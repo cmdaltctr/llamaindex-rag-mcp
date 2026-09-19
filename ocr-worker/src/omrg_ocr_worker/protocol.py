@@ -220,19 +220,16 @@ def make_success(
         extra_metadata: Additive diagnostic keys merged into metadata.
             The three protocol-owned keys cannot be overridden.
         pages_markdown: Per-page Markdown, parallel to the requested
-            pages. Only valid on a 1.1 envelope; the worker passes the
-            request's version so a plain 1.0 request is answered in 1.0.
-        protocol_version: Wire version of the envelope; the worker
-            passes the version the request spoke.
+            pages. Only valid on a 1.1 envelope.
+        protocol_version: Wire version of the envelope.
 
     Returns:
         The success envelope.
 
     Raises:
         ValueError: If ``extra_metadata`` collides with a protocol-owned
-            metadata key, or ``pages_markdown`` is empty or not a
-            sequence of strings, or it is set on a version earlier than
-            the pages protocol version.
+            metadata key, or ``pages_markdown`` is a plain string, empty,
+            holds a non-string entry, or is set before the pages version.
     """
     if pages_markdown is not None:
         if protocol_version != PAGES_PROTOCOL_VERSION:
@@ -240,8 +237,11 @@ def make_success(
                 f"pages_markdown requires protocol {PAGES_PROTOCOL_VERSION!r}; "
                 f"got {protocol_version!r}"
             )
+        # A plain string would split into one page per character.
+        if isinstance(pages_markdown, str):
+            raise ValueError("pages_markdown must be a sequence of strings, not one string")
         pages_tuple = tuple(pages_markdown)
-        if not pages_tuple:
+        if not pages_tuple or not all(isinstance(entry, str) for entry in pages_tuple):
             raise ValueError("pages_markdown must be a non-empty sequence of strings")
     else:
         pages_tuple = None

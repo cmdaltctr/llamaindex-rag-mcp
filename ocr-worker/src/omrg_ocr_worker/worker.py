@@ -320,10 +320,20 @@ def _handle_request(request: ParseRequest) -> ParseSuccess | ParseFailure:
         return parse_document(request)
     except WorkerParseError as exc:
         logger.warning("parse failed for %s: %s", request.id, exc.message)
-        return make_failure(request.id, exc.code, exc.message)
+        return make_failure(
+            request.id,
+            exc.code,
+            exc.message,
+            protocol_version=request.protocol_version,
+        )
     except Exception as exc:  # noqa: BLE001 - the loop must survive anything
         logger.exception("unhandled error while parsing %s", request.id)
-        return make_failure(request.id, "internal_error", f"{type(exc).__name__}: {exc}")
+        return make_failure(
+            request.id,
+            "internal_error",
+            f"{type(exc).__name__}: {exc}",
+            protocol_version=request.protocol_version,
+        )
 
 
 def _respond_to_recoverable_line(line: str, error: ProtocolError) -> bool:

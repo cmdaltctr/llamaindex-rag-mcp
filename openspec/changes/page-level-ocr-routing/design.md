@@ -256,9 +256,13 @@ Tasks 3 to 6 proceed under these conditions.
 
 **Amendment, 2026-09-18 (operator).** Condition 1 above called for a script and
 typography pre-check. It is dropped. The failures it aimed at announce
-themselves after the attempt — empty output covers the 129 unreadable pages —
-and a pre-check would need a signal nobody has measured. Decision 4's
-post-check rule replaces it. Conditions 2 to 5 stand unchanged.
+themselves through the combined post-check signals, not empty output alone:
+only 0.003 of measured pages produced no text, but the 0.8 confidence cut
+escalates 1.00 of `io01`, `io03` and `io07` and 0.94 of `io02` — the 129
+Devanagari and Arabic pages are escalations the post-check already reaches,
+and the pages it keeps are the residual condition 5 names. A pre-check would
+need a signal nobody has measured. Decision 4's post-check rule replaces it.
+Conditions 2 to 5 stand unchanged.
 
 ## Evidence gates
 

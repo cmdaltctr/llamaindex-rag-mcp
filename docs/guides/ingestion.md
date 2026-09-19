@@ -420,7 +420,10 @@ output. All worker logs go to standard error, which OMRG drains
 separately and forwards through its own logging, so a noisy worker can
 never corrupt the protocol stream or block on a full pipe.
 
-Protocol version is `1.0`. Successful parse responses declare the output
+Protocol versions `1.0` and `1.1` are accepted. A request that
+carries a `pages` list speaks `1.1`; a request without one speaks
+`1.0`, so an un-upgraded worker keeps serving document-level requests
+during a rolling upgrade. Successful parse responses declare the output
 schema `omrg.ocr.parse_output` version `1`. A version or schema mismatch
 is a protocol failure, not a silent downgrade.
 

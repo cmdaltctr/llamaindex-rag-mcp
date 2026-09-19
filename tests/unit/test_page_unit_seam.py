@@ -41,9 +41,14 @@ class _FakeWorker:
     """In-process worker client recording every parse request."""
 
     def __init__(
-        self, *, available: bool = True, pages_markdown=None, error: Exception | None = None
+        self,
+        *,
+        available: bool = True,
+        protocol_version: str = "1.1",
+        pages_markdown=None,
+        error: Exception | None = None,
     ):
-        self.fingerprint = SimpleNamespace(available=available)
+        self.fingerprint = SimpleNamespace(available=available, protocol_version=protocol_version)
         self.calls: list[dict] = []
         self._pages_markdown = pages_markdown
         self._error = error
@@ -353,6 +358,38 @@ def test_missing_worker_keeps_local_text_and_counts_unresolved(
     }
     assert "flawed four" in docs[0].text
     assert "worker" in caplog.text.lower()
+
+
+def test_protocol_1_0_worker_never_receives_a_page_request(
+    monkeypatch, tmp_path, effective_settings, caplog
+):
+    """A worker still on 1.0 degrades the escalation, never sees a 1.1 request.
+
+    Sending the page list would make the old worker reject the envelope
+    after dispatch and fail the file. A worker that cannot speak pages
+    is, for page routing, a worker that is not there.
+    """
+    scan = [_scan_page(i, f"native {i + 1}", i + 1 == 4) for i in range(5)]
+    engine = _EngineCalls(scan, ocr_pages_by_call=[[_ocr_page(4, "flawed four", 0.4)]])
+    _stub_engine(monkeypatch, engine)
+    inner = _FakeInner(text="whole", metadata=_inner_metadata(5, flagged=1))
+    worker = _FakeWorker(protocol_version="1.0")
+
+    with caplog.at_level("WARNING"):
+        docs = _page_reader(
+            inner, effective_settings(ocr_fallback_enabled=True, ocr_routing_unit="page"), worker
+        ).load_data(tmp_path / "doc.pdf")
+
+    assert worker.calls == [], "no page-listed request may reach a 1.0 worker"
+    meta = docs[0].metadata
+    assert _counts(meta) == {
+        "ocr_pages_native": 4,
+        "ocr_pages_local": 0,
+        "ocr_pages_worker": 0,
+        "ocr_pages_unresolved": 1,
+    }
+    assert "flawed four" in docs[0].text
+    assert "1.0" in caplog.text and "1.1" in caplog.text
 
 
 def test_missing_local_runtime_keeps_native_text_and_counts_unresolved(

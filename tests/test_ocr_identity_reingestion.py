@@ -162,11 +162,9 @@ _IDENTITY_KWARGS = {
 }
 
 
-def test_document_unit_payload_is_unchanged() -> None:
+def test_document_unit_payload_is_unchanged(effective_settings) -> None:
     """The default emits exactly the four keys it emitted before this change."""
-    from omrg.core.settings import EffectiveSettings
-
-    payload = ocr_routing_payload(EffectiveSettings())
+    payload = ocr_routing_payload(effective_settings())
 
     assert set(payload) == {
         "enabled",
@@ -176,7 +174,7 @@ def test_document_unit_payload_is_unchanged() -> None:
     }
 
 
-def test_document_unit_identity_does_not_move(monkeypatch) -> None:
+def test_document_unit_identity_does_not_move(monkeypatch, effective_settings) -> None:
     """A document-unit install keeps its identity, so nothing reindexes.
 
     Both halves of the payload are exercised, because either could move it.
@@ -200,9 +198,8 @@ def test_document_unit_identity_does_not_move(monkeypatch) -> None:
     """
     from omrg.core.ingestion import embed_exclusions, source_state
     from omrg.core.ingestion.source_state import build_index_identity
-    from omrg.core.settings import EffectiveSettings
 
-    settings = EffectiveSettings()
+    settings = effective_settings()
     grown = build_index_identity(settings, **_IDENTITY_KWARGS)
 
     before = tuple(
@@ -218,7 +215,7 @@ def test_document_unit_identity_does_not_move(monkeypatch) -> None:
     assert grown == pre_change
 
 
-def test_page_unit_identity_includes_the_page_routing_keys(monkeypatch) -> None:
+def test_page_unit_identity_includes_the_page_routing_keys(monkeypatch, effective_settings) -> None:
     """On a page-unit install the same keys must move the identity.
 
     This is the other half of the rule. Subtracting them everywhere would
@@ -227,9 +224,8 @@ def test_page_unit_identity_includes_the_page_routing_keys(monkeypatch) -> None:
     """
     from omrg.core.ingestion import embed_exclusions, source_state
     from omrg.core.ingestion.source_state import build_index_identity
-    from omrg.core.settings import EffectiveSettings
 
-    settings = EffectiveSettings(ocr_routing_unit="page")
+    settings = effective_settings(ocr_routing_unit="page")
     with_keys = build_index_identity(settings, **_IDENTITY_KWARGS)
 
     before = tuple(
@@ -253,48 +249,45 @@ def test_unit_scoped_keys_are_a_subset_of_the_exclusion_set() -> None:
     assert PAGE_ROUTING_ONLY_EMBED_KEYS <= set(EXCLUDED_EMBED_METADATA_KEYS)
 
 
-def test_page_unit_identity_differs_from_document_unit() -> None:
+def test_page_unit_identity_differs_from_document_unit(effective_settings) -> None:
     """Opting into page routing reindexes: a different engine reads the pages."""
     from omrg.core.ingestion.source_state import build_index_identity
-    from omrg.core.settings import EffectiveSettings
 
-    document = build_index_identity(EffectiveSettings(), **_IDENTITY_KWARGS)
-    page = build_index_identity(EffectiveSettings(ocr_routing_unit="page"), **_IDENTITY_KWARGS)
+    document = build_index_identity(effective_settings(), **_IDENTITY_KWARGS)
+    page = build_index_identity(effective_settings(ocr_routing_unit="page"), **_IDENTITY_KWARGS)
 
     assert page != document
 
 
-def test_page_unit_identity_ignores_the_model_directory() -> None:
+def test_page_unit_identity_ignores_the_model_directory(effective_settings) -> None:
     """Where the model lives is not what the pages say.
 
     Moving a model cache must not reindex a corpus. Only inputs that change
     the emitted text belong in the identity.
     """
     from omrg.core.ingestion.source_state import build_index_identity
-    from omrg.core.settings import EffectiveSettings
 
     here = build_index_identity(
-        EffectiveSettings(ocr_routing_unit="page", ocr_local_model_directory="/models/a"),
+        effective_settings(ocr_routing_unit="page", ocr_local_model_directory="/models/a"),
         **_IDENTITY_KWARGS,
     )
     there = build_index_identity(
-        EffectiveSettings(ocr_routing_unit="page", ocr_local_model_directory="/models/b"),
+        effective_settings(ocr_routing_unit="page", ocr_local_model_directory="/models/b"),
         **_IDENTITY_KWARGS,
     )
 
     assert here == there
 
 
-def test_page_unit_identity_follows_the_escalation_threshold() -> None:
+def test_page_unit_identity_follows_the_escalation_threshold(effective_settings) -> None:
     """The threshold decides which pages the worker rereads, so it must count."""
     from omrg.core.ingestion.source_state import build_index_identity
-    from omrg.core.settings import EffectiveSettings
 
     default_cut = build_index_identity(
-        EffectiveSettings(ocr_routing_unit="page"), **_IDENTITY_KWARGS
+        effective_settings(ocr_routing_unit="page"), **_IDENTITY_KWARGS
     )
     raised_cut = build_index_identity(
-        EffectiveSettings(ocr_routing_unit="page", ocr_local_min_confidence=0.9),
+        effective_settings(ocr_routing_unit="page", ocr_local_min_confidence=0.9),
         **_IDENTITY_KWARGS,
     )
 

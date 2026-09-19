@@ -398,6 +398,34 @@ class TestProtocolValidation:
         assert decoded.pages_markdown == ("# P2", "# P5")
         assert decoded.protocol_version == "1.1"
 
+    @pytest.mark.parametrize(
+        "label,values",
+        [
+            ("plain_string", "# P2 # P5"),
+            ("int_entries", ["# P2", 7]),
+            ("none_entries", [None]),
+            ("empty_list", []),
+        ],
+    )
+    def test_make_success_validates_pages_markdown(
+        self, side: str, label: str, values: Any
+    ) -> None:
+        """The builder refuses shapes the wire decoder would reject or mangle.
+
+        A plain string is the trap: ``tuple()`` splits it into one page
+        per character, and the decoder would accept those characters as
+        pages. The builder and the decoder must agree before the wire.
+        """
+        mod = _modules()[side]
+        with pytest.raises(ValueError):
+            mod.make_success(
+                "req-build-pm",
+                "# T",
+                ocr_backend="paddleocr-vl",
+                page_count=2,
+                pages_markdown=values,
+            )
+
     def test_factories_stamp_the_requested_version(self, side: str) -> None:
         """A worker answers in the version the request spoke (rolling upgrade rule)."""
         mod = _modules()[side]

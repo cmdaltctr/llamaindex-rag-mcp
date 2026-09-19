@@ -65,7 +65,12 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 3077
+_BASE_EXECUTED = 3090
+# Re-baselined at page-level-ocr-routing review fixes (2026-09-18): the
+# CodeRabbit pass hardened both protocol twins' ``make_success`` builder
+# (8 parametrised cases), the worker failure envelopes' version echo (2),
+# the protocol-1.0 page-request gate (1) and the local model identity
+# cache scoping (2) — net +13 (3077 -> 3090).
 # Re-baselined at page-level-ocr-routing tasks 4.4/4.5c/4.6 (2026-09-18):
 # the page unit wired into the reader seam adds 11 cases — only flagged
 # pages OCRed, the all-local backend, one-request escalation, the

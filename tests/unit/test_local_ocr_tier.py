@@ -465,6 +465,59 @@ def test_probe_failure_resolves_to_none_with_a_warning(
     assert "PDFium" in caplog.text
 
 
+def test_an_unresolved_runtime_is_reprobed(
+    monkeypatch, effective_settings, _clean_resolution_cache
+):
+    """A failed probe caches nothing: the next call gains the identity.
+
+    A cached ``None`` would keep the identity absent after the runtime
+    appeared, so changed content would be treated as unchanged.
+    """
+    calls = _Calls(
+        [
+            ValueError("failed to load PDFium; install a compatible library"),
+            _probe_stub(1, "", _provenance()),
+        ]
+    )
+    _stub_process(monkeypatch, calls)
+
+    first = page_routing.resolve_local_model_identity(effective_settings())
+    second = page_routing.resolve_local_model_identity(effective_settings())
+
+    assert first is None
+    assert second == "pp-ocrv6-small@oar-ocr-v0.7.0"
+    assert len(calls.calls) == 2
+
+
+def test_probe_cache_is_scoped_by_the_model_settings(
+    monkeypatch, effective_settings, _clean_resolution_cache
+):
+    """A different model directory or offline mode resolves afresh.
+
+    The pair is what ``local_ocr`` feeds the engine, so each pair owns
+    its own cache entry: one model's identity must never vouch for
+    another's text.
+    """
+    calls = _Calls(
+        [
+            _probe_stub(1, "", _provenance(model=("model-a", "r1"))),
+            _probe_stub(1, "", _provenance(model=("model-b", "r2"))),
+        ]
+    )
+    _stub_process(monkeypatch, calls)
+
+    default = page_routing.resolve_local_model_identity(effective_settings())
+    other = page_routing.resolve_local_model_identity(
+        effective_settings(ocr_local_model_directory="/models/other", ocr_local_offline=True)
+    )
+    # The second probe ran under the pair the tier would use.
+    assert calls.calls[1]["model_directory"] == "/models/other"
+    assert calls.calls[1]["offline"] is True
+
+    assert default == "model-a@r1"
+    assert other == "model-b@r2"
+
+
 def test_a_page_without_model_identity_reports_none(
     monkeypatch, effective_settings, _clean_resolution_cache
 ):

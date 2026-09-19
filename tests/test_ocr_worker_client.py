@@ -313,6 +313,44 @@ def test_worker_loop_internal_error_is_one_bounded_envelope(
     assert "RuntimeError" in decoded.error.message
 
 
+@pytest.mark.parametrize(
+    "failure_kind",
+    ["worker_parse_error", "internal_error"],
+)
+def test_worker_loop_failure_envelopes_echo_the_request_version(
+    monkeypatch: pytest.MonkeyPatch, small_pdf: Path, failure_kind: str
+) -> None:
+    """A failure answers in the version the request spoke (rolling upgrade rule).
+
+    A 1.0 request that fails must not receive a default 1.1 envelope: a
+    client still on 1.0 would reject the response instead of reading the
+    structured failure. Both failure paths must echo the request version.
+    """
+    worker = _load_worker_module(monkeypatch)
+
+    def failing_parse(request):
+        if failure_kind == "worker_parse_error":
+            raise worker.WorkerParseError("stub_failure", "it failed")
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(worker, "parse_document", failing_parse)
+    request = omrg_protocol.make_request("req-loop-v10", str(small_pdf))
+    assert request.protocol_version == "1.0"
+    stdin = io.StringIO(omrg_protocol.encode_line(request) + "\n")
+    stdout = io.StringIO()
+    monkeypatch.setattr(sys, "stdin", stdin)
+    monkeypatch.setattr(sys, "stdout", stdout)
+
+    exit_code = worker.main()
+
+    assert exit_code == 0
+    lines = stdout.getvalue().splitlines()
+    assert len(lines) == 1
+    decoded = omrg_protocol.decode_response_line(lines[0], expected_id="req-loop-v10")
+    assert isinstance(decoded, omrg_protocol.ParseFailure)
+    assert decoded.protocol_version == "1.0"
+
+
 def test_worker_loop_invalid_path_uses_real_seam(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

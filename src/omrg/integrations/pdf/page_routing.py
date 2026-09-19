@@ -224,11 +224,13 @@ def local_ocr(file: Path, pages: list[int], *, settings: Any) -> list[LocalOcrPa
 # ── The local model resolution probe (task 4.2, identity) ─────────────────
 
 _RESOLUTION_LOCK = threading.Lock()
-#: Process-wide cache of the resolved local model identity. A non-empty
-#: dict means a probe has run this process; ``{"identity": None}`` records
-#: an unresolved runtime as deliberately as a resolved one, so a missing
-#: PDFium does not re-probe on every operation.
-_local_model_resolution: dict[str, str | None] = {}
+#: Process-wide cache of resolved local model identities, keyed by the
+#: ``(model_directory, offline)`` pair the probe ran under — the pair
+#: ``local_ocr`` feeds the engine, so a different pair is a different
+#: model and must resolve afresh. Only successful identities are cached:
+#: an unresolved runtime is re-probed, so the identity is gained the
+#: moment the runtime appears and the index identity follows.
+_local_model_resolution: dict[tuple[str, bool], str] = {}
 
 
 def reset_local_model_resolution() -> None:
@@ -243,7 +245,7 @@ def reset_local_model_resolution() -> None:
 
 
 def resolve_local_model_identity(settings: Any) -> str | None:
-    """Resolve the local OCR model's ``name@revision``, once per process.
+    """Resolve the local OCR model's ``name@revision``, once per settings pair.
 
     pdf-inspector reports the identity only in per-page provenance after
     OCR runs, and an empty page list skips the model entirely, so the
@@ -251,13 +253,14 @@ def resolve_local_model_identity(settings: Any) -> str | None:
     The blank page costs one render and no recognition work; its
     provenance still names the model. The probe applies the same model
     directory and offline settings as the tier, so it resolves the model
-    the tier would use.
+    the tier would use, and the cache is keyed by exactly that pair.
 
-    Any failure resolves to ``None`` with one warning: a missing runtime is
-    a stable unresolved state, and the index identity then omits the model
-    until the runtime appears, reindexing exactly when the emitted text
-    would change. Lock-guarded because ingest operations run on worker
-    threads.
+    A successful resolution is cached per ``(model_directory, offline)``.
+    A failure resolves to ``None`` and caches nothing: an unavailable
+    runtime is re-probed on the next call, so the identity is gained when
+    the runtime appears — reindexing exactly when the emitted text would
+    change, which a cached ``None`` would miss. Lock-guarded because
+    ingest operations run on worker threads.
 
     Args:
         settings: Injected settings carrying ``ocr_local_model_directory``
@@ -266,11 +269,14 @@ def resolve_local_model_identity(settings: Any) -> str | None:
     Returns:
         The resolved ``name@revision``, or ``None`` when unresolvable.
     """
+    key = ((settings.ocr_local_model_directory or ""), bool(settings.ocr_local_offline))
     with _RESOLUTION_LOCK:
-        if _local_model_resolution:
-            return _local_model_resolution["identity"]
+        cached = _local_model_resolution.get(key)
+        if cached is not None:
+            return cached
         identity = _probe_local_model_identity(settings)
-        _local_model_resolution["identity"] = identity
+        if identity is not None:
+            _local_model_resolution[key] = identity
         return identity
 
 

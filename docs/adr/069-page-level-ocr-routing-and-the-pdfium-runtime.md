@@ -34,9 +34,12 @@ pages the frozen labels mark `needs_ocr`:
 
 The evidence-gate verdict was REWORK with conditions; the operator's
 2026-09-18 amendment dropped the originally required script/typography
-pre-check: the failures announce themselves after the attempt (all 129
-unreadable pages returned empty output), and no measured signal
-predicts them beforehand.
+pre-check: the failures announce themselves through the combined post-check
+signals after the attempt (only 0.003 of measured pages produced no text,
+but the 0.8 confidence cut escalates 1.00 of `io01`, `io03` and `io07` and
+0.94 of `io02`, so the 129 unreadable Devanagari and Arabic pages are
+reached, with the kept remainder the accepted residual), and no measured
+signal predicts them beforehand.
 
 The local tier also has runtime needs the document unit never had:
 pdf-inspector's OCR engine loads a PDFium shared library

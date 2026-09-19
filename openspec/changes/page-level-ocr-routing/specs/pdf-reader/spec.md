@@ -122,6 +122,7 @@ The four existing OCR diagnostics SHALL remain scalars and SHALL keep their docu
 #### Scenario: A page the local tier cannot read escalates
 
 - **GIVEN** the `page` routing unit and a flagged page the local tier returns no text for
+- **AND** the worker returns usable, non-empty Markdown for that page
 - **WHEN** the PDF is ingested
 - **THEN** that page SHALL be sent to the worker
 - **AND** the metadata SHALL count it as a worker page
@@ -130,6 +131,7 @@ The four existing OCR diagnostics SHALL remain scalars and SHALL keep their docu
 
 - **GIVEN** the local OCR tier returns no text for 1 of 3 flagged pages
 - **AND** the isolated worker is available
+- **AND** the worker returns usable, non-empty Markdown for the escalated page
 - **WHEN** the PDF is ingested
 - **THEN** exactly that page SHALL be sent to the worker
 - **AND** the metadata SHALL count 1 worker page and 2 local-OCR pages

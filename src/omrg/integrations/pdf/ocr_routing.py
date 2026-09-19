@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Any
 
 from ..ocr_worker.client import OcrWorkerError
-from ..ocr_worker.protocol import ParseSuccess
+from ..ocr_worker.protocol import PAGES_PROTOCOL_VERSION, ParseSuccess
 from .ocr_policy import OCR_UNCONDITIONAL_TYPES
 from .page_routing import (
     PAGE_SOURCE_LOCAL,
@@ -343,9 +343,11 @@ class OcrRoutedPdfInspector:
 
         Returns:
             Page number to worker Markdown. An empty dict means the
-            escalation degraded: the worker is unavailable, or its
-            response cannot be attributed per page. Both keep the best
-            available text and count the pages unresolved.
+            escalation degraded: the worker is unavailable, cannot serve
+            page-listed requests (it speaks a protocol older than
+            ``PAGES_PROTOCOL_VERSION``), or its response cannot be
+            attributed per page. All three keep the best available text
+            and count the pages unresolved.
 
         Raises:
             OcrPostDispatchError: On a worker failure after the complete
@@ -361,6 +363,23 @@ class OcrRoutedPdfInspector:
                 "worker environment and set OCR_WORKER_COMMAND to enable it.",
                 len(pages),
                 name,
+            )
+            return {}
+        if client.fingerprint.protocol_version != PAGES_PROTOCOL_VERSION:
+            # A worker still on 1.0 during a rolling upgrade must never
+            # receive a page-listed request: it would reject the 1.1
+            # envelope after dispatch and fail the file. A worker that
+            # cannot speak pages is, for page routing, a worker that is
+            # not there — degrade, never fail the file.
+            logger.warning(
+                "%d escalated page(s) in %s need a worker that speaks protocol "
+                "%s, but this worker speaks %s; page routing degrades and the "
+                "pages keep their best available text, counting unresolved. "
+                "Upgrade the worker to enable page-listed parsing.",
+                len(pages),
+                name,
+                PAGES_PROTOCOL_VERSION,
+                client.fingerprint.protocol_version,
             )
             return {}
         try:
