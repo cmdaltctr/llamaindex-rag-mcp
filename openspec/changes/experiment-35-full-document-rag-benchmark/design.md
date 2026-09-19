@@ -1,4 +1,4 @@
-# Design: Experiment 34 Local OMRG Profile Baselines
+# Design: Experiment 35 Local OMRG Profile Baselines
 
 ## Status
 
@@ -8,7 +8,7 @@ DRAFT. Measured execution must not begin until both local subsets and the evalua
 
 OMRG has strong component-level evidence but needs a complete baseline for each primary profile. A large benchmark is premature while the evaluation harness, observability, answer scoring, and cloud deployment path are still being established.
 
-Experiment 34 therefore starts with two small local benchmarks that run sequentially on the operator's Mac.
+Experiment 35 therefore starts with two small local benchmarks that run sequentially on the operator's Mac.
 
 ## Goals
 
@@ -31,16 +31,16 @@ Experiment 34 therefore starts with two small local benchmarks that run sequenti
 Run the two baselines separately:
 
 ```text
-34A FinanceBench / documents
+35A FinanceBench / documents
         ↓ complete + report
-34B RepoProbe / codebase
+35B RepoProbe / codebase
         ↓ complete + report
 cloud-scale benchmark later
 ```
 
 The two measured runs must not execute concurrently on the Mac.
 
-## 34A — Document Profile
+## 35A — Document Profile
 
 ### Corpus
 
@@ -79,7 +79,7 @@ raw PDF
 - index size
 - query latency
 
-## 34B — Codebase Profile
+## 35B — Codebase Profile
 
 ### Corpus
 
@@ -132,7 +132,7 @@ Minimum trace fields:
 - answer-stage model identity
 - error/degraded status
 
-This local schema should be simple enough to map to OpenTelemetry later when OMRG moves to cloud deployment. Experiment 34 does not require an OpenTelemetry dependency.
+This local schema should be simple enough to map to OpenTelemetry later when OMRG moves to cloud deployment. Experiment 35 does not require an OpenTelemetry dependency.
 
 ## RAGAS
 
@@ -163,12 +163,12 @@ If a smoke run shows that the frozen subset cannot complete inside that envelope
 - Record repository SHA and dependency-lock hashes.
 - Preserve failed documents, repositories, and queries in denominators.
 - Do not tune on measured outcomes.
-- Run 34A and 34B sequentially.
+- Run 35A and 35B sequentially.
 
 ## Draft Open Questions
 
-1. Which exact FinanceBench questions and PDFs make up the 34A subset?
-2. Which two RepoProbe repositories and question IDs make up 34B?
+1. Which exact FinanceBench questions and PDFs make up the 35A subset?
+2. Which two RepoProbe repositories and question IDs make up 35B?
 3. Which embedding provider/model is the local reference configuration?
 4. Is grounded-answer scoring mandatory for both profiles or secondary?
 5. Which RAGAS metrics and judge configuration are acceptable?
@@ -177,6 +177,6 @@ If a smoke run shows that the frozen subset cannot complete inside that envelope
 
 ## Decision Rule
 
-Experiment 34 establishes two local OMRG baselines. It does not need to prove superiority over another framework.
+Experiment 35 establishes two local OMRG baselines. It does not need to prove superiority over another framework.
 
 The report should identify quality, failure stage, latency, and resource bottlenecks. Larger benchmark runs and external framework comparisons belong in later proposals.

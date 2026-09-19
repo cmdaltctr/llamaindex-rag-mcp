@@ -4,11 +4,11 @@
 
 ### Requirement: Codebase baseline uses a frozen RepoProbe subset
 
-Experiment 34B SHALL evaluate the current OMRG `codebase` profile on a small frozen RepoProbe subset.
+Experiment 35B SHALL evaluate the current OMRG `codebase` profile on a small frozen RepoProbe subset.
 
 #### Scenario: Repository identity is not pinned
 - **WHEN** a repository does not have a frozen commit SHA or equivalent immutable identity
-- **THEN** it SHALL NOT be included in the measured 34B baseline
+- **THEN** it SHALL NOT be included in the measured 35B baseline
 
 ### Requirement: Codebase baseline uses the shipped codebase profile
 
@@ -17,7 +17,7 @@ The measured run SHALL preserve the current codebase retrieval policy, including
 #### Scenario: Document reranking is enabled only for the benchmark
 - **WHEN** reranking is enabled contrary to the frozen codebase profile
 - **THEN** the run SHALL be labelled exploratory
-- **AND** it SHALL NOT replace the 34B baseline
+- **AND** it SHALL NOT replace the 35B baseline
 
 ### Requirement: Codebase retrieval and answer quality are reported separately
 
@@ -40,8 +40,8 @@ The measured subset SHALL freeze repository names, repository commit SHAs, quest
 
 ### Requirement: Codebase baseline remains small and sequential
 
-The first 34B baseline SHALL use only the approved small subset and SHALL run separately from 34A.
+The first 35B baseline SHALL use only the approved small subset and SHALL run separately from 35A.
 
 #### Scenario: Both profiles are scheduled concurrently on the Mac
-- **WHEN** 34A is still running
-- **THEN** 34B SHALL wait until 34A completes or stops
+- **WHEN** 35A is still running
+- **THEN** 35B SHALL wait until 35A completes or stops

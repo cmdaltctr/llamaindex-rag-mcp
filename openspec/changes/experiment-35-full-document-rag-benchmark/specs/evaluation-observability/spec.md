@@ -2,7 +2,7 @@
 
 ## ADDED Requirements
 
-### Requirement: Experiment 34 emits structured stage traces
+### Requirement: Experiment 35 emits structured stage traces
 
 The benchmark harness SHALL emit secret-free structured JSONL records for major pipeline stages and query outcomes.
 
