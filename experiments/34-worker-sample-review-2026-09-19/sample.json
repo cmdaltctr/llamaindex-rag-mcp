@@ -1,0 +1,219 @@
+{
+ "seed": 34,
+ "control_doc": "bd03",
+ "page_count": 42,
+ "cap": 50,
+ "exp33_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-experiment-33-ocr-routing-natural-positive/experiments/33-ocr-routing-natural-positive-2026-09-17",
+ "pages": [
+  {
+   "doc_id": "io06",
+   "page": 16,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io06",
+   "page": 28,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io06",
+   "page": 30,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io06",
+   "page": 45,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io06",
+   "page": 46,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io06",
+   "page": 53,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io06",
+   "page": 62,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io06",
+   "page": 63,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io06",
+   "page": 65,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io06",
+   "page": 68,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io06",
+   "page": 75,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io06",
+   "page": 78,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io04",
+   "page": 1,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io04",
+   "page": 4,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io04",
+   "page": 16,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io04",
+   "page": 17,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io04",
+   "page": 18,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io04",
+   "page": 20,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io04",
+   "page": 33,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io04",
+   "page": 42,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io04",
+   "page": 44,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io04",
+   "page": 47,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io04",
+   "page": 49,
+   "role": "problem"
+  },
+  {
+   "doc_id": "io04",
+   "page": 52,
+   "role": "problem"
+  },
+  {
+   "doc_id": "bd01",
+   "page": 1,
+   "role": "problem"
+  },
+  {
+   "doc_id": "bd01",
+   "page": 4,
+   "role": "problem"
+  },
+  {
+   "doc_id": "bd01",
+   "page": 5,
+   "role": "problem"
+  },
+  {
+   "doc_id": "bd01",
+   "page": 6,
+   "role": "problem"
+  },
+  {
+   "doc_id": "bd02",
+   "page": 1,
+   "role": "problem"
+  },
+  {
+   "doc_id": "bd02",
+   "page": 2,
+   "role": "problem"
+  },
+  {
+   "doc_id": "bd02",
+   "page": 6,
+   "role": "problem"
+  },
+  {
+   "doc_id": "bd02",
+   "page": 8,
+   "role": "problem"
+  },
+  {
+   "doc_id": "tl03",
+   "page": 2,
+   "role": "problem"
+  },
+  {
+   "doc_id": "tl03",
+   "page": 3,
+   "role": "problem"
+  },
+  {
+   "doc_id": "tl03",
+   "page": 5,
+   "role": "problem"
+  },
+  {
+   "doc_id": "tl03",
+   "page": 8,
+   "role": "problem"
+  },
+  {
+   "doc_id": "bd03",
+   "page": 1,
+   "role": "control"
+  },
+  {
+   "doc_id": "bd03",
+   "page": 2,
+   "role": "control"
+  },
+  {
+   "doc_id": "bd03",
+   "page": 10,
+   "role": "control"
+  },
+  {
+   "doc_id": "bd03",
+   "page": 15,
+   "role": "control"
+  },
+  {
+   "doc_id": "bd03",
+   "page": 21,
+   "role": "control"
+  },
+  {
+   "doc_id": "bd03",
+   "page": 23,
+   "role": "control"
+  }
+ ]
+}

@@ -1,20 +1,22 @@
 # Tasks: Experiment 34 Worker Sample Review
 
-**Progress 2026-09-19:** 0 of 8 done. Change proposed from the
-`feat/experiment-34-worker-sample-review` worktree forked off
-`feat/page-level-ocr-routing`; the operator authorised the bounded
-worker run (sample, timeouts, budget in the proposal).
+**Progress 2026-09-19:** setup and harness built (1.1, 1.2, 2.1–2.3); the
+measured pass (3.1) is BLOCKED on the timing gate — one cold page
+outlived 900 s and a cold+warm probe outlived 3000 s, against smoke
+figures of 34–106 s/page, so `protocol.md` requires the per-page cost
+on this machine before the run. The timing probe on `io06` is running
+in the background; the 2 h wall cap is provisional until it reports.
 
 ## 1. Setup
 
-- [ ] 1.1 Rename the previous `experiment-34-full-document-rag-benchmark` change to `experiment-35-full-document-rag-benchmark` (folder and internal references; it was unstarted).
-- [ ] 1.2 Provision the OCR worker environment (`ocr-worker/provision.py`) and confirm the capability probe and one page-listed smoke parse pass.
+- [x] 1.1 Rename the previous `experiment-34-full-document-rag-benchmark` change to `experiment-35-full-document-rag-benchmark` (folder and internal references; it was unstarted).
+- [x] 1.2 Provision the OCR worker environment (`ocr-worker/provision.py`) and confirm the capability probe and one page-listed smoke parse pass. Provisioned; the capability probe reports protocol 1.1. The page-listed smoke parse is subsumed by the timing gate: cold pages on this machine exceed the smoke-fixture figures, so the probe is re-scoped as `time_worker.py` with a budget decision attached.
 
 ## 2. Sample and harness
 
-- [ ] 2.1 Freeze the sample: 42 pages from the Experiment 33 corpus (`io06` 12, `io04` 12, `bd01` 4, `bd02` 4, `tl03` 4, control 6), including every operator-spot-checked page listed in the proposal. Commit the sample manifest.
-- [ ] 2.2 Write the runner: send each document's sampled pages to the worker in one page-listed request, checkpoint per document under the 900 s soft timeout and the 2 h wall-clock cap.
-- [ ] 2.3 Write the review page generator: original page image left, worker Markdown right, per-page checklist (text accuracy, column order, headings, table readable, ready for an LLM, note) persisting to a JSON verdicts file.
+- [x] 2.1 Freeze the sample: 42 pages from the Experiment 33 corpus (`io06` 12, `io04` 12, `bd01` 4, `bd02` 4, `tl03` 4, control 6), including every operator-spot-checked page listed in the proposal. Commit the sample manifest. `sample.json`, seed 34, control `bd03`; verified against the frozen labels.
+- [x] 2.2 Write the runner: send each document's sampled pages to the worker in one page-listed request, checkpoint per document under the 900 s soft timeout and the 2 h wall-clock cap.
+- [x] 2.3 Write the review page generator: original page image left, worker Markdown right, per-page checklist (text accuracy, column order, headings, table readable, ready for an LLM, note) persisting to a JSON verdicts file. `protocol.md` added per the s-experiment skill after the operator's correction.
 
 ## 3. Run and review
 
