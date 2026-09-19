@@ -24,7 +24,7 @@ from .chunker import read_and_chunk_file_async
 from .hashing import sha256_file
 from .loader import gather_supported_files, make_file_detail
 from .metrics import sample_peak_rss_bytes
-from .ocr_identity import ocr_routing_payload
+from .ocr_identity import resolved_routing_payload
 from .replacement import IngestionStageError, replace_source_nodes_async
 from .source_state import (
     IncompatibleSourceLineageError,
@@ -228,7 +228,7 @@ async def ingest_path_async(
         from omrg.capabilities import UNAVAILABLE_OCR_WORKER_FINGERPRINT
 
         resolved_ocr_fingerprint = UNAVAILABLE_OCR_WORKER_FINGERPRINT
-    resolved_ocr_routing = ocr_routing_payload(resolved_settings)
+    resolved_ocr_routing = resolved_routing_payload(resolved_settings)
     files_indexed = 0
     files_skipped_unchanged = 0
     files_skipped_binary = 0

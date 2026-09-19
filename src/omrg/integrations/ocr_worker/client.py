@@ -22,7 +22,7 @@ import subprocess
 import threading
 import uuid
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from queue import Empty, Queue
 
 from .protocol import (
@@ -183,32 +183,35 @@ class OcrWorkerClient:
 
     # ── Requests ───────────────────────────────────────────────────────
 
-    def parse(self, pdf_path: str, *, timeout: float | None = None) -> ParseSuccess:
-        """Send one parse request and await its terminal response.
-
-        Starts the worker subprocess lazily on first use. Exactly one
-        request may be in flight at a time.
+    def parse(
+        self, pdf_path: str, *, timeout: float | None = None, pages: Sequence[int] | None = None
+    ) -> ParseSuccess:
+        """Send one parse request, optionally restricted to a page list.
 
         Args:
             pdf_path: Path of the PDF the worker must parse.
             timeout: Seconds to wait for the terminal response;
-                defaults to :attr:`request_timeout`.
+                defaults to the client's request timeout.
+            pages: 1-based page numbers to parse. ``None`` parses the
+                whole document and speaks protocol 1.0; a page list
+                speaks 1.1 (change page-level-ocr-routing, task 4.3).
 
         Returns:
-            The terminal success envelope.
+            The terminal success envelope; ``pages_markdown`` is set when
+            the request carried a page list and the worker answered per
+            page.
 
         Raises:
-            OcrWorkerError: On timeout, worker crash, unexpected
-                output closure, protocol violation, spawn failure, or
-                a worker-reported structured error. A structured
-                worker error leaves the subprocess healthy.
+            OcrWorkerError: On timeout, worker crash, unexpected output
+                closure, protocol violation, spawn failure, or a
+                worker-reported structured error.
         """
         with self._dispatch_lock:
             self.start()
             process = self._process
             if process is None or process.stdin is None:
                 raise OcrWorkerError("spawn_failed", "worker process was not started")
-            request = make_request(uuid.uuid4().hex, pdf_path)
+            request = make_request(uuid.uuid4().hex, pdf_path, pages=pages)
             try:
                 process.stdin.write(encode_line(request) + "\n")
                 process.stdin.flush()

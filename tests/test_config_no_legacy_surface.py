@@ -72,6 +72,44 @@ class TestLegacyEnvTripwire:
             config.check_legacy_env_vars({old: "x"})
         assert f"{old}  ->  {new}" in str(exc.value)
 
+    @pytest.mark.parametrize(
+        ("old", "new"),
+        sorted(config._NEVER_SHIPPED_ALIASES.items()),
+    )
+    def test_never_shipped_alias_raises_naming_replacement(self, old: str, new: str) -> None:
+        """A nested spelling of a flat setting is caught, not discarded.
+
+        These names were never read by the project, so nothing detects them
+        but this tripwire: the nested delimiter resolves only into nested
+        blocks, and the block they name does not exist, so pydantic-settings
+        drops them in silence and the server runs on the default.
+        """
+        with pytest.raises(ValueError) as exc:
+            config.check_legacy_env_vars({old: "x"})
+        message = str(exc.value)
+        assert f"{old}  ->  {new}" in message
+        assert "discarded in silence" in message
+
+    def test_never_shipped_aliases_are_pinned(self) -> None:
+        """Deleting an alias must fail, not silently shrink the sweep.
+
+        Same reasoning as the retired-mapping pin: the parametrised test
+        above draws its cases from the mapping, so a deletion would remove
+        its own coverage and leave the suite green.
+        """
+        assert set(config._NEVER_SHIPPED_ALIASES) == {
+            "OCR__ROUTING_UNIT",
+            "OCR__LOCAL_MIN_CONFIDENCE",
+            "OCR__LOCAL_OFFLINE",
+            "OCR__LOCAL_MODEL_DIRECTORY",
+        }
+
+    def test_never_shipped_alias_names_a_real_flat_field(self) -> None:
+        """Every alias must name a real field, or its advice is wrong."""
+        fields = set(config.Settings.model_fields)
+        for alias, replacement in config._NEVER_SHIPPED_ALIASES.items():
+            assert replacement.lower() in fields, f"{alias} points at a missing field"
+
     def test_retired_mapping_is_pinned(self) -> None:
         """Deleting a mapping entry must fail, not silently shrink the sweep.
 

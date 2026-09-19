@@ -22,6 +22,10 @@ from llama_index.core.schema import (
 )
 
 from ..vectordb.base import VectorStore
+from .embed_exclusions import (  # re-exported: the historic import site
+    EXCLUDED_EMBED_METADATA_KEYS,
+    scoped_excluded_keys,
+)
 from .ocr_identity import ocr_fingerprint_payload, ocr_routing_payload
 
 SOURCE_CONTENT_HASH_KEY = "source_content_hash"
@@ -54,35 +58,7 @@ _SOURCE_METADATA_KEYS = (
 #: value is machine identity, parser telemetry, or filesystem bookkeeping:
 #: constant within a document and carrying no retrievable meaning. A key
 #: carrying topical signal a query could plausibly match belongs in
-#: ``_RETAINED_EMBED_METADATA_KEYS`` instead.
-EXCLUDED_EMBED_METADATA_KEYS = (
-    # Parser telemetry — diagnostics about how a file was parsed, constant
-    # across every chunk of a document (``pdf_inspector`` emits the first
-    # four; page/layout keys cover the other readers).
-    "pdf_reader",
-    "pdf_type",
-    "pdf_confidence",
-    "ocr_required",
-    "ocr_used",
-    "ocr_backend",
-    "pages_needing_ocr",
-    "pages_needing_ocr_before_fallback",
-    "extraction_fallback_backend",
-    "page_count",
-    "page",
-    "page_label",
-    "column",
-    "section_bbox",
-    "bbox_schema_version",
-    # Filesystem bookkeeping — machine-specific paths and timestamps that
-    # differ between the machine that ingested and any other.
-    "file_path",
-    "file_type",
-    "file_size",
-    "creation_date",
-    "last_modified_date",
-    "last_accessed_date",
-)
+
 
 #: Metadata keys that MUST stay in embedding text (design D2). This
 #: deliberately INVERTS the LlamaIndex default: ``SimpleDirectoryReader``
@@ -166,6 +142,8 @@ def build_index_identity(
     because reprocessing is safer than reusing stale chunks or vectors.
     """
     configured_provider, configured_model = _configured_embedding(settings)
+    routing = ocr_routing_payload(settings) if ocr_routing is None else ocr_routing
+    excluded_keys = scoped_excluded_keys(EXCLUDED_EMBED_METADATA_KEYS, routing)
     payload = {
         "schema": _INDEX_IDENTITY_SCHEMA,
         "embedding": {
@@ -178,7 +156,7 @@ def build_index_identity(
             # is the declared embedding-text contract, and changing it must
             # invalidate identity precisely (D6). A module-global lookup
             # keeps monkeypatched/test-time overrides observable.
-            "excluded_keys": sorted(EXCLUDED_EMBED_METADATA_KEYS),
+            "excluded_keys": sorted(excluded_keys),
         },
         "parser": {
             "content_type": content_type,
@@ -195,7 +173,7 @@ def build_index_identity(
             "effective_chunk_overlap": chunk_overlap,
         },
         # Task 2.13 (design D8): unconditional members — see ocr_identity.
-        "ocr_routing": ocr_routing_payload(settings) if ocr_routing is None else ocr_routing,
+        "ocr_routing": routing,
         "ocr_worker_fingerprint": ocr_fingerprint_payload(ocr_worker_fingerprint),
         "tokenizer": (
             tokenizer

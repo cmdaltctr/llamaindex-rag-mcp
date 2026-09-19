@@ -138,6 +138,162 @@ def test_routing_payload_echoes_the_three_gate_values(effective_settings) -> Non
     }
 
 
+# ── Routing unit in the index identity (change page-level-ocr-routing) ───
+
+#: The routing payload as it stood before the routing unit joined it. The
+#: document-unit identity is pinned against this rather than against a
+#: recorded hash: ``build_index_identity`` hashes the *ambient* embedding
+#: model, which conftest replaces with a mock, so a literal digest would
+#: encode the test harness and break whenever that mock changed. Passing
+#: this payload through ``ocr_routing=`` bypasses the new code, so the
+#: comparison asks exactly the question that matters — does an install on
+#: the default still hash what it hashed before?
+_PRE_CHANGE_ROUTING_PAYLOAD = {
+    "enabled": True,
+    "min_confidence": 0.5,
+    "page_fraction": 0.10,
+    "unconditional_types": ["image_based", "scanned"],
+}
+
+_IDENTITY_KWARGS = {
+    "content_type": "application/pdf",
+    "chunk_size": 512,
+    "chunk_overlap": 100,
+}
+
+
+def test_document_unit_payload_is_unchanged(effective_settings) -> None:
+    """The default emits exactly the four keys it emitted before this change."""
+    payload = ocr_routing_payload(effective_settings())
+
+    assert set(payload) == {
+        "enabled",
+        "min_confidence",
+        "page_fraction",
+        "unconditional_types",
+    }
+
+
+def test_document_unit_identity_does_not_move(monkeypatch, effective_settings) -> None:
+    """A document-unit install keeps its identity, so nothing reindexes.
+
+    Both halves of the payload are exercised, because either could move it.
+    The left-hand side runs against the exclusion set as it stands today,
+    grown by the page-routing keys; the right-hand side runs against the
+    set as it stood before them, with the pre-change routing payload. They
+    must agree: a corpus indexed before page routing existed has no reason
+    to reprocess for keys its install can never emit.
+
+    This is why the earlier version of this test was too weak — it held the
+    exclusion set constant on both sides, so registering a page-unit key in
+    ``EXCLUDED_EMBED_METADATA_KEYS`` without listing it in
+    ``PAGE_ROUTING_ONLY_EMBED_KEYS`` passed unnoticed while every install's
+    identity moved.
+
+    Do not replace this with a recorded digest. ``build_index_identity``
+    hashes the *ambient* embedding model, and conftest swaps in a mock, so
+    the same settings hash differently inside and outside pytest: a literal
+    digest would pin the mock rather than the configuration, and break
+    whenever the harness changed its embedder.
+    """
+    from omrg.core.ingestion import embed_exclusions, source_state
+    from omrg.core.ingestion.source_state import build_index_identity
+
+    settings = effective_settings()
+    grown = build_index_identity(settings, **_IDENTITY_KWARGS)
+
+    before = tuple(
+        key
+        for key in source_state.EXCLUDED_EMBED_METADATA_KEYS
+        if key not in embed_exclusions.PAGE_ROUTING_ONLY_EMBED_KEYS
+    )
+    monkeypatch.setattr(source_state, "EXCLUDED_EMBED_METADATA_KEYS", before)
+    pre_change = build_index_identity(
+        settings, ocr_routing=_PRE_CHANGE_ROUTING_PAYLOAD, **_IDENTITY_KWARGS
+    )
+
+    assert grown == pre_change
+
+
+def test_page_unit_identity_includes_the_page_routing_keys(monkeypatch, effective_settings) -> None:
+    """On a page-unit install the same keys must move the identity.
+
+    This is the other half of the rule. Subtracting them everywhere would
+    hide a real change in embedded text, which is the failure the exclusion
+    set is hashed to prevent.
+    """
+    from omrg.core.ingestion import embed_exclusions, source_state
+    from omrg.core.ingestion.source_state import build_index_identity
+
+    settings = effective_settings(ocr_routing_unit="page")
+    with_keys = build_index_identity(settings, **_IDENTITY_KWARGS)
+
+    before = tuple(
+        key
+        for key in source_state.EXCLUDED_EMBED_METADATA_KEYS
+        if key not in embed_exclusions.PAGE_ROUTING_ONLY_EMBED_KEYS
+    )
+    monkeypatch.setattr(source_state, "EXCLUDED_EMBED_METADATA_KEYS", before)
+    without_keys = build_index_identity(settings, **_IDENTITY_KWARGS)
+
+    assert with_keys != without_keys
+
+
+def test_unit_scoped_keys_are_a_subset_of_the_exclusion_set() -> None:
+    """A unit-scoped key that is not excluded would reach the embedding model."""
+    from omrg.core.ingestion.embed_exclusions import (
+        EXCLUDED_EMBED_METADATA_KEYS,
+        PAGE_ROUTING_ONLY_EMBED_KEYS,
+    )
+
+    assert PAGE_ROUTING_ONLY_EMBED_KEYS <= set(EXCLUDED_EMBED_METADATA_KEYS)
+
+
+def test_page_unit_identity_differs_from_document_unit(effective_settings) -> None:
+    """Opting into page routing reindexes: a different engine reads the pages."""
+    from omrg.core.ingestion.source_state import build_index_identity
+
+    document = build_index_identity(effective_settings(), **_IDENTITY_KWARGS)
+    page = build_index_identity(effective_settings(ocr_routing_unit="page"), **_IDENTITY_KWARGS)
+
+    assert page != document
+
+
+def test_page_unit_identity_ignores_the_model_directory(effective_settings) -> None:
+    """Where the model lives is not what the pages say.
+
+    Moving a model cache must not reindex a corpus. Only inputs that change
+    the emitted text belong in the identity.
+    """
+    from omrg.core.ingestion.source_state import build_index_identity
+
+    here = build_index_identity(
+        effective_settings(ocr_routing_unit="page", ocr_local_model_directory="/models/a"),
+        **_IDENTITY_KWARGS,
+    )
+    there = build_index_identity(
+        effective_settings(ocr_routing_unit="page", ocr_local_model_directory="/models/b"),
+        **_IDENTITY_KWARGS,
+    )
+
+    assert here == there
+
+
+def test_page_unit_identity_follows_the_escalation_threshold(effective_settings) -> None:
+    """The threshold decides which pages the worker rereads, so it must count."""
+    from omrg.core.ingestion.source_state import build_index_identity
+
+    default_cut = build_index_identity(
+        effective_settings(ocr_routing_unit="page"), **_IDENTITY_KWARGS
+    )
+    raised_cut = build_index_identity(
+        effective_settings(ocr_routing_unit="page", ocr_local_min_confidence=0.9),
+        **_IDENTITY_KWARGS,
+    )
+
+    assert raised_cut != default_cut
+
+
 # ── Scenario: degraded extraction recovers when OCR becomes available ─────
 
 

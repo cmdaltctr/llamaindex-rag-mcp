@@ -23,7 +23,22 @@ from omrg.capabilities import (
     probe_ocr_worker,
     reset_ocr_fingerprint_cache,
 )
-from omrg.integrations.ocr_worker.fingerprint import OcrWorkerFingerprint
+from omrg.integrations.ocr_worker.fingerprint import (
+    OcrWorkerFingerprint,
+    fingerprint_from_payload,
+)
+
+
+def _payload_with_version(version: str) -> dict:
+    """Build a wire-valid capabilities payload speaking *version*."""
+    return {
+        "protocol_version": version,
+        "packages": {"stub-worker": "1.0"},
+        "pipeline": {"identity": "stub-pipeline", "revision": "1"},
+        "model": {"identity": "stub-model", "revision": "1"},
+        "output_schema": {"id": "omrg.ocr.parse_output", "version": "1"},
+    }
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STUB_WORKER = REPO_ROOT / "tests" / "fixtures" / "ocr_worker" / "stub_worker.py"
@@ -60,6 +75,25 @@ def test_probe_returns_the_full_fingerprint_from_the_stub() -> None:
     assert fingerprint.model_revision == "1"
     assert fingerprint.output_schema_id == "omrg.ocr.parse_output"
     assert fingerprint.output_schema_version == "1"
+
+
+def test_fingerprint_accepts_a_1_0_worker_and_a_1_1_worker() -> None:
+    """Protocol 1.1 accepts a worker still on 1.0: the upgrade is rolling.
+
+    An OMRG-side upgrade alone must not strand a provisioned 1.0 worker
+    (and must not move its fingerprint): the client speaks the minimum
+    version that expresses each request.
+    """
+    for version in ("1.0", "1.1"):
+        fingerprint = fingerprint_from_payload(_payload_with_version(version))
+        assert fingerprint is not None
+        assert fingerprint.available is True
+        assert fingerprint.protocol_version == version
+
+
+def test_fingerprint_rejects_an_unsupported_protocol_version() -> None:
+    """A worker outside the supported set is the stable unavailable shape."""
+    assert fingerprint_from_payload(_payload_with_version("2.0")) is None
 
 
 def test_probe_result_is_frozen_and_hashable() -> None:
@@ -170,7 +204,7 @@ def test_real_worker_fingerprint_via_probe(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setenv("PYTHONPATH", str(worker_src))
     fingerprint = probe_ocr_worker([sys.executable, "-m", "omrg_ocr_worker"], timeout=PROBE_TIMEOUT)
     assert fingerprint.available is True
-    assert fingerprint.protocol_version == "1.0"
+    assert fingerprint.protocol_version == "1.1"
     assert "omrg-ocr-worker" in dict(fingerprint.packages)
 
 

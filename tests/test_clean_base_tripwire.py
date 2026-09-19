@@ -65,7 +65,40 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2941
+_BASE_EXECUTED = 3090
+# Re-baselined at page-level-ocr-routing review fixes (2026-09-18): the
+# CodeRabbit pass hardened both protocol twins' ``make_success`` builder
+# (8 parametrised cases), the worker failure envelopes' version echo (2),
+# the protocol-1.0 page-request gate (1) and the local model identity
+# cache scoping (2) — net +13 (3077 -> 3090).
+# Re-baselined at page-level-ocr-routing tasks 4.4/4.5c/4.6 (2026-09-18):
+# the page unit wired into the reader seam adds 11 cases — only flagged
+# pages OCRed, the all-local backend, one-request escalation, the
+# per-page attribution degradations, missing worker and missing local
+# runtime, post-dispatch failure, the ADR-066 rescue fallback, and the
+# document-unit regression (3066 -> 3077).
+# Re-baselined at page-level-ocr-routing task 4.3 (2026-09-18): worker
+# protocol 1.1 adds 61 cases — the twinned validation module, the pages
+# request and pages_markdown response round trips and validation matrix
+# on both copies, the minimum-version rule, the fingerprint supported-set
+# acceptance, the client pages wire test, and the worker loop's version
+# echo and per-page answer (3005 -> 3066).
+# Re-baselined at page-level-ocr-routing task 4.2 (2026-09-18): the local OCR
+# tier and its post-check escalation add 22 cases — the force-mode tier call
+# and its settings mapping, the escalation matrix (empty, whitespace,
+# below-cut, missing-confidence, missing-page, hosted, accumulating
+# reasons, the injected cut), the resolved model identity probe and its
+# cache, and the identity-payload scoping (2983 -> 3005).
+# Re-baselined at page-level-ocr-routing (2026-09-18): the routing unit and its
+# index-identity scoping add 35 cases — per-page evidence (5), the page merge
+# (12), the never-shipped-alias tripwire (6), the unit-scoped exclusion keys and
+# their emitted-document guard (9), and the routing-unit settings (3)
+# (2948 -> 2983).
+# Re-baselined at liteparse-reading-order (2026-09-18): the layout classifier
+# adds 7 cases — two-column join order and its multi_column label, a full-width
+# running head over two columns, single-column and table pages keeping library
+# order, a sidebar failing the balance condition, and content preservation
+# (2941 -> 2948).
 # Re-baselined at fix-stale-cleanup-batching (2026-09-16): the batched
 # stale-deletion regression adds 1 case (2927 -> 2928).
 # Re-baselined for the PR-94 CodeRabbit remediation (2026-09-16): four

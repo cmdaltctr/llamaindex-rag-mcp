@@ -266,7 +266,76 @@ confirmed the fast-path Markdown is byte-identical with the fallback
 enabled and disabled.
 
 The whole PDF goes to the worker, not individual pages. There is no
-page-level stitching between the two readers.
+page-level stitching between the two readers — **under the default
+`document` unit**. The opt-in `page` unit below changes exactly that.
+
+### Page-level routing (opt-in, `OCR_ROUTING_UNIT=page`)
+
+Setting `OCR_ROUTING_UNIT=page` routes per page instead of per file
+([ADR-069](../adr/069-page-level-ocr-routing-and-the-pdfium-runtime.md)).
+Every page is scanned; flagged pages run through pdf-inspector's local
+OCR (PP-OCRv6 Small on ONNX Runtime, CPU, no PyTorch) at roughly 0.75 s
+median per page; pages the local tier cannot read escalate to the
+worker in **one** request carrying exactly those pages; the result
+merges back into one document in page order.
+
+A page escalates when the local attempt returns empty or
+whitespace-only text, reports confidence below
+`OCR_LOCAL_MIN_CONFIDENCE` (0.8, calibrated in Experiment 33 task 6.7:
+escalation 46.9%, wrongly kept 11.3%), or flags `hosted_recommended`.
+Unreported confidence escalates too. There is deliberately no script or
+typography pre-check: the failure classes announce themselves after the
+attempt, and no measured signal predicts them beforehand.
+
+The emitted document carries four scalar counts that sum to
+`page_count`:
+
+| Key | Meaning |
+|---|---|
+| `ocr_pages_native` | Pages whose text is the native pdf-inspector extraction |
+| `ocr_pages_local` | Pages whose text is local OCR |
+| `ocr_pages_worker` | Pages whose text is the worker's |
+| `ocr_pages_unresolved` | Escalated pages no tier resolved; they keep their best available text |
+
+`ocr_backend` names a backend only when it alone produced the text
+(`pdf_inspector`, `pdf_inspector_ocr`, `paddleocr_vl`); anything else
+is `mixed`. A 200-page document whose worker read one page reports
+`mixed`, not `paddleocr_vl` — naming the higher tier would be false.
+
+Degradation never fails the file. A missing worker, a reply that
+cannot be attributed per page, or an empty per-page entry keeps the
+best available text (local, then native) and counts the page
+unresolved; no marker is inserted into retrieval text. A missing local
+runtime keeps native text for flagged pages and warns once, naming
+what is missing. A worker failure after a complete request was flushed
+still fails the file, exactly as the document unit's post-dispatch
+boundary does. When page routing finds no text on any page and the
+reader's fallback chain rescued the document, the rescued text is
+emitted with all-native counts.
+
+The local tier's runtime comes from existing base dependencies and is
+configured with process-level variables (settable in `.env`, which is
+exported before any read):
+
+| Variable | Where the library lives |
+|---|---|
+| `PDFIUM_LIB_PATH` | The LiteParse-bundled `libpdfium.dylib`, inside the `liteparse` package directory of the environment |
+| `ORT_DYLIB_PATH` | ONNX Runtime's dylib, in `onnxruntime/capi/` of the environment |
+| `PDF_INSPECTOR_MODEL_CACHE` | Optional model cache directory; the default is a user-level cache |
+
+The model (`pp-ocrv6-small@oar-ocr-v0.7.0`, about 31 MB) downloads on
+first use unless `OCR_LOCAL_OFFLINE=true`; with offline mode and no
+cached model, the tier degrades. `OCR_LOCAL_MODEL_DIRECTORY`, when
+set, points at the artifact leaf directory (`<name>/<revision>`), not
+the cache root.
+
+Switching an install to `page` reindexes its sources once: the routing
+unit, the escalation threshold and the resolved model identity join
+the source index identity under that unit, and a different engine
+reads the pages. On `document` the identity is unchanged and nothing
+reindexes. The local tier's quality residual is accepted and named in
+ADR-069; the deferred retrieval experiment gates any future default
+change.
 
 ### Configuration
 
@@ -275,6 +344,10 @@ page-level stitching between the two readers.
 | `OCR_FALLBACK_ENABLED`        | `true`  | Master switch. Off means no PDF ever reaches the worker.         |
 | `OCR_FALLBACK_MIN_CONFIDENCE` | `0.5`   | Confidence floor for text-based PDFs. `0.0` never triggers.      |
 | `OCR_FALLBACK_PAGE_FRACTION`  | `0.10`  | Flagged-page proportion that triggers OCR. `0.0` never triggers. |
+| `OCR_ROUTING_UNIT`            | `document` | `page` opts into per-page routing (see above).                 |
+| `OCR_LOCAL_MIN_CONFIDENCE`    | `0.8`   | Escalation cut for the local tier (page unit only).               |
+| `OCR_LOCAL_OFFLINE`           | `false` | Forbid the model download.                                        |
+| `OCR_LOCAL_MODEL_DIRECTORY`   | empty   | Model artifact leaf directory; empty means the default cache.     |
 | `OCR_WORKER_COMMAND`          | empty   | Command that starts the worker. Empty means unavailable.         |
 | `OCR_WORKER_ENV_DIR`          | empty   | Worker virtual-environment directory.                            |
 | `OCR_WORKER_REQUEST_TIMEOUT`  | `300.0` | Seconds to wait for one parse response.                          |
@@ -347,7 +420,10 @@ output. All worker logs go to standard error, which OMRG drains
 separately and forwards through its own logging, so a noisy worker can
 never corrupt the protocol stream or block on a full pipe.
 
-Protocol version is `1.0`. Successful parse responses declare the output
+Protocol versions `1.0` and `1.1` are accepted. A request that
+carries a `pages` list speaks `1.1`; a request without one speaks
+`1.0`, so an un-upgraded worker keeps serving document-level requests
+during a rolling upgrade. Successful parse responses declare the output
 schema `omrg.ocr.parse_output` version `1`. A version or schema mismatch
 is a protocol failure, not a silent downgrade.
 
@@ -383,6 +459,16 @@ happened by reading a retrieval result:
 | `ocr_used`          | The worker actually parsed it.            |
 | `ocr_backend`       | `pdf_inspector` or `paddleocr_vl`.        |
 | `pages_needing_ocr` | Scalar count of flagged pages.            |
+
+Under the `page` routing unit two of these generalise: `ocr_used` is
+true when OCR produced the text of at least one page, local or worker;
+`ocr_backend` also takes `pdf_inspector_ocr` (the local tier alone
+produced the text) and `mixed` (more than one backend did). Four
+further scalar keys — `ocr_pages_native`, `ocr_pages_local`,
+`ocr_pages_worker`, `ocr_pages_unresolved` — sum to `page_count` and
+carry the per-page provenance; see
+[page-level routing](#page-level-routing-opt-in-ocr_routing_unitpage).
+Like every key in this section they are excluded from embedding text.
 
 Read them together:
 

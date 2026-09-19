@@ -550,6 +550,48 @@ Both groups are top-level fields beside `PDF_READER`, resolved once at
 the composition root and injected. Keep them apart: the gate is
 calibrated evidence, the worker fields are machine configuration.
 
+### OCR routing unit and the local OCR tier
+
+The unit that OCR is decided on, and the local tier that runs first
+under it (change `page-level-ocr-routing`,
+[ADR-069](../adr/069-page-level-ocr-routing-and-the-pdfium-runtime.md)):
+
+| Variable | Default | What it does |
+|---|---|---|
+| `OCR_ROUTING_UNIT` | `document` | `document` keeps whole-PDF routing. `page` (opt-in) OCRs only flagged pages |
+| `OCR_LOCAL_MIN_CONFIDENCE` | `0.8` | Below this reported confidence a page escalates to the worker. Unreported confidence escalates too |
+| `OCR_LOCAL_OFFLINE` | `false` | `true` forbids the model download; a missing cached model then degrades |
+| `OCR_LOCAL_MODEL_DIRECTORY` | empty | Artifact directory (`<name>/<revision>` leaf) to load the model from. Empty means the library's default cache |
+
+These four names are **flat on purpose**. `pydantic-settings` resolves
+its `__` delimiter only into nested settings blocks, and the OCR
+fields are top-level — a nested spelling such as
+`OCR__ROUTING_UNIT` matches nothing and is discarded in silence. The
+never-shipped nested spellings are trapped in `config/legacy.py` with
+an error naming the flat replacement, so a typo cannot pass unnoticed.
+
+An invalid `OCR_ROUTING_UNIT` raises at startup rather than warning
+and falling back: the unit feeds the index identity, and a fallback
+would index a corpus under a unit nobody chose.
+
+The local tier needs two process-level libraries that pdf-inspector
+loads by environment variable: `PDFIUM_LIB_PATH` (LiteParse ships
+`libpdfium.dylib` in its package directory) and `ORT_DYLIB_PATH`
+(ONNX Runtime ships its dylib in `capi/`). Both may live in `.env`:
+the composition root runs `load_dotenv()` before any read, which
+exports them into the process environment the Rust library sees. On
+first use the model (`pp-ocrv6-small@oar-ocr-v0.7.0`, about 31 MB)
+downloads unless `OCR_LOCAL_OFFLINE=true` and a cache is present. A
+missing library or model never fails a file: flagged pages keep
+native text and count unresolved, with one warning naming what is
+missing.
+
+Identity consequences: an install that switches to `page` reindexes
+its sources once — a different engine reads the pages — and the
+payload additionally records the escalation threshold and the
+resolved model identity. On `document` the identity is byte-for-byte
+what it was; nothing reindexes.
+
 The packaged default is the promoted gate validated by Experiment 29
 ([ADR-065](../adr/065-ocr-fallback-gate-promoted-to-packaged-default.md)):
 enabled at `0.5` confidence and `0.10` page fraction, shipped together —
@@ -641,6 +683,7 @@ These settings are part of the index identity:
 | `EMBEDDING__TOKENIZER_MODEL` and `EMBEDDING__TOKENIZER_REVISION` | They set the Markdown token budget, so chunk boundaries move |
 | The **resolved** Markdown splitter | Model-token-aware or legacy fallback. The resolved value is recorded, not the configured one, so a corpus chunked under the fallback does not stay "matching" forever once the tokenizer becomes loadable |
 | `OCR_FALLBACK_ENABLED`, `OCR_FALLBACK_MIN_CONFIDENCE`, `OCR_FALLBACK_PAGE_FRACTION` | They decide which reader produced the text |
+| `OCR_ROUTING_UNIT` and, under `page`, the escalation threshold and the resolved local model identity | They decide which engine read each page and which pages the worker rereads. Recorded only when the unit is not `document`, so a default install's identity is unchanged |
 | The resolved OCR worker fingerprint | Availability, protocol version, every package and exact version, pipeline identity and revision, model identity and revision, output-schema identity and version |
 
 Two consequences worth planning for:

@@ -22,7 +22,7 @@ import json
 
 import pytest
 
-from omrg.core.ingestion import source_state
+from omrg.core.ingestion import embed_exclusions, source_state
 from omrg.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock
 
 EXPECTED_TOP_LEVEL_KEYS = {
@@ -164,8 +164,13 @@ def test_index_identity_payload_values_echo_configuration(monkeypatch: pytest.Mo
     assert payload["parser"]["text_format"] is None
     assert payload["chunking"]["effective_chunk_size"] == 512
     assert payload["chunking"]["effective_chunk_overlap"] == 100
+    # Scoped by routing unit (change page-level-ocr-routing): this payload is
+    # built on the default `document` unit, which can never emit the
+    # page-routing keys, so they are subtracted. Including them would
+    # reprocess every existing corpus for a key it will never see.
     assert payload["embedding_text"]["excluded_keys"] == sorted(
-        source_state.EXCLUDED_EMBED_METADATA_KEYS
+        set(source_state.EXCLUDED_EMBED_METADATA_KEYS)
+        - embed_exclusions.PAGE_ROUTING_ONLY_EMBED_KEYS
     )
     assert payload["tokenizer"] == {"model": "", "revision": ""}
     # Direct callers that pass no OCR keyword arguments still get the

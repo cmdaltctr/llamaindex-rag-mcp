@@ -99,11 +99,48 @@ def test_constants_agree_between_both_sides() -> None:
     """Twin modules must declare identical protocol identities."""
     omrg, worker = _modules()["omrg"], _modules()["worker"]
     assert omrg.PROTOCOL_VERSION == worker.PROTOCOL_VERSION
+    assert omrg.SUPPORTED_PROTOCOL_VERSIONS == worker.SUPPORTED_PROTOCOL_VERSIONS
+    assert omrg.PAGES_PROTOCOL_VERSION == worker.PAGES_PROTOCOL_VERSION
     assert omrg.OUTPUT_SCHEMA_ID == worker.OUTPUT_SCHEMA_ID
     assert omrg.OUTPUT_SCHEMA_VERSION == worker.OUTPUT_SCHEMA_VERSION
     assert omrg.REQUEST_TYPE_PARSE == worker.REQUEST_TYPE_PARSE
     assert omrg.RESPONSE_TYPE_PARSE_RESULT == worker.RESPONSE_TYPE_PARSE_RESULT
     assert omrg.RESPONSE_TYPE_PARSE_ERROR == worker.RESPONSE_TYPE_PARSE_ERROR
+
+
+def test_twin_validation_modules_are_importable_and_agree() -> None:
+    """The split validation helpers must stay twinned too.
+
+    The decoder validation lives in a sibling module (the 500-line ceiling
+    forced the split); both projects carry a copy, and the wire stays
+    compatible only if both agree on the error codes and schema constants.
+    """
+    worker_src = str(WORKER_SRC)
+    sys.path.insert(0, worker_src)
+    try:
+        worker_validation = importlib.import_module("omrg_ocr_worker.validation")
+    finally:
+        sys.path.remove(worker_src)
+    from omrg.integrations.ocr_worker import validation as omrg_validation
+
+    assert omrg_validation.OUTPUT_SCHEMA_ID == worker_validation.OUTPUT_SCHEMA_ID
+    assert omrg_validation.OUTPUT_SCHEMA_VERSION == worker_validation.OUTPUT_SCHEMA_VERSION
+    for name in (
+        "ERR_INVALID_JSON",
+        "ERR_UNSUPPORTED_PROTOCOL_VERSION",
+        "ERR_MISSING_FIELD",
+        "ERR_INVALID_FIELD",
+        "ERR_UNEXPECTED_FIELD",
+        "ERR_NON_TERMINAL_TYPE",
+        "ERR_UNKNOWN_TYPE",
+        "ERR_MISMATCHED_ID",
+        "ERR_OUTPUT_SCHEMA_MISMATCH",
+    ):
+        assert getattr(omrg_validation, name) == getattr(worker_validation, name)
+    # The protocol modules must re-export the public validation names so
+    # every existing importer keeps working.
+    assert omrg_protocol.ProtocolError is omrg_validation.ProtocolError
+    assert omrg_protocol.OUTPUT_SCHEMA_ID is omrg_validation.OUTPUT_SCHEMA_ID
 
 
 def test_request_encoding_is_byte_identical() -> None:
@@ -116,6 +153,34 @@ def test_request_encoding_is_byte_identical() -> None:
     assert json.loads(omrg_line)["type"] == "parse"
 
 
+def test_pages_request_encoding_is_byte_identical() -> None:
+    """A page-listed request must encode identically on both sides."""
+    omrg, worker = _modules()["omrg"], _modules()["worker"]
+    omrg_line = omrg.encode_line(omrg.make_request("req-p", "/tmp/doc.pdf", pages=[3, 7]))
+    worker_line = worker.encode_line(worker.make_request("req-p", "/tmp/doc.pdf", pages=[3, 7]))
+    assert omrg_line == worker_line
+    payload = json.loads(omrg_line)
+    assert payload["pages"] == [3, 7]
+    assert payload["protocol_version"] == "1.1"
+
+
+def test_plain_request_speaks_the_minimum_version() -> None:
+    """A request without pages speaks 1.0, so an un-upgraded worker serves it.
+
+    Protocol 1.1 introduced exactly one payload feature: the page list. A
+    request that does not use it is expressible in 1.0, and speaking the
+    minimum version keeps document-unit routing alive against a worker
+    still on 1.0 during a rolling upgrade.
+    """
+    omrg, worker = _modules()["omrg"], _modules()["worker"]
+    for mod in (omrg, worker):
+        request = mod.make_request("req-min", "/tmp/doc.pdf")
+        assert request.protocol_version == "1.0"
+        payload = json.loads(mod.encode_line(request))
+        assert "pages" not in payload
+        assert payload["protocol_version"] == "1.0"
+
+
 def test_success_encoding_is_byte_identical() -> None:
     """Both sides must emit the same success line for the same envelope."""
     omrg, worker = _modules()["omrg"], _modules()["worker"]
@@ -124,6 +189,31 @@ def test_success_encoding_is_byte_identical() -> None:
         "req-2", "# Doc", ocr_backend="paddleocr-vl", page_count=3
     )
     assert omrg.encode_line(omrg_envelope) == worker.encode_line(worker_envelope)
+
+
+def test_pages_markdown_success_encoding_is_byte_identical() -> None:
+    """A per-page success must encode identically on both sides."""
+    omrg, worker = _modules()["omrg"], _modules()["worker"]
+    omrg_envelope = omrg.make_success(
+        "req-pm",
+        "# P3\n\n# P7",
+        ocr_backend="paddleocr-vl",
+        page_count=2,
+        pages_markdown=["# P3", "# P7"],
+        protocol_version="1.1",
+    )
+    worker_envelope = worker.make_success(
+        "req-pm",
+        "# P3\n\n# P7",
+        ocr_backend="paddleocr-vl",
+        page_count=2,
+        pages_markdown=["# P3", "# P7"],
+        protocol_version="1.1",
+    )
+    assert omrg.encode_line(omrg_envelope) == worker.encode_line(worker_envelope)
+    payload = json.loads(omrg.encode_line(omrg_envelope))
+    assert payload["pages_markdown"] == ["# P3", "# P7"]
+    assert payload["protocol_version"] == "1.1"
 
 
 def test_failure_encoding_is_byte_identical() -> None:
@@ -190,8 +280,95 @@ class TestProtocolValidation:
         decoded = mod.decode_request_line(mod.encode_line(request))
         assert decoded.id == "req-rt"
         assert decoded.pdf_path == "/docs/x.pdf"
-        assert decoded.protocol_version == mod.PROTOCOL_VERSION
+        # A plain request speaks the minimum version that expresses it.
+        assert decoded.protocol_version == "1.0"
+        assert decoded.pages is None
         assert decoded.type == mod.REQUEST_TYPE_PARSE
+
+    def test_pages_request_round_trip(self, side: str) -> None:
+        mod = _modules()[side]
+        request = mod.make_request("req-rt-pages", "/docs/x.pdf", pages=[2, 5])
+        decoded = mod.decode_request_line(mod.encode_line(request))
+        assert decoded.id == "req-rt-pages"
+        assert decoded.protocol_version == "1.1"
+        assert decoded.pages == (2, 5)
+
+    def test_decode_accepts_a_1_1_request_without_pages(self, side: str) -> None:
+        """``pages`` is optional on 1.1: absence is the whole-document request."""
+        mod = _modules()[side]
+        line = _dumps(
+            {
+                "id": "req-11-plain",
+                "protocol_version": "1.1",
+                "type": "parse",
+                "pdf_path": "/docs/x.pdf",
+            }
+        )
+        decoded = mod.decode_request_line(line)
+        assert decoded.protocol_version == "1.1"
+        assert decoded.pages is None
+
+    def test_rejects_pages_on_a_1_0_request(self, side: str) -> None:
+        """Version 1.0 never defined ``pages``; carrying it there is a violation."""
+        mod = _modules()[side]
+        line = _dumps(
+            {
+                "id": "req-10-pages",
+                "protocol_version": "1.0",
+                "type": "parse",
+                "pdf_path": "/docs/x.pdf",
+                "pages": [2],
+            }
+        )
+        with pytest.raises(mod.ProtocolError) as excinfo:
+            mod.decode_request_line(line)
+        assert excinfo.value.code == "unexpected_field"
+
+    @pytest.mark.parametrize(
+        "label,pages",
+        [
+            ("empty_list", []),
+            ("not_a_list", "3"),
+            ("zero_page", [0]),
+            ("negative_page", [-1]),
+            ("bool_page", [True]),
+            ("float_page", [1.5]),
+            ("string_page", ["2"]),
+            ("duplicate_pages", [1, 1]),
+            ("unordered_pages", [2, 1]),
+        ],
+    )
+    def test_rejects_invalid_pages_shapes(self, side: str, label: str, pages: Any) -> None:
+        """The page list is non-empty, positive, strictly increasing integers."""
+        mod = _modules()[side]
+        line = _dumps(
+            {
+                "id": "req-bad-pages",
+                "protocol_version": "1.1",
+                "type": "parse",
+                "pdf_path": "/docs/x.pdf",
+                "pages": pages,
+            }
+        )
+        with pytest.raises(mod.ProtocolError) as excinfo:
+            mod.decode_request_line(line)
+        assert excinfo.value.code == "invalid_field"
+
+    @pytest.mark.parametrize(
+        "label,pages",
+        [
+            ("empty", []),
+            ("zero", [0]),
+            ("unordered", [2, 1]),
+            ("not_ints", ["2"]),
+            ("bool", [True]),
+        ],
+    )
+    def test_make_request_validates_pages(self, side: str, label: str, pages: Any) -> None:
+        """The builder refuses to construct an envelope the decoder would reject."""
+        mod = _modules()[side]
+        with pytest.raises(ValueError):
+            mod.make_request("req-build-pages", "/docs/x.pdf", pages=pages)
 
     def test_success_round_trip_preserves_id_and_version(self, side: str) -> None:
         mod = _modules()[side]
@@ -205,6 +382,106 @@ class TestProtocolValidation:
         schema = decoded.metadata["output_schema"]
         assert schema["id"] == mod.OUTPUT_SCHEMA_ID
         assert schema["version"] == mod.OUTPUT_SCHEMA_VERSION
+
+    def test_pages_markdown_round_trip(self, side: str) -> None:
+        """Per-page Markdown travels as a parallel list and survives the wire."""
+        mod = _modules()[side]
+        envelope = mod.make_success(
+            "req-ok-pages",
+            "# P2\n\n# P5",
+            ocr_backend="paddleocr-vl",
+            page_count=2,
+            pages_markdown=["# P2", "# P5"],
+        )
+        decoded = mod.decode_response_line(mod.encode_line(envelope))
+        assert isinstance(decoded, mod.ParseSuccess)
+        assert decoded.pages_markdown == ("# P2", "# P5")
+        assert decoded.protocol_version == "1.1"
+
+    @pytest.mark.parametrize(
+        "label,values",
+        [
+            ("plain_string", "# P2 # P5"),
+            ("int_entries", ["# P2", 7]),
+            ("none_entries", [None]),
+            ("empty_list", []),
+        ],
+    )
+    def test_make_success_validates_pages_markdown(
+        self, side: str, label: str, values: Any
+    ) -> None:
+        """The builder refuses shapes the wire decoder would reject or mangle.
+
+        A plain string is the trap: ``tuple()`` splits it into one page
+        per character, and the decoder would accept those characters as
+        pages. The builder and the decoder must agree before the wire.
+        """
+        mod = _modules()[side]
+        with pytest.raises(ValueError):
+            mod.make_success(
+                "req-build-pm",
+                "# T",
+                ocr_backend="paddleocr-vl",
+                page_count=2,
+                pages_markdown=values,
+            )
+
+    def test_factories_stamp_the_requested_version(self, side: str) -> None:
+        """A worker answers in the version the request spoke (rolling upgrade rule)."""
+        mod = _modules()[side]
+        success = mod.make_success(
+            "req-v-echo", "# T", ocr_backend="b", page_count=1, protocol_version="1.0"
+        )
+        decoded = mod.decode_response_line(mod.encode_line(success))
+        assert isinstance(decoded, mod.ParseSuccess)
+        assert decoded.protocol_version == "1.0"
+
+        failure = mod.make_failure("req-v-echo", "code", "msg", protocol_version="1.0")
+        decoded_failure = mod.decode_response_line(mod.encode_line(failure))
+        assert isinstance(decoded_failure, mod.ParseFailure)
+        assert decoded_failure.protocol_version == "1.0"
+
+    def test_rejects_pages_markdown_on_a_1_0_response(self, side: str) -> None:
+        """Version 1.0 never defined ``pages_markdown`` either."""
+        mod = _modules()[side]
+        line = _dumps(_success_payload("req-10-pm", pages_markdown=["# P2"]))
+        with pytest.raises(mod.ProtocolError) as excinfo:
+            mod.decode_response_line(line)
+        assert excinfo.value.code == "unexpected_field"
+
+    @pytest.mark.parametrize(
+        "label,values",
+        [
+            ("not_a_list", "page"),
+            ("empty_list", []),
+            ("int_entries", [1]),
+            ("none_entries", [None]),
+            ("mixed_entries", ["ok", 2]),
+        ],
+    )
+    def test_rejects_invalid_pages_markdown_shapes(
+        self, side: str, label: str, values: Any
+    ) -> None:
+        """``pages_markdown`` is a non-empty list of strings; entries may be empty."""
+        mod = _modules()[side]
+        payload = _success_payload("req-bad-pm", protocol_version="1.1")
+        payload["pages_markdown"] = values
+        with pytest.raises(mod.ProtocolError) as excinfo:
+            mod.decode_response_line(_dumps(payload))
+        assert excinfo.value.code == "invalid_field"
+
+    def test_make_success_refuses_pages_markdown_on_1_0(self, side: str) -> None:
+        """The builder cannot construct an envelope the decoder would reject."""
+        mod = _modules()[side]
+        with pytest.raises(ValueError):
+            mod.make_success(
+                "req-build-pm",
+                "# T",
+                ocr_backend="b",
+                page_count=1,
+                pages_markdown=["# T"],
+                protocol_version="1.0",
+            )
 
     def test_failure_round_trip(self, side: str) -> None:
         mod = _modules()[side]

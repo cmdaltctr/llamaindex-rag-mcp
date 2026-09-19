@@ -22,7 +22,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from .protocol import OUTPUT_SCHEMA_ID, OUTPUT_SCHEMA_VERSION, PROTOCOL_VERSION
+from .protocol import (
+    OUTPUT_SCHEMA_ID,
+    OUTPUT_SCHEMA_VERSION,
+    SUPPORTED_PROTOCOL_VERSIONS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -109,8 +113,11 @@ def fingerprint_from_payload(payload: Mapping[str, Any]) -> OcrWorkerFingerprint
     if not isinstance(packages_raw, Mapping):
         _reject("capabilities payload field 'packages' must be an object")
         return None
-    if protocol_version != PROTOCOL_VERSION:
-        _reject(f"worker protocol {protocol_version!r} is incompatible with {PROTOCOL_VERSION!r}")
+    if protocol_version not in SUPPORTED_PROTOCOL_VERSIONS:
+        _reject(
+            f"worker protocol {protocol_version!r} is incompatible with "
+            f"{'/'.join(SUPPORTED_PROTOCOL_VERSIONS)}"
+        )
         return None
     if schema_id != OUTPUT_SCHEMA_ID or schema_version != OUTPUT_SCHEMA_VERSION:
         _reject(
