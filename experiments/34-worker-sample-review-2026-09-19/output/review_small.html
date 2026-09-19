@@ -1,0 +1,148 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>Experiment 34 — worker sample review</title>
+<style>
+ body{font-family:system-ui;margin:0;padding:1rem;background:#f6f6f6}
+ h1{font-size:1.3rem} h3{margin:0 0 .5rem;font-size:1.05rem;display:flex;gap:.6rem;align-items:center}
+ .role{font-size:.75rem;padding:.1rem .5rem;border-radius:1rem;color:#fff}
+ .role.problem{background:#b3392c}.role.control{background:#2c7ab3}
+ .issue{font-size:.8rem;color:#555}
+ .page{background:#fff;border:1px solid #ddd;border-radius:8px;padding:1rem;margin:1rem 0}
+ .panes{display:flex;gap:1rem;align-items:flex-start}
+ .pane{flex:1;min-width:0}
+ .pane img{width:100%;border:1px solid #ccc}
+ .pane h4{margin:.2rem 0 .4rem;font-size:.85rem;color:#444}
+ .md{max-height:70vh;overflow:auto;border:1px solid #eee;padding:.5rem;background:#fafafa}
+ .md p{margin:.15rem 0;font-size:.85rem}
+ details summary{cursor:pointer;font-size:.8rem;color:#555;margin-top:.4rem}
+ pre{white-space:pre-wrap;font-size:.75rem;max-height:40vh;overflow:auto}
+ .checks{display:flex;flex-wrap:wrap;gap:1rem;margin-top:.8rem;border-top:1px solid #eee;padding-top:.8rem}
+ .checks label{font-size:.85rem;display:flex;gap:.4rem;align-items:center}
+ .checks select,.checks textarea{font:inherit}
+ .note{flex-basis:100%} .note textarea{flex:1}
+ .bar{position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;padding:.6rem 1rem;display:flex;gap:1rem;align-items:center;z-index:9}
+ .status{font-size:.75rem;color:#2c7a4b}
+</style></head><body>
+<div class="bar"><strong>Experiment 34 — worker sample review</strong>
+ <button id="save">Save verdicts (download JSON)</button>
+ <button id="wipe">Clear all choices</button>
+ <span id="progress"></span></div>
+<h1 style="margin-left:1rem">PaddleOCR-VL on the three named issues, plus a clean control. Left: original. Right: worker Markdown.</h1>
+
+<section class="page" data-doc="io06" data-page="28">
+  <h3>io06 — page 28
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-28"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p028.png" alt="io06 page 28"></div>
+    <div class="pane"><h4>Today: local OCR tier (page unit)</h4><div class="md today"><p>6 truciusille, ad feipfum in gradu non eft,quia fibi ipfi cognatus dici non poteft, fed eius cognatio per gradus dinumeratur; Et ita f Petrucius confertur cum patruo,&amp; eius pro- genie, pater erit in primò gradu, auus in 2. ex quo auo, velut ex ftirpe, tam Petrucius quam patruus defcendunt, &amp; fic a latere pri- mus gradus effe nequit: Quod iure Ciuili,&amp; propter fucceffiones locum habet, quia in his vna tantum pérfona confideratur, de cu- ius fucceffione agitur: Iure vero Pontificio, &amp; propter matrimonia in quibus dux perfo- na confiderantur ( qux, duo effe dicuntur in carne vna) fratres &amp; forores, in primo funt gradu, itaut ab co gradu, quoad nuptias, in- cipiat collateralis cognatio. De nomine graduum. Cap. 4. DE R tranflationem, gradus,hic dicuntur, ad fimilitudinem fcalarum, Cuiac. 6. obf. 40. Deffinitur gradus, afcenfus ab inferio- ribus perfonis ad fuperiores, &amp; defcenfus à fuperioribusadinferiores. Quia in graduum feu cognatorúm di- numeratione, de proximo in proximum, feu in eum, qui quafi ex eo nafcitur fit tranfitus; Ideo, quot funt tranfitus in remotiores, tot funt gradus d. I. Itus 1o.. haétenus ff. de gradib. Cum autem quo quifque gradu alteri</p>
+<p></p>
+<p>Digilized by Google</p></div></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="53">
+  <h3>io06 — page 53
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-53"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p053.png" alt="io06 page 53"></div>
+    <div class="pane"><h4>Today: local OCR tier (page unit)</h4><div class="md today"><p>bsb u pt</p>
+<p></p>
+<p>Digilized by Google</p></div></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+<script>
+const KEY='exp34_review_verdicts_v1';
+const state=JSON.parse(localStorage.getItem(KEY)||'{}');
+function keyOf(sec){return sec.dataset.doc+'/'+sec.dataset.page}
+function refresh(){let n=0;for(const s of document.querySelectorAll('.page')){
+  const k=keyOf(s),v=state[k]||{};let filled=false;
+  for(const el of s.querySelectorAll('[data-k]')){el.value=v[el.dataset.k]||'';if(el.value)filled=true}
+  const st=s.querySelector('.status');st.textContent=filled?'reviewed':'';
+  if(filled)n++}
+  document.getElementById('progress').textContent=n+' / '+document.querySelectorAll('.page').length+' reviewed';}
+document.addEventListener('change',e=>{const el=e.target.closest('[data-k]');if(!el)return;
+  const sec=el.closest('.page');const k=keyOf(sec);state[k]=state[k]||{};
+  if(el.value)state[k][el.dataset.k]=el.value;else delete state[k][el.dataset.k];
+  if(!Object.keys(state[k]).length)delete state[k];
+  localStorage.setItem(KEY,JSON.stringify(state));refresh();});
+document.getElementById('save').onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='review_verdicts.json';a.click();};
+document.getElementById('wipe').onclick=()=>{if(confirm('Clear all choices?')){localStorage.removeItem(KEY);location.reload()}};
+refresh();
+</script></body></html>

@@ -29,10 +29,18 @@ REVIEW = EXP_DIR / "output" / "review.html"
 ISSUE = {
     "io06": "Old book: language/typography + structure",
     "io04": "Triple column with images",
-    "bd01": "Two column (worker vs fixed LiteParse)",
-    "bd02": "Two column (worker vs fixed LiteParse)",
+    "bd01": "Two column (worker vs pdf-inspector fast path)",
+    "bd02": "Two column (worker vs pdf-inspector fast path)",
     "tl03": "Tables",
 }
+
+#: Column-2 header per document: what the pipeline produces today.
+TODAY_LABEL = {
+    "bd01": "Today: pdf-inspector native (fast path)",
+    "bd02": "Today: pdf-inspector native (fast path)",
+    "bd03": "Today: pdf-inspector native (fast path)",
+}
+_TODAY_DEFAULT = "Today: local OCR tier (page unit)"
 
 CHECKLIST = """
 <div class="checks">
@@ -75,6 +83,7 @@ PAGE_TMPL = """
   </h3>
   <div class="panes">
     <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/{doc}/p{page:03d}.png" alt="{doc} page {page}"></div>
+    <div class="pane"><h4>{today_label}</h4><div class="md today">{today_html}</div></div>
     <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md">{md_html}</div>
       <details><summary>raw markdown</summary><pre>{md_raw}</pre></details>
     </div>
@@ -137,6 +146,8 @@ def main() -> int:
                 "Re-run make_review.py as the run progresses to fill it in."
             )
         )
+        today_file = EXP_DIR / "output" / "today" / doc / f"p{page:03d}.md"
+        today = today_file.read_text(encoding="utf-8") if today_file.exists() else "(no today text)"
         dst = OUT_PAGES / doc / f"p{page:03d}.png"
         if not dst.exists():
             src = images_src / doc / f"p{page:03d}.png"
@@ -150,6 +161,8 @@ def main() -> int:
                 page=page,
                 role=row["role"],
                 issue=ISSUE.get(doc, "Clean control"),
+                today_label=TODAY_LABEL.get(doc, _TODAY_DEFAULT),
+                today_html=_mini_markdown(today),
                 md_html=_mini_markdown(md),
                 md_raw=html.escape(md),
                 checklist=CHECKLIST,
