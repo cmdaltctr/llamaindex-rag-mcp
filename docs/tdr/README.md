@@ -52,6 +52,7 @@ architecture), see the [ADR index](../adr/).
 | 024 | [pdf-inspector silently extracts nothing from WinAnsi TrueType PDFs without `/ToUnicode` — retry with pypdf in the adapter](024-pdf-inspector-silent-empty-extraction-on-legacy-winansi-fonts.md) | Accepted | 2026-09-13 |
 | 025 | [Content-type detection silently degraded to suffix routing in direct-Engine processes — settings now threaded through the detector](025-magika-content-type-detection-settings-injection.md) | Accepted | 2026-09-15 |
 | 026 | [pdf-inspector counts OCR pages from an 8-page sample — complete the evidence with a full page scan](026-pdf-inspector-sampled-ocr-evidence.md) | Accepted | 2026-09-17 |
+| 027 | [paddleocr ignores page selection — write a subset PDF instead of passing `page_num`](027-paddleocr-ignores-page-selection-write-a-subset-pdf.md) | Accepted | 2026-09-19 |
 
 ## Status values
 
