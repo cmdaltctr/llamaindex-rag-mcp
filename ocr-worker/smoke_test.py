@@ -359,6 +359,14 @@ def _validate_parse_response(
             )
         if not all(isinstance(entry, str) for entry in pages_markdown):
             raise SmokeTestError("page-listed response pages_markdown entries must be strings")
+        # TDR-027 tripwire: the engine must report exactly the requested
+        # pages processed; a whole-document run reports the document length.
+        reported = (response.get("metadata") or {}).get("page_count")
+        if reported != len(pages):
+            raise SmokeTestError(
+                f"page-listed response page_count {reported!r} != {len(pages)} requested "
+                "— the engine processed more than the page list"
+            )
     return markdown
 
 

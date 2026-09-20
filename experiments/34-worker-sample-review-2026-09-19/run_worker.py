@@ -100,6 +100,12 @@ def main() -> int:
                     pages=pages,
                     timeout=max(REQUEST_TIMEOUT_S, SECONDS_PER_PAGE_S * len(pages)),
                 )
+                if result.metadata.get("page_count") != len(pages):
+                    # TDR-027 tripwire: a whole-document run masquerading as a
+                    # page-listed response must be recorded, never trusted.
+                    raise RuntimeError(
+                        f"page_count {result.metadata.get('page_count')} != {len(pages)} requested"
+                    )
                 texts = list(result.pages_markdown or [])
                 if len(texts) != len(pages):
                     raise RuntimeError(

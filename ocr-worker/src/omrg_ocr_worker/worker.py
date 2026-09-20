@@ -156,11 +156,16 @@ def _run_document_pipeline(
     performs layout analysis, reading-order handling, recognition, and
     Markdown assembly before the worker creates its protocol envelope.
 
-    A page-listed request (protocol 1.1) parses only those pages —
-    ``page_num`` selects them, and the response carries per-page
-    Markdown parallel to the list, so a page-routing client can place
-    each page's text at its own position. The page count reports pages
-    processed, which under a page list is the list's length.
+    A page-listed request (protocol 1.1) parses only those pages: the
+    requested pages are first written to a temporary single-purpose PDF
+    (pypdf), because paddleocr 3.7.0 has no page-selection parameter —
+    a ``page_num`` kwarg is swallowed by ``**kwargs`` and the engine
+    silently processes the whole document (TDR-027). The subset makes
+    selection structural: what arrives at the pipeline is exactly what
+    was asked for, and the response carries per-page Markdown parallel
+    to the list. The page count reports pages processed, which under a
+    page list is the list's length; a mismatch fails loudly rather than
+    being padded.
 
     Args:
         pdf_path: The validated PDF path from the request.
@@ -179,11 +184,19 @@ def _run_document_pipeline(
     """
     pipeline = _load_pipeline()
 
+    subset: Path | None = None
     try:
-        predict_kwargs: dict[str, Any] = {"input": str(pdf_path)}
+        target = pdf_path
         if pages is not None:
-            predict_kwargs["page_num"] = list(pages)
-        page_results = list(pipeline.predict(**predict_kwargs))
+            subset = _write_page_subset(pdf_path, pages)
+            target = subset
+        page_results = list(pipeline.predict(input=str(target)))
+        if pages is not None and len(page_results) != len(pages):
+            raise WorkerParseError(
+                "page_selection_mismatch",
+                f"pipeline returned {len(page_results)} page result(s) for {len(pages)} "
+                "requested page(s)",
+            )
         if not page_results:
             raise WorkerParseError("empty_pipeline_result", "PaddleOCR-VL returned no page results")
         structured_results = list(
@@ -213,6 +226,9 @@ def _run_document_pipeline(
         raise
     except Exception as exc:  # noqa: BLE001 - convert backend failures to protocol errors
         raise WorkerParseError("pipeline_error", f"{type(exc).__name__}: {exc}") from exc
+    finally:
+        if subset is not None:
+            subset.unlink(missing_ok=True)
 
     return make_success(
         request_id,
@@ -232,12 +248,51 @@ def _run_document_pipeline(
     )
 
 
-def _per_page_markdown(results: list[Any], expected: int) -> list[str]:
-    """Return one Markdown string per result, padding shortfalls with "".
+def _write_page_subset(source: Path, pages: tuple[int, ...] | list[int]) -> Path:
+    """Write a temporary PDF containing exactly *pages* from *source*.
 
-    A page the pipeline produced no Markdown for keeps its slot, so the
-    list stays parallel to the requested pages the client holds.
+    1-based page numbers, matching the protocol. The subset is the page
+    selection mechanism: paddleocr has no page-selection parameter, so
+    the only honest way to parse page N is to hand the engine a PDF that
+    contains page N (TDR-027).
+
+    Raises:
+        WorkerParseError: If a requested page is outside the document.
     """
+    from pypdf import PdfReader, PdfWriter
+
+    reader = PdfReader(str(source))
+    total = len(reader.pages)
+    out_of_range = [page for page in pages if not 1 <= page <= total]
+    if out_of_range:
+        raise WorkerParseError(
+            "invalid_page", f"requested page(s) {out_of_range} outside 1..{total}"
+        )
+    writer = PdfWriter()
+    for page in pages:
+        writer.add_page(reader.pages[page - 1])
+    handle = tempfile.NamedTemporaryFile(  # noqa: SIM115 - caller unlinks in finally
+        prefix=".ocr-pages-", suffix=".pdf", dir=WORKER_DIR, delete=False
+    )
+    handle.close()
+    subset = Path(handle.name)
+    writer.write(subset)
+    return subset
+
+
+def _per_page_markdown(results: list[Any], expected: int) -> list[str]:
+    """Return one Markdown string per result.
+
+    The results come from a page-subset PDF, so they are exactly the
+    requested pages in order. No padding, no truncation: a length
+    mismatch is a bug upstream of this function and fails loudly
+    (TDR-027 — padding here once masked a whole-document run).
+    """
+    if len(results) != expected:
+        raise WorkerParseError(
+            "page_selection_mismatch",
+            f"{len(results)} restructured page(s) for {expected} requested page(s)",
+        )
     pages: list[str] = []
     for result in results:
         with tempfile.TemporaryDirectory(prefix=".ocr-output-page-", dir=WORKER_DIR) as page_dir:
@@ -249,9 +304,7 @@ def _per_page_markdown(results: list[Any], expected: int) -> list[str]:
                     path.read_text(encoding="utf-8").strip() for path in markdown_files
                 ).strip()
             )
-    while len(pages) < expected:
-        pages.append("")
-    return pages[:expected]
+    return pages
 
 
 def _save_markdown_results(results: list[Any]) -> str:
