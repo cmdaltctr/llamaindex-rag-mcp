@@ -1,11 +1,19 @@
 {
  "done": {
+  "bd03": {
+   "pages": [
+    1,
+    2
+   ],
+   "seconds": 334.5,
+   "error": null
+  },
   "io06": {
    "pages": [
     28,
     53
    ],
-   "seconds": 4897.3,
+   "seconds": 85.2,
    "error": null
   }
  }
