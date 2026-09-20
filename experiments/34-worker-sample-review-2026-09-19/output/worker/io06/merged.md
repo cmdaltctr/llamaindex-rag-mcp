@@ -1,0 +1,1284 @@
+DE GRADIBUS
+
+COGNATIONIS:
+
+SIVE NATURALIS,
+
+NATIVITATE: SIVE
+
+SPIRITUALIS,...
+
+Jean Raveneau
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_0_0_276_455.jpg" alt="Image" width="100%" />
+
+2
+Digitized by Google
+
+</div>
+
+
+# DE GRADIBVS COGNATIONIS: SIVE
+
+NATURALIS, NATIVITATE: fiué (spiritualis, baptifimo & confirmatione: fiué affinitatis, adicta delineatione arborum.
+
+Brenis, succincta, facilis declaratio.
+
+Sapientiffimis, Sacra Theologia facultatis Parifienfis Doctoribus.
+
+Auctore IOANNE RAVENEAV,
+
+Aduocato & Iurium Professore Parisienfi.
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_21_230_196_401.jpg" alt="Image" width="63%" />
+
+PARISIIS
+
+</div>
+
+
+PARISIS
+
+A $ \mu_{10} $, M. D. C. X X X.
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_21_29_221_88.jpg" alt="Image" width="72%" />
+
+プレゼン
+
+</div>
+
+
+# SANCTISSIMO COLLEGIO, VENE RABILIVM DOCTORVM
+
+SACRATISSIME FACVLTATIS
+
+Theologia, Alma vniueritatis
+
+Parifienis, integritate miorum,
+
+bonarumque artium, encyclope-
+
+dia & cognitione, commenda-
+
+tiflimorum,
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_34_269_87_321.jpg" alt="Image" width="19%" />
+
+工
+
+</div>
+
+
+Audabili confuetudine,legis vicem,secundum Iuri/consultor placita, habente,l.33.34ff.dell.communi/apientum cal-
+
+culo receptumeft, vt qui in publicum, diligentie specimen aliquod, producunt: prefationum auspicia, premittant, 1. x. ff. de orig. Iur. Dedicationibus adiunctis, quarumpatrocinio, studiasnaccommendari/perant, ut a ij
+
+inaidorum spicula, Criticorumque, qui instan Ariftarchi, de omnibus rebus, etiam incognitis, virgulam cenforam fibi aptunt, temeritatem effugant.
+
+Decreceram vero, typis calographicus nuquans conmissere, qualemcumque banc laborem, brenibus consentum charitis, certissim, ne inter tot interpretum iuris, eruditisim monumenta, nullum inemiret locum: Nil, our quidam plwime eruditionis, es litterature atque inhac disciplina perissisimus (cuico conflito commiteram, emendandum & corrigendum, li quid reperit, vel vna deleter litura, fi ipli videetur) albo cadidioque notaffet calculo, omniaque praterদ
+
+feliciora retuliset, ut ianti weri iudicio, animus, fueris miici adauctus, cum nec indigna putautis, que publice, proponerentur.
+
+Supererat, ut aliquos inuenirem, quorum patrocinio, primaria hec nostra diligentia specimina, tuto prodivent in publicum.
+
+Nulli autem alii, dignius à me felgi potuerunt, quam illi, quos mater nostra Ecclesia Romana, agnoefit, adverfus hereticam pravitatem indefelfos defensores, veritatis fidales affertores, vitiorum acerrimos oppugnatores, mallecos hereticorum firmifimos,
+
+quibus refunditur peruicax, hoffium fanctia Romana Ecclesia, procacitas:
+
+Dai ut infar Athlatisvel Anceladi onus, fommam fidei Christiane, finera doctrina, feruatis; ut fepius in perticulofismis careticorum incur�ibus, wefra confilia, Christi Domini, Vicarij, Principiae Apostolorum fucoefores, Romani Pontifices, me (vila titubare Eccelia) mergeretur, pra/entifima cognourint.
+
+Sub ergo veftri ordinis communi nomine, bunnc de gradibus cognationum tractatum, adiectis arboribus cognationis non solum naturalis, verum etiam spiritualis, ex baptifmo confirmatione, atque affinitatis, prodire, volui, debuti.
+
+Volui quidem, quia hoc quod propono subrectum, vobis potius, quam cuicumque peregrino illius iuris, in diuntis non solum exercitatifimis, sed etiam in Pontificiis sanctionibus, cumulativime, eruditis, non post, non esse perfpectissimum, atque acceptissimum.
+
+Quandoquidem, ita dilucide computationis graduum, fue cognationis naturalis, fue affinitatis, obscura & intricata difficultas omnis, quae reperitur in collateralium suppudi
+
+atione interlus Pontificium & Ciulei, declarata, atque sublata, reperiatur, itaut in poljerum, nullus videatus, superesse forcupulus.
+
+Debui, vero propter reuerenialem illum amorem. quo quisque bonus, religiofistime, was profequi debet.
+
+Quocirca, has vigilias & lucubrationes, erga vestrum, de religione, deque republica Chriftiana, benemeritum ordinem, honoris ac deuotiﬁmifudiﬁnoﬁtri, argumentum, observante perpetua monumentum, ﬁubicio, quatenus fano veftro, & incorrupto iudicio, ab inuidorum maledicentia, atque lingua mendaci, vindiceticis.
+
+Vobis omnibus deuotiffimum.
+
+IoANNEM RAVENEAV.
+
+# Humaniffimo Lectori.
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_35_51_81_94.jpg" alt="Image" width="16%" />
+
+O
+
+</div>
+
+
+V o p refert D. Hieronimus, epifola ad Præfidium, & epif. contra vigilantium, atque in expofitione iymboli, flatim initio,
+
+qui docet ♂ feribit, mulier simتر fumere iudues, atque maftiges, videbatur me à prefenti flylo fcribendi dimoucre, atque retrahere, irre merito debuifle. Verum vtilitatis publicæ, caffo amore excitatus, amicorumque efflagitatis rogationibus, obfecundaturus, decrcui typis calcographicis committere de gradibus cognationum, tradatum, flylo non ineleganti methodi facili, declaratione fuccinata nec obfcura, neque à maiorion noftromum, & fancta Romana Ecclefix fide, habés aliquid cotrarium; obferuatis rationibus iuris Pontificij, & reformatione à facro fancta fynodo Tridétina, propofita circa perfonas que ex cognotione spirituali, pet baptifim, vel confirmationem, matrimonio iungi, veantur aus permittuntur.
+
+Sed cum ab amulis hefiodianis, pro eor peruicaci inuidia, aliorum carpi fuda, fexius contingat, non paruis elucubrata vigilis, illis opponam, quod pulchre aliquando in fimili lufit Martialis.
+
+Eccerubet quidam, ftuper, ofcat, edit
+
+Hoc volo núc nobis, carminanoftra placet.
+
+Quibus vice nostra repondebit, idem beatiffimus Hieronimus in prologo paralipo
+
+menün, circa finë, in publico, inquit, detrahentes, in angulus libenter legunt, in alijs probantes, quod in me reprobant, quafi virtus & virnum, no in rebus fr. sed cum autore mutetur. Si autem hæc tibi placuile pro comperto habuero, a lia propedi partim ciudem argumenti, vel ex ipf oiure Romano, vulitatis & cruditionis monumenta accipies.
+
+#### Ad libellum.
+
+1. Liber, & tenebras, atque alta filentia rumpe. Sit procur hine semper, qui latus se velit.
+
+### Ad Leclerc
+
+Hac monumenta tibi, nofsut lacerada, benign
+
+Ingenij, LeOR, qualiacumque boni.
+
+Ad Raueneau-Maltigem, è famulto legulcium emerfum.
+
+Innida mens noftris, cur vis te inmergere rebus Curque meum, tetro lumine, cernis opus? Sifte gradum, liinido que in caffum ringere dentes Defifte, er rabidum fpargere, parce virus.
+
+Labor pro patrimonio.
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_23_23_219_64.jpg" alt="Image" width="71%" />
+
+1
+
+</div>
+
+
+# INDEX
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_31_93_101_165.jpg" alt="Image" width="25%" />
+
+A
+
+</div>
+
+
+Ffinitas quid fit. fol. 19.
+
+Illius Arbor. fol. 28.
+
+Ciulis & Canonica.fo.29.
+
+Illius genus eft triplex. fol.
+
+30. Extra matrimonii
+
+contrafta eft ad fecundā
+
+gradum. fol. 11.
+
+Affines marito & vxori funt, cognati altei-
+
+rius, fol. 32.
+
+Affinium & confanguineorum gradusfune
+
+fimiles, fol. 32.
+
+Affines in iifdé gradibus matrimonium cô-
+
+trahunt, & contrahere prohibentur, qui-
+
+bus confanguinei, fol.30.
+
+Affines Rečilinei prohibentur in infinitum matrimonio iungi, fol. 30. & 33.
+
+Affines collaterales prohibétur vique ad 46.
+
+gradum inclutive lure Canonico, fol. 30.
+
+Affinitas extra matrimonium contraça, eft tantum ad 26, gradum, fol.33,
+
+Affines an inuicem dicant teftimonit, fo30
+
+Agnatorum & cognatorum gradus funt f. miles, fol. 19
+
+Animalia abhorruerunt a nefario coitu,
+
+fol. 17.
+
+# INDEX.
+
+Arbor affinitatis, fol. 28. Cognationis naturalis, fol. 20. Cognationis spiritualis ex baptifmo, fol. 39. Ex Confirmatione, fol. 44. Argumentum operis, fol. 1.
+
+#### B
+
+B $ ^{Aptifmo} $ cognatio fpiritualis contrahitur, fol. 35. Inter decem perfonasiute Pontificio, fol.39. Inter quinque ex fynodo Tridentina, fol. 41. In fine.
+
+Baptifans domi an fit compater, vel ille qui nominauit in Ecclefa, fol. 36.
+
+Baptifati nouerca, potet nubere leuanti, fol. 38.
+
+Baptifato nubere poterit concubina baptifiantis, vel patrini, fol. 38.
+
+Baptifmo, arboris, cognationis fpiritualis delineatio, fol. 39.
+
+Titius, Sempronij, & hic, Titij filium leuare poteft, fol.39.
+
+Bruta abhorruerunt à nefario côtu, fol.17.
+
+##### C
+
+Anonicum ius feratur à laïcis in cauis fpiritualibus, fol. 20.
+
+Sequitur ius Ciule in temporalib. fol. 20.
+
+Civilia iura non deignantur imitari facros
+
+Canones in piritualibus, fol. 20.
+
+Cognatio quid, & quotuplex, fol. 3. eff tri-
+
+# INDEX
+
+plex, fol. Naturalis, fol.3. Eius arbor 10. Spiritualis, 34. Ex baptifno, 35. Illius arbor, 39, ex Confirmatione, 42. Arbor illius, 44. ex Catechifmo, 34. in fine.
+
+Cognationis gradus fcire debet Iurifconfultus, fol. r.
+
+Cognatorum & Agnatorum gradus funt 4-miles, fol. 19.
+
+Cognationis feptem in gradibus perfonze
+
+numerantur,1792 fol. 16.
+
+Cognatio spiritualis contraendum impedit, & contraetum dirimit matrimonii, fol, 34.
+
+Cognatio spiritualis an quzratur per procuratorem, fol. 36. an quzratur per vniuerfitatem, fol. 37.
+
+Cognatio spiritualis ex baptifmo contahitur inter decem perfonas iure pontificio fedinter ex Concilio Tridentino, fol. 39. 40. 41.
+
+Concubina baptifiant is vel leuantis, potesti
+
+nubere baptifato, fol. 38.
+
+Coniuges, an leuare fimul poffint ex facio
+
+fonte alterius filium, fol. 57
+
+Coniugij prohibitio in collateralibus, eft v-quead 4. gradum incluie, fol. 16.
+
+Collateralium gradus non numerantur e
+
+- démodiure Ciuli & Cánotico, fol.S.
+
+Collaterales non habent primum gradüre Ciuli, fol. s.
+
+# INDEX.
+
+Collateralium duo gradus legales faciunt v-num gradum Canonicum, fol.24.
+
+Collaterales confanguinei & Affines, prohibentur vísque ad 4°. gradum incluiae, fol.
+
+Collateralium Iure Ciuli tot funt gradus, quot funt perfonz, communi ftipite dempto, fol. 21.
+
+Commatrem prazdefumetx vxoris, an reli-
+
+Aus eius earn poterit ducere, fol. 38.
+
+Compater an fit qui domi baptifauit, an ille qui in Ecclefia nominauit, fol.36.
+
+Compaternitas, an quzratur per procuratorrem, fol. 36.
+
+Compaternitatem, an quzerat, ciuitas vel vniucritas, fol.37.
+
+Côfanguinei mariti funt affines vxoris, f32.
+
+Côlanguineixvorisfuntaffinesmariti, f.32.
+
+Confanguineorum & Affinium gradus funt fimiles, fol. 32.
+
+Confanguinitatis arbor, fol.20.
+
+Confobrinus quis fit, fol. 10.
+
+##### D
+
+Domestic tottimoniureprobatur, f.2. Domi quibaptifauit, an fit compater.
+
+an vero qui leuaut in Ecclefia, fol.36.
+
+Duo gradus legales faciunt vnum gradum
+
+Canonicum, fol.24.
+
+# INDEX:
+
+##### F
+
+Flius fpiritualis an poterit effe teftis pro patrino, fol. 44.
+
+Filium fpiritualem alere an teneantur patrimus & matrima, fol. 44.
+
+Famininum genus non concipit maculinum, fol. 8 in fine.
+
+Frater non continetur fororis appellationes, fol. 8, in fine.
+
+##### G
+
+Enus affinitatis eft triplex, fol. 30.
+
+Genus femininum, non concipit maculinum, fol. 8. In fine.
+
+Gtadus quid fit, fol. 6. Quomodo cognocuntur, fol. 6. Agnationis, & cognationis funt fimiles, fol. 19. Affinitatis & cognationis funt iidem, fol. 32.
+
+Gradus cognationum fcre.debet Iurifconfultus, fol. 1.
+
+Tot funt vtroque Iure in Redilineis, quot perfonvenna dempta, vel generations, f. 21. Eodem modo numeratur, Iure Ciulis & Pontificio, fol. 17. & 23.
+
+Gradus in collateralib. tot funt Iure Ciulis, quot funt perfone, communi flipite depto, fol. 21.
+
+Gradus duo legales, faciunt in collateralib. vnum gradum Canonicum, fol. 24.
+
+# INDEX.
+
+Graduum computatio Iure Ciuli, fol. 21. Et
+
+Canonico, fol. 23.
+
+Graduum numerationis diuerfitas, Iure Ciuli & Canonico in collateralibus, fol. 7.
+
+Gradus in collateralibus quare numerantur diuerfimode vitroque iure, fol. 18.
+
+Gradum ad quem vique matrimonij prohibito continetur, fol. 16. & 33.
+
+Gradib. in fingulis quot reperi�unt perfonæ, fol. 7°. gradæ 1°. funt perfonæ, 4°. fol. 7. gradæ 1°. funt 12. perfonæ, fol. 8. gradæ 3°. funt 32. fol. 9. gradæ 4°. funt 80. fol. 10. gradæ 5°. funt 192. fol. 11°. gradæ 6° funt 448. fol. 12. gradæ 7°. funt 1024. fol. 14. gradibus in leptem funt 1792. perfonæ, fol. 16.
+
+Gradu proximio excludit remotorem, f.r.
+
+Vrifconfultus debet fcre cognationum
+
+gradus, fol. 1*.
+
+Ius Canonicum feratur a laicis in cauis
+
+Ecclefaiticus, fol. 10. Iequitur Ius Ciule
+
+in temporalibus, fol. 10.
+
+Ius Canonicum & Ciule numerant gradus cognationum diuerfimode in collaterali bus, fol. 7. 21. 23. & 24.
+
+## 1
+
+L Egales, duo gradus, faciunt vnum gradū. Canonicum, fol. 24.
+
+#### INDEX.
+
+Leges non dedignantur facros Canones in caufis Ecclefaiticiis, Necà Canonibus in
+
+causí temporalibus. fol 20.
+
+Leuanti an nübere pfeffit nouerca baptifati, fol. 38.
+
+Linea quid eft, fol. 4. quotuplex, fol. 4.& s.
+
+Collateralis non habet primum gradum
+
+Iure Ciuiili, fol. s. Superior & inferior
+
+habet primum gradum, fol. s.
+
+#### M
+
+Magi ficant Perfis, nati ex nefario coltu, fol.18.
+
+Mariti confanguinei, funt Affines vxoris & contra funt Affines marito, côlanguiniæ vxoris, fol.32.
+
+Matitus, an ducere poterit commatrem prædefunctæ vxoris, & contra, fol. 38.
+
+Mārtitus & vxor, an fimul leuare poffint ex facro fonte, alterius filium, fol.27.
+
+Mafculinum genus, non concipitur à ferminino, fol. 8. Inf.
+
+Mater an leuare poffit filium fuum vel
+
+filiam ex facro fonte; fol.37.
+
+Matrima, filium spiritualem an teneatur alere, fol. 44.
+
+Matrimonium, an effe pollit inter nouer cam & patrinum baptifati, fol. 38.
+
+Matrimonium impeditur, dirimiturque fpi-
+
+ritualicognatione, fol.34.
+
+#### INDEX.
+
+Matrimonium prohibetur in infintum, in rečilineis confanguineis, & affinibus. Et vfque ad 4. gradum in collateralibus cofanguineis, fol. 26. & affinibus legitimis, fol. 30. In illegitimis ad 2. gradum, fo. 33.
+
+#### N
+
+Nº Aturalis cognatio, quid, & quotuplex fol. 4.
+
+Nefarias nuptias probauerunt Perfa, fol.17.
+
+Nouerca baptifati, an nubere poffit leuanti,
+
+fol. 38.
+
+Nuptiarum prohibitio extenditur vfque ad 4. gradum in collateribus, fol. 26. Idem in affinibus legitimis, fol. 30. In illegitimis, ad 2. gradum, fol. 33.
+
+Nuptia; prohibentur, dirimunturque cognatione spirituali, fol. 34.
+
+##### O
+
+Operis argumentum. fol. 1.
+
+##### P
+
+Pârentes à teftimonio remouent in infinitum, fol. 2, Pater, filium fuum, an leuare politi, fol. 37. Patrinus, an fit qui domi baptifuit, an quil in Ecclefianominauit, fol. 36. Patrinus
+
+# INDEX.
+
+Patrinus alere filium spiritualem an tenere tur.
+
+Producere in teftem pro fe, an poterit, filium
+
+fpiritualem. fol. 44.
+
+Patruus quis eft. fol. 10.
+
+Perf, probauerant nuptias nefarias, fol.17.
+
+Perfis ex nefario coitu, fecbant Magi, fol.18.
+
+Perfone in fingulis gradibus, quotāfereni untur, fol. 7.
+
+Primo gradu confanguinitatis continentur quatuor perfonx, fol. 7.
+
+#### e
+
+Qianxiao, 1920. Qinto in gradu funt, 192. perfonx. fol. II.
+
+##### R
+
+R Ečilinei eodem modo numerantur v. troque Iure, fol. 17. & 23. Prohibentur iungi matrimonio, in infinitum, fol. 17. & 23. Apud Perfas matrimonio iungeban-tur, fol. 17.
+
+Rečilineorum tot funt gradus omni iure quot funt perfonx, vna dempta, vel quot funt generations, fol.21.
+
+Relizius vxoris przedefunct, an poterit ducere commatrem eius. fol. 38.
+
+##### B
+
+# INDEX
+
+##### S
+
+S $ ^{E} $cundo gradu confanguinitatis continuent,ii. perfonze, fol. 8.
+
+Septimo gradu referuntur, 1024. perfonze, fol. 14.
+
+Sexto gradu funt, 448, perfonx, fol. 12,
+
+Sororis appellatione, frater non continetur, fol.8. in fine.
+
+Spiritualis cognatio, fol. 34. quid fit, fol. 35. contrahendum impedit, & contraetum. dirimit matrimonium, fol. 34.
+
+Spiritualis cognatio ex baptifmo, fol. 35. An quarratur per procuratorem, fol. 36. Per vniuerfitatem, fol. 37. inter quas perfonas contrahitur, fol. 39. 40. 41. eius arbor, 39.
+
+Spiritualis cognatio ex confirmatione, 42. eius arbor, fol. 45.
+
+Spiritualis cognatio ex catechifmo. fol. 34. in fine.
+
+Spiritualis filius, an teftis effec politi pro patrinis & matrinis, fol. 44.
+
+##### T
+
+t, quid significat, fol, 9. in fine.
+
+Teflimonium an dicant innicem, inter fe af-
+
+fines, fol. 30.
+
+Domesticum reprobatur, fol 1. Paren-
+
+# INDEX.
+
+esinterfe dicere prohibentur in infinitum, fol. 2.
+
+Teftis effcan poffit filius fpiritualis, fol.44.
+
+### V
+
+V<sup>Ir & vxor</sup>, alienuti filium, an fimul le.
+
+uare poffint, fol. 37.
+
+Vnierfitas, an quzerat compaternitatem, fol. 37.
+
+Vxoris confanguinel, funt affines mariti, fol. ;2.
+
+Vx or & maritus, an fimul leuare poffint fi.
+
+lium alienum, fol. 37.
+
+Vzoris przedefunctz commatrem, an pore-
+
+sit vir superltesducere, fol. 38.
+
+### FINIS.
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_17_30_218_87.jpg" alt="Image" width="72%" />
+
+スーツ
+
+</div>
+
+
+# A R G V M E N
+
+TVM OPERIS.
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_29_155_93_222.jpg" alt="Image" width="23%" />
+
+ひぞ
+
+</div>
+
+
+V M farpe, fiat in iure mentio, de gradibus cognationum, fecundum quos Agnati, vel cognati, in fucceffionibus & tutelis legitimis, preferri folent, vel matrimonio copula.
+
+ri poffunt, aut vetantur. Ei ergo, qui iuris fue diuini fue humani peritus effe defide-rat, neceffe eft, rede cognatorum gradus cognofcere, l.I Ctus 10. ff. 38.degrad.& affinib.
+
+Primô, quatenus fcire poffit, ad quos vf-que gradus, matrimonij extendatur prohibito, cap. non debet, é, dc confang. & affnit.
+
+Secundò, vt cognofcatur, quis legitimam defuncti, inteftato mortui, bareditatem, proximitatis iure, fit adepturus. Communiter enim dicitur, proximitorem gradu, potorem esse iure, et remoriorem excludere a succisione. 6. fu plures, Infit. de legit, agnat. fucc. l. pronunt iatio 193. 9. familiae. verif. inres. fit. de verb.
+
+fign. nou. 118. de heredib. ab int. ven. §. cδ
+
+fequens, verf. fin autem, coll. 9.
+
+Idem, In bonorum polfeffione adipicenda l.2. 9. gradatim #. vnde cogn. d. l. ICtusio. ff. de gradib.
+
+Tertio, ratione legitimarum tutelarum, & curationum, ; Nam tutela, ficut hareditas, proximiori agnato, defertur, d. l. ICTus in prince. l. quo tutela 73. ff. de reg. iur. auth. ficut hareditas. Cod. delegit. tut. 9. ex his in d. nou. 118. de harred. ab int. ven. coll. 9.
+
+Quario, quia ratione confanguinitatis, in certis gradibus, inter confanguineos & affines, teftimonium non recipitur, vt inter rectilineos, in infinitum l. parentes 6. Cod. de teftib. l. in teftamento, 9. per contrarium l. teftis idoneus 9. ff. de teftib. hinc placito Senatus Parifienfis, Auiam, contra nepotem, eogi minime poffe, teftimonium dicere, iudicatum fuit, die 6. Sept. anno1519. vt habet Anneus Robertus lib. 1. rerum iudicae cap. finali in nargine.
+
+Quafi idem, inter collaterales feruatur, in quantum inuiti non coguntur, teftimonium dicere, fed tantum volentes d.l. Ictus, ff. de gradib. cap. licet, e, de teftib. cap. vlt. e, de appell. auth. prefbiteros Cod. de Epifc. & cler. Quidam. autumant, teftimonij provel contra eos qui fanguine nobis coniunguntur, reprobatam efile relationem, in iifde cafibus, in quibus Regia conftutio blefenfis noufilima, art. 117, eofdem Iudices eile,
+
+prohibitu, veluti inter rectineos, fue parentes & liberos, in infinitum, Item inter generum & focerum vel focrum, fratres, leucros, patruos, aunculos, ex eifque nepotes, conlobrinos, & ex eis genitos: Refert Maynardus 4. quæft cap. 92. id obferuari Tholofz, ad 4. vfque gradum, vid. Anneus Rob. loco praiaudato.
+
+### Quotuplex fit cognatio
+
+### Cap. I.
+
+P $ ^{R} $Roponitur triplex in iure cognatio, naturalis videlicet, legalis, & canonica.
+
+### Quid sit cognatio naturalis. Cap. 2.
+
+Cognatio naturalis, id nomen fortuna fruit, ex copula & natiuitate carnali, vt Spirinalis natiuitate fpirituali, feu, coniune &ione animarú, mediante Deo in baptifmo &c confirmatione: Et ciniilis, adoptione alicuis in filium, que Ciuiilis, cum moribus Gallia recepta minimè fit, illius declarationem iure omitemus.
+
+Cognatio naturalis, vt generaliter accipitur, comprehendit, tam agnationem, quæ cognationem specialem, d.l. Ictus §. i. & 2. ff. de gradib. Quia, omnes homines inter fenatura colligati, & coniunċi, dicuntur cognati.
+
+Définitur primo, Quedam perfonarum coharentia, que per generations contra-eta, ex eodem languine confitat, cuius languinis communione, altera perfona, alteri continuata eft.
+
+Secundo. Vinculum dicitur elfe perforarum, ab eodem fitipite descendentium (& ita diftinguitur ab affinitate, quæ cft, quidem vinculum perfonarum, fed non confanguinitas) carnali popagatione contraetum; Et fic diftinguitur ab adoptione & cognatione fpirituali1 non facile 4. ff. de gradib. 1.1. ff. vnde cognati.
+
+### Quoid O quotuplex fit linea. Cap. 3.
+
+I_{nea}, definitur limes, quo ordines cognationum, cognofcuntur: vnde cognatio, eft tota proximitas, linea vero, eft proximitatum separatio.
+
+Tres funt in cognatione linear, fuperior, inferior, & collateralis, in quarum qualibee, plures funt gradus, l. i. in princ. ft. de gradib. & affinib.
+
+Superior, completitur afcendentes fue parentes. Q no nomine (felicet parentum) intelliguntur omnes afcendentes vtriufque fexus vique ad tritaum, 1. appellationi &c. &cib Alc. ff. de verb. fignif. Supra quem tri-taum, fi qui viteriores reperuntur, vocantur Maiores Gallis, anceffres, 1. ftemmiata & d. 1. Ictus §. parentes ff. de gradib.
+
+Inferior, eft defcendentium Leu liberorum. Quo nomine, comprehenduntur omnes defcendentes vique ad trinepotem, cateri, vocantur, polferiores, Gallis, nosnepuenz.
+
+Collatealis, feu tranfuerfalis, eft, eorum qui ex eadem ftirpe, feu communi parente, geniti funt, vt fratrum, fororum, patruoró. aunculorum, & ex illis, defendentium, l. t. ff. de grad. Gallis, dicuntur parents.
+
+Que linea collateralis, rurfus alios habet afcendentes, vt patruos, amitas, auncuilos, miaterteras, & fimiles. Alios, defcendentes, vt fratrum & fororum filios, fue ex fratrib. & fororibus nepotes, &c.
+
+Linea directa, feu superior & inferior, feu ascendentium & defecendentium, prima habet gradum, vtroque iure, tranfuerfalis vero non habet iure Ciuliti, fod a fecundo incipit, licet habeat iure Pontificio.
+
+Rino duerificatis eft, quod in fuperiori linea, fue cognatione, funt afcendentes, feu parentes, ex quibus cognatio collateralis, & is (dequo queritur (Petrucius communiter appellatus) derivant, vt frater & foror, & Petrucius ille (de caius fucceffione, tutela, cognatione, &c. quæfuo fieri poteti) ex ildem patre & matre, defendunt, item, patrus & idei Petrucius, ex eodem natio, &
+
+1g. Petrucius, primo gradu numeratur, fratere fecundo, fratris filius tereto, &c. Ount enim perfonæ in illis numerantur, vna denypta, tot gradus effe dieuntur. Siquidem Pe
+
+trucius ille, ad feipfum in gradu non eff, quia fibi ipfi cognatus dici non potteft, fed eius cognatio per gradus dinumeratur; Et ita il Petrucius confertur cum patruo, & eius progenie, pater erit in primò gradu, auus in 2. ex quo auo, velut ex ftirpe, tam Petrucius quam patruus defendunt, & fic a latere primus gradus effe nequit: Quod iure Ciuli, & propter succeliones locum habet, quia in his vna tantum perfona confideratur, de cuius fuccelione agitur: Iure vero Pontificio, & propter matgmonia in quibus duæ perfonæ confideratur (quæ, duo effe dicuntur in carne vna) fratres & forores, in primo funt gradu, itaut ab eo gradu, quoad nuptias, incipiat collateralis cognatio.
+
+### De nomine graduum. Cap. 4.
+
+P $ ^{E R} $ translationem, gradus, hic dicuntur, ad fimititudinem fcalarum, Cuiac. 6. obf. 40.
+
+Definitur gradus, afcenfus ab inferioribus perfonis ad fuperiores, & defcenfus à fuperioribus ad inferiores.
+
+Quia in graduum feu cognatorum di-
+
+numeratione, de proximo in proximum, feu
+
+in eum, qui quai ex eo nafcitur fit tranitus;
+
+Ideo, quot funt tranitus in remotiores, tot
+
+funt gradus d.l. Ictus 10. 9. hastenus ff. de
+
+gradib.
+
+Cum autem quo quifque gradu alteri
+
+fit, notere volumus, fupponenda et tertia perfona, de cuius cognatione quiritur, ad quam perfonx cognatæ, quæ numerantur, referuntur, vt, afcendentes funt, qui Petrucium genuerunt, defendentes, qui ab eo geniti funt, & fic inter patrem vel matrem (qui fuperiores funt) filium vel filiam (qui funt inferiores) ponitur perfona interpofita, nempe Petrucius & Petrucia, quorum reﬂeﬁetæ, pater & mater, in arbore, primo gradu, in linea fuperiori funt; ﬁlius ﬁlia, primo gradu in linea inferiori.
+
+## De numero personarum, que in singulis continentur gradibus. Cap. 5.
+
+A P v D I u f t i n i a n u m, t i t. 6. de gradib. cognationum, fex proponuntur gradus, cum in l. Ictus 10. ff. de grad. & affinib. feptem referantur.
+
+Primô gradu cognationis, quatuor reperiuntur perfone, numero differentes, l. 1. 9. primo gradu, & d. l. Ictus 10. ff. de grad. Paulus 4. fentent. 6. 1.
+
+In fuperiore quidem linea pater & mater: Qhorum appellatione, auus & aulia non veniunt, prafertim in materia odiofa, Bart. in l. liberorum 9. i. ff. de verb. signif. fecus in cafu fauorabili, in quo patris nomine, auus ex interpretatione intelligitur l. iufta interpretatione 201. ff. de verb. signif.
+
+In inferiore vero linea, filius & filia, qui
+
+plures quidem, effe poffunt, d. l. Ictus, §. 1*.
+
+fed tamen cum non different, non augment
+
+numerum.
+
+Quibus iure pontificio, addi poteci frater velioror, vt fic effect quinque perfone, ex rationibus praallegatis: Verum, quia in arbore confanguinitatis vtriufque iuris, fupputationis diuerfitas, arithmeticis notis connotatur, ea propter, Iuftinianum & leges fequemur, in referendis perfonis, qua in fingulis gradibus effe dicuntur.
+
+Secundo gradu, fex perfona, à Iuftiniano numerantur, quæ duplicata, funt duodecim, d. l. 1. 9. 2. & d. l. Iatus, 9. fecundo gradu, ff. de grad. & affin.
+
+In linea fuperiori, duo funt aui, paternus nempe, & maternus, toidemque auiar, paterna videlicet, & materna, in linea inferiore, duo funt nepotes, vnus ex filio, alter ex filia, & duæ neptes, vna ex filio, altera ex filia.
+
+In linea transuerfali, duo funt fratres; vnus confanguineus, fue paternus, alter vterinus, fue maternus, toidemque forores, vna confanguinea, altera vterina.
+
+Nam Iure Ciuli, vt dictum eft, fecundo gradu, dinumeratio tantum fit eorum, qui funt a latere, quia trans verfalis linea, eo iure ciuli, primum gradum non habet.
+
+Not tft, fororis appellatione, nunquam, intelli fratrem, quia genus femininum, nunquam maculinum concipit. Necfraris appellatione,
+
+appellation,fororem dignificari proprietate
+
+ignificationis,vocabuli fratris, fed cum ratio eadem fubeft, fratris appellatione, venit
+
+fororl. tres fratres ff. de paetis.
+
+Tervö gradu, Iultinianus, refert decent perfonas, 'quæ multiplicata', numerantur triginta due.
+
+Ota videlicet, in fuperiori linea, duo proauipaterni, totidemque materni; due a nie paterna, totidemque materna.
+
+In lineainferiori očto perfona, proneportes duo ex filio, totidemque proneptes duo pronepotes ex filia, totidemque proneptes.
+
+In linea collaterali, fexdecim, nempe ofto collaterales defendentes, videlicet ex fratre confanguineo progenitus & progenita, fue nepos neptis; fue fratris filius, filia; Ex fororé confanguinea, progenitus progenita, fue nepos neptis, fue fororis cofanguinea, filius filia. Ex fratre vtcrino progenitus progenita, fue nepos, neptis, fue fratris vterini, filius filia, totidèque, ex fororevterina.
+
+Similiter oito collaterales afcendentes, ex parte patris, duo patrui, feilicet patris frater confanguincus, & frater vterinus, toridemque amita: Item Ex parte matris duo aunculi, nempe matris frater c5fanguincus, & frater vterinus, totidemque matertera d.l. ICTus.
+
+Na, obiter eft, vocem gircam his tam patruum, quã aunculum, &c. você, tam amitam, quam matereram, significare. d. l. ICus. B
+
+Quarto grado, Iufinianus pauciores numerat perlonas, quã in co colligi polint, quandoquidem octuaginta reperiantur.
+
+In superiori quidem linea, lexdecim per-
+
+conæ, quatuor nempe abaui paterni, jtotidè-
+
+que abauix: quatuor abaui materni, totidè-
+
+que abauix.
+
+In linea defendenti, fexdecim etiam re- periuntur perfona, quatuor nempe abnepotes ex filio, totidéque abneptes : ex filia quatuor abnepotes, totidemqueabneptes.
+
+In collateralibus, numerantur quadraginta octo perfonx, in collateralibus defcenden-tibus fexdecim, ex parte nempe agnatorum, duo fratres patrueles, duque forores patrueles : duo fratres amitini, toidemque forores amitinæ.
+
+Ex parte vero cognatorum, duo confobrini, totidemque confobrinæ, ex duobus aunuculis, duo confobrini, totidemque confobriæ, ex duabus matereris.
+
+Ex parte collateralium alcendentjum, fex decim, quatuor nempe patrui magni, totidé que amitar, quatuor aunculi magni, totidé que matertera magna, d. l. ICtus 6. quarto gradu. ff. de gradib. & affinib.
+
+Confobrini autem appellationem, certú eft, dubiam effé. Quia proprie confobrini dicuntur, qui ex duabus fororibus nati funt, quai confororini, abufiue tamen & vulgo, ex fratribus nati, etiam confobrini vocantur, cum alias, proprie, fratres patruoles, appellentur.
+
+Not. praterca cft, patrui fimpliciter pre-
+
+Lati appellation, não venire ex propria significazione, patruú magnú, fed per interpretationé, ex ratione l. Iufa.101. ff. de verb. signif.
+
+Quinto gradu, pauciores numerat perlonas Iultinianus, quam numerari pollint, referuntur enim centum nonaginta dux, & d. L. ICTus, §. quinto gradu, ff. de gradib.
+
+In Reliötinéis afcendétibus, triginta duzerpfonze reperiuntur, fexdecim videlicet A-taui, totidemque atauix; nempe, oção Ataui, totidemque Atauix ex parte Agnaterúfiuie patris: oção Ataui, totidemque Atauix, ex parte cognatorum, feu matrix.
+
+Seu, quod idem eft, quatuor Abaui cōfanguinei,totidemque Abauix cōfanguinex patris, quatuor Abaui vterini,totidemque abauix patris : quatuor Abaui confanguinei,totidemque Abauix cōfanguinex matris, quatuor Abaui cognati,totidemque Abauix cognate matrix.
+
+In Reliétineis defcendentibus, etiam triginta duæ perforæ reperiuntur, nempe, octo atnepotes, totidemque atneptes ex filio: octo atnepotes, totidemque atneptes ex filia.
+
+In collateralibus, reperiuntur centum viginti octo.
+
+Nempe octo pronepotes, totidéque pro-neptes fratris, octo pronepotes, totidemque proneptif fororis.
+
+Q.armor, pattui nepotes, totidemque neptes, Ŝillis, Confins remex, de germasn, on, Confins Seconds.
+
+Q.Hainor amitz nepotes, totidemq; neptes, Bij
+
+Qu.utur auiculinepotes, totidēqneptes
+
+Qmator, mataterze nepotes, totidemque
+
+neptes.
+
+Ex patruo magno, propiores fobrini quatuor, totidemque propiores fobrina:
+
+Ex Amitamagna, quatuor propores fo-brini, toideimque propores fobrina.
+
+Ex Aunculo magno, quatuor propriores
+
+*fobrini, totidemque propiores.
+
+Ex materera magna, quatuor propores fobrini,totidemque proporesfobrina.
+
+Ocho propatrui, totidemque proamitz.
+
+Oço proaunculi,totidę; promatterca.
+
+Aduerendum eft, propium lobrino, fobrinae, ad perfonam hypotheticam, vt Petrucium, de cuius nempe cognatione quariur, confobrinia ele patris Petrucii, & huius filii, fobrinum ele perfonae illius hypothetica, & fobrinos ele, qui ex confobrinis, feu, patruelibus nati funt; vnde� cōfitat, cur. propior fobrino, dicatur. Cum ex co naicatu fobrinus, qui vno gradui, propior eft in linea patrui, lue aunculi magni, Amitae fue materterae magna.
+
+Sexo gradu, pauciores quoque receniet Iufianus perfonas, quando quide in d.l. Ctrus, in 6. fexto gradu ff. de gradibus, dicutur efe, quadringenta quadraginta oito perfonx, in quoquidem gradu, feptem perfonarum fpecies referuntur, &cindugulis fexaginta quatuor perfonx numerantur.
+
+Imprimis in Reclines afcédentib° fexdecim
+
+Tritqui, totidemque ortuiturix, ex parteparis.
+
+Sexdecim tritani,totidemque tritania ex parte matris.
+
+2*. In Rectilineis defcendéibus, funt fex-deci trinepotes, totidég; trineptes ex filio.
+
+Sexdecim trinepotes, rotideinque trineptesox filia.
+
+3*.Exfratre confanguineo,octo abnepotes,totidomque abneptes.
+
+Ex forore confanguinea, octo abnepotes, totidemque abneptes.
+
+Extrare veterino, octo abnepotes, toidé-que abneptes.
+
+Ex forore vecrina, octo abneportes,toti-demque abneptes.
+
+4*. Paixui, octo pronepotes, totidemque proneptes, Amisa, octo pronepotes, totidéque proneptes. Aunounia, octo pronepotes, totidemque proneptes, anontera, octo pronepotes, totidemque proneptes.
+
+s: Patous magni, octonepotes, totidemque nepres:
+
+Amita magna, octo necpotes, toidemque
+
+neptes.
+
+Asumaculiagnini, octo nepores, totidem-que noctes.
+
+Matterera magna, octo nepotos, totidem-que neptos.
+
+6*. Ócho propatquerum, ocho filij, roti demque filia.
+
+Oeto proamitarum, octo filij, totidemque
+
+Odeo preampcularum, octo filij, toti demque filiz.
+
+## 14
+
+Oto promaterterarum, oto filij, totidem-
+
+que filiz.
+
+7. Sexaginta quatuor funt perfona, nempe, fexdecim propatrui magni, fue patrni maximi, totidemque Amita maxima.
+
+Sexdecim proaunculi magni, fue aunculi maximi, totidemque matertera maxime d.
+
+1. ICTus. ff. de gradib. Tritanui dicitur, quaf tertijaui aus, nam aus eft, abaui, qui patris tertius eft aus.
+
+In speimo gradu, continentul mille vigniti quatuor perfonze d.l. ICTus 10.9. pe-ptimo gradu, ff. 38. de grad. & affinib.
+
+1. In Rečilineis afcendentibus, centrum viginti octo maiores, mafculi quidem fexaginta quatuor, formine totidem.
+
+Nempe triginta duo maiores agnati, toti-demque maiores formina, agnatae, fue per pattern.
+
+Triginta duo maiores mafculi cognati, totidemquemaiores feminae cognatae, fue per matrem.
+
+2*. In Reptilineis defcendentibus, funt centum viginti octo inferiores, feu potferiores.
+
+Nempe triginta duo inferiores mafculi, to-
+
+sidemque inferiores feminae per filium.
+
+Triginta duo inferiores maiculi, totidemque inferiores formine, per filien.
+
+3. Ex fratre Patrucij, triginta duo trine-
+
+potes, toidemquetrineptes.
+
+Siue, ex fratre confanguineo Petrucij, fex-decim trineportes, totidemique trineptes.
+
+Ex forore confanguinea, fexdecim trine-
+
+potes, totidemquetrineptes.
+
+Ex fratre vterino, lex decim trine potes, to-
+
+tidemque trineptes.
+
+Ex forore vterina, fexdecim trinepotes, to-
+
+tidemque trineptes.
+
+Siue, fratris confanguinei, fexdecim atn-
+
+potes toidemque atneptes.
+
+Sororis confanguinare, fexdecim atnepotes, totidemque atneptes.
+
+Fratris vterini, fexdecim atnepotes, totidemque atneptes : fororis vterinæ, fexdecim atnepotes, totidemque atneptes.
+
+4*. Propatrui maximi triginta duo, totidemque proamitæ proununcis maximi triginta duo, totidemque promaterteræ.
+
+5*. Sexdecim propatruorum magnorum, fexdecim filij, totidemque filix.
+
+Sexdecim proamitarum magnarum,fexdecim filij, totidemque filir.
+
+Sexdecim proauunculorum magnorum, fexdecim filij, totidemque filix.
+
+Sexdecim promaterterarum magnarum,
+
+fexdecim filij, totidemque filiz.
+
+6*. Ode patruorum magnorum, fexdecim pronepotes totidemque proneptes.
+
+Opto amitarum magnarum, fexdetim prohepotes, toidemque proneptes.
+
+O\&to auncularum magnorum, fexdecim pronepotes, totidemque pronepetes.
+
+Oito materterarum magnarum, fexdeem pronepotes, toidemque proneptes.
+
+7*. Patrui, fexdecm abnepotes, totidemque abneptes.
+
+Amita, fexdecim abnepotes, totidemque abneptes.
+
+Auunculi, fexdecim abnepotes, totidemabneptes.
+
+Matertera, fexdecim abnepotes,totidemque abneptes.
+
+8. Oço propatruorum, fexdecim nepotes, totidemque neptes.
+
+Oço proimitarum, fexdecim nepotes, totidemque neptes.
+
+O $ \underset{\cdot}{c} $to proaunculorum,fex $ \underset{\cdot}{d} $ecim nepotes,totidemque neptes.
+
+O $ \underset{\cdot}{d} $o promaterterarum, fexdecim nepo-tes, totidemque neptes.
+
+Septem autem illorum graduum, omnes perfona fimul numerata, referitur mille feptingenta, nonaginta duæ perfona, vt cft verus textus, in d. l. Iurifconfultus ff. de gradib. & affinib. non vero mille feptingenta octuaginta quatuor, vt male quidam notarunt.
+
+Sufficient autem, quæ dicta funt, de graduum cognationis dinumeratione, qua hinc colligi poteft, quomodo vlerius, fi necefle foret, gradus numerari debrent. Si quidem, Iuris Ciulis, regula eft, generatam perfonā, nouō femper gradū adiicere, quod ita intelligi debet, vt ingula generationes, fingulos gradus faciant, licet vna tantum perlona, ex proxima quaque generetur, nec referit, fi in cadem generatione, feu gradu, plures celle
+
+effe polfinterferon.
+
+Cæterum de rectis cognatis, tam afcendentib. quam defcendentibus, vitra fextum vel feptimum gradum curandum non eft, cum natura, vitra illum gradum, vitam cognatorium confiftere, non patiatur, vt dicitur in l. non facile 4. ff. de gradibus.
+
+## De dienerfstate numeration is gradually civilized. Canonica. Cap. 6.
+
+Radius, codem modo numerantur, inter reècilineos, vitroque Iure, Ciulli nempe, & Pontibicio: & vitroque eodem iure inter reètilineos fiae inter liberos & parentes, infinita, atque perpetua eft nuptiarum prohibito, quia id pudor naturalis, omnibus gentibus fuait. I. adoptius 4.9.feruiles, llege Iulia 44.9.nec diftinguitur, nuptia 11.liuris gentium, vlt. ff. de riu nupt. vbi dicitur, inceffum committere, qui ex gradu afcendentium vel defcendentium vxorem duxerit, lnemini 17. C. de nupt. harmen.6.9.47. Genef.2. Leuit.18.Plato 8.de legib. & 8.de republ.
+
+Itavr etiam natura ipfa, in brutus animatibus, nefas effe voluerit, & abhorruerit ad hujufmodi concubitu, qua de re Philofopus, lib. 8. de hiftoria anim. Plinius lib. 8. cap.13. Varro 2. de re ruftica.
+
+Licet apud Perfas, permitxe legantur nuptiae in rectilineis fuille. Quinimo ex tali nefariρ C
+
+concubitu, magos gigni & procedere volué-
+
+rint, vt Catullus his verfibus, declarat
+
+Nafcetur Magus,ex Gelli Matrisque nefando
+
+Conjugia,vt discat Perficum barruficianum, Nam Magna ex patre, gnato, gignatur oportet. Siverra est, Impia Perfarum religio.
+
+Idem refert harmen. lib. i. tit. 1, 5.15. Inde Mirra apud Ouidium queritur, fibi non licere thalamum ingredi parentis, his verbis10. Metamorph.
+
+5.0 Genres effequer
+
+In quíba não genistrix, é nata parenti
+
+Fangitur, Or pietas, geminato erefcit amore.
+
+Vide D. August. in cap.18. Leuitici.
+
+A la revo, Ius Pontificium, aliter quam fus Ciile gradus numerat.
+
+Diuerfitatis ratio communiter redditur: quod Ius Ciule confanguinitatis arborem confiderat, tantum propter fuccelfiones, atque tutelas legitimas, in quibus, fingula fufficient perfone, vt aliquis, non fine harde deceffile, vel in tutela celle, dicatur, qui vnum habuerit tutorem & fic Ius Ciule, in gradibus computandis, omnes cognationis gradus refert ad eum, de cuius fuccellione, tutela vel cura, queriur, vt nempe generata perfona, nouum fem, per gradum adiciat.
+
+Ius vero Canonicum cognationem confiderat conjugii catifa, in quo cum duæ requirantur perforata, quæ fecundum Euangelium, duo cententur effe in carne vna, can ad fedem ss. q. s. fit vt duæ perfone collaterales, vnum faciat gradui.
+
+Quoties ergo de fucceffionibus tutelive in terris Ecclefiae queftio habetur, feruatur Civilis graduum fupputatio.
+
+Cum vero viciflim, interris Principum temporalium, propter nuptias, quæfio mouetur, obferuatur fapputatio à Iure Pontificio propofita, in numerandis collateralibus, quibuscum tantum, nuptia polfunt confiftere, referendo ad communem parentem eas perfonas, de quarum nuptii agitur. Et fic frater & foror, in primo gradu numerantur, non inter fe, fed ad patrem collati, & horum filii, qui inter fe Confobrini funt, numerantur in fecundo, ad communem parentem, nempe ad aumul, & ita deinceps.
+
+Cum ante nouellam Iuftiniani 118, de haredib. ab inteft. ven. coll. 9. Iure Ciuli, feu per l. 12. tab. fecundus ordo in fuecceffionibus, effect Agnatorum, tertius vero ex equitate Prętoria, effect cognatorum: vt cognationis, ita Agnationis gradus numerati funt.
+
+Qua enim ratione Agnatorum, feu corum, qui per virilem: fexum nobis iungungur, gradus queruntur, eodem quoque modo, cognatorum, fue eorum qui per matrem, atque fecominimum fexum ducunt originem, numeratio graduum habetur. Filum enim emancipatus qui jure antiquum Agnatus non eft, perinde in primo gradu ponitur, ac fuus, fue Agnatus: Eodem modo frater vterinus, qui tantum cognatus eft, Iure Ciuili eft in fecundo gradu, vt Iure Pontificio in primo, atque frater confanc.
+
+guineus,qui Agnatus eft.
+
+Quaetio vtiliffima proponitur, quid obfer-
+
+undum nempe fit, quoties Ius Pontificium &
+
+Ciule, in fatuendo, non conveniunt.
+
+Communis refolutio eft. Quod in materia, & causis Ecclefaitics, vt in matrimoniis, leges feculares, non deignantur facros imitari canones, vt dicitur in nou. 6. quomodo opor. Ep. & reliq. cler. ad ordin. adduci coll. i. nou. 83. vt clerici, apud propr. Epic. primum conueniantur, coll. 6. nou. 131. 9. 1. de ecclef. titr. coll. 9. l. facris canonibus 45. Cod. de Epic. & cler. can. cum fecundum Apofolum in fine ext. de fecundis nuptiis, cap. at fi clerici, ext. de Iudic. Et ita in ditionibus principum fecularium, feruantur canonica iura, in caufis Ecclefaitics, vt in matrimoniis.
+
+E diuerfo, in materia prophana, vt in fucceffionib.&c tutelis, in terris Ecclefia, vt in Romania Italica, obferatur principum fecularium, &c Iuris Ciulis difpotio; Quando ficilet Euangelicis atque Canonicis Decretis non aduerfatur, can. ad fedem 35. q.f. Idque etiam in foro confientiae, vt pluribus refert Doctor Angelicus 1.2.q.96.art.4, in proemio decret.
+
+# De computation graduum secundum Ius Ciule. Cap.7.
+
+A Iure Ciuli duæ proponuntur regule, quib. facilis fit numeratio graduum, fue in rectilineis, fue in collateralibus.
+
+Regula prima, tot sunt gradus, quot sunt personae, vna dempta, fue, Tot sunt gradus, quot sunt generationes.
+
+Semper enim generata perfona, fcilicet in rectilineis, ad perfonam de cujus cognatione queritur, gradum adiicit. 9. hactenus, infit. de gradib.cognat. d.l.ICtus. 9. nam quoties.ff.de gradib.& affinib.
+
+Non quod, tertius 4.5.& cart. filius, fit tertio 4.5. aut vlerlori gradu parenti. Quia, finguli ad Petrucium feu patrem relati, vna tantum generatione cententur. Sicut etiam nepotes, ex pluribus filius, aut filiabus geniti, in fecundo gradu habentur. Quia a nepotes vel nepte, ad auum vel auiam, tres perfonæ, & duç generationes, reperiuntur: Sic primogenitum frater, à decimo fratre, non fit in decimo gradu, fed tantum in fecundo co Iure Ciuili: Et fic quod dicitur generatam perfonam adiicere gradum, intelligitur quando, generata, alteram generat cum enim plures frates non different nomine, ideo gradum non augment.
+
+Regula fecunda, tot sunt gradus, quot sunt per-
+
+sona, communi stipite dempto.
+
+Quæ regula, feruit pro collateralibus, eo Iure Ciuli, tam in linea aquali, vt inter Petrucium & fratres atque forores, vel Confobrinos eius. Quam inaquali, vt cum vnus magis diftat à communi ftipite quam alius, veluti, inter Petrucium & eius patruum, amitam, aunculum, matereram, in collateralibus afcendentibus, Velnepotem neptemve, ex fratre aut forore, & aliis in collateralibus defcendentibus.
+
+Siqui vero fcre velit, quo故gadu diftet ab alio, verbi gratia, à fratre; debet incipere, à sua perfona, alcendendo ad patrem communem ftipitem, &c cum eo deuenerit, debet defcendere ad fratrem, &dicere, Ego, pater, frater, funt tres pefonae, dematur communis ftipes, nempe pater, remanebunt due perfone, fique duobus diftabit gradibus Petrucius & eius frater.
+
+Idem in linea collaterali inaequali, vt inter Petrucium & patruum, hoc modo numerando.Ego, pater, anus, patruum, funt quatuor perfona, dematur communis ftipes, nempe ausus, remanebunt tres perfonæ, ficque Petrucius & eius patruus, diftabunt tribus gradibus Iure Ciçili, & ita de familib.
+
+Quomodo jure Pontificio gradus cognationum computentur. Cap.8.
+
+A D facilorem computationis gradum cognitionem, fecundum Ius Canonicum habendam, tres proponuntur regula: Quarum prima, eft pro rectilineis tam afcendentibus, quam defendentibus: fecunda, pro collateribus, equaliter à communi ftipite diftantibus tertia, pro etiam collateralibus, led in linea inquali.
+
+Regula prima, vna cademque eft, cum prior Ciulli, quandoquidem.
+
+Primè, vtroq; iure tot funt gradus, quot funt generations. Itavt fi de patris ad filium interuallo & diftantia quarritur, quomodo ficilicet vna demi perfona poffit; Refpondetur, alter vtra dempta, vnam tantum fupereffe, ficque vno gradu diftare Petrucium à patre, item à filio.
+
+Secunda, quia in infinitum perpetua eft coniugii prohibizio.l adoptius 14.§.ferniles,llege Iulia 44.§. nec diffinguitur. l. nuptiae 13.iure-gentium vlet.ff.de ritu nupt. harm.6.§.ergo non omnes, initit.de nupt. Genef.x. Leuie.18. Plato 8.de legib. & 8.de repub. Iravit fi Adam nune viueret, quia communis eft omnium nostrum parents, ab eoque defendimus, nullam ex mulieribus nunc vincenibus ducere poffet, fecundum gl.poff.text.in d.§. ergo non omnes infit. de nupt. Conauruias vero,tom.1.part.2.c.6. in
+
+fine putat hǎc prohibitionem vǜrā vigefīmum gradum non extendì; Quē opinio refragatur difpofitìoni, can.17.&c18. canf33. q.f.
+
+Secunda regula. Quoto gradu, vterque diftat a communi ftipite, eodem gradu inter fe diflant, cap. quod dilectio 3. c. tuanos 7. extra de conf.& affinit.
+
+Contra Francifci Hottomanni alienam a fide Catholica opinionem in c. 3. de caftis nuptiis, vt fratres, ficut diftant vno gradu à patre, per primam regulam, ita inter fe: Item, ficut Confobrini ab auto diftant duobus gradibus, per eandem primam regulam, ita ab inuicem.
+
+Et ita licet fratres, duobus, & Confobrini quatuor diftent gradibus, Iure Ciuili, iure tamen Pontificio, Fratres vno, Confobrini, duobus tantum remouentur gradibus, vnde communiter dicitur, duos legales gradu, facere vnum gradum canonicum.
+
+Ratio diuerfitatis illius, ex eo venit, quod Ius Canonicum numerat collaterales, tantum ab vna parte ad communem ftipitem, & cum eo peruenerit afcendendo, ibi confitit, nec defendit ad alum collateralem. Quod facit Ius Ciule, & ira, quota gradu, vnus ex collaterali-bus diftat a communi fipite, per dictam primam regulam, eodem gradu lure Pontificio diftat ab eodem collaterali, ex ratione iam reddita. Quod fcilicet Ius Canonicum numerat cognationem, ciufque arborem, confiderat, ratione matrimonii, cuius gratia, duce requiruntur perfone, que duo in carne vna cenfentur, d. can. ad fedem 35. quaffione s. Et hac
+
+Et hac ratione geminantur puncta in collateralibus, in fuppofitis notis Arithmeticis, vt in cellula fratris & foronis, fuperior numerus vnum, inferior nota, duo reprefentat.
+
+Querfum autem puncta, & notæ Arithmetica, qua fupra habentur referunt gradus fecundum jus Pontificium; notæ vero inferiores Arithmetica, deuotent gradus, fecundum jus Ciule: ratio dicitur effe, ipfius juris Pontifici amplior dignitas, qua ex fine deprehenditur, quando quidem ius Pontificium, actions Christianorum ad finem aternae beatitudinis dirigit; jus autem Ciule ad finem foci etatis politae.
+
+Tertia regula. Quoto gradu remotior distat a communi fipite, eodem gradu, inter fe difent cap. cum vir à fipite è de conf. & affinit. Sic Petrucius diftat à patruo, aunculo, amita & matertera duobus gradibus, quia eodem gradu diftat ab auo communi corum parente, per d. primam regulam: fimiliter idem Petrucius, diftat à nepote ex fratre vel forore, duobus gradibus, quia nepos ille, diftat ab auo fuo, qui eft pater Petrucij, communique eorum ftipes, duobus gradibus, per eandem primam regulam.
+
+##### D
+
+Ad quem v/que gradum prohibito nuptiarum sit in colateribus. Cap.9.
+
+A Nte innocentium tertium, nuptiae in collateralibus prohibebantur vfq; ad feptimum gradum confanguinitatis, vt refertur in Can. 16. 19. 21. canæ 35. q. 1. d. can. ad fedem ead. 35. q. f. & notatur in cap. non debet 8. ext. de conf.& affinit.
+
+Nunc autem eiufmodi prohibitio inter eos collaterales, qui quafi parentum loco non habentur, cuiuifmodi funt, quios cognatos, vulgo Coufins appellamus, non extenditur vlira quartum gradum inclufue, fue quintum exclufue, d. cap. non debet.
+
+Bene autem putaut Innocentius tertius in d. c. non debet, quaternarium numerum convenire prohibitioni nuptiarum, multa namque quaternario numero perficiuntur, dominatur enim in homine quatuor humores, calidum videlicet, frigidum, humidum & ficcum; Quatuor etiam funt Elementa, terra, aqua, aér & ignis, Quatuor iejunjit tempora, can.i. dift.76. Quatuor Euangeliat & Ecclefiar Doctores cap. gloriofus de reliquis & vener. fanctorum in 6. Quatuor flumina irigantia Paradifum voluptatis Genef. cap. 1. Quatuor etiam concilia magna commandantur in Ecclefiar can.i. dift.15. nempe Nicenum 1. à Confantino magno, anno 325. Confantinopolitanum 1. à Theodo
+
+fo Seniore, anno 181. Ephefinum 1. a Theodo
+
+fo Juniore, anno 410. & Calcedonenfe 1. a
+
+Mariano, anno 442. circa que quatuor concilia, tanquam circa quatuor cardines, Ecclefa
+
+fulcitur auth. de Ecclef. titul, in princ. coll. 9.
+
+Quatuor visit D. Ioannes animalia, plena oculi ante & retro in Apocal. cap. 4. Quatuor
+
+funt plage mundi Oriens, Ocidedes, Meridies & Sepentrio, totidemque venti inagiitales,
+
+Hieremie cap. 49. Quatuor Patriarchus, nempe Conflantinopolitanus, Alexandrinus
+
+Hierofolymitanus & Antiochenusqui reprefient quatuor Enangelitas et scriptum de
+
+elekt. c. antiqua de priuleg. Quatuor numerat Cherubin totidemque rocas Ezech.
+
+10. quatuor minima terra, nempe formicae, leprores, loculfa, velpertiliones, prouerb.
+
+10. quo loci quatuor dicuntur effe inatiabilia nempe infernos, os vulnua, terra & ignis. Quatuor
+
+funt viae incognita c. ex fluidis, de prefumpr. videlicet. via aquila in ceno, via colubri fuper
+
+terram, via naus in mari, & via juuenis in adolefcenula, (vt vertit Nicolaus de Lyra)
+
+hoceft. Chrifi Domini, in vero Beate Virginia, de quo Propheta Hieremias, cap. 10. nonum creativ
+
+totum super teram, muliet circundabitur virum, qua fuficere mihi via funt, de quaternio numero.
+
+Inter alios vero collaterales, qui ex reli- gione nominum (vt loquitur D. Ambrefius Epift. 66.ad Paternú) quafi parentum loco habentur, cuiuModi funt Patruus, vel aunci lus, & neptis ex fratre vel forore. Item ami. D ij
+
+ta, vel materera, cum nepotex efratre vel forore, & deinceps, in infinitum, perpetua et nuptiarum prohibitio, veluti inter rectilineos, nulquam confiftere nuptio poffunt. Cuius enim filiam ducere non poffumin in voxens, nec eium npet tem permititur. Inquit Iuftinianus in 6. item amitam Infitit. de nuptijs, & habetur in l. per adoptionem 17. 6. fin. l. fororis pronepetem 39. l. etiam 17. 6. ff. de ritu nupt. l. nemini liceat 17. C. de nupt.
+
+Ratio communis redditur, Quod ficut atneptis non poteft Atauo nubere, licet ei fit in quinto gradv, ita nec ejus filio, quia filius vna eademque perfona cum patre habetur, vt D. Ambr. pluribus demontrat loco prelaudato.
+
+Caterum, vt melius que fupra funt propofita percipiantur, & poffint omnes auribus, & oculorum inspectione, perfectiffimam graduum doctrinam adipici, figuram arboris cognationis naturalis, exarandam, curaui: In qua, quot quisque gradibus à Petrucio difet, connotatur.
+
+Veritas enim, oculata fide magis quam per aures, animis hominum, infigur, iuxta Lyrici latini Poetar, dictum in arte Poetica.
+
+Segnino irritant animos, demissa per aures Quam que sunt oculis subietta fidelibus.
+
+Aures namque, minus perfuadent hominibus, quam oculi, vnde Plautus in truculento, pluris cenfet oculatum vnum teftem, quam decem auritos: Indeque receptum eft vt tefti, de auditu, non credatur, qua de re Nicolaus Perretotus, tractatu de teftibus, feet.37.
+
+# De affinitate tractatum 2.
+
+Quid sit affinitas.Cap.I.
+
+Troque Iure Ciuli nempe & Pontificio
+
+affinitas generaliter dicitur quafi plurium ad vnum finem, unitas: hue, Duarum cognationum inter sed inersarum, per nuptias continuatio, cr vnius ad alterius finem accellio, L non facile 9. affines ff. de gradib. Abb. in c quod fuper, é de conf. & affinit.
+
+Civilis vero affinitas definitur personarum
+
+proximitas, ex Inftis proveniens nuptiss 1. non
+
+facile 4. 9. affines, & 9. fciendum ff. de gradib.
+
+Canonica Affinitas, eft perforudrum proximitas ex quocumque costu procedens cap. 1. & gl. in cap. difcretionem 6. in verbo, nec affinitas, é, de co qui cogn. conf. vx.fue.
+
+Ex quibus definitionibus liquido confat, fola animorum coniunctione, vt in fpofalibus, non contrahi affinitatem, fed tantum, publicam honeftatem, ob quam tamen connubium prohibetur, licet facile difpenfetur L. fi qua mihi 12.1, adoptius 14. In fine ff. de ritu nupt. 9. fi vxor, Infit. de nupt.
+
+### De utilitate cognita affinitatis. Cap.2.
+
+P Rima cognitionis affinitatis vtilitas, eft refpectu teftimonij dicendi, quod affinis contra affinem teftimonii intitus dicere non cogatur d.l. ictus in princ. ff. de gradib. & affinib. llege Iulia 4.l. in legibus ff. de teftib. Paulus 1.f. fert. 1.f. 9.2.
+
+Secunda ob matrimonia, Nam Iure Ciuli inter Reetilineos, Iure Pontificio, etiam intercollatérales confanguineos, prohibitio nuptiarum eft iifdem gradibus, l. non facile 4. 5. hos itaque 7. ff. de gradib. l. nemini liceat 17. Cod. de nuptijs.
+
+### Quotuplex fit genus affinitatis. Cap. 3.
+
+G�Loffa in cap. non debet, in verbo in fecundo, è de confangunit, & affinit. enumerat tria genera affinium, fecundum quasi nuptiae prohibebantur.
+
+In rečilineis quidem in infinitum, ficut inter rečilineos confanguineos: In collaterali-bus, in certis gradib. vt in primo genere, vfque ad feptimum gradum: In fecundo genere, vfque ad quartum gradum: In tertio genere, vfque ad fecundum gradum inclufue.
+
+Quod poftea, ex evidenti necefitate immutatum eft, tantumque, in primo genere feruata fuit prohibitio inter collaterales, vfoque ad quartum gradum incluiue, ceu quintum ex
+
+## 31
+
+clufue, vt in confanguineis collateralibus cani nulli 35.q.2.can.quadam lex 35.q.3.d.cap.non debet, e de conf.& affin.Excepta affinitate, ex illicito coitu contracta, que non extendit prohibitionem,vltrafecundum gradum,ex Synodo Tridentina feff.24. de reform. matrim. cap.2.
+
+Primum genus contrahitur vnius perfone interuentu perfona enim addita perfona, per carnis copulam, primum genus affinitatis confitiut. Vt li frater meus, Caiam acceperit in vxo rem, Caia erit mihi & omnibus confanguineis fratris mei, in primo genere affinitatis.
+
+Secundum genus, interuentu duarum perforarum contrahebatur perfona enim, per carnis copulam addita perfona, prima generis affinitatis, confittuit secundum genus. Vt firmortuo fratre meo Caia, quæ erat in primo genere affinitatis, nupferit Sempronio; Sempronius, erit mihi, & omnibus confanguineis fratris mei, in fecundo genere affinitatis.
+
+Tertium genus, mediantibus tribus perfonis contrahebacur perfona enim addita perfona per carnis copulam, perfona secundis generis affinitatis, tertium genus confituit. Vt fi mortua Caia, Sempronius duxerit Mæuiam in vxorem, Mæuia erit mihi, & omnibus confanguineis fratris mei, in tertio genere.
+
+# Quomodo fiat computatio affinitati. Cap. 4.
+
+Q vatenus faciliori negotio intelligatur, qui affines, & inter eos, gradus computentur, quinque regulas fubijciemuscum cannonitis.
+
+Prima regula, perfona additaperfona per carnis copulam, mutat genus attinenisa, fed non gradum, gl. in d. cap. non debet è de confanguin. & affinit. Sicut enim frater metus, eti mihi in primo gradu confanguinitatis, ita, Caia eius vxor eft mihi in primo gradu affinitatis: Quæ mutat genus attinenix, quia eft tantum mea affinis, frater vere, eft meus confanguineus, & fic Caia mutat genus attinenix.
+
+Secunda regula. Affinis contrahitur inter maritum, confanguineos vzoris, contra, inter vxorem & confanguineos mariti, cap. quod fuper his j. è de confang, & affinit. Et fú frater meus, defunda Caia, quondam vxore fua, non poterit matrimonio jungi illius Caix forori, aliiue eius confanguinex infra quartum gradum conjundæx, in collateralibus, & in infinitum in rečilineis d. c. quod fuper his, è de confang, & affinit, sed inter confanguineos vtriifque, fine mariti, & vxoris, nulla eft affinitas impediens matrimonium. §. mariti tamen filius, tit. de nupt. apud iuftin. L. generali mandato 34. §. inter conpriuignos ff. de ritu nupt.
+
+Tertia
+
+Tertia reg. Quoto gradu confanguinatis voxoris, funt ipf voxoris iure confanguinitatis, eodem gradua funt ipfius mario, iure affinitatis, & contra. Quoto gradua cofanguinatis viri funt ipf viro iure confanguinitatis, eodem gradua funt ipfius voxr iure affinitatis. Quia vt dicitur in can, porro 35. q.s. Maritus & vxor funt vna caro, vnde fit, vt non fit alia computatio graduum inter affines, quam eft inter confanguineos. Et hinc vulgo dicitur in d. l. non facile 4. §. nomina, ff. de gradid. & aff. nullos clie gradus affinitatis. Quia nempe, Quoeo gradu confanguineus meus eft mibi iure confanguinitatis, eodem gradua, eius vxor, eft mibi iure affinitatis.
+
+Quarta reg. Sicuri inter Rechtlineos, siue afcendentes & descendentes confanguineos, nupria prohibentur in infinitum, raione confanguinitatis, ita inter rechtlineos affines d.l. non facile 4. 9. hositaque ff. de gradib. d.l. nemini liceat 17. C. de nup.
+
+Quinta regula, fict inter collaterales confan- guineos nuptia probibentur vfque ad quartum gradui inclufiae, feu, quintum exclufa. Ita inter collaverales affines, can. ego dixi, cum tribus feqq. 34. q. 2. can. fi homo 35. q. 3. cap. difrectionem, cap. pen. & ib. Canonifax, & de co qui cogn. conf. vx. fux, cap. praterea 2. & de fponf. & matr.
+
+Nifi ex illicito coitu nafcatur affinitas, quia ex Concilio Tridentino feff. 24. cap. 4. in decretis reformationis matrimonij, impedimentum eft tantum ad fecundum gradum.
+
+De cognation spirituali, tractat. 3.
+
+Expofta qua potuit facili breuitate natura-
+
+li cognatione, & omifla Ciuli, qua fie-
+
+bat per vtramque adoptionem, quia nunc,
+
+vfus illius, nullus eft per Galliam; traditifque,
+
+ad quafi cognationem, feu affinitatem pertinentibus, fupereft tertia & vltima pars huius operis, quæ occupatur circa triplicem caufam fpiritualis cognationis, ex baptifme nempe, confirmatione & Catechimo cap. 1. & fin. de cogn. fpir. in 6. Magifter fentent. lib. 4. dift. 42. & tota caufa 30. q. 1.3. & 4.
+
+Propter quam cognationem fpiritualem ex baptifmo quidem & confirmatione, quefitam, contrahendum impeditur matrimonium c. I. de cogn. fpir. in 6. Et contraetum dirimitur d. c. I. §. fin. & c. vlt. de cogn. fpir. in 6. can. non plures, de confecr. dift. 4.
+
+Nifi forte pater ex necessitate, can ad limina, 30. q. l. vel ignorantia, forte baptifauerit cap. fi vir,è, de confang. fpirit. Nam fcienter & abique necessitate, dilpenfatio, aut feparatio, requiritur, Abb. in d. cap. fi vir, per gl. in can. noifc,30. q. l.
+
+Non autem ex Catechifmo, quod impedit quidem contrahendum, fed non refoluit contraedum cap. 2. eod. in 6. & cap. contraeto s. ê de cogn. spirit. Licet Hugo, in can. peruenit, 30. q.1. can. fi quis, 30. q. 4. can. in catechifmo, de confecr. dift. 4. eius opinionis fuegit, vt etiam
+
+contraetum derimeretur. Nam filiatio, ceu fipritualis cognatio, non poteft dici, nifi fequuta regeneratione, què non eft nifi per baptifmum, non autem per folum catechifmum.
+
+Quid sit cognatio spiritualis. Cap. I.
+
+Ognatio spiritualis definitur, quadam attinensia, proveniens ex sacramenti collatione, vel ad sacramentum detentione, gl. in cap. 1. in verbo spiritualem, decogn. fpir. in 6. Abb. ad rubr. eod. Aftefanus lib. 8. cap. 18. Hoft. in fumma. 9. 2. Vel, vt Baldus in fine. 1. fi quis per calumniam Cod. de nupt. Eft quadam animarum coniunlicio mediante Deo.
+
+### De cognation spirituale e baptismo.
+
+### Cap. 3.
+
+S_{Item carnalem, fic fpirinalis per natiuitatem fpiritualem: veluti, in facramento baptimi, renafi, ceu iterum nafc quifque Chrifiianorum dicitur, iuxta quod Chritius Dominus, Ioann.3. dixit, Quod nifi quis renatus fucri, ex aqua & Spiritu Sancto, non poterit ingredi in regnum celerum, cap. firmiffime, ca. proprie, de confecr. dift.4. cap. debitum, de bapt. in antiq. can. omnes 30. q.1. cap. fin. de cogn. fpirit. apud Gregor.
+
+Priufquam autem, quæ fingulatim ad tres species cognationis fpiritualis pertinent, referamus, quaifdam generaliter quæftiones refoluemus, ex Iure Pontificio, ad baptifmum & confirmationem, pertinentes, à prefenti lubiceto non alienas.
+
+Imprimique, cauba baptifmi. Prima crit que pio, An ille habendus fur compater, qui domi baptisfaut, an ille, qui confequenter in Ecclesia le- manit.
+
+Refpondetur compatrem haberi cum, qui domi baptifaut, non cum, qui poftea tenuit in Eccleia.
+
+Ratio in numerato eft, nempe characterem fuiffe impreflum domi, propter quem, fit regeneratio spiritualis, què non reiteratur in Eccelia, gl in can. Prefbyteri diftinct. 48. Angelus in fumma in fine fexti impedimenti.
+
+Quzeltio 2. An poterst cognatio spiritualis ex baptifono, guarsper procuratorem.
+
+Ref. Canonídas, trahi in diuerfas opiniones.
+
+Negatium fententiam tuentur & tenent Panormitanus,& alij in cap.veniens 6.de cognit.fpirit.dd.in l.Gallus.§.forfitam.ff.deliberis,& pofth.haered.infit.
+
+Rationem referunt fue opinionis, quod loquendi formulae vitatae, actum proprium & personalem denotant. Alias enim Patrinus dicitur leuare, vt in d.c.veniens 6.de cogn. fpirit. Alias baptifatum /ufcipere de facro fonte, vt in c. fi vir 2, ext. de cogn. fpir. Alias, tenere, vt in c.
+
+contração matrimonio s.cod. Alias, propriis
+
+manibus justinere, vel tenere, can. de his, can. ad
+
+liminação.q.1.
+
+Affirmatia verior eft mihi opinio, maxime cum in principibus viris confuetudo recepta fit, per procuratorem, ipfos leuare de facro fonte, vt Clemens VIII. Patrinus fuit, per fuos Legatos, Christianiffimi noftri Regis Ludoui-ci XIII.vid. Perufinus in cap.L. de cognat.fpir. in 6.
+
+Quzīlio 3. Vīrum cognatio Spirituali, queri possit per univerfitatem.
+
+Reip. Doctores in diuerfas trahi fententias.
+
+Partem negatiuam tenet Federicus de Senis,ob id quod vniuerfitas non baptifet,neque baptifetur, can. baptifimate, de confecr.dift. 4 cap.Romana,§.vniuerfitatem,& cap.fi fententia, de fent. excomm.in 6.
+
+Affirmatium tuetur opinionem Panormitanus, fi per fyndicum contrahatur, quia dipofitio concepta in vniuerfitatem, refoluitur vt conceruat perfonas fungulariter de vniuerfitate, licet actus non cadat in vniuerfitates, cap. nouerit, cap. graue. de fent. excomm. in 6.
+
+Quzītio 4. An maritum cum oxore final, filium tertissem titii, vel pater aut mater lenare pos-fint filium sum baptisandum.
+
+Ref. non polfe. Quia altero fufcipiente, alter efficitur compater, can. fin. 30.q.4 hinc difolatum fuit matrimonium inter Chilpericum Regem Gallia, & Adotieram eius yxorem, quod illa, ex facro fonte leuaffet E iij
+
+filium fuum, dolo & fraude Fredegondis Pellicis eiufdem Regis inducta, quatenus eam ficut Rex pofta fecit acciperet invxorem, vt in eiufdem Chilperici vita referunt omnes Annalifta Gallia.
+
+Quoftio s. An Petrucius possit contribio iungi, cum duabus, qua inter se commatres fint.
+
+Refp.diftinguendo,videlicet,fi ipfę mulieres commatres erant, antequam vnam ex illis nuptiali thalamo fibi iungeret, poffe vnam pofl alteram vxores accipere. Si vero vna, alterius commater fuerit, poftuam Petrucius priori, coniugio effet coniunctus, non poterit vxore defuncta, indinidua, cum alia, vita confuetudine, contineri, can.1.& fcq.can.pofvxoris, can.qui fpiriculem 30.q.4. Quia tunc effet commaternitas propria, non coniugis, commatres enim vxoris, non fuas ducere poteft gl. in d.can.pofvxoris 30.q.4.
+
+Quztão 6. Vtrnm nonerca baptifati, nubere possit leuanti.
+
+Ref. affirmatine, Quia nouerca, nullam dedit baptifato natiuitatem, Nec refert, fi infans baptifatus fuerit, poftquam pater eius, illi nouerce communicaffet fpirituales actiones, hoc eft, facta fit illi, vna caro, vt dicit gl. in can. qui fpiritualem 30. q. 4. videretur enim potius communicare alias fuas paffiones, gl. in c. 1. in verbo, cognitam, de cognat. fpir. in 6. Abb. in c. Martinus 4. ext. de cogn. fpir.
+
+Quaeltio 7. Erit circa concubinam, fine baptisi-
+
+fantisio, fine levantia, num videlicet nubere poffer
+
+baptifaso,parentibusne eius.
+
+Ref. affirmatique, quia non conuent fpititualem cognationem extendi, ad illicitum coitum c. i.&d.c. Martinus 4. e de cogn. fpir.
+
+Quæfttio 8. Num, fi titius leuanit filium meum è falutaribus vendis, viciflim ego, filium eius leuare poffim.
+
+Ref. Affirmative, vt eft textus in c. fuper
+
+eo 3. ê, de cogn. fpir.& ib i Abb. in 2. notab.
+
+Quartio 9. An inter parentes baptifantis, vel leuantis & baptifatum, spiritualis fit cognatio, ex eo quod fit cum filijs eorum.
+
+Ref. Negatiue, quia parens spiritualis, nem pebaptifans, vel leuans communicat cognationem spiritualem fequira copula, coniugi, & filijs, non vero afcendentibus, gl. in d.c. i. in verbo contraetum, in fine de cogn. fpir. in 6.
+
+Inter quas personas spiritualis contrahitur cognatio, ex baptismo. Cap.3.
+
+Vre Pontificio, inter decem perfonas, contrahif spiritualem cognationem conftat.
+
+Primo, inter parentes baptifati, & baptifantem nonoblitante cadu necefitatis c. 1.de cogn. fpir. in 6.
+
+Secundo, inter eofdem parentes baptifati, & leuantem, c. veniens.6.è de cogn. fpir.
+
+Not.obiter eft,leuanté fue patrinu,aliquan.do dicileuarq,d.c.veniens,quandoque propris fuftinere manibus can. de his & can. ad
+
+limina 30. q. 1. aliquando fuscipire de fonte facro c. fi vir 2. extr. decogn. (spirit, alias tenere, et in c. contra matrimonio. cod.
+
+Tertio, inter eundem parentem baptifati, & baptifantis coniugern, iam cognitam c. Martinus 4. extr. de cogn. fpir. can. fcifcitatur can. ii quis vnus 30. q. 4.
+
+Quarto, inter eundem parentem baptifati, & levantis fue ténentis coniugem, iam cognitrim carnaliter, non pofta cognitam d.c.Martinus 4 extr. de cogn. fpirit
+
+Nam licet prius fuerit vxor, fi tamen nondum fuerat cognita non contrahitur fpiritualis cognatio, qua non tranfit nec retrotrahitur in vnionem fpiritus. præcedentem, per vnionem carnis sequentem, can. poft vxoris 30.q.3. can: qui fpiritualem can. poft obitú; 0. q. 4. Abb in d. cap. Martinus, hinc a Canonitis quatuor hi excogitati verfus fuerunt.
+
+Qua mibi, vel cuins, meanatum fonte lemasi
+
+Hac mea cômater fieri, mea non valet vxor,
+
+Si qua mea natum, non ex me fonte lemanit
+
+Hac potfata mea, non inde verabor habere.
+
+Sic inter baptifati parentem, & concubinam, fue baptifantis, (fue: leuantis, matrimonium prohiberi non potcrit, quia minime conuenit, vt spiritualis cognatio, extendatur ad illicitam coniunctionem c. 1.&d.c. Martinus extr. de cogn. (firit. folus enim vir & vxor, fibl communicant actions spirituales, non autem paffiones corporis, can. fi quis vnus, 3o. q. 4.&d.c. Martinus.
+
+Quinto,
+
+Quinto, inter baptifatum & baptifantem c.1. verf. & eadem, & ibigl. decognat. fpir. in 6.
+
+Sexto, inter babtifatum, & coniugem baptifantis, carnaliter cognitam ante baptifmum d.c.1.de cogn.fpir.in 6.
+
+Septimo, interbaptifatum, &ilios baptifiantis quomodo cumque, ante vel polit fufceptos c. tua nos 7. extr. de cogn. fpir.
+
+Očtano, inter baptifatum & leuantem d. c.1. de cogn. fpir. in 6.
+
+None, inter baptifatum, & leuantis coniugern, ante carnaliter cognitam d. c. i. de cogn. fpir. in 6.
+
+Vlt. interbaptifatum, & leuantis filios primigradus ante vel poft genitos d. c. 1. extr. de cognat. fpir. can. Pytacium, & gl. in can. ita diligere 30. q. 3. Non vero inter baptifatum & nepotes leuantis, quia de illis non fit mentio in prohibitione.
+
+Hodie, prout decreuit ftatuitque facrofanta Synodus Tridentina, feff. 24. derefor. marrimonij cap. 2. non contrahitur fpitualis cognatio, nifi inter de facrofonte leuantes & baptifatum ipfum, & ipfius patrem & matrem, nec non inter baptifantem & baptifatum baptifatique patrem ac matrem can. fuper quibus can. Pyftacium & can. fin. 30. q. 3. c. 7. c. fuper, extr. de cogn. fpar. c. 1. d. eod. in 6. Non autem, cum aliis antea enumeratis perfonis: vnde fublat funt multæ difputationes, inter filios patrinorum, & alias perfonas, de quibus
+
+Canonifite, in d. cap. Martinus. de cogn. fpir. in antiquis.
+
+Præterea, animaduertendum eft, Matrimonium minime prohiberi inter fex dextras perfonas, nempe inter baptifantem, coniugem, liberofque eius, & inter leuantem coniugem liberofque eius, quia inter eos, nulla eft cognatio spiritualis.
+
+Primo, quia edictum de matrimonio non contrahendo, eft prohibitorium cap. cum ad fedem extr. de fponf. & matrim. quod cum nullam faciat mentionem fex illarum perfonarum, ideo cententur iure matrimonium inire poffe.
+
+Secund, quia compaternitas, non eft nifi inter generatum spiritualiter, parentefque eius, & generantes spiritualiter, qualis eft baptifans & leuans, inter enim patrem naturalem atque matrem, & baptifantes, leuantefque, eft compaterditas & commaternitas, non vero inter baptifantes, & leuantes folos, quia non eft aliquis ex illis, qui primam natiuitem dederit procreando.
+
+#### De cognationєpiritualiex Conformatione. Cap.4.
+
+N On-folum baptifmali vnda, & regenerationone, fed etiam confirmationis facrmento, fpiritualis cognatio corroboratur, ini quantum ficilicet, confirmatio funilitudinem
+
+habet, cum baptifino, nempe quod confirmetur illa regeneratio acquifita in baptifino, vt eff gl.in cap. fin.de cognat.fpirit.in6.Ita enim conjuncta funt harc duo, vt vnum ab altero, nifi morte praueniente, feparari non debeat, can.1. & can.de his, de confecr. dift.f.
+
+Quarritur primo. Cur in arbore cognationis spiritualis ex confirmatione, nulla reponatur cellula, vxori confirmantis, quando quidem in arbore cognationis spiritualis ex baptiformo, reponatur.
+
+Ref. rationem diuerfitatis effe, quod baptifmus conferri polit ab omnibus, confirmatio vero à folis Apoftolorum fuccefforibus, Deo amabilibus fanetiffimis Epifcopis, can. de his, de confecr. dift. f. Qui vxorem non habent, can. placuit Epifcopos, dift. 32. Cum nequidem, cum mulieribus eis habitare liceat, can. interdixit ead. dift. 32. vnde fi fuadente Diabolo, Epifcopus cohabitaret carnaliter, cum àfe confirmata, majus peccatum haberet.
+
+quod vero attinet ad liberos confirmatis, id fieri poteft, fiae ex pracedenti matrimonio habuerit, vt D. Hilarius Pietauienfis Epifcopus: vel etiam vulgo quafitos, atque fpurios fiae inceftuofos c. debitum, de bigamis, apud Greg.
+
+queritur fecundo. An cognatio spiritualis ex confirmatione, politi per procuratorem quæ.
+
+Ref. Canoníitas non conuenire. Namque Barthol. negatiam opinionem tuetur in l. Gallus.§, foritan. ff. 28. de lib. & poth. har. inft. Et Baldus in l. fi quis per calumniam in verbo fulej
+
+cepit.C.de nupt.quia per fe requirit proprium factum, atque prafentiam perfona, Cum Philippo Franco in c.1. de cogn. fpir. can. de his 30. q. 1.
+
+Ipfe vero Baldus in l. poft mortem ff. de adopt.affirmatium opinionem defendit, cum gl.in can. honorantur 31.q. 1. quæ allegat in argumætum, quod matrimonium per procuratorem contrahi poteft, cap.fin. de proc.in 6. quæ duo matrimonia equiparantur in iure, vt in cap. quoniam frequenter. 5. porro, vt lite non conteft. non proced. ad teft. recept. Euerardus in locis legalibus, loco à matrimonio carnalis ad fpirit, 33. Abb. in d. c. venieus 4. é, de cogn, fpirit.
+
+queritur generaliter, An filius spiritualis te
+
+lis elle possit fauore Patrini, matrinque.
+
+Ref. affirmatique cum Baldo in l. parentes, C. de teftib. Negatius, cum Iafone in l. generaliter.ff. de inius voc. & textu in can. ita diligere 30. q. 3. ob mutuum fcilicet, inter ipfos maxi mumque amorem.
+
+queritur generaliter, An Patrinus matrinae, filios fuos spirituales, alere tencantur. Et contra.
+
+Ref, Affirmatine cum Baldo in Auth. nili rogati.C. ad S. C. treb. num.19.vt praeterca, tenentur curare, vt infinituantur in doctrina fana, & fide patrum noftrorum, can.vos ante omnia, de confeet. dift.3.
+
+D E cognatione fpirituali ex Catechifmo dium prius fuit in ﬁne tituli, de cognatione fpirituali.
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_56_161_201_311.jpg" alt="Image" width="52%" />
+
+鶴
+
+</div>
+
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_0_0_276_473.jpg" alt="Image" width="100%" />
+
+
+
+</div>
+
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_0_0_276_440.jpg" alt="Image" width="100%" />
+
+
+
+</div>
+
+<div style="text-align: center;"><img src="imgs/img_in_image_box_0_0_276_455.jpg" alt="Image" width="100%" />
+
+2
+Digitized by Google
+
+</div>
