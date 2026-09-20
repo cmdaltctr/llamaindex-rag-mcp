@@ -85,7 +85,7 @@ def main() -> int:
     ) as client:
         for doc_id in sorted(by_doc):
             pages = by_doc[doc_id]
-            if doc_id in state["done"]:
+            if doc_id in state["done"] and state["done"][doc_id].get("pages") == pages:
                 print(f"[exp34] {doc_id}: already done, skipping", flush=True)
                 continue
             if time.perf_counter() - started > WALL_CAP_S:
