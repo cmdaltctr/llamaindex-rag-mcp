@@ -53,6 +53,7 @@ architecture), see the [ADR index](../adr/).
 | 025 | [Content-type detection silently degraded to suffix routing in direct-Engine processes — settings now threaded through the detector](025-magika-content-type-detection-settings-injection.md) | Accepted | 2026-09-15 |
 | 026 | [pdf-inspector counts OCR pages from an 8-page sample — complete the evidence with a full page scan](026-pdf-inspector-sampled-ocr-evidence.md) | Accepted | 2026-09-17 |
 | 027 | [paddleocr ignores page selection — write a subset PDF instead of passing `page_num`](027-paddleocr-ignores-page-selection-write-a-subset-pdf.md) | Accepted | 2026-09-19 |
+| 028 | [Normalise reader Markdown before chunking — strip formatting-only HTML, keep links and tables](028-normalise-reader-markdown-before-chunking.md) | Proposed | 2026-09-24 |
 
 ## Status values
 
