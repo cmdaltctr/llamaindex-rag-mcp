@@ -1,0 +1,71 @@
+{
+ "pages": {
+  "bd03/1": {
+   "seconds": 49.8,
+   "new_tokens": 1640,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2200
+   ],
+   "error": null
+  },
+  "bd03/2": {
+   "seconds": 38.2,
+   "new_tokens": 1198,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2200
+   ],
+   "error": null
+  },
+  "io06/28": {
+   "seconds": 16.8,
+   "new_tokens": 660,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    984,
+    1600
+   ],
+   "error": null
+  },
+  "io06/53": {
+   "seconds": 6.7,
+   "new_tokens": 181,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    987,
+    1600
+   ],
+   "error": null
+  },
+  "eq01/11": {
+   "seconds": 55.7,
+   "new_tokens": 1937,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2200
+   ],
+   "error": null
+  }
+ },
+ "patches": [
+  "flash_attn import optional",
+  "vision attn_implementation=sdpa"
+ ],
+ "download_seconds": 0.5,
+ "device": "mps",
+ "dtype": "bfloat16",
+ "torch": "2.14.0",
+ "load_seconds": 2.5,
+ "max_new_tokens": 8192,
+ "mps_driver_gb": 8.78,
+ "min_long_side": 1600
+}

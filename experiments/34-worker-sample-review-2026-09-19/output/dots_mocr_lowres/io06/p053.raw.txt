@@ -1,0 +1,1 @@
+[{"bbox": [206, 26, 222, 37], "category": "Page-header", "text": "39"}, {"bbox": [265, 71, 305, 90], "category": "Text", "text": "282"}, {"bbox": [331, 132, 347, 448], "category": "Text", "text": "io u. a. n. L. c. m on b. ci- gl. ts, ut, ts, li- m ua pt."}, {"bbox": [282, 585, 380, 601], "category": "Page-footer", "text": "Digitized by Google"}]
