@@ -137,6 +137,59 @@ def _gutter_bands(coverage: list[int], threshold: float) -> list[float]:
     return centres
 
 
+#: Two consecutive items share a line when their vertical ranges overlap by at
+#: least this share of the shorter item's height, so a superscript joins its word.
+_SAME_LINE_OVERLAP = 0.5
+#: A horizontal gap narrower than this share of the shorter height is inside a
+#: word (a kerning split), so the pieces join without a space.
+_WORD_GAP_SHARE = 0.1
+#: A horizontal gap wider than this multiple of the taller height is a column
+#: gutter or a table cell boundary, never a word space: the line breaks there,
+#: so a sidebar and the body beside it are not glued into one sentence.
+_MAX_WORD_GAP = 1.0
+
+
+def _same_line(prev: Any, item: Any) -> bool:
+    """Return whether *item* continues *prev*'s line, to its right."""
+    overlap = min(prev.y + prev.height, item.y + item.height) - max(prev.y, item.y)
+    if overlap < _SAME_LINE_OVERLAP * min(prev.height, item.height):
+        return False
+    gap = item.x - (prev.x + prev.width)
+    if gap > _MAX_WORD_GAP * max(prev.height, item.height):
+        return False
+    return gap >= -_WORD_GAP_SHARE * min(prev.height, item.height)
+
+
+def _join_lines(items: list[Any]) -> str:
+    """Join ordered items into text: one line per visual line, not per item.
+
+    LiteParse emits a word or run as its own item when the PDF draws it
+    separately. Consecutive items on the same line, left to right and within
+    a word gap, are joined with a space (none across a kerning gap); every
+    other boundary, including a column gutter, is a line break. The order is
+    never changed and no item text is altered.
+
+    Args:
+        items: The page's text items, already in reading order.
+
+    Returns:
+        The page text.
+    """
+    parts: list[str] = []
+    prev = None
+    for item in items:
+        if prev is None:
+            parts.append(item.text)
+        elif _same_line(prev, item):
+            gap = item.x - (prev.x + prev.width)
+            tight = gap < _WORD_GAP_SHARE * min(prev.height, item.height)
+            parts.append(("" if tight else " ") + item.text)
+        else:
+            parts.append("\n" + item.text)
+        prev = item
+    return "".join(parts)
+
+
 def _relative_centre(item: Any, left_edge: float, extent: float) -> float:
     """Return an item's horizontal centre as a share of the text extent."""
     return (item.x + item.width / 2 - left_edge) / extent
@@ -233,7 +286,7 @@ class LiteParseReader:
                 ordered = list(page.text_items)
             else:
                 ordered = _order_by_column(page.text_items, gutter)
-            page_text = "\n".join(item.text for item in ordered)
+            page_text = _join_lines(ordered)
             if not page_text.strip():
                 continue
 

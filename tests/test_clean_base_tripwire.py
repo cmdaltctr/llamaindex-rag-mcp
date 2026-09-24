@@ -65,7 +65,10 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 3090
+_BASE_EXECUTED = 3095
+# Re-baselined at the LiteParse line join fix (2026-09-24, Experiment 34):
+# words on one visual line, a superscript, a column gap, a right-to-left
+# step and a kerning split — net +5 (3090 -> 3095).
 # Re-baselined at page-level-ocr-routing review fixes (2026-09-18): the
 # CodeRabbit pass hardened both protocol twins' ``make_success`` builder
 # (8 parametrised cases), the worker failure envelopes' version echo (2),
