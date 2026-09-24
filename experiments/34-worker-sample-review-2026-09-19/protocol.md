@@ -3,7 +3,7 @@
 **ID**: `34-worker-sample-review-2026-09-19`
 **Date planned**: 2026-09-19
 **Operator**: Dr Muhammad Aizat Bin Md Hawari, with pi coding agent
-**Status**: RUNNING — review scoped to 4 pages (see Amendments A1); dots.mocr probe added (A2)
+**Status**: PASS — scoped to 4 pages (A1); `io04` and `tl03` not evaluated. See [report.md](report.md)
 **Relation**: OpenSpec change `experiment-34-worker-sample-review` (this branch); PR #96 (`feat/page-level-ocr-routing`, the protocol 1.1 worker code under test); deferred task 2.3 of `page-level-ocr-routing`; Experiment 33 task 6.7 (local tier evidence)
 
 ## Why this experiment exists
@@ -167,7 +167,11 @@ python3 experiments/34-worker-sample-review-2026-09-19/make_review.py
 - `eq01` p11 appears only in `review_small.html` (`--only`), with all four engines. `review.html` keeps the 42-page frozen sample. The page does not count towards any pass gate.
 - Result: 55.7 s, 1,937 tokens, valid JSON. All 4 display blocks came back as correct LaTeX `align`/`align*` environments, with equation tags (11) and (12), bold vectors and `\mathcal{N}`. All 59 formulas on `eq01` p11 and `bd03` p1–p2 (dots.mocr and worker) render in KaTeX with no error.
 - Four-engine comparison on `eq01` p11 (operator request 2026-09-24):
-  - pdf-inspector and LiteParse: the text layer has no maths structure. Equations come out as flat symbol runs (`X *J* <u>J 1</u>2 = log(2) …`), with Greek letters and operators missing. Prose and headings are intact.
+  - The PDF uses Computer Modern Type 1 fonts with no `ToUnicode` map, so a reader must derive characters from each font's built-in glyph names. The text layer also has no maths structure: fractions, sub- and superscripts are separate text runs.
+  - pdf-inspector: an extraction failure, not a display one. It drops every Greek letter (θ, μ, σ, φ, π: 0 of 35 that pdfium finds) and every minus sign (0 of 8). It maps `|` to `j`, and reads fraction bars as underline (`<u>J 1</u>2` for J/2). Prose and headings are intact.
+  - LiteParse: extracts what the text layer holds, character for character with pdfium (all 35 Greek letters, all 8 `|`; minus normalised to `-`). It loses the 2-D layout (`σ⏎2⏎j` for σ_j²). Both it and pdfium give `Z` for ∫ and `X` for ∑, because the CMEX glyph names have no standard Unicode mapping.
+  - Against the page (dots.mocr as reference, which matched the page image; LaTeX flattened with pylatexenc, character recall / sequence similarity per display block): LiteParse 0.65–0.75 / 0.65–0.74; pdf-inspector 0.40–0.66 / 0.43–0.64; the OCR worker 1.00 / 1.00 (its differences are equation tags, bold and "where" style, which flattening removes). LiteParse's order is not the equation's order: limits come after the operator (`= X⏎xi log yi … ⏎i=1` for ∑ᵢ₌₁ᴰ), exponents sit on their own lines, and fractions split. Faithful to the text layer is not usable: neither text reader is fit for equations.
+  - Display check: the review page's rendered view drops no characters from either output (only the `#` heading markers become headings).
   - OCR worker (PaddleOCR-VL): 75.7 s. All four display blocks are correct LaTeX (`align*`, `aligned`). It drops the equation tags (11) and (12), sets "where" as maths italic (`where\mathbf{y}`), and loses bold on the inline weight set.
   - dots.mocr: keeps the tags, sets "where" as text, and keeps the bold. On this page it is slightly more faithful than the worker; both are usable.
 - Worker environment: `ocr-worker/.venv` pointed at a removed uv Python (3.12.10). It was rebuilt with `ocr-worker/provision.py` from `uv.lock` (Python 3.12.14; paddleocr 3.7.0, paddlepaddle 3.3.1, paddlex 3.7.2 unchanged; protocol 1.1).

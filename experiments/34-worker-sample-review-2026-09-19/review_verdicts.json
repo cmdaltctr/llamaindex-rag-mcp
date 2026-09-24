@@ -1,0 +1,244 @@
+{
+ "schema": "exp34-review-v2",
+ "exported_at": "2026-09-24T03:41:20.435Z",
+ "pages": {
+  "bd03/1": {
+   "pdf_inspector": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "partial",
+    "table": "na",
+    "issues": [
+     "noise"
+    ],
+    "llm": "yes"
+   },
+   "liteparse": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "scrambled",
+    "structure": "partial",
+    "table": "na",
+    "issues": [
+     "furniture",
+     "noise"
+    ],
+    "llm": "yes"
+   },
+   "worker": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "partial",
+    "table": "na",
+    "issues": [
+     "noise"
+    ],
+    "llm": "yes"
+   },
+   "page": {
+    "layout": [
+     "two"
+    ],
+    "best": [
+     "pdf_inspector",
+     "worker",
+     "dots_mocr"
+    ]
+   },
+   "dots_mocr": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "kept",
+    "table": "na",
+    "issues": [
+     "none"
+    ],
+    "llm": "yes"
+   }
+  },
+  "bd03/2": {
+   "pdf_inspector": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "kept",
+    "table": "na",
+    "issues": [
+     "noise"
+    ],
+    "llm": "yes"
+   },
+   "liteparse": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "lost",
+    "table": "na",
+    "issues": [
+     "furniture",
+     "noise"
+    ],
+    "llm": "yes"
+   },
+   "worker": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "kept",
+    "table": "ok",
+    "issues": [
+     "none"
+    ],
+    "llm": "yes"
+   },
+   "page": {
+    "layout": [
+     "two"
+    ],
+    "best": [
+     "pdf_inspector",
+     "worker",
+     "dots_mocr"
+    ]
+   },
+   "dots_mocr": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "kept",
+    "table": "ok",
+    "issues": [
+     "none"
+    ],
+    "llm": "yes"
+   }
+  },
+  "io06/28": {
+   "pdf_inspector": {
+    "output": "empty"
+   },
+   "liteparse": {
+    "output": "empty"
+   },
+   "worker": {
+    "output": "text",
+    "accuracy": "most",
+    "order": "correct",
+    "structure": "kept",
+    "table": "na",
+    "issues": [
+     "invented"
+    ],
+    "llm": "yes"
+   },
+   "page": {
+    "layout": [
+     "one"
+    ],
+    "best": [
+     "worker",
+     "dots_mocr"
+    ]
+   },
+   "dots_mocr": {
+    "output": "text",
+    "accuracy": "most",
+    "order": "correct",
+    "structure": "kept",
+    "table": "ok",
+    "issues": [
+     "none"
+    ],
+    "llm": "yes"
+   }
+  },
+  "io06/53": {
+   "pdf_inspector": {
+    "output": "empty"
+   },
+   "liteparse": {
+    "output": "empty"
+   },
+   "worker": {
+    "output": "empty"
+   },
+   "page": {
+    "layout": [
+     "blank"
+    ],
+    "best": [
+     "dots_mocr"
+    ]
+   },
+   "dots_mocr": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "kept",
+    "table": "na",
+    "issues": [
+     "none"
+    ],
+    "llm": "yes"
+   }
+  },
+  "eq01/11": {
+   "dots_mocr": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "kept",
+    "table": "ok",
+    "issues": [
+     "none"
+    ],
+    "llm": "yes"
+   },
+   "page": {
+    "layout": [
+     "one"
+    ],
+    "best": [
+     "worker",
+     "dots_mocr"
+    ]
+   },
+   "worker": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "kept",
+    "table": "na",
+    "issues": [
+     "none"
+    ],
+    "llm": "yes"
+   },
+   "pdf_inspector": {
+    "output": "text",
+    "accuracy": "some",
+    "order": "correct",
+    "structure": "kept",
+    "table": "na",
+    "issues": [
+     "chars"
+    ],
+    "llm": "no"
+   },
+   "liteparse": {
+    "output": "text",
+    "accuracy": "some",
+    "order": "correct",
+    "structure": "kept",
+    "table": "na",
+    "issues": [
+     "chars"
+    ],
+    "llm": "no"
+   }
+  }
+ }
+}
