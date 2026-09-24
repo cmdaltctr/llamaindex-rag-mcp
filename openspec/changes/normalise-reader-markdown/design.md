@@ -40,7 +40,7 @@ Normalise when `file_path.suffix.lower() == ".pdf"` or the detected `content_typ
 
 ### D3 — Implementation: protected segments plus closed regex rules, stdlib only
 
-1. Cut out fenced code blocks, inline code spans and `<table>…</table>` blocks, and replace them with placeholders.
+1. Cut out fenced code blocks, inline code spans, `<table>…</table>` blocks and LaTeX maths, and replace them with placeholders. Maths is `$$…$$` (may span lines), `\begin{name}…\end{name}` with a matching name, and `$…$` within one line. Code is cut first, so a `$` inside code never opens maths. An unmatched `$` or `\begin` protects nothing.
 2. Apply the `<div>` rules innermost first, repeated until stable: image-bearing block → removed; text-only block → unwrapped.
 3. Apply the formatting-tag rules (`u`, `span`, `font`, `center` unwrapped; `b`/`strong` → `**`; `i`/`em` → `*`), `<br>` → newline, bare `<img>` removed.
 4. Decode entities with `html.unescape` on the unprotected text only.
@@ -77,6 +77,8 @@ Measure before and after in a new experiment folder, `experiments/36-reader-outp
 - [An image block's text is a real caption] → The Experiment 34 sample shows captions in text-only blocks, not image blocks. The measurement lists every removed image-block text for operator spot-checks. Tighten the rule if a real caption appears.
 - [Regex rules on malformed HTML (unclosed `<div>`)] → Unbalanced tags are left untouched and not guessed. A test covers an unclosed `<div>`.
 - [One-off full re-ingest after upgrade] → Documented in the release notes. It follows the schema 4 and schema 5 precedent.
+- [`html.unescape` decodes some entities without a closing semicolon (`&not` → `¬`, `&times` → `×`), and `&` separates LaTeX columns] → Maths is a protected segment (D3 step 1), so entity and tag rules never see it.
+- [A currency `$` pairs with another on the same line (`$5 and $10`)] → The span between them is protected and skips the rules. It is kept, not lost, so the no-text-loss rule still holds. Real `<u>` or entities inside such a span stay raw; Experiment 36 counts them.
 - [Bold inside a table cell is lost] → Accepted. Markdown `**` does not render inside HTML cells, so the tag is unwrapped and the text kept.
 
 ## Migration Plan

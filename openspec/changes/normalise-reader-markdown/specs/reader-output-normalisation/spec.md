@@ -70,9 +70,9 @@ Normalisation SHALL remove a `<div>` block that contains an `<img>`, including a
 - **WHEN** the reader emits a line `<img src="imgs/b.jpg" alt="Image" width="8%" />`
 - **THEN** the normalised text SHALL NOT contain `<img`
 
-### Requirement: Links, tables and code SHALL be preserved
+### Requirement: Links, tables, code and maths SHALL be preserved
 
-Normalisation SHALL keep Markdown links and bare URLs unchanged. It SHALL keep `<table>` blocks as HTML tables. Inside a table it SHALL keep only the `table`, `thead`, `tbody`, `tr`, `td` and `th` tags and their `colspan` and `rowspan` attributes, and SHALL remove every other attribute. It SHALL decode HTML entities outside tables and code. It SHALL NOT change fenced code blocks or inline code spans.
+Normalisation SHALL keep Markdown links and bare URLs unchanged. It SHALL keep `<table>` blocks as HTML tables. Inside a table it SHALL keep only the `table`, `thead`, `tbody`, `tr`, `td` and `th` tags and their `colspan` and `rowspan` attributes, and SHALL remove every other attribute. It SHALL decode HTML entities outside tables, code and maths. It SHALL NOT change fenced code blocks or inline code spans. It SHALL NOT change LaTeX maths: `$…$` within one line, `$$…$$`, and `\begin{…}…\end{…}` with matching environment names.
 
 #### Scenario: Link is untouched
 
@@ -88,6 +88,12 @@ Normalisation SHALL keep Markdown links and bare URLs unchanged. It SHALL keep `
 
 - **WHEN** the reader emits a fenced code block that contains `<div>` and `&amp;`
 - **THEN** the fenced block SHALL be identical in the normalised text
+
+#### Scenario: Aligned maths is untouched
+
+- **WHEN** the reader emits `$$ \begin{align*} f(x) &= a < b \\ &not= c &times d \end{align*} $$`
+- **THEN** the maths block SHALL be identical in the normalised text
+- **AND** it SHALL NOT contain `¬` or `×` (`html.unescape` would decode `&not` and `&times` without a semicolon)
 
 ### Requirement: Normalisation SHALL NOT lose document text
 

@@ -14,8 +14,9 @@ Nothing cleans the text a PDF reader or OCR engine emits. Tag characters therefo
   - Remove bare `<img>` tags.
   - Keep Markdown links and bare URLs unchanged.
   - Keep `<table>` blocks. Keep only structural tags and `colspan`/`rowspan`, and remove presentational attributes (`style`, `border`, …).
-  - Convert `<br>` to a newline. Decode HTML entities outside tables and code.
+  - Convert `<br>` to a newline. Decode HTML entities outside tables, code and maths.
   - Never change fenced code blocks or inline code.
+  - Never change LaTeX maths: `$…$`, `$$…$$` and `\begin{…}…\end{…}`. The OCR engines emit it on every formula (Experiment 34, amendment A4), and `&` is its column separator.
 - Scope: text extracted from PDF sources, through every PDF reader, the OCR tiers and cloud backends. Authored text files (`.md`, `.txt`, `.html`) and code and config files pass through unchanged, because their HTML can be intentional.
 - New nested setting `ingestion.normalise_reader_output` (`INGESTION__NORMALISE_READER_OUTPUT`), default `true`. It exists for comparison experiments.
 - The normaliser version and the resolved on/off value join `source_index_identity`. The identity schema advances from 5 to 6. **Reprocessing:** every existing source re-ingests once on its next ingest, including sources the normaliser would not change. This follows the spec's conservative identity rule.
