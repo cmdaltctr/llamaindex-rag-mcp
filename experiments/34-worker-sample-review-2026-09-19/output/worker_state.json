@@ -15,6 +15,54 @@
    ],
    "seconds": 85.2,
    "error": null
+  },
+  "bd01": {
+   "pages": [
+    1,
+    4,
+    5,
+    6
+   ],
+   "seconds": 1450.0,
+   "error": null
+  },
+  "bd02": {
+   "pages": [
+    1,
+    2,
+    6,
+    8
+   ],
+   "seconds": 1237.3,
+   "error": null
+  },
+  "io04": {
+   "pages": [
+    1,
+    4,
+    16,
+    17,
+    18,
+    20,
+    33,
+    42,
+    44,
+    47,
+    49,
+    52
+   ],
+   "seconds": 4006.1,
+   "error": null
+  },
+  "tl03": {
+   "pages": [
+    2,
+    3,
+    5,
+    8
+   ],
+   "seconds": 295.9,
+   "error": null
   }
  }
 }
