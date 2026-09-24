@@ -5,7 +5,7 @@
 One self-contained HTML file. Every sampled page is a collapsible row.
 Inside, the original page image stays pinned on the left (click it to
 open a zoomable viewer: pinch, scroll or double-click), and each engine
-(pdf-inspector, LiteParse, OCR worker, and the dots.mocr probe where it ran) has its own collapsible panel on
+(pdf-inspector, LiteParse, and where they ran the local OCR tier, the OCR worker and the dots.mocr probe) has its own collapsible panel on
 the right with its output and its own selectable checklist. A short
 page-level block records the page layout and the best engine. No free
 text: every answer is a choice.
@@ -19,7 +19,7 @@ Copies the needed page images from the Experiment 33 worktree into
 
 Usage:
     python3 make_review.py
-    python3 make_review.py --only bd03:1,bd03:2,io06:28,io06:53 --out review_small.html
+    python3 make_review.py --only bd03:1,bd03:2,io06:28,io06:53,eq01:11 --out review_small.html
 """
 
 from __future__ import annotations
@@ -47,8 +47,9 @@ ISSUE = {
 #: (key, label, output folder under output/, optional) — key is the verdict JSON key.
 #: An optional engine (a probe on a few pages) never blocks a page from counting as reviewed.
 ENGINES = [
-    ("pdf_inspector", "pdf-inspector (fast path)", "pdf_inspector", False),
+    ("pdf_inspector", "pdf-inspector (text layer, fast path)", "pdf_inspector", False),
     ("liteparse", "LiteParse (fixed join, rescue tier)", "liteparse", False),
+    ("local_ocr", "pdf-inspector OCR (local OCR tier, PP-OCRv6 Small)", "local_ocr", True),
     ("worker", "OCR worker (PaddleOCR-VL)", "worker", False),
     ("dots_mocr", "dots.mocr (probe, 3B, MPS)", "dots_mocr", True),
 ]
@@ -134,8 +135,14 @@ ENGINE_QUESTIONS = [
     ),
 ]
 
-#: Pages the dots.mocr probe covers (protocol A2; mirrors DEFAULT_PAGES in probe_dots_mocr.py).
+#: Pages the optional engines cover: the dots.mocr probe (A2; mirrors DEFAULT_PAGES in
+#: probe_dots_mocr.py) and the local OCR tier (A5; local_ocr_pages.py).
 PROBE_PAGES = {("bd03", 1), ("bd03", 2), ("io06", 28), ("io06", 53), ("eq01", 11)}
+#: Script that fills each optional engine, and the amendment that scopes it.
+OPTIONAL_SOURCES = {
+    "dots_mocr": ("probe_dots_mocr.py", "A2"),
+    "local_ocr": ("local_ocr_pages.py", "A5"),
+}
 #: Pages outside the frozen sample (extra_pages.py) render only when named in ``--only``,
 #: so the full review keeps the frozen sample. The dots.mocr probe writes their page images.
 
@@ -161,6 +168,7 @@ PAGE_QUESTIONS = [
         [
             ("pdf_inspector", "pdf-inspector"),
             ("liteparse", "LiteParse"),
+            ("local_ocr", "pdf-inspector OCR"),
             ("worker", "OCR worker"),
             ("dots_mocr", "dots.mocr"),
             ("none", "None usable"),
@@ -284,16 +292,18 @@ def _page_section(doc: str, page: int, role: str) -> str:
             badge = "not run"
             body = '<div class="pending">Page outside the frozen sample; this engine has not run on it yet.</div>'
         elif pending and optional and (doc, page) in PROBE_PAGES:
-            badge = "probe not finished"
+            script, _ = OPTIONAL_SOURCES[eng_key]
+            badge = "not finished"
             body = (
-                '<div class="pending">The dots.mocr probe covers this page but has no output yet. '
-                "Re-run <code>make_review.py</code> when <code>probe_dots_mocr.py</code> finishes.</div>"
+                f'<div class="pending">This engine covers this page but has no output yet. '
+                f"Re-run <code>make_review.py</code> when <code>{script}</code> finishes.</div>"
             )
         elif pending and optional:
-            badge = "not in probe"
+            _, amendment = OPTIONAL_SOURCES[eng_key]
+            badge = "not run here"
             body = (
-                '<div class="pending">Outside the probe. dots.mocr ran only on the reviewed set '
-                "(bd03 p1, p2; io06 p28, p53), protocol amendment A2.</div>"
+                '<div class="pending">This engine ran only on the reviewed set '
+                f"(bd03 p1, p2; io06 p28, p53), protocol amendment {amendment}.</div>"
             )
         elif pending:
             body = (

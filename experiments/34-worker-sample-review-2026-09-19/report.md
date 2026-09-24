@@ -76,13 +76,15 @@ Recorded oddities, kept as the operator entered them. (1) `io06/53` dots.mocr is
 
 ## Discussion
 
-1. **The worker is safe on clean pages.** Both `bd03` pages keep all text and correct two-column order. `liteparse` scrambled the columns on p1 and lost structure on p2; the worker did neither. The worker's single `partial` structure verdict matches `pdf_inspector` on the same page.
-2. **The worker reads the old book, with defects.** On `io06/28` both text readers are `empty`: the page is a scan, and its text layer holds nothing they can extract. The worker transcribes it in the correct order. The likeliest source of the `invented` tick is the drop cap: the worker turns "PER" into maths, `P $ ^{E R} $`. It also has misreadings: `matgmonia` for matrimonia, `succeliones`, `tranitus`. The Experiment 33 local OCR tier (`output/today/io06/p028.md`, not a review column) reads those three words correctly. The worker's advantage on this page is therefore structure (joined lines, a heading) more than character accuracy. That comparison is from one page and was not part of the operator review.
+1. **The worker is safe on clean pages.** Both `bd03` pages keep all text and correct two-column order. The worker's single `partial` structure verdict matches `pdf_inspector` on the same page. The `liteparse` verdicts (`scrambled` on p1, `lost` on p2) were given to output from a faulty adapter, our wrapper around the LiteParse library (`src/omrg/integrations/pdf/liteparse.py`), not to LiteParse itself. The adapter put a line break after every text piece, so a title drawn word by word came out one word per line. This is the likely cause of `lost`. The fault was fixed during this experiment (A6), and the `liteparse` panels need a new verdict. The adapter still does not reorder `bd03`'s sidebar layout; that part of `scrambled` is a column-detection limit, not the join.
+2. **The worker reads the old book, with defects.** On `io06/28` both text readers are `empty`: the page is a scan, and its text layer holds nothing they can extract. The worker transcribes it in the correct order. The likeliest source of the `invented` tick is the drop cap: the worker turns "PER" into maths, `P $ ^{E R} $`. It also has misreadings: `matgmonia` for matrimonia, `succeliones`, `tranitus`. The local OCR tier (pdf-inspector's own OCR mode, what the pipeline uses today on scans) reads those three words correctly, but misreads others the worker gets right (`dux perfo- na`, `ab co gradu`, `truciusille`): about 5–6 wrong words each. It also keeps the printed line breaks and hyphens (`pro- genie`). By word search, the worker's advantage on this page is layout (joined lines, a heading) more than character accuracy. The local OCR tier is now a review column (A5); its verdicts are pending.
 3. **The worker's empty output on `io06/53` is arguably correct.** The page is near-blank. dots.mocr returned page numbers and bleed-through noise, and the operator preferred that. Whether noise is better than nothing for retrieval is an open question. This review does not answer it.
 4. **Text readers cannot handle equations.** On `eq01/11` both readers are `some` · `chars` · not LLM-ready. The mechanism is in protocol A4: Computer Modern fonts with no `ToUnicode` map, and a text layer with no maths structure. Both OCR engines return correct LaTeX.
 5. **dots.mocr matched or beat the worker on every page.** It kept the structure the worker lost on `bd03/1`, and it did not invent text on `io06/28`. It ran 1.4–3.8× faster per page on the reviewed pages, but on the GPU, not the CPU.
 
 ### Limits
+
+Pending: the `liteparse` verdicts and the local OCR tier column await the operator's review after A5 and A6. Until then the `liteparse` rows describe the pre-fix output.
 
 1. The operator reviewed 4 pages. That is enough for a safety check, not for a rate.
 2. `io04` (triple column) and `tl03` (tables) have worker output but no verdict. The "needs llm maybe" question is still open.
@@ -104,6 +106,7 @@ The experiment answered its safety question. The worker does not damage clean pa
 | `review_verdicts.json` | Operator verdicts, schema `exp34-review-v2`, exported 2026-09-24T03:41:20Z, committed unchanged |
 | `output/worker/<doc>/pNNN.md`, `output/worker_state.json` | Worker Markdown and per-document seconds |
 | `output/dots_mocr/`, `output/dots_mocr_state.json` | dots.mocr probe output and per-page stats |
-| `output/pdf_inspector/`, `output/liteparse/`, `output/today/` | Reader columns and the Experiment 33 local-tier baseline |
+| `output/pdf_inspector/`, `output/liteparse/`, `output/today/` | Reader columns (LiteParse regenerated after the A6 fix) and the Experiment 33 local-tier baseline |
+| `local_ocr_pages.py`, `output/local_ocr/`, `output/local_ocr_state.json` | Local OCR tier column (A5) |
 | `output/review_small.html`, `output/review.html` | Review surfaces (reviewed set; full sample) |
 | `analysis.py` | Jupytext analysis: verdict tallies, gate checks, timing plot |

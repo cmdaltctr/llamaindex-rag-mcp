@@ -177,6 +177,22 @@ python3 experiments/34-worker-sample-review-2026-09-19/make_review.py
 - Worker environment: `ocr-worker/.venv` pointed at a removed uv Python (3.12.10). It was rebuilt with `ocr-worker/provision.py` from `uv.lock` (Python 3.12.14; paddleocr 3.7.0, paddlepaddle 3.3.1, paddlex 3.7.2 unchanged; protocol 1.1).
 - Probe fixes found on the way: (1) the model adds its own `$$` around formulas, so the converter now strips them before wrapping (the earlier `.md` files did not change; `eq01` was rebuilt from `.raw.txt`). (2) The `flash_attn` patch was not idempotent: the patched copy still contained the import as a substring, so a second run wrapped it again and broke the file. The test now matches only at line start.
 
+### A5 — Local OCR tier as a review column (operator request 2026-09-24)
+
+- Gap: the review compared the worker with the two text-layer readers only. On scanned pages those readers return nothing, and the pipeline falls back to the local OCR tier: pdf-inspector's own OCR mode (PP-OCRv6 Small, ONNX Runtime, CPU). No review column showed it, so the first report compared the worker with it by word search, not by operator verdict.
+- Runner: `local_ocr_pages.py`, the same call as Experiment 33 task 6.7 (`process_pdf_with_ocr`, `mode="force"`; pdf-inspector 1.17.0, onnxruntime 1.28.0; model cache reused from Experiment 33). It ran on the 5 pages of `review_small.html`.
+- Result (`output/local_ocr_state.json`): no errors; 0.3–2.2 s per document. `io06` p28 is byte-identical to the Experiment 33 text (`output/today/io06/p028.md`). Source `ocr` on `io06` (confidence 0.959 on p28, 0.781 on p53); `fused` (OCR merged with the text layer) on `bd03` and `eq01` (0.971–0.992). No page recommends hosted OCR.
+- Review: a fifth engine panel, "pdf-inspector OCR (local OCR tier)", with the same checklist, and a "best output" option. It is optional, like the dots.mocr probe. The first-panel label now reads "pdf-inspector (text layer, fast path)" to separate the two pdf-inspector modes. Verdict keys do not change; saved answers load unchanged.
+
+### A6 — LiteParse adapter line join fixed (operator decision 2026-09-24)
+
+- Finding: on `bd01` p1 the LiteParse column printed the title one word per line. LiteParse returns each separately drawn word or run as its own text piece with a position. The adapter (`src/omrg/integrations/pdf/liteparse.py`) joined every piece with a line break. That join dates from the adapter's first version (`34fd595`); PR #96 (`38d6bad`) kept it. LiteParse's own `page.text` is not affected.
+- Why earlier measurements missed it: the PR #96 reading-order score (Experiment 33 `compare_readers.order_score`) compares lowercase token streams, so a line break and a space score the same.
+- Fix (no OpenSpec change, operator decision): `_join_lines` joins consecutive pieces on the same visual line (vertical overlap ≥ 0.5 of the shorter height, moving right) with a space, or with no space across a kerning gap (< 0.1 × height). A gap wider than 1.0 × the taller height breaks the line, so a sidebar and the body beside it are never glued into one sentence. On `bd03` p2 the sidebar gaps measure 1.56–3.69 × height and real word gaps at most 0.73 ×. Column order (PR #96) is unchanged. Unit tests check lines, not tokens.
+- Regenerated `output/liteparse/` for the 42-page sample and `eq01` p11 (`extract_readers.py`), then both review pages. Lines fall from 2,573 to 1,117 across the 19 non-empty pages. With whitespace ignored, the characters are identical on every page. Tokens differ only on `bd02` p1 and `eq01` p11, where a comma or a formula part rejoined its neighbour (`Zhang1†,`, `x(i)`).
+- Not fixed: `bd03` keeps its sidebar interleaving. The gutter test leaves sidebar layouts alone by design (Experiment 33).
+- Consequence: the operator's `liteparse` verdicts in `review_verdicts.json` describe the pre-fix output and need re-review.
+
 ## Cleanup
 
 No indexes to remove. Keep raw outputs (`output/worker/`, `worker_state.json`), `sample.json`, verdicts and `report.md`. The worker venv and model cache are regenerable and stay uncommitted.
@@ -191,6 +207,7 @@ No indexes to remove. Keep raw outputs (`output/worker/`, `worker_state.json`), 
 | `output/worker_state.json` | Checkpointed run state + timings | ✅ |
 | `output/worker/<doc>/pNNN.md` | Worker Markdown per page | ✅ |
 | `output/review.html`, `output/review_small.html` | Review surfaces (full sample; reviewed set) | ✅ |
+| `local_ocr_pages.py`, `output/local_ocr/`, `output/local_ocr_state.json` | Local OCR tier column (A5) | ✅ |
 | `probe_dots_mocr.py`, `output/dots_mocr/`, `output/dots_mocr_state.json`, `output/pages/eq01/` | dots.mocr probe (A2, A4) | ✅ |
 | `review_verdicts.json` | Operator verdicts, committed unchanged | ✅ |
 | `report.md` | Verdict summary and the 2.3 go/no-go | ✅ |

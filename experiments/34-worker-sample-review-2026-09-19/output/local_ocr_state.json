@@ -1,0 +1,64 @@
+{
+ "pages": {
+  "bd03/1": {
+   "source": "fused",
+   "confidence": 0.9921700954437256,
+   "hosted_recommended": false,
+   "chars": 4311
+  },
+  "bd03/2": {
+   "source": "fused",
+   "confidence": 0.99171382188797,
+   "hosted_recommended": false,
+   "chars": 4628
+  },
+  "eq01/11": {
+   "source": "fused",
+   "confidence": 0.9707341194152832,
+   "hosted_recommended": false,
+   "chars": 3295
+  },
+  "io06/28": {
+   "source": "ocr",
+   "confidence": 0.9590055346488953,
+   "hosted_recommended": false,
+   "chars": 1193
+  },
+  "io06/53": {
+   "source": "ocr",
+   "confidence": 0.78084397315979,
+   "hosted_recommended": false,
+   "chars": 30
+  }
+ },
+ "docs": {
+  "bd03": {
+   "pages": [
+    1,
+    2
+   ],
+   "seconds": 2.2,
+   "error": null
+  },
+  "eq01": {
+   "pages": [
+    11
+   ],
+   "seconds": 0.7,
+   "error": null
+  },
+  "io06": {
+   "pages": [
+    28,
+    53
+   ],
+   "seconds": 0.3,
+   "error": null
+  }
+ },
+ "identity": {
+  "pdf_inspector": "1.17.0",
+  "onnxruntime": "1.28.0",
+  "mode": "force"
+ }
+}

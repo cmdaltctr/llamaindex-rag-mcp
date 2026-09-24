@@ -34,7 +34,7 @@ except NameError:
 import matplotlib.pyplot as plt
 import pandas as pd
 
-ENGINES = ["pdf_inspector", "liteparse", "worker", "dots_mocr"]
+ENGINES = ["pdf_inspector", "liteparse", "local_ocr", "worker", "dots_mocr"]
 FIELDS = ["output", "accuracy", "order", "structure", "table", "issues", "llm"]
 
 verdicts = json.loads((_ROOT / "review_verdicts.json").read_text())
