@@ -42,6 +42,8 @@ import re
 import time
 from pathlib import Path
 
+from extra_pages import EXTRA_SOURCES, source_pdf
+
 EXP_DIR = Path(__file__).resolve().parent
 OUT_DIR = EXP_DIR / "output" / "dots_mocr"
 STATE = EXP_DIR / "output" / "dots_mocr_state.json"
@@ -50,12 +52,6 @@ MODEL_DIR = Path.home() / ".cache" / "omrg-exp34" / "DotsMOCR"
 REPO_ID = "rednote-hilab/dots.mocr"
 #: The operator's review set (commit 46147e1 scoped the review to these pages).
 DEFAULT_PAGES = "bd03:1,bd03:2,io06:28,io06:53,eq01:11"
-#: Pages outside the frozen sample, keyed by doc id. The review set has no display
-#: equations, so ``eq01`` tests the formula claim in the dots.mocr demo.
-#: eq01 = Kingma & Welling, "Auto-Encoding Variational Bayes", arXiv 1312.6114v11
-#: (https://arxiv.org/pdf/1312.6114v11); page 11 is appendix B-C, display maths only.
-#: ``corpus/`` is gitignored: download the PDF there before the first run.
-EXTRA_SOURCES = {"eq01": EXP_DIR / "corpus" / "eq01.pdf"}
 PAGES_DIR = EXP_DIR / "output" / "pages"
 
 PROMPT = """Please output the layout information from the PDF image, including each layout element's bbox, its category, and the corresponding text content within the bbox.
@@ -199,7 +195,7 @@ def main() -> int:
     print(f"model loaded on {device} ({args.dtype}) in {state['load_seconds']} s", flush=True)
 
     for doc, page in pairs:
-        pdf = EXTRA_SOURCES[doc] if doc in EXTRA_SOURCES else exp33 / sources[doc]["local_path"]
+        pdf = source_pdf(doc, exp33, sources)
         image = render_page(pdf, page, min_long_side=args.min_long_side)
         if doc in EXTRA_SOURCES:  # the review page needs an image; Experiment 33 has none for it
             (PAGES_DIR / doc).mkdir(parents=True, exist_ok=True)

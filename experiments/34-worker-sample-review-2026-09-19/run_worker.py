@@ -13,6 +13,7 @@ Budget rules (proposal, operator decision 2026-09-19):
 
 Usage (from the repository root, provisioned venv):
     uv run python experiments/34-worker-sample-review-2026-09-19/run_worker.py
+    uv run python .../run_worker.py --only eq01:11   # a page outside the sample (A4)
 """
 
 from __future__ import annotations
@@ -20,6 +21,8 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
+
+from extra_pages import EXTRA_PAGES, source_pdf
 
 from omrg.integrations.ocr_worker.client import OcrWorkerClient, OcrWorkerError
 
@@ -65,7 +68,8 @@ def main() -> int:
     }
 
     by_doc: dict[str, list[int]] = {}
-    for row in sample["pages"]:
+    # Extra pages join only through --only, which intersects them away otherwise.
+    for row in sample["pages"] + (EXTRA_PAGES if args.only else []):
         by_doc.setdefault(row["doc_id"], []).append(row["page"])
     if args.only:
         only: dict[str, list[int]] = {}
@@ -92,7 +96,7 @@ def main() -> int:
                 print("[exp34] wall-clock cap reached; stopping (resume later)", flush=True)
                 break
             t0 = time.perf_counter()
-            pdf = exp33 / sources[doc_id]["local_path"]
+            pdf = source_pdf(doc_id, exp33, sources)
             record: dict = {"pages": pages, "seconds": None, "error": None}
             try:
                 result = client.parse(

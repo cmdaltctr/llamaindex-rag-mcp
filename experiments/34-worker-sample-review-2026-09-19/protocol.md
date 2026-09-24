@@ -163,9 +163,14 @@ python3 experiments/34-worker-sample-review-2026-09-19/make_review.py
 
 - Trigger: on `bd03` p2 the dots.mocr panel looked as if formulas were not extracted. The cause was the review page, not the model. dots.mocr writes chemical formulas as inline LaTeX (`$\text{SiO}_2$`), and the review page showed LaTeX as plain text. The other engines use Unicode subscripts (`SiO₂`).
 - Review page: `make_review.py` loads KaTeX 0.16.22 (auto-render, from cdn.jsdelivr.net). It renders `$…$` and `$$…$$` in the rendered view; the raw view stays as source. The page needs network access for this; offline, the LaTeX source shows.
-- No page in the reviewed set has display equations. To test the formula claim in the dots.mocr demo, the probe ran on one page outside the frozen sample: `eq01` p11 = Kingma & Welling, "Auto-Encoding Variational Bayes", arXiv 1312.6114v11, appendix B–D. The PDF goes in `corpus/eq01.pdf` (gitignored); the probe writes the page image.
-- `eq01` p11 appears only in `review_small.html` (`--only`), with dots.mocr as its only engine. `review.html` keeps the 42-page frozen sample. The page does not count towards any pass gate.
+- No page in the reviewed set has display equations. To test the formula claim in the dots.mocr demo, the probe ran on one page outside the frozen sample: `eq01` p11 = Kingma & Welling, "Auto-Encoding Variational Bayes", arXiv 1312.6114v11, appendix B–D. The PDF goes in `corpus/eq01.pdf` (gitignored); the probe writes the page image. `extra_pages.py` names the page for every engine script (`--only eq01:11`).
+- `eq01` p11 appears only in `review_small.html` (`--only`), with all four engines. `review.html` keeps the 42-page frozen sample. The page does not count towards any pass gate.
 - Result: 55.7 s, 1,937 tokens, valid JSON. All 4 display blocks came back as correct LaTeX `align`/`align*` environments, with equation tags (11) and (12), bold vectors and `\mathcal{N}`. All 59 formulas on `eq01` p11 and `bd03` p1–p2 (dots.mocr and worker) render in KaTeX with no error.
+- Four-engine comparison on `eq01` p11 (operator request 2026-09-24):
+  - pdf-inspector and LiteParse: the text layer has no maths structure. Equations come out as flat symbol runs (`X *J* <u>J 1</u>2 = log(2) …`), with Greek letters and operators missing. Prose and headings are intact.
+  - OCR worker (PaddleOCR-VL): 75.7 s. All four display blocks are correct LaTeX (`align*`, `aligned`). It drops the equation tags (11) and (12), sets "where" as maths italic (`where\mathbf{y}`), and loses bold on the inline weight set.
+  - dots.mocr: keeps the tags, sets "where" as text, and keeps the bold. On this page it is slightly more faithful than the worker; both are usable.
+- Worker environment: `ocr-worker/.venv` pointed at a removed uv Python (3.12.10). It was rebuilt with `ocr-worker/provision.py` from `uv.lock` (Python 3.12.14; paddleocr 3.7.0, paddlepaddle 3.3.1, paddlex 3.7.2 unchanged; protocol 1.1).
 - Probe fixes found on the way: (1) the model adds its own `$$` around formulas, so the converter now strips them before wrapping (the earlier `.md` files did not change; `eq01` was rebuilt from `.raw.txt`). (2) The `flash_attn` patch was not idempotent: the patched copy still contained the import as a substring, so a second run wrapped it again and broke the file. The test now matches only at line start.
 
 ## Cleanup

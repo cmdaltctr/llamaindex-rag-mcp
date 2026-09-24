@@ -30,6 +30,8 @@ import re
 import shutil
 from pathlib import Path
 
+from extra_pages import EXTRA_PAGES
+
 EXP_DIR = Path(__file__).resolve().parent
 OUT_PAGES = EXP_DIR / "output" / "pages"
 
@@ -39,7 +41,7 @@ ISSUE = {
     "bd01": "Two column (worker vs pdf-inspector fast path)",
     "bd02": "Two column (worker vs pdf-inspector fast path)",
     "tl03": "Tables",
-    "eq01": "Display equations (probe only, outside the sample)",
+    "eq01": "Display equations (outside the sample, A4)",
 }
 
 #: (key, label, output folder under output/, optional) — key is the verdict JSON key.
@@ -134,10 +136,8 @@ ENGINE_QUESTIONS = [
 
 #: Pages the dots.mocr probe covers (protocol A2; mirrors DEFAULT_PAGES in probe_dots_mocr.py).
 PROBE_PAGES = {("bd03", 1), ("bd03", 2), ("io06", 28), ("io06", 53), ("eq01", 11)}
-#: Probe-only pages outside the frozen sample (EXTRA_SOURCES in probe_dots_mocr.py).
-#: Rendered only when named in ``--only``, so the full review keeps the frozen sample.
-#: The probe writes their page images; the other engines never ran on them.
-EXTRA_PAGES = [{"doc_id": "eq01", "page": 11, "role": "probe"}]
+#: Pages outside the frozen sample (extra_pages.py) render only when named in ``--only``,
+#: so the full review keeps the frozen sample. The dots.mocr probe writes their page images.
 
 PAGE_QUESTIONS = [
     (
@@ -282,7 +282,7 @@ def _page_section(doc: str, page: int, role: str) -> str:
         if pending and any(r["doc_id"] == doc and r["page"] == page for r in EXTRA_PAGES):
             optional = True
             badge = "not run"
-            body = '<div class="pending">Probe-only page outside the frozen sample; only dots.mocr ran here.</div>'
+            body = '<div class="pending">Page outside the frozen sample; this engine has not run on it yet.</div>'
         elif pending and optional and (doc, page) in PROBE_PAGES:
             badge = "probe not finished"
             body = (
@@ -402,7 +402,7 @@ details.page>summary::before,details.engine>summary::before{content:'▸';color:
 details[open]>summary::before{transform:rotate(90deg)}
 .pt{font-weight:600}
 .role{font-size:.72rem;padding:.1rem .55rem;border-radius:1rem;color:#fff}
-.role.problem{background:var(--prob)}.role.control{background:var(--ctrl)}.role.probe{background:var(--muted)}
+.role.problem{background:var(--prob)}.role.control{background:var(--ctrl)}.role.extra{background:var(--muted)}
 .issue{font-size:.82rem;color:var(--muted)}
 .pstat{margin-left:auto;font-size:.78rem;font-weight:600}
 .ok{color:var(--ok)}.part{color:var(--part)}
