@@ -28,4 +28,4 @@ review pages.
 
 ## 4. Close
 
-- [ ] 4.1 PR this branch to `v3` (the rename, the change, the harness and the outputs ride together); ask the operator before opening it.
+- [x] 4.1 PR this branch to `v3` (the rename, the change, the harness and the outputs ride together); ask the operator before opening it. 2026-09-25: PR #97, rebased onto `v3` (PR #96 was squash-merged); the operator's re-review (3.2) lands as a follow-up commit on it.
