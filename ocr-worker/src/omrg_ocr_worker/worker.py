@@ -15,6 +15,7 @@ logging — is Paddle-free and testable in the main environment.
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import os
@@ -199,6 +200,24 @@ def _run_document_pipeline(
             )
         if not page_results:
             raise WorkerParseError("empty_pipeline_result", "PaddleOCR-VL returned no page results")
+        pages_markdown = None
+        if pages is not None:
+            # A second assembly pass, without concatenation, yields each
+            # page's Markdown on its own; re-prediction is the expensive part
+            # and is not repeated. restructure_pages rewrites its input in
+            # place: with concatenate_pages=True it gives the first page
+            # result every page's blocks (paddlex PaddleOCR-VL pipeline).
+            # So the per-page pass runs first, on a deep copy, or page 1
+            # would carry the whole request (Experiment 34 A9).
+            per_page_results = list(
+                pipeline.restructure_pages(
+                    copy.deepcopy(page_results),
+                    merge_tables=True,
+                    relevel_titles=True,
+                    concatenate_pages=False,
+                )
+            )
+            pages_markdown = _per_page_markdown(per_page_results, len(pages))
         structured_results = list(
             pipeline.restructure_pages(
                 page_results,
@@ -208,20 +227,6 @@ def _run_document_pipeline(
             )
         )
         markdown = _save_markdown_results(structured_results)
-        pages_markdown = None
-        if pages is not None:
-            # A second assembly pass over the same results, without
-            # concatenation, yields each page's Markdown on its own.
-            # Re-prediction is the expensive part and is not repeated.
-            per_page_results = list(
-                pipeline.restructure_pages(
-                    page_results,
-                    merge_tables=True,
-                    relevel_titles=True,
-                    concatenate_pages=False,
-                )
-            )
-            pages_markdown = _per_page_markdown(per_page_results, len(pages))
     except WorkerParseError:
         raise
     except Exception as exc:  # noqa: BLE001 - convert backend failures to protocol errors

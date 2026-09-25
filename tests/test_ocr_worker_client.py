@@ -671,3 +671,56 @@ def test_page_listed_request_fails_loudly_on_page_count_mismatch(
     with pytest.raises(worker.WorkerParseError) as excinfo:
         worker.parse_document(request)
     assert excinfo.value.code == "page_selection_mismatch"
+
+
+def test_page_listed_request_keeps_each_page_to_its_own_text(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Page 1's Markdown must not carry the other pages (Experiment 34 A9).
+
+    paddlex's ``restructure_pages(concatenate_pages=True)`` rewrites its
+    input in place: the first page result receives every page's blocks.
+    When the joined pass ran first, the per-page pass then read that
+    rewritten page 1, so page 1 carried the whole request. The stand-in
+    pipeline below copies that in-place rewrite.
+    """
+    from pypdf import PdfWriter
+
+    worker = _load_worker_module(monkeypatch)
+    import omrg_ocr_worker.protocol as worker_protocol
+
+    pdf = tmp_path / "two_pages.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.add_blank_page(width=200, height=200)
+    writer.write(pdf)
+
+    class _Structured:
+        def __init__(self, blocks: list[str]) -> None:
+            self.blocks = list(blocks)
+
+        def save_to_markdown(self, save_path: str) -> None:
+            Path(save_path).mkdir(parents=True, exist_ok=True)
+            (Path(save_path) / "page.md").write_text("\n".join(self.blocks), encoding="utf-8")
+
+    class _Pipeline:
+        def predict(self, input: str, **kwargs: Any) -> list:
+            return [{"blocks": ["# page one"]}, {"blocks": ["# page two"]}]
+
+        def restructure_pages(self, page_results: list, **kwargs: Any) -> list:
+            if kwargs["concatenate_pages"]:
+                every = [block for result in page_results for block in result["blocks"]]
+                page_results[0]["blocks"] = every  # the in-place rewrite
+                return [_Structured(every)]
+            return [_Structured(result["blocks"]) for result in page_results]
+
+    monkeypatch.setattr(worker, "_load_pipeline", lambda: _Pipeline())
+    request = worker_protocol.ParseRequest(
+        id="req-own-text", pdf_path=str(pdf), pages=(1, 2), protocol_version="1.1"
+    )
+
+    success = worker.parse_document(request)
+
+    assert success.pages_markdown == ("# page one", "# page two")
+    assert success.markdown.count("# page one") == 1
+    assert "# page two" in success.markdown
