@@ -89,8 +89,13 @@ def main() -> int:
     ) as client:
         for doc_id in sorted(by_doc):
             pages = by_doc[doc_id]
-            if doc_id in state["done"] and state["done"][doc_id].get("pages") == pages:
-                print(f"[exp34] {doc_id}: already done, skipping", flush=True)
+            # A later run over other pages of a document already in the state
+            # gets its own key, so the earlier run's timing and merged text stay.
+            key = doc_id
+            if doc_id in state["done"] and state["done"][doc_id].get("pages") != pages:
+                key = f"{doc_id}@{','.join(str(p) for p in pages)}"
+            if key in state["done"] and state["done"][key].get("pages") == pages:
+                print(f"[exp34] {key}: already done, skipping", flush=True)
                 continue
             if time.perf_counter() - started > WALL_CAP_S:
                 print("[exp34] wall-clock cap reached; stopping (resume later)", flush=True)
@@ -119,14 +124,17 @@ def main() -> int:
                 doc_dir.mkdir(parents=True, exist_ok=True)
                 for page, text in zip(pages, texts, strict=True):
                     (doc_dir / f"p{page:03d}.md").write_text(text, encoding="utf-8")
-                (doc_dir / "merged.md").write_text("\n\n".join(texts), encoding="utf-8")
+                merged = "merged.md"
+                if key != doc_id:
+                    merged = f"merged_p{pages[0]:03d}-p{pages[-1]:03d}.md"
+                (doc_dir / merged).write_text("\n\n".join(texts), encoding="utf-8")
             except (OcrWorkerError, RuntimeError) as exc:
                 record["error"] = f"{type(exc).__name__}: {exc}"
                 print(f"[exp34] {doc_id}: ERROR {record['error']}", flush=True)
             record["seconds"] = round(time.perf_counter() - t0, 1)
-            state["done"][doc_id] = record
+            state["done"][key] = record
             _write_state(state)
-            print(f"[exp34] {doc_id}: {len(pages)} pages in {record['seconds']}s", flush=True)
+            print(f"[exp34] {key}: {len(pages)} pages in {record['seconds']}s", flush=True)
 
     print(json.dumps({k: v["seconds"] for k, v in state["done"].items()}, indent=1))
     return 0

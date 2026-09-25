@@ -306,9 +306,13 @@ def _page_section(doc: str, page: int, role: str) -> str:
                 f"(bd03 p1, p2; io06 p28, p53), protocol amendment {amendment}.</div>"
             )
         elif pending:
+            # A1 scoped the runs to the reviewed pages, so a missing output is
+            # a page the engine was not run on, not a run still in progress.
+            optional = True
+            badge = "not run"
             body = (
-                '<div class="pending">Not run yet. Re-run <code>make_review.py</code> after the engine '
-                "reaches this page; the checklist unlocks then.</div>"
+                '<div class="pending">This engine was not run on this page. Protocol amendment A1 '
+                "scoped the runs to the reviewed pages; see the protocol for each engine's pages.</div>"
             )
         else:
             body = (

@@ -95,8 +95,14 @@ print(f"completeness: {complete}; control guard: {control_guard}; io06 worker re
 
 # %%
 t_rows = []
-for doc, d in worker_state["done"].items():
-    t_rows.append({"doc": doc, "engine": "worker", "s_per_page": d["seconds"] / len(d["pages"])})
+# A later run over other pages of a document is keyed "<doc>@<pages>" (run_worker.py).
+worker_docs: dict[str, list[float]] = {}
+for key, d in worker_state["done"].items():
+    totals = worker_docs.setdefault(key.split("@")[0], [0.0, 0])
+    totals[0] += d["seconds"]
+    totals[1] += len(d["pages"])
+for doc, (seconds, pages) in worker_docs.items():
+    t_rows.append({"doc": doc, "engine": "worker", "s_per_page": seconds / pages})
 dots_docs: dict[str, list[float]] = {}
 for page, p in dots_state["pages"].items():
     dots_docs.setdefault(page.split("/")[0], []).append(p["seconds"])

@@ -139,6 +139,8 @@ python3 experiments/34-worker-sample-review-2026-09-19/make_review.py
 - Decision: no multi-day run. The operator reviews 4 pages: `bd03` p1, p2 (clean control, two-column) and `io06` p28, p53 (old book; p53 was marked unrecoverable).
 - Implemented in commit `46147e1` (`--only` on the runner and the review generator); `output/review_small.html` is the review surface. This protocol was not updated at the time; this entry closes that gap.
 - The worker later also ran `bd01`, `bd02`, `io04` and `tl03` at their full sample page lists. Those outputs are kept as diagnostic evidence (timing, error classes), not as reviewed verdicts.
+- Completion run (operator request 2026-09-25): the worker ran the 14 remaining sample pages (`bd03` p10, 15, 21, 23: 388.0 s; `io06` p16, 30, 45, 46, 62, 63, 65, 68, 75, 78: 225.6 s), so `review.html` has worker output on all 42 pages. No errors. `run_worker.py` keys a later run over other pages of a document as `<doc>@<pages>`, so the reviewed-page timings (`bd03`, `io06`) and `merged.md` are unchanged. `io06` p65 is near-blank and empty; `io06` p16 (an index page, 8,859 chars) has one invented character (`鶴`) inside an image block. These pages are diagnostic, not reviewed.
+- Review page: a panel with no output now reads "This engine was not run on this page (A1)" and does not count as missing.
 - Consequence for interpretation: 2 control pages and 2 old-book pages cannot settle the `io04` triple-column or `tl03` table questions. The report states per-issue coverage explicitly.
 
 ### A2 — dots.mocr probe (operator request 2026-09-24)
