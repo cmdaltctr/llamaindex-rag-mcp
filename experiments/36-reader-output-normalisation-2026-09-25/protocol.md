@@ -26,7 +26,7 @@ Rebuild Experiment 34 review pages only after the final rules and marker decisio
 
 | Item | Value |
 | --- | --- |
-| Source | `experiments/34-worker-sample-review-2026-09-19/output/{pdf_inspector,liteparse,worker}/<doc>/pNNN.md` |
+| Source | `experiments/34-worker-sample-review-2026-09-19/output/{pdf_inspector,liteparse,worker,local_ocr,dots_mocr}/<doc>/pNNN.md` (the last two from amendment A1) |
 | Sample | Existing Experiment 34 page outputs, including `eq01` p11 |
 | Baseline | Raw reader Markdown, read-only |
 | Candidate | `omrg.core.ingestion.normalise.normalise_reader_text` |
@@ -87,3 +87,11 @@ Expected files: `protocol.md`, `measure.py`, `output/summary.json`, and `report.
 - `experiments/34-worker-sample-review-2026-09-19/report.md` and `output/`
 - `openspec/changes/normalise-reader-markdown/{proposal.md,design.md,tasks.md}`
 - `docs/tdr/028-normalise-reader-markdown-before-chunking.md`
+
+## Amendments
+
+### A1 — Corrected worker output and all five engines (2026-09-25)
+
+- The first measurement (`5cbf91e`, 129 pages) read worker output with a fault: every multi-page request wrote page 1 as the whole request (Experiment 34 A9, fixed in `d3460bf`). Its removed-block list held 23 duplicates of later pages' blocks, and the two 14,722-character `bd02` blocks were one real block counted twice.
+- The worker pages were re-run (Experiment 34 `44af069`). The measurement is repeated with `--resume`, which re-measures every page whose source hash changed.
+- The Experiment 34 review pages show five engines, and task 4.5 normalises every panel. So the inventory now includes `local_ocr` (pdf-inspector's OCR mode) and `dots_mocr`, 43 pages each, under the same gates.

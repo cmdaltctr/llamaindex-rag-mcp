@@ -92,7 +92,8 @@ def main() -> int:
     args = parser.parse_args()
     files = sorted(
         path
-        for engine in ("pdf_inspector", "liteparse", "worker")
+        # local_ocr and dots_mocr joined in amendment A1: the review pages normalise them too.
+        for engine in ("pdf_inspector", "liteparse", "worker", "local_ocr", "dots_mocr")
         for path in (SOURCE / engine).glob("*/p[0-9][0-9][0-9].md")
     )
     if not files:
