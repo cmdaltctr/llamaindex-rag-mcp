@@ -1,13 +1,6 @@
 # Tasks: Experiment 34 Worker Sample Review
 
-**Progress 2026-09-25:** setup, harness and the worker run are done (1.x,
-2.x, 3.1). The review was scoped to 4 pages (protocol A1). The operator's
-first verdicts are committed and `report.md` records a PASS (scoped) with a
-task 2.3 go. Two corrections reopened the review: the LiteParse adapter
-line-join fix (A6) and the new local OCR tier column (A5). The operator
-re-reviews on normalised output, so 3.2 and 3.3 wait for
-`normalise-reader-markdown` (operator decision 2026-09-25) to rebuild the
-review pages.
+**Progress 2026-09-25:** all tasks done. The review (4 pages plus `eq01` p11, A1) is complete on normalised output; `report.md` is final (PASS, scoped). Code fixes found on the way shipped in PR #97.
 
 ## 1. Setup
 
@@ -23,8 +16,8 @@ review pages.
 ## 3. Run and review
 
 - [x] 3.1 Run the worker over the sample from this worktree, reading the corpus by absolute path from the Experiment 33 worktree; commit the raw outputs. All 42 sample pages plus `eq01` p11, no errors (`output/worker_state.json`; completion run 2026-09-25, `a384f11`).
-- [ ] 3.2 Operator reviews the pages and fills the checklist; the verdicts JSON is committed unchanged. First pass committed (`db19091`, 4 reviewed pages + `eq01` p11). Re-review pending: LiteParse panels (A6), local OCR tier panel (A5), and every panel the normaliser changes. Waits for `normalise-reader-markdown` to rebuild the review pages.
-- [ ] 3.3 Summarise the verdicts per issue (old books, triple column, two column/tables, control) and record the go/no-go for the task 2.3 signal experiment. Draft in `report.md` (PASS scoped, 2.3 go); final after the 3.2 re-review.
+- [x] 3.2 Operator reviews the pages and fills the checklist; the verdicts JSON is committed unchanged. First pass committed (`db19091`, 4 reviewed pages + `eq01` p11). Re-review pending: LiteParse panels (A6), local OCR tier panel (A5), and every panel the normaliser changes. Waits for `normalise-reader-markdown` to rebuild the review pages. Second pass committed 2026-09-25 on normalised pages (export `2026-09-25T13:32:24Z`): local OCR tier panels added; other answers unchanged.
+- [x] 3.3 Summarise the verdicts per issue (old books, triple column, two column/tables, control) and record the go/no-go for the task 2.3 signal experiment. Final in `report.md`: PASS (scoped), task 2.3 go for `io06`-class pages; `io04` and `tl03` not evaluated; follow-ups include the local-tier `fused` repetition (A10).
 
 ## 4. Close
 

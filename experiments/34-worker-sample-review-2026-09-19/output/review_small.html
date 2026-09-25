@@ -1208,6 +1208,8 @@ document.addEventListener('change',e=>{const i=e.target;if(!i.matches('.q input'
  store(i.closest('.form'))});
 document.addEventListener('click',e=>{const c=e.target.closest('.clear');if(c){const f=c.closest('.form');write(f,{});store(f);return}
  const v=e.target.closest('.vt');if(v){const w=v.closest('.outwrap');w.querySelectorAll('.vt').forEach(b=>b.classList.toggle('on',b===v));w.querySelector('.md').hidden=v.dataset.v!=='md';w.querySelector('.raw').hidden=v.dataset.v!=='raw'}});
+// One page open at a time: opening a page closes the others, then keeps the opened page's header in view (closing a page above it would otherwise shift it).
+for(const p of pages)p.addEventListener('toggle',()=>{if(!p.open)return;let moved=false;for(const o of pages)if(o!==p&&o.open){if(o.compareDocumentPosition(p)&Node.DOCUMENT_POSITION_FOLLOWING)moved=true;o.open=false}if(moved)p.scrollIntoView({block:'start'})});
 for(const p of pages)p.addEventListener('toggle',()=>{if(p.open&&!p.querySelector('details.engine[open]')){const first=[...p.querySelectorAll('details.engine')].find(d=>{const[dd,t]=status(d.querySelector('.form'));const f=d.querySelector('.form');return!f.dataset.pending&&!f.dataset.optional&&dd<t})||p.querySelector('details.engine');first.open=true}});
 document.getElementById('next').onclick=()=>{const p=pages.find(x=>!x.dataset.done&&!x.querySelector('.form[data-pending]'))||pages.find(x=>!x.dataset.done);if(!p)return alert('All pages reviewed.');p.open=true;p.scrollIntoView({behavior:'smooth',block:'start'})};
 document.getElementById('collapse').onclick=()=>pages.forEach(p=>p.open=false);

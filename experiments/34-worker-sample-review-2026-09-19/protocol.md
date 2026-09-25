@@ -219,6 +219,12 @@ python3 experiments/34-worker-sample-review-2026-09-19/make_review.py
 - Consequences: (1) the operator's worker verdict on `bd03` p1 judged p1 + p2 and needs re-review; (2) Experiment 36 must re-measure (its 54 removed blocks included 23 duplicates); (3) production: the page-level OCR routing path (PR #96) reads `pages_markdown`, so before the fix it would have indexed the first routed page's neighbours twice.
 - Timing note: the same `bd03` p1–2 request took 334.5 s in the first run and 156.2 s in the re-run. Per-page worker seconds on this machine vary by about 2× between runs.
 
+### A10 — The local OCR tier repeats text on pages with a text layer (found 2026-09-25)
+
+- Finding: on every page where pdf-inspector's OCR mode reports source `fused` (all 15 `bd01`, `bd02`, `bd03` and `eq01` pages), the output is the page's whole text layer followed by appended OCR text, 115–3,204 characters more than the text layer. Part of the page therefore appears twice: on `eq01` p11 the maths section appears first garbled from the text layer, then again from OCR; on `bd03` p1 the author list and logo text repeat; on `bd01` p4 whole body lines repeat. The operator marked `eq01/11` `repeated`.
+- Scope: this experiment ran the local tier in `force` mode on every page (as Experiment 33 did), including born-digital pages the pipeline would never send to OCR. The `bd03` and `eq01` local OCR verdicts describe forced behaviour, not the pipeline.
+- Open question: a page that routing does send to OCR but that has a partial text layer would also come back `fused`. Whether page-level routing (ADR-069) then indexes repeated text is not measured here. Follow-up 3 in the report.
+
 ## Cleanup
 
 No indexes to remove. Keep raw outputs (`output/worker/`, `worker_state.json`), `sample.json`, verdicts and `report.md`. The worker venv and model cache are regenerable and stay uncommitted.

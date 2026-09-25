@@ -1,6 +1,6 @@
 {
  "schema": "exp34-review-v2",
- "exported_at": "2026-09-24T03:41:20.435Z",
+ "exported_at": "2026-09-25T13:32:24.987Z",
  "pages": {
   "bd03/1": {
    "pdf_inspector": {
@@ -43,6 +43,7 @@
     ],
     "best": [
      "pdf_inspector",
+     "local_ocr",
      "worker",
      "dots_mocr"
     ]
@@ -53,6 +54,17 @@
     "order": "correct",
     "structure": "kept",
     "table": "na",
+    "issues": [
+     "none"
+    ],
+    "llm": "yes"
+   },
+   "local_ocr": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "na",
+    "table": "ok",
     "issues": [
      "none"
     ],
@@ -100,6 +112,7 @@
     ],
     "best": [
      "pdf_inspector",
+     "local_ocr",
      "worker",
      "dots_mocr"
     ]
@@ -109,6 +122,17 @@
     "accuracy": "all",
     "order": "correct",
     "structure": "kept",
+    "table": "ok",
+    "issues": [
+     "none"
+    ],
+    "llm": "yes"
+   },
+   "local_ocr": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "na",
     "table": "ok",
     "issues": [
      "none"
@@ -153,6 +177,18 @@
      "none"
     ],
     "llm": "yes"
+   },
+   "local_ocr": {
+    "output": "text",
+    "accuracy": "most",
+    "order": "correct",
+    "structure": "lost",
+    "table": "na",
+    "issues": [
+     "missing",
+     "invented"
+    ],
+    "llm": "cleanup"
    }
   },
   "io06/53": {
@@ -183,6 +219,9 @@
      "none"
     ],
     "llm": "yes"
+   },
+   "local_ocr": {
+    "output": "empty"
    }
   },
   "eq01/11": {
@@ -238,6 +277,31 @@
      "chars"
     ],
     "llm": "no"
+   },
+   "local_ocr": {
+    "output": "text",
+    "accuracy": "some",
+    "order": "correct",
+    "structure": "kept",
+    "table": "na",
+    "issues": [
+     "repeated",
+     "chars"
+    ],
+    "llm": "cleanup"
+   }
+  },
+  "bd01/1": {
+   "pdf_inspector": {
+    "output": "text",
+    "accuracy": "all",
+    "order": "correct",
+    "structure": "kept",
+    "table": "ok",
+    "issues": [
+     "none"
+    ],
+    "llm": "yes"
    }
   }
  }
