@@ -80,7 +80,7 @@ and rerun. A missing source page makes the result INCONCLUSIVE until the invento
 This is a file-only experiment. It uses the existing `uv` environment and no model or network.
 Write checkpoints and the final JSON under this experiment's `output/` only; use `.tmp` then rename.
 Keep the Experiment 34 raw Markdown unchanged. Keep `output/summary.json` and `report.md` as evidence.
-Expected files: `protocol.md`, `measure.py`, `output/summary.json`, `report.md`, and `analysis.py`.
+Expected files: `protocol.md`, `measure.py`, `output/summary.json`, and `report.md`.
 
 ## References
 
