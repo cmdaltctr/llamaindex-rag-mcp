@@ -6,7 +6,7 @@ The LiteParse adapter SHALL classify each page's layout from its own text items 
 
 Classification SHALL depend only on the geometry of the page's own text items and SHALL NOT read the document, the file name or any setting. It SHALL require a vertical gutter: a band of the page's horizontal extent that the page's own non-full-width items leave essentially uncovered, whose centre lies in the middle third of that extent, with text on both sides of comparable quantity, each side spanning most of the page's vertical text extent. A page that fails any of those conditions SHALL keep the library order and SHALL NOT be labelled `multi_column`.
 
-Reordering SHALL NOT add, drop or alter any item, so the emitted token content of a page is unchanged.
+Reordering SHALL NOT add, drop or alter any item. Together with the line join below, the only change to a page's characters SHALL be whitespace.
 
 #### Scenario: Two-column body page is emitted column by column
 
@@ -32,6 +32,28 @@ Reordering SHALL NOT add, drop or alter any item, so the emitted token content o
 - **GIVEN** any page the adapter reorders
 - **WHEN** the adapter emits its Document
 - **THEN** the multiset of item texts in the output SHALL equal the multiset LiteParse returned
+
+### Requirement: LiteParse adapter SHALL join the items of one visual line
+
+The adapter SHALL join consecutive items that sit on one visual line, left to right, into one line of text. Two items share a line when their vertical ranges overlap by at least half the shorter item's height and the second starts at or to the right of the first. Items on one line SHALL be joined by a single space, or by no space when the horizontal gap is under one tenth of the shorter height (a kerning split). A gap wider than the taller item's height SHALL start a new line, so a sidebar and the body beside it are never joined. Every other item boundary SHALL be a line break. The join SHALL NOT change item order or item text.
+
+#### Scenario: Words drawn separately form one line
+
+- **GIVEN** a title whose words are separate items at the same height
+- **WHEN** the adapter emits its Document
+- **THEN** the title SHALL be one line, its words separated by single spaces
+
+#### Scenario: A column gap breaks the line
+
+- **GIVEN** two items at the same height separated by more than one text height
+- **WHEN** the adapter emits its Document
+- **THEN** they SHALL be on separate lines
+
+#### Scenario: A kerning split rejoins without a space
+
+- **GIVEN** two pieces of one word with no gap between them
+- **WHEN** the adapter emits its Document
+- **THEN** they SHALL be joined with no space
 
 ## MODIFIED Requirements
 

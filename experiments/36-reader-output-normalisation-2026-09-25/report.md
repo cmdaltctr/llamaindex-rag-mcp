@@ -5,7 +5,7 @@
 **Normaliser:** version 2 (version 1 removed image blocks with their text; see protocol A2).  
 **Source:** Experiment 34 raw page Markdown after the worker fix (Experiment 34 A9); 5 engines × 43 pages (42 sampled plus `eq01` p11), protocol A1.  
 **Raw data:** [`output/summary.json`](output/summary.json)  
-**Change:** `openspec/changes/normalise-reader-markdown` (tasks 4.1–4.4)  
+**Change:** `openspec/changes/normalise-reader-markdown` (tasks 4.1–4.4); decision recorded in ADR-070 and TDR-028  
 **Protocol:** [protocol.md](protocol.md)
 
 ## Bottom line

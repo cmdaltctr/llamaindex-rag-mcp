@@ -7,6 +7,7 @@
 **Verdict**: The PaddleOCR-VL worker is safe on clean pages and reads the old book. Task 2.3 goes ahead for `io06`-class pages. dots.mocr earns a full-sample comparison.  
 **Raw data**: [`review_verdicts.json`](./review_verdicts.json), [`output/worker_state.json`](./output/worker_state.json), [`output/dots_mocr_state.json`](./output/dots_mocr_state.json)  
 **Change**: `openspec/changes/experiment-34-worker-sample-review`; informs deferred task 2.3 of `page-level-ocr-routing`  
+**Decision records**: ADR-070 (reader-output normalisation), TDR-028 (rules), TDR-029 (worker page-1 fault, A9), TDR-030 (LiteParse line join, A6)  
 **Protocol**: [protocol.md](protocol.md)
 
 ## Bottom line

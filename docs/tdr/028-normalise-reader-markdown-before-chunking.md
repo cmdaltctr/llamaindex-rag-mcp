@@ -103,6 +103,7 @@ Constraints:
 
 - Experiment 34: `experiments/34-worker-sample-review-2026-09-19/` (outputs per engine, `protocol.md`)
 - Experiment 36: `experiments/36-reader-output-normalisation-2026-09-25/` (the before-and-after measurement)
+- ADR-070 (the architectural decision and its history); TDR-029, TDR-030 (the two reader faults found on the way)
 - OpenSpec change `normalise-reader-markdown`; setting `IngestionSettings.normalise_reader_output`
 - `src/omrg/core/ingestion/backends/orchestrator.py` (`BackendRead`, `read_document`), the insertion point
 - `src/omrg/core/ingestion/chunker.py` (Markdown routing, ADR-055)

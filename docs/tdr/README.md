@@ -54,6 +54,8 @@ architecture), see the [ADR index](../adr/).
 | 026 | [pdf-inspector counts OCR pages from an 8-page sample — complete the evidence with a full page scan](026-pdf-inspector-sampled-ocr-evidence.md) | Accepted | 2026-09-17 |
 | 027 | [paddleocr ignores page selection — write a subset PDF instead of passing `page_num`](027-paddleocr-ignores-page-selection-write-a-subset-pdf.md) | Accepted | 2026-09-19 |
 | 028 | [Normalise reader Markdown before chunking — strip formatting-only HTML, keep links and tables](028-normalise-reader-markdown-before-chunking.md) | Accepted | 2026-09-25 |
+| 029 | [paddlex `restructure_pages` rewrites its input — build per-page Markdown first, from a deep copy](029-paddlex-restructure-pages-rewrites-its-input.md) | Accepted | 2026-09-25 |
+| 030 | [The LiteParse adapter joined every text piece with a line break — join pieces on one visual line](030-liteparse-adapter-joined-every-text-piece-with-a-line-break.md) | Accepted | 2026-09-25 |
 
 ## Status values
 

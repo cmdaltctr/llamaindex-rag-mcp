@@ -85,6 +85,17 @@ that reaches retrieval.
    order means. Unreordered pages keep `single`, `left` or `right` exactly as
    today. The key is already excluded from embedding, so no re-index follows.
 
+6. **Join by visual line** (added 2026-09-25, Experiment 34 A6, TDR-030).
+   The first implementation kept the adapter's original `"\n".join` of
+   items, so a title drawn word by word came out one word per line. Items
+   now join on one visual line (vertical overlap ≥ 0.5 × the shorter
+   height, moving right): a space, no space across a kerning gap
+   (< 0.1 × height), and a line break across a gap wider than the taller
+   height (`bd03` p2: sidebar gaps 1.56–3.69 × height, word gaps ≤ 0.73 ×).
+   The evidence gate below missed this: `order_score` compares token
+   streams, where a line break and a space are the same. Unit tests now
+   assert lines.
+
 ## Risks
 
 - A page with a decorative vertical gap could be misread as two columns. The
