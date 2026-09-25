@@ -1,19 +1,110 @@
 {
  "done": {
-  "bd03": {
-   "pages": [
-    1,
-    2
-   ],
-   "seconds": 334.5,
-   "error": null
-  },
   "io06": {
    "pages": [
     28,
     53
    ],
    "seconds": 85.2,
+   "error": null
+  },
+  "eq01": {
+   "pages": [
+    11
+   ],
+   "seconds": 75.7,
+   "error": null
+  },
+  "bd03": {
+   "pages": [
+    1,
+    2
+   ],
+   "seconds": 156.2,
+   "error": null
+  },
+  "bd01": {
+   "pages": [
+    1,
+    4,
+    5,
+    6
+   ],
+   "seconds": 656.4,
+   "error": null
+  },
+  "bd02": {
+   "pages": [
+    1,
+    2,
+    6,
+    8
+   ],
+   "seconds": 609.9,
+   "error": null
+  },
+  "tl03": {
+   "pages": [
+    2,
+    3,
+    5,
+    8
+   ],
+   "seconds": 161.0,
+   "error": null
+  },
+  "bd03@10,15,21,23": {
+   "pages": [
+    10,
+    15,
+    21,
+    23
+   ],
+   "seconds": 396.6,
+   "error": null
+  },
+  "io06@16,30,45,46,62,63,65,68,75,78": {
+   "pages": [
+    16,
+    30,
+    45,
+    46,
+    62,
+    63,
+    65,
+    68,
+    75,
+    78
+   ],
+   "seconds": 232.0,
+   "error": null
+  },
+  "io04": {
+   "pages": [
+    1,
+    4,
+    16,
+    17,
+    18,
+    20,
+    33,
+    42,
+    44,
+    47,
+    49,
+    52
+   ],
+   "seconds": 1706.6,
+   "error": null
+  }
+ },
+ "superseded": {
+  "bd03": {
+   "pages": [
+    1,
+    2
+   ],
+   "seconds": 334.5,
    "error": null
   },
   "bd01": {
@@ -36,24 +127,6 @@
    "seconds": 1237.3,
    "error": null
   },
-  "io04": {
-   "pages": [
-    1,
-    4,
-    16,
-    17,
-    18,
-    20,
-    33,
-    42,
-    44,
-    47,
-    49,
-    52
-   ],
-   "seconds": 4006.1,
-   "error": null
-  },
   "tl03": {
    "pages": [
     2,
@@ -62,13 +135,6 @@
     8
    ],
    "seconds": 295.9,
-   "error": null
-  },
-  "eq01": {
-   "pages": [
-    11
-   ],
-   "seconds": 75.7,
    "error": null
   },
   "bd03@10,15,21,23": {
@@ -95,6 +161,24 @@
     78
    ],
    "seconds": 225.6,
+   "error": null
+  },
+  "io04": {
+   "pages": [
+    1,
+    4,
+    16,
+    17,
+    18,
+    20,
+    33,
+    42,
+    44,
+    47,
+    49,
+    52
+   ],
+   "seconds": 4006.1,
    "error": null
   }
  }

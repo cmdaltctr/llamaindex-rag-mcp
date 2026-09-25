@@ -61,14 +61,14 @@ Cell format: accuracy · order · structure · problems · LLM-ready. `empty` me
 
 ### Seconds per page
 
-The two engines ran on different hardware: the worker on CPU, dots.mocr on the Apple GPU (MPS). This is not a like-for-like speed test.
+The two engines ran on different hardware: the worker on CPU, dots.mocr on the Apple GPU (MPS). This is not a like-for-like speed test. Worker figures are from the A9 re-run; the first run's figures are kept under `superseded` in `output/worker_state.json`, and the same `bd03` request took 334.5 s then and 156.2 s now.
 
 | Doc | Worker (CPU) s/page | dots.mocr (MPS) s/page |
 | --- | ---: | ---: |
-| `bd03` (2 pages) | 167.3 | 44.0 |
+| `bd03` (2 pages) | 78.1 | 44.0 |
 | `io06` (2 pages) | 42.6 | 11.8 |
 | `eq01` (1 page) | 75.7 | 55.7 |
-| `bd01` / `bd02` / `io04` / `tl03` (worker only) | 362.5 / 309.3 / 333.8 / 74.0 | — |
+| `bd01` / `bd02` / `io04` / `tl03` | 164.1 / 152.5 / 142.2 / 40.3 | 50.5 / 43.9 / 85.9 / 21.8 (A8) |
 
 The worker produced no `parse_error` on any document. dots.mocr: 0 errors, 0 token-cap hits, valid layout JSON on all 5 pages, about 8.8 GB MPS memory.
 
@@ -80,11 +80,11 @@ Recorded oddities, kept as the operator entered them. (1) `io06/53` dots.mocr is
 2. **The worker reads the old book, with defects.** On `io06/28` both text readers are `empty`: the page is a scan, and its text layer holds nothing they can extract. The worker transcribes it in the correct order. The likeliest source of the `invented` tick is the drop cap: the worker turns "PER" into maths, `P $ ^{E R} $`. It also has misreadings: `matgmonia` for matrimonia, `succeliones`, `tranitus`. The local OCR tier (pdf-inspector's own OCR mode, what the pipeline uses today on scans) reads those three words correctly, but misreads others the worker gets right (`dux perfo- na`, `ab co gradu`, `truciusille`): about 5–6 wrong words each. It also keeps the printed line breaks and hyphens (`pro- genie`). By word search, the worker's advantage on this page is layout (joined lines, a heading) more than character accuracy. The local OCR tier is now a review column (A5); its verdicts are pending.
 3. **The worker's empty output on `io06/53` is arguably correct.** The page is near-blank. dots.mocr returned page numbers and bleed-through noise, and the operator preferred that. Whether noise is better than nothing for retrieval is an open question. This review does not answer it.
 4. **Text readers cannot handle equations.** On `eq01/11` both readers are `some` · `chars` · not LLM-ready. The mechanism is in protocol A4: Computer Modern fonts with no `ToUnicode` map, and a text layer with no maths structure. Both OCR engines return correct LaTeX.
-5. **dots.mocr matched or beat the worker on every page.** It kept the structure the worker lost on `bd03/1`, and it did not invent text on `io06/28`. It ran 1.4–3.8× faster per page on the reviewed pages, but on the GPU, not the CPU.
+5. **dots.mocr matched or beat the worker on every page.** It kept the structure the worker lost on `bd03/1` (a verdict given to faulty worker output, A9), and it did not invent text on `io06/28`. It ran 1.4–3.6× faster per page on the reviewed pages (A9 re-run timings), but on the GPU, not the CPU.
 
 ### Limits
 
-Pending: the `liteparse` verdicts and the local OCR tier column await the operator's review after A5 and A6. Until then the `liteparse` rows describe the pre-fix output.
+Pending: the `liteparse` verdicts and the local OCR tier column await the operator's review after A5 and A6, and the worker verdict on `bd03/1` after A9 (the panel showed p1 + p2). Until then those rows describe the pre-fix output.
 
 1. The operator reviewed 4 pages. That is enough for a safety check, not for a rate.
 2. `io04` (triple column) and `tl03` (tables) have worker output but no verdict. The "needs llm maybe" question is still open.

@@ -59,6 +59,11 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--only", help="restrict the run, e.g. 'io06:28,io06:53' (doc:page pairs)")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="re-run completed documents; the old record moves to state['superseded'] (A9)",
+    )
     args = parser.parse_args()
 
     sample = json.loads((EXP_DIR / "sample.json").read_text(encoding="utf-8"))
@@ -95,8 +100,10 @@ def main() -> int:
             if doc_id in state["done"] and state["done"][doc_id].get("pages") != pages:
                 key = f"{doc_id}@{','.join(str(p) for p in pages)}"
             if key in state["done"] and state["done"][key].get("pages") == pages:
-                print(f"[exp34] {key}: already done, skipping", flush=True)
-                continue
+                if not args.force:
+                    print(f"[exp34] {key}: already done, skipping", flush=True)
+                    continue
+                state.setdefault("superseded", {})[key] = state["done"].pop(key)
             if time.perf_counter() - started > WALL_CAP_S:
                 print("[exp34] wall-clock cap reached; stopping (resume later)", flush=True)
                 break
