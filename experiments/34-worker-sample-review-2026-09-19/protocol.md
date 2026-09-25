@@ -195,6 +195,13 @@ python3 experiments/34-worker-sample-review-2026-09-19/make_review.py
 - Not fixed: `bd03` keeps its sidebar interleaving. The gutter test leaves sidebar layouts alone by design (Experiment 33).
 - Consequence: the operator's `liteparse` verdicts in `review_verdicts.json` describe the pre-fix output and need re-review.
 
+### A8 — Full-sample fill-in for the optional engines (operator request 2026-09-25)
+
+- Purpose: every page of `review.html` gets all five engines, so a later full-sample review (or the dots.mocr vs PaddleOCR-VL comparison) needs no further runs. It does not change the reviewed set (A1) or any gate.
+- Local OCR tier (`local_ocr_pages.py`, 38 pages = the 42-page sample minus the 4 reviewed): 28 s in total, no errors. 25 of the 28 scanned pages (`io06`, `io04`, `tl03`) are byte-identical to the Experiment 33 text; the 3 others are `tl03` p2, p3, p5, which Experiment 33 did not OCR (not labelled `needs_ocr`). The per-document seconds in `output/local_ocr_state.json` for `bd03` and `io06` now describe this run; the per-page records of the reviewed pages are unchanged.
+- dots.mocr (`probe_dots_mocr.py`, same 38 pages, same settings as A2): 1,880.2 s in total, 4.1–137.5 s per page; no error, no token-cap hit, valid layout JSON on every page. Mean seconds per page: `io04` 85.9, `bd03` 56.4, `bd01` 50.5, `bd02` 43.9, `tl03` 21.8, `io06` 15.9. Model load 2.8 s; MPS memory 9.59 GB (top-level fields in `output/dots_mocr_state.json` now describe this run; the A2 page records are unchanged).
+- Both review pages rebuilt. No panel in `review.html` is now without output.
+
 ## Cleanup
 
 No indexes to remove. Keep raw outputs (`output/worker/`, `worker_state.json`), `sample.json`, verdicts and `report.md`. The worker venv and model cache are regenerable and stay uncommitted.

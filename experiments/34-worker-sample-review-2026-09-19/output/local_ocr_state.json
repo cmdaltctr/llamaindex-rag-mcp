@@ -29,15 +29,245 @@
    "confidence": 0.78084397315979,
    "hosted_recommended": false,
    "chars": 30
+  },
+  "bd01/1": {
+   "source": "fused",
+   "confidence": 0.9933552742004395,
+   "hosted_recommended": false,
+   "chars": 2216
+  },
+  "bd01/4": {
+   "source": "fused",
+   "confidence": 0.9925239682197571,
+   "hosted_recommended": false,
+   "chars": 11596
+  },
+  "bd01/5": {
+   "source": "fused",
+   "confidence": 0.9929077625274658,
+   "hosted_recommended": false,
+   "chars": 9598
+  },
+  "bd01/6": {
+   "source": "fused",
+   "confidence": 0.972815752029419,
+   "hosted_recommended": false,
+   "chars": 2069
+  },
+  "bd02/1": {
+   "source": "fused",
+   "confidence": 0.9924756288528442,
+   "hosted_recommended": false,
+   "chars": 5443
+  },
+  "bd02/2": {
+   "source": "fused",
+   "confidence": 0.9929393529891968,
+   "hosted_recommended": false,
+   "chars": 6499
+  },
+  "bd02/6": {
+   "source": "fused",
+   "confidence": 0.9892981648445129,
+   "hosted_recommended": false,
+   "chars": 908
+  },
+  "bd02/8": {
+   "source": "fused",
+   "confidence": 0.966606616973877,
+   "hosted_recommended": false,
+   "chars": 1759
+  },
+  "bd03/10": {
+   "source": "fused",
+   "confidence": 0.9778221845626831,
+   "hosted_recommended": false,
+   "chars": 3881
+  },
+  "bd03/15": {
+   "source": "fused",
+   "confidence": 0.9886529445648193,
+   "hosted_recommended": false,
+   "chars": 5359
+  },
+  "bd03/21": {
+   "source": "fused",
+   "confidence": 0.9925894737243652,
+   "hosted_recommended": false,
+   "chars": 7025
+  },
+  "bd03/23": {
+   "source": "fused",
+   "confidence": 0.9915701746940613,
+   "hosted_recommended": false,
+   "chars": 7839
+  },
+  "io04/1": {
+   "source": "ocr",
+   "confidence": 0.9559363126754761,
+   "hosted_recommended": false,
+   "chars": 145
+  },
+  "io04/4": {
+   "source": "ocr",
+   "confidence": 0.9925152659416199,
+   "hosted_recommended": false,
+   "chars": 12162
+  },
+  "io04/16": {
+   "source": "ocr",
+   "confidence": 0.9918244481086731,
+   "hosted_recommended": false,
+   "chars": 7392
+  },
+  "io04/17": {
+   "source": "ocr",
+   "confidence": 0.9927610754966736,
+   "hosted_recommended": false,
+   "chars": 4266
+  },
+  "io04/18": {
+   "source": "ocr",
+   "confidence": 0.991937518119812,
+   "hosted_recommended": false,
+   "chars": 10033
+  },
+  "io04/20": {
+   "source": "ocr",
+   "confidence": 0.9926791787147522,
+   "hosted_recommended": false,
+   "chars": 9484
+  },
+  "io04/33": {
+   "source": "ocr",
+   "confidence": 0.992201566696167,
+   "hosted_recommended": false,
+   "chars": 13511
+  },
+  "io04/42": {
+   "source": "ocr",
+   "confidence": 0.981157124042511,
+   "hosted_recommended": false,
+   "chars": 9834
+  },
+  "io04/44": {
+   "source": "ocr",
+   "confidence": 0.9866559505462646,
+   "hosted_recommended": false,
+   "chars": 12551
+  },
+  "io04/47": {
+   "source": "ocr",
+   "confidence": 0.9889715909957886,
+   "hosted_recommended": false,
+   "chars": 15608
+  },
+  "io04/49": {
+   "source": "ocr",
+   "confidence": 0.9913870096206665,
+   "hosted_recommended": false,
+   "chars": 3653
+  },
+  "io04/52": {
+   "source": "ocr",
+   "confidence": 0.9585800170898438,
+   "hosted_recommended": false,
+   "chars": 5846
+  },
+  "io06/16": {
+   "source": "ocr",
+   "confidence": 0.9290990829467773,
+   "hosted_recommended": false,
+   "chars": 962
+  },
+  "io06/30": {
+   "source": "ocr",
+   "confidence": 0.952302873134613,
+   "hosted_recommended": false,
+   "chars": 1286
+  },
+  "io06/45": {
+   "source": "ocr",
+   "confidence": 0.8429402112960815,
+   "hosted_recommended": false,
+   "chars": 1125
+  },
+  "io06/46": {
+   "source": "ocr",
+   "confidence": 0.950426459312439,
+   "hosted_recommended": false,
+   "chars": 1061
+  },
+  "io06/62": {
+   "source": "ocr",
+   "confidence": 0.9314639568328857,
+   "hosted_recommended": false,
+   "chars": 1263
+  },
+  "io06/63": {
+   "source": "ocr",
+   "confidence": 0.9155286550521851,
+   "hosted_recommended": false,
+   "chars": 1315
+  },
+  "io06/65": {
+   "source": "ocr",
+   "confidence": 0.7654716968536377,
+   "hosted_recommended": false,
+   "chars": 30
+  },
+  "io06/68": {
+   "source": "ocr",
+   "confidence": 0.9406746029853821,
+   "hosted_recommended": false,
+   "chars": 1382
+  },
+  "io06/75": {
+   "source": "ocr",
+   "confidence": 0.7520106434822083,
+   "hosted_recommended": false,
+   "chars": 84
+  },
+  "io06/78": {
+   "source": "ocr",
+   "confidence": null,
+   "hosted_recommended": true,
+   "chars": 0
+  },
+  "tl03/2": {
+   "source": "ocr",
+   "confidence": 0.9946195483207703,
+   "hosted_recommended": false,
+   "chars": 1998
+  },
+  "tl03/3": {
+   "source": "ocr",
+   "confidence": 0.96552973985672,
+   "hosted_recommended": false,
+   "chars": 1088
+  },
+  "tl03/5": {
+   "source": "ocr",
+   "confidence": 0.9932745695114136,
+   "hosted_recommended": false,
+   "chars": 2087
+  },
+  "tl03/8": {
+   "source": "ocr",
+   "confidence": 0.7784928679466248,
+   "hosted_recommended": false,
+   "chars": 184
   }
  },
  "docs": {
   "bd03": {
    "pages": [
-    1,
-    2
+    10,
+    15,
+    21,
+    23
    ],
-   "seconds": 2.2,
+   "seconds": 3.6,
    "error": null
   },
   "eq01": {
@@ -49,10 +279,66 @@
   },
   "io06": {
    "pages": [
-    28,
-    53
+    16,
+    30,
+    45,
+    46,
+    62,
+    63,
+    65,
+    68,
+    75,
+    78
    ],
-   "seconds": 0.3,
+   "seconds": 1.1,
+   "error": null
+  },
+  "bd01": {
+   "pages": [
+    1,
+    4,
+    5,
+    6
+   ],
+   "seconds": 3.2,
+   "error": null
+  },
+  "bd02": {
+   "pages": [
+    1,
+    2,
+    6,
+    8
+   ],
+   "seconds": 2.5,
+   "error": null
+  },
+  "io04": {
+   "pages": [
+    1,
+    4,
+    16,
+    17,
+    18,
+    20,
+    33,
+    42,
+    44,
+    47,
+    49,
+    52
+   ],
+   "seconds": 16.1,
+   "error": null
+  },
+  "tl03": {
+   "pages": [
+    2,
+    3,
+    5,
+    8
+   ],
+   "seconds": 1.2,
    "error": null
   }
  },

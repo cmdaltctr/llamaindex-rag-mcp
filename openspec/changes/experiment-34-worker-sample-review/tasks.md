@@ -1,11 +1,13 @@
 # Tasks: Experiment 34 Worker Sample Review
 
-**Progress 2026-09-19:** setup and harness built (1.1, 1.2, 2.1–2.3); the
-measured pass (3.1) is BLOCKED on the timing gate — one cold page
-outlived 900 s and a cold+warm probe outlived 3000 s, against smoke
-figures of 34–106 s/page, so `protocol.md` requires the per-page cost
-on this machine before the run. The timing probe on `io06` is running
-in the background; the 2 h wall cap is provisional until it reports.
+**Progress 2026-09-25:** setup, harness and the worker run are done (1.x,
+2.x, 3.1). The review was scoped to 4 pages (protocol A1). The operator's
+first verdicts are committed and `report.md` records a PASS (scoped) with a
+task 2.3 go. Two corrections reopened the review: the LiteParse adapter
+line-join fix (A6) and the new local OCR tier column (A5). The operator
+re-reviews on normalised output, so 3.2 and 3.3 wait for
+`normalise-reader-markdown` (operator decision 2026-09-25) to rebuild the
+review pages.
 
 ## 1. Setup
 
@@ -20,9 +22,9 @@ in the background; the 2 h wall cap is provisional until it reports.
 
 ## 3. Run and review
 
-- [ ] 3.1 Run the worker over the sample from this worktree, reading the corpus by absolute path from the Experiment 33 worktree; commit the raw outputs.
-- [ ] 3.2 Operator reviews the pages and fills the checklist; the verdicts JSON is committed unchanged.
-- [ ] 3.3 Summarise the verdicts per issue (old books, triple column, two column/tables, control) and record the go/no-go for the task 2.3 signal experiment.
+- [x] 3.1 Run the worker over the sample from this worktree, reading the corpus by absolute path from the Experiment 33 worktree; commit the raw outputs. All 42 sample pages plus `eq01` p11, no errors (`output/worker_state.json`; completion run 2026-09-25, `a384f11`).
+- [ ] 3.2 Operator reviews the pages and fills the checklist; the verdicts JSON is committed unchanged. First pass committed (`db19091`, 4 reviewed pages + `eq01` p11). Re-review pending: LiteParse panels (A6), local OCR tier panel (A5), and every panel the normaliser changes. Waits for `normalise-reader-markdown` to rebuild the review pages.
+- [ ] 3.3 Summarise the verdicts per issue (old books, triple column, two column/tables, control) and record the go/no-go for the task 2.3 signal experiment. Draft in `report.md` (PASS scoped, 2.3 go); final after the 3.2 re-review.
 
 ## 4. Close
 

@@ -54,18 +54,436 @@
     2200
    ],
    "error": null
+  },
+  "io06/16": {
+   "seconds": 24.3,
+   "new_tokens": 895,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    983,
+    1600
+   ],
+   "error": null
+  },
+  "io06/30": {
+   "seconds": 18.8,
+   "new_tokens": 755,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    987,
+    1600
+   ],
+   "error": null
+  },
+  "io06/45": {
+   "seconds": 18.1,
+   "new_tokens": 721,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    988,
+    1600
+   ],
+   "error": null
+  },
+  "io06/46": {
+   "seconds": 14.6,
+   "new_tokens": 525,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    986,
+    1600
+   ],
+   "error": null
+  },
+  "io06/62": {
+   "seconds": 19.7,
+   "new_tokens": 798,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    980,
+    1600
+   ],
+   "error": null
+  },
+  "io06/63": {
+   "seconds": 21.1,
+   "new_tokens": 857,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    979,
+    1600
+   ],
+   "error": null
+  },
+  "io06/65": {
+   "seconds": 11.0,
+   "new_tokens": 381,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    986,
+    1600
+   ],
+   "error": null
+  },
+  "io06/68": {
+   "seconds": 20.1,
+   "new_tokens": 819,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    977,
+    1600
+   ],
+   "error": null
+  },
+  "io06/75": {
+   "seconds": 7.3,
+   "new_tokens": 203,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    982,
+    1600
+   ],
+   "error": null
+  },
+  "io06/78": {
+   "seconds": 4.1,
+   "new_tokens": 30,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1006,
+    1600
+   ],
+   "error": null
+  },
+  "io04/1": {
+   "seconds": 26.8,
+   "new_tokens": 603,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2300
+   ],
+   "error": null
+  },
+  "io04/4": {
+   "seconds": 99.7,
+   "new_tokens": 3733,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2300
+   ],
+   "error": null
+  },
+  "io04/16": {
+   "seconds": 71.0,
+   "new_tokens": 2505,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2300
+   ],
+   "error": null
+  },
+  "io04/17": {
+   "seconds": 50.1,
+   "new_tokens": 1592,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2300
+   ],
+   "error": null
+  },
+  "io04/18": {
+   "seconds": 76.2,
+   "new_tokens": 2746,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2300
+   ],
+   "error": null
+  },
+  "io04/20": {
+   "seconds": 73.4,
+   "new_tokens": 2619,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2300
+   ],
+   "error": null
+  },
+  "io04/33": {
+   "seconds": 97.7,
+   "new_tokens": 3672,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2300
+   ],
+   "error": null
+  },
+  "io04/42": {
+   "seconds": 116.8,
+   "new_tokens": 4461,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2300
+   ],
+   "error": null
+  },
+  "io04/44": {
+   "seconds": 97.9,
+   "new_tokens": 3680,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2300
+   ],
+   "error": null
+  },
+  "io04/47": {
+   "seconds": 131.9,
+   "new_tokens": 5093,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2300
+   ],
+   "error": null
+  },
+  "io04/49": {
+   "seconds": 51.8,
+   "new_tokens": 1714,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2300
+   ],
+   "error": null
+  },
+  "io04/52": {
+   "seconds": 137.5,
+   "new_tokens": 5331,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2300
+   ],
+   "error": null
+  },
+  "bd01/1": {
+   "seconds": 29.3,
+   "new_tokens": 813,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1654,
+    2174
+   ],
+   "error": null
+  },
+  "bd01/4": {
+   "seconds": 61.4,
+   "new_tokens": 2195,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1654,
+    2174
+   ],
+   "error": null
+  },
+  "bd01/5": {
+   "seconds": 83.7,
+   "new_tokens": 3202,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1654,
+    2174
+   ],
+   "error": null
+  },
+  "bd01/6": {
+   "seconds": 27.5,
+   "new_tokens": 748,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1654,
+    2174
+   ],
+   "error": null
+  },
+  "bd02/1": {
+   "seconds": 59.5,
+   "new_tokens": 1928,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1654,
+    2339
+   ],
+   "error": null
+  },
+  "bd02/2": {
+   "seconds": 63.7,
+   "new_tokens": 2263,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1654,
+    2339
+   ],
+   "error": null
+  },
+  "bd02/6": {
+   "seconds": 22.0,
+   "new_tokens": 423,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1654,
+    2339
+   ],
+   "error": null
+  },
+  "bd02/8": {
+   "seconds": 30.3,
+   "new_tokens": 784,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1654,
+    2339
+   ],
+   "error": null
+  },
+  "tl03/2": {
+   "seconds": 26.7,
+   "new_tokens": 786,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1564,
+    2086
+   ],
+   "error": null
+  },
+  "tl03/3": {
+   "seconds": 20.5,
+   "new_tokens": 505,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1550,
+    2090
+   ],
+   "error": null
+  },
+  "tl03/5": {
+   "seconds": 27.1,
+   "new_tokens": 801,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1546,
+    2088
+   ],
+   "error": null
+  },
+  "tl03/8": {
+   "seconds": 13.0,
+   "new_tokens": 160,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1546,
+    2085
+   ],
+   "error": null
+  },
+  "bd03/10": {
+   "seconds": 39.1,
+   "new_tokens": 1177,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2200
+   ],
+   "error": null
+  },
+  "bd03/15": {
+   "seconds": 51.2,
+   "new_tokens": 1716,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2200
+   ],
+   "error": null
+  },
+  "bd03/21": {
+   "seconds": 64.1,
+   "new_tokens": 2244,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2200
+   ],
+   "error": null
+  },
+  "bd03/23": {
+   "seconds": 71.2,
+   "new_tokens": 2568,
+   "hit_token_cap": false,
+   "json_parsed": true,
+   "image_px": [
+    1700,
+    2200
+   ],
+   "error": null
   }
  },
  "patches": [
   "flash_attn import optional",
   "vision attn_implementation=sdpa"
  ],
- "download_seconds": 0.5,
+ "download_seconds": 0.3,
  "device": "mps",
  "dtype": "bfloat16",
  "torch": "2.14.0",
- "load_seconds": 2.5,
+ "load_seconds": 2.8,
  "max_new_tokens": 8192,
- "mps_driver_gb": 8.78,
+ "mps_driver_gb": 9.59,
  "min_long_side": 1600
 }
