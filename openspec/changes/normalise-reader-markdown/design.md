@@ -41,7 +41,7 @@ Normalise when `file_path.suffix.lower() == ".pdf"` or the detected `content_typ
 ### D3 — Implementation: protected segments plus closed regex rules, stdlib only
 
 1. Cut out fenced code blocks, inline code spans, `<table>…</table>` blocks and LaTeX maths, and replace them with placeholders. Maths is `$$…$$` (may span lines), `\begin{name}…\end{name}` with a matching name, and `$…$` within one line. Code is cut first, so a `$` inside code never opens maths. An unmatched `$` or `\begin` protects nothing.
-2. Apply the `<div>` rules innermost first, repeated until stable: image-bearing block → removed; text-only block → unwrapped.
+2. Apply the `<div>` rules innermost first, repeated until stable: every block → unwrapped, its text kept; `<img>` tags are removed by the bare-image rule. (Version 1 removed image-bearing blocks with their text; the operator chose version 2 after Experiment 36.)
 3. Apply the formatting-tag rules (`u`, `span`, `font`, `center` unwrapped; `b`/`strong` → `**`; `i`/`em` → `*`), `<br>` → newline, bare `<img>` removed.
 4. Decode entities with `html.unescape` on the unprotected text only.
 5. Clean each protected table: keep structural tags with only `colspan`/`rowspan`, unwrap every other tag inside the table and keep its text (no Markdown bold inside HTML cells). Restore every placeholder.
@@ -74,7 +74,7 @@ Measure before and after in a new experiment folder, `experiments/36-reader-outp
 ## Risks / Trade-offs
 
 - [A text-only `<div>` wraps content that is really part of a figure (chart labels without an `<img>`)] → That text stays; this is the no-text-loss rule working as intended. The measurement reports the count of unwrapped blocks for review.
-- [An image block's text is a real caption] → The Experiment 34 sample shows captions in text-only blocks, not image blocks. The measurement lists every removed image-block text for operator spot-checks. Tighten the rule if a real caption appears.
+- [Text inside an image block is noise (logos, stray characters, a 14,722-character chart-label dump on `bd02` p6)] → Kept (version 2). The normaliser removes markup, not content: judging which printed text is useful is not a formatting rule, and dropping it lost real `io04` advertisement text in version 1. Noisy image-region OCR is an engine-quality question for the worker comparison.
 - [Regex rules on malformed HTML (unclosed `<div>`)] → Unbalanced tags are left untouched and not guessed. A test covers an unclosed `<div>`.
 - [One-off full re-ingest after upgrade] → Documented in the release notes. It follows the schema 4 and schema 5 precedent.
 - [`html.unescape` decodes some entities without a closing semicolon (`&not` → `¬`, `&times` → `×`), and `&` separates LaTeX columns] → Maths is a protected segment (D3 step 1), so entity and tag rules never see it.
@@ -88,4 +88,4 @@ Measure before and after in a new experiment folder, `experiments/36-reader-outp
 
 ## Open Questions
 
-- Should a removed image block leave a `[figure]` marker? Deferred to the Experiment 36 results: keep it only if the marker improves retrieval or LLM reading on figure-heavy pages. The default is no marker. Adding one later is a rule change and a version bump. It does not change the specs' structure.
+- Resolved 2026-09-25 (operator, after Experiment 36): no `[figure]` marker. Most image blocks in the sample are logos and badges, captions are separate text and stay, and a marker carries no searchable content. Text inside image blocks is kept (normaliser version 2).

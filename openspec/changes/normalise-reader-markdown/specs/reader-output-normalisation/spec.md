@@ -49,15 +49,20 @@ Normalisation SHALL remove the tags `<u>`, `<span>`, `<font>` and `<center>` and
 - **WHEN** the reader emits `H<sub>2</sub>O`
 - **THEN** the normalised text SHALL be `H<sub>2</sub>O`
 
-### Requirement: Image blocks SHALL be removed and text-only blocks unwrapped
+### Requirement: Blocks SHALL be unwrapped and image tags removed
 
-Normalisation SHALL remove a `<div>` block that contains an `<img>`, including any text inside that block, because that text is read from inside the picture. It SHALL remove the tags of a `<div>` block that contains no image and keep the block's text. It SHALL remove a bare `<img>` tag.
+Normalisation SHALL remove the tags of every `<div>` block and keep the block's text, whether or not the block contains an `<img>`. Text an engine recognised inside a picture (a badge, an advertisement, chart labels) is document text. Normalisation SHALL remove every `<img>` tag. It SHALL NOT insert a placeholder where an image was.
 
-#### Scenario: Badge inside an image block is removed
+#### Scenario: Text inside an image block is kept
 
 - **WHEN** the reader emits `<div style="text-align: center;"><img src="imgs/a.jpg" alt="Image" />Check for updates</div>`
-- **THEN** the normalised text SHALL NOT contain `Check for updates` from that block
+- **THEN** the normalised text SHALL contain `Check for updates`
 - **AND** it SHALL NOT contain `<div` or `<img`
+
+#### Scenario: An image-only block leaves no placeholder
+
+- **WHEN** the reader emits `before<div><img src="imgs/c.jpg" alt="Image" /></div>after`
+- **THEN** the normalised text SHALL be `beforeafter`
 
 #### Scenario: Figure caption in a text-only block is kept
 
@@ -97,12 +102,12 @@ Normalisation SHALL keep Markdown links and bare URLs unchanged. It SHALL keep `
 
 ### Requirement: Normalisation SHALL NOT lose document text
 
-Apart from text inside removed image blocks, every visible character of the input SHALL appear in the normalised output. Visible characters are those outside tags, after entity decoding.
+Every visible character of the input SHALL appear in the normalised output, including text inside image blocks. Visible characters are those outside tags, after entity decoding.
 
 #### Scenario: Visible text survives on the Experiment 34 outputs
 
-- **WHEN** the normaliser runs over the Experiment 34 outputs of pdf-inspector, LiteParse and the OCR worker
-- **THEN** the visible-character count of each page, excluding text inside removed image blocks, SHALL be equal before and after normalisation
+- **WHEN** the normaliser runs over the Experiment 34 outputs of pdf-inspector, LiteParse, the local OCR tier, the OCR worker and dots.mocr
+- **THEN** the visible-character count of each page SHALL be equal before and after normalisation
 
 ### Requirement: Normalisation SHALL be configurable
 

@@ -500,3 +500,44 @@ async def test_ingestion_exposes_stage_timings_and_peak_rss(tmp_path: Path) -> N
     assert peak is None or peak > 0
     direct_peak = sample_peak_rss_bytes()
     assert direct_peak is None or direct_peak > 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("change", ["version", "toggle", "schema"])
+async def test_reader_normalisation_identity_reprocesses_then_skips(
+    tmp_path: Path,
+    stage3_store,
+    effective_settings,
+    monkeypatch: pytest.MonkeyPatch,
+    change: str,
+) -> None:
+    """A changed normaliser input replaces rows once, then skips unchanged input."""
+    from omrg.core.ingestion import source_state
+
+    source = tmp_path / "normalisation-identity.txt"
+    source.write_text("unchanged source text " * 80, encoding="utf-8")
+    first_settings = effective_settings(normalise_reader_output=True)
+    second_settings = first_settings
+    if change == "schema":
+        monkeypatch.setattr(source_state, "_INDEX_IDENTITY_SCHEMA", 5)
+    first = await ingest_path_async(
+        str(source), collection_name=_COLLECTION, effective_settings=first_settings
+    )
+    if change == "schema":
+        monkeypatch.setattr(source_state, "_INDEX_IDENTITY_SCHEMA", 6)
+    elif change == "version":
+        monkeypatch.setattr(source_state, "NORMALISER_VERSION", source_state.NORMALISER_VERSION + 1)
+    else:
+        second_settings = effective_settings(normalise_reader_output=False)
+    second = await ingest_path_async(
+        str(source), collection_name=_COLLECTION, effective_settings=second_settings
+    )
+    third = await ingest_path_async(
+        str(source), collection_name=_COLLECTION, effective_settings=second_settings
+    )
+    assert first["status"] == second["status"] == third["status"] == "ok"
+    assert second["files_indexed"] == 1
+    assert second["files_skipped_unchanged"] == 0
+    assert second["chunks_removed"] == first["chunks_created"]
+    assert third["files_skipped_unchanged"] == 1
+    assert third["files_indexed"] == 0

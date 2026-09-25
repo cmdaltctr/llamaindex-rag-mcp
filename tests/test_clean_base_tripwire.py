@@ -65,7 +65,13 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 3095
+_BASE_EXECUTED = 3141
+# Re-baselined at normaliser version 2 (2026-09-25, Experiment 36): an
+# image-only block leaves no placeholder — +1 (3140 -> 3141).
+# Re-baselined at the OCR worker per-page fix (2026-09-25, Experiment 34
+# A9): page 1 keeps only its own text — +1 (3139 -> 3140).
+# Re-baselined at reader-output normalisation (2026-09-25): fixture,
+# rule, setting, chunker and index-identity regressions add 44 cases.
 # Re-baselined at the LiteParse line join fix (2026-09-24, Experiment 34):
 # words on one visual line, a superscript, a column gap, a right-to-left
 # step and a kerning split — net +5 (3090 -> 3095).

@@ -9,8 +9,7 @@ Nothing cleans the text a PDF reader or OCR engine emits. Tag characters therefo
 - Add one pure, deterministic normalisation function for reader-produced text. It runs once per document, after `read_document` and before chunking. It uses no LLM and no new dependency.
 - Rules (closed list; unknown tags pass through unchanged):
   - Remove formatting-only tags and keep their text: `<u>`, `<span>`, `<font>`, `<center>`. `<b>`/`<strong>` become `**text**`. `<i>`/`<em>` become `*text*`.
-  - Remove a `<div>` block that contains an image, including any text inside it.
-  - Unwrap a `<div>` that contains only text, and keep the text (figure captions).
+  - Unwrap every `<div>` block and keep its text, including text inside an image block (badges, adverts, chart labels). No placeholder replaces an image (Experiment 36, operator decisions 2026-09-25).
   - Remove bare `<img>` tags.
   - Keep Markdown links and bare URLs unchanged.
   - Keep `<table>` blocks. Keep only structural tags and `colspan`/`rowspan`, and remove presentational attributes (`style`, `border`, …).
@@ -20,7 +19,7 @@ Nothing cleans the text a PDF reader or OCR engine emits. Tag characters therefo
 - Scope: text extracted from PDF sources, through every PDF reader, the OCR tiers and cloud backends. Authored text files (`.md`, `.txt`, `.html`) and code and config files pass through unchanged, because their HTML can be intentional.
 - New nested setting `ingestion.normalise_reader_output` (`INGESTION__NORMALISE_READER_OUTPUT`), default `true`. It exists for comparison experiments.
 - The normaliser version and the resolved on/off value join `source_index_identity`. The identity schema advances from 5 to 6. **Reprocessing:** every existing source re-ingests once on its next ingest, including sources the normaliser would not change. This follows the spec's conservative identity rule.
-- Measure before and after on the Experiment 34 outputs: tags removed per engine and rule, and visible text lost (target: zero outside removed image blocks).
+- Measure before and after on the Experiment 34 outputs: tags removed per engine and rule, and visible text lost (target: zero on every page).
 
 ## Capabilities
 

@@ -1,7 +1,7 @@
 # TDR-028: Normalise reader Markdown before chunking — strip formatting-only HTML, keep links and tables
 
 **Date:** 2026-09-24
-**Status:** Proposed (implementation needs an OpenSpec change; not started)
+**Status:** Accepted (2026-09-25; OpenSpec change `normalise-reader-markdown`, evidence Experiment 36)
 **Deciders:** Aizat
 **Tags:** ingestion | markdown | pdf-inspector | ocr-worker | experiment-34
 
@@ -40,7 +40,7 @@ produced the text. Rules:
 | Input | Output |
 | --- | --- |
 | Formatting-only tags: `<u>`, `<span>`, `<div>`, `<font>`, `<center>`, `<b>`/`<strong>`, `<i>`/`<em>` | Remove the tag and keep the inner text. `<b>`/`<strong>` become `**text**`. `<i>`/`<em>` become `*text*`. |
-| `<div>` wrapping an image, with or without text | Remove the whole block, text included. The text is read from inside the picture: badges ("Check for updates"), chart labels ("Pathogenic / Benign / Uncertain…"). A `[figure]` marker is an option, decided in the OpenSpec change. Experiment 34 worker outputs: 30 image-only blocks, 52 image-plus-text blocks. |
+| `<div>` wrapping an image, with or without text | Remove the tags and the `<img>`, keep the text, and leave no `[figure]` marker (normaliser version 2, operator decisions after Experiment 36, 2026-09-25). The text an engine read inside a picture is document text: besides badges and chart labels it includes real printed advertisements (`io04`). Version 1 removed the block with its text; none of the 28 texts it dropped was a caption, but 15 were printed advertisements and headings. |
 | `<div>` wrapping text only | Remove the tags, keep the text. These are figure captions (22 in Experiment 34, for example "FIGURE 2 Statistical description of…"). Deleting the whole block would lose them. |
 | A bare `<img …>` | Remove. |
 | Markdown links, bare URLs | Keep unchanged. |
@@ -58,7 +58,7 @@ Constraints:
 - **Pure function in `core/ingestion/`**, with no reader imports. It takes a string and returns a string. It follows Architecture Invariant 2 (no cross-imports).
 - **Folded into the index identity.** Normalised text differs from raw text, so the normaliser version must join `source_index_identity`. Otherwise old and new chunks would mix in one collection.
 - **Configurable off** through a nested setting (`INGESTION__NORMALISE_READER_OUTPUT`, see change `normalise-reader-markdown`). The default is on. Set it off only for comparison experiments.
-- **Measured before and after** on the Experiment 34 outputs. Count the tags removed per engine, and check that no text was lost (visible-character count, excluding markup).
+- **Measured before and after** on the Experiment 34 outputs (Experiment 36): 215 pages across five engines, no visible character lost, 452 `<u>` tags removed, 46 image blocks and 13 text blocks unwrapped, 28 table styling attributes removed.
 
 ## Consequences
 
@@ -102,6 +102,8 @@ Constraints:
 ## References
 
 - Experiment 34: `experiments/34-worker-sample-review-2026-09-19/` (outputs per engine, `protocol.md`)
+- Experiment 36: `experiments/36-reader-output-normalisation-2026-09-25/` (the before-and-after measurement)
+- OpenSpec change `normalise-reader-markdown`; setting `IngestionSettings.normalise_reader_output`
 - `src/omrg/core/ingestion/backends/orchestrator.py` (`BackendRead`, `read_document`), the insertion point
 - `src/omrg/core/ingestion/chunker.py` (Markdown routing, ADR-055)
 - TDR-027 (the worker page-selection fix that produced these outputs)

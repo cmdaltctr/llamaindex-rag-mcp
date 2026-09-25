@@ -194,6 +194,35 @@ See [ADR-020](../adr/020-use-liteparse-as-pdf-reader.md) for the factory
 adoption rationale and [ADR-050](../adr/050-configure-pdf-inspector-as-default-reader.md)
 for the default-selection decision and Experiment 14 results.
 
+## Reader-output normalisation
+
+PDF readers and OCR engines put HTML into their Markdown: pdf-inspector wraps
+links and some headers in `<u>`, and the OCR worker wraps pictures in
+`<div><img></div>` blocks and styles its tables. Ingestion removes this markup
+from PDF text right after the reader returns it and before chunking, so
+stored chunks, embeddings and BM25 carry document text, not tags.
+
+The rules are a closed list (unknown tags pass through unchanged):
+
+| Input | Result |
+| --- | --- |
+| `<u>`, `<span>`, `<font>`, `<center>` | Tag removed, text kept |
+| `<b>`/`<strong>`, `<i>`/`<em>` | `**text**`, `*text*` |
+| `<div>` (with or without an image) | Tag removed, text kept. Text an engine read inside a picture stays |
+| `<img>` | Removed. No placeholder |
+| `<br>` | Line break |
+| `<table>` | Kept as HTML; only structural tags and `colspan`/`rowspan` remain |
+| Code, links, LaTeX maths | Unchanged |
+
+No visible character is lost: Experiment 36 checked 215 pages across five
+engines. Only PDF sources are normalised; a `.md` file is left as written.
+
+Set `INGESTION__NORMALISE_READER_OUTPUT=false` to index raw reader text, for
+example in a reader comparison. The setting and the normaliser version are
+part of the index identity (schema 6), so changing either reprocesses every
+source once on its next ingest. See
+[TDR-028](../tdr/028-normalise-reader-markdown-before-chunking.md).
+
 ## OCR fallback for scanned PDFs
 
 `pdf-inspector` reads text out of a PDF. It cannot read text that is only
