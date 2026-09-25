@@ -47,12 +47,15 @@ Each engine's `pyproject.toml` depends on the core through a uv path source (`om
 
 ```python
 class OcrEngine(Protocol):
-    name: str                                  # "paddleocr-vl", "dots-mocr"
-    backend_id: str                            # diagnostics: "paddleocr_vl", "dots_mocr"
+    name: str  # "paddleocr-vl", "dots-mocr"
+    backend_id: str  # diagnostics: "paddleocr_vl", "dots_mocr"
     declared_packages: tuple[str, ...]
-    pipeline: tuple[str, str]                  # identity, revision
+    pipeline: tuple[str, str]  # identity, revision
     model: tuple[str, str]
-    def parse(self, pdf: Path, pages: Sequence[int] | None) -> list[str]: ...  # one Markdown string per page
+
+    def parse(
+        self, pdf: Path, pages: Sequence[int] | None
+    ) -> list[str]: ...  # one Markdown string per page
 ```
 
 The core owns everything else: framing, validation, subset-PDF writing for page lists (TDR-027), error mapping, and the capability command, built from the engine's static fields without importing model code. An engine returns `""` for a page it cannot read, and the core passes that through. The capability payload gains `backend_id`, so the host can stamp diagnostics without knowing engine names.
