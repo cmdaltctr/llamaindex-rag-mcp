@@ -195,6 +195,14 @@ python3 experiments/34-worker-sample-review-2026-09-19/make_review.py
 - Not fixed: `bd03` keeps its sidebar interleaving. The gutter test leaves sidebar layouts alone by design (Experiment 33).
 - Consequence: the operator's `liteparse` verdicts in `review_verdicts.json` describe the pre-fix output and need re-review.
 
+### A7 — Review pages show normalised output (2026-09-25)
+
+- Why: the operator re-reviews on the text the pipeline will index, not on reader markup that the `normalise-reader-markdown` change removes (operator decision 2026-09-25).
+- How: `make_review.py` runs `omrg.core.ingestion.normalise.normalise_reader_text` (normaliser version 2) on each engine's raw Markdown before rendering. The raw files under `output/<engine>/` are unchanged (checked by hash). `--raw` renders them unnormalised. The script now runs with `uv run python`, because it imports the normaliser.
+- Panels the normaliser changed (`output/normalised_panels.json`): `review_small.html` 8 (pdf-inspector 3, local OCR tier 3, worker 2); `review.html` 41 (worker 25, pdf-inspector 9, local OCR tier 7). LiteParse and dots.mocr output is never changed (Experiment 36). A changed panel's badge reads "normalised v2".
+- Check: neither page contains an escaped `<u>`, `<span>`, `<font>` or `<center>` from engine text.
+- Evidence for the normaliser: Experiment 36 (215 pages, no visible character lost).
+
 ### A8 — Full-sample fill-in for the optional engines (operator request 2026-09-25)
 
 - Purpose: every page of `review.html` gets all five engines, so a later full-sample review (or the dots.mocr vs PaddleOCR-VL comparison) needs no further runs. It does not change the reviewed set (A1) or any gate.

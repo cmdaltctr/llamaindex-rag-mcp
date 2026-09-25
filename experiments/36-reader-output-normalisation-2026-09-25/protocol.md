@@ -95,3 +95,9 @@ Expected files: `protocol.md`, `measure.py`, `output/summary.json`, and `report.
 - The first measurement (`5cbf91e`, 129 pages) read worker output with a fault: every multi-page request wrote page 1 as the whole request (Experiment 34 A9, fixed in `d3460bf`). Its removed-block list held 23 duplicates of later pages' blocks, and the two 14,722-character `bd02` blocks were one real block counted twice.
 - The worker pages were re-run (Experiment 34 `44af069`). The measurement is repeated with `--resume`, which re-measures every page whose source hash changed.
 - The Experiment 34 review pages show five engines, and task 4.5 normalises every panel. So the inventory now includes `local_ocr` (pdf-inspector's OCR mode) and `dots_mocr`, 43 pages each, under the same gates.
+
+### A2 — Operator decisions: keep image-block text, no marker (2026-09-25)
+
+- Task 4.3: none of the 28 removed texts was a real caption. They were publisher badges (3), one chart-label dump (`bd02` p6, 14,722 characters), `io04` advertisements and printed headings (15) and single stray characters (9). The operator chose to keep text inside image blocks: the normaliser removes markup, not content, and version 1 lost real printed advertisement text.
+- Task 4.4: no `[figure]` marker.
+- Normaliser version 2 unwraps every `<div>` block and removes `<img>` tags. The measurement now compares every visible character, with no exclusion for image blocks, and records the 28 texts as `image_block_texts_kept`.

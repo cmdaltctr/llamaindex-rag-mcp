@@ -1,5 +1,5 @@
 {
-  "normaliser_version": 1,
+  "normaliser_version": 2,
   "source": "experiments/34-worker-sample-review-2026-09-19/output",
   "page_count": 215,
   "rule_totals": {
@@ -17,7 +17,7 @@
     "text_divs_unwrapped": 13,
     "u": 452
   },
-  "removed_image_block_texts": [
+  "image_block_texts_kept": [
     {
       "page": "worker/bd01/p006.md",
       "text": "CC BY"
@@ -132,6 +132,1038 @@
     }
   ],
   "pages": {
+    "dots_mocr/bd01/p001.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd01/p001.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1714,
+      "visible_after": 1714,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "1b0ca56bbe1e88834b5774eedcda7ccd8bc53e7d7e38b3a88a4065039bf74a0c"
+    },
+    "dots_mocr/bd01/p004.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd01/p004.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 7093,
+      "visible_after": 7093,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "b453b138a9de23880f6654c2fac22053cac9ecb694de8d2b46af0a6a6d0a2c2d"
+    },
+    "dots_mocr/bd01/p005.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd01/p005.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 7408,
+      "visible_after": 7408,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "93e58dd1cebd6f17acdc9e8e79b91ef86f4429cfdbb89f319b640eb134affeb0"
+    },
+    "dots_mocr/bd01/p006.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd01/p006.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1292,
+      "visible_after": 1292,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "3049b31a949ee15d5fa88b15388905fe2dd418ee6d6ecdc5849705f1de9d8442"
+    },
+    "dots_mocr/bd02/p001.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd02/p001.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 3387,
+      "visible_after": 3387,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "78afa12d4f9fe95ffd0b9fef14d55b7f2af1a0a4be431f7323c663cf01d4454e"
+    },
+    "dots_mocr/bd02/p002.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd02/p002.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 5437,
+      "visible_after": 5437,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "1a339df17ca947aeacfb016b8dff3b7dd4c52c6390c43727454d0b80ab791f89"
+    },
+    "dots_mocr/bd02/p006.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd02/p006.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 544,
+      "visible_after": 544,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "5492cc5c2ae2bfae61292d7a2f92f72391aa01cac4f0fd3f0b976a5c2f367d98"
+    },
+    "dots_mocr/bd02/p008.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd02/p008.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1033,
+      "visible_after": 1033,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "dcbde551c28c412b565c4434f8472cf48d91720edb15e2b50421ffe22767a61d"
+    },
+    "dots_mocr/bd03/p001.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd03/p001.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 3442,
+      "visible_after": 3442,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "b23959979b17eab518ce3cccf1fc72dfe6e31aa555a375dd80fcdb4671aa5b84"
+    },
+    "dots_mocr/bd03/p002.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd03/p002.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 3375,
+      "visible_after": 3375,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "5214abdb2ce8aaa25b766c8676a2dd8d1a2f3dcdf4f7665da5d14bff7589b1a1"
+    },
+    "dots_mocr/bd03/p010.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd03/p010.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 2949,
+      "visible_after": 2949,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "2f00e44b7511d4fd80637c40f248ca893522cdda50b2f247fb55c037892e3f72"
+    },
+    "dots_mocr/bd03/p015.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd03/p015.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 4566,
+      "visible_after": 4566,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "ee97ba2dbf99f27b1c4533e74cfff241e6cacfa4cddeeb9994213a9b00888713"
+    },
+    "dots_mocr/bd03/p021.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd03/p021.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 4604,
+      "visible_after": 4604,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "6bf34341a9c3d07a7bd8d8ae3f96e771dbe903cf7e172bdadcbd598245b98bd5"
+    },
+    "dots_mocr/bd03/p023.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/bd03/p023.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 5359,
+      "visible_after": 5359,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "47ddfa65a8af4cfd86cbc07749abfa154aa2e3248f9d74730c6927293a10c315"
+    },
+    "dots_mocr/eq01/p011.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/eq01/p011.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 3132,
+      "visible_after": 3132,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "d0a5a6b0c6366d931c514faa993f63275553ba85252e5957356802891b086f35"
+    },
+    "dots_mocr/io04/p001.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io04/p001.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 154,
+      "visible_after": 154,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "0deb5cf914b5e1ec3cc509c7e28327e755fd902b0323bc205180e709d32063a2"
+    },
+    "dots_mocr/io04/p004.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io04/p004.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 10082,
+      "visible_after": 10082,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "860d3984b7a7e603073b8741f04e23a2a5fd48fb834c60e07a97cc61b73c8c77"
+    },
+    "dots_mocr/io04/p016.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io04/p016.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 6036,
+      "visible_after": 6036,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "4bbe2b17c32a3dfbf4d6c2fc290aff72e42654fde8ce99483d3b4847f89fb8d7"
+    },
+    "dots_mocr/io04/p017.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io04/p017.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 3503,
+      "visible_after": 3503,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "5c328e75e411a6890d195971481e202c3f85e47ac80ade2f7c6741ac9a3a985a"
+    },
+    "dots_mocr/io04/p018.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io04/p018.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 8196,
+      "visible_after": 8196,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "aa0979cdf4299fc9468a9b40af1a4d78568a99d25fe23c3d30760a99318e3f55"
+    },
+    "dots_mocr/io04/p020.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io04/p020.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 7798,
+      "visible_after": 7798,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "5d317fc70dbfeb91a9e42cf03a1cc62f271c7e09346f37c1e3ac5216855a60c8"
+    },
+    "dots_mocr/io04/p033.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io04/p033.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 11124,
+      "visible_after": 11124,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "01804e8eefef20a7ac977b5343637cc0bfa5066697d8f934cfa8acb72b3e06cc"
+    },
+    "dots_mocr/io04/p042.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io04/p042.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 8056,
+      "visible_after": 8056,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "d54274711b5a7a01fd4e200eef64cffe19d573aae522d2059e3999ecb60c11ad"
+    },
+    "dots_mocr/io04/p044.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io04/p044.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 10298,
+      "visible_after": 10298,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "0edc21f03a0ef63ca44938ab35929b657eba97f8456f95a249a6e605717ba337"
+    },
+    "dots_mocr/io04/p047.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io04/p047.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 13069,
+      "visible_after": 13069,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "da301295c9d8d02c7a8e14ce6bfa0fdab6bc32cbfd8b600000b8238259d02729"
+    },
+    "dots_mocr/io04/p049.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io04/p049.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 2999,
+      "visible_after": 2999,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "150c9a8e5a32d304c6f6800ad297c9a9bd44f1264edd817d9a3a787d77ae41e6"
+    },
+    "dots_mocr/io04/p052.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io04/p052.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 4838,
+      "visible_after": 4838,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "2e08406b148450e661fe80f160d8f82aca94f73741a76214b434a32b3e06c66c"
+    },
+    "dots_mocr/io06/p016.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io06/p016.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 860,
+      "visible_after": 860,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "ebf54e2c10e68075fbef55cfd5f29070ebcbd6c9223e09cb71ff100fe4783154"
+    },
+    "dots_mocr/io06/p028.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io06/p028.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 999,
+      "visible_after": 999,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "214bca9f55ae766415b5f909d0bc4e5940cb22a4857b7d82f8b0e76049c11dad"
+    },
+    "dots_mocr/io06/p030.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io06/p030.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1098,
+      "visible_after": 1098,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "55acbf272b34bc2f7af888943698d27b647cbd5f3beecb50a42e8cae79870678"
+    },
+    "dots_mocr/io06/p045.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io06/p045.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1032,
+      "visible_after": 1032,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "cfc7a3a5b183b9058a20106166b21b4feb8200614ea8b9d17ac2ff44fbb75072"
+    },
+    "dots_mocr/io06/p046.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io06/p046.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 918,
+      "visible_after": 918,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "b9b530db95f6f0c2702d6b6ea384b24f527e66f1aa9feca28c5390e93143979d"
+    },
+    "dots_mocr/io06/p053.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io06/p053.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 60,
+      "visible_after": 60,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "ca9c12523109fec9c8f346fb0e4131f0c74efd46933ae720d6a417eff5e7d68b"
+    },
+    "dots_mocr/io06/p062.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io06/p062.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1106,
+      "visible_after": 1106,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "abfea92981c9b76ce3bf63e75590d29aef4baa8c90a7fad04cd0daf8a18dbb77"
+    },
+    "dots_mocr/io06/p063.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io06/p063.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1152,
+      "visible_after": 1152,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "d0922f2a932265c2f28f9d70d1d4583120f810f2178b37f8f8cd029d2f1f8da7"
+    },
+    "dots_mocr/io06/p065.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io06/p065.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 48,
+      "visible_after": 48,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "1a90a3e6e9f51556462087e2b57c002b516dedd9d865186d3e3d3abd50191a11"
+    },
+    "dots_mocr/io06/p068.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io06/p068.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1172,
+      "visible_after": 1172,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "200c3d450a53baa5be5d295f1df27b163d4a00fe386830a8cf9cedf31ab6f682"
+    },
+    "dots_mocr/io06/p075.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io06/p075.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 104,
+      "visible_after": 104,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "d517883238da63da186ba40001730f25b6103ab038087f336d81546f5787b843"
+    },
+    "dots_mocr/io06/p078.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/io06/p078.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 0,
+      "visible_after": 0,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "dots_mocr/tl03/p002.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/tl03/p002.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1655,
+      "visible_after": 1655,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "6be4acfef6b38b107b4de85f9c29144c55edf4e7b8fad063f5c7eef25771adc2"
+    },
+    "dots_mocr/tl03/p003.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/tl03/p003.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1016,
+      "visible_after": 1016,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "1ea45d0cbf4619dca41bff901fdb9e39cbe0bfa0426b9ba412e8b18097e62be6"
+    },
+    "dots_mocr/tl03/p005.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/tl03/p005.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1754,
+      "visible_after": 1754,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "8c0831a02d178eb53be45c3e8d70aeb479fb794c7f735480f0921449976859f0"
+    },
+    "dots_mocr/tl03/p008.md": {
+      "engine": "dots_mocr",
+      "page": "dots_mocr/tl03/p008.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 38,
+      "visible_after": 38,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "a4d77db0b53297f66b891049c8269c6033fcd071ef1aa6d7eeccd873c9eba77c"
+    },
     "liteparse/bd01/p001.md": {
       "engine": "liteparse",
       "page": "liteparse/bd01/p001.md",
@@ -153,7 +1185,7 @@
       "visible_before": 1693,
       "visible_after": 1693,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "2a6faa58786d65e01dfce3f7a382d826563380df3c981fc5323da2cdea2bd8a5"
     },
     "liteparse/bd01/p004.md": {
@@ -177,7 +1209,7 @@
       "visible_before": 7103,
       "visible_after": 7103,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "bad8fe425fb9e97a29873c29e1b66f76ff93734635f24e1e87c2b9ba67a65005"
     },
     "liteparse/bd01/p005.md": {
@@ -201,7 +1233,7 @@
       "visible_before": 7376,
       "visible_after": 7376,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "8966a8be77a011ff7583a98f6643a72e9209f6ce3d0dcb01bccaf9354f2f17b0"
     },
     "liteparse/bd01/p006.md": {
@@ -225,7 +1257,7 @@
       "visible_before": 1265,
       "visible_after": 1265,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "839d8162592152a32953a3e646bcc8df260851bee13c90d46efef344ae59c877"
     },
     "liteparse/bd02/p001.md": {
@@ -249,7 +1281,7 @@
       "visible_before": 3319,
       "visible_after": 3319,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "57f7c3d93887e6a3705e50577d46414dab0cb10e09dd0b4129692d77eec0b5cc"
     },
     "liteparse/bd02/p002.md": {
@@ -273,7 +1305,7 @@
       "visible_before": 5403,
       "visible_after": 5403,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "f8e0f0e8ee779d6e91cb1d6bb88dd958de906acbe93d1a9742ac5da7d140be1e"
     },
     "liteparse/bd02/p006.md": {
@@ -297,7 +1329,7 @@
       "visible_before": 544,
       "visible_after": 544,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "6c82fc1ad0b1bc6529587f5d3668fee4424a77358e0762aba6f6300c46e57301"
     },
     "liteparse/bd02/p008.md": {
@@ -321,7 +1353,7 @@
       "visible_before": 1032,
       "visible_after": 1032,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "a7c78803c77a494f062f5de822854eeb7b8a55170d98c6155453b2fe20144264"
     },
     "liteparse/bd03/p001.md": {
@@ -345,7 +1377,7 @@
       "visible_before": 3333,
       "visible_after": 3333,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "90fc203845003b7d83a12ef021263a380c82f2e98c8cd882aa762a0981ef05cd"
     },
     "liteparse/bd03/p002.md": {
@@ -369,7 +1401,7 @@
       "visible_before": 3287,
       "visible_after": 3287,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "5985c0b6b01582a51d52f1aab74837455b5571d5bbcf813f2ea465f4381ac6f5"
     },
     "liteparse/bd03/p010.md": {
@@ -393,7 +1425,7 @@
       "visible_before": 2765,
       "visible_after": 2765,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "1f8eaf8f345d06c3146b88f0c642f160e1080bf4b7fd1216ed920ec4c58c7b87"
     },
     "liteparse/bd03/p015.md": {
@@ -417,7 +1449,7 @@
       "visible_before": 4167,
       "visible_after": 4167,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "093ce55f2f05d63eb93cca013c24f1d69a84e0dd1ac78f29b1a6fc969ee74685"
     },
     "liteparse/bd03/p021.md": {
@@ -441,7 +1473,7 @@
       "visible_before": 4580,
       "visible_after": 4580,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "2c7e68bd47dc63fd2e873286913a86f0dd289ec02bc4188ee86c7106ac954add"
     },
     "liteparse/bd03/p023.md": {
@@ -465,7 +1497,7 @@
       "visible_before": 5359,
       "visible_after": 5359,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "8ca477603979e6c6713cafbc8fa13747eaf7eac70cc1b811aa596c7d9bfe6997"
     },
     "liteparse/eq01/p011.md": {
@@ -489,7 +1521,7 @@
       "visible_before": 1822,
       "visible_after": 1822,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "27c3fe269906d7af41e40eee15dad78ebc4d5f5e115789c4899291edb726dfcb"
     },
     "liteparse/io04/p001.md": {
@@ -513,7 +1545,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io04/p004.md": {
@@ -537,7 +1569,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io04/p016.md": {
@@ -561,7 +1593,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io04/p017.md": {
@@ -585,7 +1617,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io04/p018.md": {
@@ -609,7 +1641,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io04/p020.md": {
@@ -633,7 +1665,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io04/p033.md": {
@@ -657,7 +1689,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io04/p042.md": {
@@ -681,7 +1713,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io04/p044.md": {
@@ -705,7 +1737,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io04/p047.md": {
@@ -729,7 +1761,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io04/p049.md": {
@@ -753,7 +1785,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io04/p052.md": {
@@ -777,7 +1809,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io06/p016.md": {
@@ -801,7 +1833,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io06/p028.md": {
@@ -825,7 +1857,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io06/p030.md": {
@@ -849,7 +1881,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io06/p045.md": {
@@ -873,7 +1905,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io06/p046.md": {
@@ -897,7 +1929,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io06/p053.md": {
@@ -921,7 +1953,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io06/p062.md": {
@@ -945,7 +1977,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io06/p063.md": {
@@ -969,7 +2001,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io06/p065.md": {
@@ -993,7 +2025,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io06/p068.md": {
@@ -1017,7 +2049,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io06/p075.md": {
@@ -1041,7 +2073,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/io06/p078.md": {
@@ -1065,7 +2097,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "liteparse/tl03/p002.md": {
@@ -1089,7 +2121,7 @@
       "visible_before": 1654,
       "visible_after": 1654,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "47ba3c3cc994b204940fdc81b18678ad227e3fdc1d173c820b6921b0e9d570ad"
     },
     "liteparse/tl03/p003.md": {
@@ -1113,7 +2145,7 @@
       "visible_before": 887,
       "visible_after": 887,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "4bc9ec24bd61d32fb3f39c322155f640c36a95840332d0659d51ffad321c6474"
     },
     "liteparse/tl03/p005.md": {
@@ -1137,7 +2169,7 @@
       "visible_before": 1717,
       "visible_after": 1717,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "31ed3e5d27effe111852f349740a83cf510df2361f9217873ac75fdb8597ba01"
     },
     "liteparse/tl03/p008.md": {
@@ -1161,8 +2193,1040 @@
       "visible_before": 28,
       "visible_after": 28,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "d96394dad50c36b5558a8f6e309a818bbbf9f19d8466ca7a00a03e9969d35a29"
+    },
+    "local_ocr/bd01/p001.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd01/p001.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1923,
+      "visible_after": 1923,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "e37e6c22884ca3755de7f6cd1f3d508e7da22ea1a0cbc9ba41dc9be8e5c7f098"
+    },
+    "local_ocr/bd01/p004.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd01/p004.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 9925,
+      "visible_after": 9925,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "0dea3ebd3145d5e61c851252ef4e6cc6be56f1a78c5159de5699556e82340f8f"
+    },
+    "local_ocr/bd01/p005.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd01/p005.md",
+      "rules": {
+        "u": 2,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 8418,
+      "visible_after": 8418,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "a3f1943402f9964f0a31111aa403c1a11b266fa890a797c43a5b71757d643548"
+    },
+    "local_ocr/bd01/p006.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd01/p006.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1795,
+      "visible_after": 1795,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "de28edb34c82fbc58e77ad7231bc74e3d7792917cb96dd8d0374b7c2f4182c32"
+    },
+    "local_ocr/bd02/p001.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd02/p001.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 4683,
+      "visible_after": 4683,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "8dfc8c1076be1e7bab94d151e49c46024b3093b06388778579ededbc532164a9"
+    },
+    "local_ocr/bd02/p002.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd02/p002.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 5526,
+      "visible_after": 5526,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "456d54fc8b888dc1f8db9cf8c2a46264ddb2f40ca397bc08a0925a35a4a02d59"
+    },
+    "local_ocr/bd02/p006.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd02/p006.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 775,
+      "visible_after": 775,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "4d8270e4fb493989f36a468b49a7d0442166a2b0fa86d08e198e7ed301d4f9ab"
+    },
+    "local_ocr/bd02/p008.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd02/p008.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1446,
+      "visible_after": 1446,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "6e0af85e9aa52a8e3dd74c261f84070cadc2031590a2b05ca965acefff308241"
+    },
+    "local_ocr/bd03/p001.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd03/p001.md",
+      "rules": {
+        "u": 14,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 3688,
+      "visible_after": 3688,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "ebcf2cca8e86a94dd0e5615878fa740c44624d54257b60ef72ff9dcef05bf0d6"
+    },
+    "local_ocr/bd03/p002.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd03/p002.md",
+      "rules": {
+        "u": 30,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 3919,
+      "visible_after": 3919,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "501c6bbd68da3bb110b9f64c9c2a43e474e06c61ea46f7e7f73fec70a99aa0c1"
+    },
+    "local_ocr/bd03/p010.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd03/p010.md",
+      "rules": {
+        "u": 24,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 3203,
+      "visible_after": 3203,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "10841bfb86f64695210e62b497169b2d49a82e66fd102909b82a9e00240e582d"
+    },
+    "local_ocr/bd03/p015.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd03/p015.md",
+      "rules": {
+        "u": 16,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 4488,
+      "visible_after": 4488,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "56302b8b264dc1ad39b11f664af681a6089afe6c3343ad4779e31bafeb648a38"
+    },
+    "local_ocr/bd03/p021.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd03/p021.md",
+      "rules": {
+        "u": 58,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 6095,
+      "visible_after": 6095,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "88458fda6374afdf0a1e3ec32fe96f822574a9d040ff0751cd04897464763912"
+    },
+    "local_ocr/bd03/p023.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/bd03/p023.md",
+      "rules": {
+        "u": 76,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 6782,
+      "visible_after": 6782,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "690deb7cc94de4bd2f55ab07d7eccf299bfae5c7f1eb16347dcef153c7dddb15"
+    },
+    "local_ocr/eq01/p011.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/eq01/p011.md",
+      "rules": {
+        "u": 4,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 2673,
+      "visible_after": 2673,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "5dca41ee85af5173488df931e48c2813517d16dcf8cb3498c295f2db801c09a4"
+    },
+    "local_ocr/io04/p001.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io04/p001.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 121,
+      "visible_after": 121,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "c34919685a1b4a8ce024d69acea081eecc6114b1777b1ab95c05898d1a039fbd"
+    },
+    "local_ocr/io04/p004.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io04/p004.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 10072,
+      "visible_after": 10072,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "6a89275ecc245a50a3df7449b27d81dc3bb6a6136a5b415f85e6a0b0c46e26fd"
+    },
+    "local_ocr/io04/p016.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io04/p016.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 6037,
+      "visible_after": 6037,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "5ddc600976c258701d3c24647ccebb7ef05f0e4d8d232fa057f9590229f2caef"
+    },
+    "local_ocr/io04/p017.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io04/p017.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 3510,
+      "visible_after": 3510,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "0cffead2c5a9889dd354a60845dd56f9cb3968723174a16038318f6c47cdac97"
+    },
+    "local_ocr/io04/p018.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io04/p018.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 8206,
+      "visible_after": 8206,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "763a40f04a8149d3e12d3314742e97fa3de48b5c09559ef3727e50489b1bf3c7"
+    },
+    "local_ocr/io04/p020.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io04/p020.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 7798,
+      "visible_after": 7798,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "4461b7ce232f128e351dd3b282c7b71d53a2c2f87e25a6615d1ad0e2ed14244d"
+    },
+    "local_ocr/io04/p033.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io04/p033.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 11151,
+      "visible_after": 11151,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "a12cc062b3745ae99314ea24bb15a8fcbe3fecce0d670f172cca24ce0e5f57de"
+    },
+    "local_ocr/io04/p042.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io04/p042.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 8194,
+      "visible_after": 8194,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "56deae0b6a0bfe2bbea0141164091bdd9d72d1737eeccb66f36d6eec6c1b8740"
+    },
+    "local_ocr/io04/p044.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io04/p044.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 10302,
+      "visible_after": 10302,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "87ae5b225029cd9dc23789ad1ef661cc97e02438475baff1a5a28a9194233f26"
+    },
+    "local_ocr/io04/p047.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io04/p047.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 12995,
+      "visible_after": 12995,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "1454515e4eab758c79697bfb5fc6fbd77853b91454272743136fae262b5c6950"
+    },
+    "local_ocr/io04/p049.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io04/p049.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 3028,
+      "visible_after": 3028,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "9a2e27aa013dbf2f6c5bea374544346ff12a98ff7e7236db1db7dbef0804e644"
+    },
+    "local_ocr/io04/p052.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io04/p052.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 4835,
+      "visible_after": 4835,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "06f22b2b7981e255959767846cc642cf826aa850bf1efa8c8d5680e93a09712e"
+    },
+    "local_ocr/io06/p016.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io06/p016.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 817,
+      "visible_after": 817,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "fcadff825887e6b2038a18205993c1fe4567fd3ea4a0c8e5b54b8e86b52fa0b0"
+    },
+    "local_ocr/io06/p028.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io06/p028.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1001,
+      "visible_after": 1001,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "7d6b6bfb209f8d80aeef90379f7bef4b73da117db1616876a10b46104d882bf3"
+    },
+    "local_ocr/io06/p030.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io06/p030.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1101,
+      "visible_after": 1101,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "8a00579e73b50c0ce660e2bfd7e31b59a5b0e3ed296fd85e01831f6427b58ecc"
+    },
+    "local_ocr/io06/p045.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io06/p045.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 969,
+      "visible_after": 969,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "fa6fbeb315b4314ecf69ccf69a40bf5c91facd1cf67d1563dd5db68d39e4cfbf"
+    },
+    "local_ocr/io06/p046.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io06/p046.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 922,
+      "visible_after": 922,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "241caaa844b3aecea6b3074d9572509e4e451a4e7d26aea04432306b53fb1566"
+    },
+    "local_ocr/io06/p053.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io06/p053.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 23,
+      "visible_after": 23,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "7126aafe03816853b2f5c7951847c2fd5b390acea5e338d7ebd2a89bb34ccf3f"
+    },
+    "local_ocr/io06/p062.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io06/p062.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1110,
+      "visible_after": 1110,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "a2c0a0b31d15dcc64791ea6dd09531a16ab45976333761119bac76ca2eff3bfb"
+    },
+    "local_ocr/io06/p063.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io06/p063.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1146,
+      "visible_after": 1146,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "6d00ac4042a67f7b0e4e3208e7d31f75570b77001e09ce3b13fe9c267e083532"
+    },
+    "local_ocr/io06/p065.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io06/p065.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 22,
+      "visible_after": 22,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "d4ea4bd75b1eb03430514fab6512dd848ba972307665897cd0d864f8e69db256"
+    },
+    "local_ocr/io06/p068.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io06/p068.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1171,
+      "visible_after": 1171,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "c5b9b20e6af4be71902f5e1dfa1a901bbd67880b8a04ef0e0c5bf20e94a7013f"
+    },
+    "local_ocr/io06/p075.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io06/p075.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 71,
+      "visible_after": 71,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "f0264e07ae54ffb0eb460ffe674e7245541e420e96a85827908ef99f57c71639"
+    },
+    "local_ocr/io06/p078.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/io06/p078.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 0,
+      "visible_after": 0,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "local_ocr/tl03/p002.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/tl03/p002.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1667,
+      "visible_after": 1667,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "1266a889026d22f7da1cd34dd0778a93d90127fde3f97c6850ccce7de1de1f0d"
+    },
+    "local_ocr/tl03/p003.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/tl03/p003.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 909,
+      "visible_after": 909,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "296b93f1a26b114dca998d423be79e12dcd4ef1eb0c01a871ecf308a3205b24e"
+    },
+    "local_ocr/tl03/p005.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/tl03/p005.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 1749,
+      "visible_after": 1749,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "7ecff3dfd13a1bb448a0a358dc461222c321dddde139a3240c27628e93fda7f1"
+    },
+    "local_ocr/tl03/p008.md": {
+      "engine": "local_ocr",
+      "page": "local_ocr/tl03/p008.md",
+      "rules": {
+        "u": 0,
+        "span": 0,
+        "font": 0,
+        "center": 0,
+        "b": 0,
+        "strong": 0,
+        "i": 0,
+        "em": 0,
+        "br": 0,
+        "image_blocks": 0,
+        "text_divs_unwrapped": 0,
+        "bare_images": 0,
+        "table_presentation_attributes": 0
+      },
+      "visible_before": 144,
+      "visible_after": 144,
+      "visible_delta": 0,
+      "image_block_texts_kept": [],
+      "source_sha256": "c9060c9f8b36f23d2e937c791c5670cbebbab1dee5297e0c864751a6f47de737"
     },
     "pdf_inspector/bd01/p001.md": {
       "engine": "pdf_inspector",
@@ -1185,7 +3249,7 @@
       "visible_before": 1790,
       "visible_after": 1790,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "29bca067867b0ec7fe6cd11864577294a16019dba905f1178204306f8c66d6ff"
     },
     "pdf_inspector/bd01/p004.md": {
@@ -1209,7 +3273,7 @@
       "visible_before": 7185,
       "visible_after": 7185,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "8f4546eb7e99f565f4986c7d754ec0a9addc26cec0b7163f670d0645093bf502"
     },
     "pdf_inspector/bd01/p005.md": {
@@ -1233,7 +3297,7 @@
       "visible_before": 8076,
       "visible_after": 8076,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "0164069baebc4964c0d943cc72b881261bec5e2c9a9d5bebdf10d8bd4cbdb82c"
     },
     "pdf_inspector/bd01/p006.md": {
@@ -1257,7 +3321,7 @@
       "visible_before": 1422,
       "visible_after": 1422,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "b2acd6672acbd38da0798f72bb888790fd0d2abebf1c7c8cbacf46fa98206db6"
     },
     "pdf_inspector/bd02/p001.md": {
@@ -1281,7 +3345,7 @@
       "visible_before": 3319,
       "visible_after": 3319,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "9d359e8e325463fc5dc6374392eede829860d1237da493dc059ab4f5199018c6"
     },
     "pdf_inspector/bd02/p002.md": {
@@ -1305,7 +3369,7 @@
       "visible_before": 5433,
       "visible_after": 5433,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "344cce99a66f7b469852bf321c753551a7935690218bf1eb46aa47bdd5d2762e"
     },
     "pdf_inspector/bd02/p006.md": {
@@ -1329,7 +3393,7 @@
       "visible_before": 542,
       "visible_after": 542,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "b101a5a3251756c4475064c9def06575354e744b71c30ba3a95211d7d84862a9"
     },
     "pdf_inspector/bd02/p008.md": {
@@ -1353,7 +3417,7 @@
       "visible_before": 1030,
       "visible_after": 1030,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "a6b9e319bac487bcd93f3295f6a8ecd9a979b4db153313e20f0b7ec1c8686d10"
     },
     "pdf_inspector/bd03/p001.md": {
@@ -1377,7 +3441,7 @@
       "visible_before": 3478,
       "visible_after": 3478,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "37711e759fdc4e92738837512b7d4bac21317c320099e6c6dc99caa0e9e1cae7"
     },
     "pdf_inspector/bd03/p002.md": {
@@ -1401,7 +3465,7 @@
       "visible_before": 3364,
       "visible_after": 3364,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "50f3c3aed904c1cd0b64dbd7d42b000239b1a37c037e9ff8d32d9db4793dc44d"
     },
     "pdf_inspector/bd03/p010.md": {
@@ -1425,7 +3489,7 @@
       "visible_before": 2884,
       "visible_after": 2884,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "51524d34cfd050e5f22d3f18eaba3bb5ee7aa54d7a232a60ce9a0b6ab1d982e7"
     },
     "pdf_inspector/bd03/p015.md": {
@@ -1449,7 +3513,7 @@
       "visible_before": 4244,
       "visible_after": 4244,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "8f26880ce6bd29c5090874639e29be013da371478e85bbac0fb25bf191a0e278"
     },
     "pdf_inspector/bd03/p021.md": {
@@ -1473,7 +3537,7 @@
       "visible_before": 5451,
       "visible_after": 5451,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "347fc4169941226bdcec5d09ab2bee6d6de0dabaa3a9a8edc4ef356175f189ec"
     },
     "pdf_inspector/bd03/p023.md": {
@@ -1497,7 +3561,7 @@
       "visible_before": 6375,
       "visible_after": 6375,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "1bbf04f658960fe3edd636fffe8ceedaf5d0c5f4afd0cda34307c65c28109622"
     },
     "pdf_inspector/eq01/p011.md": {
@@ -1521,7 +3585,7 @@
       "visible_before": 1912,
       "visible_after": 1912,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "f9bf583cde30e69f87d3c29ed81a61ff689eacda44c215260b95dea2b4b660db"
     },
     "pdf_inspector/io04/p001.md": {
@@ -1545,7 +3609,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io04/p004.md": {
@@ -1569,7 +3633,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io04/p016.md": {
@@ -1593,7 +3657,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io04/p017.md": {
@@ -1617,7 +3681,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io04/p018.md": {
@@ -1641,7 +3705,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io04/p020.md": {
@@ -1665,7 +3729,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io04/p033.md": {
@@ -1689,7 +3753,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io04/p042.md": {
@@ -1713,7 +3777,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io04/p044.md": {
@@ -1737,7 +3801,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io04/p047.md": {
@@ -1761,7 +3825,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io04/p049.md": {
@@ -1785,7 +3849,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io04/p052.md": {
@@ -1809,7 +3873,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io06/p016.md": {
@@ -1833,7 +3897,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io06/p028.md": {
@@ -1857,7 +3921,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io06/p030.md": {
@@ -1881,7 +3945,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io06/p045.md": {
@@ -1905,7 +3969,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io06/p046.md": {
@@ -1929,7 +3993,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io06/p053.md": {
@@ -1953,7 +4017,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io06/p062.md": {
@@ -1977,7 +4041,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io06/p063.md": {
@@ -2001,7 +4065,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io06/p065.md": {
@@ -2025,7 +4089,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io06/p068.md": {
@@ -2049,7 +4113,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io06/p075.md": {
@@ -2073,7 +4137,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/io06/p078.md": {
@@ -2097,7 +4161,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/tl03/p002.md": {
@@ -2121,7 +4185,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/tl03/p003.md": {
@@ -2145,7 +4209,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/tl03/p005.md": {
@@ -2169,7 +4233,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "pdf_inspector/tl03/p008.md": {
@@ -2193,7 +4257,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "worker/bd01/p001.md": {
@@ -2217,7 +4281,7 @@
       "visible_before": 1372,
       "visible_after": 1372,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "1779946c63beeaaad3cb0c78250115ce3ddb288af82f0d1af368385e6e92f228"
     },
     "worker/bd01/p004.md": {
@@ -2241,7 +4305,7 @@
       "visible_before": 6899,
       "visible_after": 6899,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "408f5a7ef04be2495f558d3448f275226de4fe2bd736d968698cfdf97ae4f21e"
     },
     "worker/bd01/p005.md": {
@@ -2265,7 +4329,7 @@
       "visible_before": 7225,
       "visible_after": 7225,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "62b62e85f865f0aee277ccdd29ed6f6f91f5b04daad598ed55f198258bb0da18"
     },
     "worker/bd01/p006.md": {
@@ -2286,10 +4350,10 @@
         "bare_images": 0,
         "table_presentation_attributes": 0
       },
-      "visible_before": 1082,
-      "visible_after": 1082,
+      "visible_before": 1086,
+      "visible_after": 1086,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "CC BY"
       ],
       "source_sha256": "3de3bbef124a1fde0164dd9d7674400ea6657fa93d710c70a5ddaa91c40a2a06"
@@ -2312,10 +4376,10 @@
         "bare_images": 0,
         "table_presentation_attributes": 0
       },
-      "visible_before": 3304,
-      "visible_after": 3304,
+      "visible_before": 3319,
+      "visible_after": 3319,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "Check for updates"
       ],
       "source_sha256": "ddafb7960f0e76c8231c9c86fc48249b06292770a1a42dea6733a442577273b7"
@@ -2341,7 +4405,7 @@
       "visible_before": 5362,
       "visible_after": 5362,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "635b7eee1ef90a0d5b19c1af04d6d734f78022ecdda140f8645aae11e141e46f"
     },
     "worker/bd02/p006.md": {
@@ -2362,10 +4426,10 @@
         "bare_images": 0,
         "table_presentation_attributes": 0
       },
-      "visible_before": 472,
-      "visible_after": 472,
+      "visible_before": 13832,
+      "visible_after": 13832,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "",
         "Pathogenic Pathogeniclikely Benign Benignlikely Uncertain Pathogenic Pathogenic Pathogeniclikely Benign Benignlikely Uncertain SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication deletion insertion deletion_insertion SNP duplication",
         "",
@@ -2394,7 +4458,7 @@
       "visible_before": 956,
       "visible_after": 956,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "",
         "",
         "",
@@ -2421,10 +4485,10 @@
         "bare_images": 0,
         "table_presentation_attributes": 0
       },
-      "visible_before": 3425,
-      "visible_after": 3425,
+      "visible_before": 3440,
+      "visible_after": 3440,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "Check for updates"
       ],
       "source_sha256": "75bbc6a69a8476def106b1e61acb632e5cf1d4f6915f2764cec39f3e591fbbaf"
@@ -2450,7 +4514,7 @@
       "visible_before": 3216,
       "visible_after": 3216,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "885c76246f2db13c839d18a96a7560fb06cfbffcacf5e88e065fb778a1102f40"
     },
     "worker/bd03/p010.md": {
@@ -2474,7 +4538,7 @@
       "visible_before": 2786,
       "visible_after": 2786,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "",
         ""
       ],
@@ -2501,7 +4565,7 @@
       "visible_before": 4447,
       "visible_after": 4447,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "af26ee7da8c630fc19952680e7556ee226cd7faf715355006ad7ea4574ddb75d"
     },
     "worker/bd03/p021.md": {
@@ -2525,7 +4589,7 @@
       "visible_before": 4508,
       "visible_after": 4508,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "58cc33f1d3eb495306a68e3f95a22121c23a757d5be847df8389cbf2f4500fe9"
     },
     "worker/bd03/p023.md": {
@@ -2549,7 +4613,7 @@
       "visible_before": 5297,
       "visible_after": 5297,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "1ddceea7f00621e0a7df21c1e5a6640d7b576beebefe1e49945666c84b46b082"
     },
     "worker/eq01/p011.md": {
@@ -2573,7 +4637,7 @@
       "visible_before": 3124,
       "visible_after": 3124,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "2f6bf88a32f2819c215f0a30f90d0183c42fcfdcd831b8fc393e4cd534fe6e95"
     },
     "worker/io04/p001.md": {
@@ -2597,7 +4661,7 @@
       "visible_before": 40,
       "visible_after": 40,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "a41536e78fdcc731eb4b40f58344edf00f3b8e00a4be1ac012aa20b3beee1273"
     },
     "worker/io04/p004.md": {
@@ -2618,10 +4682,10 @@
         "bare_images": 0,
         "table_presentation_attributes": 0
       },
-      "visible_before": 10031,
-      "visible_after": 10031,
+      "visible_before": 10032,
+      "visible_after": 10032,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "港"
       ],
       "source_sha256": "60c727b4b309d1510eba1ffe6918cf7324fd09f15e288d794e449eb8c331eaf4"
@@ -2647,7 +4711,7 @@
       "visible_before": 6005,
       "visible_after": 6005,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "",
         "",
         ""
@@ -2672,10 +4736,10 @@
         "bare_images": 0,
         "table_presentation_attributes": 0
       },
-      "visible_before": 3498,
-      "visible_after": 3498,
+      "visible_before": 3506,
+      "visible_after": 3506,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "",
         "",
         "AMER AGRI"
@@ -2703,7 +4767,7 @@
       "visible_before": 8162,
       "visible_after": 8162,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "8d5c9a764c1d61aa9f2bb84be6c8135df515e7abfb4e30ad4596197a93466ed8"
     },
     "worker/io04/p020.md": {
@@ -2727,7 +4791,7 @@
       "visible_before": 7766,
       "visible_after": 7766,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "53d5519242dec3bd2e5b2cad0b7edde547b111cd7a67203e0143937781fdfec1"
     },
     "worker/io04/p033.md": {
@@ -2751,7 +4815,7 @@
       "visible_before": 11086,
       "visible_after": 11086,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "098fce08f44800ddb8260cafd4380720bd4bbd78303b23ed583d728586066f67"
     },
     "worker/io04/p042.md": {
@@ -2772,10 +4836,10 @@
         "bare_images": 0,
         "table_presentation_attributes": 0
       },
-      "visible_before": 7415,
-      "visible_after": 7415,
+      "visible_before": 8132,
+      "visible_after": 8132,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "Gatarrh",
         "O",
         "Do You Want",
@@ -2802,10 +4866,10 @@
         "bare_images": 0,
         "table_presentation_attributes": 0
       },
-      "visible_before": 10248,
-      "visible_after": 10248,
+      "visible_before": 10261,
+      "visible_after": 10261,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "SUNDRY HUMBUGS"
       ],
       "source_sha256": "f1a2667703af91a405983ed66f4f7f0eec33330130c71cd2ee2daf979f4dd76d"
@@ -2828,10 +4892,10 @@
         "bare_images": 0,
         "table_presentation_attributes": 0
       },
-      "visible_before": 12920,
-      "visible_after": 12920,
+      "visible_before": 12941,
+      "visible_after": 12941,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "CH&D CHINNA TINSOAYINRR"
       ],
       "source_sha256": "d178e579b3a5660b2825dc8cca31b43d9d77498f5db4fcdc8a919e634c40a6f4"
@@ -2854,10 +4918,10 @@
         "bare_images": 0,
         "table_presentation_attributes": 0
       },
-      "visible_before": 2962,
-      "visible_after": 2962,
+      "visible_before": 3188,
+      "visible_after": 3188,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "ATALE OF TWO CITIES. HARD TIMES & THE OLD CURIOSITY SHOP & BARNABY RUDGE & CHRISTMAS STORIES. OLIVER TWIST & CREAT EXPECTATIONS. PICKWICK PAPERS. OUR MUTUAL FRIEND. LITTLE DORRIT. BLEAK HOUSE. NICHOLAS NICKLEBY. MARTIN CHUZZLEWIT. DAVID COPPERFIELD. DOMBEY AND SON.",
         ""
       ],
@@ -2881,10 +4945,10 @@
         "bare_images": 0,
         "table_presentation_attributes": 0
       },
-      "visible_before": 4076,
-      "visible_after": 4076,
+      "visible_before": 4718,
+      "visible_after": 4718,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "ROYAL FULL WEIGHT ROYAL POMERABROUTELY PURE ROYAL BAKING POWDER POWDER Absolutely Pure.",
         "Low Down Discharge, Guaranteed to sow 50 per cent wider and more evenly than any in use. Perfectly Adjustable. Double Slides and Cut-Off.",
         "1",
@@ -2922,7 +4986,7 @@
       "visible_before": 829,
       "visible_after": 829,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "f2ebdc118c145b6f344d5c76bf2a5e50384e6d7dfb93d9758295aae599b20220"
     },
     "worker/io06/p028.md": {
@@ -2946,7 +5010,7 @@
       "visible_before": 978,
       "visible_after": 978,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "11c6d41390966621fc0f55dd11c53de27bc18ca56366d761f323def9e6632c80"
     },
     "worker/io06/p030.md": {
@@ -2970,7 +5034,7 @@
       "visible_before": 1071,
       "visible_after": 1071,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "b304d79b5bb5056bf4645dd1a3f4cb819ee97fd179b807e0fe1b1da74e19124f"
     },
     "worker/io06/p045.md": {
@@ -2994,7 +5058,7 @@
       "visible_before": 1004,
       "visible_after": 1004,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "a74e54253f154d6654d8947946b84a67d8e62ddbb9883202a383fcef02cb9940"
     },
     "worker/io06/p046.md": {
@@ -3018,7 +5082,7 @@
       "visible_before": 894,
       "visible_after": 894,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "0e2241817c6ff6bc447fb5169eb5a431e766eae8eec5f7221ff78a4f2f234e30"
     },
     "worker/io06/p053.md": {
@@ -3042,7 +5106,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "worker/io06/p062.md": {
@@ -3066,7 +5130,7 @@
       "visible_before": 1084,
       "visible_after": 1084,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "6f3c14ae7f59a889b8d9674916556863badd404da4b58605871e9658965c273a"
     },
     "worker/io06/p063.md": {
@@ -3090,7 +5154,7 @@
       "visible_before": 1130,
       "visible_after": 1130,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "aa1a9d430d583b41bcc269bf8d3447d5bf93aa4720e7032e4bf86bde6081b285"
     },
     "worker/io06/p065.md": {
@@ -3114,7 +5178,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "worker/io06/p068.md": {
@@ -3138,7 +5202,7 @@
       "visible_before": 1144,
       "visible_after": 1144,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "d9b54b498944763daa11a01687813b33af420f74a6cc77b342bf298d278619b3"
     },
     "worker/io06/p075.md": {
@@ -3159,10 +5223,10 @@
         "bare_images": 0,
         "table_presentation_attributes": 0
       },
-      "visible_before": 83,
-      "visible_after": 83,
+      "visible_before": 84,
+      "visible_after": 84,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         "鶴"
       ],
       "source_sha256": "9649b4fdd41e8b7fc17b1f919e2c632ea992861f8822ca8c25f4ebe476c0bf08"
@@ -3188,7 +5252,7 @@
       "visible_before": 0,
       "visible_after": 0,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         ""
       ],
       "source_sha256": "760193ac1f93cf7dc27287e87090ea382afaa4b93d1764791d91f29742b5bb32"
@@ -3214,7 +5278,7 @@
       "visible_before": 1664,
       "visible_after": 1664,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "9b4ee13aea8145c2b0290ac4fd66e5853ebe342468036acaf01a46cd41729e57"
     },
     "worker/tl03/p003.md": {
@@ -3238,7 +5302,7 @@
       "visible_before": 1009,
       "visible_after": 1009,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "4d88de8124ded4b2fa5603b395ec670ab1e48d65e2fb6402de169b83f7799c1f"
     },
     "worker/tl03/p005.md": {
@@ -3262,7 +5326,7 @@
       "visible_before": 1730,
       "visible_after": 1730,
       "visible_delta": 0,
-      "removed_image_block_texts": [],
+      "image_block_texts_kept": [],
       "source_sha256": "e590ad9365e2d0cbed4d2f47eab60cda41b9cbc15c9fd7556c58ece6f566114d"
     },
     "worker/tl03/p008.md": {
@@ -3286,2074 +5350,10 @@
       "visible_before": 85,
       "visible_after": 85,
       "visible_delta": 0,
-      "removed_image_block_texts": [
+      "image_block_texts_kept": [
         ""
       ],
       "source_sha256": "313b9f825642cb39617ba030c7a8152bb84950a57c6d555af4367e56df0d52c0"
-    },
-    "dots_mocr/bd01/p001.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd01/p001.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1714,
-      "visible_after": 1714,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "1b0ca56bbe1e88834b5774eedcda7ccd8bc53e7d7e38b3a88a4065039bf74a0c"
-    },
-    "dots_mocr/bd01/p004.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd01/p004.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 7093,
-      "visible_after": 7093,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "b453b138a9de23880f6654c2fac22053cac9ecb694de8d2b46af0a6a6d0a2c2d"
-    },
-    "dots_mocr/bd01/p005.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd01/p005.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 7408,
-      "visible_after": 7408,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "93e58dd1cebd6f17acdc9e8e79b91ef86f4429cfdbb89f319b640eb134affeb0"
-    },
-    "dots_mocr/bd01/p006.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd01/p006.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1292,
-      "visible_after": 1292,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "3049b31a949ee15d5fa88b15388905fe2dd418ee6d6ecdc5849705f1de9d8442"
-    },
-    "dots_mocr/bd02/p001.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd02/p001.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 3387,
-      "visible_after": 3387,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "78afa12d4f9fe95ffd0b9fef14d55b7f2af1a0a4be431f7323c663cf01d4454e"
-    },
-    "dots_mocr/bd02/p002.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd02/p002.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 5437,
-      "visible_after": 5437,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "1a339df17ca947aeacfb016b8dff3b7dd4c52c6390c43727454d0b80ab791f89"
-    },
-    "dots_mocr/bd02/p006.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd02/p006.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 544,
-      "visible_after": 544,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "5492cc5c2ae2bfae61292d7a2f92f72391aa01cac4f0fd3f0b976a5c2f367d98"
-    },
-    "dots_mocr/bd02/p008.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd02/p008.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1033,
-      "visible_after": 1033,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "dcbde551c28c412b565c4434f8472cf48d91720edb15e2b50421ffe22767a61d"
-    },
-    "dots_mocr/bd03/p001.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd03/p001.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 3442,
-      "visible_after": 3442,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "b23959979b17eab518ce3cccf1fc72dfe6e31aa555a375dd80fcdb4671aa5b84"
-    },
-    "dots_mocr/bd03/p002.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd03/p002.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 3375,
-      "visible_after": 3375,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "5214abdb2ce8aaa25b766c8676a2dd8d1a2f3dcdf4f7665da5d14bff7589b1a1"
-    },
-    "dots_mocr/bd03/p010.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd03/p010.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 2949,
-      "visible_after": 2949,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "2f00e44b7511d4fd80637c40f248ca893522cdda50b2f247fb55c037892e3f72"
-    },
-    "dots_mocr/bd03/p015.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd03/p015.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 4566,
-      "visible_after": 4566,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "ee97ba2dbf99f27b1c4533e74cfff241e6cacfa4cddeeb9994213a9b00888713"
-    },
-    "dots_mocr/bd03/p021.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd03/p021.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 4604,
-      "visible_after": 4604,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "6bf34341a9c3d07a7bd8d8ae3f96e771dbe903cf7e172bdadcbd598245b98bd5"
-    },
-    "dots_mocr/bd03/p023.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/bd03/p023.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 5359,
-      "visible_after": 5359,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "47ddfa65a8af4cfd86cbc07749abfa154aa2e3248f9d74730c6927293a10c315"
-    },
-    "dots_mocr/eq01/p011.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/eq01/p011.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 3132,
-      "visible_after": 3132,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "d0a5a6b0c6366d931c514faa993f63275553ba85252e5957356802891b086f35"
-    },
-    "dots_mocr/io04/p001.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io04/p001.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 154,
-      "visible_after": 154,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "0deb5cf914b5e1ec3cc509c7e28327e755fd902b0323bc205180e709d32063a2"
-    },
-    "dots_mocr/io04/p004.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io04/p004.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 10082,
-      "visible_after": 10082,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "860d3984b7a7e603073b8741f04e23a2a5fd48fb834c60e07a97cc61b73c8c77"
-    },
-    "dots_mocr/io04/p016.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io04/p016.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 6036,
-      "visible_after": 6036,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "4bbe2b17c32a3dfbf4d6c2fc290aff72e42654fde8ce99483d3b4847f89fb8d7"
-    },
-    "dots_mocr/io04/p017.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io04/p017.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 3503,
-      "visible_after": 3503,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "5c328e75e411a6890d195971481e202c3f85e47ac80ade2f7c6741ac9a3a985a"
-    },
-    "dots_mocr/io04/p018.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io04/p018.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 8196,
-      "visible_after": 8196,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "aa0979cdf4299fc9468a9b40af1a4d78568a99d25fe23c3d30760a99318e3f55"
-    },
-    "dots_mocr/io04/p020.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io04/p020.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 7798,
-      "visible_after": 7798,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "5d317fc70dbfeb91a9e42cf03a1cc62f271c7e09346f37c1e3ac5216855a60c8"
-    },
-    "dots_mocr/io04/p033.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io04/p033.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 11124,
-      "visible_after": 11124,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "01804e8eefef20a7ac977b5343637cc0bfa5066697d8f934cfa8acb72b3e06cc"
-    },
-    "dots_mocr/io04/p042.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io04/p042.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 8056,
-      "visible_after": 8056,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "d54274711b5a7a01fd4e200eef64cffe19d573aae522d2059e3999ecb60c11ad"
-    },
-    "dots_mocr/io04/p044.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io04/p044.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 10298,
-      "visible_after": 10298,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "0edc21f03a0ef63ca44938ab35929b657eba97f8456f95a249a6e605717ba337"
-    },
-    "dots_mocr/io04/p047.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io04/p047.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 13069,
-      "visible_after": 13069,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "da301295c9d8d02c7a8e14ce6bfa0fdab6bc32cbfd8b600000b8238259d02729"
-    },
-    "dots_mocr/io04/p049.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io04/p049.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 2999,
-      "visible_after": 2999,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "150c9a8e5a32d304c6f6800ad297c9a9bd44f1264edd817d9a3a787d77ae41e6"
-    },
-    "dots_mocr/io04/p052.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io04/p052.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 4838,
-      "visible_after": 4838,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "2e08406b148450e661fe80f160d8f82aca94f73741a76214b434a32b3e06c66c"
-    },
-    "dots_mocr/io06/p016.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io06/p016.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 860,
-      "visible_after": 860,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "ebf54e2c10e68075fbef55cfd5f29070ebcbd6c9223e09cb71ff100fe4783154"
-    },
-    "dots_mocr/io06/p028.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io06/p028.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 999,
-      "visible_after": 999,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "214bca9f55ae766415b5f909d0bc4e5940cb22a4857b7d82f8b0e76049c11dad"
-    },
-    "dots_mocr/io06/p030.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io06/p030.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1098,
-      "visible_after": 1098,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "55acbf272b34bc2f7af888943698d27b647cbd5f3beecb50a42e8cae79870678"
-    },
-    "dots_mocr/io06/p045.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io06/p045.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1032,
-      "visible_after": 1032,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "cfc7a3a5b183b9058a20106166b21b4feb8200614ea8b9d17ac2ff44fbb75072"
-    },
-    "dots_mocr/io06/p046.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io06/p046.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 918,
-      "visible_after": 918,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "b9b530db95f6f0c2702d6b6ea384b24f527e66f1aa9feca28c5390e93143979d"
-    },
-    "dots_mocr/io06/p053.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io06/p053.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 60,
-      "visible_after": 60,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "ca9c12523109fec9c8f346fb0e4131f0c74efd46933ae720d6a417eff5e7d68b"
-    },
-    "dots_mocr/io06/p062.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io06/p062.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1106,
-      "visible_after": 1106,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "abfea92981c9b76ce3bf63e75590d29aef4baa8c90a7fad04cd0daf8a18dbb77"
-    },
-    "dots_mocr/io06/p063.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io06/p063.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1152,
-      "visible_after": 1152,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "d0922f2a932265c2f28f9d70d1d4583120f810f2178b37f8f8cd029d2f1f8da7"
-    },
-    "dots_mocr/io06/p065.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io06/p065.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 48,
-      "visible_after": 48,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "1a90a3e6e9f51556462087e2b57c002b516dedd9d865186d3e3d3abd50191a11"
-    },
-    "dots_mocr/io06/p068.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io06/p068.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1172,
-      "visible_after": 1172,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "200c3d450a53baa5be5d295f1df27b163d4a00fe386830a8cf9cedf31ab6f682"
-    },
-    "dots_mocr/io06/p075.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io06/p075.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 104,
-      "visible_after": 104,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "d517883238da63da186ba40001730f25b6103ab038087f336d81546f5787b843"
-    },
-    "dots_mocr/io06/p078.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/io06/p078.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 0,
-      "visible_after": 0,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
-    },
-    "dots_mocr/tl03/p002.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/tl03/p002.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1655,
-      "visible_after": 1655,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "6be4acfef6b38b107b4de85f9c29144c55edf4e7b8fad063f5c7eef25771adc2"
-    },
-    "dots_mocr/tl03/p003.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/tl03/p003.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1016,
-      "visible_after": 1016,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "1ea45d0cbf4619dca41bff901fdb9e39cbe0bfa0426b9ba412e8b18097e62be6"
-    },
-    "dots_mocr/tl03/p005.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/tl03/p005.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1754,
-      "visible_after": 1754,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "8c0831a02d178eb53be45c3e8d70aeb479fb794c7f735480f0921449976859f0"
-    },
-    "dots_mocr/tl03/p008.md": {
-      "engine": "dots_mocr",
-      "page": "dots_mocr/tl03/p008.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 38,
-      "visible_after": 38,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "a4d77db0b53297f66b891049c8269c6033fcd071ef1aa6d7eeccd873c9eba77c"
-    },
-    "local_ocr/bd01/p001.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd01/p001.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1923,
-      "visible_after": 1923,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "e37e6c22884ca3755de7f6cd1f3d508e7da22ea1a0cbc9ba41dc9be8e5c7f098"
-    },
-    "local_ocr/bd01/p004.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd01/p004.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 9925,
-      "visible_after": 9925,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "0dea3ebd3145d5e61c851252ef4e6cc6be56f1a78c5159de5699556e82340f8f"
-    },
-    "local_ocr/bd01/p005.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd01/p005.md",
-      "rules": {
-        "u": 2,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 8418,
-      "visible_after": 8418,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "a3f1943402f9964f0a31111aa403c1a11b266fa890a797c43a5b71757d643548"
-    },
-    "local_ocr/bd01/p006.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd01/p006.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1795,
-      "visible_after": 1795,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "de28edb34c82fbc58e77ad7231bc74e3d7792917cb96dd8d0374b7c2f4182c32"
-    },
-    "local_ocr/bd02/p001.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd02/p001.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 4683,
-      "visible_after": 4683,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "8dfc8c1076be1e7bab94d151e49c46024b3093b06388778579ededbc532164a9"
-    },
-    "local_ocr/bd02/p002.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd02/p002.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 5526,
-      "visible_after": 5526,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "456d54fc8b888dc1f8db9cf8c2a46264ddb2f40ca397bc08a0925a35a4a02d59"
-    },
-    "local_ocr/bd02/p006.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd02/p006.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 775,
-      "visible_after": 775,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "4d8270e4fb493989f36a468b49a7d0442166a2b0fa86d08e198e7ed301d4f9ab"
-    },
-    "local_ocr/bd02/p008.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd02/p008.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1446,
-      "visible_after": 1446,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "6e0af85e9aa52a8e3dd74c261f84070cadc2031590a2b05ca965acefff308241"
-    },
-    "local_ocr/bd03/p001.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd03/p001.md",
-      "rules": {
-        "u": 14,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 3688,
-      "visible_after": 3688,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "ebcf2cca8e86a94dd0e5615878fa740c44624d54257b60ef72ff9dcef05bf0d6"
-    },
-    "local_ocr/bd03/p002.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd03/p002.md",
-      "rules": {
-        "u": 30,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 3919,
-      "visible_after": 3919,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "501c6bbd68da3bb110b9f64c9c2a43e474e06c61ea46f7e7f73fec70a99aa0c1"
-    },
-    "local_ocr/bd03/p010.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd03/p010.md",
-      "rules": {
-        "u": 24,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 3203,
-      "visible_after": 3203,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "10841bfb86f64695210e62b497169b2d49a82e66fd102909b82a9e00240e582d"
-    },
-    "local_ocr/bd03/p015.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd03/p015.md",
-      "rules": {
-        "u": 16,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 4488,
-      "visible_after": 4488,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "56302b8b264dc1ad39b11f664af681a6089afe6c3343ad4779e31bafeb648a38"
-    },
-    "local_ocr/bd03/p021.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd03/p021.md",
-      "rules": {
-        "u": 58,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 6095,
-      "visible_after": 6095,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "88458fda6374afdf0a1e3ec32fe96f822574a9d040ff0751cd04897464763912"
-    },
-    "local_ocr/bd03/p023.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/bd03/p023.md",
-      "rules": {
-        "u": 76,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 6782,
-      "visible_after": 6782,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "690deb7cc94de4bd2f55ab07d7eccf299bfae5c7f1eb16347dcef153c7dddb15"
-    },
-    "local_ocr/eq01/p011.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/eq01/p011.md",
-      "rules": {
-        "u": 4,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 2673,
-      "visible_after": 2673,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "5dca41ee85af5173488df931e48c2813517d16dcf8cb3498c295f2db801c09a4"
-    },
-    "local_ocr/io04/p001.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io04/p001.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 121,
-      "visible_after": 121,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "c34919685a1b4a8ce024d69acea081eecc6114b1777b1ab95c05898d1a039fbd"
-    },
-    "local_ocr/io04/p004.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io04/p004.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 10072,
-      "visible_after": 10072,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "6a89275ecc245a50a3df7449b27d81dc3bb6a6136a5b415f85e6a0b0c46e26fd"
-    },
-    "local_ocr/io04/p016.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io04/p016.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 6037,
-      "visible_after": 6037,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "5ddc600976c258701d3c24647ccebb7ef05f0e4d8d232fa057f9590229f2caef"
-    },
-    "local_ocr/io04/p017.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io04/p017.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 3510,
-      "visible_after": 3510,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "0cffead2c5a9889dd354a60845dd56f9cb3968723174a16038318f6c47cdac97"
-    },
-    "local_ocr/io04/p018.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io04/p018.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 8206,
-      "visible_after": 8206,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "763a40f04a8149d3e12d3314742e97fa3de48b5c09559ef3727e50489b1bf3c7"
-    },
-    "local_ocr/io04/p020.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io04/p020.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 7798,
-      "visible_after": 7798,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "4461b7ce232f128e351dd3b282c7b71d53a2c2f87e25a6615d1ad0e2ed14244d"
-    },
-    "local_ocr/io04/p033.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io04/p033.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 11151,
-      "visible_after": 11151,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "a12cc062b3745ae99314ea24bb15a8fcbe3fecce0d670f172cca24ce0e5f57de"
-    },
-    "local_ocr/io04/p042.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io04/p042.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 8194,
-      "visible_after": 8194,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "56deae0b6a0bfe2bbea0141164091bdd9d72d1737eeccb66f36d6eec6c1b8740"
-    },
-    "local_ocr/io04/p044.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io04/p044.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 10302,
-      "visible_after": 10302,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "87ae5b225029cd9dc23789ad1ef661cc97e02438475baff1a5a28a9194233f26"
-    },
-    "local_ocr/io04/p047.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io04/p047.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 12995,
-      "visible_after": 12995,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "1454515e4eab758c79697bfb5fc6fbd77853b91454272743136fae262b5c6950"
-    },
-    "local_ocr/io04/p049.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io04/p049.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 3028,
-      "visible_after": 3028,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "9a2e27aa013dbf2f6c5bea374544346ff12a98ff7e7236db1db7dbef0804e644"
-    },
-    "local_ocr/io04/p052.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io04/p052.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 4835,
-      "visible_after": 4835,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "06f22b2b7981e255959767846cc642cf826aa850bf1efa8c8d5680e93a09712e"
-    },
-    "local_ocr/io06/p016.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io06/p016.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 817,
-      "visible_after": 817,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "fcadff825887e6b2038a18205993c1fe4567fd3ea4a0c8e5b54b8e86b52fa0b0"
-    },
-    "local_ocr/io06/p028.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io06/p028.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1001,
-      "visible_after": 1001,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "7d6b6bfb209f8d80aeef90379f7bef4b73da117db1616876a10b46104d882bf3"
-    },
-    "local_ocr/io06/p030.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io06/p030.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1101,
-      "visible_after": 1101,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "8a00579e73b50c0ce660e2bfd7e31b59a5b0e3ed296fd85e01831f6427b58ecc"
-    },
-    "local_ocr/io06/p045.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io06/p045.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 969,
-      "visible_after": 969,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "fa6fbeb315b4314ecf69ccf69a40bf5c91facd1cf67d1563dd5db68d39e4cfbf"
-    },
-    "local_ocr/io06/p046.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io06/p046.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 922,
-      "visible_after": 922,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "241caaa844b3aecea6b3074d9572509e4e451a4e7d26aea04432306b53fb1566"
-    },
-    "local_ocr/io06/p053.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io06/p053.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 23,
-      "visible_after": 23,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "7126aafe03816853b2f5c7951847c2fd5b390acea5e338d7ebd2a89bb34ccf3f"
-    },
-    "local_ocr/io06/p062.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io06/p062.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1110,
-      "visible_after": 1110,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "a2c0a0b31d15dcc64791ea6dd09531a16ab45976333761119bac76ca2eff3bfb"
-    },
-    "local_ocr/io06/p063.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io06/p063.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1146,
-      "visible_after": 1146,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "6d00ac4042a67f7b0e4e3208e7d31f75570b77001e09ce3b13fe9c267e083532"
-    },
-    "local_ocr/io06/p065.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io06/p065.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 22,
-      "visible_after": 22,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "d4ea4bd75b1eb03430514fab6512dd848ba972307665897cd0d864f8e69db256"
-    },
-    "local_ocr/io06/p068.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io06/p068.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1171,
-      "visible_after": 1171,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "c5b9b20e6af4be71902f5e1dfa1a901bbd67880b8a04ef0e0c5bf20e94a7013f"
-    },
-    "local_ocr/io06/p075.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io06/p075.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 71,
-      "visible_after": 71,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "f0264e07ae54ffb0eb460ffe674e7245541e420e96a85827908ef99f57c71639"
-    },
-    "local_ocr/io06/p078.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/io06/p078.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 0,
-      "visible_after": 0,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    "local_ocr/tl03/p002.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/tl03/p002.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1667,
-      "visible_after": 1667,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "1266a889026d22f7da1cd34dd0778a93d90127fde3f97c6850ccce7de1de1f0d"
-    },
-    "local_ocr/tl03/p003.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/tl03/p003.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 909,
-      "visible_after": 909,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "296b93f1a26b114dca998d423be79e12dcd4ef1eb0c01a871ecf308a3205b24e"
-    },
-    "local_ocr/tl03/p005.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/tl03/p005.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 1749,
-      "visible_after": 1749,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "7ecff3dfd13a1bb448a0a358dc461222c321dddde139a3240c27628e93fda7f1"
-    },
-    "local_ocr/tl03/p008.md": {
-      "engine": "local_ocr",
-      "page": "local_ocr/tl03/p008.md",
-      "rules": {
-        "u": 0,
-        "span": 0,
-        "font": 0,
-        "center": 0,
-        "b": 0,
-        "strong": 0,
-        "i": 0,
-        "em": 0,
-        "br": 0,
-        "image_blocks": 0,
-        "text_divs_unwrapped": 0,
-        "bare_images": 0,
-        "table_presentation_attributes": 0
-      },
-      "visible_before": 144,
-      "visible_after": 144,
-      "visible_delta": 0,
-      "removed_image_block_texts": [],
-      "source_sha256": "c9060c9f8b36f23d2e937c791c5670cbebbab1dee5297e0c864751a6f47de737"
     }
   }
 }

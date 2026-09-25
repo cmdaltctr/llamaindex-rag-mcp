@@ -45,22 +45,24 @@ def _visible(text: str) -> str:
 
 
 def _measure(raw: str, clean: str, key: str, engine: str) -> dict:
-    removed = [block for block in _image_blocks(raw) if block not in clean]
+    # Normaliser version 2 unwraps image blocks and keeps their text (A2), so
+    # the comparison covers every visible character: nothing is excluded.
+    unwrapped = [block for block in _image_blocks(raw) if block not in clean]
     before = raw
-    for block in removed:
-        before = before.replace(block, "", 1)
     after = clean
     rules = {
         name: max(0, len(regex.findall(raw)) - len(regex.findall(clean)))
         for name, regex in _FORMAT.items()
     }
-    rules["image_blocks"] = len(removed)
-    rules["text_divs_unwrapped"] = max(0, len(_DIV.findall(before)) - len(_DIV.findall(after)))
+    rules["image_blocks"] = len(unwrapped)
+    rules["text_divs_unwrapped"] = max(
+        0, len(_DIV.findall(before)) - len(_DIV.findall(after)) - len(unwrapped)
+    )
     rules["bare_images"] = max(
         0,
         len(_IMG.findall(raw))
         - len(_IMG.findall(clean))
-        - sum(len(_IMG.findall(block)) for block in removed),
+        - sum(len(_IMG.findall(block)) for block in unwrapped),
     )
     rules["table_presentation_attributes"] = sum(
         len(re.findall(r"\b(?!colspan\b|rowspan\b)[\w-]+\s*=", tag, re.I))
@@ -79,8 +81,8 @@ def _measure(raw: str, clean: str, key: str, engine: str) -> dict:
         "visible_before": before_count,
         "visible_after": after_count,
         "visible_delta": after_count - before_count,
-        "removed_image_block_texts": [
-            " ".join(html.unescape(_TAG.sub("", block)).split()) for block in removed
+        "image_block_texts_kept": [
+            " ".join(html.unescape(_TAG.sub("", block)).split()) for block in unwrapped
         ],
     }
 
@@ -120,12 +122,12 @@ def main() -> int:
     ):
         raise RuntimeError("Experiment 34 raw output changed during measurement")
     totals = Counter()
-    removed_texts = []
+    kept_texts = []
     for record in records.values():
         totals.update(record["rules"])
-        removed_texts.extend(
+        kept_texts.extend(
             {"page": record["page"], "text": text}
-            for text in record["removed_image_block_texts"]
+            for text in record["image_block_texts_kept"]
             if text
         )
     summary = {
@@ -133,7 +135,7 @@ def main() -> int:
         "source": str(SOURCE.relative_to(ROOT)),
         "page_count": len(records),
         "rule_totals": dict(sorted(totals.items())),
-        "removed_image_block_texts": removed_texts,
+        "image_block_texts_kept": kept_texts,
         "pages": records,
     }
     _atomic_json(OUTPUT / "summary.json", summary)

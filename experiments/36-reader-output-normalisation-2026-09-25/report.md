@@ -1,43 +1,51 @@
 # Experiment 36: Reader-output normalisation
 
-**Status:** Awaiting operator decisions: removed image-block text (task 4.3) and the `[figure]` marker (task 4.4).  
-**Normaliser:** version 1.  
-**Source:** Experiment 34 raw page Markdown after the worker fix (Experiment 34 A9); 5 engines × 43 pages (42 sampled plus `eq01` p11). See protocol amendment A1.
+**Status:** PASS  
+**Verdict:** Normaliser version 2 removes reader markup from all five engines' output and loses no visible character on any of 215 pages.  
+**Normaliser:** version 2 (version 1 removed image blocks with their text; see protocol A2).  
+**Source:** Experiment 34 raw page Markdown after the worker fix (Experiment 34 A9); 5 engines × 43 pages (42 sampled plus `eq01` p11), protocol A1.  
+**Raw data:** [`output/summary.json`](output/summary.json)  
+**Change:** `openspec/changes/normalise-reader-markdown` (tasks 4.1–4.4)  
+**Protocol:** [protocol.md](protocol.md)
 
-## Measured result
+## Bottom line
+
+PDF readers and OCR engines leave HTML markup in their Markdown: underline tags, image blocks and table styling. The normaliser removes it before chunking. On the Experiment 34 outputs, every visible character survives on every page, including text that the OCR worker read inside pictures. The operator reviewed the 28 texts that version 1 dropped with their image blocks. None was a caption, but some were real printed advertisements, so version 2 keeps them and adds no `[figure]` marker.
+
+## Results
 
 | Measure | `pdf_inspector` | `liteparse` | `worker` | `local_ocr` | `dots_mocr` | Total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Pages | 43 | 43 | 43 | 43 | 43 | 215 |
-| Visible-character deltas outside removed image blocks | 0 | 0 | 0 | 0 | 0 | 0 |
+| Visible-character deltas (whole page) | 0 | 0 | 0 | 0 | 0 | 0 |
 | `<u>` tags removed | 228 | 0 | 0 | 224 | 0 | 452 |
-| Image-bearing `<div>` blocks removed | 0 | 0 | 46 | 0 | 0 | 46 |
-| Table presentation attributes removed | 0 | 0 | 28 | 0 | 0 | 28 |
+| Image blocks unwrapped (`<img>` removed, text kept) | 0 | 0 | 46 | 0 | 0 | 46 |
 | Text-only `<div>` blocks unwrapped | 0 | 0 | 13 | 0 | 0 | 13 |
-| Removed blocks containing text | 0 | 0 | 28 | 0 | 0 | 28 |
+| Table presentation attributes removed | 0 | 0 | 28 | 0 | 0 | 28 |
 
 LiteParse and dots.mocr output needs no normalisation. The local OCR tier keeps
 pdf-inspector's `<u>` tags on fused pages. Only the worker emits image blocks.
+The runner confirmed that the Experiment 34 raw files stayed byte-identical.
 
-The first measurement (`5cbf91e`: 129 pages, 3 engines, 54 removed texts) read
-worker output with the page-1 fault. 26 of its 54 entries were duplicates of
-later pages' blocks; the two 14,722-character `bd02` blocks were one block.
+## Operator review of image-block text (task 4.3)
 
-The page-level data, source SHA-256 hashes and all removed texts are in
-[`output/summary.json`](output/summary.json). The runner confirmed that the
-Experiment 34 raw files stayed byte-identical during measurement.
+| Kind | Entries | Example | Version 2 |
+| --- | ---: | --- | --- |
+| Publisher logos and badges | 3 | `CC BY`, `Check for updates` | kept |
+| Chart labels | 1 | `bd02` p6: 14,722 characters of axis and legend labels | kept |
+| Newspaper advertisements and printed headings (`io04`) | 15 | `TORNADO CORN & COB MILL …`, `SUNDRY HUMBUGS` | kept |
+| Single stray characters | 9 | `港`, `福`, `鶴`, `☆`, `1` ×3, `A`, `O` | kept |
 
-## Removed text, by kind (28 entries, all worker)
+No entry is a real caption: captions sit in text-only blocks, which both versions keep.
 
-| Kind | Entries | Example |
-| --- | ---: | --- |
-| Publisher logos and badges | 3 | `CC BY`, `Check for updates` |
-| Chart labels | 1 | `bd02` p6: 14,722 characters of axis and legend labels |
-| Newspaper advertisements and printed headings (`io04`) | 15 | `TORNADO CORN & COB MILL …`, `J.I.C DRIVING BIT …`, `SUNDRY HUMBUGS` |
-| Single stray characters | 9 | `港`, `福`, `鶴`, `☆`, `1` ×3, `A`, `O` |
+## Discussion
 
-## Operator decisions needed
+1. **Why keep noisy text.** A formatting step cannot tell a useful advert from a stray `港`. Version 1 tried, by position (inside a picture), and dropped 15 real advertisement texts from an 1889 magazine. Version 2 keeps everything printed and leaves quality judgements to the engine comparison.
+2. **Cost.** The `bd02` p6 chart-label dump (14,722 characters) now reaches the index as a few low-value chunks. It is one block in 215 pages.
+3. **History.** The first measurement (`5cbf91e`) read worker output with the page-1 fault (Experiment 34 A9). The second (`42cb4df`, version 1) listed 28 removed texts. This run is version 2.
+4. **Limits.** 43 pages per engine, one corpus. The zero-loss result is measured on this sample only. Unknown tags pass through unchanged by design and are not counted.
 
-1. Task 4.3: is any removed text a real caption? Separately: should `io04`
-   advertisement text (printed on the page, but inside image blocks) be kept?
-2. Task 4.4: add a `[figure]` marker where an image block is removed?
+## Decisions
+
+- Task 4.3: keep text inside image blocks (normaliser version 2).
+- Task 4.4: no `[figure]` marker.

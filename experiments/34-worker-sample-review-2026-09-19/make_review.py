@@ -17,9 +17,15 @@ as the experiment's result. The export can be loaded back.
 Copies the needed page images from the Experiment 33 worktree into
 ``output/pages/`` (relative references keep the HTML movable).
 
-Usage:
-    python3 make_review.py
-    python3 make_review.py --only bd03:1,bd03:2,io06:28,io06:53,eq01:11 --out review_small.html
+Panels show normalised output (protocol A7): the pipeline's reader-output
+normaliser runs on each engine's raw Markdown before it is rendered; the raw
+files under ``output/<engine>/`` are never changed. ``--raw`` renders them as
+they are. Pages whose text the normaliser changed are listed in
+``output/normalised_panels.json``.
+
+Usage (the normaliser import needs the project environment):
+    uv run python make_review.py
+    uv run python make_review.py --only bd03:1,bd03:2,io06:28,io06:53,eq01:11 --out review_small.html
 """
 
 from __future__ import annotations
@@ -31,6 +37,13 @@ import shutil
 from pathlib import Path
 
 from extra_pages import EXTRA_PAGES
+
+from omrg.core.ingestion.normalise import NORMALISER_VERSION, normalise_reader_text
+
+#: Set by --raw: render engine output without the normaliser.
+NORMALISE = True
+#: (doc/page, engine) panels whose text the normaliser changed, for the re-review list.
+NORMALISED_PANELS: list[dict] = []
 
 EXP_DIR = Path(__file__).resolve().parent
 OUT_PAGES = EXP_DIR / "output" / "pages"
@@ -278,6 +291,13 @@ def _read_output(folder: str, doc: str, page: int, engine_label: str) -> tuple[s
     text = path.read_text(encoding="utf-8")
     if not text.strip():
         return f"(empty — {engine_label} extracted no text from this page)", "empty"
+    if NORMALISE:
+        normalised = normalise_reader_text(text)
+        if normalised != text:
+            NORMALISED_PANELS.append(
+                {"page": f"{doc}/{page}", "engine": folder, "chars": [len(text), len(normalised)]}
+            )
+            return normalised, f"{len(normalised):,} chars · normalised v{NORMALISER_VERSION}"
     return text, f"{len(text):,} chars"
 
 
@@ -356,7 +376,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--only", help="render only these doc:page pairs, e.g. 'io06:28,io06:53'")
     parser.add_argument("--out", default="review.html", help="output file name under output/")
+    parser.add_argument(
+        "--raw", action="store_true", help="render raw engine output (no normaliser)"
+    )
     args = parser.parse_args()
+    global NORMALISE
+    NORMALISE = not args.raw
 
     sample = json.loads((EXP_DIR / "sample.json").read_text(encoding="utf-8"))
     images_src = Path(sample["exp33_dir"]) / "output" / ".pages"
@@ -388,6 +413,12 @@ def main() -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(HTML_HEAD + "\n".join(sections) + HTML_TAIL, encoding="utf-8")
     print(f"wrote {out_path} ({len(sections)} pages)")
+    if NORMALISE:
+        listing = EXP_DIR / "output" / "normalised_panels.json"
+        existing = json.loads(listing.read_text()) if listing.exists() else {}
+        existing[args.out] = {"normaliser_version": NORMALISER_VERSION, "panels": NORMALISED_PANELS}
+        listing.write_text(json.dumps(existing, indent=1) + "\n", encoding="utf-8")
+        print(f"normalised {len(NORMALISED_PANELS)} panels (listed in {listing.name})")
     return 0
 
 
