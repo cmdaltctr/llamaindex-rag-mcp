@@ -362,6 +362,7 @@ splitter regardless of the fallback.
 | `embed_concurrency` | `4` | Parallel embedding requests. Machine-specific — lower it if the backend throttles |
 | `embed_batch_size` | `100` | Documents per embedding call |
 | `ingest_extensions` | the seven document extensions | File extensions ingestion collects. **Profile-owned** — the `codebase` profile adds source extensions. Env form is comma-separated (`.py,.ts`) or a JSON array string |
+| `normalise_reader_output` (`INGESTION__NORMALISE_READER_OUTPUT`) | `true` | Remove reader markup (`<u>`, `<span>`, `<font>`, `<center>`, `<div>`, `<img>`, table styling) from PDF text before chunking, keeping every visible character. Part of the index identity: changing it reprocesses every source once. See [Ingestion guide](ingestion.md#reader-output-normalisation) |
 
 ### Embedding — `EMBEDDING__*`
 

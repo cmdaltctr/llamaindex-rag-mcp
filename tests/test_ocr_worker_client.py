@@ -579,3 +579,148 @@ def test_worker_forces_worker_local_paddle_cache_env(
     worker._apply_worker_cache_env()
     assert os.environ["PADDLE_OCR_BASE_DIR"] == str(worker.MODEL_CACHE_DIR)
     assert os.environ["PADDLE_PDX_CACHE_HOME"] == str(worker.MODEL_CACHE_DIR)
+
+
+def test_page_listed_request_parses_only_a_subset_pdf(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A page-listed request must hand the pipeline a subset PDF, not the file.
+
+    paddleocr 3.7.0 has no ``page_num`` parameter on ``PaddleOCRVL.predict``:
+    the kwarg this replaces was swallowed by ``**kwargs`` and the engine
+    OCR'd the whole document, which experiment 34 caught as a page-28
+    "extraction" that was really a run of the whole book (TDR-027). The
+    pipeline under test must therefore receive a PDF containing exactly
+    the requested page, the response must report the requested count, and
+    the temporary subset must be cleaned up afterwards.
+    """
+    from pypdf import PdfReader, PdfWriter
+
+    worker = _load_worker_module(monkeypatch)
+    import omrg_ocr_worker.protocol as worker_protocol
+
+    pdf = tmp_path / "two_pages.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.add_blank_page(width=200, height=200)
+    writer.write(pdf)
+
+    seen: dict[str, Any] = {}
+
+    class _Structured:
+        def save_to_markdown(self, save_path: str) -> None:
+            Path(save_path).mkdir(parents=True, exist_ok=True)
+            (Path(save_path) / "page.md").write_text("# page two", encoding="utf-8")
+
+    class _Pipeline:
+        def predict(self, input: str, **kwargs: Any) -> list:
+            seen["input"] = input
+            seen["kwargs"] = kwargs
+            seen["pages_in_pdf"] = len(PdfReader(input).pages)
+            return ["raw-result-2"]
+
+        def restructure_pages(self, page_results: list, **kwargs: Any) -> list:
+            seen["restructure_kwargs"] = kwargs
+            return [_Structured()]
+
+    monkeypatch.setattr(worker, "_load_pipeline", lambda: _Pipeline())
+    request = worker_protocol.ParseRequest(
+        id="req-subset", pdf_path=str(pdf), pages=(2,), protocol_version="1.1"
+    )
+
+    success = worker.parse_document(request)
+
+    assert seen["pages_in_pdf"] == 1, "pipeline must receive a one-page subset PDF"
+    assert "page_num" not in seen["kwargs"], "the unsupported kwarg must not be passed"
+    assert success.metadata["page_count"] == 1
+    assert success.pages_markdown == ("# page two",)
+    assert not Path(seen["input"]).exists(), "the temporary subset must be removed"
+
+
+def test_page_listed_request_fails_loudly_on_page_count_mismatch(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A pipeline returning the wrong number of pages is an error, never padded.
+
+    The first version of the page-listed path padded ``pages_markdown`` to
+    the requested length, which masked exactly the whole-document bug the
+    padding was meant to guard against (TDR-027)."
+    """
+    from pypdf import PdfWriter
+
+    worker = _load_worker_module(monkeypatch)
+    import omrg_ocr_worker.protocol as worker_protocol
+
+    pdf = tmp_path / "one_page.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.write(pdf)
+
+    class _Pipeline:
+        def predict(self, input: str, **kwargs: Any) -> list:
+            return ["result-a", "result-b"]  # two results for one requested page
+
+        def restructure_pages(self, page_results: list, **kwargs: Any) -> list:
+            return []
+
+    monkeypatch.setattr(worker, "_load_pipeline", lambda: _Pipeline())
+    request = worker_protocol.ParseRequest(
+        id="req-mismatch", pdf_path=str(pdf), pages=(1,), protocol_version="1.1"
+    )
+
+    with pytest.raises(worker.WorkerParseError) as excinfo:
+        worker.parse_document(request)
+    assert excinfo.value.code == "page_selection_mismatch"
+
+
+def test_page_listed_request_keeps_each_page_to_its_own_text(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Page 1's Markdown must not carry the other pages (Experiment 34 A9).
+
+    paddlex's ``restructure_pages(concatenate_pages=True)`` rewrites its
+    input in place: the first page result receives every page's blocks.
+    When the joined pass ran first, the per-page pass then read that
+    rewritten page 1, so page 1 carried the whole request. The stand-in
+    pipeline below copies that in-place rewrite.
+    """
+    from pypdf import PdfWriter
+
+    worker = _load_worker_module(monkeypatch)
+    import omrg_ocr_worker.protocol as worker_protocol
+
+    pdf = tmp_path / "two_pages.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.add_blank_page(width=200, height=200)
+    writer.write(pdf)
+
+    class _Structured:
+        def __init__(self, blocks: list[str]) -> None:
+            self.blocks = list(blocks)
+
+        def save_to_markdown(self, save_path: str) -> None:
+            Path(save_path).mkdir(parents=True, exist_ok=True)
+            (Path(save_path) / "page.md").write_text("\n".join(self.blocks), encoding="utf-8")
+
+    class _Pipeline:
+        def predict(self, input: str, **kwargs: Any) -> list:
+            return [{"blocks": ["# page one"]}, {"blocks": ["# page two"]}]
+
+        def restructure_pages(self, page_results: list, **kwargs: Any) -> list:
+            if kwargs["concatenate_pages"]:
+                every = [block for result in page_results for block in result["blocks"]]
+                page_results[0]["blocks"] = every  # the in-place rewrite
+                return [_Structured(every)]
+            return [_Structured(result["blocks"]) for result in page_results]
+
+    monkeypatch.setattr(worker, "_load_pipeline", lambda: _Pipeline())
+    request = worker_protocol.ParseRequest(
+        id="req-own-text", pdf_path=str(pdf), pages=(1, 2), protocol_version="1.1"
+    )
+
+    success = worker.parse_document(request)
+
+    assert success.pages_markdown == ("# page one", "# page two")
+    assert success.markdown.count("# page one") == 1
+    assert "# page two" in success.markdown

@@ -5,3 +5,4 @@ __pycache__/
 *.py[cod]
 
 .model-cache
+.ocr-pages-*

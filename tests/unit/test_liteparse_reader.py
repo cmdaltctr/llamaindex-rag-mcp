@@ -203,3 +203,62 @@ def test_reordering_preserves_content(monkeypatch, tmp_path):
     emitted = _read(monkeypatch, tmp_path, [page])[0].get_content().splitlines()
 
     assert sorted(emitted) == sorted(item.text for item in items)
+
+
+def _one_page(monkeypatch, tmp_path, items) -> str:
+    """Return the text of a one-page document made of *items*."""
+    page = SimpleNamespace(page_num=1, text_items=items)
+    return _read(monkeypatch, tmp_path, [page])[0].get_content()
+
+
+def test_words_drawn_separately_join_into_one_line(monkeypatch, tmp_path):
+    """A title drawn word by word comes out on one line, not one word per line."""
+    items = [
+        _item("Epistemic", x=43.6, y=170.0, width=95.5, height=20.0),
+        _item("injustice", x=147.1, y=170.0, width=82.1, height=20.0),
+        _item("in", x=237.3, y=170.0, width=17.9, height=20.0),
+        _item("practice:", x=43.6, y=195.8, width=84.1, height=20.0),
+        _item("The", x=135.7, y=195.8, width=37.8, height=20.0),
+    ]
+
+    assert _one_page(monkeypatch, tmp_path, items) == "Epistemic injustice in\npractice: The"
+
+
+def test_superscript_joins_its_word(monkeypatch, tmp_path):
+    """A raised affiliation marker overlapping the line stays on it."""
+    items = [
+        _item("Berg", x=0.0, y=10.0, width=20.0, height=10.0),
+        _item("1,2", x=20.5, y=8.0, width=6.0, height=6.0),
+    ]
+
+    assert _one_page(monkeypatch, tmp_path, items) == "Berg1,2"
+
+
+def test_column_gap_on_the_same_line_breaks_the_line(monkeypatch, tmp_path):
+    """A sidebar and the body beside it are never glued into one sentence."""
+    items = [
+        _item("The authors have", x=36.1, y=95.4, width=123.2, height=9.5),
+        _item("solani in lettuce", x=198.0, y=95.2, width=362.4, height=11.5),
+    ]
+
+    assert _one_page(monkeypatch, tmp_path, items) == "The authors have\nsolani in lettuce"
+
+
+def test_right_to_left_step_starts_a_new_line(monkeypatch, tmp_path):
+    """An item back to the left at the same height is a new line, not a continuation."""
+    items = [
+        _item("second", x=50.0, y=10.0, width=20.0, height=10.0),
+        _item("first", x=0.0, y=10.0, width=20.0, height=10.0),
+    ]
+
+    assert _one_page(monkeypatch, tmp_path, items) == "second\nfirst"
+
+
+def test_kerning_split_joins_without_a_space(monkeypatch, tmp_path):
+    """Two pieces of one word, drawn with no gap, rejoin as one word."""
+    items = [
+        _item("fibro", x=0.0, y=10.0, width=25.0, height=10.0),
+        _item("myalgia", x=25.2, y=10.0, width=35.0, height=10.0),
+    ]
+
+    assert _one_page(monkeypatch, tmp_path, items) == "fibromyalgia"

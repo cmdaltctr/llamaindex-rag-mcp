@@ -26,6 +26,7 @@ from .embed_exclusions import (  # re-exported: the historic import site
     EXCLUDED_EMBED_METADATA_KEYS,
     scoped_excluded_keys,
 )
+from .normalise import NORMALISER_VERSION
 from .ocr_identity import ocr_fingerprint_payload, ocr_routing_payload
 
 SOURCE_CONTENT_HASH_KEY = "source_content_hash"
@@ -37,10 +38,8 @@ SOURCE_ATTEMPT_KEY = "source_attempt"
 SOURCE_CHUNK_COUNT_KEY = "source_chunk_count"
 SOURCE_CHUNK_INDEX_KEY = "source_chunk_index"
 
-# Schema 5 adds ``unconditional_types`` to the OCR routing payload so
-# changes to the unconditional routing set participate in the index
-# identity (prevents stale ``skipped_unchanged`` after a routing-rule fix).
-_INDEX_IDENTITY_SCHEMA = 5
+# Schema 6 adds reader normalisation inputs so old sources reprocess once.
+_INDEX_IDENTITY_SCHEMA = 6
 _SOURCE_METADATA_KEYS = (
     SOURCE_CONTENT_HASH_KEY,
     SOURCE_ID_KEY,
@@ -146,6 +145,10 @@ def build_index_identity(
     excluded_keys = scoped_excluded_keys(EXCLUDED_EMBED_METADATA_KEYS, routing)
     payload = {
         "schema": _INDEX_IDENTITY_SCHEMA,
+        "normalisation": {
+            "enabled": settings.ingestion.normalise_reader_output,
+            "version": NORMALISER_VERSION,
+        },
         "embedding": {
             "runtime": _runtime_embedding_identity(embed_model),
             "configured_provider": configured_provider,

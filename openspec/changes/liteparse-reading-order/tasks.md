@@ -29,3 +29,9 @@ to `v3`.
 
 - [x] 4.1 Run `openspec validate --all --strict` and `./scripts/local_ci.sh`. Green at `f24b593`: 57 OpenSpec items passed, local CI passed end to end (ruff, format, import-linter, OpenSpec, OpenAPI, torch-free, fast suite, advisory pyright).
 - [x] 4.2 Include this change in the branch's PR to `v3`. PR #96, opened 2026-09-18.
+
+## 5. Line join (Experiment 34 A6, added 2026-09-25)
+
+- [x] 5.1 Join items on one visual line instead of one item per line (`_join_lines`, design decision 6, TDR-030). Commit `8a48510` on PR #97.
+- [x] 5.2 Add line-level tests: one title line, a superscript, a column gap, a right-to-left step, a kerning split. Verify: 5 tests pass; the old join fails them.
+- [x] 5.3 Regenerate the Experiment 34 LiteParse output and compare. Verify: 19 non-empty pages, 2,573 → 1,117 lines, characters identical with whitespace ignored.

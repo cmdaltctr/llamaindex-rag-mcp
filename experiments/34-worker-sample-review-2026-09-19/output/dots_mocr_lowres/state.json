@@ -1,0 +1,24 @@
+{
+ "io06/28": {
+  "seconds": 14.3,
+  "new_tokens": 680,
+  "hit_token_cap": false,
+  "json_parsed": true,
+  "image_px": [
+   384,
+   624
+  ],
+  "error": null
+ },
+ "io06/53": {
+  "seconds": 3.9,
+  "new_tokens": 177,
+  "hit_token_cap": false,
+  "json_parsed": true,
+  "image_px": [
+   384,
+   622
+  ],
+  "error": null
+ }
+}

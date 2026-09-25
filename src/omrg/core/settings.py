@@ -53,6 +53,7 @@ class IngestionBlock(BaseModel):
 
     embed_concurrency: int = 2
     embed_batch_size: int = 100
+    normalise_reader_output: bool = True
 
     # File extensions ingestion collects (design D4 of
     # fix-embedding-and-structure-fidelity-1: profile-scoped). The default
