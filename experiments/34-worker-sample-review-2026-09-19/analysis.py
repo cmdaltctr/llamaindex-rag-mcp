@@ -45,15 +45,19 @@ dots_state = json.loads((_ROOT / "output" / "dots_mocr_state.json").read_text())
 # ## Verdicts: one row per page and engine
 
 # %%
+# The reviewed set (A1) plus eq01 p11 (A4). The export can also hold pages
+# started on review.html (bd01/1 in the second pass); they are not counted here.
+REVIEWED = ["bd03/1", "bd03/2", "io06/28", "io06/53", "eq01/11"]
 rows = []
-for page, v in verdicts["pages"].items():
+for page in REVIEWED:
+    v = verdicts["pages"][page]
     for engine in ENGINES:
         e = v.get(engine, {})
         row = {"page": page, "engine": engine}
         for f in FIELDS:
             val = e.get(f, "")
             row[f] = ",".join(val) if isinstance(val, list) else val
-        row["best"] = engine in v["page"]["best"]
+        row["best"] = engine in v.get("page", {}).get("best", [])
         rows.append(row)
 df = pd.DataFrame(rows)
 df

@@ -1,7 +1,7 @@
 # ADR-070: Normalise Reader Output Before Chunking — Remove Markup, Never Content
 
 **Date:** 2026-09-25
-**Status:** Proposed (implementation complete on `feat/experiment-34-worker-sample-review`; awaiting operator acceptance at PR #97 review)
+**Status:** Accepted (2026-09-25; merged to `v3` in PR #97, `d9800a4`)
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Change:** `openspec/changes/normalise-reader-markdown/`
 **Related:** [ADR-055](055-embedding-text-is-a-declared-contract.md) (declared text contract, Markdown routing), [ADR-069](069-page-level-ocr-routing-and-the-pdfium-runtime.md) (page-level OCR routing), TDR-028 (rule list), TDR-029 (worker page-1 fault), TDR-030 (LiteParse line join)
