@@ -43,7 +43,7 @@ The full sample (42 pages) is frozen in `sample.json`. The worker also ran `bd01
 
 ### Verdicts per page and engine
 
-Cell format: accuracy · order · structure · problems · LLM-ready. `empty` means that engine produced no output. Verdicts from the second pass (2026-09-25, export `2026-09-25T13:32:24Z`); the `pdf_inspector`, `liteparse` and `worker` answers are unchanged from the first pass.
+Cell format: accuracy · order · structure · problems · LLM-ready. `empty` means that engine produced no output. Verdicts from the second pass (2026-09-25) on normalised pages, with the `bd03/1` worker panel re-reviewed on 2026-09-27 (export `2026-09-27T22:16:28Z`). The `pdf_inspector`, `liteparse` and `worker` answers are unchanged from the first pass.
 
 | Page | `pdf_inspector` | `liteparse` | `local_ocr` | `worker` | `dots_mocr` | Best (operator) |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -92,7 +92,7 @@ Recorded oddities, kept as the operator entered them. (1) `io06/53` dots.mocr is
 3. `io06` has one page with real text in the reviewed set, so "reads old books" rests on one page.
 4. The timings compare CPU with GPU and cold with warm runs. They show the scale of the difference, not an exact speed-up.
 5. The verdicts come from one operator with no second rater.
-6. The second pass changed only the new `local_ocr` panels and the `best` picks; the other answers match the first pass, including the worker on `bd03/1`, whose text changed after A9 (it had shown p1 + p2).
+6. The second pass changed only the new `local_ocr` panels and the `best` picks. The worker panel on `bd03/1`, whose text changed after A9 (it had shown p1 + p2), was re-reviewed on the corrected, normalised output on 2026-09-27; the operator kept the verdict (`all` · `correct` · `partial` · `noise` · `yes`), so the control guard stands on corrected output.
 
 ## Conclusion
 
@@ -106,7 +106,7 @@ The experiment answered its safety question. The worker does not damage clean pa
 
 | File | Description |
 | --- | --- |
-| `review_verdicts.json` | Operator verdicts, schema `exp34-review-v2`, second pass exported 2026-09-25T13:32:24Z, committed unchanged (the first pass is in git history, `db19091`) |
+| `review_verdicts.json` | Operator verdicts, schema `exp34-review-v2`, final export 2026-09-27T22:16:28Z (second pass plus the `bd03/1` worker re-review), committed unchanged (earlier passes are in git history: `db19091`, `b26f641`) |
 | `output/worker/<doc>/pNNN.md`, `output/worker_state.json` | Worker Markdown and per-document seconds |
 | `output/dots_mocr/`, `output/dots_mocr_state.json` | dots.mocr probe output and per-page stats |
 | `output/pdf_inspector/`, `output/liteparse/`, `output/today/` | Reader columns (LiteParse regenerated after the A6 fix) and the Experiment 33 local-tier baseline |

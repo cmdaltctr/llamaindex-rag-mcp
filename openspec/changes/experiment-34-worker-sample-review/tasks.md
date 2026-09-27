@@ -16,7 +16,7 @@
 ## 3. Run and review
 
 - [x] 3.1 Run the worker over the sample from this worktree, reading the corpus by absolute path from the Experiment 33 worktree; commit the raw outputs. All 42 sample pages plus `eq01` p11, no errors (`output/worker_state.json`; completion run 2026-09-25, `a384f11`).
-- [x] 3.2 Operator reviews the pages and fills the checklist; the verdicts JSON is committed unchanged. First pass committed (`db19091`, 4 reviewed pages + `eq01` p11). Re-review pending: LiteParse panels (A6), local OCR tier panel (A5), and every panel the normaliser changes. Waits for `normalise-reader-markdown` to rebuild the review pages. Second pass committed 2026-09-25 on normalised pages (export `2026-09-25T13:32:24Z`): local OCR tier panels added; other answers unchanged.
+- [x] 3.2 Operator reviews the pages and fills the checklist; the verdicts JSON is committed unchanged. First pass committed (`db19091`, 4 reviewed pages + `eq01` p11). Re-review pending: LiteParse panels (A6), local OCR tier panel (A5), and every panel the normaliser changes. Waits for `normalise-reader-markdown` to rebuild the review pages. Second pass committed 2026-09-25 on normalised pages (export `2026-09-25T13:32:24Z`): local OCR tier panels added; other answers unchanged. The `bd03/1` worker panel (changed by A9) was re-reviewed on 2026-09-27 and its verdict kept (PR #98 review).
 - [x] 3.3 Summarise the verdicts per issue (old books, triple column, two column/tables, control) and record the go/no-go for the task 2.3 signal experiment. Final in `report.md`: PASS (scoped), task 2.3 go for `io06`-class pages; `io04` and `tl03` not evaluated; follow-ups include the local-tier `fused` repetition (A10).
 
 ## 4. Close
