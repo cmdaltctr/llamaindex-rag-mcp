@@ -1,8 +1,8 @@
 # ADR-055: Embedding Text Is a Declared Contract
 
-**Date:** 2026-09-01
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-09-01
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

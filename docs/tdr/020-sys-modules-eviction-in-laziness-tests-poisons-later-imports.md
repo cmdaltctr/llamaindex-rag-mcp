@@ -1,9 +1,9 @@
 # TDR-020: Permanent `sys.modules` eviction in laziness tests poisons later real imports
 
-**Date:** 2026-09-01
-**Status:** Accepted
-**Deciders:** Aizat
-**Tags:** testing | pdf | imports
+- **Date:** 2026-09-01
+- **Status:** Accepted
+- **Deciders:** Aizat
+- **Tags:** testing | pdf | imports
 
 ## Context
 

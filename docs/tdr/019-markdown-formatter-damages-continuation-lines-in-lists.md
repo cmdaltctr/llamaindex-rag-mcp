@@ -1,9 +1,9 @@
 # TDR-019: Markdown formatter damages continuation lines in list items
 
-**Date:** 2026-09-01
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Tags:** documentation | markdown | formatter | review
+- **Date:** 2026-09-01
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Tags:** documentation | markdown | formatter | review
 
 ## Context
 

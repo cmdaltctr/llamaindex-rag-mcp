@@ -1,8 +1,8 @@
 # ADR-047: Semantic Vector-Store Swappability
 
-**Date:** 2026-08-18
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-18
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

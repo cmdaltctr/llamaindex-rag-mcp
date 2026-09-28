@@ -1,8 +1,8 @@
 # ADR-021: Reranker Inference Optimisation — CoreML, Batching, and Reduced Fetch Pool
 
-**Date:** 2026-06-23
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-06-23
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

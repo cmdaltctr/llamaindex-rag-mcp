@@ -1,8 +1,8 @@
 # ADR-057: Answering Is Additive and Injected
 
-**Date:** 2026-09-02
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-09-02
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

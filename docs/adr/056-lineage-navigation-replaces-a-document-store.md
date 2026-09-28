@@ -1,8 +1,8 @@
 # ADR-056: Lineage Navigation Replaces a Document Store
 
-**Date:** 2026-09-02
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-09-02
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

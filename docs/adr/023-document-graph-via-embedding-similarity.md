@@ -1,8 +1,8 @@
 # ADR-023: Document graph via embedding similarity
 
-**Date:** 2026-01-15  
-**Status:** Accepted  
-**Change:** `add-fast-context-codebase-map`
+- **Date:** 2026-01-15
+- **Status:** Accepted
+- **Change:** `add-fast-context-codebase-map`
 
 ## Context
 

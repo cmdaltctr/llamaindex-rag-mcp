@@ -1,11 +1,11 @@
 # ADR-065: OCR Fallback Gate Promoted to Packaged Default
 
-**Date:** 2026-09-13
-**Status:** Accepted (evidence: Experiment 29, all frozen gates PASS)
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Change:** `promote-ocr-fallback-defaults`
-**Supersedes:** items 1–2 of the settled decision in [ADR-064](064-input-quality-promotion-decisions.md)
-**Related:** [ADR-062](062-isolate-paddleocr-vl-in-a-versioned-ocr-worker.md) (worker boundary), [ADR-050](050-configure-pdf-inspector-as-default-reader.md) (default reader)
+- **Date:** 2026-09-13
+- **Status:** Accepted (evidence: Experiment 29, all frozen gates PASS)
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Change:** `promote-ocr-fallback-defaults`
+- **Supersedes:** items 1–2 of the settled decision in [ADR-064](064-input-quality-promotion-decisions.md)
+- **Related:** [ADR-062](062-isolate-paddleocr-vl-in-a-versioned-ocr-worker.md) (worker boundary), [ADR-050](050-configure-pdf-inspector-as-default-reader.md) (default reader)
 
 ## Context
 

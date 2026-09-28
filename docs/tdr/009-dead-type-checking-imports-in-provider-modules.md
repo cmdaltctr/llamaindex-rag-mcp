@@ -1,9 +1,9 @@
 # TDR-009: Dead TYPE_CHECKING imports in provider modules
 
-**Date:** 2026-08-13
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Tags:** pyright | providers | imports | settings
+- **Date:** 2026-08-13
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Tags:** pyright | providers | imports | settings
 
 ## Context
 

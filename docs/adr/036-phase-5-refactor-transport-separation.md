@@ -1,9 +1,9 @@
 # ADR-036: Transport Separation (MCP / CLI / API)
 
-**Date:** 2026-08-04
-**Status:** Accepted
-**Phase:** 5 — Transports Reorganisation
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-04
+- **Status:** Accepted
+- **Phase:** 5 — Transports Reorganisation
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

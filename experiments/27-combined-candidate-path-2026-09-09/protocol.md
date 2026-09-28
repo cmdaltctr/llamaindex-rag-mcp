@@ -1,10 +1,10 @@
 # Experiment 27 — Combined candidate path (task 5.4)
 
-**ID**: `27-combined-candidate-path-2026-09-09`
-**Date planned**: 2026-09-09
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
-**Status**: PLANNED (validity gates frozen 2026-09-09, task 1.6)
-**Relation**: `improve-rag-input-quality-5` task 5.4; experiments 22, 24, 25, 26
+- **ID**: `27-combined-candidate-path-2026-09-09`
+- **Date planned**: 2026-09-09
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: PLANNED (validity gates frozen 2026-09-09, task 1.6)
+- **Relation**: `improve-rag-input-quality-5` task 5.4; experiments 22, 24, 25, 26
 
 ## Why this experiment exists
 

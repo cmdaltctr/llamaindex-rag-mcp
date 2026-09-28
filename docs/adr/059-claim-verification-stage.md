@@ -1,8 +1,8 @@
 # ADR-059: Claim Verification Is an Opt-In Cloud Judge
 
-**Date:** 2026-09-04
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-09-04
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

@@ -1,8 +1,8 @@
 # ADR-013: Hybrid Category Taxonomy for Ollama Metadata Extraction
 
-**Status**: Accepted
-**Date**: 2026-05-20
-**Change**: `enhance-metadata-extraction`
+- **Status**: Accepted
+- **Date**: 2026-05-20
+- **Change**: `enhance-metadata-extraction`
 
 ## Context
 

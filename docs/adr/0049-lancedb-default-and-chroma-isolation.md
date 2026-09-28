@@ -1,9 +1,9 @@
 # ADR-049: LanceDB Default and Chroma Isolation
 
-**Date:** 2026-08-21
-**Status:** Accepted (release clearance granted 2026-08-22 under the signed policy-owner disposition — see Security Ownership and Release Gate)
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Supersedes:** ADR-003 for the configured vector-store default only
+- **Date:** 2026-08-21
+- **Status:** Accepted (release clearance granted 2026-08-22 under the signed policy-owner disposition — see Security Ownership and Release Gate)
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Supersedes:** ADR-003 for the configured vector-store default only
 
 ## Context
 

@@ -1,10 +1,10 @@
 # Experiment 18 — Ingestion lock-scope baseline and conditional A/B
 
-**Template ID:** promoted from `example/experiment-6-ingestion-boundedness-and-atomicity`
-**Status:** PASS (Phase A + Phase B)
-**Role:** systems/reliability gate after Stage 3A; measurement evidence for optional Stage 3B (design constraint D12: measure before widening)
-**Operator:** Dr Muhammad Aizat Bin Md Hawari
-**Date:** 2026-08-19
+- **Template ID:** promoted from `example/experiment-6-ingestion-boundedness-and-atomicity`
+- **Status:** PASS (Phase A + Phase B)
+- **Role:** systems/reliability gate after Stage 3A; measurement evidence for optional Stage 3B (design constraint D12: measure before widening)
+- **Operator:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-19
 
 ## 1. Research question
 

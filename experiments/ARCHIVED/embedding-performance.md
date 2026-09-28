@@ -1,8 +1,8 @@
 # Embedding Performance Report
 
-**Date**: 2026-05-19
-**Machine**: Apple Silicon Mac (macOS, Darwin)
-**Test file**: `ScientificAdvertising.pdf` (117 chunks, CHUNK_SIZE=512, CHUNK_OVERLAP=64)
+- **Date**: 2026-05-19
+- **Machine**: Apple Silicon Mac (macOS, Darwin)
+- **Test file**: `ScientificAdvertising.pdf` (117 chunks, CHUNK_SIZE=512, CHUNK_OVERLAP=64)
 
 ## Benchmark Results
 

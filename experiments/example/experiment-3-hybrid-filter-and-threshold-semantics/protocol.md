@@ -1,10 +1,10 @@
 # Experiment 3 — Hybrid metadata-filter and threshold semantics
 
-**Template ID:** `example/experiment-3-hybrid-filter-and-threshold-semantics`  
-**Status:** PASS  
-**Protocol version:** 1.0  
-**Executed:** 2026-08-19  
-**Role:** deterministic hybrid-retrieval correctness gate
+- **Template ID:** `example/experiment-3-hybrid-filter-and-threshold-semantics`
+- **Status:** PASS
+- **Protocol version:** 1.0
+- **Executed:** 2026-08-19
+- **Role:** deterministic hybrid-retrieval correctness gate
 
 ## 1. Research question
 

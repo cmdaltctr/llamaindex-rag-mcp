@@ -1,10 +1,10 @@
 # Experiment 8a Results: Query Embedding Cache Full-Size Evaluation
 
-**ID**: `8a-query-embedding-cache-fullsize-2026-05-29`  
-**Date run**: 2026-05-29  
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent support  
-**Status**: **PASS**  
-**Raw data**: external artifact; see [`artifacts.md`](./artifacts.md). Summary data is tracked in [`eval_results.summary.json`](./eval_results.summary.json).
+- **ID**: `8a-query-embedding-cache-fullsize-2026-05-29`
+- **Date run**: 2026-05-29
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent support
+- **Status**: **PASS**
+- **Raw data**: external artifact; see [`artifacts.md`](./artifacts.md). Summary data is tracked in [`eval_results.summary.json`](./eval_results.summary.json).
 
 ---
 

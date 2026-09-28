@@ -1,10 +1,10 @@
 # Experiment <N>: <Descriptive Title>
 
-**ID**: `<experiment-directory-name>`  
-**Date planned**: YYYY-MM-DD  
-**Operator**: <human operator> with <AI/build agent, if used>  
-**Status**: PLANNED | READY TO RUN | ACTIVE  
-**Relation**: <OpenSpec change / ADR / prior experiment / issue, if any>
+- **ID**: `<experiment-directory-name>`
+- **Date planned**: YYYY-MM-DD
+- **Operator**: <human operator> with <AI/build agent, if used>
+- **Status**: PLANNED | READY TO RUN | ACTIVE
+- **Relation**: <OpenSpec change / ADR / prior experiment / issue, if any>
 
 ---
 

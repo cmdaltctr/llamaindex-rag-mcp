@@ -1,9 +1,9 @@
 # Experiment 32: Content detection when file extensions lie
 
-**ID:** `32-misnamed-extension-detection-2026-09-16`
-**Date:** 2026-09-16
-**Status:** PASS (gates G1 to G5)
-**Evidence for:** ADR-068 — Magika content-type detection (`magika==1.0.3`, CLI transport)
+- **ID:** `32-misnamed-extension-detection-2026-09-16`
+- **Date:** 2026-09-16
+- **Status:** PASS (gates G1 to G5)
+- **Evidence for:** ADR-068 — Magika content-type detection (`magika==1.0.3`, CLI transport)
 
 ## Question
 

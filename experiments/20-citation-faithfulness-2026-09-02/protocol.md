@@ -1,10 +1,10 @@
 # Experiment 20: Citation Faithfulness — Does the Cited Evidence Support the Claim?
 
-**ID**: `20-citation-faithfulness-2026-09-02`
-**Date planned**: 2026-09-02
-**Operator**: Dr Muhammad Aizat with build agent (scaffold only; not run)
-**Status**: PASS (all gates met; see `results.md`)
-**Relation**: `openspec/changes/add-grounded-answer-synthesis-3` — task 7.2 (recorded follow-up experiment) and security-review finding F4 (referential-only `ok` status)
+- **ID**: `20-citation-faithfulness-2026-09-02`
+- **Date planned**: 2026-09-02
+- **Operator**: Dr Muhammad Aizat with build agent (scaffold only; not run)
+- **Status**: PASS (all gates met; see `results.md`)
+- **Relation**: `openspec/changes/add-grounded-answer-synthesis-3` — task 7.2 (recorded follow-up experiment) and security-review finding F4 (referential-only `ok` status)
 
 ---
 

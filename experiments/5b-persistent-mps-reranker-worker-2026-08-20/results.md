@@ -1,8 +1,8 @@
 # Experiment 5b results — persistent MPS reranker worker
 
-**Protocol version:** 1.1 (v1.0 budget-filter amendment, 2026-08-22)
-**Campaign date:** 2026-08-22 (second campaign; see invalidation record below)
-**Overall verdict:** **FAIL — promotion rejected; ONNX CPU remains the production default**
+- **Protocol version:** 1.1 (v1.0 budget-filter amendment, 2026-08-22)
+- **Campaign date:** 2026-08-22 (second campaign; see invalidation record below)
+- **Overall verdict:** **FAIL — promotion rejected; ONNX CPU remains the production default**
 
 ## 1. Host and runtime identity
 

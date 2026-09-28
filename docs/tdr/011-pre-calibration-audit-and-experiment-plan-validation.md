@@ -1,9 +1,9 @@
 # TDR-011: Pre-calibration audit and executable experiment-plan validation
 
-**Date:** 2026-08-18
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Md Hawari with AI agent
-**Tags:** experiments | audit | testing | pre-calibration
+- **Date:** 2026-08-18
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Md Hawari with AI agent
+- **Tags:** experiments | audit | testing | pre-calibration
 
 ## Context
 

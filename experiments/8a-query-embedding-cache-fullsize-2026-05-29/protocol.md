@@ -1,8 +1,8 @@
 # Experiment 8a: Query Embedding Cache Full-Size Evaluation
 
-**ID**: `8a-query-embedding-cache-fullsize-2026-05-29`  
-**Status**: READY TO RUN  
-**Relation**: Follow-up to Experiment 8 and ADR-016 Decision 4.
+- **ID**: `8a-query-embedding-cache-fullsize-2026-05-29`
+- **Status**: READY TO RUN
+- **Relation**: Follow-up to Experiment 8 and ADR-016 Decision 4.
 
 ## Why this experiment exists
 

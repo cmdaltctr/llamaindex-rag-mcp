@@ -1,8 +1,8 @@
 # ADR-045: Hosted Chroma Cloud Backend for Experiment Storage
 
-**Date:** 2026-08-15
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-15
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

@@ -1,9 +1,9 @@
 # TDR-018: `monkeypatch.setattr` on a submodule name is a silent no-op
 
-**Date:** 2026-08-31
-**Status:** Accepted
-**Deciders:** Aizat
-**Tags:** testing | mcp | transport
+- **Date:** 2026-08-31
+- **Status:** Accepted
+- **Deciders:** Aizat
+- **Tags:** testing | mcp | transport
 
 ## Context
 

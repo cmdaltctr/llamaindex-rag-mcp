@@ -1,10 +1,10 @@
 # Experiment 9a: Hybrid Retrieval Quality on FreshStack LangChain
 
-**ID**: `9a-hybrid-retrieval-freshstack-langchain-2026-05-30`  
-**Date planned**: 2026-05-30  
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  
-**Status**: COMPLETED  
-**Relation**: Follow-up to `experiments/9-hybrid-retrieval-2026-05-27/`; OpenSpec change `rag-hybrid-retrieval`; ADR-017 hybrid retrieval with RRF
+- **ID**: `9a-hybrid-retrieval-freshstack-langchain-2026-05-30`
+- **Date planned**: 2026-05-30
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: COMPLETED
+- **Relation**: Follow-up to `experiments/9-hybrid-retrieval-2026-05-27/`; OpenSpec change `rag-hybrid-retrieval`; ADR-017 hybrid retrieval with RRF
 
 ---
 
@@ -400,9 +400,9 @@ for git.
 
 ## Results summary
 
-**Date completed**: 2026-05-31  
-**Recommendation**: KEEP `HYBRID_ENABLED=false` default; hybrid remains opt-in  
-**Pass gates**: 4 of 7 passed; 3 primary quality gates failed
+- **Date completed**: 2026-05-31
+- **Recommendation**: KEEP `HYBRID_ENABLED=false` default; hybrid remains opt-in
+- **Pass gates**: 4 of 7 passed; 3 primary quality gates failed
 
 | Gate                                    | Threshold          |     Observed | Pass? |
 | --------------------------------------- | ------------------ | -----------: | :---: |

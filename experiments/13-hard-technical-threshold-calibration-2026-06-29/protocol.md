@@ -1,9 +1,9 @@
 # Experiment 13: HARD_TECHNICAL_THRESHOLD Calibration
 
-**ID**: `13-hard-technical-threshold-calibration-2026-06-29`  
-**Date planned**: 2026-06-29  
-**Status**: REPAIRED (v2.0, Stage 4 task 4.3.5) — policy mode rerank=None, fixed fraction blocks, reference envelope arms  
-**Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; informs ADR-019. Repaired under OpenSpec change `harden-pipeline-correctness-before-calibration` (design D18).
+- **ID**: `13-hard-technical-threshold-calibration-2026-06-29`
+- **Date planned**: 2026-06-29
+- **Status**: REPAIRED (v2.0, Stage 4 task 4.3.5) — policy mode rerank=None, fixed fraction blocks, reference envelope arms
+- **Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; informs ADR-019. Repaired under OpenSpec change `harden-pipeline-correctness-before-calibration` (design D18).
 
 ---
 

@@ -5,9 +5,9 @@
 > **Superseded note (2026-05-25):** the ingest report no longer includes a
 > file-reader worker count. File reading is sequential; embedding throughput is
 > tuned with `EMBED_BATCH_SIZE` and `EMBED_CONCURRENCY`.
-**Proposed**: 2026-05-19
-**Accepted**: 2026-05-19
-**Change**: `cli-folder-embed-progress`
+- **Proposed**: 2026-05-19
+- **Accepted**: 2026-05-19
+- **Change**: `cli-folder-embed-progress`
 
 ## Context
 

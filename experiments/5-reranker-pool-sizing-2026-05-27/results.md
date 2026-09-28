@@ -1,9 +1,9 @@
 # Experiment 5 Results: Reranker Fetch Pool Sizing
 
-**Date run**: 2026-05-27
-**Operator**: AI agent (build phase)
-**Status**: PASS
-**Outcome**: Ship `(RERANK_MAX_FETCH=50, RERANK_FETCH_MULTIPLIER=10)` as default.
+- **Date run**: 2026-05-27
+- **Operator**: AI agent (build phase)
+- **Status**: PASS
+- **Outcome**: Ship `(RERANK_MAX_FETCH=50, RERANK_FETCH_MULTIPLIER=10)` as default.
 
 ---
 

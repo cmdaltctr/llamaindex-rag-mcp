@@ -1,11 +1,11 @@
 # ADR-033: Phase 2 Refactor — DI Refinement (Inject Constructed Objects, Resolve Settings at Call Time)
 
-**Date:** 2026-08-04
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Change:** `phase-2-refactor-config-core-split` (review follow-ups)
-**Follows:** [ADR-031](./031-three-layer-config-compose-di.md)
-**Phase:** 2 of 5 (`docs/brainstorm/refactor-proposal/PROPOSAL.md`)
+- **Date:** 2026-08-04
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Change:** `phase-2-refactor-config-core-split` (review follow-ups)
+- **Follows:** [ADR-031](./031-three-layer-config-compose-di.md)
+- **Phase:** 2 of 5 (`docs/brainstorm/refactor-proposal/PROPOSAL.md`)
 
 ## Context
 

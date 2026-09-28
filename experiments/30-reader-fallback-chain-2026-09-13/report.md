@@ -1,12 +1,12 @@
 # Experiment 30: Reader fallback chain — pdf-inspector → liteparse → pypdf
 
-**ID**: `30-reader-fallback-chain-2026-09-13`
-**Date run**: 2026-09-13
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
-**Status**: PASS — all four gates
-**Verdict**: The tiered chain recovers every silent-empty extraction via liteparse, up to ~45× faster than the shipped pypdf retry, with every routing decision preserved.
-**Raw data**: [`output/chain_results.json`](./output/chain_results.json), [`output/eval_results.summary.json`](./output/eval_results.summary.json)
-**Protocol**: [protocol.md](protocol.md)
+- **ID**: `30-reader-fallback-chain-2026-09-13`
+- **Date run**: 2026-09-13
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: PASS — all four gates
+- **Verdict**: The tiered chain recovers every silent-empty extraction via liteparse, up to ~45× faster than the shipped pypdf retry, with every routing decision preserved.
+- **Raw data**: [`output/chain_results.json`](./output/chain_results.json), [`output/eval_results.summary.json`](./output/eval_results.summary.json)
+- **Protocol**: [protocol.md](protocol.md)
 
 ## Bottom line
 

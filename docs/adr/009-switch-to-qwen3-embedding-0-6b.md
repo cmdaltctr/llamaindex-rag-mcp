@@ -1,8 +1,8 @@
 # ADR-009: Switch to `qwen3-embedding:0.6b` as the Default Embedding Model
 
-**Status**: Accepted
-**Date**: 2026-05-19
-**Change**: `optimise-embedding-performance`
+- **Status**: Accepted
+- **Date**: 2026-05-19
+- **Change**: `optimise-embedding-performance`
 
 ## Context
 

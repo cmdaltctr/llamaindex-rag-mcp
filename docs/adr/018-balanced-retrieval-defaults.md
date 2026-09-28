@@ -1,9 +1,9 @@
 # ADR-018: Balanced Retrieval Defaults
 
-**Status**: Superseded by [ADR-019](./019-reranker-disabled-for-technical-workloads.md)
-**Date**: 2026-05-29
-**Deciders**: Dr Muhammad Aizat Bin Md Hawari
-**Related experiments**: Experiment 7a and Experiment 8a
+- **Status**: Superseded by [ADR-019](./019-reranker-disabled-for-technical-workloads.md)
+- **Date**: 2026-05-29
+- **Deciders**: Dr Muhammad Aizat Bin Md Hawari
+- **Related experiments**: Experiment 7a and Experiment 8a
 
 ## Context
 

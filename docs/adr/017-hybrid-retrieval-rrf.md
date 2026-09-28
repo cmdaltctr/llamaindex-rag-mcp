@@ -1,10 +1,10 @@
 # ADR-017: Hybrid Retrieval with Reciprocal Rank Fusion
 
-**Status**: Accepted
-**Date**: 2026-05-31
-**Change**: `rag-hybrid-retrieval`
-**Deciders**: Dr Muhammad Aizat Bin Md Hawari
-**Git Commits**: <TODO: list relevant SHAs once landed>
+- **Status**: Accepted
+- **Date**: 2026-05-31
+- **Change**: `rag-hybrid-retrieval`
+- **Deciders**: Dr Muhammad Aizat Bin Md Hawari
+- **Git Commits**: <TODO: list relevant SHAs once landed>
 
 ## Context
 

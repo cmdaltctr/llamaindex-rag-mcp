@@ -1,10 +1,10 @@
 # TDR-NNN: <Short descriptive title — imperative or declarative>
 
-**Date:** YYYY-MM-DD
-**Status:** Proposed | Accepted | Superseded by TDR-XXX | Deprecated
-**Deciders:** <Names>
-**Supersedes:** TDR-XXX (if applicable)
-**Tags:** tauri | desktop | ocr | security (optional, for filtering)
+- **Date:** YYYY-MM-DD
+- **Status:** Proposed | Accepted | Superseded by TDR-XXX | Deprecated
+- **Deciders:** <Names>
+- **Supersedes:** TDR-XXX (if applicable)
+- **Tags:** tauri | desktop | ocr | security (optional, for filtering)
 
 ## Context
 

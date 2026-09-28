@@ -1,9 +1,9 @@
 # Experiment 14: LiteParse Promotion on Harder Corpus (Qasper)
 
-**ID**: `14-liteparse-qasper-promotion-2026-06-29`  
-**Date planned**: 2026-06-29  
-**Status**: REPAIRED build path (v2.0, Stage 4 task 4.3.6) — real immutable PDF bytes, parser-before-embeddings preflight, per-parser artefact/index identity; THREE-PARSER extension (v2.1, 2026-08-23) — pdf-inspector added as a third reader arm (see the final section)
-**Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; validates ADR-020
+- **ID**: `14-liteparse-qasper-promotion-2026-06-29`
+- **Date planned**: 2026-06-29
+- **Status**: REPAIRED build path (v2.0, Stage 4 task 4.3.6) — real immutable PDF bytes, parser-before-embeddings preflight, per-parser artefact/index identity; THREE-PARSER extension (v2.1, 2026-08-23) — pdf-inspector added as a third reader arm (see the final section)
+- **Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; validates ADR-020
 
 ---
 

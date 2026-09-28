@@ -1,11 +1,11 @@
 # ADR-034: Phase 3 Refactor — Vector Store Abstraction Interface
 
-**Date:** 2026-08-04
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Change:** `phase-3-refactor-vectordb-abstraction`
-**Amends:** ADR-003 (ChromaDB stays the default implementation; the ABC sits in front of it)
-**Phase:** 3 of 5 (`docs/brainstorm/refactor-proposal/PROPOSAL.md` §5.2, §8)
+- **Date:** 2026-08-04
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Change:** `phase-3-refactor-vectordb-abstraction`
+- **Amends:** ADR-003 (ChromaDB stays the default implementation; the ABC sits in front of it)
+- **Phase:** 3 of 5 (`docs/brainstorm/refactor-proposal/PROPOSAL.md` §5.2, §8)
 
 > **Numbering note.** The proposal called this "ADR 029" based on the
 > pre-refactor numbering. ADRs 029–033 landed before Phase 3, so the next

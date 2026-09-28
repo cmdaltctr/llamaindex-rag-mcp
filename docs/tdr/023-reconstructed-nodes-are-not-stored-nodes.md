@@ -1,10 +1,10 @@
 # TDR-023: Reconstructed nodes are not stored nodes — deserialise `_node_content` for payload accounting
 
-**Date:** 2026-09-08
-**Status:** Accepted
-**Deciders:** Aizat
-**Tags:** experiments | lancedb | llama-index | tokenization | embedding-cost
-**Extends:** TDR-022
+- **Date:** 2026-09-08
+- **Status:** Accepted
+- **Deciders:** Aizat
+- **Tags:** experiments | lancedb | llama-index | tokenization | embedding-cost
+- **Extends:** TDR-022
 
 ## Context
 

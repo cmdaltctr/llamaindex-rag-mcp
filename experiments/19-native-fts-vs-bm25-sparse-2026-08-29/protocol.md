@@ -1,9 +1,9 @@
 # Experiment 19: Native FTS vs BM25 sparse backend
 
-**Number:** 19
-**Slug:** `19-native-fts-vs-bm25-sparse-2026-08-29`
-**Status:** FAIL (G3 latency; G1 quality parity, G2 determinism, G4 memory pass) — decision: **KEEP `bm25` DEFAULT**. See [results.md](./results.md).
-**Operator:** @a-build agent (session 2026-08-29), for OpenSpec change
+- **Number:** 19
+- **Slug:** `19-native-fts-vs-bm25-sparse-2026-08-29`
+- **Status:** FAIL (G3 latency; G1 quality parity, G2 determinism, G4 memory pass) — decision: **KEEP `bm25` DEFAULT**. See [results.md](./results.md).
+- **Operator:** @a-build agent (session 2026-08-29), for OpenSpec change
 `implement-native-sparse-backend-strategy` (task 4.1)
 **Question owner:** Dr Muhammad Aizat Bin Md Hawari
 

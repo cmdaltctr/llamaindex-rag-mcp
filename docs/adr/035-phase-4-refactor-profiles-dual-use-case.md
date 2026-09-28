@@ -1,12 +1,12 @@
 # ADR-035: Phase 4 Refactor — Profiles: Dual Use Cases
 
-**Date:** 2026-08-04
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Change:** `phase-4-refactor-profiles-dual-use-case`
-**Amends:** ADR-018 (balanced retrieval defaults — profile-level restoration of reranker-on for documents)
-**Supersedes:** ADR-019 (partially — the codebase profile formalises reranker-off for technical workloads)
-**Phase:** 4 of 5 (`docs/brainstorm/refactor-proposal/PROPOSAL.md` §6, §8)
+- **Date:** 2026-08-04
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Change:** `phase-4-refactor-profiles-dual-use-case`
+- **Amends:** ADR-018 (balanced retrieval defaults — profile-level restoration of reranker-on for documents)
+- **Supersedes:** ADR-019 (partially — the codebase profile formalises reranker-off for technical workloads)
+- **Phase:** 4 of 5 (`docs/brainstorm/refactor-proposal/PROPOSAL.md` §6, §8)
 
 > **Numbering note.** The proposal called this "ADR 030" based on the
 > pre-refactor numbering. ADRs 028–034 landed before Phase 4, so the next

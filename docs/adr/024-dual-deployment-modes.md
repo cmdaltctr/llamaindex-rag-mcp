@@ -1,9 +1,9 @@
 # ADR-024: Dual deployment modes — Full Local vs Hybrid
 
-**Date:** 2026-01-15  
-**Status:** Accepted
-**Update:** This ADR supersedes the "no cloud services" hard boundary in AGENTS.md — shifts to local-first, cloud-allowed-as-opt-in.
-**Change:** `add-fast-context-codebase-map`
+- **Date:** 2026-01-15
+- **Status:** Accepted
+- **Update:** This ADR supersedes the "no cloud services" hard boundary in AGENTS.md — shifts to local-first, cloud-allowed-as-opt-in.
+- **Change:** `add-fast-context-codebase-map`
 
 ## Context
 

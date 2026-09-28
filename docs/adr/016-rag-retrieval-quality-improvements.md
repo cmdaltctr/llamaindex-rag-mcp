@@ -1,10 +1,10 @@
 # ADR-016: RAG Retrieval Quality Improvements
 
-**Status**: Accepted
-**Date**: 2026-05-27
-**Change**: `2-rag-retrieval-quality-improvements`
-**Deciders**: Dr Muhammad Aizat Bin Md Hawari
-**Git Commits**: `0b91d03`, `abea2b5`, `483c4dd`, `796b132`, `8214605` (feature branch `feat/rag-retrieval-quality-tier-2`)
+- **Status**: Accepted
+- **Date**: 2026-05-27
+- **Change**: `2-rag-retrieval-quality-improvements`
+- **Deciders**: Dr Muhammad Aizat Bin Md Hawari
+- **Git Commits**: `0b91d03`, `abea2b5`, `483c4dd`, `796b132`, `8214605` (feature branch `feat/rag-retrieval-quality-tier-2`)
 
 ## Context
 

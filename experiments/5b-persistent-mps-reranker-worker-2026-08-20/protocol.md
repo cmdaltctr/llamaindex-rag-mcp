@@ -1,10 +1,10 @@
 # Experiment 5b — Persistent MPS reranker worker
 
-**Experiment ID:** `5b-persistent-mps-reranker-worker`  
-**Protocol version:** `1.1` (`1.0-draft` prepared against `b4788ff`; operational values resolved 2026-08-21 against `b013ae6`; `1.1` amended 2026-08-22 — longevity-schedule budget filter, see section 22)  
-**Status:** PLANNED — finalised before harness code; no measured result is claimed  
-**Prepared against repository commit:** `b4788ff2fb6f548d11091edbeb1f9df622574a98`  
-**Role:** experiment-only evaluation of a persistent optional Torch MPS worker
+- **Experiment ID:** `5b-persistent-mps-reranker-worker`
+- **Protocol version:** `1.1` (`1.0-draft` prepared against `b4788ff`; operational values resolved 2026-08-21 against `b013ae6`; `1.1` amended 2026-08-22 — longevity-schedule budget filter, see section 22)
+- **Status:** PLANNED — finalised before harness code; no measured result is claimed
+- **Prepared against repository commit:** `b4788ff2fb6f548d11091edbeb1f9df622574a98`
+- **Role:** experiment-only evaluation of a persistent optional Torch MPS worker
 
 > Version 1.0 resolves every operational value that the proposal and prior
 > experiments left open; no `TODO-LOCAL` marker remains. The amendment rule

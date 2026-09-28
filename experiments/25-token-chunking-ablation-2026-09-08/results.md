@@ -1,10 +1,10 @@
 # Experiment 25 Results: Model-Token-Aware Markdown Chunking Ablation
 
-**ID**: `25-token-chunking-ablation-2026-09-08`  
-**Date evaluated**: 2026-09-09  
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  
-**Status**: COMPLETE — frozen-gate verdict: **PASS** (all four gates passed).  
-**Raw data**: [`output/eval_results.summary.json`](./output/eval_results.summary.json)
+- **ID**: `25-token-chunking-ablation-2026-09-08`
+- **Date evaluated**: 2026-09-09
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: COMPLETE — frozen-gate verdict: **PASS** (all four gates passed).
+- **Raw data**: [`output/eval_results.summary.json`](./output/eval_results.summary.json)
 
 ---
 

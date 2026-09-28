@@ -1,9 +1,9 @@
 # TDR-008: Copy uv cache files for NLTK Pathsec in Linux CI
 
-**Date:** 2026-08-13
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Tags:** ci | uv | nltk | dependency-floors | security
+- **Date:** 2026-08-13
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Tags:** ci | uv | nltk | dependency-floors | security
 
 ## Context
 

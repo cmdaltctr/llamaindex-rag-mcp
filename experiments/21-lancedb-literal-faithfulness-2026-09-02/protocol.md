@@ -1,9 +1,9 @@
 # Experiment 21: LanceDB Engine Literal-Faithfulness Inventory
 
-**ID**: `21-lancedb-literal-faithfulness-2026-09-02`
-**Date**: 2026-09-02
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent (for automation)
-**Status**: PLANNED
+- **ID**: `21-lancedb-literal-faithfulness-2026-09-02`
+- **Date**: 2026-09-02
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent (for automation)
+- **Status**: PLANNED
 
 ---
 

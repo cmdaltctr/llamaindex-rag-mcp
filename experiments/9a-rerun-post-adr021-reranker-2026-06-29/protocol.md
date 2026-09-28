@@ -1,9 +1,9 @@
 # Experiment 9a-rerun: Post-ADR-021 Reranker Validation
 
-**ID**: `9a-rerun-post-adr021-reranker-2026-06-29`  
-**Date planned**: 2026-06-29  
-**Status**: PLANNED  
-**Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; validates ADR-019
+- **ID**: `9a-rerun-post-adr021-reranker-2026-06-29`
+- **Date planned**: 2026-06-29
+- **Status**: PLANNED
+- **Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; validates ADR-019
 
 ---
 

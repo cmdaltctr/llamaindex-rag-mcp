@@ -1,10 +1,10 @@
 # Experiment 16: Reranker CoreML EP + fp16 feasibility and latency
 
-**Status**: FAIL (H2) — fp16 loads with fix but is 2.3× slower than int8; CoreML does not help
-**Date**: 2026-08-03
-**Model**: `Alibaba-NLP/gte-reranker-modernbert-base`
-**Platform**: macOS-26.5.1-arm64 | arm64 | ORT 1.25.1
-**Iterations**: 5 warm × 5 queries × 20 docs (each cell in a separate process)
+- **Status**: FAIL (H2) — fp16 loads with fix but is 2.3× slower than int8; CoreML does not help
+- **Date**: 2026-08-03
+- **Model**: `Alibaba-NLP/gte-reranker-modernbert-base`
+- **Platform**: macOS-26.5.1-arm64 | arm64 | ORT 1.25.1
+- **Iterations**: 5 warm × 5 queries × 20 docs (each cell in a separate process)
 
 ---
 

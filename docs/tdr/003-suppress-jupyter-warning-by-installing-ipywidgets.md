@@ -1,9 +1,9 @@
 # TDR-003: Suppress Jupyter warning by installing ipywidgets as dev dependency
 
-**Date:** 2026-06-28
-**Status:** Accepted
-**Deciders:** Muhammad Aizat Bin Md Hawari
-**Tags:** rich | ipywidgets | warnings | dev-dependencies
+- **Date:** 2026-06-28
+- **Status:** Accepted
+- **Deciders:** Muhammad Aizat Bin Md Hawari
+- **Tags:** rich | ipywidgets | warnings | dev-dependencies
 
 ## Context
 

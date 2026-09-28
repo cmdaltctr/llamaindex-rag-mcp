@@ -1,11 +1,11 @@
 # ADR-026: Provider registry pattern and OpenAI-compatible API providers
 
-**Date:** 2026-07-15
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Md Hawari
-**Change:** `add-openrouter-provider`
-**Supersedes:** ADR-025 (partially — replaces `INFERENCE_BACKEND` with split env vars)
-**Amended by:** ADR-027 (naming taxonomy — flat names replaced with `local`/`cloud` + sub-provider)
+- **Date:** 2026-07-15
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Md Hawari
+- **Change:** `add-openrouter-provider`
+- **Supersedes:** ADR-025 (partially — replaces `INFERENCE_BACKEND` with split env vars)
+- **Amended by:** ADR-027 (naming taxonomy — flat names replaced with `local`/`cloud` + sub-provider)
 
 ## Scope
 

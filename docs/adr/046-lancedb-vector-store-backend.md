@@ -1,8 +1,8 @@
 # ADR-046: LanceDB as the Second Vector-Store Backend
 
-**Date:** 2026-08-17
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-17
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

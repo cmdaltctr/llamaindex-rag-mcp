@@ -1,9 +1,9 @@
 # TDR-005: fetch_k override parameter for experiment pool-size sweeps
 
-**Date:** 2026-06-29
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari with AI agent
-**Tags:** retrieval | reranker | experiment | fetch-pool
+- **Date:** 2026-06-29
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Tags:** retrieval | reranker | experiment | fetch-pool
 
 ## Context
 

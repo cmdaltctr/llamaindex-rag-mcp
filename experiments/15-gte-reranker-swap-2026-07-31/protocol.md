@@ -1,10 +1,10 @@
 # Experiment 15: gte-reranker-modernbert-base A/B Comparison
 
-**ID**: `15-gte-reranker-swap-2026-07-31`  
-**Date planned**: 2026-07-31  
-**Operator**: Dr Muhammad Aizat Md Hawari with a-build agent  
-**Status**: PLANNED  
-**Relation**: OpenSpec change `swap-reranker-to-gte-modernbert`; NiftyPM AIE-20; informs ADR-028
+- **ID**: `15-gte-reranker-swap-2026-07-31`
+- **Date planned**: 2026-07-31
+- **Operator**: Dr Muhammad Aizat Md Hawari with a-build agent
+- **Status**: PLANNED
+- **Relation**: OpenSpec change `swap-reranker-to-gte-modernbert`; NiftyPM AIE-20; informs ADR-028
 
 ---
 

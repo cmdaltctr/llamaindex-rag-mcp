@@ -1,10 +1,10 @@
 # Experiment 16: Reranker CoreML EP + fp16 feasibility and latency
 
-**ID**: `16-reranker-coreml-fp16-2026-08-03`
-**Date planned**: 2026-08-03
-**Operator**: Dr Muhammad Aizat Md Hawari with AI build agent
-**Status**: PLANNED
-**Relation**: OpenSpec change `swap-reranker-to-gte-modernbert` (AIE-20); informs the
+- **ID**: `16-reranker-coreml-fp16-2026-08-03`
+- **Date planned**: 2026-08-03
+- **Operator**: Dr Muhammad Aizat Md Hawari with AI build agent
+- **Status**: PLANNED
+- **Relation**: OpenSpec change `swap-reranker-to-gte-modernbert` (AIE-20); informs the
 provider-default and variant-selection logic in `src/rag_mcp/reranker.py`
 
 ---

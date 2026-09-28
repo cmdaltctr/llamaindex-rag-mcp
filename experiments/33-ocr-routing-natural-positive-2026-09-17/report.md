@@ -1,13 +1,13 @@
 # Experiment 33: OCR routing natural-positive study
 
-**ID**: `33-ocr-routing-natural-positive-2026-09-17`  
-**Date run**: 2026-09-17  
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  
-**Status**: FAIL (Stage A) — the shipped gate misses 8 of 18 documents that need OCR. Task 6.7 (local OCR tier) measured  
-**Verdict**: The packaged gate does not detect most natural OCR need. The full-scan candidate helps slightly (recall 0.556 → 0.611) and costs 49 extra OCR pages; recalibration belongs in a separate proposal  
-**Raw data**: [`output/arm_sampled_baseline/eval_results.summary.json`](./output/arm_sampled_baseline/eval_results.summary.json), [`output/arm_full_scan_candidate/eval_results.summary.json`](./output/arm_full_scan_candidate/eval_results.summary.json), [`output/arm_comparison.json`](./output/arm_comparison.json), [`output/page_evidence.json`](./output/page_evidence.json), [`output/local_ocr/summary.json`](./output/local_ocr/summary.json)  
-**Change**: `openspec/changes/experiment-33-ocr-routing-natural-positive`; relates to `full-page-ocr-evidence` (PR #95, TDR-026) and `page-level-ocr-routing`  
-**Protocol**: [protocol.md](protocol.md)
+- **ID**: `33-ocr-routing-natural-positive-2026-09-17`
+- **Date run**: 2026-09-17
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: FAIL (Stage A) — the shipped gate misses 8 of 18 documents that need OCR. Task 6.7 (local OCR tier) measured
+- **Verdict**: The packaged gate does not detect most natural OCR need. The full-scan candidate helps slightly (recall 0.556 → 0.611) and costs 49 extra OCR pages; recalibration belongs in a separate proposal
+- **Raw data**: [`output/arm_sampled_baseline/eval_results.summary.json`](./output/arm_sampled_baseline/eval_results.summary.json), [`output/arm_full_scan_candidate/eval_results.summary.json`](./output/arm_full_scan_candidate/eval_results.summary.json), [`output/arm_comparison.json`](./output/arm_comparison.json), [`output/page_evidence.json`](./output/page_evidence.json), [`output/local_ocr/summary.json`](./output/local_ocr/summary.json)
+- **Change**: `openspec/changes/experiment-33-ocr-routing-natural-positive`; relates to `full-page-ocr-evidence` (PR #95, TDR-026) and `page-level-ocr-routing`
+- **Protocol**: [protocol.md](protocol.md)
 
 ## Bottom line
 

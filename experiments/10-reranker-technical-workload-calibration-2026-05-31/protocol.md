@@ -1,10 +1,10 @@
 # Experiment 10: Reranker Technical Workload Calibration
 
-**ID**: `10-reranker-technical-workload-calibration-2026-05-31`
-**Date planned**: 2026-05-31
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
-**Status**: FAIL for current reranker policy; INCONCLUSIVE for effective pool-size sensitivity — reranking with an effective fetch pool of 500 substantially underperformed rerank-off retrieval on the technical workload. The intended labelled `RERANK_MAX_FETCH` sweep did not vary effective fetch size because `top_k=50` and `RERANK_FETCH_MULTIPLIER=10` forced all reranker-on cells to `fetch_k=500`. Recommends disabling reranking for technical/hybrid workloads while treating pool-size sensitivity as unresolved.
-**Relation**: Follow-up to `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/`; OpenSpec change `rag-reranker-technical-workload-calibration`; ADR-018 balanced retrieval defaults
+- **ID**: `10-reranker-technical-workload-calibration-2026-05-31`
+- **Date planned**: 2026-05-31
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: FAIL for current reranker policy; INCONCLUSIVE for effective pool-size sensitivity — reranking with an effective fetch pool of 500 substantially underperformed rerank-off retrieval on the technical workload. The intended labelled `RERANK_MAX_FETCH` sweep did not vary effective fetch size because `top_k=50` and `RERANK_FETCH_MULTIPLIER=10` forced all reranker-on cells to `fetch_k=500`. Recommends disabling reranking for technical/hybrid workloads while treating pool-size sensitivity as unresolved.
+- **Relation**: Follow-up to `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/`; OpenSpec change `rag-reranker-technical-workload-calibration`; ADR-018 balanced retrieval defaults
 
 ---
 

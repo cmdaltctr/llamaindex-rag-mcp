@@ -1,8 +1,8 @@
 # ADR-030: Prefer int8 Quantised ONNX Variant for ModernBERT Rerankers
 
-**Date:** 2026-08-03
-**Status:** Proposed
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-03
+- **Status:** Proposed
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

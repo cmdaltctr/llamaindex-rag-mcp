@@ -1,10 +1,10 @@
 # Experiment 9: Hybrid Retrieval Quality (Dense + BM25 + RRF)
 
-**ID**: `hybrid-retrieval-2026-05-27`
-**Date**: 2026-05-27
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent (for automation)
-**Status**: PLANNED
-**Related OpenSpec change**: `rag-hybrid-retrieval` (Tier 3)
+- **ID**: `hybrid-retrieval-2026-05-27`
+- **Date**: 2026-05-27
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent (for automation)
+- **Status**: PLANNED
+- **Related OpenSpec change**: `rag-hybrid-retrieval` (Tier 3)
 
 ---
 

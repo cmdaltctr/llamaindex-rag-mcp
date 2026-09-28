@@ -1,10 +1,10 @@
 # Experiment 1 — SentenceSplitter vs CodeSplitter execution and structural integrity
 
-**Template ID:** `example/experiment-1-sentencesplitter-vs-codesplitter`  
-**Status:** PASS  
-**Role:** correctness gate before code-retrieval calibration  
-**Protocol version:** 1.0  
-**Executed:** 2026-08-19 (structural arm; optional H4 not run)
+- **Template ID:** `example/experiment-1-sentencesplitter-vs-codesplitter`
+- **Status:** PASS
+- **Role:** correctness gate before code-retrieval calibration
+- **Protocol version:** 1.0
+- **Executed:** 2026-08-19 (structural arm; optional H4 not run)
 
 ## 1. Research question
 

@@ -1,9 +1,9 @@
 # TDR-014: Experiment-Validity Framework: Runtime Manifests, Preflight Aborts, and Cell Agreement
 
-**Date:** 2026-08-19
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Tags:** experiments | stage4 | preflight | manifest | validity
+- **Date:** 2026-08-19
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Tags:** experiments | stage4 | preflight | manifest | validity
 
 ## Context
 

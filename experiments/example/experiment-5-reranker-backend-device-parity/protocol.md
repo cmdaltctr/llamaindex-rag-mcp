@@ -1,8 +1,8 @@
 # Experiment 5 — Reranker backend and execution-device parity
 
-**Template ID:** `example/experiment-5-reranker-backend-device-parity`  
-**Status:** FAIL — measured campaign 2026-08-19; correctness gates H1/H5 PASS, performance H2 PASS and H3 FAIL, H4 applied; H3 does not block Stage 6 correctness work; see section 22 and `results.md`  
-**Role:** bounded correctness/performance gate for ONNX vs Torch and CPU vs Apple acceleration
+- **Template ID:** `example/experiment-5-reranker-backend-device-parity`
+- **Status:** FAIL — measured campaign 2026-08-19; correctness gates H1/H5 PASS, performance H2 PASS and H3 FAIL, H4 applied; H3 does not block Stage 6 correctness work; see section 22 and `results.md`
+- **Role:** bounded correctness/performance gate for ONNX vs Torch and CPU vs Apple acceleration
 
 ## 1. Research question
 

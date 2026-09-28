@@ -1,8 +1,8 @@
 # Experiment 9a Results: Hybrid Retrieval on FreshStack LangChain
 
-**ID**: `9a-hybrid-retrieval-freshstack-langchain-2026-05-30`  
-**Date completed**: 2026-05-31  
-**Recommendation**: **KEEP `HYBRID_ENABLED=false` default** — hybrid remains opt-in
+- **ID**: `9a-hybrid-retrieval-freshstack-langchain-2026-05-30`
+- **Date completed**: 2026-05-31
+- **Recommendation**: **KEEP `HYBRID_ENABLED=false` default** — hybrid remains opt-in
 
 ---
 

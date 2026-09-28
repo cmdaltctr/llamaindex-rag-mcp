@@ -1,8 +1,8 @@
 # ADR-048: Bounded and Failure-Safe Ingestion
 
-**Date:** 2026-08-19
-**Status:** Accepted (Pause Gate 3A closed 2026-08-19; see validation evidence)
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-19
+- **Status:** Accepted (Pause Gate 3A closed 2026-08-19; see validation evidence)
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

@@ -13,8 +13,8 @@ identifier-heavy corpus.** The gte model is less harmful than MiniLM (+4.2pp
 Coverage@20) but still 16.1pp below the rerank-off baseline. Latency on CPU is
 impractical (24.6s P95 per query).
 
-**Critical discovery:** During this experiment, two bugs were found that mean
-**all prior reranker experiments (Exp 10, 12) were testing a broken reranker**:
+- **Critical discovery:** During this experiment, two bugs were found that mean
+- **all prior reranker experiments (Exp 10, 12) were testing a broken reranker**:
 1. CoreML execution provider silently failed on every inference (dynamic sequence
    lengths unsupported), returning un-reranked fallback results.
 2. The `max_length=2048` change exceeded MiniLM's 512-token ONNX position embedding
@@ -98,11 +98,11 @@ but still harmful, and its CPU latency (24.6s P95) is impractical.
 
 ### Bug 1: CoreML silent failure (production code)
 
-**Symptom:** Every reranker inference returned un-reranked fallback results.
-**Root cause:** CoreML execution provider doesn't support dynamic sequence lengths
+- **Symptom:** Every reranker inference returned un-reranked fallback results.
+- **Root cause:** CoreML execution provider doesn't support dynamic sequence lengths
 produced by cross-encoder tokenisation (variable batch padding).
-**Fix:** Default to `CPUExecutionProvider` (`RERANK_ONNX_PROVIDER=cpu`).
-**Impact:** Post-ADR-021 reranker experiments (Exp 12, 9a-rerun, 13) had
+- **Fix:** Default to `CPUExecutionProvider` (`RERANK_ONNX_PROVIDER=cpu`).
+- **Impact:** Post-ADR-021 reranker experiments (Exp 12, 9a-rerun, 13) had
 invalid rerank-on cells. Exp 10 (May 31, pre-ADR-021) was valid — the
 reranker ran on CPU and genuinely degraded quality.
 

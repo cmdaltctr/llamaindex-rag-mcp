@@ -1,10 +1,10 @@
 # Experiment 17: Reranker MPS vs ONNX CPU latency
 
-**ID**: `17-reranker-mps-vs-onnx-cpu-2026-08-11`
-**Date planned**: 2026-08-11
-**Operator**: Dr Muhammad Aizat Md Hawari with AI build agent
-**Status**: FAIL (H1-H4 PASS, H5 FAIL)
-**Relation**: OpenSpec change `apple-acceleration-for-reranker`; ADR-038 (pluggable
+- **ID**: `17-reranker-mps-vs-onnx-cpu-2026-08-11`
+- **Date planned**: 2026-08-11
+- **Operator**: Dr Muhammad Aizat Md Hawari with AI build agent
+- **Status**: FAIL (H1-H4 PASS, H5 FAIL)
+- **Relation**: OpenSpec change `apple-acceleration-for-reranker`; ADR-038 (pluggable
 reranker backend); ADR-043 (Apple acceleration verdict); follows Experiment 16
 (CoreML evidence for ModernBERT)
 

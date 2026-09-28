@@ -1,8 +1,8 @@
 # Experiment 4 — Results (Large Corpus Replication)
 
-**Date run**: 2026-05-27
-**Operator**: Dr Muhammad Aizat Bin Md Hawari (with AI agent automation)
-**Status**: PASS — responsiveness contract holds; GIL contention identified as residual
+- **Date run**: 2026-05-27
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari (with AI agent automation)
+- **Status**: PASS — responsiveness contract holds; GIL contention identified as residual
 
 ---
 

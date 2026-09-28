@@ -1,9 +1,9 @@
 # ADR-038: Pluggable Reranker Backend
 
-**Date:** 2026-08-11
-**Status:** Accepted
-**Scopes:** ADR-005 (does not reverse it — narrows the blanket "no PyTorch at runtime" to "no PyTorch in the base install or on the default retrieval path")
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-11
+- **Status:** Accepted
+- **Scopes:** ADR-005 (does not reverse it — narrows the blanket "no PyTorch at runtime" to "no PyTorch in the base install or on the default retrieval path")
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

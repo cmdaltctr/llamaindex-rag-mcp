@@ -1,9 +1,9 @@
 # Experiment 4 results — BM25 cache isolation and invalidation
 
 **Status: PASS** (all five correctness gates green in every cell)
-**Executed:** 2026-08-19, worktree `harden-pipeline-correctness-before-calibration`
-**Commit:** `c475852cf195658ce6af8654e11e07dce4c39fec` (dirty: experiment artefacts uncommitted)
-**Runtime:** Python 3.12.10, chromadb 1.5.9, lancedb 0.37.1, rank_bm25 NOT
+- **Executed:** 2026-08-19, worktree `harden-pipeline-correctness-before-calibration`
+- **Commit:** `c475852cf195658ce6af8654e11e07dce4c39fec` (dirty: experiment artefacts uncommitted)
+- **Runtime:** Python 3.12.10, chromadb 1.5.9, lancedb 0.37.1, rank_bm25 NOT
 installed — the deterministic internal `_SimpleBM25Okapi` mirror
 (sparse.py:93-151) served the sparse path; every manifest records this
 honestly as `sparse.effective_backend: "bm25-internal-okapi"`.

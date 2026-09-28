@@ -1,8 +1,8 @@
 # ADR-044: Pluggable Community Detection
 
-**Date:** 2026-08-14
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-14
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

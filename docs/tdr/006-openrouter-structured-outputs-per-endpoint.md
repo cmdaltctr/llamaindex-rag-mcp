@@ -1,9 +1,9 @@
 # TDR-006: OpenRouter structured outputs are per-endpoint, so `require_parameters` needs a downgrade path
 
-**Date:** 2026-08-07
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Tags:** openrouter | metadata | cloud | graceful-degradation
+- **Date:** 2026-08-07
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Tags:** openrouter | metadata | cloud | graceful-degradation
 
 ## Context
 

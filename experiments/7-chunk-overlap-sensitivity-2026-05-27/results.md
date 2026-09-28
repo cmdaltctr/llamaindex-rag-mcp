@@ -1,9 +1,9 @@
 # Experiment 7 Results: Chunk Overlap Sensitivity
 
-**Date run**: 2026-05-27
-**Operator**: AI agent (build phase)
-**Status**: PASS — Hit@1 / MRR non-regression confirmed.
-**Outcome**: Ship `CHUNK_OVERLAP=100` as the new default.
+- **Date run**: 2026-05-27
+- **Operator**: AI agent (build phase)
+- **Status**: PASS — Hit@1 / MRR non-regression confirmed.
+- **Outcome**: Ship `CHUNK_OVERLAP=100` as the new default.
 
 ---
 

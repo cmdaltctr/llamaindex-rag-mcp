@@ -2,11 +2,11 @@
 
 # Experiment 10b: Corrected Reranker Pool-Size Sweep
 
-**ID**: `10b-reranker-pool-size-corrected-2026-06-29`  
-**Date planned**: 2026-06-29  
-**Operator**: Dr Aizat Md Hawari with AI build agent  
-**Status**: PLANNED  
-**Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; supersedes Exp 10 (design confound); informs ADR-019 / ADR-021
+- **ID**: `10b-reranker-pool-size-corrected-2026-06-29`
+- **Date planned**: 2026-06-29
+- **Operator**: Dr Aizat Md Hawari with AI build agent
+- **Status**: PLANNED
+- **Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; supersedes Exp 10 (design confound); informs ADR-019 / ADR-021
 
 ---
 

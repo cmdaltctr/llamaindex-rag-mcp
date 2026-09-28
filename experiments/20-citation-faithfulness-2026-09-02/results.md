@@ -1,11 +1,11 @@
 # Experiment 20 Results: Citation Faithfulness — Does the Cited Evidence Support the Claim?
 
-**ID**: `20-citation-faithfulness-2026-09-02`
-**Date run**: 2026-09-02
-**Operator**: Dr Muhammad Aizat with build agent (ran the judge cells, wrote this report)
-**Status**: PASS
-**Outcome**: All gates pass; propose a claim-verification stage behind `ANSWER__VERIFY_CLAIMS=true`.
-**Raw data**: [`eval_results.json`](./output/eval_results.json)
+- **ID**: `20-citation-faithfulness-2026-09-02`
+- **Date run**: 2026-09-02
+- **Operator**: Dr Muhammad Aizat with build agent (ran the judge cells, wrote this report)
+- **Status**: PASS
+- **Outcome**: All gates pass; propose a claim-verification stage behind `ANSWER__VERIFY_CLAIMS=true`.
+- **Raw data**: [`eval_results.json`](./output/eval_results.json)
 
 ---
 

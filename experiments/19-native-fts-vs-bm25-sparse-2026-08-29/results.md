@@ -1,7 +1,7 @@
 # Experiment 19 results: native FTS vs BM25 sparse backend
 
-**Status:** FAIL (gates) — decision: KEEP bm25 DEFAULT
-**Ran:** 2026-08-29 · corpus: Exp 9 packs · store chunks: 53
+- **Status:** FAIL (gates) — decision: KEEP bm25 DEFAULT
+- **Ran:** 2026-08-29 · corpus: Exp 9 packs · store chunks: 53
 
 ## Quality (sparse-only, warm)
 

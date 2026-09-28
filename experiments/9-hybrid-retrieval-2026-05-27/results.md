@@ -1,9 +1,9 @@
 # Experiment 9 Results: Hybrid Retrieval Quality
 
-**Date run**: 2026-05-30  
-**Operator**: Dr Muhammad Aizat Bin Md Hawari  
-**Status**: PARTIAL — implementation works; default-promotion criteria not met.  
-**Outcome**: Ship hybrid retrieval as **opt-in only**. Do **not** flip defaults yet.
+- **Date run**: 2026-05-30
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari
+- **Status**: PARTIAL — implementation works; default-promotion criteria not met.
+- **Outcome**: Ship hybrid retrieval as **opt-in only**. Do **not** flip defaults yet.
 
 ---
 

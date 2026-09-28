@@ -1,10 +1,10 @@
 # Experiment 2 results — dense cross-store score parity
 
 **Status: FAIL at v1.0** (correctness blocker; see the production finding) — **re-executed at v1.1: PASS** after fix commit `7bf16b3` (see the v1.1 section below; the v1.0 record is preserved unchanged)
-**Executed:** 2026-08-19, worktree `harden-pipeline-correctness-before-calibration`
-**Commit:** `c475852cf195658ce6af8654e11e07dce4c39fec` (dirty: experiment artefacts uncommitted)
-**Runtime:** Python 3.12.10, chromadb 1.5.9, lancedb 0.37.1, pyarrow 25.0.1, llama-index 0.14.23
-**Protocol:** `protocol.md` v1.0, pre-registered sections unchanged; execution record appended there.
+- **Executed:** 2026-08-19, worktree `harden-pipeline-correctness-before-calibration`
+- **Commit:** `c475852cf195658ce6af8654e11e07dce4c39fec` (dirty: experiment artefacts uncommitted)
+- **Runtime:** Python 3.12.10, chromadb 1.5.9, lancedb 0.37.1, pyarrow 25.0.1, llama-index 0.14.23
+- **Protocol:** `protocol.md` v1.0, pre-registered sections unchanged; execution record appended there.
 
 ## Hypothesis verdicts
 

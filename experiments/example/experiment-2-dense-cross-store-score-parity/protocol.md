@@ -1,10 +1,10 @@
 # Experiment 2 — Dense cross-store score parity
 
-**Template ID:** `example/experiment-2-dense-cross-store-score-parity`  
-**Status:** FAIL  
-**Protocol version:** 1.0  
-**Executed:** 2026-08-19  
-**Role:** semantic-swappability gate for ChromaDB and LanceDB
+- **Template ID:** `example/experiment-2-dense-cross-store-score-parity`
+- **Status:** FAIL
+- **Protocol version:** 1.0
+- **Executed:** 2026-08-19
+- **Role:** semantic-swappability gate for ChromaDB and LanceDB
 
 ## 1. Research question
 

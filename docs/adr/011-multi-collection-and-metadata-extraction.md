@@ -1,8 +1,8 @@
 # ADR-011: Multi-Collection and Metadata Extraction
 
-**Status**: Accepted
-**Date**: 2026-05-19
-**Change**: `add-multi-collection-metadata`
+- **Status**: Accepted
+- **Date**: 2026-05-19
+- **Change**: `add-multi-collection-metadata`
 
 ## Context
 
