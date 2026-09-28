@@ -75,7 +75,7 @@ development of OMRG — Opinionated Modular RAG.
 | [066](./066-tiered-reader-fallback-chain.md)                 | Tiered Reader Fallback — pdf-inspector → liteparse → pypdf                                  | 2026-09-13 | Accepted |
 | [067](./067-self-contained-reader-fallback-settings.md)     | Self-Contained Reader Fallback Settings                                                     | 2026-09-13 | Accepted |
 | [068](./068-pin-magika-content-detection.md)                | Pin Magika Content Detection                                                                | 2026-09-16 | Accepted |
-| [069](./069-page-level-ocr-routing-and-the-pdfium-runtime.md) | Page-Level OCR Routing with a Local Tier, and the PDFium Runtime                            | 2026-09-18 | Proposed |
+| [069](./069-page-level-ocr-routing-and-the-pdfium-runtime.md) | Page-Level OCR Routing with a Local Tier, and the PDFium Runtime                            | 2026-09-18 | Accepted |
 | [070](./070-normalise-reader-output-before-chunking.md) | Normalise Reader Output Before Chunking — Remove Markup, Never Content | 2026-09-25 | Accepted |
 
 ## Convention

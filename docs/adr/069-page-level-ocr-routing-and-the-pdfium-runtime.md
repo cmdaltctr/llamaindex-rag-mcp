@@ -1,7 +1,7 @@
 # ADR-069: Page-Level OCR Routing with a Local Tier, and the PDFium Runtime
 
 **Date:** 2026-09-18
-**Status:** Proposed (implementation complete on `feat/page-level-ocr-routing`; awaiting operator acceptance at PR review)
+**Status:** Accepted (PR #96 merged to `v3`, 2026-09-28)
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Change:** `openspec/changes/page-level-ocr-routing/` (tasks 3–6)
 **Related:** [ADR-050](050-configure-pdf-inspector-as-default-reader.md) (pdf-inspector default), [ADR-065](065-ocr-fallback-gate-promoted-to-packaged-default.md) (document-unit gate), [ADR-066](066-tiered-reader-fallback-chain.md) (reader chain, kept), TDR-026 (false-alarm risk that motivated the unit)
@@ -114,9 +114,13 @@ downloading unless offline mode forbids it.
   corpus 46.9% of flagged pages still escalate.
 - Residual risk is accepted and named: 11.3% of kept pages fall below
   0.8 recall, and the `io06` blind spot (confident, half-wrong
-  early-modern typography) survives the confidence cut. The deferred
-  retrieval experiment (task 6.1) gates any future default change; the
-  default remains `document`.
+  early-modern typography) survives the confidence cut. No task
+  targets it; reopen it only if real ingests hit that kind of print.
+  The `page` versus `document` retrieval comparison, now a task in
+  Experiment 33, gates any future default change; the default remains
+  `document`. If `page` wins, a separate proposal flips the default,
+  empties `PAGE_ROUTING_ONLY_EMBED_KEYS` and bumps
+  `_INDEX_IDENTITY_SCHEMA` in the same change.
 - Opting into `page` reindexes that install's sources once; the
   document unit is untouched. A local runtime that appears later adds
   the model identity and reindexes exactly then — the moment the
