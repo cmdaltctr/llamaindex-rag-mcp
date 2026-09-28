@@ -31,4 +31,5 @@ The run SHALL drive the worker through its protocol with a per-document soft tim
 - **GIVEN** the worker run stopped before completing the sample
 - **WHEN** the run is restarted
 - **THEN** completed documents SHALL not be re-run
-- **AND** the run SHALL continue within the same budget rules
+- **AND** the restarted run SHALL keep the per-document soft timeout
+- **AND** the restarted run SHALL get a new wall-clock cap, because the cap limits one run attempt and not the whole evaluation

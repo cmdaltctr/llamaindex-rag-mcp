@@ -76,12 +76,17 @@ Normalisation SHALL remove the tags of every `<div>` block and keep the block's 
 
 ### Requirement: Links, tables, code and maths SHALL be preserved
 
-Normalisation SHALL keep Markdown links and bare URLs unchanged. It SHALL keep `<table>` blocks as HTML tables. Inside a table it SHALL keep only the `table`, `thead`, `tbody`, `tr`, `td` and `th` tags and their `colspan` and `rowspan` attributes, and SHALL remove every other attribute. It SHALL decode HTML entities outside tables, code and maths. It SHALL NOT change fenced code blocks or inline code spans. It SHALL NOT change LaTeX maths: `$…$` within one line, `$$…$$`, and `\begin{…}…\end{…}` with matching environment names.
+Normalisation SHALL keep the structure of Markdown links and bare URLs. It SHALL decode HTML entities in link text and link destinations, as in the rest of the text. It SHALL keep `<table>` blocks as HTML tables. Inside a table it SHALL keep only the `table`, `thead`, `tbody`, `tr`, `td` and `th` tags and their `colspan` and `rowspan` attributes, and SHALL remove every other attribute. It SHALL decode HTML entities outside tables, code and maths. It SHALL NOT change fenced code blocks or inline code spans. It SHALL NOT change LaTeX maths: `$…$` within one line, `$$…$$`, and `\begin{…}…\end{…}` with matching environment names.
 
 #### Scenario: Link is untouched
 
 - **WHEN** the reader emits `[https://doi.org/10.1371/x](https://doi.org/10.1371/x)`
 - **THEN** the normalised text SHALL be identical to the input
+
+#### Scenario: Entity in a link destination is decoded
+
+- **WHEN** the reader emits `[docs](https://example.test/?a=1&amp;b=2)`
+- **THEN** the normalised text SHALL be `[docs](https://example.test/?a=1&b=2)`
 
 #### Scenario: Table keeps structure and loses presentation
 
