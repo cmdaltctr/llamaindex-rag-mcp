@@ -1,7 +1,7 @@
 # ADR-069: Page-Level OCR Routing with a Local Tier, and the PDFium Runtime
 
 **Date:** 2026-09-18
-**Status:** Proposed (implementation complete on `feat/page-level-ocr-routing`; awaiting operator acceptance at PR review)
+**Status:** Accepted (PR #96 merged to `v3`, 2026-09-28)
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Change:** `openspec/changes/page-level-ocr-routing/` (tasks 3–6)
 **Related:** [ADR-050](050-configure-pdf-inspector-as-default-reader.md) (pdf-inspector default), [ADR-065](065-ocr-fallback-gate-promoted-to-packaged-default.md) (document-unit gate), [ADR-066](066-tiered-reader-fallback-chain.md) (reader chain, kept), TDR-026 (false-alarm risk that motivated the unit)
@@ -124,3 +124,19 @@ downloading unless offline mode forbids it.
 - The worker's Paddle-side page forwarding is validated only by the
   operator-gated smoke test (`ocr-worker/smoke_test.py --provision`),
   which task 4.3 extended with a page-listed request.
+
+## Addendum (2026-09-28)
+
+- The change was archived after PR #96 merged. Its deferred task 6.1,
+  the `page` versus `document` retrieval comparison, is now task 6.8 of
+  Experiment 33. It gates any default change; the default remains
+  `document`.
+- If `page` wins, a separate proposal flips the default. That change
+  also empties `PAGE_ROUTING_ONLY_EMBED_KEYS` and bumps
+  `_INDEX_IDENTITY_SCHEMA`.
+- The `io06` blind spot has no task. Reopen it only if real ingests hit
+  that kind of print.
+- An unresolved page that keeps local OCR text now counts as
+  `pdf_inspector_ocr` when `ocr_backend` is derived, and sets
+  `ocr_used`, as the diagnostics contract requires. Both keys are excluded from embedding,
+  so the index identity does not change.

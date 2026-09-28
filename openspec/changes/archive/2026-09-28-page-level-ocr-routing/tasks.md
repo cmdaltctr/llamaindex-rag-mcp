@@ -7,6 +7,11 @@ guides cover the flat names and the runtime (6.2). PR #96 carries this
 change to `v3`; the deferred items (2.3, 6.1, 6.3) belong to future
 changes with their own evidence.
 
+**Archived 2026-09-28.** Where the deferred items went: 6.1 is a task in
+`experiment-33-ocr-routing-natural-positive` (page versus document
+comparison); 6.3 follows that result as a separate `v3` proposal; 2.3 is
+an accepted, named risk in ADR-069 with no task.
+
 ## 1. Evidence gate (before implementation)
 
 - [x] 1.1 Receive Experiment 33 local-OCR results: token recall on natural `needs_ocr` pages, confidence calibration, escalation rate, seconds per page.

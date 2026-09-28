@@ -357,7 +357,31 @@ def test_missing_worker_keeps_local_text_and_counts_unresolved(
         "ocr_pages_unresolved": 1,
     }
     assert "flawed four" in docs[0].text
+    # The kept page text came from local OCR, so the diagnostics name it.
+    assert meta["ocr_used"] is True
+    assert meta["ocr_backend"] == "mixed"
     assert "worker" in caplog.text.lower()
+
+
+def test_missing_worker_with_blank_local_text_keeps_native_text(
+    monkeypatch, tmp_path, effective_settings
+):
+    """Whitespace-only local output is no text: the native text is kept, not credited to OCR."""
+    scan = [_scan_page(i, f"native {i + 1}", i + 1 == 4) for i in range(5)]
+    engine = _EngineCalls(scan, ocr_pages_by_call=[[_ocr_page(4, "  \n ", 0.9)]])
+    _stub_engine(monkeypatch, engine)
+    inner = _FakeInner(text="whole", metadata=_inner_metadata(5, flagged=1))
+    worker = _FakeWorker(available=False)
+
+    docs = _page_reader(
+        inner, effective_settings(ocr_fallback_enabled=True, ocr_routing_unit="page"), worker
+    ).load_data(tmp_path / "doc.pdf")
+
+    meta = docs[0].metadata
+    assert "native 4" in docs[0].text
+    assert meta["ocr_pages_unresolved"] == 1
+    assert meta["ocr_used"] is False
+    assert meta["ocr_backend"] == OCR_BACKEND_FAST_PATH
 
 
 def test_protocol_1_0_worker_never_receives_a_page_request(
