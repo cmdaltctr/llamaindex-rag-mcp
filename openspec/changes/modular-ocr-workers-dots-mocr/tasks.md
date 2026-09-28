@@ -63,15 +63,18 @@
   - **Maths positives:** at least 5 arXiv maths-heavy papers from different fields and years, including one pdfLaTeX paper built with `glyphtounicode` (a Unicode-mapped maths font) and one Word paper with Cambria Math equations.
   - **Negative controls:** the Experiment 34 born-digital documents `bd01`, `bd02` and `bd03`, and one prose-only LaTeX paper.
   - **Scanned set:** the Experiment 34 scanned and problem pages (`io04`, `io06`, `tl03`).
+  - **Script and handwriting set:** the Experiment 33 pages whose frozen body label is `needs_ocr` in `io01`, `io02` and `io03` (Arabic), `io07` (Hindi), and `rf06` and `rf07` (handwriting). The local tier scored median token recall 0.000 and 0.310 on these (Experiment 33 task 6.7). Reuse the Experiment 33 frozen labels and reference transcriptions; do not relabel.
 - [ ] 7.2 Run the built system end to end, and report:
   - detection precision and recall per page, the flagged share per paper, and every font name on labelled maths pages that the list does not match;
   - dots-mocr and PaddleOCR-VL on the same maths and scanned pages: seconds per page, the KaTeX error rate over emitted formulas, and every page where either engine emits text absent from the page image (noise or invented text).
+  - dots-mocr and PaddleOCR-VL on the script and handwriting set: token recall against the Experiment 33 reference transcriptions, with the Experiment 33 task 6.7 tokeniser, shown by writing system beside the local-tier recall from Experiment 33.
 
   Verify: `output/summary.json` is committed.
 - [ ] 7.3 Acceptance:
   - zero flagged pages on the negative controls;
   - a dots-mocr KaTeX error rate at or below 5 % of formulas;
   - the operator reviews the scanned-set noise list.
+  - the script and handwriting recall is reported, not gated.
 
   If a detection or converter criterion fails, fix it, bump its version, and repeat 7.2. Verify: the verdict and the operator's scanned-set review are recorded in the experiment report and linked from this change.
 
