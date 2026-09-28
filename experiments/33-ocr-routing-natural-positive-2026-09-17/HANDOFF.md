@@ -57,6 +57,18 @@ worktree and local branch removed.
       operator on 41.5% and then 20.2% of the random sample, and the final
       labels take the operator's verdict on the 277 reviewed pages and the rule
       on the other 846.
+   4. The OCR engine change (operator decision 2026-09-24, change
+      `modular-ocr-workers-dots-mocr` on `v3`): dots.mocr becomes the primary
+      OCR engine and PaddleOCR-VL the fallback. Stage B, if authorised, runs
+      dots.mocr first and PaddleOCR-VL second. The local tier (PP-OCRv6 Small,
+      ONNX, CPU) stays: dots.mocr needs PyTorch and 7–9 GB, so it cannot
+      replace the local tier. `protocol.md` stays unchanged because it is
+      frozen.
+   5. The projected OCR time (3.7–11.7 h baseline, 4.2–13.1 h candidate) uses
+      the Experiment 24 PaddleOCR-VL rates of 33.7–106.4 s per page. It does
+      not describe dots.mocr. Experiment 34 measured dots.mocr at 1.4–3.6
+      times faster per page, but on GPU against Paddle on CPU, so the two
+      rates do not compare directly.
 6. **Later: a rescue-quality signal**, so a junk LiteParse rescue counts as
    OCR-required (`rf06` fast-path recall 0.236, `rf07` 0.469). `report.md`
    conclusion item 2. Its own change, after item 5.
@@ -336,9 +348,10 @@ Heavy artefacts should go to a GitHub Release before the final removal, per the
    do not patch digests without telling the operator.
 2. Thresholds `0.5` and `0.10` do not change in Experiment 33. Recalibration
    needs its own proposal.
-3. Stage B with PaddleOCR-VL (tasks 6.1 to 6.6) stays **unauthorised**. It
-   needs a separate operator decision naming the document subset, timeout and
-   runtime budget.
+3. Stage B (tasks 6.1 to 6.6) stays **unauthorised**. It needs a separate
+   operator decision naming the document subset, timeout and runtime budget.
+   If authorised, it runs dots.mocr as the primary engine and PaddleOCR-VL as
+   the fallback (queue item 5.4).
 4. Keep `pdf_inspector` → `liteparse` → `pypdf` (ADR-066) as the reader chain.
    The poppler and pypdf text layers exist only as the experiment's answer key.
 5. OpenRouter is used only for labelling, and labelling is finished.
