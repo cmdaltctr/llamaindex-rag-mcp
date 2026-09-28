@@ -65,7 +65,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 3141
+_BASE_EXECUTED = 3142
+# Re-baselined at the PR #100 review fix (2026-09-28): an entity-encoded
+# query separator in a Markdown link destination — +1 (3141 -> 3142).
 # Re-baselined at normaliser version 2 (2026-09-25, Experiment 36): an
 # image-only block leaves no placeholder — +1 (3140 -> 3141).
 # Re-baselined at the OCR worker per-page fix (2026-09-25, Experiment 34

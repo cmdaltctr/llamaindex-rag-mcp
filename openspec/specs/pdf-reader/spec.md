@@ -1,7 +1,9 @@
 ## Purpose
 
 Define a pluggable PDF reader architecture with environment-variable-driven backend selection, bounding-box metadata capture, graceful fallback across multiple parser backends, and structured error handling for MCP tool compliance.
+
 ## Requirements
+
 ### Requirement: PDF reader SHALL be selectable via environment variable
 
 The system SHALL read a `PDF_READER` environment variable at config-load
@@ -107,11 +109,12 @@ out of `ingest_path_async` or any MCP tool handler, per the project's
 
 ### Requirement: LiteParse adapter SHALL capture bounding-box metadata on emitted Documents
 
-When the LiteParse adapter is in use, every emitted `Document` object SHALL carry a `metadata` dictionary containing spatial information extracted by LiteParse. The metadata SHALL include the keys `pdf_reader="liteparse"`, `page=<int>` (1-indexed), `column=<"left"|"right"|"single">`, `section_bbox=<[x0, y0, x1, y1]>` (page-coordinate space), and `bbox_schema_version=1`. Retrieval-side consumption of these fields is out of scope for this change.
+When the LiteParse adapter is in use, every emitted `Document` object SHALL carry a `metadata` dictionary containing spatial information extracted by LiteParse. The metadata SHALL include the keys `pdf_reader="liteparse"`, `page=<int>` (1-indexed), `column=<"left"|"right"|"single"|"multi_column">`, `section_bbox=<[x0, y0, x1, y1]>` (page-coordinate space), and `bbox_schema_version=1`. A page the adapter joins column by column SHALL carry `column="multi_column"`, so the label names the order the text is in. Retrieval-side consumption of these fields is out of scope for this change.
 
 #### Scenario: Two-column academic PDF
 - **WHEN** a two-column academic PDF is ingested via the LiteParse adapter
-- **THEN** each emitted Document SHALL have `metadata["column"]` set to `"left"` or `"right"` reflecting the source column
+- **THEN** each emitted Document for a page joined column by column SHALL have `metadata["column"]` set to `"multi_column"`
+- **AND** a two-column page the classifier does not recognise SHALL keep `"left"` or `"right"`
 - **AND** `metadata["page"]` SHALL reflect the 1-indexed source page number
 
 #### Scenario: Single-column PDF
@@ -187,7 +190,6 @@ run, and the highest reranked Hit@5 result (0.6250).
 
 - **WHEN** `PDF_READER=pdf_inspector` is configured but the package is not importable
 - **THEN** the system SHALL log an error naming the missing package and fall back to pypdf rather than raising
-
 
 ### Requirement: Readers declare their emitted text format
 
@@ -611,3 +613,58 @@ pdf-inspector detects OCR need from a bounded page sample (8 pages). When `proce
 - **WHEN** the adapter emits its document
 - **THEN** `pages_needing_ocr` SHALL be zero
 - **AND** `pages_needing_ocr_before_fallback` SHALL be the full-scan count
+
+### Requirement: LiteParse adapter SHALL emit multi-column pages in reading order
+
+The LiteParse adapter SHALL classify each page's layout from its own text items before joining them into text. A page classified `multi_column` SHALL be joined column by column: every item of the first column in vertical order, then every item of the next column. A page not classified `multi_column` SHALL keep the order the library returned, so single-column pages, tables and layouts the classifier does not recognise are unchanged, and SHALL keep the `column` label the adapter emits today.
+
+Classification SHALL depend only on the geometry of the page's own text items and SHALL NOT read the document, the file name or any setting. It SHALL require a vertical gutter: a band of the page's horizontal extent that the page's own non-full-width items leave essentially uncovered, whose centre lies in the middle third of that extent, with text on both sides of comparable quantity, each side spanning most of the page's vertical text extent. A page that fails any of those conditions SHALL keep the library order and SHALL NOT be labelled `multi_column`.
+
+Reordering SHALL NOT add, drop or alter any item. Together with the line join below, the only change to a page's characters SHALL be whitespace.
+
+#### Scenario: Two-column body page is emitted column by column
+
+- **GIVEN** a page whose text items form two columns separated by a gutter
+- **WHEN** the adapter emits its Document
+- **THEN** the text SHALL contain every item of the left column, in vertical order, before any item of the right column
+
+#### Scenario: Single-column page keeps the library order
+
+- **GIVEN** a page whose items leave no qualifying gutter
+- **WHEN** the adapter emits its Document
+- **THEN** the text SHALL be the items joined in the order LiteParse returned them
+
+#### Scenario: A table is not reordered
+
+- **GIVEN** a page whose items are laid out in rows across the page with no qualifying gutter
+- **WHEN** the adapter emits its Document
+- **THEN** the item order SHALL be unchanged
+- **AND** the page SHALL NOT be labelled `multi_column`
+
+#### Scenario: Reordering preserves content
+
+- **GIVEN** any page the adapter reorders
+- **WHEN** the adapter emits its Document
+- **THEN** the multiset of item texts in the output SHALL equal the multiset LiteParse returned
+
+### Requirement: LiteParse adapter SHALL join the items of one visual line
+
+The adapter SHALL join consecutive items that sit on one visual line, left to right, into one line of text. Two items share a line when their vertical ranges overlap by at least half the shorter item's height and the second starts at or to the right of the first. Items on one line SHALL be joined by a single space, or by no space when the horizontal gap is under one tenth of the shorter height (a kerning split). A gap wider than the taller item's height SHALL start a new line, so a sidebar and the body beside it are never joined. Every other item boundary SHALL be a line break. The join SHALL NOT change item order or item text.
+
+#### Scenario: Words drawn separately form one line
+
+- **GIVEN** a title whose words are separate items at the same height
+- **WHEN** the adapter emits its Document
+- **THEN** the title SHALL be one line, its words separated by single spaces
+
+#### Scenario: A column gap breaks the line
+
+- **GIVEN** two items at the same height separated by more than one text height
+- **WHEN** the adapter emits its Document
+- **THEN** they SHALL be on separate lines
+
+#### Scenario: A kerning split rejoins without a space
+
+- **GIVEN** two pieces of one word with no gap between them
+- **WHEN** the adapter emits its Document
+- **THEN** they SHALL be joined with no space

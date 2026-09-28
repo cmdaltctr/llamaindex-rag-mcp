@@ -25,6 +25,10 @@ from omrg.core.ingestion.normalise import normalise_reader_text
             "[https://doi.org/10.1371/x](https://doi.org/10.1371/x)",
         ),
         ("https://doi.org/10.1371/x", "https://doi.org/10.1371/x"),
+        (
+            "[docs](https://example.test/?a=1&amp;b=2)",
+            "[docs](https://example.test/?a=1&b=2)",
+        ),
         ("<div>unfinished", "<div>unfinished"),
         ('<div><img src="x">caption', '<div><img src="x">caption'),
     ],
