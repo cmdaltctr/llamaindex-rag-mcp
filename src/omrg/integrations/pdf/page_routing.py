@@ -328,11 +328,14 @@ class PageResult:
         page: 1-based page number.
         text: The page's text, possibly empty.
         source: One of the ``PAGE_SOURCE_*`` values.
+        producer: The ``OCR_BACKEND_*`` that produced ``text`` when the source
+            does not name one: an unresolved page that kept local OCR text.
     """
 
     page: int
     text: str
     source: str
+    producer: str | None = None
 
 
 @dataclass(frozen=True)
@@ -384,9 +387,9 @@ def merge_pages(pages: list[PageResult], *, page_count: int) -> MergedDocument:
     # Only a page that produced text names a backend: a page nothing could
     # read is not evidence for any engine.
     backends = {
-        _SOURCE_BACKENDS[result.source]
+        result.producer or _SOURCE_BACKENDS[result.source]
         for result in ordered
-        if result.text and result.source in _SOURCE_BACKENDS
+        if result.text and (result.producer or result.source in _SOURCE_BACKENDS)
     }
     if len(backends) == 1:
         backend = next(iter(backends))

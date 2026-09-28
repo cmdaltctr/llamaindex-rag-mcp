@@ -40,6 +40,7 @@ from ..ocr_worker.client import OcrWorkerError
 from ..ocr_worker.protocol import PAGES_PROTOCOL_VERSION, ParseSuccess
 from .ocr_policy import OCR_UNCONDITIONAL_TYPES
 from .page_routing import (
+    OCR_BACKEND_LOCAL_OCR,
     PAGE_SOURCE_LOCAL,
     PAGE_SOURCE_NATIVE,
     PAGE_SOURCE_UNRESOLVED,
@@ -280,11 +281,14 @@ class OcrRoutedPdfInspector:
                     # The escalation did not resolve this page: the worker
                     # was missing, unattributable, or returned nothing. The
                     # best available text is kept; no marker is inserted.
+                    # Kept local OCR text still names its producer.
+                    local_page = escalated[entry.page]
                     results.append(
                         PageResult(
                             page=entry.page,
-                            text=self._fallback_text(escalated[entry.page], entry),
+                            text=self._fallback_text(local_page, entry),
                             source=PAGE_SOURCE_UNRESOLVED,
+                            producer=OCR_BACKEND_LOCAL_OCR if local_page.text else None,
                         )
                     )
             elif entry.page in flagged:

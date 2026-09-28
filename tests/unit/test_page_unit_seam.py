@@ -357,6 +357,9 @@ def test_missing_worker_keeps_local_text_and_counts_unresolved(
         "ocr_pages_unresolved": 1,
     }
     assert "flawed four" in docs[0].text
+    # The kept page text came from local OCR, so the diagnostics name it.
+    assert meta["ocr_used"] is True
+    assert meta["ocr_backend"] == "mixed"
     assert "worker" in caplog.text.lower()
 
 

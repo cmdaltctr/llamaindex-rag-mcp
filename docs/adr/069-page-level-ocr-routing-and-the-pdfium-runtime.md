@@ -114,13 +114,9 @@ downloading unless offline mode forbids it.
   corpus 46.9% of flagged pages still escalate.
 - Residual risk is accepted and named: 11.3% of kept pages fall below
   0.8 recall, and the `io06` blind spot (confident, half-wrong
-  early-modern typography) survives the confidence cut. No task
-  targets it; reopen it only if real ingests hit that kind of print.
-  The `page` versus `document` retrieval comparison, now a task in
-  Experiment 33, gates any future default change; the default remains
-  `document`. If `page` wins, a separate proposal flips the default,
-  empties `PAGE_ROUTING_ONLY_EMBED_KEYS` and bumps
-  `_INDEX_IDENTITY_SCHEMA` in the same change.
+  early-modern typography) survives the confidence cut. The deferred
+  retrieval experiment (task 6.1) gates any future default change; the
+  default remains `document`.
 - Opting into `page` reindexes that install's sources once; the
   document unit is untouched. A local runtime that appears later adds
   the model identity and reindexes exactly then — the moment the
@@ -128,3 +124,19 @@ downloading unless offline mode forbids it.
 - The worker's Paddle-side page forwarding is validated only by the
   operator-gated smoke test (`ocr-worker/smoke_test.py --provision`),
   which task 4.3 extended with a page-listed request.
+
+## Addendum (2026-09-28)
+
+- The change was archived after PR #96 merged. Its deferred task 6.1,
+  the `page` versus `document` retrieval comparison, is now task 6.8 of
+  Experiment 33. It gates any default change; the default remains
+  `document`.
+- If `page` wins, a separate proposal flips the default. That change
+  also empties `PAGE_ROUTING_ONLY_EMBED_KEYS` and bumps
+  `_INDEX_IDENTITY_SCHEMA`.
+- The `io06` blind spot has no task. Reopen it only if real ingests hit
+  that kind of print.
+- An unresolved page that keeps local OCR text now counts as
+  `pdf_inspector_ocr` when `ocr_backend` is derived, and sets
+  `ocr_used`, as the diagnostics contract requires. Both keys are excluded from embedding,
+  so the index identity does not change.
