@@ -49,6 +49,7 @@
 - [ ] 6.5 Measure CER on synthetic documents against the source PDF text.
 - [ ] 6.6 Record unrecoverable-page outcomes: failure reported or text emitted.
 - [x] 6.7 Measure the local OCR tier (pdf-inspector selective OCR, force mode) on natural pages labelled needs_ocr: token recall, confidence calibration, escalation share, seconds per page; evidence gate for change page-level-ocr-routing.
+- [ ] 6.8 Compare `OCR_ROUTING_UNIT=page` against `document` on the authorised mixed-PDF subset: Recall@K, MRR@10, pages sent to OCR, seconds per document. Carried from archived change `page-level-ocr-routing` (its task 6.1). If `page` wins, open a separate `v3` proposal to make it the default; that change empties `PAGE_ROUTING_ONLY_EMBED_KEYS` and bumps `_INDEX_IDENTITY_SCHEMA` together. Do not change the default here.
 
 ## 7. Report and close
 
