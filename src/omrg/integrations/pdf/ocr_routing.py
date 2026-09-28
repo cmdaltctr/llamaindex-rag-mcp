@@ -288,7 +288,7 @@ class OcrRoutedPdfInspector:
                             page=entry.page,
                             text=self._fallback_text(local_page, entry),
                             source=PAGE_SOURCE_UNRESOLVED,
-                            producer=OCR_BACKEND_LOCAL_OCR if local_page.text else None,
+                            producer=OCR_BACKEND_LOCAL_OCR if local_page.text.strip() else None,
                         )
                     )
             elif entry.page in flagged:
@@ -404,7 +404,7 @@ class OcrRoutedPdfInspector:
     @staticmethod
     def _fallback_text(local_page: LocalOcrPage, entry: PageEvidence) -> str:
         """Return the best text an unresolved escalated page can carry."""
-        if local_page.text:
+        if local_page.text.strip():
             return local_page.text
         return entry.markdown
 
