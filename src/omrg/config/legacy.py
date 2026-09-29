@@ -29,6 +29,19 @@ it without this tripwire:
   because a major version has elapsed — deleting it would restore the
   silent misconfiguration it exists to prevent.
 
+A third group is not about retirement at all:
+
+- **Never-shipped aliases** are names the project has never read: a nested
+  spelling (``OCR__ROUTING_UNIT``) of a setting that is a flat top-level
+  field (``OCR_ROUTING_UNIT``). The nested delimiter resolves only into
+  nested blocks, so such a name matches no field and no block, and
+  pydantic-settings discards it in silence — there is no ``extra="forbid"``
+  to reject it, because the block it names does not exist. They are listed
+  because the nested spelling is the plausible mistake, having appeared in
+  this project's own planning documents before the field was named. Their
+  lifetime follows the flat rule: retained while the flat field exists,
+  and **not** deleted on a version schedule.
+
 The lifetime is stated as this rule, not as a version number, so a release
 that retires a name cannot also be the release that expires it.
 """
@@ -84,6 +97,24 @@ _RETIRED_ENV_VARS: dict[str, str] = {
     "METADATA__OLLAMA_CLASSIFY_TIMEOUT": "METADATA__CLASSIFY_TIMEOUT",
 }
 
+# ── Never-shipped aliases (not retirements) ──────────────────────────
+#
+# A nested spelling of a setting that is a flat top-level field. The
+# project never read these names, so nothing is being retired: they are
+# listed because pydantic-settings cannot detect them. ``OCR__ROUTING_UNIT``
+# names an ``ocr`` block that does not exist, so it matches no field, no
+# block rejects it, and it is discarded in silence while the server runs on
+# the default. The OCR settings are flat top-level fields beside the PDF
+# knobs; the nested delimiter binds only to nested blocks.
+#
+# Lifetime: as FLAT above — retained while the flat field exists.
+_NEVER_SHIPPED_ALIASES: dict[str, str] = {
+    "OCR__ROUTING_UNIT": "OCR_ROUTING_UNIT",
+    "OCR__LOCAL_MIN_CONFIDENCE": "OCR_LOCAL_MIN_CONFIDENCE",
+    "OCR__LOCAL_OFFLINE": "OCR_LOCAL_OFFLINE",
+    "OCR__LOCAL_MODEL_DIRECTORY": "OCR_LOCAL_MODEL_DIRECTORY",
+}
+
 
 def check_legacy_env_vars(env: dict[str, str] | None = None) -> None:
     """Raise if the environment carries retired configuration names.
@@ -100,7 +131,8 @@ def check_legacy_env_vars(env: dict[str, str] | None = None) -> None:
     """
     source = os.environ if env is None else env
     found = [(old, new) for old, new in _RETIRED_ENV_VARS.items() if old in source]
-    if not found:
+    aliases = sorted((old, new) for old, new in _NEVER_SHIPPED_ALIASES.items() if old in source)
+    if not found and not aliases:
         return
     flat = sorted((old, new) for old, new in found if "__" not in old)
     nested = sorted((old, new) for old, new in found if "__" in old)
@@ -120,9 +152,17 @@ def check_legacy_env_vars(env: dict[str, str] | None = None) -> None:
             'outright by their settings block\'s extra="forbid":\n'
             f"{nested_lines}"
         )
+    if aliases:
+        alias_lines = "\n".join(f"  {old}  ->  {new}" for old, new in aliases)
+        sections.append(
+            "Nested spellings of flat settings. The project never read "
+            "these: the nested delimiter binds only to nested blocks, so "
+            "they match nothing and are discarded in silence:\n"
+            f"{alias_lines}"
+        )
     body = "\n".join(sections)
     raise ValueError(
-        "Retired configuration variable(s) found in the environment. "
+        "Unreadable configuration variable(s) found in the environment. "
         "Rename them:\n"
         f"{body}\n"
         "Cross-cutting names (EMBED_MODEL, RAG_PROFILE, PDF_READER, "

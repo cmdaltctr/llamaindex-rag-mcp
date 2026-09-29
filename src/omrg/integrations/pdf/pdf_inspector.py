@@ -20,6 +20,12 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+#: pdf-inspector's default detection samples at most this many evenly
+#: spread pages (``ScanStrategy::Sample(8)``); the Python binding exposes
+#: no scan-strategy option. A ``text_based`` result on a longer PDF can
+#: therefore miss image-only pages outside the sample (TDR-026).
+PDF_INSPECTOR_SAMPLED_PAGES = 8
+
 
 class PdfInspectorReader:
     """Adapter wrapping pdf-inspector for whole-document markdown extraction.
@@ -64,7 +70,7 @@ class PdfInspectorReader:
         # metadata values are scalars in both backends and nothing
         # sanitises them on the way in, so the classifier's page LIST
         # is reduced here to the count the routing gate consumes.
-        pages_needing_ocr_count = len(result.pages_needing_ocr or [])
+        pages_needing_ocr_count = len(_complete_ocr_pages(pdf_inspector, file, result))
 
         metadata: dict[str, Any] = {
             "pdf_reader": "pdf_inspector",
@@ -159,3 +165,47 @@ class PdfInspectorReader:
                 )
 
         return [Document(text=markdown, metadata=metadata)]
+
+
+def _complete_ocr_pages(pdf_inspector: Any, file: Path, result: Any) -> list:
+    """Return OCR-needing pages, completing a sampled ``text_based`` result.
+
+    Only a ``text_based`` result on a PDF longer than the detection sample
+    can be incomplete: a flagged sample page already makes pdf-inspector
+    scan every page, and ``scanned``/``image_based`` PDFs route regardless
+    (change full-page-ocr-evidence). Classification, confidence and the
+    extracted Markdown stay the library's.
+
+    Args:
+        pdf_inspector: The imported ``pdf_inspector`` module.
+        file: Path to the PDF file.
+        result: The ``process_pdf`` result.
+
+    Returns:
+        The page list the routing evidence is counted from; the sampled
+        list when no full scan is needed or the full scan fails.
+    """
+    sampled = list(result.pages_needing_ocr or [])
+    if result.pdf_type != "text_based" or result.page_count <= PDF_INSPECTOR_SAMPLED_PAGES:
+        return sampled
+    try:
+        complete = list(pdf_inspector.extract_pages_markdown(str(file)).pages_needing_ocr or [])
+    except Exception as exc:  # noqa: BLE001 - evidence completion must never fail the read
+        logger.warning(
+            "pdf-inspector full page scan failed for %s (%s); keeping the sampled OCR "
+            "evidence (%d page(s))",
+            file.name,
+            type(exc).__name__,
+            len(sampled),
+        )
+        return sampled
+    if len(complete) > len(sampled):
+        logger.info(
+            "pdf-inspector full page scan of %s found %d page(s) needing OCR; the "
+            "%d-page detection sample found %d",
+            file.name,
+            len(complete),
+            PDF_INSPECTOR_SAMPLED_PAGES,
+            len(sampled),
+        )
+    return complete

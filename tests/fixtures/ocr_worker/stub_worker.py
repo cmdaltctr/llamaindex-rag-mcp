@@ -77,11 +77,17 @@ def _stderr_noise(count: int) -> None:
     sys.stderr.flush()
 
 
-def _success(request_id: str, pdf_path: str) -> dict:
-    """Build a wire-valid success envelope for the given request."""
-    return {
+def _success(request_id: str, pdf_path: str, protocol_version: str = "1.0", pages=None) -> dict:
+    """Build a wire-valid success envelope for the given request.
+
+    The stub speaks protocol 1.1: it answers in the version the request
+    spoke (the rolling-upgrade rule), and reflects a page-listed request
+    back as per-page Markdown plus the received list, so client tests can
+    observe what actually reached the wire.
+    """
+    payload = {
         "id": request_id,
-        "protocol_version": PROTOCOL_VERSION,
+        "protocol_version": protocol_version,
         "type": "parse_result",
         "ok": True,
         "markdown": f"# Stub extraction\n\nPath: {pdf_path}",
@@ -91,13 +97,18 @@ def _success(request_id: str, pdf_path: str) -> dict:
             "output_schema": OUTPUT_SCHEMA,
         },
     }
+    if pages is not None:
+        payload["pages_markdown"] = [f"# Stub page {page}" for page in pages]
+        payload["metadata"]["stub_request_pages"] = list(pages)
+        payload["markdown"] = "\n\n".join(payload["pages_markdown"])
+    return payload
 
 
-def _failure(request_id: str) -> dict:
+def _failure(request_id: str, protocol_version: str = "1.0") -> dict:
     """Build a wire-valid error envelope for the given request."""
     return {
         "id": request_id,
-        "protocol_version": PROTOCOL_VERSION,
+        "protocol_version": protocol_version,
         "type": "parse_error",
         "ok": False,
         "error": {"code": "stub_failure", "message": "stub failure"},
@@ -168,15 +179,17 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         request_id = request["id"]
         pdf_path = request["pdf_path"]
+        request_version = request.get("protocol_version", "1.0")
+        request_pages = request.get("pages")
 
         if args.mode == "echo":
             _stderr_noise(args.stderr_lines)
-            _emit(_success(request_id, pdf_path))
+            _emit(_success(request_id, pdf_path, request_version, request_pages))
         elif args.mode == "error":
             _stderr_noise(args.stderr_lines)
-            _emit(_failure(request_id))
+            _emit(_failure(request_id, request_version))
         elif args.mode == "wrong-id":
-            _emit(_success(request_id + "-wrong", pdf_path))
+            _emit(_success(request_id + "-wrong", pdf_path, request_version, request_pages))
         elif args.mode == "bad-json":
             sys.stdout.write("this is not json {{{\n")
             sys.stdout.flush()

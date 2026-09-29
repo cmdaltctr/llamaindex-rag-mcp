@@ -18,6 +18,7 @@ from ..chunking.registry import get as _chunking_get
 from ..codebase.ast_extract import MAGIKA_LABEL_TO_TREESITTER
 from ..settings import resolve_effective_settings
 from .backends import read_document
+from .normalise import normalise_reader_text
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +104,12 @@ async def read_and_chunk_file_async(
     # (paragraphs/tables) that split directly, while the local chain
     # feeds file-level metadata extraction below.
     backend_read = await read_document(file_path, settings=resolved, ocr_client=ocr_client)
+    if resolved.ingestion.normalise_reader_output and (
+        file_path.suffix.lower() == ".pdf" or label == "pdf"
+    ):
+        for document in backend_read.documents:
+            if document.text_resource is not None and document.text_resource.text is not None:
+                document.text_resource.text = normalise_reader_text(document.text)
     # Text counts as Markdown when the source file has extension `.md`, OR
     # when the reader that produced it declares its emitted text format as
     # `markdown` (spec markdown-aware-chunking; design D3). Routing follows

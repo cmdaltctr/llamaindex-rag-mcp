@@ -510,3 +510,98 @@ def test_failed_retry_still_routes_to_ocr_at_promoted_thresholds(
         assert client.process_generations == 1
     finally:
         client.close()
+
+
+# ── The page unit's keys never appear on the document unit ────────────────
+
+
+def test_document_unit_emits_no_page_source_counts(effective_settings) -> None:
+    """The default unit's metadata is exactly what it was before page routing.
+
+    The page-source counts describe a merge that only the ``page`` unit
+    performs. Emitting them on the default — even as zeros — would tell a
+    consumer a merge happened, and would move the index identity of every
+    install that never opted in.
+    """
+    from omrg.integrations.pdf.page_routing import _COUNT_KEYS
+
+    client = _echo_client()
+    try:
+        reader = _routed_reader(client, effective_settings)
+        meta = reader.load_data(file=CALIBRATION / "cal_clean_text.pdf")[0].metadata
+    finally:
+        client.close()
+
+    assert not set(meta) & set(_COUNT_KEYS.values())
+    assert meta["ocr_backend"] == OCR_BACKEND_FAST_PATH
+
+
+def test_page_source_count_keys_are_all_excluded_from_embedding_text() -> None:
+    """Every count is parser telemetry, so none may reach embedding text.
+
+    They are constant across a document's chunks and would otherwise be
+    embedded into every one of them.
+    """
+    from omrg.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS
+    from omrg.integrations.pdf.page_routing import _COUNT_KEYS
+
+    assert set(_COUNT_KEYS.values()) <= set(EXCLUDED_EMBED_METADATA_KEYS)
+
+
+def test_page_routing_keys_are_exactly_the_unit_scoped_set() -> None:
+    """The reader's counts and the identity's unit-scoped subset must agree.
+
+    They are declared in two modules: the reader owns the keys it emits, the
+    identity owns which keys a document-unit install may subtract. If the two
+    drift, a key emitted on the document path would be subtracted from its
+    identity — freezing the fingerprint while the embedded text changed. That
+    is the one failure this arrangement could cause, so it is pinned here.
+    """
+    from omrg.core.ingestion.embed_exclusions import PAGE_ROUTING_ONLY_EMBED_KEYS
+    from omrg.integrations.pdf.page_routing import _COUNT_KEYS
+
+    assert set(_COUNT_KEYS.values()) == set(PAGE_ROUTING_ONLY_EMBED_KEYS)
+
+
+def test_no_unit_scoped_key_is_emitted_on_the_document_path(effective_settings) -> None:
+    """The guard: a document-unit document carries none of the subtracted keys.
+
+    The identity subtracts these keys for a document-unit install on the
+    grounds that it never emits them. This asserts that premise against the
+    real reader rather than trusting it.
+    """
+    from omrg.core.ingestion.embed_exclusions import PAGE_ROUTING_ONLY_EMBED_KEYS
+
+    client = _echo_client()
+    try:
+        reader = _routed_reader(client, effective_settings)
+        documents = reader.load_data(file=CALIBRATION / "cal_clean_text.pdf")
+    finally:
+        client.close()
+
+    for document in documents:
+        assert not set(document.metadata) & set(PAGE_ROUTING_ONLY_EMBED_KEYS)
+
+
+def test_page_unit_counts_never_reach_embedding_text() -> None:
+    """A page-unit document's embedding text contains none of the four counts.
+
+    The exclusion set is what keeps them out; this checks the text a Document
+    would hand the embedding model, not just the membership of a tuple.
+    """
+    from llama_index.core import Document
+
+    from omrg.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS
+    from omrg.integrations.pdf.page_routing import _COUNT_KEYS
+
+    document = Document(
+        text="page one",
+        metadata={key: 3 for key in _COUNT_KEYS.values()} | {"pdf_reader": "pdf_inspector"},
+        excluded_embed_metadata_keys=list(EXCLUDED_EMBED_METADATA_KEYS),
+    )
+
+    embedded = document.get_content(metadata_mode="embed")
+
+    for key in _COUNT_KEYS.values():
+        assert key not in embedded
+    assert "page one" in embedded

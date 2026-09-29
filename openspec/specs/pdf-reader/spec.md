@@ -1,7 +1,9 @@
 ## Purpose
 
 Define a pluggable PDF reader architecture with environment-variable-driven backend selection, bounding-box metadata capture, graceful fallback across multiple parser backends, and structured error handling for MCP tool compliance.
+
 ## Requirements
+
 ### Requirement: PDF reader SHALL be selectable via environment variable
 
 The system SHALL read a `PDF_READER` environment variable at config-load
@@ -107,11 +109,12 @@ out of `ingest_path_async` or any MCP tool handler, per the project's
 
 ### Requirement: LiteParse adapter SHALL capture bounding-box metadata on emitted Documents
 
-When the LiteParse adapter is in use, every emitted `Document` object SHALL carry a `metadata` dictionary containing spatial information extracted by LiteParse. The metadata SHALL include the keys `pdf_reader="liteparse"`, `page=<int>` (1-indexed), `column=<"left"|"right"|"single">`, `section_bbox=<[x0, y0, x1, y1]>` (page-coordinate space), and `bbox_schema_version=1`. Retrieval-side consumption of these fields is out of scope for this change.
+When the LiteParse adapter is in use, every emitted `Document` object SHALL carry a `metadata` dictionary containing spatial information extracted by LiteParse. The metadata SHALL include the keys `pdf_reader="liteparse"`, `page=<int>` (1-indexed), `column=<"left"|"right"|"single"|"multi_column">`, `section_bbox=<[x0, y0, x1, y1]>` (page-coordinate space), and `bbox_schema_version=1`. A page the adapter joins column by column SHALL carry `column="multi_column"`, so the label names the order the text is in. Retrieval-side consumption of these fields is out of scope for this change.
 
 #### Scenario: Two-column academic PDF
 - **WHEN** a two-column academic PDF is ingested via the LiteParse adapter
-- **THEN** each emitted Document SHALL have `metadata["column"]` set to `"left"` or `"right"` reflecting the source column
+- **THEN** each emitted Document for a page joined column by column SHALL have `metadata["column"]` set to `"multi_column"`
+- **AND** a two-column page the classifier does not recognise SHALL keep `"left"` or `"right"`
 - **AND** `metadata["page"]` SHALL reflect the 1-indexed source page number
 
 #### Scenario: Single-column PDF
@@ -188,7 +191,6 @@ run, and the highest reranked Hit@5 result (0.6250).
 - **WHEN** `PDF_READER=pdf_inspector` is configured but the package is not importable
 - **THEN** the system SHALL log an error naming the missing package and fall back to pypdf rather than raising
 
-
 ### Requirement: Readers declare their emitted text format
 
 Each registered PDF reader SHALL declare the text format it emits and whether
@@ -251,7 +253,7 @@ When the configured PDF path uses `pdf_inspector`, the system SHALL use the exis
 
 Layout complexity alone SHALL NOT require OCR. A text-based multi-column or table-heavy PDF that `pdf-inspector` extracts acceptably SHALL remain on the fast path.
 
-The first implementation SHALL route the whole PDF to the worker when the OCR condition is met. It SHALL NOT merge page fragments from two PDF engines.
+With the `document` routing unit (the default), the system SHALL route the whole PDF to the worker when the OCR condition is met and SHALL NOT merge page fragments from two PDF engines. With the `page` routing unit, routing SHALL follow the page-level OCR routing requirement instead.
 
 #### Scenario: Clean text-based PDF stays on pdf-inspector without starting the parsing worker
 
@@ -280,7 +282,8 @@ The first implementation SHALL route the whole PDF to the worker when the OCR co
 
 #### Scenario: Mixed PDF with material OCR requirement uses the worker
 
-- **GIVEN** `pdf-inspector` reports mixed content or material `pages_needing_ocr`
+- **GIVEN** the `document` routing unit is configured
+- **AND** `pdf-inspector` reports mixed content or material `pages_needing_ocr`
 - **AND** the configured routing gate selects OCR
 - **AND** the capability probe reports that the isolated OCR worker is available and compatible
 - **WHEN** the PDF is ingested
@@ -580,3 +583,183 @@ A successful retry SHALL correct the routing evidence it emits: the scalar `page
 - **WHEN** the adapter emits its document
 - **THEN** no retry SHALL occur regardless of extraction emptiness
 - **AND** the OCR routing decision SHALL be unchanged
+
+### Requirement: pdf-inspector OCR evidence SHALL cover every page of text_based PDFs longer than the detection sample
+
+pdf-inspector detects OCR need from a bounded page sample (8 pages). When `process_pdf` classifies a PDF as `text_based` and its page count is greater than 8, the adapter SHALL compute `pages_needing_ocr` from a scan of every page (`extract_pages_markdown`), so image-only pages outside the sample reach the OCR routing gate. The adapter SHALL NOT change `pdf_type`, `pdf_confidence` or the extracted Markdown, and SHALL NOT add a metadata key.
+
+#### Scenario: Image-only page outside the sample is counted
+
+- **GIVEN** a 20-page PDF that pdf-inspector classifies as `text_based` with no sampled page needing OCR
+- **AND** a full page scan finds 3 pages needing OCR
+- **WHEN** the adapter emits its document
+- **THEN** `pages_needing_ocr` SHALL be 3
+
+#### Scenario: Short or already complete results get no extra scan
+
+- **GIVEN** a `text_based` PDF with 8 pages or fewer, or a PDF classified `scanned`, `image_based` or `mixed`
+- **WHEN** the adapter emits its document
+- **THEN** no full page scan SHALL run
+
+#### Scenario: Full scan failure keeps the sampled evidence
+
+- **GIVEN** a `text_based` PDF longer than 8 pages whose full page scan raises
+- **WHEN** the adapter emits its document
+- **THEN** `pages_needing_ocr` SHALL be the sampled count
+- **AND** the read SHALL succeed with a logged warning
+
+#### Scenario: Silent-empty rescue records the full-scan count
+
+- **GIVEN** a `text_based` PDF longer than 8 pages with empty Markdown whose fallback tier recovers text
+- **WHEN** the adapter emits its document
+- **THEN** `pages_needing_ocr` SHALL be zero
+- **AND** `pages_needing_ocr_before_fallback` SHALL be the full-scan count
+
+### Requirement: LiteParse adapter SHALL emit multi-column pages in reading order
+
+The LiteParse adapter SHALL classify each page's layout from its own text items before joining them into text. A page classified `multi_column` SHALL be joined column by column: every item of the first column in vertical order, then every item of the next column. A page not classified `multi_column` SHALL keep the order the library returned, so single-column pages, tables and layouts the classifier does not recognise are unchanged, and SHALL keep the `column` label the adapter emits today.
+
+Classification SHALL depend only on the geometry of the page's own text items and SHALL NOT read the document, the file name or any setting. It SHALL require a vertical gutter: a band of the page's horizontal extent that the page's own non-full-width items leave essentially uncovered, whose centre lies in the middle third of that extent, with text on both sides of comparable quantity, each side spanning most of the page's vertical text extent. A page that fails any of those conditions SHALL keep the library order and SHALL NOT be labelled `multi_column`.
+
+Reordering SHALL NOT add, drop or alter any item. Together with the line join below, the only change to a page's characters SHALL be whitespace.
+
+#### Scenario: Two-column body page is emitted column by column
+
+- **GIVEN** a page whose text items form two columns separated by a gutter
+- **WHEN** the adapter emits its Document
+- **THEN** the text SHALL contain every item of the left column, in vertical order, before any item of the right column
+
+#### Scenario: Single-column page keeps the library order
+
+- **GIVEN** a page whose items leave no qualifying gutter
+- **WHEN** the adapter emits its Document
+- **THEN** the text SHALL be the items joined in the order LiteParse returned them
+
+#### Scenario: A table is not reordered
+
+- **GIVEN** a page whose items are laid out in rows across the page with no qualifying gutter
+- **WHEN** the adapter emits its Document
+- **THEN** the item order SHALL be unchanged
+- **AND** the page SHALL NOT be labelled `multi_column`
+
+#### Scenario: Reordering preserves content
+
+- **GIVEN** any page the adapter reorders
+- **WHEN** the adapter emits its Document
+- **THEN** the multiset of item texts in the output SHALL equal the multiset LiteParse returned
+
+### Requirement: LiteParse adapter SHALL join the items of one visual line
+
+The adapter SHALL join consecutive items that sit on one visual line, left to right, into one line of text. Two items share a line when their vertical ranges overlap by at least half the shorter item's height and the second starts at or to the right of the first. Items on one line SHALL be joined by a single space, or by no space when the horizontal gap is under one tenth of the shorter height (a kerning split). A gap wider than the taller item's height SHALL start a new line, so a sidebar and the body beside it are never joined. Every other item boundary SHALL be a line break. The join SHALL NOT change item order or item text.
+
+#### Scenario: Words drawn separately form one line
+
+- **GIVEN** a title whose words are separate items at the same height
+- **WHEN** the adapter emits its Document
+- **THEN** the title SHALL be one line, its words separated by single spaces
+
+#### Scenario: A column gap breaks the line
+
+- **GIVEN** two items at the same height separated by more than one text height
+- **WHEN** the adapter emits its Document
+- **THEN** they SHALL be on separate lines
+
+#### Scenario: A kerning split rejoins without a space
+
+- **GIVEN** two pieces of one word with no gap between them
+- **WHEN** the adapter emits its Document
+- **THEN** they SHALL be joined with no space
+
+### Requirement: Unit-scoped metadata keys SHALL enter the index identity only under their unit
+
+A metadata key that only one routing unit can emit SHALL contribute to `embedding_text.excluded_keys` in the source index identity only when that unit is active. The page-source counts are such keys: the `document` unit never puts them on a Document, so their presence in the centrally owned exclusion set cannot change a `document`-unit install's embedded text, and including them in its identity would reprocess every existing corpus for a key it can never emit.
+
+This mirrors the routing unit's own treatment, which enters the identity only when it is not `document`. The keys SHALL remain in the one centrally owned exclusion set; a second list held by the PDF reader would exclude them from embedding text while moving no identity at all, on any unit.
+
+#### Scenario: A document-unit install keeps the identity it had
+
+- **GIVEN** the `document` routing unit and a source indexed before page routing existed
+- **WHEN** its index identity is computed
+- **THEN** the identity SHALL equal the identity computed before the page-source counts joined the exclusion set
+- **AND** the source SHALL NOT be reprocessed
+
+#### Scenario: A page-unit install includes them
+
+- **GIVEN** the `page` routing unit
+- **WHEN** its index identity is computed
+- **THEN** the page-source counts SHALL contribute to `embedding_text.excluded_keys`
+
+#### Scenario: Subtracted keys are never emitted on the document path
+
+- **GIVEN** the `document` routing unit
+- **WHEN** a PDF is ingested
+- **THEN** the emitted metadata SHALL carry none of the page-source counts
+
+### Requirement: Page-level OCR routing SHALL OCR only pages that need it
+
+When `OCR_ROUTING_UNIT=page` and OCR is enabled, the pdf-inspector path SHALL decide OCR need per page from a scan of every page. Pages that do not need OCR SHALL keep native pdf-inspector Markdown. Pages that need OCR SHALL be processed by the local OCR tier. A page SHALL escalate to the PaddleOCR-VL worker only when the local tier returns no text or only whitespace, reports no confidence or a confidence below the configured minimum, or recommends hosted OCR. The worker SHALL receive only escalated pages. The emitted document SHALL join pages in page order and SHALL carry scalar counts of native, local-OCR, worker and unresolved pages, which SHALL sum to the page count. The default routing unit SHALL remain `document`.
+
+The four existing OCR diagnostics SHALL remain scalars and SHALL keep their document-unit meaning. `ocr_required` SHALL be true when at least one page was flagged. `ocr_used` SHALL be true when OCR produced the text of at least one page, by either tier. `pages_needing_ocr` SHALL remain the count of flagged pages. `ocr_backend` SHALL name the one backend that produced all of the document's text, and SHALL be `mixed` when more than one produced text, so that it never names a backend that produced only part of a document.
+
+#### Scenario: Page-source counts sum to the page count
+
+- **GIVEN** the `page` routing unit and any ingested PDF
+- **WHEN** the adapter emits its document
+- **THEN** the native, local-OCR, worker and unresolved page counts SHALL sum to `page_count`
+
+#### Scenario: A document read by two backends reports mixed
+
+- **GIVEN** the `page` routing unit and a PDF whose text comes partly from native extraction and partly from OCR
+- **WHEN** the adapter emits its document
+- **THEN** `ocr_backend` SHALL be `mixed`
+- **AND** it SHALL NOT name either contributing backend alone
+
+#### Scenario: The document unit emits no page-source counts
+
+- **GIVEN** no routing unit is configured
+- **WHEN** a PDF is ingested
+- **THEN** the emitted metadata SHALL NOT carry the native, local-OCR, worker or unresolved page counts
+
+#### Scenario: Only flagged pages are OCRed
+
+- **GIVEN** the `page` routing unit and a 20-page PDF with 3 pages needing OCR
+- **WHEN** the PDF is ingested
+- **THEN** the 17 other pages SHALL keep native Markdown
+- **AND** only the 3 flagged pages SHALL be processed by the local OCR tier
+
+#### Scenario: A page the local tier cannot read escalates
+
+- **GIVEN** the `page` routing unit and a flagged page the local tier returns no text for
+- **AND** the worker returns usable, non-empty Markdown for that page
+- **WHEN** the PDF is ingested
+- **THEN** that page SHALL be sent to the worker
+- **AND** the metadata SHALL count it as a worker page
+
+#### Scenario: Unreadable local OCR pages escalate alone
+
+- **GIVEN** the local OCR tier returns no text for 1 of 3 flagged pages
+- **AND** the isolated worker is available
+- **AND** the worker returns usable, non-empty Markdown for the escalated page
+- **WHEN** the PDF is ingested
+- **THEN** exactly that page SHALL be sent to the worker
+- **AND** the metadata SHALL count 1 worker page and 2 local-OCR pages
+
+#### Scenario: Missing worker keeps local OCR text
+
+- **GIVEN** a page escalates and the worker is unavailable
+- **WHEN** the PDF is ingested
+- **THEN** the page SHALL keep its local OCR text, or native text when local OCR produced none
+- **AND** the page SHALL be counted as unresolved without failing the file
+
+#### Scenario: Missing local OCR runtime degrades to native text
+
+- **GIVEN** the `page` routing unit and no usable PDFium library or ONNX Runtime
+- **WHEN** a PDF with flagged pages is ingested
+- **THEN** flagged pages SHALL keep native text and be counted as unresolved
+- **AND** a warning SHALL name the missing runtime once per operation
+
+#### Scenario: Document unit is unchanged
+
+- **GIVEN** no routing unit is configured
+- **WHEN** a PDF is ingested
+- **THEN** routing SHALL follow the whole-PDF behaviour of the `document` unit

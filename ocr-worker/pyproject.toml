@@ -17,6 +17,10 @@ dependencies = [
     # variants) are not declared until a provisioned environment has
     # validated them.
     "paddlepaddle",
+    # Page selection for page-listed parse requests: paddleocr has no
+    # page-selection parameter, so the worker writes the requested pages
+    # to a subset PDF first (TDR-027).
+    "pypdf",
 ]
 
 [build-system]

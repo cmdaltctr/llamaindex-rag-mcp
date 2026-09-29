@@ -65,7 +65,53 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2933
+_BASE_EXECUTED = 3143
+# Re-baselined at the PR #101 review fix (2026-09-28): whitespace-only
+# local OCR on an unresolved page keeps native text — +1 (3142 -> 3143).
+# Re-baselined at the PR #100 review fix (2026-09-28): an entity-encoded
+# query separator in a Markdown link destination — +1 (3141 -> 3142).
+# Re-baselined at normaliser version 2 (2026-09-25, Experiment 36): an
+# image-only block leaves no placeholder — +1 (3140 -> 3141).
+# Re-baselined at the OCR worker per-page fix (2026-09-25, Experiment 34
+# A9): page 1 keeps only its own text — +1 (3139 -> 3140).
+# Re-baselined at reader-output normalisation (2026-09-25): fixture,
+# rule, setting, chunker and index-identity regressions add 44 cases.
+# Re-baselined at the LiteParse line join fix (2026-09-24, Experiment 34):
+# words on one visual line, a superscript, a column gap, a right-to-left
+# step and a kerning split — net +5 (3090 -> 3095).
+# Re-baselined at page-level-ocr-routing review fixes (2026-09-18): the
+# CodeRabbit pass hardened both protocol twins' ``make_success`` builder
+# (8 parametrised cases), the worker failure envelopes' version echo (2),
+# the protocol-1.0 page-request gate (1) and the local model identity
+# cache scoping (2) — net +13 (3077 -> 3090).
+# Re-baselined at page-level-ocr-routing tasks 4.4/4.5c/4.6 (2026-09-18):
+# the page unit wired into the reader seam adds 11 cases — only flagged
+# pages OCRed, the all-local backend, one-request escalation, the
+# per-page attribution degradations, missing worker and missing local
+# runtime, post-dispatch failure, the ADR-066 rescue fallback, and the
+# document-unit regression (3066 -> 3077).
+# Re-baselined at page-level-ocr-routing task 4.3 (2026-09-18): worker
+# protocol 1.1 adds 61 cases — the twinned validation module, the pages
+# request and pages_markdown response round trips and validation matrix
+# on both copies, the minimum-version rule, the fingerprint supported-set
+# acceptance, the client pages wire test, and the worker loop's version
+# echo and per-page answer (3005 -> 3066).
+# Re-baselined at page-level-ocr-routing task 4.2 (2026-09-18): the local OCR
+# tier and its post-check escalation add 22 cases — the force-mode tier call
+# and its settings mapping, the escalation matrix (empty, whitespace,
+# below-cut, missing-confidence, missing-page, hosted, accumulating
+# reasons, the injected cut), the resolved model identity probe and its
+# cache, and the identity-payload scoping (2983 -> 3005).
+# Re-baselined at page-level-ocr-routing (2026-09-18): the routing unit and its
+# index-identity scoping add 35 cases — per-page evidence (5), the page merge
+# (12), the never-shipped-alias tripwire (6), the unit-scoped exclusion keys and
+# their emitted-document guard (9), and the routing-unit settings (3)
+# (2948 -> 2983).
+# Re-baselined at liteparse-reading-order (2026-09-18): the layout classifier
+# adds 7 cases — two-column join order and its multi_column label, a full-width
+# running head over two columns, single-column and table pages keeping library
+# order, a sidebar failing the balance condition, and content preservation
+# (2941 -> 2948).
 # Re-baselined at fix-stale-cleanup-batching (2026-09-16): the batched
 # stale-deletion regression adds 1 case (2927 -> 2928).
 # Re-baselined for the PR-94 CodeRabbit remediation (2026-09-16): four
@@ -73,6 +119,8 @@ _BASE_EXECUTED = 2933
 # file-inside-directory smoke validation, and the binary-transition row
 # removal regression (2928 -> 2932); the codecov patch follow-up adds the
 # binary-cleanup failure-path case (2932 -> 2933).
+# Re-baselined at full-page-ocr-evidence (2026-09-17): eight pdf-inspector
+# full-scan evidence cases (2933 -> 2941).
 # Re-baselined at pin-magika-detection (2026-09-16): the pinned detector
 # added 28 regressions (3 base-install/smoke subprocess, 13 parser and
 # boundary, 12 smoke-guard and comparison cases), measured 2923 executed

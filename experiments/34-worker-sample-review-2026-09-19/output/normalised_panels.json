@@ -1,0 +1,404 @@
+{
+ "review_small.html": {
+  "normaliser_version": 2,
+  "panels": [
+   {
+    "page": "bd03/1",
+    "engine": "pdf_inspector",
+    "chars": [
+     4056,
+     4007
+    ]
+   },
+   {
+    "page": "bd03/1",
+    "engine": "local_ocr",
+    "chars": [
+     4311,
+     4262
+    ]
+   },
+   {
+    "page": "bd03/1",
+    "engine": "worker",
+    "chars": [
+     4158,
+     4033
+    ]
+   },
+   {
+    "page": "bd03/2",
+    "engine": "pdf_inspector",
+    "chars": [
+     3994,
+     3889
+    ]
+   },
+   {
+    "page": "bd03/2",
+    "engine": "local_ocr",
+    "chars": [
+     4628,
+     4523
+    ]
+   },
+   {
+    "page": "bd03/2",
+    "engine": "worker",
+    "chars": [
+     3734,
+     3732
+    ]
+   },
+   {
+    "page": "eq01/11",
+    "engine": "pdf_inspector",
+    "chars": [
+     2344,
+     2330
+    ]
+   },
+   {
+    "page": "eq01/11",
+    "engine": "local_ocr",
+    "chars": [
+     3295,
+     3281
+    ]
+   }
+  ]
+ },
+ "review.html": {
+  "normaliser_version": 2,
+  "panels": [
+   {
+    "page": "bd01/1",
+    "engine": "worker",
+    "chars": [
+     1594,
+     1592
+    ]
+   },
+   {
+    "page": "bd01/4",
+    "engine": "pdf_inspector",
+    "chars": [
+     8392,
+     8385
+    ]
+   },
+   {
+    "page": "bd01/4",
+    "engine": "worker",
+    "chars": [
+     8080,
+     8078
+    ]
+   },
+   {
+    "page": "bd01/5",
+    "engine": "pdf_inspector",
+    "chars": [
+     9240,
+     9233
+    ]
+   },
+   {
+    "page": "bd01/5",
+    "engine": "local_ocr",
+    "chars": [
+     9598,
+     9591
+    ]
+   },
+   {
+    "page": "bd01/6",
+    "engine": "pdf_inspector",
+    "chars": [
+     1631,
+     1624
+    ]
+   },
+   {
+    "page": "bd01/6",
+    "engine": "worker",
+    "chars": [
+     1398,
+     1276
+    ]
+   },
+   {
+    "page": "bd02/1",
+    "engine": "worker",
+    "chars": [
+     4014,
+     3894
+    ]
+   },
+   {
+    "page": "bd02/2",
+    "engine": "worker",
+    "chars": [
+     6331,
+     6329
+    ]
+   },
+   {
+    "page": "bd02/6",
+    "engine": "worker",
+    "chars": [
+     15810,
+     15271
+    ]
+   },
+   {
+    "page": "bd02/8",
+    "engine": "worker",
+    "chars": [
+     1966,
+     1141
+    ]
+   },
+   {
+    "page": "bd03/1",
+    "engine": "pdf_inspector",
+    "chars": [
+     4056,
+     4007
+    ]
+   },
+   {
+    "page": "bd03/1",
+    "engine": "local_ocr",
+    "chars": [
+     4311,
+     4262
+    ]
+   },
+   {
+    "page": "bd03/1",
+    "engine": "worker",
+    "chars": [
+     4158,
+     4033
+    ]
+   },
+   {
+    "page": "bd03/2",
+    "engine": "pdf_inspector",
+    "chars": [
+     3994,
+     3889
+    ]
+   },
+   {
+    "page": "bd03/2",
+    "engine": "local_ocr",
+    "chars": [
+     4628,
+     4523
+    ]
+   },
+   {
+    "page": "bd03/2",
+    "engine": "worker",
+    "chars": [
+     3734,
+     3732
+    ]
+   },
+   {
+    "page": "bd03/10",
+    "engine": "pdf_inspector",
+    "chars": [
+     3465,
+     3381
+    ]
+   },
+   {
+    "page": "bd03/10",
+    "engine": "local_ocr",
+    "chars": [
+     3881,
+     3797
+    ]
+   },
+   {
+    "page": "bd03/10",
+    "engine": "worker",
+    "chars": [
+     3627,
+     3296
+    ]
+   },
+   {
+    "page": "bd03/15",
+    "engine": "pdf_inspector",
+    "chars": [
+     5079,
+     5023
+    ]
+   },
+   {
+    "page": "bd03/15",
+    "engine": "local_ocr",
+    "chars": [
+     5359,
+     5303
+    ]
+   },
+   {
+    "page": "bd03/21",
+    "engine": "pdf_inspector",
+    "chars": [
+     6313,
+     6110
+    ]
+   },
+   {
+    "page": "bd03/21",
+    "engine": "local_ocr",
+    "chars": [
+     7025,
+     6822
+    ]
+   },
+   {
+    "page": "bd03/23",
+    "engine": "pdf_inspector",
+    "chars": [
+     7419,
+     7153
+    ]
+   },
+   {
+    "page": "bd03/23",
+    "engine": "local_ocr",
+    "chars": [
+     7839,
+     7573
+    ]
+   },
+   {
+    "page": "io04/4",
+    "engine": "worker",
+    "chars": [
+     12260,
+     12134
+    ]
+   },
+   {
+    "page": "io04/16",
+    "engine": "worker",
+    "chars": [
+     7856,
+     7356
+    ]
+   },
+   {
+    "page": "io04/17",
+    "engine": "worker",
+    "chars": [
+     4628,
+     4250
+    ]
+   },
+   {
+    "page": "io04/18",
+    "engine": "worker",
+    "chars": [
+     9978,
+     9976
+    ]
+   },
+   {
+    "page": "io04/20",
+    "engine": "worker",
+    "chars": [
+     9448,
+     9446
+    ]
+   },
+   {
+    "page": "io04/33",
+    "engine": "worker",
+    "chars": [
+     13442,
+     13440
+    ]
+   },
+   {
+    "page": "io04/42",
+    "engine": "worker",
+    "chars": [
+     10448,
+     9823
+    ]
+   },
+   {
+    "page": "io04/44",
+    "engine": "worker",
+    "chars": [
+     12619,
+     12496
+    ]
+   },
+   {
+    "page": "io04/47",
+    "engine": "worker",
+    "chars": [
+     15690,
+     15564
+    ]
+   },
+   {
+    "page": "io04/49",
+    "engine": "worker",
+    "chars": [
+     4105,
+     3855
+    ]
+   },
+   {
+    "page": "io04/52",
+    "engine": "worker",
+    "chars": [
+     7340,
+     5736
+    ]
+   },
+   {
+    "page": "io06/75",
+    "engine": "worker",
+    "chars": [
+     221,
+     102
+    ]
+   },
+   {
+    "page": "io06/78",
+    "engine": "worker",
+    "chars": [
+     119,
+     2
+    ]
+   },
+   {
+    "page": "tl03/5",
+    "engine": "worker",
+    "chars": [
+     2890,
+     2223
+    ]
+   },
+   {
+    "page": "tl03/8",
+    "engine": "worker",
+    "chars": [
+     1206,
+     335
+    ]
+   }
+  ]
+ }
+}

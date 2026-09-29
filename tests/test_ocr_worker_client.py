@@ -15,6 +15,7 @@ import subprocess
 import sys
 import types
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -45,14 +46,35 @@ def small_pdf(tmp_path: Path) -> Path:
 
 
 def test_round_trip_returns_correlated_success(small_pdf: Path) -> None:
-    """One request in, one correlated terminal success line out."""
+    """One request in, one correlated terminal success line out.
+
+    A plain request speaks the minimum version that expresses it (1.0),
+    and the worker answers in that version.
+    """
     with OcrWorkerClient(_stub_command("echo")) as client:
         result = client.parse(str(small_pdf))
     assert isinstance(result, omrg_protocol.ParseSuccess)
     assert str(small_pdf) in result.markdown
     assert result.metadata["ocr_backend"] == "stub-worker"
     assert result.metadata["page_count"] == 1
-    assert result.protocol_version == omrg_protocol.PROTOCOL_VERSION
+    assert result.protocol_version == "1.0"
+
+
+def test_pages_request_reaches_the_wire_and_returns_per_page_markdown(
+    small_pdf: Path,
+) -> None:
+    """A page-listed parse speaks 1.1 and carries the list on the wire.
+
+    The stub worker reflects the received page list into its metadata and
+    answers with per-page Markdown, so this observes the actual wire bytes.
+    """
+    with OcrWorkerClient(_stub_command("echo")) as client:
+        result = client.parse(str(small_pdf), pages=[2, 5])
+    assert isinstance(result, omrg_protocol.ParseSuccess)
+    assert result.protocol_version == "1.1"
+    assert result.metadata["stub_request_pages"] == [2, 5]
+    assert result.pages_markdown == ("# Stub page 2", "# Stub page 5")
+    assert result.markdown == "# Stub page 2\n\n# Stub page 5"
 
 
 def test_client_starts_lazily_and_is_reusable(small_pdf: Path) -> None:
@@ -291,6 +313,44 @@ def test_worker_loop_internal_error_is_one_bounded_envelope(
     assert "RuntimeError" in decoded.error.message
 
 
+@pytest.mark.parametrize(
+    "failure_kind",
+    ["worker_parse_error", "internal_error"],
+)
+def test_worker_loop_failure_envelopes_echo_the_request_version(
+    monkeypatch: pytest.MonkeyPatch, small_pdf: Path, failure_kind: str
+) -> None:
+    """A failure answers in the version the request spoke (rolling upgrade rule).
+
+    A 1.0 request that fails must not receive a default 1.1 envelope: a
+    client still on 1.0 would reject the response instead of reading the
+    structured failure. Both failure paths must echo the request version.
+    """
+    worker = _load_worker_module(monkeypatch)
+
+    def failing_parse(request):
+        if failure_kind == "worker_parse_error":
+            raise worker.WorkerParseError("stub_failure", "it failed")
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(worker, "parse_document", failing_parse)
+    request = omrg_protocol.make_request("req-loop-v10", str(small_pdf))
+    assert request.protocol_version == "1.0"
+    stdin = io.StringIO(omrg_protocol.encode_line(request) + "\n")
+    stdout = io.StringIO()
+    monkeypatch.setattr(sys, "stdin", stdin)
+    monkeypatch.setattr(sys, "stdout", stdout)
+
+    exit_code = worker.main()
+
+    assert exit_code == 0
+    lines = stdout.getvalue().splitlines()
+    assert len(lines) == 1
+    decoded = omrg_protocol.decode_response_line(lines[0], expected_id="req-loop-v10")
+    assert isinstance(decoded, omrg_protocol.ParseFailure)
+    assert decoded.protocol_version == "1.0"
+
+
 def test_worker_loop_invalid_path_uses_real_seam(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -361,6 +421,86 @@ def test_worker_subprocess_rejects_wrong_version_request(small_pdf: Path) -> Non
     assert isinstance(decoded, omrg_protocol.ParseFailure)
     assert decoded.error.code == "invalid_request"
     assert "unsupported_protocol_version" in decoded.error.message
+
+
+def test_worker_loop_pages_request_reaches_the_seam_and_answers_per_page(
+    monkeypatch: pytest.MonkeyPatch, small_pdf: Path
+) -> None:
+    """A 1.1 page-listed request carries its pages into the parse seam.
+
+    The stubbed seam asserts what the loop handed it and answers with
+    per-page Markdown; the decoded response must carry both the echoed
+    version and the parallel page list.
+    """
+    worker = _load_worker_module(monkeypatch)
+    import omrg_ocr_worker.protocol as worker_protocol
+
+    seen: dict[str, Any] = {}
+
+    def fake_parse(request):
+        seen["pages"] = request.pages
+        seen["version"] = request.protocol_version
+        return worker_protocol.make_success(
+            request.id,
+            "# P2\n\n# P5",
+            ocr_backend=worker.WORKER_BACKEND,
+            page_count=2,
+            pages_markdown=["# P2", "# P5"],
+            protocol_version=request.protocol_version,
+        )
+
+    monkeypatch.setattr(worker, "parse_document", fake_parse)
+    request = omrg_protocol.make_request("req-loop-pages", str(small_pdf), pages=[2, 5])
+    stdin = io.StringIO(omrg_protocol.encode_line(request) + "\n")
+    stdout = io.StringIO()
+    monkeypatch.setattr(sys, "stdin", stdin)
+    monkeypatch.setattr(sys, "stdout", stdout)
+
+    exit_code = worker.main()
+
+    assert exit_code == 0
+    assert seen["pages"] == (2, 5)
+    assert seen["version"] == "1.1"
+    lines = stdout.getvalue().splitlines()
+    assert len(lines) == 1
+    decoded = omrg_protocol.decode_response_line(lines[0], expected_id="req-loop-pages")
+    assert isinstance(decoded, omrg_protocol.ParseSuccess)
+    assert decoded.protocol_version == "1.1"
+    assert decoded.pages_markdown == ("# P2", "# P5")
+
+
+def test_worker_loop_answers_a_1_0_request_in_1_0(
+    monkeypatch: pytest.MonkeyPatch, small_pdf: Path
+) -> None:
+    """The rolling-upgrade rule: a plain 1.0 request is answered in 1.0."""
+    worker = _load_worker_module(monkeypatch)
+    import omrg_ocr_worker.protocol as worker_protocol
+
+    def fake_parse(request):
+        return worker_protocol.make_success(
+            request.id,
+            "# P",
+            ocr_backend=worker.WORKER_BACKEND,
+            page_count=1,
+            protocol_version=request.protocol_version,
+        )
+
+    monkeypatch.setattr(worker, "parse_document", fake_parse)
+    request = omrg_protocol.make_request("req-loop-10", str(small_pdf))
+    assert request.protocol_version == "1.0"
+    stdin = io.StringIO(omrg_protocol.encode_line(request) + "\n")
+    stdout = io.StringIO()
+    monkeypatch.setattr(sys, "stdin", stdin)
+    monkeypatch.setattr(sys, "stdout", stdout)
+
+    exit_code = worker.main()
+
+    assert exit_code == 0
+    decoded = omrg_protocol.decode_response_line(
+        stdout.getvalue().splitlines()[0], expected_id="req-loop-10"
+    )
+    assert isinstance(decoded, omrg_protocol.ParseSuccess)
+    assert decoded.protocol_version == "1.0"
 
 
 def test_worker_subprocess_exits_on_uncorrelatable_line() -> None:
@@ -439,3 +579,148 @@ def test_worker_forces_worker_local_paddle_cache_env(
     worker._apply_worker_cache_env()
     assert os.environ["PADDLE_OCR_BASE_DIR"] == str(worker.MODEL_CACHE_DIR)
     assert os.environ["PADDLE_PDX_CACHE_HOME"] == str(worker.MODEL_CACHE_DIR)
+
+
+def test_page_listed_request_parses_only_a_subset_pdf(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A page-listed request must hand the pipeline a subset PDF, not the file.
+
+    paddleocr 3.7.0 has no ``page_num`` parameter on ``PaddleOCRVL.predict``:
+    the kwarg this replaces was swallowed by ``**kwargs`` and the engine
+    OCR'd the whole document, which experiment 34 caught as a page-28
+    "extraction" that was really a run of the whole book (TDR-027). The
+    pipeline under test must therefore receive a PDF containing exactly
+    the requested page, the response must report the requested count, and
+    the temporary subset must be cleaned up afterwards.
+    """
+    from pypdf import PdfReader, PdfWriter
+
+    worker = _load_worker_module(monkeypatch)
+    import omrg_ocr_worker.protocol as worker_protocol
+
+    pdf = tmp_path / "two_pages.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.add_blank_page(width=200, height=200)
+    writer.write(pdf)
+
+    seen: dict[str, Any] = {}
+
+    class _Structured:
+        def save_to_markdown(self, save_path: str) -> None:
+            Path(save_path).mkdir(parents=True, exist_ok=True)
+            (Path(save_path) / "page.md").write_text("# page two", encoding="utf-8")
+
+    class _Pipeline:
+        def predict(self, input: str, **kwargs: Any) -> list:
+            seen["input"] = input
+            seen["kwargs"] = kwargs
+            seen["pages_in_pdf"] = len(PdfReader(input).pages)
+            return ["raw-result-2"]
+
+        def restructure_pages(self, page_results: list, **kwargs: Any) -> list:
+            seen["restructure_kwargs"] = kwargs
+            return [_Structured()]
+
+    monkeypatch.setattr(worker, "_load_pipeline", lambda: _Pipeline())
+    request = worker_protocol.ParseRequest(
+        id="req-subset", pdf_path=str(pdf), pages=(2,), protocol_version="1.1"
+    )
+
+    success = worker.parse_document(request)
+
+    assert seen["pages_in_pdf"] == 1, "pipeline must receive a one-page subset PDF"
+    assert "page_num" not in seen["kwargs"], "the unsupported kwarg must not be passed"
+    assert success.metadata["page_count"] == 1
+    assert success.pages_markdown == ("# page two",)
+    assert not Path(seen["input"]).exists(), "the temporary subset must be removed"
+
+
+def test_page_listed_request_fails_loudly_on_page_count_mismatch(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A pipeline returning the wrong number of pages is an error, never padded.
+
+    The first version of the page-listed path padded ``pages_markdown`` to
+    the requested length, which masked exactly the whole-document bug the
+    padding was meant to guard against (TDR-027)."
+    """
+    from pypdf import PdfWriter
+
+    worker = _load_worker_module(monkeypatch)
+    import omrg_ocr_worker.protocol as worker_protocol
+
+    pdf = tmp_path / "one_page.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.write(pdf)
+
+    class _Pipeline:
+        def predict(self, input: str, **kwargs: Any) -> list:
+            return ["result-a", "result-b"]  # two results for one requested page
+
+        def restructure_pages(self, page_results: list, **kwargs: Any) -> list:
+            return []
+
+    monkeypatch.setattr(worker, "_load_pipeline", lambda: _Pipeline())
+    request = worker_protocol.ParseRequest(
+        id="req-mismatch", pdf_path=str(pdf), pages=(1,), protocol_version="1.1"
+    )
+
+    with pytest.raises(worker.WorkerParseError) as excinfo:
+        worker.parse_document(request)
+    assert excinfo.value.code == "page_selection_mismatch"
+
+
+def test_page_listed_request_keeps_each_page_to_its_own_text(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Page 1's Markdown must not carry the other pages (Experiment 34 A9).
+
+    paddlex's ``restructure_pages(concatenate_pages=True)`` rewrites its
+    input in place: the first page result receives every page's blocks.
+    When the joined pass ran first, the per-page pass then read that
+    rewritten page 1, so page 1 carried the whole request. The stand-in
+    pipeline below copies that in-place rewrite.
+    """
+    from pypdf import PdfWriter
+
+    worker = _load_worker_module(monkeypatch)
+    import omrg_ocr_worker.protocol as worker_protocol
+
+    pdf = tmp_path / "two_pages.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.add_blank_page(width=200, height=200)
+    writer.write(pdf)
+
+    class _Structured:
+        def __init__(self, blocks: list[str]) -> None:
+            self.blocks = list(blocks)
+
+        def save_to_markdown(self, save_path: str) -> None:
+            Path(save_path).mkdir(parents=True, exist_ok=True)
+            (Path(save_path) / "page.md").write_text("\n".join(self.blocks), encoding="utf-8")
+
+    class _Pipeline:
+        def predict(self, input: str, **kwargs: Any) -> list:
+            return [{"blocks": ["# page one"]}, {"blocks": ["# page two"]}]
+
+        def restructure_pages(self, page_results: list, **kwargs: Any) -> list:
+            if kwargs["concatenate_pages"]:
+                every = [block for result in page_results for block in result["blocks"]]
+                page_results[0]["blocks"] = every  # the in-place rewrite
+                return [_Structured(every)]
+            return [_Structured(result["blocks"]) for result in page_results]
+
+    monkeypatch.setattr(worker, "_load_pipeline", lambda: _Pipeline())
+    request = worker_protocol.ParseRequest(
+        id="req-own-text", pdf_path=str(pdf), pages=(1, 2), protocol_version="1.1"
+    )
+
+    success = worker.parse_document(request)
+
+    assert success.pages_markdown == ("# page one", "# page two")
+    assert success.markdown.count("# page one") == 1
+    assert "# page two" in success.markdown

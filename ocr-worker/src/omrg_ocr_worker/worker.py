@@ -15,6 +15,7 @@ logging — is Paddle-free and testable in the main environment.
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import os
@@ -25,6 +26,7 @@ from typing import Any
 
 from .protocol import (
     PROTOCOL_VERSION,
+    SUPPORTED_PROTOCOL_VERSIONS,
     ParseFailure,
     ParseRequest,
     ParseSuccess,
@@ -79,7 +81,9 @@ def parse_document(request: ParseRequest) -> ParseSuccess:
     pdf_path = Path(request.pdf_path)
     if not pdf_path.is_file():
         raise WorkerParseError("invalid_pdf_path", f"no readable PDF at {request.pdf_path}")
-    return _run_document_pipeline(pdf_path, request.id)
+    return _run_document_pipeline(
+        pdf_path, request.id, pages=request.pages, protocol_version=request.protocol_version
+    )
 
 
 #: Process-wide pipeline singleton (design D2.2): the long-lived worker
@@ -140,16 +144,37 @@ def _load_pipeline() -> Any:
     return _PIPELINE_SINGLETON
 
 
-def _run_document_pipeline(pdf_path: Path, request_id: str) -> ParseSuccess:
-    """Invoke the full PaddleOCR-VL document pipeline inside the worker env.
+def _run_document_pipeline(
+    pdf_path: Path,
+    request_id: str,
+    *,
+    pages: tuple[int, ...] | None = None,
+    protocol_version: str = PROTOCOL_VERSION,
+) -> ParseSuccess:
+    """Invoke the PaddleOCR-VL document pipeline inside the worker env.
 
     The pipeline is loaded once per worker process (design D2.2) and
     performs layout analysis, reading-order handling, recognition, and
     Markdown assembly before the worker creates its protocol envelope.
 
+    A page-listed request (protocol 1.1) parses only those pages: the
+    requested pages are first written to a temporary single-purpose PDF
+    (pypdf), because paddleocr 3.7.0 has no page-selection parameter —
+    a ``page_num`` kwarg is swallowed by ``**kwargs`` and the engine
+    silently processes the whole document (TDR-027). The subset makes
+    selection structural: what arrives at the pipeline is exactly what
+    was asked for, and the response carries per-page Markdown parallel
+    to the list. The page count reports pages processed, which under a
+    page list is the list's length; a mismatch fails loudly rather than
+    being padded.
+
     Args:
         pdf_path: The validated PDF path from the request.
         request_id: Correlation identifier for the terminal response.
+        pages: 1-based page numbers to parse, or ``None`` for the whole
+            document.
+        protocol_version: The version the request spoke; the response
+            answers in it (the rolling-upgrade rule).
 
     Returns:
         The assembled success envelope with pipeline metadata.
@@ -160,10 +185,39 @@ def _run_document_pipeline(pdf_path: Path, request_id: str) -> ParseSuccess:
     """
     pipeline = _load_pipeline()
 
+    subset: Path | None = None
     try:
-        page_results = list(pipeline.predict(input=str(pdf_path)))
+        target = pdf_path
+        if pages is not None:
+            subset = _write_page_subset(pdf_path, pages)
+            target = subset
+        page_results = list(pipeline.predict(input=str(target)))
+        if pages is not None and len(page_results) != len(pages):
+            raise WorkerParseError(
+                "page_selection_mismatch",
+                f"pipeline returned {len(page_results)} page result(s) for {len(pages)} "
+                "requested page(s)",
+            )
         if not page_results:
             raise WorkerParseError("empty_pipeline_result", "PaddleOCR-VL returned no page results")
+        pages_markdown = None
+        if pages is not None:
+            # A second assembly pass, without concatenation, yields each
+            # page's Markdown on its own; re-prediction is the expensive part
+            # and is not repeated. restructure_pages rewrites its input in
+            # place: with concatenate_pages=True it gives the first page
+            # result every page's blocks (paddlex PaddleOCR-VL pipeline).
+            # So the per-page pass runs first, on a deep copy, or page 1
+            # would carry the whole request (Experiment 34 A9).
+            per_page_results = list(
+                pipeline.restructure_pages(
+                    copy.deepcopy(page_results),
+                    merge_tables=True,
+                    relevel_titles=True,
+                    concatenate_pages=False,
+                )
+            )
+            pages_markdown = _per_page_markdown(per_page_results, len(pages))
         structured_results = list(
             pipeline.restructure_pages(
                 page_results,
@@ -177,6 +231,9 @@ def _run_document_pipeline(pdf_path: Path, request_id: str) -> ParseSuccess:
         raise
     except Exception as exc:  # noqa: BLE001 - convert backend failures to protocol errors
         raise WorkerParseError("pipeline_error", f"{type(exc).__name__}: {exc}") from exc
+    finally:
+        if subset is not None:
+            subset.unlink(missing_ok=True)
 
     return make_success(
         request_id,
@@ -191,7 +248,68 @@ def _run_document_pipeline(pdf_path: Path, request_id: str) -> ParseSuccess:
             "model": "PaddleOCR-VL",
             "model_revision": "1.6",
         },
+        pages_markdown=pages_markdown,
+        protocol_version=protocol_version,
     )
+
+
+def _write_page_subset(source: Path, pages: tuple[int, ...] | list[int]) -> Path:
+    """Write a temporary PDF containing exactly *pages* from *source*.
+
+    1-based page numbers, matching the protocol. The subset is the page
+    selection mechanism: paddleocr has no page-selection parameter, so
+    the only honest way to parse page N is to hand the engine a PDF that
+    contains page N (TDR-027).
+
+    Raises:
+        WorkerParseError: If a requested page is outside the document.
+    """
+    from pypdf import PdfReader, PdfWriter
+
+    reader = PdfReader(str(source))
+    total = len(reader.pages)
+    out_of_range = [page for page in pages if not 1 <= page <= total]
+    if out_of_range:
+        raise WorkerParseError(
+            "invalid_page", f"requested page(s) {out_of_range} outside 1..{total}"
+        )
+    writer = PdfWriter()
+    for page in pages:
+        writer.add_page(reader.pages[page - 1])
+    handle = tempfile.NamedTemporaryFile(  # noqa: SIM115 - caller unlinks in finally
+        prefix=".ocr-pages-", suffix=".pdf", dir=WORKER_DIR, delete=False
+    )
+    handle.close()
+    subset = Path(handle.name)
+    writer.write(subset)
+    return subset
+
+
+def _per_page_markdown(results: list[Any], expected: int) -> list[str]:
+    """Return one Markdown string per result.
+
+    The results come from a page-subset PDF, so they are exactly the
+    requested pages in order. No padding, no truncation: a length
+    mismatch is a bug upstream of this function and fails loudly
+    (TDR-027 — padding here once masked a whole-document run).
+    """
+    if len(results) != expected:
+        raise WorkerParseError(
+            "page_selection_mismatch",
+            f"{len(results)} restructured page(s) for {expected} requested page(s)",
+        )
+    pages: list[str] = []
+    for result in results:
+        with tempfile.TemporaryDirectory(prefix=".ocr-output-page-", dir=WORKER_DIR) as page_dir:
+            output_path = Path(page_dir)
+            result.save_to_markdown(save_path=str(output_path))
+            markdown_files = sorted(output_path.rglob("*.md"))
+            pages.append(
+                "\n\n".join(
+                    path.read_text(encoding="utf-8").strip() for path in markdown_files
+                ).strip()
+            )
+    return pages
 
 
 def _save_markdown_results(results: list[Any]) -> str:
@@ -260,10 +378,20 @@ def _handle_request(request: ParseRequest) -> ParseSuccess | ParseFailure:
         return parse_document(request)
     except WorkerParseError as exc:
         logger.warning("parse failed for %s: %s", request.id, exc.message)
-        return make_failure(request.id, exc.code, exc.message)
+        return make_failure(
+            request.id,
+            exc.code,
+            exc.message,
+            protocol_version=request.protocol_version,
+        )
     except Exception as exc:  # noqa: BLE001 - the loop must survive anything
         logger.exception("unhandled error while parsing %s", request.id)
-        return make_failure(request.id, "internal_error", f"{type(exc).__name__}: {exc}")
+        return make_failure(
+            request.id,
+            "internal_error",
+            f"{type(exc).__name__}: {exc}",
+            protocol_version=request.protocol_version,
+        )
 
 
 def _respond_to_recoverable_line(line: str, error: ProtocolError) -> bool:
@@ -290,7 +418,23 @@ def _respond_to_recoverable_line(line: str, error: ProtocolError) -> bool:
     request_id = payload.get("id")
     if not isinstance(request_id, str) or not request_id:
         return False
-    _write_response(make_failure(request_id, "invalid_request", f"{error.code}: {error.message}"))
+    # Answer in the version the broken line claimed, when that version
+    # is one this endpoint speaks, so an old client can still read the
+    # error; anything else gets this endpoint's own version.
+    claimed = payload.get("protocol_version")
+    version = (
+        claimed
+        if isinstance(claimed, str) and claimed in SUPPORTED_PROTOCOL_VERSIONS
+        else PROTOCOL_VERSION
+    )
+    _write_response(
+        make_failure(
+            request_id,
+            "invalid_request",
+            f"{error.code}: {error.message}",
+            protocol_version=version,
+        )
+    )
     return True
 
 

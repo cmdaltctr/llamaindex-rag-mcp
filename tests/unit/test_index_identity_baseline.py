@@ -8,7 +8,8 @@ this way: the pre-change pin recorded schema 3 with top-level keys
 ``schema/embedding/embedding_text/parser/chunking/metadata_shape`` and
 neither OCR block; the diff to this file shows the schema-4 extension
 (OCR routing + resolved worker fingerprint), and the schema-5 extension
-(unconditional routing types in the OCR routing payload).
+(unconditional routing types in the OCR routing payload), followed by
+schema 6 (reader normalisation version and toggle).
 
 The payload is captured by wrapping the module-local ``json`` binding, so
 the recorded structure is exactly what gets canonicalised and hashed —
@@ -22,7 +23,7 @@ import json
 
 import pytest
 
-from omrg.core.ingestion import source_state
+from omrg.core.ingestion import embed_exclusions, source_state
 from omrg.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock
 
 EXPECTED_TOP_LEVEL_KEYS = {
@@ -36,6 +37,7 @@ EXPECTED_TOP_LEVEL_KEYS = {
     "ocr_routing",
     "ocr_worker_fingerprint",
     "metadata_shape",
+    "normalisation",
 }
 EXPECTED_EMBEDDING_KEYS = {"runtime", "configured_provider", "configured_model"}
 EXPECTED_EMBEDDING_TEXT_KEYS = {"excluded_keys"}
@@ -129,21 +131,16 @@ def _baseline_payload(monkeypatch: pytest.MonkeyPatch) -> tuple[dict, str]:
 
 
 def test_index_identity_schema_value_is_pinned() -> None:
-    """Baseline: schema is 5 after the unconditional-types identity extension.
-
-    Schema 4 was the single shared Stage 2/3 bump (task 2.13/3.11). Schema 5
-    adds ``unconditional_types`` to the OCR routing payload so changes to
-    the unconditional routing set participate in the index identity.
-    """
-    assert source_state._INDEX_IDENTITY_SCHEMA == 5
+    """Schema 6 tracks the reader normaliser version and enabled state."""
+    assert source_state._INDEX_IDENTITY_SCHEMA == 6
 
 
 def test_index_identity_payload_shape_is_recorded(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Pin the exact key structure of the schema-5 payload after Stage 3."""
+    """Pin the exact key structure of the schema-6 payload."""
     payload, _ = _baseline_payload(monkeypatch)
 
     assert set(payload) == EXPECTED_TOP_LEVEL_KEYS
-    assert payload["schema"] == 5
+    assert payload["schema"] == 6
     assert set(payload["embedding"]) == EXPECTED_EMBEDDING_KEYS
     assert set(payload["embedding_text"]) == EXPECTED_EMBEDDING_TEXT_KEYS
     assert set(payload["tokenizer"]) == EXPECTED_TOKENIZER_KEYS
@@ -154,6 +151,7 @@ def test_index_identity_payload_shape_is_recorded(monkeypatch: pytest.MonkeyPatc
     assert set(payload["ocr_routing"]) == EXPECTED_OCR_ROUTING_KEYS
     assert set(payload["ocr_worker_fingerprint"]) == EXPECTED_OCR_FINGERPRINT_KEYS
     assert set(payload["metadata_shape"]) == EXPECTED_METADATA_SHAPE_KEYS
+    assert payload["normalisation"] == {"enabled": True, "version": 2}
 
 
 def test_index_identity_payload_values_echo_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -164,8 +162,13 @@ def test_index_identity_payload_values_echo_configuration(monkeypatch: pytest.Mo
     assert payload["parser"]["text_format"] is None
     assert payload["chunking"]["effective_chunk_size"] == 512
     assert payload["chunking"]["effective_chunk_overlap"] == 100
+    # Scoped by routing unit (change page-level-ocr-routing): this payload is
+    # built on the default `document` unit, which can never emit the
+    # page-routing keys, so they are subtracted. Including them would
+    # reprocess every existing corpus for a key it will never see.
     assert payload["embedding_text"]["excluded_keys"] == sorted(
-        source_state.EXCLUDED_EMBED_METADATA_KEYS
+        set(source_state.EXCLUDED_EMBED_METADATA_KEYS)
+        - embed_exclusions.PAGE_ROUTING_ONLY_EMBED_KEYS
     )
     assert payload["tokenizer"] == {"model": "", "revision": ""}
     # Direct callers that pass no OCR keyword arguments still get the
@@ -224,3 +227,25 @@ def test_recorded_payload_is_exactly_what_is_hashed(monkeypatch: pytest.MonkeyPa
 
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     assert identity == hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def test_normaliser_version_and_toggle_change_identity_for_every_source(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from omrg.core.settings import IngestionBlock
+
+    settings = EffectiveSettings(ingestion=IngestionBlock(normalise_reader_output=True))
+
+    def identity(config: EffectiveSettings) -> str:
+        return source_state.build_index_identity(
+            config, content_type="text/plain", chunk_size=512, chunk_overlap=100
+        )
+
+    original = identity(settings)
+    assert identity(settings) == original
+    disabled = settings.model_copy(
+        update={"ingestion": IngestionBlock(normalise_reader_output=False)}
+    )
+    assert identity(disabled) != original
+    monkeypatch.setattr(source_state, "NORMALISER_VERSION", source_state.NORMALISER_VERSION + 1)
+    assert identity(settings) != original

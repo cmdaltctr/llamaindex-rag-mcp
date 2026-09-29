@@ -1,0 +1,1 @@
+<table border=1 style='margin: auto; word-wrap: break-word;'><tr><td style='text-align: center; word-wrap: break-word;'>60</td><td style='text-align: center; word-wrap: break-word;'>1.0</td></tr><tr><td colspan="2">$ C_{{L_p}} $</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>50</td><td style='text-align: center; word-wrap: break-word;'>.8</td></tr></table>

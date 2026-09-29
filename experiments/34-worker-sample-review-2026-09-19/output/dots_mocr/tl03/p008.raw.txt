@@ -1,0 +1,1 @@
+[{"bbox": [144, 1897, 164, 1925], "category": "Page-header", "text": "8"}, {"bbox": [208, 245, 1300, 1751], "category": "Picture"}, {"bbox": [1337, 852, 1370, 1179], "category": "Caption", "text": "(b) Rigid propeller."}, {"bbox": [1405, 835, 1434, 1179], "category": "Text", "text": "Figure 1. - Concluded."}]

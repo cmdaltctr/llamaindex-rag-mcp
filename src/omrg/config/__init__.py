@@ -31,7 +31,7 @@ from ..core.chunking.settings import ChunkingSettings
 from ..core.ingestion.settings import IngestionSettings
 from ..core.metadata.settings import MetadataSettings
 from ..core.retrieval.settings import RetrievalSettings
-from ..core.settings import EmbeddingSettings
+from ..core.settings import OCR_ROUTING_UNITS, EmbeddingSettings
 
 load_dotenv()
 
@@ -197,6 +197,14 @@ class Settings(StorageValidationMixin, BaseSettings):
     ocr_fallback_min_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     ocr_fallback_page_fraction: float = Field(default=0.10, ge=0.0, le=1.0)
 
+    # ── OCR routing unit and local tier (page-level-ocr-routing) ──
+    # Flat names: the nested delimiter binds only to nested blocks, so a
+    # nested spelling is discarded in silence (config/legacy.py aliases).
+    ocr_routing_unit: str = "document"
+    ocr_local_min_confidence: float = Field(default=0.8, ge=0.0, le=1.0)  # exp 33 t6.7
+    ocr_local_offline: LegacyBool = False
+    ocr_local_model_directory: str = ""
+
     # ── OCR worker operation (task 2.6b) ──────────────────────────
     # Operational settings, separate from the calibrated gate above:
     # how to reach the worker, not which PDFs deserve it. Empty
@@ -337,6 +345,14 @@ class Settings(StorageValidationMixin, BaseSettings):
             logger.warning("Unknown PDF_READER=%r; falling back to auto", self.pdf_reader)
             object.__setattr__(self, "pdf_reader", "auto")
 
+        # Raises, unlike PDF_READER and RAG_PROFILE above: the unit feeds the
+        # index identity, so a fallback would index under a unit nobody chose.
+        if self.ocr_routing_unit not in OCR_ROUTING_UNITS:
+            raise ValueError(
+                f"Unknown OCR_ROUTING_UNIT={self.ocr_routing_unit!r}. "
+                f"Valid units: {', '.join(OCR_ROUTING_UNITS)}."
+            )
+
         # Profile selection (Phase 4).  Unknown values fall back to
         # "documents" with a warning rather than raising — the profile
         # system degrades gracefully to the document-grounding default.
@@ -472,6 +488,7 @@ _settings: Settings | None = None
 # after the task 8.7 split.
 
 from .legacy import (  # noqa: E402, F401
+    _NEVER_SHIPPED_ALIASES,
     _RETIRED_ENV_VARS,
     check_legacy_env_vars,
 )

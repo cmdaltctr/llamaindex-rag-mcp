@@ -93,6 +93,7 @@ class IngestionSettings(BaseModel):
 
     # Documents per embedding API call.
     embed_batch_size: int = 100
+    normalise_reader_output: bool = True
 
     # File extensions ingestion collects (design D4: profile-scoped, not a
     # global constant). The ``codebase`` profile overlays source extensions
