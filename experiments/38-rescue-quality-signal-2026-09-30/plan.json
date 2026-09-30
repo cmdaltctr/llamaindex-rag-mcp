@@ -1,0 +1,198 @@
+{
+  "experiment_id": "38-rescue-quality-signal-2026-09-30",
+  "protocol_version": 1,
+  "status": "PLANNED",
+  "change_ref": "openspec/changes/experiment-38-rescue-quality-signal",
+  "niftypm": "AIE-99",
+  "source_data": {
+    "experiment": "33-ocr-routing-natural-positive-2026-09-17",
+    "labels_sha256": "cd4960ba36bddd3cd665a9142592457945fe2234c4a37bbfb81a0bfe1041c6bf",
+    "labels_commit": "cf0d6d7",
+    "precondition": "freeze.py --check prints 'freeze verified'",
+    "pages": 1123,
+    "documents": 40,
+    "token_rule": "build_labels.tokens and build_labels.recall, imported",
+    "reference": "body text (output/.transcripts_split when present, else output/.transcripts)"
+  },
+  "text_under_test": {
+    "primary": "liteparse adapter page text, OCR off, shipped normaliser applied",
+    "secondary": "pypdf adapter page text, shipped normaliser applied",
+    "sanity_check": "recomputed pypdf recall equals frozen r_pypdf within 0.0001 on every page, else stop"
+  },
+  "classes": {
+    "junk": "recall < 0.50 and at least one token",
+    "healthy": "recall >= 0.80",
+    "grey": "0.50 <= recall < 0.80, reported only",
+    "excluded": [
+      "body reference < 10 tokens",
+      "frozen label unrecoverable or ambiguous",
+      "empty rescue text"
+    ],
+    "basis": "frozen Experiment 33 page rule thresholds"
+  },
+  "size_estimate": {
+    "basis": "frozen r_pypdf, 2026-09-30",
+    "eligible": 953,
+    "junk_nonempty": 105,
+    "healthy": 536,
+    "largest_cluster": {
+      "rf06": 39
+    }
+  },
+  "candidates": {
+    "A": {
+      "A1": {
+        "name": "real-word ratio",
+        "lexicon": "wordfreq",
+        "zipf_min": 1.0,
+        "languages": [
+          "en",
+          "es",
+          "fr",
+          "de",
+          "it",
+          "pt",
+          "nl",
+          "ar",
+          "hi",
+          "bn"
+        ],
+        "version": null
+      },
+      "A2": {
+        "name": "script consistency",
+        "rule": "share of letters in the most frequent Unicode script; Common and Inherited excluded"
+      },
+      "score": "min(A1, A2)",
+      "as_designed_flag": "score < 0.50",
+      "fallback_A1": "word-shape ratio: 2-20 letters, one script, no letter repeated 3 times in a row, Latin tokens hold a vowel; used only if wordfreq is not approved, recorded as an amendment before the run"
+    },
+    "B": {
+      "model": "SupersonicLabs/Julia-1-ONNX",
+      "revision": "82a2fadf8fccfccdc5fd4e1009ba8f1a265eb7a8",
+      "reference_model_revision": "a85b127321d580d65176c89ced8273f305745d85",
+      "runtime": "onnxruntime CPUExecutionProvider, numpy encoder port, no PyTorch",
+      "request": {
+        "type": "noul",
+        "options": [
+          "no",
+          "yes"
+        ],
+        "question": "Is this text readable writing in a natural language, rather than garbled or broken OCR output?",
+        "state": "page text",
+        "max_length": 8192,
+        "head_length": 512,
+        "strict_encoding": true
+      },
+      "score": "P(yes)",
+      "as_designed_flag": "score < 0.50",
+      "file_sha256": {
+        "model.onnx": null,
+        "model.onnx.data": null,
+        "tokenizer.json": null
+      },
+      "download_bytes": {
+        "model.onnx": 2988923,
+        "model.onnx.data": 576782336,
+        "tokenizer.json": 34363188
+      }
+    },
+    "baseline": {
+      "rule": "TDR-024 today: never flags"
+    }
+  },
+  "operating_points": [
+    "as designed (0.50)",
+    "equal cost: threshold where healthy false-positive rate = 0.02, chosen per candidate on these pages"
+  ],
+  "gates": {
+    "G1": {
+      "rule": "rf06 and rf07 both route",
+      "scope": "equal-cost threshold"
+    },
+    "G2": {
+      "rule": "no usable document newly routes",
+      "scope": "equal-cost threshold"
+    },
+    "G3": {
+      "rule": "healthy false-positive rate <= 0.02",
+      "scope": "both operating points reported; gated at equal cost"
+    },
+    "P0": {
+      "rule": ">= 99 of 100 argmax matches and <= 0.01 absolute logit error on parity-cases.json",
+      "on_fail": "stop; operator chooses isolated environment or torch extra"
+    }
+  },
+  "routing_simulation": {
+    "fraction": 0.1,
+    "rule": "a document routes when flagged pages that the shipped chain rescued reach 10% of its pages, or when it routed in the Experiment 33 sampled_baseline arm",
+    "source": "experiments/33-ocr-routing-natural-positive-2026-09-17/output/arm_sampled_baseline/routing.json"
+  },
+  "adoption": {
+    "margin_abs_junk_recall": 0.1,
+    "paired_test": "exact one-sided McNemar on junk pages, p < 0.05",
+    "also_requires": [
+      "G1",
+      "G2",
+      "G3",
+      "P0"
+    ],
+    "margin_reason": "about 105 junk pages give a 95% half-width of 0.06-0.10 on recall between 0.5 and 0.9; a smaller gap is inside sampling noise, and Julia 1 adds a 580 MB download, a runtime path, an index identity input and about 0.18 s per page",
+    "false_positive_ceiling": 0.02,
+    "false_positive_reason": "2% of about 536 healthy pages is about 11 pages, five times below the 10% document fraction; G2 catches clustered false positives"
+  },
+  "outcome_table": [
+    [
+      "A passes",
+      "any",
+      "B not by margin",
+      "A"
+    ],
+    [
+      "any",
+      "B passes",
+      "B by margin",
+      "B, with runtime ADR"
+    ],
+    [
+      "A fails",
+      "B fails",
+      "any",
+      "neither"
+    ],
+    [
+      "A fails",
+      "B passes",
+      "B not by margin",
+      "neither; operator decides"
+    ]
+  ],
+  "uncertainty": {
+    "bootstrap": "document-cluster, 2000 resamples, seed 38",
+    "per_document_recall": true
+  },
+  "false_positive_cost": {
+    "dots_mocr_s_per_page": 38.2,
+    "paddleocr_vl_s_per_page": [
+      23.2,
+      164.1
+    ],
+    "fast_path_s_per_page": 0.008,
+    "basis": "Experiment 34 state files; Experiment 33 read time 9.27 s over 1,123 pages"
+  },
+  "cloud": "none; hosted Jev (TypeSafe AI) rejected: closed weights, page text would leave the machine",
+  "production_change": "none; a recommendation opens a separate proposal",
+  "decision_register": [
+    {
+      "item": "wordfreq as an experiment-only tool (uv run --with)",
+      "status": "PENDING operator approval",
+      "date": null
+    },
+    {
+      "item": "Julia 1 ONNX download, about 580 MB",
+      "status": "PENDING operator approval",
+      "date": null
+    }
+  ],
+  "amendments": []
+}
