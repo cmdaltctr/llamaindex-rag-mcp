@@ -3,7 +3,7 @@
 - **ID**: `33-ocr-routing-natural-positive-2026-09-17`
 - **Date planned**: 2026-09-17
 - **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
-- **Status**: FAIL (Stage A) — corpus and labels frozen 2026-09-17; both arms measured; see [report.md](report.md). Stage B (PaddleOCR-VL) unauthorised; local OCR tier measurement (task 6.7) pending
+- **Status**: FAIL (Stage A) — corpus and labels frozen 2026-09-17; both arms measured; see [report.md](report.md). Stage B descoped 2026-09-29 (a real OCR run needs a separate operator approval and would use dots.mocr first); local OCR tier measured (task 6.7); change archived 2026-09-30; see [ADR-071](../../docs/adr/071-ocr-routing-natural-positive-findings.md)
 - **Relation**: OpenSpec change `experiment-33-ocr-routing-natural-positive`; Experiments 29, 30, 31; ADR-065, ADR-066, TDR-024
 - **Machine-readable plan**: [`plan.json`](plan.json) (the plan wins if this file and the plan disagree)
 

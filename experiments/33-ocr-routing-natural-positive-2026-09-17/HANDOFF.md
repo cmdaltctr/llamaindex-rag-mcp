@@ -3,6 +3,14 @@
 Rewritten 2026-09-18 after task 6.7, the reader comparison, and the PR #95
 merge decision. Everything below is committed; nothing depends on chat history.
 
+**Status 2026-09-30: queue items 0 to 5 are done.** PR #96 merged to `v3`.
+ADR-071 is Accepted. The OpenSpec change is archived
+(`openspec/changes/archive/2026-09-30-experiment-33-ocr-routing-natural-positive`).
+Stage B (tasks 6.1 to 6.6), print-and-rescan (5.3) and the routing-unit
+comparison (6.8) were descoped on 2026-09-29. What remains is item 6, now
+tracked in NiftyPM, plus the branch PR to `v3` and the worktree removal
+(CLAUDE.md Critical Gotcha #15). Sections below record how the work went.
+
 ## Worktrees: exactly two stay open
 
 | Worktree (sibling of the main checkout) | Branch | Role |
@@ -43,7 +51,8 @@ worktree and local branch removed.
    an accepted risk (confidence 0.922, recall 0.609).
 4. **One PR to `v3`** covering items 2 and 3. Before opening it:
    `openspec validate --all --strict` and `./scripts/local_ci.sh`.
-5. **Experiment 33 ADR, then archive the experiment.** The ADR must state
+5. ~~**Experiment 33 ADR, then archive the experiment.**~~ **Done 2026-09-29/30.** ADR-071 accepted; change archived. Original brief kept below.
+   **Experiment 33 ADR, then archive the experiment.** The ADR must state
    **prominently**, at the operator's explicit request:
    1. The operator's understanding observations: equations and scientific
       notation, figures and charts needing interpretation, two- and
@@ -69,9 +78,15 @@ worktree and local branch removed.
       not describe dots.mocr. Experiment 34 measured dots.mocr at 1.4–3.6
       times faster per page, but on GPU against Paddle on CPU, so the two
       rates do not compare directly.
-6. **Later: a rescue-quality signal**, so a junk LiteParse rescue counts as
-   OCR-required (`rf06` fast-path recall 0.236, `rf07` 0.469). `report.md`
-   conclusion item 2. Its own change, after item 5.
+6. **Later, now tracked in NiftyPM (OMRG board):**
+   - **AIE-99** rescue-quality signal, so a junk LiteParse rescue does not
+     zero the OCR evidence (`rf06` fast-path recall 0.236, `rf07` 0.469).
+     ADR-071 decision 3. Deterministic checks versus Julia 1, scored on this
+     corpus.
+   - **AIE-100** local OCR tier escalation on script and typography
+     (ADR-071 decision 4).
+   - **AIE-101** page versus document routing experiment (old task 6.8), after
+     Experiment 37 and an operator approval to run real OCR.
 
 ## LiteParse join-order fix (queue item 2)
 

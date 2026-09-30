@@ -105,6 +105,10 @@ The median cost was 0.75 s per page.
 6. **Stage B stays unauthorised.** A real OCR engine on named pages needs a
    separate operator decision naming the document subset, timeout and runtime
    budget. If authorised, it runs dots.mocr first.
+   Amendment 2026-09-30: the operator descoped Stage B (tasks 6.1 to 6.6), the
+   print-and-rescan tier (5.3) and the routing-unit comparison (6.8) when the
+   change was archived. They were dropped, not done. Task 6.8 moved to NiftyPM
+   AIE-101 as its own experiment.
 7. **Experiment 37 scores both engines on the pages the local tier cannot
    read.** It adds `io01`, `io02`, `io03`, `io07`, `rf06` and `rf07` from this
    corpus, using the frozen labels and reference transcriptions (PR #102).

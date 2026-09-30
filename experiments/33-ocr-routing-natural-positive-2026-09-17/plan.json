@@ -287,6 +287,13 @@
       "change": "the freeze manifest re-records the digests of protocol.md and plan.json only. protocol.md changed by one line (its Status field, PLANNED -> FAIL (Stage A), commit 6f20d49); plan.json changes by this amendment. frozen_utc, the labels, spot check, sources and all 40 document digests are untouched and still verify against the original freeze.",
       "reason": "freeze.py --check blocked local_ocr.py on prose drift. No measured input moved: labels.json, spot_check.json, sources.json and every corpus document match the 2026-09-17T20:34:44Z freeze. Both superseded digests are kept in the manifest under 'redigested' so the audit trail is complete.",
       "approved_by": "operator, 2026-09-17"
+    },
+    {
+      "date": "2026-09-30",
+      "stage": "after the experiment 33 report, ADR-071 and the OpenSpec archive; no measured input moved",
+      "change": "the freeze manifest re-records the digests of protocol.md and plan.json only. protocol.md changed in two ways: (1) commit 1738cdf reformatted its header fields as bullet lists (formatting only, repo-wide docs change); (2) its Status field now records Stage B descoped 2026-09-29, task 6.7 measured, and the archive. plan.json gains this amendment.",
+      "reason": "freeze.py --check reported protocol.md drift. Labels, spot_check, sources, dev_exclusions and every corpus document digest are unchanged. Stage B (tasks 6.1 to 6.6), the print-and-rescan tier (5.3) and the routing-unit comparison (6.8) were dropped from the OpenSpec change; 6.8 moved to NiftyPM AIE-101.",
+      "approved_by": "operator, 2026-09-30"
     }
   ],
   "decision_register": [

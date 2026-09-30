@@ -4,11 +4,11 @@
   "files": {
     "protocol": {
       "path": "protocol.md",
-      "sha256": "985b3d283a65d200e32d0dff7715c2bac21ca9b4913dc578f77f15f188629425"
+      "sha256": "9d8d20f2833fc43800af0445bda0d96839c0827d26c90c1d86351fb42e2ecb38"
     },
     "plan": {
       "path": "plan.json",
-      "sha256": "93742f13493f4e1a55e7ca3edc9fb971b95d600ec3c31e7e657cea7bfc04ebf6"
+      "sha256": "5a575196898c72cb429f93f06f7eaf6a9cd6751fc3d3cd32704acfd8b617b755"
     },
     "dev_exclusions": {
       "path": "dev_exclusions.json",
@@ -78,6 +78,15 @@
         "plan": "7ef6c39271be5de34d2ac2ee5274cd04d5dc3ae146b2a7ac03d9365dfaa368a3"
       },
       "note": "frozen_utc, labels, spot_check, sources and all document digests unchanged"
+    },
+    {
+      "utc": "2026-09-30",
+      "reason": "protocol.md header reformatted (commit 1738cdf) and Status line updated after archive; plan.json amended to record this re-digest",
+      "superseded": {
+        "protocol": "985b3d283a65d200e32d0dff7715c2bac21ca9b4913dc578f77f15f188629425",
+        "plan": "93742f13493f4e1a55e7ca3edc9fb971b95d600ec3c31e7e657cea7bfc04ebf6"
+      },
+      "note": "frozen_utc, labels, spot_check, sources, dev_exclusions and all document digests unchanged"
     }
   ]
 }
