@@ -48,7 +48,10 @@ class _FakeWorker:
         pages_markdown=None,
         error: Exception | None = None,
     ):
-        self.fingerprint = SimpleNamespace(available=available, protocol_version=protocol_version)
+        # backend_id names the answering engine in diagnostics (modular-ocr-workers).
+        self.fingerprint = SimpleNamespace(
+            available=available, protocol_version=protocol_version, backend_id="paddleocr_vl"
+        )
         self.calls: list[dict] = []
         self._pages_markdown = pages_markdown
         self._error = error

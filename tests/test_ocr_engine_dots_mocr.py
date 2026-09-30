@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import re
 import shutil
 import sys
@@ -248,14 +249,16 @@ def test_hash_record_from_another_patch_set_is_refused(dots: Any, tmp_path: Path
 
 
 def test_patches_on_real_model_copy_when_present(dots: Any, tmp_path: Path) -> None:
-    """On the Experiment 34 model copy (if present), a second patch run changes nothing.
+    """On a real model copy (if named), a second patch run changes nothing.
 
-    The copy lives outside the repository; the test is skipped when it is
-    absent. Only the two small code files are copied, never the weights.
+    Set ``OMRG_DOTS_MOCR_MODEL_DIR`` to a downloaded dots.mocr folder (for
+    example the Experiment 34 copy) to run it; it skips otherwise, so the
+    base-suite counts do not depend on the machine. Only the two small
+    code files are copied, never the weights.
     """
-    source = Path.home() / ".cache" / "omrg-exp34" / "DotsMOCR"
+    source = Path(os.environ.get("OMRG_DOTS_MOCR_MODEL_DIR", "/nonexistent"))
     if not (source / "modeling_dots_vision.py").is_file():
-        pytest.skip("Experiment 34 dots.mocr model copy not present")
+        pytest.skip("set OMRG_DOTS_MOCR_MODEL_DIR to a dots.mocr model folder")
     patches = importlib.import_module("omrg_ocr_dots_mocr.patches")
     folder = tmp_path / "DotsMOCR"
     folder.mkdir()

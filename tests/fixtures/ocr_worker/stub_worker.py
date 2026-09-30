@@ -23,6 +23,11 @@ fingerprint line and exit. Modes: ``json`` (a wire-valid fingerprint),
 ``bad-json`` (garbage on standard output), ``wrong-protocol`` /
 ``wrong-schema`` (incompatible identities), ``fail`` (exit status 1
 without output), ``hang`` (never answer).
+
+``--backend-id ID`` sets the ``backend_id`` the fingerprint reports
+(default ``paddleocr_vl``, the engine this stub historically stands
+for), so route tests can tell a primary stub from a fallback stub
+(change modular-ocr-workers-dots-mocr).
 """
 
 from __future__ import annotations
@@ -39,10 +44,11 @@ OUTPUT_SCHEMA = {"id": "omrg.ocr.parse_output", "version": "1"}
 CAPABILITY_MODES = ("json", "bad-json", "wrong-protocol", "wrong-schema", "fail", "hang")
 
 
-def stub_fingerprint_payload() -> dict:
+def stub_fingerprint_payload(backend_id: str = "paddleocr_vl") -> dict:
     """Build the stub worker's wire-valid capability fingerprint."""
     return {
         "protocol_version": PROTOCOL_VERSION,
+        "backend_id": backend_id,
         "packages": {"stub-worker": "1.0"},
         "pipeline": {"identity": "stub-pipeline", "revision": "1"},
         "model": {"identity": "stub-model", "revision": "1"},
@@ -115,7 +121,7 @@ def _failure(request_id: str, protocol_version: str = "1.0") -> dict:
     }
 
 
-def _run_capabilities(mode: str) -> int:
+def _run_capabilities(mode: str, backend_id: str = "paddleocr_vl") -> int:
     """Answer the metadata-only capability probe, then exit.
 
     The ``json`` mode prints a wire-valid fingerprint; every other mode
@@ -123,7 +129,7 @@ def _run_capabilities(mode: str) -> int:
     the stable unavailable fingerprint.
     """
     if mode == "json":
-        _emit(stub_fingerprint_payload())
+        _emit(stub_fingerprint_payload(backend_id))
         return 0
     if mode == "bad-json":
         sys.stdout.write("this is not json {{{\n")
@@ -155,6 +161,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--mode", choices=MODES, default="echo")
     parser.add_argument("--stderr-lines", type=int, default=0)
+    parser.add_argument("--backend-id", default="paddleocr_vl")
     parser.add_argument(
         "--capabilities",
         choices=CAPABILITY_MODES,
@@ -166,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.capabilities is not None:
-        return _run_capabilities(args.capabilities)
+        return _run_capabilities(args.capabilities, args.backend_id)
 
     for raw_line in sys.stdin:
         line = raw_line.strip()

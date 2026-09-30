@@ -24,7 +24,7 @@ from .chunker import read_and_chunk_file_async
 from .hashing import sha256_file
 from .loader import gather_supported_files, make_file_detail
 from .metrics import sample_peak_rss_bytes
-from .ocr_identity import resolved_routing_payload
+from .ocr_identity import resolved_routing_payload, route_fingerprints
 from .replacement import IngestionStageError, replace_source_nodes_async
 from .source_state import (
     IncompatibleSourceLineageError,
@@ -213,21 +213,16 @@ async def ingest_path_async(
     # closed when this batch finishes.
     owns_ocr_client = ocr_client is None and resolved_settings.ocr_fallback_enabled
     if owns_ocr_client:
-        from omrg.capabilities import build_managed_ocr_client
+        from omrg.capabilities import build_ocr_routes
 
-        ocr_client = build_managed_ocr_client(resolved_settings)
+        ocr_client = build_ocr_routes(resolved_settings)
     # Resolved OCR capability for the index identity (task 2.13, design
     # D8): the fingerprint travels on the injected-or-composed client —
     # resolved ONCE here per operation, never re-probed per file. No
     # client means the fallback is off, which resolves to the ONE stable
-    # unavailable fingerprint (the same value build_managed_ocr_client
+    # unavailable fingerprint (the same value build_ocr_routes
     # yields for a disabled fallback or empty command).
-    if ocr_client is not None:
-        resolved_ocr_fingerprint = ocr_client.fingerprint
-    else:
-        from omrg.capabilities import UNAVAILABLE_OCR_WORKER_FINGERPRINT
-
-        resolved_ocr_fingerprint = UNAVAILABLE_OCR_WORKER_FINGERPRINT
+    resolved_ocr_fingerprint, resolved_fallback_fingerprint = route_fingerprints(ocr_client)
     resolved_ocr_routing = resolved_routing_payload(resolved_settings)
     files_indexed = 0
     files_skipped_unchanged = 0
@@ -308,6 +303,7 @@ async def ingest_path_async(
                     embed_model=embed_model,
                     ocr_routing=resolved_ocr_routing,
                     ocr_worker_fingerprint=resolved_ocr_fingerprint,
+                    ocr_fallback_fingerprint=resolved_fallback_fingerprint,
                     tokenizer=markdown_chunking.tokenizer_identity,
                     resolved_splitter=markdown_chunking.resolved_splitter,
                 )

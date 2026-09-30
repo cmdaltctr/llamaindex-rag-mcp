@@ -136,12 +136,12 @@ def build_engine(settings: Settings | None = None) -> Any:
     except Exception:
         reranker = None
 
-    # Owner-scoped OCR worker client (task 2.6a): resolved (probed)
+    # Owner-scoped OCR routes (task 2.6a, design D3 of
+    # modular-ocr-workers-dots-mocr): each route is resolved (probed)
     # once here at the composition boundary when the operator enabled
-    # the fallback, and owned by the engine — its close() releases the
-    # subprocess. Construction is cheap; no process starts until the
-    # first OCR dispatch.
-    from .capabilities import build_managed_ocr_client
+    # OCR, and owned by the engine — its close() releases the
+    # subprocesses. No process starts until a route's first dispatch.
+    from .capabilities import build_ocr_routes
     from .engine import Engine
 
     return Engine(
@@ -154,7 +154,7 @@ def build_engine(settings: Settings | None = None) -> Any:
         ),
         answer_llm_factory=lambda: _build_answer_llm(settings),
         verify_llm_factory=lambda block: _build_verify_llm(settings, block),
-        ocr_client=build_managed_ocr_client(settings),
+        ocr_client=build_ocr_routes(settings),
     )
 
 

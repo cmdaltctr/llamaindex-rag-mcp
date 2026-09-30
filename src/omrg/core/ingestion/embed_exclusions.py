@@ -35,6 +35,8 @@ EXCLUDED_EMBED_METADATA_KEYS = (
     "ocr_pages_local",
     "ocr_pages_worker",
     "ocr_pages_unresolved",
+    # Maths-page count (modular-ocr-workers-dots-mocr, maths-page-routing).
+    "pages_maths_font",
     "page_count",
     "page",
     "page_label",

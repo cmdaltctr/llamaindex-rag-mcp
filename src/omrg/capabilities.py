@@ -26,7 +26,7 @@ from .integrations.ocr_worker.fingerprint import (
 
 __all__ = [
     "UNAVAILABLE_OCR_WORKER_FINGERPRINT",
-    "build_managed_ocr_client",
+    "build_ocr_routes",
     "probe_ocr_worker",
     "reset_ocr_fingerprint_cache",
     "resolve_document_backend",
@@ -361,45 +361,24 @@ def reset_ocr_fingerprint_cache() -> None:
     _ocr_fingerprint_cache.clear()
 
 
-def build_managed_ocr_client(settings: Any) -> Any:
-    """Compose the owner-scoped OCR worker client from injected settings.
+def build_ocr_routes(settings: Any) -> Any:
+    """Compose the primary and fallback OCR route clients from settings.
 
     Single composition path shared by ``build_engine`` (engine-owned
-    client, closed at engine shutdown) and the ingest boundary
-    (operation-owned client, closed when the batch finishes). The probe
-    runs only when the operator enabled the fallback AND configured a
-    command, so the packaged default spawns nothing; an empty command
-    is the stable unavailable fingerprint.
+    routes, closed at engine shutdown) and the ingest boundary
+    (operation-owned routes, closed when the batch finishes). Each route
+    is probed once, and only when the operator enabled OCR and the route
+    resolved a command, so the packaged default spawns nothing
+    (change modular-ocr-workers-dots-mocr, design D3).
 
     Args:
         settings: Settings object (flat ``Settings`` or frozen
-            ``EffectiveSettings`` — the six OCR fields exist on both)
-            carrying ``ocr_fallback_enabled``, ``ocr_worker_command``,
-            ``ocr_worker_env_dir`` and ``ocr_worker_request_timeout``.
+            ``EffectiveSettings``) carrying the OCR route fields.
 
     Returns:
-        A :class:`~omrg.integrations.ocr_worker.managed.ManagedOcrClient`
-        holding the resolved fingerprint. Construction starts no
-        process.
+        An :class:`~omrg.integrations.ocr_worker.routes.OcrRoutes` pair.
+        Construction starts no parsing process.
     """
-    import shlex
+    from .integrations.ocr_worker.routes import build_route_clients
 
-    from .integrations.ocr_worker.managed import ManagedOcrClient
-
-    # isinstance guards keep duck-typed settings objects (tests, fakes)
-    # on the unavailable path instead of exploding inside shlex.
-    raw_command = getattr(settings, "ocr_worker_command", "")
-    command = shlex.split(raw_command) if isinstance(raw_command, str) else []
-    enabled = bool(getattr(settings, "ocr_fallback_enabled", False))
-    if not enabled or not command:
-        fingerprint: Any = UNAVAILABLE_OCR_WORKER_FINGERPRINT
-    else:
-        fingerprint = probe_ocr_worker(command)
-    raw_env_dir = getattr(settings, "ocr_worker_env_dir", "")
-    env_dir = raw_env_dir.strip() or None if isinstance(raw_env_dir, str) else None
-    return ManagedOcrClient(
-        fingerprint=fingerprint,
-        command=command,
-        request_timeout=settings.ocr_worker_request_timeout,
-        cwd=env_dir,
-    )
+    return build_route_clients(settings, probe=probe_ocr_worker)

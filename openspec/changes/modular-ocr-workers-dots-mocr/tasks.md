@@ -33,15 +33,15 @@
 
 ## 4. Host routes and settings
 
-- [ ] 4.1 Add the six settings to `config/` and `EffectiveSettings` (design D3), and add them to `.env.example`. Verify: settings tests cover defaults (`dots-mocr` primary, `paddleocr-vl` fallback), env parsing, an empty fallback, and `ocr_maths_page_fraction` bounds 0.0–1.0.
-- [ ] 4.2 Implement `integrations/ocr_worker/routes.py`: command resolution, the explicit-command override for the primary route, a shared client for an identical fallback, and `OcrRoutes.select()`. Verify: tests for the "fallback does not start", "explicit command overrides the primary route", "missing primary hands the request to the fallback" and "unknown engine name degrades" scenarios; `uv run lint-imports` passes.
-- [ ] 4.3 Scale the request timeout by page count. Verify: the "A long request gets a longer timeout" scenario test passes (14 pages → 1,680 s).
-- [ ] 4.4 Wire `build_route_clients` through `capabilities.py` and `compose.py`, with engine- and operation-owned lifecycles as today. Log the resolved primary and fallback engines once at start-up. Verify: `tests/test_ocr_worker_managed.py` and engine shutdown tests pass with two routes.
-- [ ] 4.5 Replace the single client in `OcrRoutedPdfInspector` with `OcrRoutes` at every dispatch site. Stamp `ocr_backend` from the answering fingerprint's `backend_id`. Verify: the "Every OCR dispatch…" and "OCR diagnostics SHALL name the answering engine" scenarios pass, including "Post-dispatch failure does not retry on the fallback".
+- [x] 4.1 Add the six settings to `config/` and `EffectiveSettings` (design D3), and add them to `.env.example`. Verify: settings tests cover defaults (`dots-mocr` primary, `paddleocr-vl` fallback), env parsing, an empty fallback, and `ocr_maths_page_fraction` bounds 0.0–1.0. _Done 2026-09-30: fields live in a `config/ocr_routes.py` mixin (config/__init__.py is at the ceiling); tests in `tests/test_ocr_routes.py`._
+- [x] 4.2 Implement `integrations/ocr_worker/routes.py`: command resolution, the explicit-command override for the primary route, a shared client for an identical fallback, and `OcrRoutes.select()`. Verify: tests for the "fallback does not start", "explicit command overrides the primary route", "missing primary hands the request to the fallback" and "unknown engine name degrades" scenarios; `uv run lint-imports` passes. _Done 2026-09-30: the four scenarios pass; `uv run lint-imports` keeps 8 of 8 contracts._
+- [x] 4.3 Scale the request timeout by page count. Verify: the "A long request gets a longer timeout" scenario test passes (14 pages → 1,680 s). _Done 2026-09-30: 14 pages gives 1,680 s; the managed client forwards the per-request timeout._
+- [x] 4.4 Wire `build_route_clients` through `capabilities.py` and `compose.py`, with engine- and operation-owned lifecycles as today. Log the resolved primary and fallback engines once at start-up. Verify: `tests/test_ocr_worker_managed.py` and engine shutdown tests pass with two routes. _Done 2026-09-30: `capabilities.build_ocr_routes` replaces `build_managed_ocr_client`; engine close and operation-owned close tested with two routes._
+- [x] 4.5 Replace the single client in `OcrRoutedPdfInspector` with `OcrRoutes` at every dispatch site. Stamp `ocr_backend` from the answering fingerprint's `backend_id`. Verify: the "Every OCR dispatch…" and "OCR diagnostics SHALL name the answering engine" scenarios pass, including "Post-dispatch failure does not retry on the fallback". _Done 2026-09-30: `tests/unit/test_ocr_route_dispatch.py`. The seam keeps its `ocr_client=` keyword and wraps a single client as a primary-only `OcrRoutes`._
 
 ## 5. Maths-page detection and routing
 
-- [ ] 5.1 Implement `integrations/pdf/maths_pages.py` (design D5). Verify: tests for the five detection scenarios. Fixtures:
+- [x] 5.1 Implement `integrations/pdf/maths_pages.py` (design D5). Verify: tests for the five detection scenarios. Fixtures: _Done 2026-09-30: the eq01 fixtures are synthetic PDFs with eq01's exact font names (the paper is gitignored); an optional test runs on the real eq01 when `OMRG_EQ01_PDF` points at it._
   - `eq01` p11 (CMEX10, CMMI7/10, CMMIB7/10, CMSY10): flagged;
   - `eq01` p1 (Nimbus and Times only): not flagged;
   - a synthetic CMMI10 font with `/ToUnicode`: flagged;
@@ -50,12 +50,12 @@
   - a malformed resource dictionary: nothing flagged.
 
   A version-pin test covers the pattern tuple.
-- [ ] 5.2 Implement `integrations/pdf/maths_routing.py` (design D6) and call it from `OcrRoutedPdfInspector`. Verify: tests for every scenario in `specs/maths-page-routing/spec.md` under "Maths pages SHALL route to the OCR routes", with stub clients. `tests/test_file_size_ceiling.py` passes.
-- [ ] 5.3 Emit `pages_maths_font` and add it to `EXCLUDED_EMBED_METADATA_KEYS`. Verify: the diagnostics scenarios pass, and an embedding-text test shows the key absent.
+- [x] 5.2 Implement `integrations/pdf/maths_routing.py` (design D6) and call it from `OcrRoutedPdfInspector`. Verify: tests for every scenario in `specs/maths-page-routing/spec.md` under "Maths pages SHALL route to the OCR routes", with stub clients. `tests/test_file_size_ceiling.py` passes. _Done 2026-09-30: every scenario passes with stub clients; `ocr_routing.py` is 472 lines._
+- [x] 5.3 Emit `pages_maths_font` and add it to `EXCLUDED_EMBED_METADATA_KEYS`. Verify: the diagnostics scenarios pass, and an embedding-text test shows the key absent. _Done 2026-09-30._
 
 ## 6. Identity
 
-- [ ] 6.1 Add `ocr_fallback_fingerprint` and the `maths_routing` block in `core/ingestion/ocr_identity.py`, and advance `_INDEX_IDENTITY_SCHEMA` by one. Coordinate with `normalise-reader-markdown` so both share one bump if they ship together (design D7). Verify: the identity scenarios in `pdf-reader` and `maths-page-routing` pass, and `uv run pytest -m "not slow"` passes.
+- [x] 6.1 Add `ocr_fallback_fingerprint` and the `maths_routing` block in `core/ingestion/ocr_identity.py`, and advance `_INDEX_IDENTITY_SCHEMA` by one. Coordinate with `normalise-reader-markdown` so both share one bump if they ship together (design D7). Verify: the identity scenarios in `pdf-reader` and `maths-page-routing` pass, and `uv run pytest -m "not slow"` passes. _Done 2026-09-30: shared bump with normalise-reader-markdown; operator to confirm. `_INDEX_IDENTITY_SCHEMA` stays 6, its comment names both blocks, and a test shows a pre-change schema-6 digest differs, so those sources reprocess once._
 
 ## 7. Acceptance check on real documents (Experiment 37)
 

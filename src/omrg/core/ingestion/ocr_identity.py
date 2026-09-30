@@ -171,3 +171,43 @@ def ocr_fingerprint_payload(fingerprint: Any) -> dict[str, Any]:
     if is_dataclass(fingerprint):
         return asdict(fingerprint)
     return dict(_UNAVAILABLE_FINGERPRINT_PAYLOAD)
+
+
+def route_fingerprints(ocr_client: Any) -> tuple[Any, Any]:
+    """Return the ``(primary, fallback)`` fingerprints of the injected routes.
+
+    Change modular-ocr-workers-dots-mocr, design D7: the existing
+    ``ocr_worker_fingerprint`` is the primary route's, and
+    ``ocr_fallback_fingerprint`` sits beside it. A single injected
+    client is a primary-only route pair; ``None`` (OCR off) and a
+    missing route yield ``None``, which
+    :func:`ocr_fingerprint_payload` maps to the stable unavailable payload.
+
+    Args:
+        ocr_client: The injected ``OcrRoutes``, one managed client, or
+            ``None``.
+
+    Returns:
+        The primary and fallback fingerprints (either may be ``None``).
+    """
+    if ocr_client is None:
+        return None, None
+    primary = getattr(ocr_client, "fingerprint", None)
+    return primary, getattr(ocr_client, "fallback_fingerprint", None)
+
+
+def maths_routing_payload(settings: Any) -> dict[str, Any]:
+    """Return the maths-routing identity block, present for every source.
+
+    The resolved flag, the document-unit fraction and the detector
+    version decide which pages reach OCR, so each change re-ingests
+    (spec maths-page-routing: "Maths routing SHALL participate in the
+    source index identity").
+    """
+    from ...integrations.pdf.maths_pages import MATHS_DETECTOR_VERSION
+
+    return {
+        "enabled": bool(getattr(settings, "ocr_maths_routing_enabled", False)),
+        "page_fraction": getattr(settings, "ocr_maths_page_fraction", 0.0),
+        "detector_version": MATHS_DETECTOR_VERSION,
+    }
