@@ -1,0 +1,1276 @@
+{
+  "experiment_id": "37-dots-mocr-routing-acceptance-2026-09-30",
+  "protocol_version": 1,
+  "status": "PLANNED",
+  "change_ref": "openspec/changes/modular-ocr-workers-dots-mocr (tasks 7.1-7.3)",
+  "niftypm": null,
+  "blocked_on": [
+    "modular-ocr-workers-dots-mocr sections 0-6 merged (detector, routes, engines)",
+    "operator provisions dots-mocr with --accept-model-licence (licence clauses 3.3(c), 5.2)",
+    "operator OCR authorisation below",
+    "operator maths page labels for the maths positives and the prose-only control"
+  ],
+  "sets": {
+    "maths_positives": {
+      "status": "TO SOURCE",
+      "min_papers": 5,
+      "must_include": [
+        "pdfLaTeX paper built with glyphtounicode (Unicode-mapped maths font)",
+        "Word paper with Cambria Math equations"
+      ],
+      "diversity": "different fields and years",
+      "engine_pages": "up to 8 maths-labelled pages per paper, seeded sample (seed 37) when a paper has more",
+      "detection_pages": "all pages"
+    },
+    "negative_controls": {
+      "documents": [
+        "bd01",
+        "bd02",
+        "bd03",
+        "<prose-only LaTeX paper, TO SOURCE>"
+      ],
+      "source": "experiments/34-worker-sample-review-2026-09-19/corpus (bd01-bd03)",
+      "detection_pages": "all pages"
+    },
+    "scanned": {
+      "source": "experiments/34-worker-sample-review-2026-09-19/sample.json (roles: problem)",
+      "pages": [
+        {
+          "doc_id": "io06",
+          "page": 16,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io06",
+          "page": 28,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io06",
+          "page": 30,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io06",
+          "page": 45,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io06",
+          "page": 46,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io06",
+          "page": 53,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io06",
+          "page": 62,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io06",
+          "page": 63,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io06",
+          "page": 65,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io06",
+          "page": 68,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io06",
+          "page": 75,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io06",
+          "page": 78,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io04",
+          "page": 1,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io04",
+          "page": 4,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io04",
+          "page": 16,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io04",
+          "page": 17,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io04",
+          "page": 18,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io04",
+          "page": 20,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io04",
+          "page": 33,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io04",
+          "page": 42,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io04",
+          "page": 44,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io04",
+          "page": 47,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io04",
+          "page": 49,
+          "role": "problem"
+        },
+        {
+          "doc_id": "io04",
+          "page": 52,
+          "role": "problem"
+        },
+        {
+          "doc_id": "tl03",
+          "page": 2,
+          "role": "problem"
+        },
+        {
+          "doc_id": "tl03",
+          "page": 3,
+          "role": "problem"
+        },
+        {
+          "doc_id": "tl03",
+          "page": 5,
+          "role": "problem"
+        },
+        {
+          "doc_id": "tl03",
+          "page": 8,
+          "role": "problem"
+        }
+      ]
+    },
+    "script_handwriting": {
+      "source": "experiments/33-ocr-routing-natural-positive-2026-09-17/output/page_evidence.json, label == needs_ocr",
+      "labels_sha256": "cd4960ba36bddd3cd665a9142592457945fe2234c4a37bbfb81a0bfe1041c6bf",
+      "labels_commit": "cf0d6d7",
+      "writing_system_basis": "Unicode block count of the Experiment 33 reference transcriptions, 2026-09-30 (corrects task 7.1: io01 Devanagari, io07 Bengali)",
+      "counts": {
+        "devanagari": 48,
+        "arabic": 21,
+        "bengali": 60,
+        "latin_handwriting": 60
+      },
+      "pages": [
+        {
+          "doc_id": "io01",
+          "page": 2,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 3,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 4,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 5,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 6,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 7,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 8,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 9,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 10,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 11,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 12,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 13,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 14,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 15,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 16,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 17,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 18,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 19,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 20,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 21,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 22,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 23,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 24,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 25,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 26,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 27,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 28,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 29,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 30,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 31,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 32,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 33,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 34,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 35,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 36,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 37,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 38,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 39,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 40,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 41,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 42,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 43,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 44,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 45,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 46,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 47,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 48,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io01",
+          "page": 49,
+          "writing_system": "devanagari"
+        },
+        {
+          "doc_id": "io02",
+          "page": 1,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 2,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 3,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 4,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 5,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 6,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 7,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 8,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 9,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 10,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 11,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 12,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 13,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 14,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 15,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io02",
+          "page": 16,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io03",
+          "page": 1,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io03",
+          "page": 2,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io03",
+          "page": 3,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io03",
+          "page": 4,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io03",
+          "page": 5,
+          "writing_system": "arabic"
+        },
+        {
+          "doc_id": "io07",
+          "page": 2,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 4,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 6,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 7,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 8,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 9,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 10,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 11,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 12,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 13,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 14,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 15,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 16,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 17,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 18,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 19,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 20,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 21,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 22,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 23,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 24,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 25,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 26,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 27,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 28,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 29,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 30,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 31,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 32,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 33,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 34,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 35,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 36,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 37,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 38,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 39,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 40,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 41,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 42,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 43,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 44,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 45,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 46,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 47,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 48,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 49,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 50,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 51,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 52,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 53,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 54,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 55,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 56,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 57,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 58,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 59,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 60,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 61,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 62,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "io07",
+          "page": 63,
+          "writing_system": "bengali"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 1,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 3,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 4,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 7,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 11,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 15,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 19,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 23,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 24,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 25,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 27,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 29,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 31,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 32,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 33,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 39,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 42,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 43,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 44,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 45,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 46,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 47,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 48,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 49,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 50,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 51,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 52,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 53,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 57,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 60,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 61,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 62,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 63,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 64,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 65,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 67,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 73,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 79,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 83,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 85,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 86,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 87,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf06",
+          "page": 88,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 4,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 5,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 6,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 9,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 10,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 11,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 13,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 17,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 21,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 27,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 29,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 31,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 37,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 47,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 49,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 51,
+          "writing_system": "latin_handwriting"
+        },
+        {
+          "doc_id": "rf07",
+          "page": 55,
+          "writing_system": "latin_handwriting"
+        }
+      ],
+      "budget_fallback": "seeded (seed 37) subsample of up to 30 pages per writing system: 111 pages"
+    }
+  },
+  "labels": {
+    "maths_rule": "maths when the page image shows at least one mathematical expression typeset as mathematics: a display equation, or an inline expression with a variable, operator or Greek letter; section numbers and plain numerals are not maths",
+    "maths_labels_file": "maths_labels.json",
+    "maths_labels_sha256": null,
+    "experiment_33": "frozen labels and reference transcriptions reused; never relabel; freeze.py --check before use",
+    "token_rule": "experiments/33-ocr-routing-natural-positive-2026-09-17/build_labels.py tokens() and recall(), imported"
+  },
+  "system_identity": {
+    "omrg_commit": null,
+    "maths_detector_version": null,
+    "dots_mocr_fingerprint": null,
+    "paddleocr_vl_fingerprint": null,
+    "dots_mocr_revision": "e539fbb52280393adc081b289ec597430a0f9031",
+    "katex": "0.16.22"
+  },
+  "runs": [
+    {
+      "id": "D-pos",
+      "input": "maths positives, all pages",
+      "engines": [],
+      "measures": [
+        "detection precision",
+        "detection recall",
+        "flagged share per paper",
+        "unmatched font names on maths pages"
+      ]
+    },
+    {
+      "id": "D-neg",
+      "input": "negative controls, all pages",
+      "engines": [],
+      "measures": [
+        "flagged pages"
+      ]
+    },
+    {
+      "id": "E-maths",
+      "input": "maths engine pages",
+      "engines": [
+        "dots-mocr",
+        "paddleocr-vl"
+      ],
+      "measures": [
+        "seconds per page",
+        "KaTeX error rate",
+        "noise list"
+      ]
+    },
+    {
+      "id": "E-scan",
+      "input": "scanned set, 28 pages",
+      "engines": [
+        "dots-mocr",
+        "paddleocr-vl"
+      ],
+      "measures": [
+        "seconds per page",
+        "KaTeX error rate",
+        "noise list"
+      ]
+    },
+    {
+      "id": "E-script",
+      "input": "script and handwriting set, 189 pages",
+      "engines": [
+        "dots-mocr",
+        "paddleocr-vl"
+      ],
+      "measures": [
+        "token recall by writing system",
+        "seconds per page"
+      ]
+    }
+  ],
+  "engine_order": [
+    "dots-mocr",
+    "paddleocr-vl"
+  ],
+  "path_under_test": "host OcrRoutes with the engine named as primary; page-listed requests (protocol 1.1)",
+  "gates": {
+    "G1": {
+      "rule": "flagged pages in D-neg == 0",
+      "source": "tasks.md 7.3"
+    },
+    "G2": {
+      "rule": "dots-mocr KaTeX error rate over formulas emitted in E-maths and E-scan <= 0.05",
+      "formula_unit": "each $$...$$ block and each $...$ inline span",
+      "katex": {
+        "version": "0.16.22",
+        "throwOnError": true
+      },
+      "source": "tasks.md 7.3"
+    },
+    "G3": {
+      "rule": "operator verdict recorded for every page on the noise list, both engines",
+      "source": "tasks.md 7.3"
+    }
+  },
+  "reported_not_gated": [
+    "Q4 script and handwriting recall by writing system and engine, beside Experiment 33 local-tier recall on the same pages",
+    "PaddleOCR-VL KaTeX error rate",
+    "seconds per page",
+    "peak MPS memory"
+  ],
+  "failure_rule": "if G1 or G2 fails: fix the detector or converter, bump its version, repeat the affected runs, record an amendment",
+  "budget_estimate": {
+    "rates": {
+      "dots_mocr_median_s_per_page": 38.2,
+      "dots_mocr_basis": "Experiment 34 dots_mocr_state.json, 43 page runs, MPS bfloat16, max 137.5",
+      "paddleocr_vl_s_per_page_range": [
+        23.2,
+        164.1
+      ],
+      "paddleocr_vl_basis": "Experiment 34 worker_state.json: io06 10 pages 232.0 s, io04 12 pages 1706.6 s, bd01 4 pages 656.4 s"
+    },
+    "pages_per_engine_max": 257,
+    "dots_mocr_hours": 2.7,
+    "paddleocr_vl_hours": [
+      1.6,
+      11.7
+    ]
+  },
+  "ocr_authorisation": {
+    "approved": false,
+    "approved_by": null,
+    "date": null,
+    "subset": null,
+    "per_request_timeout_s": null,
+    "runtime_budget_h": null,
+    "note": "No OCR runs until the operator fills this block. The dots.mocr licence is accepted by the operator at provisioning, never by an agent."
+  },
+  "checkpointing": "per document; atomic .tmp then rename; --resume skips finished pages",
+  "network": "off during engine runs (HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1)",
+  "amendments": [],
+  "decision_register": []
+}

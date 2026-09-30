@@ -153,6 +153,16 @@ The median cost was 0.75 s per page.
 | **Rely on the confidence score alone for escalation** | It misses `io06`, where the local model is confident and about 40% wrong. |
 | **Do nothing** | The preregistered trigger fired. Half of natural OCR need reaches the index as junk or nothing. |
 
+## Erratum (2026-09-30)
+
+The Experiment 33 reference transcriptions give a different script mix from the one named in this record. Letters counted by Unicode block:
+
+- `io01`: Devanagari (Hindi), 48 `needs_ocr` pages.
+- `io02` and `io03`: Arabic, 21 pages.
+- `io07`: Bengali, 60 pages.
+
+So the 129 non-Latin pages in the Findings are 48 Devanagari, 21 Arabic and 60 Bengali pages, and the local tier scored 0.000 on all three scripts. Decision 4 must cover Bengali as well as Arabic and Devanagari. No number in the Findings changes. Experiment 37 (`protocol.md`) and Experiment 39 use the corrected grouping.
+
 ## References
 
 - `experiments/33-ocr-routing-natural-positive-2026-09-17/report.md`,
