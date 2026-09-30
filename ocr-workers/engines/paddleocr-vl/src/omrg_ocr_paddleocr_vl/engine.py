@@ -1,89 +1,39 @@
-"""OCR worker entry loop: JSON Lines framing over standard I/O.
+"""The PaddleOCR-VL OCR engine: the fallback route.
 
-Framing contract (design D2.3 of change improve-rag-input-quality-5):
+This module was ``ocr-worker/src/omrg_ocr_worker/worker.py``. The JSON
+Lines framing loop, validation, the capability command and page-subset
+writing moved to the shared worker core (``omrg_ocr_worker_core``,
+change modular-ocr-workers-dots-mocr, design D1/D2). What stays here is
+the PaddleOCR-VL document pipeline call, and its output does not change.
 
-- standard input: one request object per line, UTF-8;
-- standard output: exactly one terminal response line per accepted
-  request, and nothing else, ever;
-- standard error: every log, warning, and traceback.
-
-The parse seam :func:`parse_document` is the single place the isolated
-environment's Paddle packages enter, and it is the function tests
-stub. Everything around it — validation, error conversion, framing,
-logging — is Paddle-free and testable in the main environment.
+The pipeline seam :func:`_run_document_pipeline` is the single place the
+isolated environment's Paddle packages enter, and it is the function
+tests stub. Everything around it is Paddle-free and testable in the
+main environment.
 """
 
 from __future__ import annotations
 
 import copy
-import json
 import logging
 import os
-import sys
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from .protocol import (
-    PROTOCOL_VERSION,
-    SUPPORTED_PROTOCOL_VERSIONS,
-    ParseFailure,
-    ParseRequest,
-    ParseSuccess,
-    ProtocolError,
-    decode_request_line,
-    encode_line,
-    make_failure,
-    make_success,
-)
+from omrg_ocr_worker_core.engine import DocumentMarkdown, WorkerParseError, model_cache_dir
+from omrg_ocr_worker_core.pages import page_subset
 
 WORKER_BACKEND = "paddleocr-vl"
 WORKER_DIR = Path(__file__).resolve().parents[2]
-MODEL_CACHE_DIR = WORKER_DIR / ".model-cache"
 
-logger = logging.getLogger("omrg_ocr_worker")
-_logger_configured = False
+logger = logging.getLogger("omrg_ocr_paddleocr_vl")
 
 
-class WorkerParseError(Exception):
-    """A parse failure that must surface as one terminal error envelope.
-
-    Attributes:
-        code: Stable machine-readable error code.
-        message: Human-readable description; the envelope bounds it.
-    """
-
-    def __init__(self, code: str, message: str) -> None:
-        super().__init__(message)
-        self.code = code
-        self.message = message
-
-
-# ── Parse seam ─────────────────────────────────────────────────────────────
-
-
-def parse_document(request: ParseRequest) -> ParseSuccess:
-    """Run the document pipeline for one request (the parse seam).
-
-    Tests stub this function; the framing around it is the part under
-    test in a Paddle-free environment.
-
-    Args:
-        request: The decoded parse request.
-
-    Returns:
-        The terminal success envelope carrying structured Markdown.
-
-    Raises:
-        WorkerParseError: If the referenced PDF is unusable or the
-            pipeline cannot run.
-    """
-    pdf_path = Path(request.pdf_path)
-    if not pdf_path.is_file():
-        raise WorkerParseError("invalid_pdf_path", f"no readable PDF at {request.pdf_path}")
-    return _run_document_pipeline(
-        pdf_path, request.id, pages=request.pages, protocol_version=request.protocol_version
-    )
+def model_cache() -> Path:
+    """Return the Paddle model cache folder (design D8)."""
+    return model_cache_dir(WORKER_BACKEND, WORKER_DIR)
 
 
 #: Process-wide pipeline singleton (design D2.2): the long-lived worker
@@ -103,16 +53,17 @@ def _reset_pipeline_cache() -> None:
 
 
 def _apply_worker_cache_env() -> None:
-    """Force both Paddle cache variables to the worker-local directory.
+    """Force both Paddle cache variables to the engine-owned cache.
 
     Assignment, not ``setdefault``: an inherited value pointing outside
-    ``ocr-worker/`` would direct model reads and downloads to a path
-    outside the worker-owned, git-ignored cache. Both variables are set
+    the engine cache would direct model reads and downloads to a path
+    outside the engine-owned, git-ignored cache. Both variables are set
     before any Paddle import because PaddleOCR and PaddleX read them at
     import and initialisation time.
     """
-    os.environ["PADDLE_OCR_BASE_DIR"] = str(MODEL_CACHE_DIR)
-    os.environ["PADDLE_PDX_CACHE_HOME"] = str(MODEL_CACHE_DIR)
+    cache = str(model_cache())
+    os.environ["PADDLE_OCR_BASE_DIR"] = cache
+    os.environ["PADDLE_PDX_CACHE_HOME"] = cache
 
 
 def _load_pipeline() -> Any:
@@ -145,39 +96,30 @@ def _load_pipeline() -> Any:
 
 
 def _run_document_pipeline(
-    pdf_path: Path,
-    request_id: str,
-    *,
-    pages: tuple[int, ...] | None = None,
-    protocol_version: str = PROTOCOL_VERSION,
-) -> ParseSuccess:
-    """Invoke the PaddleOCR-VL document pipeline inside the worker env.
+    pdf_path: Path, *, pages: Sequence[int] | None = None
+) -> DocumentMarkdown:
+    """Invoke the PaddleOCR-VL document pipeline inside the engine env.
 
     The pipeline is loaded once per worker process (design D2.2) and
     performs layout analysis, reading-order handling, recognition, and
-    Markdown assembly before the worker creates its protocol envelope.
+    Markdown assembly.
 
     A page-listed request (protocol 1.1) parses only those pages: the
-    requested pages are first written to a temporary single-purpose PDF
-    (pypdf), because paddleocr 3.7.0 has no page-selection parameter —
+    requested pages are first written to a temporary subset PDF by the
+    worker core, because paddleocr 3.7.0 has no page-selection parameter:
     a ``page_num`` kwarg is swallowed by ``**kwargs`` and the engine
-    silently processes the whole document (TDR-027). The subset makes
-    selection structural: what arrives at the pipeline is exactly what
-    was asked for, and the response carries per-page Markdown parallel
-    to the list. The page count reports pages processed, which under a
-    page list is the list's length; a mismatch fails loudly rather than
-    being padded.
+    silently processes the whole document (TDR-027). The page count
+    reports pages processed, which under a page list is the list's
+    length; a mismatch fails loudly rather than being padded.
 
     Args:
         pdf_path: The validated PDF path from the request.
-        request_id: Correlation identifier for the terminal response.
         pages: 1-based page numbers to parse, or ``None`` for the whole
             document.
-        protocol_version: The version the request spoke; the response
-            answers in it (the rolling-upgrade rule).
 
     Returns:
-        The assembled success envelope with pipeline metadata.
+        The whole-request Markdown and, for a page list, one Markdown
+        string per requested page.
 
     Raises:
         WorkerParseError: If PaddleOCR-VL is unavailable or the pipeline
@@ -185,13 +127,9 @@ def _run_document_pipeline(
     """
     pipeline = _load_pipeline()
 
-    subset: Path | None = None
     try:
-        target = pdf_path
-        if pages is not None:
-            subset = _write_page_subset(pdf_path, pages)
-            target = subset
-        page_results = list(pipeline.predict(input=str(target)))
+        with page_subset(pdf_path, pages, directory=WORKER_DIR) as target:
+            page_results = list(pipeline.predict(input=str(target)))
         if pages is not None and len(page_results) != len(pages):
             raise WorkerParseError(
                 "page_selection_mismatch",
@@ -217,7 +155,7 @@ def _run_document_pipeline(
                     concatenate_pages=False,
                 )
             )
-            pages_markdown = _per_page_markdown(per_page_results, len(pages))
+            pages_markdown = tuple(_per_page_markdown(per_page_results, len(pages)))
         structured_results = list(
             pipeline.restructure_pages(
                 page_results,
@@ -231,58 +169,10 @@ def _run_document_pipeline(
         raise
     except Exception as exc:  # noqa: BLE001 - convert backend failures to protocol errors
         raise WorkerParseError("pipeline_error", f"{type(exc).__name__}: {exc}") from exc
-    finally:
-        if subset is not None:
-            subset.unlink(missing_ok=True)
 
-    return make_success(
-        request_id,
-        markdown,
-        ocr_backend=WORKER_BACKEND,
-        page_count=len(page_results),
-        extra_metadata={
-            "reader": WORKER_BACKEND,
-            "ocr_used": True,
-            "pipeline": "PaddleOCRVL",
-            "pipeline_revision": "predict+restructure_pages",
-            "model": "PaddleOCR-VL",
-            "model_revision": "1.6",
-        },
-        pages_markdown=pages_markdown,
-        protocol_version=protocol_version,
+    return DocumentMarkdown(
+        markdown=markdown, pages_markdown=pages_markdown, page_count=len(page_results)
     )
-
-
-def _write_page_subset(source: Path, pages: tuple[int, ...] | list[int]) -> Path:
-    """Write a temporary PDF containing exactly *pages* from *source*.
-
-    1-based page numbers, matching the protocol. The subset is the page
-    selection mechanism: paddleocr has no page-selection parameter, so
-    the only honest way to parse page N is to hand the engine a PDF that
-    contains page N (TDR-027).
-
-    Raises:
-        WorkerParseError: If a requested page is outside the document.
-    """
-    from pypdf import PdfReader, PdfWriter
-
-    reader = PdfReader(str(source))
-    total = len(reader.pages)
-    out_of_range = [page for page in pages if not 1 <= page <= total]
-    if out_of_range:
-        raise WorkerParseError(
-            "invalid_page", f"requested page(s) {out_of_range} outside 1..{total}"
-        )
-    writer = PdfWriter()
-    for page in pages:
-        writer.add_page(reader.pages[page - 1])
-    handle = tempfile.NamedTemporaryFile(  # noqa: SIM115 - caller unlinks in finally
-        prefix=".ocr-pages-", suffix=".pdf", dir=WORKER_DIR, delete=False
-    )
-    handle.close()
-    subset = Path(handle.name)
-    writer.write(subset)
-    return subset
 
 
 def _per_page_markdown(results: list[Any], expected: int) -> list[str]:
@@ -331,126 +221,44 @@ def _save_markdown_results(results: list[Any]) -> str:
     return markdown
 
 
-# ── Entry loop ─────────────────────────────────────────────────────────────
+class PaddleOcrVlEngine:
+    """PaddleOCR-VL on the worker core contract (design D2).
 
-
-def main(argv: list[str] | None = None) -> int:
-    """Run the worker loop over standard input and output.
-
-    Reads one request line at a time and writes exactly one terminal
-    response line per accepted request. A request line that cannot be
-    correlated (no parsable identifier) ends the process with a
-    failure status: the input framing is broken, and continuing would
-    desynchronise the stream.
-
-    Args:
-        argv: Unused; present for a conventional entry signature.
-
-    Returns:
-        The process exit status: 0 on clean end of input, 2 on an
-        uncorrelatable request line.
+    The engine defines ``parse_document`` because PaddleOCR-VL assembles
+    the whole request itself (it merges tables across pages and re-levels
+    titles), so the whole-request Markdown is not a join of the pages.
     """
-    _configure_logging()
-    logger.info("omrg-ocr-worker starting (protocol %s)", PROTOCOL_VERSION)
-    for raw_line in sys.stdin:
-        line = raw_line.rstrip("\r\n")
-        if not line.strip():
-            continue
-        try:
-            request = decode_request_line(line)
-        except ProtocolError as exc:
-            if not _respond_to_recoverable_line(line, exc):
-                logger.error("uncorrelatable request line; stopping: %s", exc.message)
-                return 2
-            continue
-        _write_response(_handle_request(request))
-    logger.info("omrg-ocr-worker input closed; stopping")
-    return 0
 
-
-def _handle_request(request: ParseRequest) -> ParseSuccess | ParseFailure:
-    """Run one request, converting every failure into a terminal envelope.
-
-    The worker never raises out of a request it has accepted: the loop
-    must answer with exactly one terminal line whatever the seam does.
-    """
-    try:
-        return parse_document(request)
-    except WorkerParseError as exc:
-        logger.warning("parse failed for %s: %s", request.id, exc.message)
-        return make_failure(
-            request.id,
-            exc.code,
-            exc.message,
-            protocol_version=request.protocol_version,
-        )
-    except Exception as exc:  # noqa: BLE001 - the loop must survive anything
-        logger.exception("unhandled error while parsing %s", request.id)
-        return make_failure(
-            request.id,
-            "internal_error",
-            f"{type(exc).__name__}: {exc}",
-            protocol_version=request.protocol_version,
-        )
-
-
-def _respond_to_recoverable_line(line: str, error: ProtocolError) -> bool:
-    """Answer an invalid request line when its identifier is recoverable.
-
-    A request carrying the wrong protocol version or an unexpected
-    field still names a request, so it receives a correlated error
-    envelope. A line with no recoverable identifier breaks the stream.
-
-    Args:
-        line: The raw request line that failed validation.
-        error: The protocol violation that rejected it.
-
-    Returns:
-        True when a terminal error envelope was written; False when
-        the line cannot be correlated.
-    """
-    try:
-        payload = json.loads(line)
-    except json.JSONDecodeError:
-        return False
-    if not isinstance(payload, dict):
-        return False
-    request_id = payload.get("id")
-    if not isinstance(request_id, str) or not request_id:
-        return False
-    # Answer in the version the broken line claimed, when that version
-    # is one this endpoint speaks, so an old client can still read the
-    # error; anything else gets this endpoint's own version.
-    claimed = payload.get("protocol_version")
-    version = (
-        claimed
-        if isinstance(claimed, str) and claimed in SUPPORTED_PROTOCOL_VERSIONS
-        else PROTOCOL_VERSION
+    name = WORKER_BACKEND
+    backend_id = "paddleocr_vl"
+    #: Every package whose exact version belongs in the fingerprint.
+    #: PaddleX is declared even though ``paddleocr`` pulls it in
+    #: transitively: ``PaddleOCRVL`` delegates prediction and page
+    #: restructuring to PaddleX, so a PaddleX-only change can alter the
+    #: emitted Markdown and must change the worker identity.
+    declared_packages: tuple[str, ...] = (
+        "omrg-ocr-worker-core",
+        "omrg-ocr-paddleocr-vl",
+        "paddleocr",
+        "paddlex",
+        "paddlepaddle",
     )
-    _write_response(
-        make_failure(
-            request_id,
-            "invalid_request",
-            f"{error.code}: {error.message}",
-            protocol_version=version,
-        )
-    )
-    return True
+    pipeline = ("paddleocr-vl", "predict+restructure_pages")
+    model = ("PaddleOCR-VL", "1.6")
+
+    def parse_document(self, pdf: Path, pages: Sequence[int] | None) -> DocumentMarkdown:
+        """Run the pipeline once for the whole request."""
+        return _run_document_pipeline(pdf, pages=pages)
+
+    def parse(self, pdf: Path, pages: Sequence[int] | None) -> list[str]:
+        """Return one Markdown string per parsed page."""
+        if pages is None:
+            from omrg_ocr_worker_core.pages import document_page_count
+
+            pages = range(1, document_page_count(pdf) + 1)
+        result = _run_document_pipeline(pdf, pages=tuple(pages))
+        return list(result.pages_markdown or ())
 
 
-def _write_response(envelope: ParseSuccess | ParseFailure) -> None:
-    """Write exactly one terminal response line and flush it."""
-    sys.stdout.write(encode_line(envelope) + "\n")
-    sys.stdout.flush()
-
-
-def _configure_logging() -> None:
-    """Route worker logs to standard error only, once per process."""
-    global _logger_configured
-    if _logger_configured:
-        return
-    handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
-    _logger_configured = True
+#: The object the ``omrg.ocr_engine`` entry point names.
+ENGINE = PaddleOcrVlEngine()

@@ -62,6 +62,7 @@ _UNAVAILABLE_FINGERPRINT_PAYLOAD: dict[str, Any] = {
     "model_revision": "",
     "output_schema_id": "",
     "output_schema_version": "",
+    "backend_id": "",
 }
 
 

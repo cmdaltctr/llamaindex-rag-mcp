@@ -1,21 +1,26 @@
-"""Unit tests for the OCR worker provisioning guard (task 2.1a).
+"""Unit tests for the OCR engine provisioning script (tasks 1.5, 3.1).
 
-Only the pure check functions are exercised here. Provisioning itself
-installs a multi-gigabyte Paddle environment and belongs to the
-dedicated worker smoke test (task 2.15), never to the main suite.
+Only the pure checks and the command plan are exercised here, with
+``subprocess.run`` replaced by a recorder. Provisioning itself installs
+a multi-gigabyte environment and downloads model weights; that belongs
+to the per-engine smoke tests run by the operator, never to this suite.
 """
 
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-PROVISION_SCRIPT = REPO_ROOT / "ocr-worker" / "provision.py"
+WORKERS_DIR = REPO_ROOT / "ocr-workers"
+PROVISION_SCRIPT = WORKERS_DIR / "provision.py"
+ENGINES = ("dots-mocr", "paddleocr-vl")
 
 
 def _load_provision_module():
@@ -32,6 +37,20 @@ def _load_provision_module():
 def provision():
     """Load the provisioning module once for the test module."""
     return _load_provision_module()
+
+
+@pytest.fixture
+def recorded(monkeypatch: pytest.MonkeyPatch, provision) -> list[dict[str, Any]]:
+    """Record every subprocess the script would run; each succeeds."""
+    calls: list[dict[str, Any]] = []
+
+    def fake_run(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
+        calls.append({"command": list(command), **kwargs})
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(provision.subprocess, "run", fake_run)
+    monkeypatch.setattr(provision.shutil, "which", lambda name: f"/usr/bin/{name}")
+    return calls
 
 
 @pytest.mark.parametrize(
@@ -74,15 +93,113 @@ def test_unsupported_versions_are_rejected(provision, version: tuple[int, int]) 
     assert "3.11" in message and "3.13" in message, "error must name usable versions"
 
 
-def test_guard_matches_the_worker_manifest() -> None:
-    """The guard's range must equal the worker manifest declaration."""
-    worker_manifest = tomllib.loads(
-        (REPO_ROOT / "ocr-worker" / "pyproject.toml").read_text(encoding="utf-8")
-    )
-    assert worker_manifest["project"]["requires-python"] == ">=3.11,<3.14"
+@pytest.mark.parametrize("engine", [*ENGINES, "core"])
+def test_guard_matches_every_manifest(engine: str) -> None:
+    """The guard's range must equal every engine (and core) manifest declaration."""
+    folder = WORKERS_DIR / "core" if engine == "core" else WORKERS_DIR / "engines" / engine
+    manifest = tomllib.loads((folder / "pyproject.toml").read_text(encoding="utf-8"))
+    assert manifest["project"]["requires-python"] == ">=3.11,<3.14"
+
+
+def test_available_engines_are_the_engine_folders(provision) -> None:
+    """Every folder with a pyproject.toml under engines/ is an engine."""
+    assert provision.available_engines() == sorted(ENGINES)
+
+
+@pytest.mark.parametrize("name", ["nope", "../core", "", ".hidden"])
+def test_unknown_engine_is_rejected_before_anything_runs(
+    provision, recorded: list, capsys: pytest.CaptureFixture[str], name: str
+) -> None:
+    """An unknown or path-like name fails, listing the real engines."""
+    assert provision.main([name]) == 1
+    assert recorded == []
+    err = capsys.readouterr().err
+    assert "available engines: dots-mocr, paddleocr-vl" in err
+
+
+def test_dots_mocr_without_the_flag_stops_before_uv_sync(
+    provision, recorded: list, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Spec: dots-mocr refuses to provision without licence acceptance.
+
+    Nothing runs, and the error names the licence file and the flag.
+    """
+    assert provision.main(["dots-mocr"]) == provision.EXIT_LICENCE_NOT_ACCEPTED
+    assert recorded == [], "no command may run before the licence is accepted"
+    err = capsys.readouterr().err
+    assert str(WORKERS_DIR / "engines" / "dots-mocr" / "LICENCE-NOTES.md") in err
+    assert "--accept-model-licence" in err
+
+
+def test_dots_mocr_with_the_flag_syncs_then_fetches(provision, recorded: list) -> None:
+    """With acceptance: locked sync in the engine folder, then the fetch script."""
+    assert provision.main(["dots-mocr", "--accept-model-licence"]) == 0
+    folder = WORKERS_DIR / "engines" / "dots-mocr"
+    assert [call["command"] for call in recorded] == [
+        ["uv", "sync", "--locked", "--python", "3.12"],
+        [str(folder / ".venv" / "bin" / "omrg-ocr-fetch")],
+    ]
+    for call in recorded:
+        assert call["cwd"] == folder
+        assert call["env"]["UV_PROJECT"] == str(folder)
+        assert call["env"]["UV_PROJECT_ENVIRONMENT"] == str(folder / ".venv")
+
+
+def test_dry_run_installs_and_fetches_nothing(provision, recorded: list) -> None:
+    """``--dry-run`` runs only ``uv sync --locked --dry-run``, never the fetch."""
+    assert provision.main(["dots-mocr", "--accept-model-licence", "--dry-run"]) == 0
+    assert [call["command"] for call in recorded] == [
+        ["uv", "sync", "--locked", "--python", "3.12", "--dry-run"]
+    ]
+
+
+def test_paddle_needs_no_licence_flag_and_has_no_fetch(provision, recorded: list) -> None:
+    """PaddleOCR-VL (Apache-2.0) provisions without the flag and fetches nothing."""
+    assert provision.main(["paddleocr-vl", "--python", "3.13"]) == 0
+    assert [call["command"] for call in recorded] == [
+        ["uv", "sync", "--locked", "--python", "3.13"]
+    ]
+    assert recorded[0]["cwd"] == WORKERS_DIR / "engines" / "paddleocr-vl"
+
+
+def test_unsupported_python_is_rejected_before_anything_runs(provision, recorded: list) -> None:
+    """The Python range check runs before uv."""
+    assert provision.main(["paddleocr-vl", "--python", "3.10"]) == 1
+    assert recorded == []
+
+
+def test_failed_sync_stops_before_the_fetch(provision, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A failing ``uv sync`` returns its status and never runs the fetch."""
+    calls: list[list[str]] = []
+
+    def failing_run(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
+        calls.append(list(command))
+        return subprocess.CompletedProcess(command, 7)
+
+    monkeypatch.setattr(provision.subprocess, "run", failing_run)
+    monkeypatch.setattr(provision.shutil, "which", lambda name: f"/usr/bin/{name}")
+    assert provision.main(["dots-mocr", "--accept-model-licence"]) == 7
+    assert len(calls) == 1
+
+
+def test_missing_uv_is_reported(provision, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Without uv on PATH the script stops with an install hint."""
+    monkeypatch.setattr(provision.shutil, "which", lambda name: None)
+    assert provision.main(["paddleocr-vl"]) == 1
+
+
+def test_minimal_toml_reader_matches_tomllib(provision) -> None:
+    """The fallback reader (for Python < 3.11) agrees on the fields it reads."""
+    for engine in ENGINES:
+        text = (WORKERS_DIR / "engines" / engine / "pyproject.toml").read_text(encoding="utf-8")
+        full = tomllib.loads(text)
+        minimal = provision._minimal_toml(text)
+        assert provision.licence_gate(minimal) == provision.licence_gate(full)
+        assert provision.has_fetch_script(minimal) == provision.has_fetch_script(full)
 
 
 def test_provision_script_never_targets_the_repo_root(provision) -> None:
-    """The provisioning working directory is the worker directory itself."""
-    assert provision.WORKER_DIR == (REPO_ROOT / "ocr-worker").resolve()
-    assert provision.WORKER_DIR != REPO_ROOT
+    """The provisioning working directories are engine folders only."""
+    assert provision.WORKERS_DIR == WORKERS_DIR.resolve()
+    assert provision.engine_dir("paddleocr-vl").parent == provision.ENGINES_DIR
+    assert provision.WORKERS_DIR != REPO_ROOT

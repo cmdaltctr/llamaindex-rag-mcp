@@ -1,0 +1,6 @@
+# Engine-local environment and model weights
+.venv/
+.model-cache/
+__pycache__/
+*.py[cod]
+.ocr-pages-*

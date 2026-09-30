@@ -19,10 +19,10 @@ at each page's position in the merged document. The wire rules:
 - a 1.0 envelope may not carry ``pages`` or ``pages_markdown`` — those
   fields did not exist in 1.0.
 
-This is the OMRG-owned twin. The worker project keeps an independent
-copy at ``ocr-worker/src/omrg_ocr_worker/protocol.py``; the duplication
-is deliberate so neither project imports the other. Tests prove the
-two copies agree byte-for-byte on the wire.
+Two byte-identical copies exist: this host copy and the worker core's
+(``ocr-workers/core/src/omrg_ocr_worker_core/protocol.py``). Neither
+project imports the other; a test fails if the two files differ by a
+single byte (change modular-ocr-workers-dots-mocr, task 1.4).
 """
 
 from __future__ import annotations

@@ -1,85 +1,137 @@
-# omrg-ocr-worker
+# OMRG OCR workers
 
-The isolated PaddleOCR-VL document-parsing worker for OMRG.
+This folder holds the isolated OCR engines that OMRG calls for scanned
+PDFs, gate-selected PDFs, escalated pages and maths pages. OpenSpec change
+`modular-ocr-workers-dots-mocr` sets the layout (design D1 to D9).
 
-This project is one half of the OpenSpec change
-`improve-rag-input-quality-5` (Stage 2). It owns every Paddle package.
-The OMRG main project keeps none of them. Read the change documents
-under `openspec/changes/improve-rag-input-quality-5/` for the design
-decisions (D2, D2.1 to D2.4).
+```
+ocr-workers/
+  README.md        this file
+  provision.py     provisions one engine: python3 provision.py <engine>
+  core/            omrg-ocr-worker-core: protocol, framing, capabilities, engine contract
+  engines/
+    dots-mocr/     primary engine (PyTorch, licence gate)
+    paddleocr-vl/  fallback engine (PaddlePaddle)
+```
 
-## Purpose
+## How OMRG talks to an engine
 
-The worker runs as a local subprocess. It parses a whole PDF with the
-full PaddleOCR-VL document pipeline: layout analysis, region
-handling, reading order, recognition, and result assembly. It returns
-structured Markdown.
+Each engine runs as a local subprocess in its own environment. OMRG and the
+engine exchange JSON Lines over standard input and standard output:
 
-The two processes talk over JSON Lines:
+- OMRG writes one request object per line.
+- The engine writes one terminal response object per line. Nothing else goes
+  to standard output.
+- All logs go to standard error.
 
-- OMRG writes one request object per line to the worker's standard
-  input.
-- The worker writes one terminal response object per line to standard
-  output. Nothing else may appear there.
-- All worker logs and diagnostics go to standard error.
+The protocol lives in `core/src/omrg_ocr_worker_core/protocol.py`. OMRG keeps
+a byte-identical copy in `src/omrg/integrations/ocr_worker/protocol.py`. The
+same rule applies to `validation.py`. A test fails if the copies differ by one
+byte. Do not make one import the other.
 
-The protocol lives in `src/omrg_ocr_worker/protocol.py`. OMRG keeps an
-independent twin. Tests in the main repository prove the two copies
-agree byte-for-byte. Do not make one import the other.
+OMRG starts an engine with this command, from the engine folder:
+
+```bash
+<OCR_WORKERS_DIR>/engines/<engine>/.venv/bin/python -m omrg_ocr_worker_core
+```
+
+The core loads the one engine that the environment registers. An environment
+with zero engines, or with more than one, reports itself unavailable.
+
+## Routes
+
+OMRG reads two route settings:
+
+| Setting               | Default        | Meaning                                  |
+| --------------------- | -------------- | ---------------------------------------- |
+| `OCR_WORKERS_DIR`     | empty          | This folder. Empty makes every route unavailable. |
+| `OCR_ENGINE_PRIMARY`  | `dots-mocr`    | Engine for every OCR dispatch.           |
+| `OCR_ENGINE_FALLBACK` | `paddleocr-vl` | Engine when the primary is unavailable before dispatch. Empty means no fallback. |
+
+A non-empty `OCR_WORKER_COMMAND` (with `OCR_WORKER_ENV_DIR`) overrides the
+primary route only. The fallback route still resolves from `OCR_WORKERS_DIR`.
 
 ## Provisioning
 
-Run the deterministic provisioning script from this directory:
+Run the provisioning script for each engine you want:
 
 ```bash
-cd ocr-worker
-python3 provision.py                # uses Python 3.12
-python3 provision.py --python 3.11
-python3 provision.py --python 3.13
-python3 provision.py --dry-run      # resolve only, install nothing
+python3 ocr-workers/provision.py paddleocr-vl
+python3 ocr-workers/provision.py dots-mocr --accept-model-licence
+python3 ocr-workers/provision.py paddleocr-vl --python 3.11
+python3 ocr-workers/provision.py dots-mocr --accept-model-licence --dry-run
 ```
 
-The script resolves the environment from `uv.lock` only
-(`uv sync --locked`). It never changes the OMRG main environment. It
-rejects any Python outside the supported range before it installs
-anything.
+The script:
 
-After provisioning, start the worker with:
+1. Rejects an unknown engine name.
+2. Stops before it installs anything when the engine needs licence acceptance
+   and you did not give `--accept-model-licence`. The error names the licence
+   file.
+3. Rejects any Python outside `>=3.11,<3.14`.
+4. Runs `uv sync --locked` in the engine folder. It never changes the OMRG
+   main environment.
+5. Runs the engine's `omrg-ocr-fetch` script, if the engine has one, to
+   download pinned weights and apply patches. `--dry-run` skips this step.
 
-```bash
-uv run python -m omrg_ocr_worker
-```
+Do not run `uv sync` from the repository root to provision an engine. That
+command installs the OMRG main environment.
 
-Do not run `uv sync` from the repository root. That installs the OMRG
-main environment, not this one.
+### Model cache
 
-## Python support
+Each engine keeps its weights in `<engine folder>/.model-cache/`. This folder
+is gitignored. To keep weights outside a worktree, set `OMRG_OCR_MODEL_CACHE`.
+Engine `<name>` then uses `$OMRG_OCR_MODEL_CACHE/<name>/`.
 
-| Version | Status |
-| ------- | ------ |
-| 3.11    | Supported |
-| 3.12    | Supported (provisioning default) |
-| 3.13    | Supported |
-| 3.10    | Rejected by `provision.py` |
-| 3.14+   | Rejected by `provision.py` |
+## Engines
 
-The manifest declares `requires-python = ">=3.11,<3.14"`. The
-lockfile resolves for all three supported versions.
+### dots-mocr (primary)
 
-## Known caveats
+- Model `rednote-hilab/dots.mocr`, pinned revision
+  `e539fbb52280393adc081b289ec597430a0f9031`.
+- Needs `--accept-model-licence`. Read `engines/dots-mocr/LICENCE-NOTES.md`
+  first. It records clauses 3.3(c), 5.2, 8 and 9 of the model licence.
+- Uses about 7 to 9 GB of MPS memory in bfloat16 on Apple Silicon. It is slow
+  on CPU. On a machine with little memory, set
+  `OCR_ENGINE_PRIMARY=paddleocr-vl`.
+- Parses offline. The worker refuses to load when a model code file differs
+  from the hash recorded at provisioning.
 
-- Apple Silicon: PaddleOCR documents direct Metal inference on Apple
-  Silicon, but the project tests it officially on M4 hardware only.
-  This worker pins the CPU `paddlepaddle` runtime. Treat
-  accelerator variants as unvalidated until the smoke test (task
-  2.15) has run on the target machine.
-- The full environment is multi-gigabyte. Provision it only on
-  machines that will run OCR. OMRG degrades to the `pdf-inspector`
-  fast path when the worker is absent.
+### paddleocr-vl (fallback)
 
-## Wave status
+- PaddleOCR-VL 1.6 document pipeline on the CPU PaddlePaddle runtime.
+- Apache-2.0. No licence flag.
+- `engines/paddleocr-vl/DATA_LOCATIONS.md` names the preserved weight copy.
 
-This wave ships the project manifest, the lockfile, the provisioning
-guard, the protocol, and the worker framing loop. The PaddleOCR-VL
-pipeline call inside the parse seam is completed with the provisioned
-smoke test (task 2.15).
+## Add an engine
+
+A new engine needs one folder and one route setting. OMRG code does not
+change. The stub engine in `tests/fixtures/ocr_worker/stub_engine/` has the
+same parts.
+
+1. Create `engines/<name>/`. Use a plain folder name: letters, digits, `.`,
+   `_` and `-`.
+2. Add `engines/<name>/pyproject.toml` with:
+   - `requires-python = ">=3.11,<3.14"`;
+   - `omrg-ocr-worker-core` in `dependencies`, with
+     `[tool.uv.sources] omrg-ocr-worker-core = { path = "../../core" }`;
+   - the model runtime packages;
+   - one entry point:
+     `[project.entry-points."omrg.ocr_engine"] <name> = "<module>:ENGINE"`;
+   - if the model licence adds terms: `[tool.omrg-ocr] licence-file = "..."`
+     and `requires-acceptance = true`;
+   - if the engine downloads weights: `[project.scripts] omrg-ocr-fetch = "..."`.
+3. Add the engine module. Its `ENGINE` object has:
+   - `name`: the folder name;
+   - `backend_id`: the diagnostic name, for example `dots_mocr`;
+   - `declared_packages`: every package whose version changes the output;
+   - `pipeline` and `model`: `(identity, revision)` pairs;
+   - `parse(pdf, pages) -> list[str]`: one Markdown string per page. Return
+     `""` for a page the engine cannot read.
+   Import model code inside `parse`, never at module level.
+4. Add `engines/<name>/.gitignore` with `.venv/`, `.model-cache/` and
+   `.ocr-pages-*`.
+5. Run `uv lock` in `engines/<name>/` and commit `uv.lock`.
+6. If the licence adds terms, add the licence file that step 2 names.
+7. Provision the engine: `python3 ocr-workers/provision.py <name>`.
+8. Set `OCR_ENGINE_PRIMARY=<name>` or `OCR_ENGINE_FALLBACK=<name>`.

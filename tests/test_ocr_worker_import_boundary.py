@@ -1,7 +1,7 @@
 """Import boundary between OMRG and the Paddle packages (task 2.1b).
 
 PaddleOCR, PaddleX, and PaddlePaddle live only in the isolated worker
-project (``ocr-worker/``). These tests prove the boundary statically:
+projects (``ocr-workers/engines/``). These tests prove the boundary statically:
 
 - no module under ``src/omrg/`` contains a Paddle import statement,
   module-level or lazy;
@@ -45,7 +45,7 @@ def test_no_paddle_import_in_omrg_source() -> None:
             violations.append(f"{path.relative_to(REPO_ROOT)}:{line_no}")
     assert not violations, (
         "Paddle import statements found in OMRG source (they belong only in "
-        f"ocr-worker/): {', '.join(violations)}"
+        f"ocr-workers/engines/): {', '.join(violations)}"
     )
 
 
@@ -77,8 +77,8 @@ def test_worker_lockfile_owns_the_paddle_packages() -> None:
     meaningful if the worker lock actually carries what the main
     environment is forbidden from carrying.
     """
-    worker_lock = REPO_ROOT / "ocr-worker" / "uv.lock"
-    assert worker_lock.is_file(), "ocr-worker/uv.lock is missing; run `uv lock` there"
+    worker_lock = REPO_ROOT / "ocr-workers" / "engines" / "paddleocr-vl" / "uv.lock"
+    assert worker_lock.is_file(), "paddleocr-vl uv.lock is missing; run `uv lock` there"
     lock = tomllib.loads(worker_lock.read_text(encoding="utf-8"))
     names = {_normalise(pkg["name"]) for pkg in lock.get("package", [])}
     present = sorted(names & _PADDLE_DISTRIBUTIONS)
@@ -94,3 +94,46 @@ def _distribution_name(requirement: str) -> str:
 def _normalise(name: str) -> str:
     """Apply PEP 503 name normalisation (underscores become hyphens)."""
     return re.sub(r"[-_.]+", "-", name).lower()
+
+
+# ── PyTorch and the dots-mocr engine (change modular-ocr-workers-dots-mocr) ──
+
+_TORCH_DISTRIBUTIONS = frozenset({"torch", "torchvision", "transformers"})
+
+
+def test_base_dependencies_carry_no_pytorch() -> None:
+    """The OMRG base install declares no PyTorch or transformers package.
+
+    PyTorch may appear only behind the optional ``torch`` extra (the
+    reranker's Ask-tier opt-in) and in the dots-mocr engine's own
+    lockfile. The dots-mocr engine never adds it to the base install.
+    """
+    pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    declared = {_distribution_name(r) for r in pyproject["project"].get("dependencies", [])}
+    assert not sorted(declared & _TORCH_DISTRIBUTIONS)
+
+
+def test_no_omrg_module_imports_an_engine_package() -> None:
+    """OMRG source never imports an OCR engine or the worker core package."""
+    engine_import = re.compile(r"^\s*(?:import|from)\s+omrg_ocr_", re.M)
+    violations = [
+        str(path.relative_to(REPO_ROOT))
+        for path in _python_sources()
+        if engine_import.search(path.read_text(encoding="utf-8"))
+    ]
+    assert not violations, f"OMRG source imports OCR worker packages: {violations}"
+
+
+def test_dots_mocr_lock_owns_pytorch_and_the_core_stays_free() -> None:
+    """PyTorch lives only in the dots-mocr lock; the core declares pypdf alone."""
+    workers = REPO_ROOT / "ocr-workers"
+    lock = tomllib.loads((workers / "engines" / "dots-mocr" / "uv.lock").read_text("utf-8"))
+    names = {_normalise(pkg["name"]) for pkg in lock.get("package", [])}
+    assert {"torch", "transformers"} <= names
+    paddle_lock = tomllib.loads(
+        (workers / "engines" / "paddleocr-vl" / "uv.lock").read_text("utf-8")
+    )
+    paddle_names = {_normalise(pkg["name"]) for pkg in paddle_lock.get("package", [])}
+    assert not paddle_names & {"torch", "transformers"}
+    core = tomllib.loads((workers / "core" / "pyproject.toml").read_text("utf-8"))
+    assert [_distribution_name(r) for r in core["project"]["dependencies"]] == ["pypdf"]

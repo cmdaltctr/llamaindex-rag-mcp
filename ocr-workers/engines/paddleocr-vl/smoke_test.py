@@ -24,9 +24,10 @@ Two modes:
 
 Usage::
 
-    python ocr-worker/smoke_test.py --python 3.12
-    python ocr-worker/smoke_test.py --python 3.13 --provision
-    python ocr-worker/smoke_test.py --python /path/to/python3.11 --fixture doc.pdf
+    python ocr-workers/engines/paddleocr-vl/smoke_test.py --python 3.12
+    python ocr-workers/engines/paddleocr-vl/smoke_test.py --python 3.13 --provision
+    python ocr-workers/engines/paddleocr-vl/smoke_test.py --python /path/to/python3.11 \
+        --fixture doc.pdf
 
 Supported interpreters: Python 3.11, 3.12, and 3.13 (the range the
 worker manifest declares, ``>=3.11,<3.14``).
@@ -46,11 +47,16 @@ from importlib import metadata as importlib_metadata
 from pathlib import Path
 from typing import Any
 
-import provision
-
 WORKER_DIR = Path(__file__).resolve().parent
-REPO_ROOT = WORKER_DIR.parent
+WORKERS_DIR = WORKER_DIR.parents[1]
+REPO_ROOT = WORKERS_DIR.parent
+ENGINE_NAME = "paddleocr-vl"
 MODEL_CACHE_DIR = WORKER_DIR / ".model-cache"
+
+# The shared provisioning script lives in ocr-workers/, beside engines/.
+sys.path.insert(0, str(WORKERS_DIR))
+import provision  # noqa: E402
+
 EVIDENCE_DIR = WORKER_DIR / "smoke_evidence"
 DEFAULT_FIXTURE = (
     REPO_ROOT / "tests" / "fixtures" / "pdf_baseline" / "calibration" / "cal_table_text.pdf"
@@ -66,7 +72,7 @@ PADDLE_DISTRIBUTIONS: tuple[str, ...] = ("paddleocr", "paddlex", "paddlepaddle")
 # the outside, so its expected values must be independent of the code
 # under test (they mirror
 # src/omrg/integrations/ocr_worker/protocol.py and
-# ocr-worker/src/omrg_ocr_worker/protocol.py).
+# ocr-workers/core/src/omrg_ocr_worker_core/protocol.py).
 EXPECTED_PROTOCOL_VERSION = "1.1"
 #: The version that introduced the page-list fields (protocol 1.1).
 PAGES_PROTOCOL_VERSION = "1.1"
@@ -180,13 +186,14 @@ def build_plan(python_arg: str, fixture: Path, *, provision_requested: bool) -> 
         "fixture": str(fixture),
         "provision_command": [
             sys.executable,
-            str(WORKER_DIR / "provision.py"),
+            str(WORKERS_DIR / "provision.py"),
+            ENGINE_NAME,
             "--python",
             python_arg,
         ],
         "worker_venv_python": str(venv_python),
-        "probe_command": [str(venv_python), "-m", "omrg_ocr_worker", "--capabilities"],
-        "parse_command": [str(venv_python), "-m", "omrg_ocr_worker"],
+        "probe_command": [str(venv_python), "-m", "omrg_ocr_worker_core", "--capabilities"],
+        "parse_command": [str(venv_python), "-m", "omrg_ocr_worker_core"],
     }
 
 
@@ -230,7 +237,7 @@ def _worker_environment() -> dict[str, str]:
     an inherited ``UV_PROJECT``/``UV_PROJECT_ENVIRONMENT`` (an absolute
     path overrides the working directory) would otherwise let the exact
     ``uv sync --locked`` install Paddle into — and prune — an
-    environment outside ``ocr-worker/``, typically the root project's.
+    environment outside the engine folder, typically the root project's.
     """
     environment = os.environ.copy()
     environment["PADDLE_OCR_BASE_DIR"] = str(MODEL_CACHE_DIR)

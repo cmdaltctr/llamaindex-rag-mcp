@@ -1,19 +1,24 @@
-"""Metadata-only capability fingerprint command for the OCR worker.
+"""Metadata-only capability fingerprint command for every OCR engine.
 
 Prints exactly one JSON object on standard output and exits (design
 D2.4 of change improve-rag-input-quality-5). The payload reports:
 
-- the wire protocol version this worker speaks;
+- the wire protocol version the worker speaks;
+- the engine's diagnostic backend identifier (``backend_id``), so the
+  host can stamp diagnostics without knowing engine names;
 - every declared package with its exact installed version;
 - the document-pipeline identity and revision;
 - the parsing-model identity and revision;
 - the output-schema identity and version of parse responses.
 
 The command is metadata-only: it reads ``importlib.metadata`` and the
-static declarations below. It must never initialise Paddle, import
-model code, load weights, or keep running after printing — OMRG's
-composition boundary calls it to decide availability before any parse
-dispatch, and the probe must stay cheap.
+engine's static fields. It must never initialise a model runtime, load
+weights, or keep running after printing. OMRG's composition boundary
+calls it to decide availability before any parse dispatch.
+
+An environment that registers zero or several engines prints nothing on
+standard output and exits with a failure status, so the host records
+the stable unavailable fingerprint.
 """
 
 from __future__ import annotations
@@ -22,49 +27,40 @@ import json
 import sys
 from importlib import metadata as importlib_metadata
 
+from .engine import EngineLoadError, OcrEngine, load_engine
 from .protocol import OUTPUT_SCHEMA_ID, OUTPUT_SCHEMA_VERSION, PROTOCOL_VERSION
 
-#: Every package whose exact version belongs in the fingerprint. The
-#: worker owns these through its lockfile (D2.1); a package that is
-#: somehow missing reports ``not-installed`` rather than lying by
-#: omission. PaddleX is declared even though ``paddleocr`` pulls it in
-#: transitively: ``PaddleOCRVL`` delegates prediction and page
-#: restructuring to PaddleX, so a PaddleX-only change can alter the
-#: emitted Markdown and must change the worker identity.
-DECLARED_PACKAGES: tuple[str, ...] = (
-    "omrg-ocr-worker",
-    "paddleocr",
-    "paddlex",
-    "paddlepaddle",
-)
-
-#: Static pipeline/model declarations matching the worker's wired path.
-#: The package versions remain in ``packages`` so a lockfile change also
-#: changes the resolved worker identity.
-PIPELINE_IDENTITY = "paddleocr-vl"
-PIPELINE_REVISION = "predict+restructure_pages"
-MODEL_IDENTITY = "PaddleOCR-VL"
-MODEL_REVISION = "1.6"
+#: Exit status when the environment does not register exactly one engine.
+EXIT_NO_ENGINE = 3
 
 
-def fingerprint_payload() -> dict[str, object]:
+def fingerprint_payload(engine: OcrEngine) -> dict[str, object]:
     """Build the capabilities payload from metadata and static declarations.
 
+    A declared package that is somehow missing reports ``not-installed``
+    rather than lying by omission.
+
+    Args:
+        engine: The loaded engine.
+
     Returns:
-        The JSON-ready fingerprint object. Pure data — no process side
+        The JSON-ready fingerprint object. Pure data: no process side
         effects, no model loading.
     """
     packages: dict[str, str] = {}
-    for name in DECLARED_PACKAGES:
+    for name in engine.declared_packages:
         try:
             packages[name] = importlib_metadata.version(name)
         except importlib_metadata.PackageNotFoundError:
             packages[name] = "not-installed"
+    pipeline_identity, pipeline_revision = engine.pipeline
+    model_identity, model_revision = engine.model
     return {
         "protocol_version": PROTOCOL_VERSION,
+        "backend_id": engine.backend_id,
         "packages": packages,
-        "pipeline": {"identity": PIPELINE_IDENTITY, "revision": PIPELINE_REVISION},
-        "model": {"identity": MODEL_IDENTITY, "revision": MODEL_REVISION},
+        "pipeline": {"identity": pipeline_identity, "revision": pipeline_revision},
+        "model": {"identity": model_identity, "revision": model_revision},
         "output_schema": {"id": OUTPUT_SCHEMA_ID, "version": OUTPUT_SCHEMA_VERSION},
     }
 
@@ -72,15 +68,18 @@ def fingerprint_payload() -> dict[str, object]:
 def main(argv: list[str] | None = None) -> int:  # noqa: ARG001 - conventional signature
     """Print the fingerprint as one JSON line and exit.
 
-    Args:
-        argv: Unused; present for a conventional entry signature.
-
     Returns:
-        The process exit status (always 0 — a metadata read cannot
-        meaningfully fail, and the probe treats non-zero exits as
-        unavailability).
+        0 after printing; :data:`EXIT_NO_ENGINE` when the environment
+        does not register exactly one usable engine (nothing printed on
+        standard output, the reason on standard error).
     """
-    sys.stdout.write(json.dumps(fingerprint_payload(), sort_keys=True))
+    try:
+        engine = load_engine()
+    except EngineLoadError as exc:
+        sys.stderr.write(f"omrg OCR worker unavailable: {exc}\n")
+        sys.stderr.flush()
+        return EXIT_NO_ENGINE
+    sys.stdout.write(json.dumps(fingerprint_payload(engine), sort_keys=True))
     sys.stdout.write("\n")
     sys.stdout.flush()
     return 0

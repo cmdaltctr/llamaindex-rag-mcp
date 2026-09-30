@@ -1,11 +1,11 @@
 """Wire-validation helpers for the OCR worker JSON Lines protocol.
 
 Split out of ``protocol.py`` when the 500-line ceiling caught up with it
-(change page-level-ocr-routing, task 4.3). This is the OMRG-owned twin;
-the worker project keeps an independent copy at
-``ocr-worker/src/omrg_ocr_worker/validation.py``. The duplication is
-deliberate so neither project imports the other, and the protocol tests
-prove the copies agree on codes, schema identity and behaviour.
+(change page-level-ocr-routing, task 4.3). Two byte-identical copies
+exist: this host copy and the worker core's
+(``ocr-workers/core/src/omrg_ocr_worker_core/validation.py``). Neither
+project imports the other; a test fails if the two files differ by a
+single byte (change modular-ocr-workers-dots-mocr, task 1.4).
 
 Holds the parts of the contract both decoders lean on: the violation
 codes, the output-schema identity, the typed protocol error, and the
