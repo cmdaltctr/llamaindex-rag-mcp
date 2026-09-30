@@ -1,9 +1,9 @@
 # TDR-017: Restore root logging state after MCP entry-point tests
 
-**Date:** 2026-08-30
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Tags:** pytest | logging | test-isolation | regression-guard
+- **Date:** 2026-08-30
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Tags:** pytest | logging | test-isolation | regression-guard
 
 ## Context
 

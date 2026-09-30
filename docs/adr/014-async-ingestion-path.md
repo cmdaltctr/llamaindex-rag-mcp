@@ -1,8 +1,8 @@
 # ADR-014: Async Ingestion Path
 
-**Status**: Accepted
-**Date**: 2026-05-20
-**Change**: `make-ingest-path-async`
+- **Status**: Accepted
+- **Date**: 2026-05-20
+- **Change**: `make-ingest-path-async`
 
 ## Context
 

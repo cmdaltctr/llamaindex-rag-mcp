@@ -1,9 +1,9 @@
 # TDR-013: Narrow the Ingestion Write Lock to the Mutation Section
 
-**Date:** 2026-08-19
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Tags:** ingestion | concurrency | stage3b | experiment-18
+- **Date:** 2026-08-19
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Tags:** ingestion | concurrency | stage3b | experiment-18
 
 ## Context
 

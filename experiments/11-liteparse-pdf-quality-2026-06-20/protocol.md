@@ -1,10 +1,10 @@
 # Experiment 11: LiteParse PDF Quality and Speed
 
-**ID**: `11-liteparse-pdf-quality-2026-06-20`
-**Date planned**: 2026-06-20
-**Operator**: Dr Muhammad Aizat Bin Md Hawari (with a-build / a-autonomous agents as needed)
-**Status**: PLANNED
-**Relation**: OpenSpec change `use-liteparse-as-pdf-reader`; superseded by ADR-020 (pending outcome)
+- **ID**: `11-liteparse-pdf-quality-2026-06-20`
+- **Date planned**: 2026-06-20
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari (with a-build / a-autonomous agents as needed)
+- **Status**: PLANNED
+- **Relation**: OpenSpec change `use-liteparse-as-pdf-reader`; superseded by ADR-020 (pending outcome)
 
 ---
 

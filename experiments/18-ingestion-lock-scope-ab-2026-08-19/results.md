@@ -1,8 +1,8 @@
 # Experiment 18 results — Stage 3B lock-scope baseline and A/B verdict
 
-**Date:** 2026-08-19 · **Operator:** Dr Muhammad Aizat Bin Md Hawari
-**Status:** PASS — Stage 3B retained (Phase A + Phase B)
-**Environment:** macOS aarch64, Python 3.12.10, `uv sync --frozen` (208 packages),
+- **Date:** 2026-08-19 · **Operator:** Dr Muhammad Aizat Bin Md Hawari
+- **Status:** PASS — Stage 3B retained (Phase A + Phase B)
+- **Environment:** macOS aarch64, Python 3.12.10, `uv sync --frozen` (208 packages),
 ChromaDB local persistent (isolated per cell), real block = Ollama
 `nomic-embed-text` at `http://localhost:11434`. Runtime manifests with
 `repo_commit`, `dependency_lock_hash`, and `corpus_identity` are recorded inside

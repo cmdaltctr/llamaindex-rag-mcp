@@ -1,8 +1,8 @@
 # Experiment: Reranker Threshold Calibration — Results
 
-**Date run**: 2026-05-12
-**Operator**: Dr Muhammad Aizat Bin Md Hawari
-**Status**: PASS
+- **Date run**: 2026-05-12
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari
+- **Status**: PASS
 
 ---
 

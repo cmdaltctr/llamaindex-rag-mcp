@@ -1,11 +1,11 @@
 # ADR-031: Three-Layer Architecture — Config, Compose, DI
 
-**Date:** 2026-08-04
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Change:** `phase-2-refactor-config-core-split`
-**Amends:** ADR-006 (aggregation point), ADR-025, ADR-026 (registry relocation)
-**Phase:** 2 of 5 (`docs/brainstorm/refactor-proposal/PROPOSAL.md`)
+- **Date:** 2026-08-04
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Change:** `phase-2-refactor-config-core-split`
+- **Amends:** ADR-006 (aggregation point), ADR-025, ADR-026 (registry relocation)
+- **Phase:** 2 of 5 (`docs/brainstorm/refactor-proposal/PROPOSAL.md`)
 
 ## Context
 

@@ -1,9 +1,9 @@
 # Experiment: Reranker Threshold Calibration
 
-**ID**: `reranker-threshold-calibration-2026-05-12`
-**Date**: 2026-05-12
-**Operator**: Dr Muhammad Aizat Bin Md Hawari
-**Status**: PASS
+- **ID**: `reranker-threshold-calibration-2026-05-12`
+- **Date**: 2026-05-12
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari
+- **Status**: PASS
 
 ---
 

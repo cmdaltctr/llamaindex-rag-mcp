@@ -9,7 +9,10 @@ OMRG needs a separate study containing genuine OCR-required PDFs and genuine non
 ## What Changes
 
 - Add Experiment 33 under `experiments/33-ocr-routing-natural-positive-<date>/` when execution is approved.
-- Freeze a stratified corpus containing born-digital, mixed, scanned/image-based, and reader-failure PDFs.
+- Freeze a stratified natural corpus containing five classes: born-digital, mixed, image-only scanned, scanned with an existing OCR text layer, and reader-failure PDFs.
+- Source natural documents from open-licence PDFs; log licence, URL, and SHA-256 in `corpus/SOURCING.md`.
+- Label pages `usable`, `needs_ocr`, `unrecoverable`, or `ambiguous`; report `unrecoverable` apart from OCR need.
+- Build a separate, clearly labelled synthetic degraded set for Stage B character error rate (CER) and evidence recovery; it never counts as natural held-out evidence.
 - Score routing per document on the shipped reader path, after the reader fallback chain has run.
 - Label OCR need independently from the classifier and routing output.
 - Evaluate the current packaged routing policy without changing its thresholds.
@@ -32,5 +35,6 @@ OMRG needs a separate study containing genuine OCR-required PDFs and genuine non
 ## Impact
 
 - Adds experiment artefacts only.
+- Synthetic degradation tooling stays inside the experiment directory; no new core dependency.
 - Does not change OCR defaults, worker architecture, or ingestion behaviour.
 - Any threshold or routing-policy change requires a separate proposal after the evidence is reviewed.

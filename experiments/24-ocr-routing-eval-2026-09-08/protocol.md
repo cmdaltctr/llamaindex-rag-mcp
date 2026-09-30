@@ -1,10 +1,10 @@
 # Experiment 24 — OCR routing evaluation (task 5.1)
 
-**ID**: `24-ocr-routing-eval-2026-09-08`
-**Date planned**: 2026-09-08
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
-**Status**: COMPLETE — PASS (run 2, after the task 1.1 fixture repair; run 1 FAIL on blank fixtures is recorded in results.md and commit `a7d7cd2`)
-**Relation**: `improve-rag-input-quality-5` task 5.1; ADR-062 (Proposed); experiment 23 routing gate
+- **ID**: `24-ocr-routing-eval-2026-09-08`
+- **Date planned**: 2026-09-08
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: COMPLETE — PASS (run 2, after the task 1.1 fixture repair; run 1 FAIL on blank fixtures is recorded in results.md and commit `a7d7cd2`)
+- **Relation**: `improve-rag-input-quality-5` task 5.1; ADR-062 (Proposed); experiment 23 routing gate
 
 ## Why this experiment exists
 

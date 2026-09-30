@@ -1,8 +1,8 @@
 # ADR-062: Isolate PaddleOCR-VL in a Versioned OCR Worker
 
-**Date:** 2026-09-07
-**Status:** Accepted — the worker architecture is implemented, tested, and explicitly approved by the operator on 2026-09-14; the OCR default disposition is governed by ADR-065
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari (OCR default decision, 2026-09-10; worker architecture approval, 2026-09-14)
+- **Date:** 2026-09-07
+- **Status:** Accepted — the worker architecture is implemented, tested, and explicitly approved by the operator on 2026-09-14; the OCR default disposition is governed by ADR-065
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari (OCR default decision, 2026-09-10; worker architecture approval, 2026-09-14)
 
 ## Recovery correction (2026-09-09)
 

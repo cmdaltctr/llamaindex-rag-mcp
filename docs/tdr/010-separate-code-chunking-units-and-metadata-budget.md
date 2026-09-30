@@ -1,9 +1,9 @@
 # TDR-010: Separate code chunking units and make metadata budget node-exact
 
-**Date:** 2026-08-18
-**Status:** Accepted — Stage 1 validation gate passed 2026-08-18
-**Deciders:** Dr Muhammad Aizat Md Hawari with AI agent
-**Tags:** chunking | llamaindex | metadata | correctness | pre-calibration
+- **Date:** 2026-08-18
+- **Status:** Accepted — Stage 1 validation gate passed 2026-08-18
+- **Deciders:** Dr Muhammad Aizat Md Hawari with AI agent
+- **Tags:** chunking | llamaindex | metadata | correctness | pre-calibration
 
 ## Context
 

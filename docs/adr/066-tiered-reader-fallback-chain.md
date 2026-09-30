@@ -1,10 +1,10 @@
 # ADR-066: Tiered Reader Fallback — pdf-inspector → liteparse → pypdf
 
-**Date:** 2026-09-13
-**Status:** Accepted (evidence: Experiment 30, all four gates PASS)
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Change:** implemented and shipped (`src/omrg/integrations/pdf/pdf_inspector.py` carries the chain)
-**Related:** [ADR-050](050-configure-pdf-inspector-as-default-reader.md) (pdf-inspector default), [ADR-020](020-use-liteparse-as-pdf-reader.md) (liteparse adapter), [ADR-065](065-ocr-fallback-gate-promoted-to-packaged-default.md) (routing default), TDR-024 (both failure mechanisms)
+- **Date:** 2026-09-13
+- **Status:** Accepted (evidence: Experiment 30, all four gates PASS)
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Change:** implemented and shipped (`src/omrg/integrations/pdf/pdf_inspector.py` carries the chain)
+- **Related:** [ADR-050](050-configure-pdf-inspector-as-default-reader.md) (pdf-inspector default), [ADR-020](020-use-liteparse-as-pdf-reader.md) (liteparse adapter), [ADR-065](065-ocr-fallback-gate-promoted-to-packaged-default.md) (routing default), TDR-024 (both failure mechanisms)
 
 ## Context
 

@@ -1,9 +1,9 @@
 # TDR-022: Token counting is contract-sensitive — three traps in the exp 25 pre-build gate
 
-**Date:** 2026-09-08
-**Status:** Partially superseded by [TDR-023](023-reconstructed-nodes-are-not-stored-nodes.md): accounting method, totals and pre-spend approval
-**Deciders:** Aizat
-**Tags:** experiments | chunking | tokenization | embedding-cost | gates
+- **Date:** 2026-09-08
+- **Status:** Partially superseded by [TDR-023](023-reconstructed-nodes-are-not-stored-nodes.md): accounting method, totals and pre-spend approval
+- **Deciders:** Aizat
+- **Tags:** experiments | chunking | tokenization | embedding-cost | gates
 
 ## Current accounting status (2026-09-08)
 

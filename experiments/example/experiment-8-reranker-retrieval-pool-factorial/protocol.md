@@ -1,8 +1,8 @@
 # Experiment 8 — Reranker × retrieval mode × candidate-pool factorial
 
-**Template ID:** `example/experiment-8-reranker-retrieval-pool-factorial`  
-**Status:** PLANNED  
-**Role:** repaired large calibration replacing/superseding overlapping 9a-rerun + 10b and providing the Exp 12 reranker-off hybrid contrast
+- **Template ID:** `example/experiment-8-reranker-retrieval-pool-factorial`
+- **Status:** PLANNED
+- **Role:** repaired large calibration replacing/superseding overlapping 9a-rerun + 10b and providing the Exp 12 reranker-off hybrid contrast
 
 ## 1. Research question
 

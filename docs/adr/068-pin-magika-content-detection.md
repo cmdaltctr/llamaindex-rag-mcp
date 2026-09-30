@@ -1,9 +1,9 @@
 # ADR-068: Pin Magika Content Detection
 
-**Date:** 2026-09-16
-**Status:** Accepted (gate passed 2026-09-16)
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Related:** [ADR-037](037-layered-modular-architecture.md), [TDR-025](../tdr/025-magika-content-type-detection-settings-injection.md)
+- **Date:** 2026-09-16
+- **Status:** Accepted (gate passed 2026-09-16)
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Related:** [ADR-037](037-layered-modular-architecture.md), [TDR-025](../tdr/025-magika-content-type-detection-settings-injection.md)
 
 ## Context
 

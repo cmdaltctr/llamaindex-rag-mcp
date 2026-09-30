@@ -1,0 +1,53 @@
+{
+  "experiment": "33-ocr-routing-natural-positive-2026-09-17",
+  "stage": "A",
+  "settings": {
+    "pdf_reader": "pdf_inspector",
+    "ocr_fallback_enabled": true,
+    "ocr_fallback_min_confidence": 0.5,
+    "ocr_fallback_page_fraction": 0.1,
+    "ocr_worker_command_set": false
+  },
+  "policy": {
+    "unconditional_types": [
+      "image_based",
+      "scanned"
+    ],
+    "seam_class": "OcrRoutedPdfInspector",
+    "git_commit": "72807660f3275964bdec31cc7c732944011b1396",
+    "routing_code_clean": true,
+    "source_sha256": {
+      "src/omrg/integrations/pdf/ocr_routing.py": "d03250d525317326d28476c2d39e62ab13cb18cbbd7161be424dbacad2e2205c",
+      "src/omrg/integrations/pdf/ocr_policy.py": "d1f7beb028ba70ce9a98a21036a131664c403e99034c5d6a0d4820271765f726",
+      "src/omrg/integrations/pdf/pdf_inspector.py": "01fe3df737361b8cfd13ec5422e7a13c10a8a8b01ddb22265e93f31920f05f57",
+      "src/omrg/integrations/pdf/factory.py": "041f0887feb294cd9f6734bf8b1e12c95cc7c10911f449e971eaaf0fab28317c",
+      "src/omrg/core/ingestion/backends/local.py": "d267a01f81468a94dc1138e4671f79f44f436e6edfed0df121a61183d3064a6b"
+    },
+    "arm": "full_scan_candidate",
+    "omrg_loaded_from_code_root": true
+  },
+  "packages": {
+    "pdf-inspector": "1.17.0",
+    "liteparse": "2.11.1",
+    "pypdf": "6.16.2",
+    "magika": "1.0.3",
+    "llama-index-core": "0.14.23"
+  },
+  "detection": {
+    "path": "magika",
+    "magika_version": "magika 1.1.0 standard_v3_3"
+  },
+  "ocr": {
+    "client_injected": false,
+    "worker_started": false
+  },
+  "freeze": {
+    "verified": true
+  },
+  "labels": {
+    "frozen": true
+  },
+  "secrets": {
+    "recorded": false
+  }
+}

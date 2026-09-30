@@ -1,10 +1,10 @@
 # Experiment 17: Reranker MPS vs ONNX CPU latency
 
-**ID**: `17-reranker-mps-vs-onnx-cpu-2026-08-11`
-**Date**: 2026-08-11
-**Operator**: Dr Muhammad Aizat Md Hawari with AI build agent
-**Status**: FAIL
-**Relation**: OpenSpec change `apple-acceleration-for-reranker`; ADR-043; follows Experiment 16
+- **ID**: `17-reranker-mps-vs-onnx-cpu-2026-08-11`
+- **Date**: 2026-08-11
+- **Operator**: Dr Muhammad Aizat Md Hawari with AI build agent
+- **Status**: FAIL
+- **Relation**: OpenSpec change `apple-acceleration-for-reranker`; ADR-043; follows Experiment 16
 
 ---
 

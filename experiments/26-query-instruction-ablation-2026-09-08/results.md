@@ -1,10 +1,10 @@
 # Experiment 26 Results: Query-instruction ablation (task 5.3)
 
-**ID**: `26-query-instruction-ablation-2026-09-08`  
-**Date run**: 2026-09-09  
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  
-**Status**: FAIL  
-**Raw data**: [`output/cells/`](./output/cells/)
+- **ID**: `26-query-instruction-ablation-2026-09-08`
+- **Date run**: 2026-09-09
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: FAIL
+- **Raw data**: [`output/cells/`](./output/cells/)
 
 ---
 

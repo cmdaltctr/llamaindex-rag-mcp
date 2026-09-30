@@ -1,10 +1,10 @@
 # Experiment 4 — BM25 cache isolation and invalidation
 
-**Template ID:** `example/experiment-4-bm25-cache-isolation`  
-**Status:** PASS  
-**Protocol version:** 1.0  
-**Executed:** 2026-08-19  
-**Role:** deterministic sparse-state correctness gate
+- **Template ID:** `example/experiment-4-bm25-cache-isolation`
+- **Status:** PASS
+- **Protocol version:** 1.0
+- **Executed:** 2026-08-19
+- **Role:** deterministic sparse-state correctness gate
 
 ## 1. Research question
 

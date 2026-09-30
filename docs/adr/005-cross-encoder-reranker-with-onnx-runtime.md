@@ -1,10 +1,10 @@
 # ADR-005: Cross-Encoder Reranker with ONNX Runtime
 
-**Date:** 2026-05-11
-**Status:** Accepted
-**Update:** Cloud constraint superseded by ADR-024 — local-first, cloud allowed as opt-in.
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Git Commits:** `5594176`, `9a1b310`
+- **Date:** 2026-05-11
+- **Status:** Accepted
+- **Update:** Cloud constraint superseded by ADR-024 — local-first, cloud allowed as opt-in.
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Git Commits:** `5594176`, `9a1b310`
 
 ## Context
 

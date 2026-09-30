@@ -1,9 +1,9 @@
 # ADR-037: Architecture v2 Conformance
 
-**Date:** 2026-08-05
-**Status:** Accepted
-**Phase:** Conformance — closing the gap left by Phases 1–5
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-05
+- **Status:** Accepted
+- **Phase:** Conformance — closing the gap left by Phases 1–5
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

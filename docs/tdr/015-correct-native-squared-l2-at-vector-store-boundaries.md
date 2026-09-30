@@ -1,9 +1,9 @@
 # TDR-015: Correct native squared L2 at the vector-store boundaries
 
-**Date:** 2026-08-19
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Tags:** vectordb | adapters | dense-scores | thresholds | stage5
+- **Date:** 2026-08-19
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Tags:** vectordb | adapters | dense-scores | thresholds | stage5
 
 ## Context
 

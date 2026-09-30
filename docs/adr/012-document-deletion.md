@@ -1,7 +1,7 @@
 # ADR-012: Document Deletion
 
-**Date**: 2026-05-20
-**Status**: Accepted
+- **Date**: 2026-05-20
+- **Status**: Accepted
 
 ## Context
 

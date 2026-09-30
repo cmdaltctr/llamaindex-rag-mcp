@@ -1,11 +1,11 @@
 # ADR-064: Input-Quality Promotion Evidence and OCR Default Decision
 
-**Date:** 2026-09-09
-**Settled:** 2026-09-10
-**Status:** Accepted — the OCR routing/default decision was settled by the operator on 2026-09-10
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Change:** `improve-rag-input-quality-5`
-**Related:** [ADR-062](062-isolate-paddleocr-vl-in-a-versioned-ocr-worker.md) (worker boundary, lifecycle, protocol), [ADR-063](063-model-token-aware-markdown-chunking.md) (tokenizer and chunker), [ADR-018](018-balanced-retrieval-defaults.md), [ADR-037](037-architecture-v2-conformance.md)
+- **Date:** 2026-09-09
+- **Settled:** 2026-09-10
+- **Status:** Accepted — the OCR routing/default decision was settled by the operator on 2026-09-10
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Change:** `improve-rag-input-quality-5`
+- **Related:** [ADR-062](062-isolate-paddleocr-vl-in-a-versioned-ocr-worker.md) (worker boundary, lifecycle, protocol), [ADR-063](063-model-token-aware-markdown-chunking.md) (tokenizer and chunker), [ADR-018](018-balanced-retrieval-defaults.md), [ADR-037](037-architecture-v2-conformance.md)
 
 > **Update (2026-09-13):** items 1–2 of the settled decision below —
 > `OCR_FALLBACK_ENABLED=false` and the `0.0` threshold sentinels — are

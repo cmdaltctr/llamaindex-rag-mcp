@@ -1,8 +1,8 @@
 # ADR-051: Fail-Closed Embedding Write Contract
 
-**Date:** 2026-08-28
-**Status:** Proposed
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-28
+- **Status:** Proposed
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

@@ -1,8 +1,8 @@
 # Experiment 6 — Ingestion boundedness, atomic replacement and concurrency
 
-**Template ID:** `example/experiment-6-ingestion-boundedness-and-atomicity`  
-**Status:** EXECUTED — GREEN (2026-08-19; Phase A H1–H5 PASS, Phase B confirming-only, consistent with experiment 18 Stage 3B)  
-**Role:** systems/reliability gate after Stage 3A; evidence for optional Stage 3B
+- **Template ID:** `example/experiment-6-ingestion-boundedness-and-atomicity`
+- **Status:** EXECUTED — GREEN (2026-08-19; Phase A H1–H5 PASS, Phase B confirming-only, consistent with experiment 18 Stage 3B)
+- **Role:** systems/reliability gate after Stage 3A; evidence for optional Stage 3B
 
 ## 1. Research question
 
@@ -195,9 +195,9 @@ Remove generated corpora/stores after hashes/results are retained. Keep generato
 
 ## Execution record (v1.0 — 2026-08-19)
 
-**Task:** OpenSpec change `harden-pipeline-correctness-before-calibration`, Stage 5 task 5.6.  
-**Code under test:** HEAD `c475852` — Stage 3B (narrow write lock) already implemented and RETAINED; the Stage 3A baseline arm no longer exists.  
-**Protocol version executed:** 1.0. Phase A ran as pre-registered (H1–H5). Phase B ran as CONFIRMING EVIDENCE ONLY per the retained-3B reality: current-code contended throughput was measured and compared descriptively against experiment 18's recorded Stage 3B arm (`experiments/18-ingestion-lock-scope-ab-2026-08-19/output/results.ab.json`, reference commit `b4b01b6`). This was not a re-run of the A/B.
+- **Task:** OpenSpec change `harden-pipeline-correctness-before-calibration`, Stage 5 task 5.6.
+- **Code under test:** HEAD `c475852` — Stage 3B (narrow write lock) already implemented and RETAINED; the Stage 3A baseline arm no longer exists.
+- **Protocol version executed:** 1.0. Phase A ran as pre-registered (H1–H5). Phase B ran as CONFIRMING EVIDENCE ONLY per the retained-3B reality: current-code contended throughput was measured and compared descriptively against experiment 18's recorded Stage 3B arm (`experiments/18-ingestion-lock-scope-ab-2026-08-19/output/results.ab.json`, reference commit `b4b01b6`). This was not a re-run of the A/B.
 
 **Harness:** `corpus.py` (generator v1.0-exp6, seed 20260806, 6000 chars/file), `harness.py` (fake/real runtimes, `_lib` D13 manifests, embed/store-write counters, replacement-batch probe), `run_eval.py` (23-cell driver, subprocess per cell, `--resume`, `--rerun-proof`, `--remerge`), `summarise_eval.py`, `plan.json` (frozen cell matrix, H2 guard frozen before the measured run, `phase_b_mode: confirming_only`).
 

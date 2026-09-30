@@ -1,9 +1,9 @@
 # Experiment 8 Results: Query Embedding Cache
 
-**Date run**: 2026-05-27
-**Operator**: AI agent (build phase)
-**Status**: PASS — cache works on both branches; warm-trace speedup ≥ 30 %.
-**Outcome**: Ship the LRU cache (already shipped in Tier 2 task 4.x).
+- **Date run**: 2026-05-27
+- **Operator**: AI agent (build phase)
+- **Status**: PASS — cache works on both branches; warm-trace speedup ≥ 30 %.
+- **Outcome**: Ship the LRU cache (already shipped in Tier 2 task 4.x).
 
 ---
 

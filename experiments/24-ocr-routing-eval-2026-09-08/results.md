@@ -1,10 +1,10 @@
 # Experiment 24 Results: OCR Routing Evaluation (task 5.1)
 
-**ID**: `24-ocr-routing-eval-2026-09-08`  
-**Date run**: 2026-09-08  
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  
-**Status**: PASS (run 2, after fixture repair)  
-**Raw data**: [`output/ablation.json`](./output/ablation.json)
+- **ID**: `24-ocr-routing-eval-2026-09-08`
+- **Date run**: 2026-09-08
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: PASS (run 2, after fixture repair)
+- **Raw data**: [`output/ablation.json`](./output/ablation.json)
 
 ---
 

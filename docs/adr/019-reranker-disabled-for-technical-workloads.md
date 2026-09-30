@@ -1,10 +1,10 @@
 # ADR-019: Disable Reranker for Technical Workloads (Supersedes ADR-018)
 
-**Status**: Accepted
-**Date**: 2026-06-01
-**Deciders**: Dr Muhammad Aizat Bin Md Hawari
-**Supersedes**: [ADR-018: Balanced Retrieval Defaults](./018-balanced-retrieval-defaults.md)
-**Related experiments**: Experiment 9a, Experiment 10
+- **Status**: Accepted
+- **Date**: 2026-06-01
+- **Deciders**: Dr Muhammad Aizat Bin Md Hawari
+- **Supersedes**: [ADR-018: Balanced Retrieval Defaults](./018-balanced-retrieval-defaults.md)
+- **Related experiments**: Experiment 9a, Experiment 10
 
 ## Context
 

@@ -1,10 +1,10 @@
 # Experiment 7a Results: Chunk Overlap Sensitivity on Qasper
 
-**ID**: `7a-chunk-overlap-evidence-2026-05-29`  
-**Date run**: 2026-05-29  
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent support  
-**Status**: **INCONCLUSIVE for global default; FAIL on Qasper at production `top_k=5`**  
-**Raw data**: external artifact; see [`artifacts.md`](./artifacts.md). Summary data is tracked in [`eval_results.summary.json`](./eval_results.summary.json).
+- **ID**: `7a-chunk-overlap-evidence-2026-05-29`
+- **Date run**: 2026-05-29
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent support
+- **Status**: **INCONCLUSIVE for global default; FAIL on Qasper at production `top_k=5`**
+- **Raw data**: external artifact; see [`artifacts.md`](./artifacts.md). Summary data is tracked in [`eval_results.summary.json`](./eval_results.summary.json).
 
 ---
 

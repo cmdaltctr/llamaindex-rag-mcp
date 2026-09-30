@@ -1,9 +1,9 @@
 # ADR-043: Apple Acceleration for the Reranker
 
-**Date:** 2026-08-13
-**Status:** Accepted
-**Scopes:** ADR-005 (no PyTorch on the default path — unchanged), ADR-029 (silent fallback lesson — reinforced), ADR-038 (pluggable reranker backend — measured)
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-13
+- **Status:** Accepted
+- **Scopes:** ADR-005 (no PyTorch on the default path — unchanged), ADR-029 (silent fallback lesson — reinforced), ADR-038 (pluggable reranker backend — measured)
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

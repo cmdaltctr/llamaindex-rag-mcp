@@ -1,10 +1,10 @@
 # Experiment 7 — Metadata extraction cap and persisted granularity
 
-**Template ID:** `example/experiment-7-metadata-cap-and-granularity`  
-**Status:** PASS  
-**Role:** correctness gate for metadata workload units and stored metadata semantics  
-**Protocol version:** 1.0  
-**Executed:** 2026-08-19 (deterministic fake extractor; no real LLM)
+- **Template ID:** `example/experiment-7-metadata-cap-and-granularity`
+- **Status:** PASS
+- **Role:** correctness gate for metadata workload units and stored metadata semantics
+- **Protocol version:** 1.0
+- **Executed:** 2026-08-19 (deterministic fake extractor; no real LLM)
 
 ## 1. Research question
 

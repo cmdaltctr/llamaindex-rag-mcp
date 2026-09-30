@@ -1,8 +1,8 @@
 # ADR-029: Disable CoreML for Reranker — Silent Fallback Lesson
 
-**Date:** 2026-07-31
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-07-31
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

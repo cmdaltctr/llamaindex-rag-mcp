@@ -1,9 +1,9 @@
 # Experiment: <Descriptive Title>
 
-**ID**: `<dirname>`
-**Date**: YYYY-MM-DD
-**Operator**: <who ran it — human name (refer to @LICENSE name) with "AI agent (for automation)">
-**Status**: PLANNED | PASS | FAIL | INCONCLUSIVE
+- **ID**: `<dirname>`
+- **Date**: YYYY-MM-DD
+- **Operator**: <who ran it — human name (refer to @LICENSE name) with "AI agent (for automation)">
+- **Status**: PLANNED | PASS | FAIL | INCONCLUSIVE
 
 ---
 

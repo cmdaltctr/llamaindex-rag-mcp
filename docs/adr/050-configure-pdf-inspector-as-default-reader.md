@@ -1,8 +1,8 @@
 # ADR-050: Configure pdf-inspector as the Default PDF Reader
 
-**Date:** 2026-08-24
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-24
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

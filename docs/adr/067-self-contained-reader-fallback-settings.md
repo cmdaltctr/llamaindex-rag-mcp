@@ -1,9 +1,9 @@
 # ADR-067: Self-Contained Reader Fallback Settings
 
-**Date:** 2026-09-13
-**Status:** Accepted (implementation verified in `tiered-reader-fallback-chain`)
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Related:** [ADR-066](066-tiered-reader-fallback-chain.md), [ADR-050](050-configure-pdf-inspector-as-default-reader.md), TDR-024
+- **Date:** 2026-09-13
+- **Status:** Accepted (implementation verified in `tiered-reader-fallback-chain`)
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Related:** [ADR-066](066-tiered-reader-fallback-chain.md), [ADR-050](050-configure-pdf-inspector-as-default-reader.md), TDR-024
 
 ## Context
 

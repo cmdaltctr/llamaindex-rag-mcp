@@ -1,9 +1,9 @@
 # ADR-054: Native Sparse Backend over LanceDB FTS
 
-**Date:** 2026-08-29
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Change:** `implement-native-sparse-backend-strategy` (`feat/implement-native-sparse-backend-strategy`)
+- **Date:** 2026-08-29
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Change:** `implement-native-sparse-backend-strategy` (`feat/implement-native-sparse-backend-strategy`)
 
 ## Context
 

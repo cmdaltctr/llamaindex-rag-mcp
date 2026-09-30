@@ -1,9 +1,9 @@
 # Experiment 12: Hybrid Default Promotion Test (Post-ADR-019)
 
-**ID**: `12-hybrid-default-promotion-2026-06-29`  
-**Date planned**: 2026-06-29  
-**Status**: PLANNED  
-**Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; informs ADR-016 / ADR-019
+- **ID**: `12-hybrid-default-promotion-2026-06-29`
+- **Date planned**: 2026-06-29
+- **Status**: PLANNED
+- **Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; informs ADR-016 / ADR-019
 
 ---
 

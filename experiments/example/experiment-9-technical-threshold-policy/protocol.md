@@ -1,8 +1,8 @@
 # Experiment 9 — Technical-query rerank policy threshold
 
-**Template ID:** `example/experiment-9-technical-threshold-policy`  
-**Status:** PLANNED / CONDITIONAL  
-**Role:** run only if Experiment 8 establishes reranker benefit worth routing selectively
+- **Template ID:** `example/experiment-9-technical-threshold-policy`
+- **Status:** PLANNED / CONDITIONAL
+- **Role:** run only if Experiment 8 establishes reranker benefit worth routing selectively
 
 ## 1. Research question
 

@@ -1,11 +1,11 @@
 # ADR-032: Phase 1 Refactor — Modular Core Extraction
 
-**Date:** 2026-08-03
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Change:** `phase-1-refactor-modular-extraction`
-**Phase:** 1 of 5 (`docs/brainstorm/refactor-proposal/PROPOSAL.md`)
-**Precedes:** [ADR-031](./031-three-layer-config-compose-di.md) (Phase 2)
+- **Date:** 2026-08-03
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Change:** `phase-1-refactor-modular-extraction`
+- **Phase:** 1 of 5 (`docs/brainstorm/refactor-proposal/PROPOSAL.md`)
+- **Precedes:** [ADR-031](./031-three-layer-config-compose-di.md) (Phase 2)
 
 ## Context
 

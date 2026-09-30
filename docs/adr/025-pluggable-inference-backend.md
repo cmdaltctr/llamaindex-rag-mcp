@@ -1,9 +1,9 @@
 # ADR-025: Pluggable inference backend — Ollama and llama.cpp
 
-**Date:** 2026-07-01
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Md Hawari
-**Change:** `add-llamacpp-backend`
+- **Date:** 2026-07-01
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Md Hawari
+- **Change:** `add-llamacpp-backend`
 
 ## Context
 

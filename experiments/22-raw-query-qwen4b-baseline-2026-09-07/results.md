@@ -1,10 +1,10 @@
 # Experiment 22 Results: Raw-Query Qwen3-Embedding-4B Retrieval Baseline
 
-**ID**: `22-raw-query-qwen4b-baseline-2026-09-07`  
-**Date completed**: 2026-09-07  
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  
-**Status**: COMPLETE — measurement run. No pass/fail gates; task 1.6 derives the frozen regression and latency gates from these numbers.  
-**Raw data**: [`output/eval_results.summary.json`](./output/eval_results.summary.json)
+- **ID**: `22-raw-query-qwen4b-baseline-2026-09-07`
+- **Date completed**: 2026-09-07
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: COMPLETE — measurement run. No pass/fail gates; task 1.6 derives the frozen regression and latency gates from these numbers.
+- **Raw data**: [`output/eval_results.summary.json`](./output/eval_results.summary.json)
 
 ---
 

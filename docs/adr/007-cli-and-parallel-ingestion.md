@@ -1,14 +1,14 @@
 # ADR-007: CLI Interface and Parallel Ingestion
 
-**Date:** 2026-05-15
-**Status:** Accepted
+- **Date:** 2026-05-15
+- **Status:** Accepted
 
 > **Superseded note (2026-05-25):** the file-reader worker API described in
 > this ADR was later removed because async ingestion now reads files
 > sequentially. Use `EMBED_BATCH_SIZE` and `EMBED_CONCURRENCY` for supported
 > throughput tuning.
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Git Commits:** `08121d7`, `60e955a`, `b28abe2`, `7857c32`
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Git Commits:** `08121d7`, `60e955a`, `b28abe2`, `7857c32`
 
 ## Context
 

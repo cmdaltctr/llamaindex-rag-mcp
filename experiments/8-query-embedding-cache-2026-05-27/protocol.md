@@ -1,10 +1,10 @@
 # Experiment 8: Query Embedding Cache Hit-Rate and Latency
 
-**ID**: `query-embedding-cache-2026-05-27`
-**Date**: 2026-05-27
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent (for automation)
-**Status**: PLANNED
-**Related OpenSpec change**: `rag-retrieval-quality-improvements` (Tier 2)
+- **ID**: `query-embedding-cache-2026-05-27`
+- **Date**: 2026-05-27
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent (for automation)
+- **Status**: PLANNED
+- **Related OpenSpec change**: `rag-retrieval-quality-improvements` (Tier 2)
 
 ---
 

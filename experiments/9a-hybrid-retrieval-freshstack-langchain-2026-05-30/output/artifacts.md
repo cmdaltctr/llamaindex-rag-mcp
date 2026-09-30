@@ -1,8 +1,8 @@
 # Artifacts — Experiment 9a
 
-**Experiment**: `9a-hybrid-retrieval-freshstack-langchain-2026-05-30`
-**Date completed**: 2026-05-31
-**Repository**: [cmdaltctr/llamaindex-rag-mcp](https://github.com/cmdaltctr/llamaindex-rag-mcp)
+- **Experiment**: `9a-hybrid-retrieval-freshstack-langchain-2026-05-30`
+- **Date completed**: 2026-05-31
+- **Repository**: [cmdaltctr/llamaindex-rag-mcp](https://github.com/cmdaltctr/llamaindex-rag-mcp)
 
 ---
 

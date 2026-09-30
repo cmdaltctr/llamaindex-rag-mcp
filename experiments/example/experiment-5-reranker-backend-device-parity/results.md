@@ -1,11 +1,11 @@
 # Experiment 5 results — reranker backend and execution-device parity
 
-**Experiment ID:** `5-reranker-backend-device-parity` (protocol v1.0)  
-**Run date:** 2026-08-19 · **Measured campaign, single quiet pass, machine reserved**  
-**Repo commit (recorded in every manifest):** `4c29377c6ea3989d69eea439cf47d666368d0593`  
-**Dependency lock hash:** `3a225230a6ebe0f7513a4b4191b6158e1435135158a22ee4a63844cec4c5f77d` (torch extra installed in `.venv`; `pyproject.toml`/`uv.lock` unchanged)  
-**Workload identity:** `sha256:bb412ddcd1e3c855a6bd78e06e61ff6a5bf72592a1566602c3b769524d06e1dc` (24 queries × 50 candidates; 8 wide / 8 medium / 8 near-tie)  
-**Model:** `cross-encoder/ms-marco-MiniLM-L-6-v2`, ONNX variant `onnx/model_qint8_arm64.onnx`, cached, `HF_HUB_OFFLINE=1`
+- **Experiment ID:** `5-reranker-backend-device-parity` (protocol v1.0)
+- **Run date:** 2026-08-19 · **Measured campaign, single quiet pass, machine reserved**
+- **Repo commit (recorded in every manifest):** `4c29377c6ea3989d69eea439cf47d666368d0593`
+- **Dependency lock hash:** `3a225230a6ebe0f7513a4b4191b6158e1435135158a22ee4a63844cec4c5f77d` (torch extra installed in `.venv`; `pyproject.toml`/`uv.lock` unchanged)
+- **Workload identity:** `sha256:bb412ddcd1e3c855a6bd78e06e61ff6a5bf72592a1566602c3b769524d06e1dc` (24 queries × 50 candidates; 8 wide / 8 medium / 8 near-tie)
+- **Model:** `cross-encoder/ms-marco-MiniLM-L-6-v2`, ONNX variant `onnx/model_qint8_arm64.onnx`, cached, `HF_HUB_OFFLINE=1`
 
 ## Campaign shape
 

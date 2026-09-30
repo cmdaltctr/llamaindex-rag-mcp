@@ -1,10 +1,10 @@
 # Experiment 30: Reader fallback chain — pdf-inspector → liteparse → pypdf
 
-**ID**: `30-reader-fallback-chain-2026-09-13`
-**Date planned**: 2026-09-13
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
-**Status**: PASS — run 2026-09-13, all four gates
-**Relation**: Experiment 29 (routing); archived change `pdf-reader-extraction-fallback` (shipped pypdf-only guard); TDR-024; ADR-050
+- **ID**: `30-reader-fallback-chain-2026-09-13`
+- **Date planned**: 2026-09-13
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: PASS — run 2026-09-13, all four gates
+- **Relation**: Experiment 29 (routing); archived change `pdf-reader-extraction-fallback` (shipped pypdf-only guard); TDR-024; ADR-050
 
 ## Why this experiment exists
 

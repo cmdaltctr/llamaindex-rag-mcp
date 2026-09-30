@@ -1,10 +1,10 @@
 # ADR-027: Local/Cloud Provider Naming Taxonomy
 
-**Date:** 2026-07-16
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Md Hawari
-**Change:** `local-cloud-provider-naming`
-**Amends:** ADR-026 (naming aspects only — registry mechanics unchanged)
+- **Date:** 2026-07-16
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Md Hawari
+- **Change:** `local-cloud-provider-naming`
+- **Amends:** ADR-026 (naming aspects only — registry mechanics unchanged)
 
 ## Context
 

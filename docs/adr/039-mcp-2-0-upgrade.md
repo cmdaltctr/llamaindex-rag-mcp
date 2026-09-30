@@ -1,9 +1,9 @@
 # ADR-039: MCP Python SDK 2.0 Upgrade
 
-**Date:** 2026-08-12
-**Status:** Accepted
-**Scopes:** ADR-036 (Phase 5 transport separation — the `transports/mcp/` thin-wrapper invariant is preserved; only the SDK class name and field casing change)
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-12
+- **Status:** Accepted
+- **Scopes:** ADR-036 (Phase 5 transport separation — the `transports/mcp/` thin-wrapper invariant is preserved; only the SDK class name and field casing change)
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

@@ -1,9 +1,9 @@
 # ADR-006: Config as Single Source of Truth
 
-**Date:** 2026-05-12
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Git Commits:** `9a1b310`
+- **Date:** 2026-05-12
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Git Commits:** `9a1b310`
 
 ## Context
 

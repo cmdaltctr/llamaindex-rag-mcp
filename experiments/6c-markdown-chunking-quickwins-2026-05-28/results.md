@@ -1,9 +1,9 @@
 # Experiment 6c Results: Quick-Win Interventions for Markdown Chunking on Qasper
 
-**ID**: `markdown-chunking-quickwins-2026-05-28`
-**Date**: 2026-05-28
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with build agent
-**Status**: PASS — Phase 2 found a configuration where the heading-aware Markdown chunker beats the bare splitter in production shape (reranker enabled). The winning combination is `chunk_size=1024` on the Markdown branch only, with the reranker on. Pass A (chunker isolation, reranker off) remains negative, so the gain is reranker-driven, not chunker-driven.
+- **ID**: `markdown-chunking-quickwins-2026-05-28`
+- **Date**: 2026-05-28
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with build agent
+- **Status**: PASS — Phase 2 found a configuration where the heading-aware Markdown chunker beats the bare splitter in production shape (reranker enabled). The winning combination is `chunk_size=1024` on the Markdown branch only, with the reranker on. Pass A (chunker isolation, reranker off) remains negative, so the gain is reranker-driven, not chunker-driven.
 
 ---
 

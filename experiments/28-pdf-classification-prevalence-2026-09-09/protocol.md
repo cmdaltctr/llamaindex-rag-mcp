@@ -1,10 +1,10 @@
 # Experiment 28 — PDF classification prevalence on a real library (task 5.5)
 
-**ID**: `28-pdf-classification-prevalence-2026-09-09`
-**Date planned**: 2026-09-09
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
-**Status**: PLANNED (validity gates frozen 2026-09-09, before any measurement)
-**Relation**: `improve-rag-input-quality-5` task 5.5; experiments 23 and 24
+- **ID**: `28-pdf-classification-prevalence-2026-09-09`
+- **Date planned**: 2026-09-09
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: PLANNED (validity gates frozen 2026-09-09, before any measurement)
+- **Relation**: `improve-rag-input-quality-5` task 5.5; experiments 23 and 24
 
 ## Why this experiment exists
 
@@ -150,8 +150,8 @@ valid at proportions near 0, which is exactly where these estimates sit.
 **No significance testing.** There is no comparison to test. Reporting a
 p-value here would be decoration.
 
-**Inclusion**: every readable PDF in the population.
-**Exclusion**: files that fail to parse are reported separately with
+- **Inclusion**: every readable PDF in the population.
+- **Exclusion**: files that fail to parse are reported separately with
 their count and error class, never silently dropped. A parse failure is
 a finding about the classifier, not a missing observation.
 **Missing data**: none possible — the classifier is local and

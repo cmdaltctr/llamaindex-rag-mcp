@@ -1,0 +1,757 @@
+{
+ "summary": {
+  "code_root": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-page-level-ocr-routing",
+  "pages_scored": 65,
+  "by_class": {
+   "multi_column": {
+    "pages": 6,
+    "median_order_before": 0.5309,
+    "median_order_after": 0.9613,
+    "median_recall_before": 0.977,
+    "median_recall_after": 0.977
+   },
+   "single": {
+    "pages": 59,
+    "median_order_before": 0.9409,
+    "median_order_after": 0.9409,
+    "median_recall_before": 0.9679,
+    "median_recall_after": 0.9679
+   }
+  },
+  "gate": {
+   "multi_column_median_order_after": 0.9613,
+   "guard_pages": {
+    "bd02_p1": {
+     "before": 0.6703,
+     "after": 0.6703,
+     "class": "single"
+    },
+    "tl03_p5": {
+     "before": 0.7401,
+     "after": 0.7401,
+     "class": "single"
+    }
+   },
+   "order_regressions": [],
+   "recall_changes_over_0_01": [],
+   "content_preserved_on_every_page": true
+  }
+ },
+ "pages": [
+  {
+   "doc_id": "bd01",
+   "page": 4,
+   "page_class": "multi_column",
+   "note": "needs better support for two columns",
+   "order_before": 0.5332,
+   "order_after": 0.9709,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd02",
+   "page": 1,
+   "page_class": "single",
+   "note": "needs better support for two columns",
+   "order_before": 0.6703,
+   "order_after": 0.6703,
+   "recall_before": 0.98,
+   "recall_after": 0.98,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd03",
+   "page": 16,
+   "page_class": "single",
+   "note": "words extracted is okay, but need support for scientific words like chemical names",
+   "order_before": 0.7359,
+   "order_after": 0.7359,
+   "recall_before": 0.7359,
+   "recall_after": 0.7359,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd04",
+   "page": 11,
+   "page_class": "single",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "order_before": 0.9801,
+   "order_after": 0.9801,
+   "recall_before": 0.9801,
+   "recall_after": 0.9801,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd04",
+   "page": 15,
+   "page_class": "single",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "order_before": 0.9655,
+   "order_after": 0.9655,
+   "recall_before": 0.977,
+   "recall_after": 0.977,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd04",
+   "page": 16,
+   "page_class": "single",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "order_before": 0.8806,
+   "order_after": 0.8806,
+   "recall_before": 0.8806,
+   "recall_after": 0.8806,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd04",
+   "page": 22,
+   "page_class": "single",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "order_before": 0.8966,
+   "order_after": 0.8966,
+   "recall_before": 0.954,
+   "recall_after": 0.954,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd04",
+   "page": 25,
+   "page_class": "single",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "order_before": 0.9926,
+   "order_after": 0.9926,
+   "recall_before": 0.9963,
+   "recall_after": 0.9963,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd04",
+   "page": 30,
+   "page_class": "single",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "order_before": 0.9968,
+   "order_after": 0.9968,
+   "recall_before": 0.9968,
+   "recall_after": 0.9968,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd05",
+   "page": 22,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd06",
+   "page": 9,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.9947,
+   "order_after": 0.9947,
+   "recall_before": 0.9947,
+   "recall_after": 0.9947,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd07",
+   "page": 8,
+   "page_class": "single",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly",
+   "order_before": 0.866,
+   "order_after": 0.866,
+   "recall_before": 0.8856,
+   "recall_after": 0.8856,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd07",
+   "page": 10,
+   "page_class": "single",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly",
+   "order_before": 0.9871,
+   "order_after": 0.9871,
+   "recall_before": 0.9897,
+   "recall_after": 0.9897,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd07",
+   "page": 14,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.9679,
+   "order_after": 0.9679,
+   "recall_before": 0.9679,
+   "recall_after": 0.9679,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "bd07",
+   "page": 40,
+   "page_class": "single",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly",
+   "order_before": 0.9409,
+   "order_after": 0.9409,
+   "recall_before": 0.95,
+   "recall_after": 0.95,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx02",
+   "page": 4,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx04",
+   "page": 3,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx04",
+   "page": 4,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx04",
+   "page": 11,
+   "page_class": "single",
+   "note": "words extracted well, but needs llm to make sense of the image",
+   "order_before": 0.8514,
+   "order_after": 0.8514,
+   "recall_before": 0.8514,
+   "recall_after": 0.8514,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx04",
+   "page": 21,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx04",
+   "page": 32,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.057,
+   "order_after": 0.057,
+   "recall_before": 0.057,
+   "recall_after": 0.057,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx05",
+   "page": 18,
+   "page_class": "single",
+   "note": "words extracted well, but needs llm to make sense of the image",
+   "order_before": 0.6828,
+   "order_after": 0.6828,
+   "recall_before": 0.6828,
+   "recall_after": 0.6828,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx05",
+   "page": 28,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx05",
+   "page": 31,
+   "page_class": "single",
+   "note": "words extracted well, but needs llm to make sense of the image",
+   "order_before": 0.3686,
+   "order_after": 0.3686,
+   "recall_before": 0.3686,
+   "recall_after": 0.3686,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx07",
+   "page": 5,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.9859,
+   "order_after": 0.9859,
+   "recall_before": 0.9859,
+   "recall_after": 0.9859,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx07",
+   "page": 8,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx07",
+   "page": 9,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.9822,
+   "order_after": 0.9822,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx07",
+   "page": 13,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.9788,
+   "order_after": 0.9788,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx07",
+   "page": 14,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx07",
+   "page": 17,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx07",
+   "page": 34,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx07",
+   "page": 37,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.9918,
+   "order_after": 0.9918,
+   "recall_before": 0.9918,
+   "recall_after": 0.9918,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx07",
+   "page": 42,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.0746,
+   "order_after": 0.0746,
+   "recall_before": 0.0746,
+   "recall_after": 0.0746,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx08",
+   "page": 4,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.9875,
+   "order_after": 0.9875,
+   "recall_before": 0.9875,
+   "recall_after": 0.9875,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx08",
+   "page": 6,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.9957,
+   "order_after": 0.9957,
+   "recall_before": 0.9957,
+   "recall_after": 0.9957,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx08",
+   "page": 7,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.9897,
+   "order_after": 0.9897,
+   "recall_before": 0.9897,
+   "recall_after": 0.9897,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx08",
+   "page": 8,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.973,
+   "order_after": 0.973,
+   "recall_before": 0.973,
+   "recall_after": 0.973,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "mx08",
+   "page": 9,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf02",
+   "page": 7,
+   "page_class": "multi_column",
+   "note": "support for scientifc letters and figures needs toe understood by llm",
+   "order_before": 0.6586,
+   "order_after": 0.9517,
+   "recall_before": 0.9534,
+   "recall_after": 0.9534,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf03",
+   "page": 6,
+   "page_class": "multi_column",
+   "note": "support for scientifc letters and figures needs toe understood by llm",
+   "order_before": 0.525,
+   "order_after": 0.9833,
+   "recall_before": 0.9938,
+   "recall_after": 0.9938,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf04",
+   "page": 4,
+   "page_class": "multi_column",
+   "note": "needs dual column support",
+   "order_before": 0.5295,
+   "order_after": 0.942,
+   "recall_before": 0.9777,
+   "recall_after": 0.9777,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf04",
+   "page": 6,
+   "page_class": "multi_column",
+   "note": "needs dual column and table support",
+   "order_before": 0.5322,
+   "order_after": 0.975,
+   "recall_before": 0.9763,
+   "recall_after": 0.9763,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf06",
+   "page": 19,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.05,
+   "order_after": 0.05,
+   "recall_before": 0.05,
+   "recall_after": 0.05,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf06",
+   "page": 65,
+   "page_class": "multi_column",
+   "note": "",
+   "order_before": 0.4433,
+   "order_after": 0.6913,
+   "recall_before": 0.7177,
+   "recall_after": 0.7177,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf06",
+   "page": 67,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.0261,
+   "order_after": 0.0261,
+   "recall_before": 0.0348,
+   "recall_after": 0.0348,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf07",
+   "page": 27,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.7643,
+   "order_after": 0.7643,
+   "recall_before": 0.7786,
+   "recall_after": 0.7786,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf07",
+   "page": 29,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.7299,
+   "order_after": 0.7299,
+   "recall_before": 0.7664,
+   "recall_after": 0.7664,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf07",
+   "page": 47,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.6954,
+   "order_after": 0.6954,
+   "recall_before": 0.7417,
+   "recall_after": 0.7417,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf07",
+   "page": 49,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.0303,
+   "order_after": 0.0303,
+   "recall_before": 0.0606,
+   "recall_after": 0.0606,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf08",
+   "page": 10,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf08",
+   "page": 16,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.9914,
+   "order_after": 0.9914,
+   "recall_before": 0.9914,
+   "recall_after": 0.9914,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "rf08",
+   "page": 20,
+   "page_class": "single",
+   "note": "",
+   "order_before": 1.0,
+   "order_after": 1.0,
+   "recall_before": 1.0,
+   "recall_after": 1.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl01",
+   "page": 14,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.8186,
+   "order_after": 0.8186,
+   "recall_before": 0.8319,
+   "recall_after": 0.8319,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl01",
+   "page": 23,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.8618,
+   "order_after": 0.8618,
+   "recall_before": 0.8618,
+   "recall_after": 0.8618,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl01",
+   "page": 34,
+   "page_class": "single",
+   "note": "needs llm help to make sense of the figure",
+   "order_before": 0.0,
+   "order_after": 0.0,
+   "recall_before": 0.0,
+   "recall_after": 0.0,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl01",
+   "page": 39,
+   "page_class": "single",
+   "note": "needs llm help to make sense of the figure",
+   "order_before": 0.6364,
+   "order_after": 0.6364,
+   "recall_before": 0.6364,
+   "recall_after": 0.6364,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl01",
+   "page": 42,
+   "page_class": "single",
+   "note": "needs llm help to make sense of the figure",
+   "order_before": 0.1538,
+   "order_after": 0.1538,
+   "recall_before": 0.1538,
+   "recall_after": 0.1538,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl01",
+   "page": 59,
+   "page_class": "single",
+   "note": "needs llm help to make sense of the figure",
+   "order_before": 0.0435,
+   "order_after": 0.0435,
+   "recall_before": 0.0435,
+   "recall_after": 0.0435,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl01",
+   "page": 61,
+   "page_class": "single",
+   "note": "needs llm help to make sense of the figure",
+   "order_before": 0.0417,
+   "order_after": 0.0417,
+   "recall_before": 0.0417,
+   "recall_after": 0.0417,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl01",
+   "page": 66,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.04,
+   "order_after": 0.04,
+   "recall_before": 0.04,
+   "recall_after": 0.04,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl03",
+   "page": 1,
+   "page_class": "single",
+   "note": "",
+   "order_before": 0.7391,
+   "order_after": 0.7391,
+   "recall_before": 0.7391,
+   "recall_after": 0.7391,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl03",
+   "page": 5,
+   "page_class": "single",
+   "note": "needs table extraction support",
+   "order_before": 0.7401,
+   "order_after": 0.7401,
+   "recall_before": 0.7627,
+   "recall_after": 0.7627,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl03",
+   "page": 9,
+   "page_class": "single",
+   "note": "needs llm support for figure",
+   "order_before": 0.8667,
+   "order_after": 0.8667,
+   "recall_before": 0.8667,
+   "recall_after": 0.8667,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl03",
+   "page": 11,
+   "page_class": "single",
+   "note": "needs llm support for figure",
+   "order_before": 0.3784,
+   "order_after": 0.3784,
+   "recall_before": 0.4595,
+   "recall_after": 0.4595,
+   "content_preserved": true
+  },
+  {
+   "doc_id": "tl03",
+   "page": 15,
+   "page_class": "single",
+   "note": "needs llm support for figure",
+   "order_before": 0.2857,
+   "order_after": 0.2857,
+   "recall_before": 0.2857,
+   "recall_after": 0.2857,
+   "content_preserved": true
+  }
+ ]
+}

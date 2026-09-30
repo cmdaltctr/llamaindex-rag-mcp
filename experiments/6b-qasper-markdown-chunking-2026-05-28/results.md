@@ -1,8 +1,8 @@
 # Experiment 6b Results: Evidence-Level Markdown Chunking on Qasper
 
-**Run date**: 2026-05-28
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with build agent
-**Status**: COMPLETE — both Pass A (reranker disabled, chunker isolation) and Pass B (reranker enabled, production shape) executed end to end on Qasper-dev. Real negative result for the heading-aware Markdown chunker on this corpus in both passes.
+- **Run date**: 2026-05-28
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with build agent
+- **Status**: COMPLETE — both Pass A (reranker disabled, chunker isolation) and Pass B (reranker enabled, production shape) executed end to end on Qasper-dev. Real negative result for the heading-aware Markdown chunker on this corpus in both passes.
 
 ---
 

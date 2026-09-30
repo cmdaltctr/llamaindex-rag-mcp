@@ -1,0 +1,33 @@
+{
+  "label": "Stage B local OCR tier; natural pages; not a routing measurement",
+  "pages_measured": 464,
+  "body_needs_ocr_pages": 399,
+  "body_recall_ge_0_8_share": 0.3108,
+  "body_recall_lt_0_5_share": 0.5163,
+  "no_text_share": 0.0025,
+  "hosted_recommended_share": 0.015,
+  "escalation_by_confidence_cut": {
+    "0.5": {
+      "escalation_share": 0.015,
+      "kept_pages_recall_ge_0_8": 0.3155
+    },
+    "0.6": {
+      "escalation_share": 0.1604,
+      "kept_pages_recall_ge_0_8": 0.3701
+    },
+    "0.7": {
+      "escalation_share": 0.381,
+      "kept_pages_recall_ge_0_8": 0.502
+    },
+    "0.8": {
+      "escalation_share": 0.4687,
+      "kept_pages_recall_ge_0_8": 0.5708
+    },
+    "0.9": {
+      "escalation_share": 0.5965,
+      "kept_pages_recall_ge_0_8": 0.6522
+    }
+  },
+  "seconds_per_page": 1.576,
+  "figure_only_pages": 65
+}

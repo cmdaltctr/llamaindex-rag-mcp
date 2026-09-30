@@ -1,9 +1,9 @@
 # ADR-053: Embedding Norm Guard
 
-**Date:** 2026-08-28
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Change:** `guard-embedding-normalisation` (`feat/guard-embedding-normalisation`)
+- **Date:** 2026-08-28
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Change:** `guard-embedding-normalisation` (`feat/guard-embedding-normalisation`)
 
 ## Context
 

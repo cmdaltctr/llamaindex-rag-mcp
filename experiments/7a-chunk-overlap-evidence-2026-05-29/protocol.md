@@ -1,8 +1,8 @@
 # Experiment 7a: Chunk Overlap Sensitivity on Evidence-Level Qasper
 
-**ID**: `7a-chunk-overlap-evidence-2026-05-29`  
-**Status**: READY TO RUN  
-**Relation**: Follow-up to Experiment 7 and informed by Experiments 6b/6c.
+- **ID**: `7a-chunk-overlap-evidence-2026-05-29`
+- **Status**: READY TO RUN
+- **Relation**: Follow-up to Experiment 7 and informed by Experiments 6b/6c.
 
 ## Why this experiment exists
 

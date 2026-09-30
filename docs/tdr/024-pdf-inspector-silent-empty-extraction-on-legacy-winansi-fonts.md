@@ -1,9 +1,9 @@
 # TDR-024: pdf-inspector silently extracts nothing from WinAnsi TrueType PDFs without `/ToUnicode` — retry with pypdf in the adapter
 
-**Date:** 2026-09-13
-**Status:** Accepted (amended same day — second failure mechanism and reader matrix below)
-**Deciders:** Aizat
-**Tags:** pdf | ingestion | pdf-inspector | pypdf | liteparse | ocr-routing
+- **Date:** 2026-09-13
+- **Status:** Accepted (amended same day — second failure mechanism and reader matrix below)
+- **Deciders:** Aizat
+- **Tags:** pdf | ingestion | pdf-inspector | pypdf | liteparse | ocr-routing
 
 ## Context
 

@@ -1,9 +1,9 @@
 # ADR-040: huggingface-hub 1.0 + transformers 5.0 Upgrade
 
-**Date:** 2026-08-12
-**Status:** Accepted
-**Scopes:** ADR-038 (pluggable reranker backend — the `torch` extra's `transformers` pin is lifted; the `activation_fn` contract on `CrossEncoder.predict()` is preserved in sentence-transformers 5.7.0)
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-12
+- **Status:** Accepted
+- **Scopes:** ADR-038 (pluggable reranker backend — the `torch` extra's `transformers` pin is lifted; the `activation_fn` contract on `CrossEncoder.predict()` is preserved in sentence-transformers 5.7.0)
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

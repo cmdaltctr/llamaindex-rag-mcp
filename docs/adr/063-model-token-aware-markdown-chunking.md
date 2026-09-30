@@ -1,9 +1,9 @@
 # ADR-063: Model-Token-Aware Markdown Chunking
 
-**Date:** 2026-09-07
-**Accepted:** 2026-09-09
-**Status:** Accepted (task 5.5 promotion; evidence: Experiment 25, all four frozen gates PASS)
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-09-07
+- **Accepted:** 2026-09-09
+- **Status:** Accepted (task 5.5 promotion; evidence: Experiment 25, all four frozen gates PASS)
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

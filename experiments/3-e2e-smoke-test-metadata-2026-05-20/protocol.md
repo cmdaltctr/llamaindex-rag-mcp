@@ -1,9 +1,9 @@
 # Experiment: End-to-End Smoke Test with Real-World Documents
 
-**ID**: `e2e-smoke-test-metadata-2026-05-20`
-**Date**: 2026-05-20
-**Operator**: Dr Muhammad Aizat Bin Md Hawari
-**Status**: PASS
+- **ID**: `e2e-smoke-test-metadata-2026-05-20`
+- **Date**: 2026-05-20
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari
+- **Status**: PASS
 
 ---
 

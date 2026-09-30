@@ -1,0 +1,328 @@
+# Experiment 33: OCR routing natural-positive study
+
+- **ID**: `33-ocr-routing-natural-positive-2026-09-17`
+- **Date run**: 2026-09-17
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: FAIL (Stage A) — the shipped gate misses 8 of 18 documents that need OCR. Task 6.7 (local OCR tier) measured
+- **Verdict**: The packaged gate does not detect most natural OCR need. The full-scan candidate helps slightly (recall 0.556 → 0.611) and costs 49 extra OCR pages; recalibration belongs in a separate proposal
+- **Raw data**: [`output/arm_sampled_baseline/eval_results.summary.json`](./output/arm_sampled_baseline/eval_results.summary.json), [`output/arm_full_scan_candidate/eval_results.summary.json`](./output/arm_full_scan_candidate/eval_results.summary.json), [`output/arm_comparison.json`](./output/arm_comparison.json), [`output/page_evidence.json`](./output/page_evidence.json), [`output/local_ocr/summary.json`](./output/local_ocr/summary.json)
+- **Change**: `openspec/changes/experiment-33-ocr-routing-natural-positive`; relates to `full-page-ocr-evidence` (PR #95, TDR-026) and `page-level-ocr-routing`
+- **Protocol**: [protocol.md](protocol.md)
+
+## Bottom line
+
+Experiment 29 promoted the OCR routing gate without ever measuring recall: its
+held-out set contained no document that needs OCR. This study built one. On 40
+open-licence PDFs with page-by-page labels, the shipped gate caught 10 of the
+18 documents whose text is genuinely missing (`routing_recall` 0.556, Wilson
+95% interval 0.337 to 0.754) and wrongly routed 1 of 22 healthy documents. The
+candidate fix from PR #95, which completes pdf-inspector's page evidence,
+caught one more (0.611) and added no false alarm. Three distinct mechanisms
+cause the misses, and only one of them is a threshold problem.
+
+## What we tested and why
+
+Does the packaged OCR routing gate send a PDF to OCR when its text really is
+missing, and leave healthy PDFs alone?
+
+Two arms, same frozen corpus, same labels, same scoring; the only difference is
+the code that computes the evidence the gate reads:
+
+| Arm | Code | Difference |
+| --- | --- | --- |
+| `sampled_baseline` | `5bac71e` | pdf-inspector's default detection: OCR need from at most 8 sampled pages |
+| `full_scan_candidate` | `7280766` (`feat/full-page-ocr-evidence`) | For `text_based` PDFs over 8 pages, OCR need from a scan of every page |
+
+The result decides two things: whether the `0.5` / `0.10` gate needs
+recalibration (a separate proposal, never this change), and whether PR #95
+merges.
+
+## Setup at a glance
+
+| Corpus | Labels | Gate under test | Reader chain | OCR |
+| --- | --- | --- | --- | --- |
+| 40 natural open-licence PDFs, 1,123 pages, 5 strata | 18 `needs_ocr`, 22 `usable`, 0 ambiguous | `OCR_FALLBACK_ENABLED=true`, `0.5` confidence, `0.10` page fraction, unconditional `scanned`/`image_based` | `pdf_inspector` → `liteparse` → `pypdf` (ADR-066) | none executed; `ocr_client=None`, costs are projections |
+
+Labels come from an independent page assessment (poppler `pdftotext` and pypdf
+text layers scored against a vision-model reference transcription), then the
+operator's verdicts on 277 reviewed pages, which override the rule where they
+exist. See protocol.md "Label validation exercises" and the amendments in
+`plan.json`: the automatic rule and the operator disagreed on 20.2% of the
+random sample even after a narrowing re-check, and the cause is named below.
+
+## Results
+
+### Preregistered triggers
+
+| Trigger | Rule | `sampled_baseline` | `full_scan_candidate` |
+| --- | --- | --- | --- |
+| Recall evaluable | ≥ 1 natural `needs_ocr` document | 18 documents — evaluable | 18 documents — evaluable |
+| False negatives | `false_negative_count >= 1` fires a calibration recommendation | 8 — **fired** | 7 — **fired** |
+| False positives on born-digital | `>= 1` fires | 0 | 0 |
+
+### Primary and secondary measurements
+
+| Measurement | `sampled_baseline` | `full_scan_candidate` |
+| --- | ---: | ---: |
+| `routing_recall` (routed ÷ documents needing OCR) | 0.556 (10/18) | 0.611 (11/18) |
+| Wilson 95% interval | 0.337–0.754 | 0.386–0.797 |
+| `false_negative_count` | 8 | 7 |
+| `routing_precision` (correct ÷ routed) | 0.909 | 0.917 |
+| `false_positive_count` (healthy routed) | 1 (`mx08`) | 1 (`mx08`) |
+| `unnecessary_ocr_pages` (usable pages inside routed documents) | 121 | 137 |
+| Routed documents / pages | 11 / 395 | 12 / 444 |
+| Projected OCR time (33.7–106.4 s per page) | 3.7–11.7 h | 4.2–13.1 h |
+| Read time, all 40 documents | 9.27 s | 9.51 s |
+
+### By stratum (`sampled_baseline`)
+
+| Stratum | Correctly routed | Missed | Healthy kept fast | Healthy routed |
+| --- | ---: | ---: | ---: | ---: |
+| `image_only_scan` | 8 | 0 | 0 | 0 |
+| `scan_with_text_layer` | 2 | 3 | 3 | 0 |
+| `mixed` | 0 | 2 | 5 | 1 |
+| `reader_failure` | 0 | 2 | 6 | 0 |
+| `born_digital` | 0 | 1 | 7 | 0 |
+
+### The 8 missed documents
+
+| Document | What it is | `pdf_type` | Pages flagged | Pages needing OCR | Missed because |
+| --- | --- | --- | ---: | ---: | --- |
+| `rf06` | Handwritten Spanish academic record, 89 pp | `text_based` | 0 | 43 | LiteParse rescue accepted junk text; fast-path text recall 0.236 |
+| `rf07` | Handwritten Spanish academic record, 63 pp | `text_based` | 0 | 17 | Same; fast-path text recall 0.469 |
+| `mx02` | GAO report with scanned comment letters, 19 pp | `text_based` | 0 | 3 | Letter pages carry header text, so the detector does not call them scanned |
+| `mx07` | GAO report with scanned comment letters, 46 pp | `text_based` | 0 | 7 | Same |
+| `tl07` | US patent 1701513, 3 pp | `text_based` | 0 | 1 | Drawing sheet with a little text |
+| `tl08` | US patent 2163042, 4 pp | `text_based` | 0 | 1 | Same |
+| `bd04` | Born-digital mathematics paper, 31 pp | `text_based` | 0 | 6 | Words extract cleanly; the equations do not. The gate never looks at maths |
+| `tl02` | NASA technical note, scanned with OCR layer, 49 pp | `text_based` | 0 → 45 | 33 | 8-page sample missed every affected page. **The candidate catches this** |
+
+### The 1 false positive
+
+`mx08` (13-page Peruvian thesis) classifies as `image_based`, which routes
+unconditionally (ADR-065). Its body text is present on 12 of 13 pages, so the
+label is `usable`. Both arms route it; the classification, not the threshold,
+decides.
+
+### Reader-quality loss (fast-path text vs the reference transcription)
+
+| Document | Token recall on the fast path | Attributed to |
+| --- | ---: | --- |
+| `tl02` | 0.015 | `pdf_inspector` (candidate arm routes it instead) |
+| `rf06` | 0.236 | `liteparse` |
+| `rf07` | 0.469 | `liteparse` |
+
+### Local OCR tier (task 6.7, evidence gate 1 for `page-level-ocr-routing`)
+
+pdf-inspector 1.17.0 selective OCR in `force` mode (PP-OCRv6 Small on ONNX
+Runtime, CPU, local only) ran on every natural page whose frozen body or
+all-text label is `needs_ocr`: 464 pages across 28 documents, 731 s wall clock,
+no error and no document over the 900 s soft limit. Routing was never
+consulted. Scores are token recall against the reference transcription.
+
+| Measurement | Value |
+| --- | ---: |
+| Pages measured | 464 (399 with body label `needs_ocr`, 65 figure-only) |
+| Body recall ≥ 0.8 | 0.311 |
+| Body recall < 0.5 | 0.516 |
+| Pages with no text at all | 0.003 |
+| `hosted_recommended` share | 0.015 |
+| Seconds per page | 1.58 mean, 0.75 median |
+
+The aggregate hides a bimodal split. Local OCR either reads a page well or does
+not read it at all, and which happens is decided by the writing system and the
+typography, not by page quality:
+
+| Class | Pages | Median recall | ≥ 0.8 | < 0.5 |
+| --- | ---: | ---: | ---: | ---: |
+| Modern Latin-script print | 144 | 0.977 | 0.840 | 0.111 |
+| Early-modern Latin book (`io06`) | 66 | 0.609 | 0.015 | 0.197 |
+| Handwriting (`rf06`, `rf07`) | 60 | 0.310 | 0.033 | 0.800 |
+| Non-Latin script (`io01`, `io02` Arabic, `io03` Arabic, `io07` Hindi) | 129 | 0.000 | 0.000 | 1.000 |
+
+Every one of the 129 Devanagari and Arabic pages scored 0.000: the packaged
+model has no recogniser for those scripts.
+
+**Confidence calibration.** The confidence score separates well
+(AUC 0.949 over all 399 pages, 0.935 within the modern-print class). Raising
+the cut trades worker cost against pages kept wrong:
+
+| Confidence cut | Escalation share | Kept pages, recall ≥ 0.8 | Kept pages, recall < 0.5 |
+| ---: | ---: | ---: | ---: |
+| 0.5 | 0.015 | 0.316 | 0.509 |
+| 0.6 | 0.160 | 0.370 | 0.424 |
+| 0.7 | 0.381 | 0.502 | 0.219 |
+| 0.8 | 0.469 | 0.571 | 0.113 |
+| 0.9 | 0.597 | 0.652 | 0.025 |
+
+Per document, a cut of 0.8 escalates the classes the model cannot read —
+`io01` 1.00, `io03` 1.00, `io07` 1.00, `io02` 0.94, `tl01` 0.92 (figure pages),
+`rf07` 0.65, `rf06` 0.63 — and leaves the modern-print documents almost
+untouched (`io04`, `mx01`–`mx07`, `bd04`, `bd07`, `tl07`, `tl08` all at 0.00).
+It has one systematic blind spot: `io06`, the early-modern Latin book, carries
+median confidence 0.922 with median recall 0.609, so a 0.8 cut escalates only
+8% of it. Confident, fluent, and half wrong is the one failure this signal does
+not catch, and it matches the operator's "old-book spelling" note.
+
+`pages_recommending_hosted` is close to useless on natural documents: it fired
+on 6 pages, all genuinely bad, but 206 pages scored below 0.5 recall. It is a
+precise signal with 3% recall; the confidence cut has to do the work.
+
+**Cost.** 0.75 s median per page, with one outlier: `io04`, the dense 1889
+newspaper, at 7.11 s per page. Against the Experiment 24 hosted rates
+(33.7–106.4 s per page), local OCR is 20 to 140 times faster per page on this
+corpus.
+
+### Reader comparison on the operator-reviewed pages (extraction quality)
+
+The operator's spot check judged pypdf's text. This measurement scores all
+three readers of the ADR-066 chain on the same 87 reviewed pages, against the
+same reference transcription, on two scores: token recall (did the words
+survive) and reading order (longest common subsequence against the reference
+token stream, divided by its length — did they arrive in reading order).
+Source: `output/reader_comparison.json`, produced by `compare_readers.py`.
+
+| Reader | Median recall | Median order | Pages with no text |
+| --- | ---: | ---: | ---: |
+| `pdf_inspector` | 0.683 | 0.683 | 19 of 41 |
+| `liteparse` | 0.991 | 0.982 | 2 of 41 |
+| `pypdf` | 0.990 | 0.964 | 2 of 41 |
+
+Counted over the 41 reviewed pages the labels call `usable`, where the fast
+path is expected to work.
+
+**pdf-inspector reads well or not at all.** On the 22 `usable` pages where it
+produced text it ties pypdf on recall and equals or beats it on order, never
+worse, with a median order gap of 0.000 against pypdf's 0.021. On the other 19
+(46.3% of the reviewed `usable` pages, all from the seeded random sample) it
+returned nothing. Those split three ways: 7 pages in documents that route to
+OCR regardless (`io06` `scanned`, `mx08` `image_based`); 7 pages in documents
+the ADR-066 chain rescued whole (`rf02`, `rf03`, `rf04`, `rf08`, all to
+liteparse); and 5 pages in `tl01` and `tl03`, which pass the document-level
+silent-empty check and lose those pages with no signal anywhere.
+
+**The column loss is in liteparse's join, not in OCR.** Liteparse keeps
+almost every word and then emits it out of order on multi-column pages. On the
+operator's column pages it scores recall 0.98 with order 0.53, where pypdf
+scores 0.98 and 0.98:
+
+| Page | Operator note | `pdf_inspector` | `liteparse` | `pypdf` |
+| --- | --- | ---: | ---: | ---: |
+| `bd01` p4 | needs better support for two columns | 0.98 / 0.98 | 1.00 / 0.53 | 0.99 / 0.98 |
+| `bd02` p1 | needs better support for two columns | 0.97 / 0.84 | 0.98 / 0.67 | 0.96 / 0.60 |
+| `rf04` p4 | needs dual column support | — | 0.98 / 0.53 | 0.98 / 0.98 |
+| `rf04` p6 | needs dual column and table support | — | 0.98 / 0.53 | 0.98 / 0.97 |
+| `tl03` p5 | needs table extraction support | — | 0.76 / 0.74 | 0.94 / 0.85 |
+
+Recall / order. An em dash means the reader produced no text for that page.
+
+`rf04` is rescued to liteparse, so liteparse's 0.53 is what ships — worse than
+the pypdf text the operator judged. The liteparse adapter already labels each
+page `single`, `left` or `right` from its text-item x positions, but the join
+(`"\n".join(item.text for item in page.text_items)`) ignores that label.
+
+**A column-aware sort is a candidate, not an answer.** Re-joining liteparse's
+own text items by (column, y, x) lifts order on true two-column pages and
+damages everything else, recall unchanged throughout:
+
+| Page | Shipped order | Sorted by (y, x) | Sorted by (column, y, x) |
+| --- | ---: | ---: | ---: |
+| `rf04` p4 | 0.53 | 0.53 | **0.93** |
+| `rf04` p6 | 0.53 | 0.53 | **0.96** |
+| `bd01` p4 | 0.53 | 0.53 | **0.95** |
+| `bd02` p1 (front page with sidebar) | 0.67 | 0.63 | 0.52 |
+| `tl03` p5 (table) | 0.74 | 0.71 | 0.40 |
+
+The 45% split that fixes a two-column body breaks a journal front page and a
+table. A layout detector and its own experiment decide this, not a guess.
+
+## Discussion
+
+1. **Three mechanisms, not one.** The misses split cleanly. `tl02` is a
+   sampling failure, fixed by PR #95. `rf06`, `rf07`, `mx02`, `mx07`, `tl07`
+   and `tl08` are detection failures: pdf-inspector's page test asks whether a
+   page looks like a scan, and a page with a header line, a caption or junk OCR
+   text does not. `bd04` is a definition failure: the gate measures missing
+   words, and this page loses only its equations. No threshold change fixes the
+   last two classes, which is why the `0.5` / `0.10` values are left untouched
+   here.
+
+2. **The rescue chain can hide a scan.** ADR-066's chain exists to save a
+   readable text layer that pdf-inspector cannot read, and TDR-024 zeroes
+   `pages_needing_ocr` after a successful rescue. On `rf06` and `rf07` the
+   rescue produced text that matches 24% and 47% of the page content, and the
+   zeroed evidence then kept both documents on the fast path. Experiment 31
+   measured the same effect on retrieval; here it converts into two missed
+   documents.
+
+3. **The candidate fix is a small, real gain.** One more document caught, no
+   new false alarm, 49 extra OCR pages, 0.24 s extra read time across 40
+   documents. The illustrated-book over-routing risk recorded in TDR-026 did
+   not appear on this corpus: `unnecessary_ocr_pages` rose from 121 to 137, all
+   inside documents that genuinely need OCR.
+
+4. **The operator's labels found a second question the gate does not ask.**
+   The first spot check disagreed with the automatic rule on 41.5% of the
+   random sample. The narrowed re-check still disagreed on 20.2%. The cause is
+   not a broken rule: on 10 of those 19 pages both text layers hold 85–100% of
+   the words while equations, tables, columns or figure content are lost. The
+   operator's notes name the recurring cases: equations and scientific
+   notation, figures needing interpretation, two- and three-column layout,
+   tables, headings and footnote numbers, old-book spelling, and non-Latin
+   scripts (Hindi, Arabic). Those are document-understanding needs, not OCR
+   needs, and they are kept as `understanding_label` in `spot_check.json`.
+
+5. **Limitations.**
+   1. 18 positives give a wide recall interval (0.337–0.754); the direction is
+      solid, the exact value is not.
+   2. The 100-page cap excludes long books, including the 991-page document
+      that failed Experiment 28.
+   3. `mixed` is 7 GAO reports plus 1 thesis, and `scan_with_text_layer` draws
+      from two producers (NASA NTRS, Google patent images).
+   4. Labels on the 846 unreviewed pages come from the automatic rule, which
+      is known to miss equation loss.
+   5. No OCR ran. Every cost figure is a projection at the Experiment 24 rates.
+
+## Conclusion
+
+The question is answered: on natural documents the shipped gate detects about
+half of real OCR need (10 of 18), while over-routing almost nothing (1 of 22).
+The preregistered false-negative trigger fired in both arms, so a calibration
+proposal is warranted — but the evidence says thresholds are the smallest part
+of the problem. Two changes address the measured causes:
+
+1. **Merge PR #95** (`full-page-ocr-evidence`): it removes the sampling blind
+   spot, catches `tl02`, and adds no false alarm here.
+2. **Treat a low-quality rescue as OCR-required** rather than zero evidence.
+   `rf06` and `rf07` show the current rule hides scans behind junk text; this
+   needs its own proposal with a quality signal.
+
+3. **Give the local OCR tier an escalation rule that keys on script and
+   typography, not confidence alone.** Task 6.7 measured the tier: on modern
+   Latin-script print it reads 84% of pages at recall ≥ 0.8 for 0.75 s a page,
+   and on Devanagari and Arabic it reads nothing at all. A 0.8 confidence cut
+   escalates the unreadable classes almost perfectly and leaves the readable
+   ones alone, but it misses `io06`, where the model is confident and half
+   wrong on early-modern typography.
+
+Page-level OCR routing (`page-level-ocr-routing`) remains the structural
+answer to both the cost trade-off and the understanding needs the operator
+recorded. Its evidence gate 1 is task 6.7 of this experiment, now measured: the
+tier is worth building for the documents it can read, and the change needs an
+escalation rule that admits the documents it cannot.
+
+## Artefacts
+
+| File | Description |
+| --- | --- |
+| `output/arm_sampled_baseline/` | Routing rows, runtime manifest and summary for the preregistered gate |
+| `output/arm_full_scan_candidate/` | Same for the PR #95 candidate |
+| `output/arm_comparison.json` | Per-arm headline measurements and the documents whose route differs |
+| `output/page_evidence.json` | Per-page match scores, labels, `label_source` |
+| `labels.json`, `spot_check.json` | Frozen labels; operator verdicts, notes and agreement |
+| `output/frozen.manifest.json` | Freeze digests for corpus, labels and protocol |
+| `output/local_ocr/pages.json`, `output/local_ocr/summary.json` | Per-page local OCR rows (recall, confidence, provenance, timing) and the task 6.7 summary |
+| `output/reader_comparison.json` | pdf-inspector, liteparse and pypdf recall and reading order on the 87 operator-reviewed pages |
+| `output/probe/`, `probe.json` | Exploratory page-fraction boundary probe and position sweep |
+| `synthetic.json` | Synthetic degraded set for Stage B (CER reference) |
+| `SOURCING.md`, `sources.json` | Corpus provenance, licences and hashes |

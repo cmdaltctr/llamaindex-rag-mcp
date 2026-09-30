@@ -1,10 +1,10 @@
 # TDR-007: CI quality toolchain consolidation — Ruff, CodeRabbit, and Codecov replace SonarCloud
 
-**Date:** 2026-08-10
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Supersedes:** TDR-002
-**Tags:** ci | lint | security | coverage | ruff | coderabbit | codecov | sonarcloud
+- **Date:** 2026-08-10
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Supersedes:** TDR-002
+- **Tags:** ci | lint | security | coverage | ruff | coderabbit | codecov | sonarcloud
 
 ## Context
 

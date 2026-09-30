@@ -1,9 +1,9 @@
 # TDR-001: Fix codebase map dead code and missing boundary validation
 
-**Date:** 2026-06-28
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Tags:** codebase-map | security | dead-code | magika
+- **Date:** 2026-06-28
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Tags:** codebase-map | security | dead-code | magika
 
 ## Context
 

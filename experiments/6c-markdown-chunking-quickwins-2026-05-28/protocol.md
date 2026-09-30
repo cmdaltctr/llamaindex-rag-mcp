@@ -1,10 +1,10 @@
 # Experiment 6c: Quick-Win Interventions for Markdown Chunking on Qasper
 
-**ID**: `markdown-chunking-quickwins-2026-05-28`
-**Date**: 2026-05-28
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with build agent
-**Status**: ACTIVE — follow-up to Experiment 6b's negative result. Same Qasper-dev corpus, same evidence-level metrics, same Pass A / Pass B methodology. Adds four targeted interventions and reports each independently and in combination.
-**Related OpenSpec change**: `4-experiment-6c-markdown-chunking-quickwins`
+- **ID**: `markdown-chunking-quickwins-2026-05-28`
+- **Date**: 2026-05-28
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with build agent
+- **Status**: ACTIVE — follow-up to Experiment 6b's negative result. Same Qasper-dev corpus, same evidence-level metrics, same Pass A / Pass B methodology. Adds four targeted interventions and reports each independently and in combination.
+- **Related OpenSpec change**: `4-experiment-6c-markdown-chunking-quickwins`
 
 ---
 

@@ -1,13 +1,13 @@
 # Experiment 29: PDF routing repeat study
 
-**ID**: `29-pdf-routing-repeat-2026-09-13`  
-**Date run**: 2026-09-13  
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  
-**Status**: PASS — safety gate green; recall gate not_evaluable by construction; dev_003 label amended post-run (see Results)  
-**Verdict**: The OCR routing fix works. Enable `OCR_FALLBACK_ENABLED` with the promoted thresholds — the corpus no longer contains a case where a bare enable differs, so that risk is untested here, not cleared.  
-**Raw data**: [`output/classifications.json`](./output/classifications.json), [`output/eval_results.summary.json`](./output/eval_results.summary.json)  
-**Change**: `openspec/changes/repeat-pdf-routing-study`  
-**Protocol**: [protocol.md](protocol.md)
+- **ID**: `29-pdf-routing-repeat-2026-09-13`
+- **Date run**: 2026-09-13
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: PASS — safety gate green; recall gate not_evaluable by construction; dev_003 label amended post-run (see Results)
+- **Verdict**: The OCR routing fix works. Enable `OCR_FALLBACK_ENABLED` with the promoted thresholds — the corpus no longer contains a case where a bare enable differs, so that risk is untested here, not cleared.
+- **Raw data**: [`output/classifications.json`](./output/classifications.json), [`output/eval_results.summary.json`](./output/eval_results.summary.json)
+- **Change**: `openspec/changes/repeat-pdf-routing-study`
+- **Protocol**: [protocol.md](protocol.md)
 
 ## Bottom line
 

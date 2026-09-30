@@ -1,10 +1,10 @@
 # Experiment 27 Results: Combined candidate path (task 5.4)
 
-**ID**: `27-combined-candidate-path-2026-09-09`  
-**Date run**: 2026-09-09  
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  
-**Status**: FAIL  
-**Raw data**: [`output/eval_results.summary.json`](./output/eval_results.summary.json)
+- **ID**: `27-combined-candidate-path-2026-09-09`
+- **Date run**: 2026-09-09
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: FAIL
+- **Raw data**: [`output/eval_results.summary.json`](./output/eval_results.summary.json)
 
 ---
 

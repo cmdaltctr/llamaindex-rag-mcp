@@ -1,9 +1,9 @@
 # TDR-012: Widen Null-Typed LanceDB Adapter Columns Before Write
 
-**Date:** 2026-08-19
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Tags:** lancedb | pyarrow | ingestion | stage3a
+- **Date:** 2026-08-19
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Tags:** lancedb | pyarrow | ingestion | stage3a
 
 ## Context
 

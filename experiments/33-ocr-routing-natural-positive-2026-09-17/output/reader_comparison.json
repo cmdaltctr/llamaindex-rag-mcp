@@ -1,0 +1,2092 @@
+{
+ "pages": [
+  {
+   "doc_id": "bd01",
+   "page": 4,
+   "stratum": "born_digital",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "needs better support for two columns",
+   "reference_tokens": 1204,
+   "pdf_inspector": {
+    "chars": 8392,
+    "recall": 0.9834,
+    "order": 0.9834
+   },
+   "liteparse": {
+    "chars": 8307,
+    "recall": 1.0,
+    "order": 0.5332
+   },
+   "pypdf": {
+    "chars": 8336,
+    "recall": 0.9884,
+    "order": 0.9767
+   }
+  },
+  {
+   "doc_id": "bd02",
+   "page": 1,
+   "stratum": "born_digital",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "needs better support for two columns",
+   "reference_tokens": 549,
+   "pdf_inspector": {
+    "chars": 3849,
+    "recall": 0.969,
+    "order": 0.8361
+   },
+   "liteparse": {
+    "chars": 3840,
+    "recall": 0.98,
+    "order": 0.6703
+   },
+   "pypdf": {
+    "chars": 3837,
+    "recall": 0.9636,
+    "order": 0.5974
+   }
+  },
+  {
+   "doc_id": "bd03",
+   "page": 16,
+   "stratum": "born_digital",
+   "presence_label": "usable",
+   "understanding_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names",
+   "reference_tokens": 496,
+   "pdf_inspector": {
+    "chars": 2763,
+    "recall": 0.746,
+    "order": 0.746
+   },
+   "liteparse": {
+    "chars": 2544,
+    "recall": 0.7359,
+    "order": 0.7359
+   },
+   "pypdf": {
+    "chars": 2573,
+    "recall": 0.748,
+    "order": 0.4456
+   }
+  },
+  {
+   "doc_id": "bd04",
+   "page": 11,
+   "stratum": "born_digital",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "reference_tokens": 151,
+   "pdf_inspector": {
+    "chars": 1441,
+    "recall": 0.9801,
+    "order": 0.9669
+   },
+   "liteparse": {
+    "chars": 1254,
+    "recall": 0.9801,
+    "order": 0.9801
+   },
+   "pypdf": {
+    "chars": 1303,
+    "recall": 0.9669,
+    "order": 0.9669
+   }
+  },
+  {
+   "doc_id": "bd04",
+   "page": 15,
+   "stratum": "born_digital",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "reference_tokens": 174,
+   "pdf_inspector": {
+    "chars": 1540,
+    "recall": 0.6092,
+    "order": 0.6092
+   },
+   "liteparse": {
+    "chars": 1305,
+    "recall": 0.977,
+    "order": 0.9655
+   },
+   "pypdf": {
+    "chars": 1321,
+    "recall": 0.8966,
+    "order": 0.8966
+   }
+  },
+  {
+   "doc_id": "bd04",
+   "page": 16,
+   "stratum": "born_digital",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "reference_tokens": 201,
+   "pdf_inspector": {
+    "chars": 1733,
+    "recall": 0.6667,
+    "order": 0.6667
+   },
+   "liteparse": {
+    "chars": 1411,
+    "recall": 0.8806,
+    "order": 0.8806
+   },
+   "pypdf": {
+    "chars": 1432,
+    "recall": 0.9502,
+    "order": 0.9502
+   }
+  },
+  {
+   "doc_id": "bd04",
+   "page": 22,
+   "stratum": "born_digital",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "reference_tokens": 174,
+   "pdf_inspector": {
+    "chars": 1804,
+    "recall": 0.5977,
+    "order": 0.5977
+   },
+   "liteparse": {
+    "chars": 1449,
+    "recall": 0.954,
+    "order": 0.8966
+   },
+   "pypdf": {
+    "chars": 1478,
+    "recall": 0.908,
+    "order": 0.908
+   }
+  },
+  {
+   "doc_id": "bd04",
+   "page": 25,
+   "stratum": "born_digital",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "reference_tokens": 271,
+   "pdf_inspector": {
+    "chars": 2138,
+    "recall": 0.9114,
+    "order": 0.8967
+   },
+   "liteparse": {
+    "chars": 2021,
+    "recall": 0.9963,
+    "order": 0.9926
+   },
+   "pypdf": {
+    "chars": 2105,
+    "recall": 0.9631,
+    "order": 0.9631
+   }
+  },
+  {
+   "doc_id": "bd04",
+   "page": 30,
+   "stratum": "born_digital",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "reference_tokens": 314,
+   "pdf_inspector": {
+    "chars": 2602,
+    "recall": 0.9968,
+    "order": 0.9968
+   },
+   "liteparse": {
+    "chars": 2454,
+    "recall": 0.9968,
+    "order": 0.9968
+   },
+   "pypdf": {
+    "chars": 2464,
+    "recall": 0.9904,
+    "order": 0.9904
+   }
+  },
+  {
+   "doc_id": "bd05",
+   "page": 22,
+   "stratum": "born_digital",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 462,
+   "pdf_inspector": {
+    "chars": 3285,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "liteparse": {
+    "chars": 3263,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 3305,
+    "recall": 0.9978,
+    "order": 0.9957
+   }
+  },
+  {
+   "doc_id": "bd06",
+   "page": 9,
+   "stratum": "born_digital",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 565,
+   "pdf_inspector": {
+    "chars": 3824,
+    "recall": 0.9947,
+    "order": 0.9947
+   },
+   "liteparse": {
+    "chars": 3816,
+    "recall": 0.9947,
+    "order": 0.9947
+   },
+   "pypdf": {
+    "chars": 3880,
+    "recall": 0.9947,
+    "order": 0.9912
+   }
+  },
+  {
+   "doc_id": "bd07",
+   "page": 8,
+   "stratum": "born_digital",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly",
+   "reference_tokens": 306,
+   "pdf_inspector": {
+    "chars": 2244,
+    "recall": 0.7974,
+    "order": 0.7778
+   },
+   "liteparse": {
+    "chars": 2031,
+    "recall": 0.8856,
+    "order": 0.866
+   },
+   "pypdf": {
+    "chars": 1936,
+    "recall": 0.8595,
+    "order": 0.8595
+   }
+  },
+  {
+   "doc_id": "bd07",
+   "page": 10,
+   "stratum": "born_digital",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly",
+   "reference_tokens": 389,
+   "pdf_inspector": {
+    "chars": 3212,
+    "recall": 0.9563,
+    "order": 0.9563
+   },
+   "liteparse": {
+    "chars": 3025,
+    "recall": 0.9897,
+    "order": 0.9871
+   },
+   "pypdf": {
+    "chars": 2993,
+    "recall": 0.9897,
+    "order": 0.9897
+   }
+  },
+  {
+   "doc_id": "bd07",
+   "page": 14,
+   "stratum": "born_digital",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 436,
+   "pdf_inspector": {
+    "chars": 3310,
+    "recall": 0.9748,
+    "order": 0.9748
+   },
+   "liteparse": {
+    "chars": 3249,
+    "recall": 0.9679,
+    "order": 0.9679
+   },
+   "pypdf": {
+    "chars": 3255,
+    "recall": 0.9633,
+    "order": 0.9633
+   }
+  },
+  {
+   "doc_id": "bd07",
+   "page": 40,
+   "stratum": "born_digital",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly",
+   "reference_tokens": 220,
+   "pdf_inspector": {
+    "chars": 2400,
+    "recall": 0.8773,
+    "order": 0.8682
+   },
+   "liteparse": {
+    "chars": 2028,
+    "recall": 0.95,
+    "order": 0.9409
+   },
+   "pypdf": {
+    "chars": 1938,
+    "recall": 0.9273,
+    "order": 0.9273
+   }
+  },
+  {
+   "doc_id": "io01",
+   "page": 23,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for the language and its alphabets",
+   "reference_tokens": 44,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io01",
+   "page": 29,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for the language and its alphabets",
+   "reference_tokens": 79,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io01",
+   "page": 40,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for the language and its alphabets",
+   "reference_tokens": 72,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io01",
+   "page": 41,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for the language and its alphabets",
+   "reference_tokens": 94,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io02",
+   "page": 16,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for the language and its alphabets",
+   "reference_tokens": 115,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io03",
+   "page": 5,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for the language and its alphabets",
+   "reference_tokens": 314,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io04",
+   "page": 16,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for dual column and images needs llm maybe ",
+   "reference_tokens": 1365,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io04",
+   "page": 20,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for dual column and images needs llm maybe ",
+   "reference_tokens": 1650,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io04",
+   "page": 33,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for dual/triple column and images needs llm maybe ",
+   "reference_tokens": 2332,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io04",
+   "page": 52,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for dual/triple column and images needs llm maybe ",
+   "reference_tokens": 928,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io06",
+   "page": 28,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for language",
+   "reference_tokens": 179,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io06",
+   "page": 30,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for language",
+   "reference_tokens": 177,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io06",
+   "page": 46,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for language",
+   "reference_tokens": 151,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io06",
+   "page": 53,
+   "stratum": "image_only_scan",
+   "presence_label": "usable",
+   "understanding_label": "unrecoverable",
+   "note": "",
+   "reference_tokens": 16,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io06",
+   "page": 63,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for language",
+   "reference_tokens": 195,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io06",
+   "page": 68,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for language",
+   "reference_tokens": 198,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io06",
+   "page": 75,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for language",
+   "reference_tokens": 18,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io06",
+   "page": 78,
+   "stratum": "image_only_scan",
+   "presence_label": "usable",
+   "understanding_label": "unrecoverable",
+   "note": "",
+   "reference_tokens": 3,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io07",
+   "page": 28,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for language",
+   "reference_tokens": 66,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io07",
+   "page": 33,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for language",
+   "reference_tokens": 57,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "io07",
+   "page": 44,
+   "stratum": "image_only_scan",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs support for language",
+   "reference_tokens": 84,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "mx02",
+   "page": 4,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 116,
+   "pdf_inspector": {
+    "chars": 841,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "liteparse": {
+    "chars": 831,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 937,
+    "recall": 1.0,
+    "order": 0.931
+   }
+  },
+  {
+   "doc_id": "mx04",
+   "page": 3,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 105,
+   "pdf_inspector": {
+    "chars": 758,
+    "recall": 1.0,
+    "order": 0.9429
+   },
+   "liteparse": {
+    "chars": 715,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 795,
+    "recall": 1.0,
+    "order": 0.9143
+   }
+  },
+  {
+   "doc_id": "mx04",
+   "page": 4,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 98,
+   "pdf_inspector": {
+    "chars": 666,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "liteparse": {
+    "chars": 655,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 753,
+    "recall": 1.0,
+    "order": 0.9082
+   }
+  },
+  {
+   "doc_id": "mx04",
+   "page": 11,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "ambiguous",
+   "note": "words extracted well, but needs llm to make sense of the image",
+   "reference_tokens": 175,
+   "pdf_inspector": {
+    "chars": 1043,
+    "recall": 0.84,
+    "order": 0.84
+   },
+   "liteparse": {
+    "chars": 1028,
+    "recall": 0.8514,
+    "order": 0.8514
+   },
+   "pypdf": {
+    "chars": 1181,
+    "recall": 0.8514,
+    "order": 0.8057
+   }
+  },
+  {
+   "doc_id": "mx04",
+   "page": 21,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 408,
+   "pdf_inspector": {
+    "chars": 2749,
+    "recall": 0.9853,
+    "order": 0.9853
+   },
+   "liteparse": {
+    "chars": 2739,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 2913,
+    "recall": 1.0,
+    "order": 0.9779
+   }
+  },
+  {
+   "doc_id": "mx04",
+   "page": 32,
+   "stratum": "mixed",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 316,
+   "pdf_inspector": {
+    "chars": 107,
+    "recall": 0.057,
+    "order": 0.057
+   },
+   "liteparse": {
+    "chars": 97,
+    "recall": 0.057,
+    "order": 0.057
+   },
+   "pypdf": {
+    "chars": 116,
+    "recall": 0.057,
+    "order": 0.057
+   }
+  },
+  {
+   "doc_id": "mx05",
+   "page": 18,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "needs_ocr",
+   "note": "words extracted well, but needs llm to make sense of the image",
+   "reference_tokens": 268,
+   "pdf_inspector": {
+    "chars": 1253,
+    "recall": 0.6828,
+    "order": 0.6828
+   },
+   "liteparse": {
+    "chars": 1235,
+    "recall": 0.6828,
+    "order": 0.6828
+   },
+   "pypdf": {
+    "chars": 1270,
+    "recall": 0.6828,
+    "order": 0.6567
+   }
+  },
+  {
+   "doc_id": "mx05",
+   "page": 28,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 161,
+   "pdf_inspector": {
+    "chars": 1051,
+    "recall": 0.9876,
+    "order": 0.9876
+   },
+   "liteparse": {
+    "chars": 1045,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 1076,
+    "recall": 1.0,
+    "order": 0.9565
+   }
+  },
+  {
+   "doc_id": "mx05",
+   "page": 31,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "needs_ocr",
+   "note": "words extracted well, but needs llm to make sense of the image",
+   "reference_tokens": 331,
+   "pdf_inspector": {
+    "chars": 793,
+    "recall": 0.3686,
+    "order": 0.3686
+   },
+   "liteparse": {
+    "chars": 776,
+    "recall": 0.3686,
+    "order": 0.3686
+   },
+   "pypdf": {
+    "chars": 801,
+    "recall": 0.3686,
+    "order": 0.3474
+   }
+  },
+  {
+   "doc_id": "mx07",
+   "page": 5,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 284,
+   "pdf_inspector": {
+    "chars": 2097,
+    "recall": 0.9824,
+    "order": 0.9824
+   },
+   "liteparse": {
+    "chars": 2068,
+    "recall": 0.9859,
+    "order": 0.9859
+   },
+   "pypdf": {
+    "chars": 2117,
+    "recall": 0.9859,
+    "order": 0.9648
+   }
+  },
+  {
+   "doc_id": "mx07",
+   "page": 8,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 320,
+   "pdf_inspector": {
+    "chars": 2303,
+    "recall": 0.9844,
+    "order": 0.9812
+   },
+   "liteparse": {
+    "chars": 2292,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 2347,
+    "recall": 1.0,
+    "order": 0.975
+   }
+  },
+  {
+   "doc_id": "mx07",
+   "page": 9,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 393,
+   "pdf_inspector": {
+    "chars": 2915,
+    "recall": 0.9847,
+    "order": 0.9669
+   },
+   "liteparse": {
+    "chars": 2780,
+    "recall": 1.0,
+    "order": 0.9822
+   },
+   "pypdf": {
+    "chars": 2839,
+    "recall": 1.0,
+    "order": 0.9644
+   }
+  },
+  {
+   "doc_id": "mx07",
+   "page": 13,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 378,
+   "pdf_inspector": {
+    "chars": 2630,
+    "recall": 0.9841,
+    "order": 0.963
+   },
+   "liteparse": {
+    "chars": 2609,
+    "recall": 1.0,
+    "order": 0.9788
+   },
+   "pypdf": {
+    "chars": 2668,
+    "recall": 1.0,
+    "order": 0.9524
+   }
+  },
+  {
+   "doc_id": "mx07",
+   "page": 14,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 359,
+   "pdf_inspector": {
+    "chars": 2448,
+    "recall": 0.9833,
+    "order": 0.9833
+   },
+   "liteparse": {
+    "chars": 2438,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 2491,
+    "recall": 1.0,
+    "order": 0.9777
+   }
+  },
+  {
+   "doc_id": "mx07",
+   "page": 17,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 352,
+   "pdf_inspector": {
+    "chars": 2494,
+    "recall": 0.9886,
+    "order": 0.9886
+   },
+   "liteparse": {
+    "chars": 2461,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 2512,
+    "recall": 1.0,
+    "order": 0.9773
+   }
+  },
+  {
+   "doc_id": "mx07",
+   "page": 34,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 386,
+   "pdf_inspector": {
+    "chars": 2741,
+    "recall": 0.9922,
+    "order": 0.9922
+   },
+   "liteparse": {
+    "chars": 2707,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 2776,
+    "recall": 1.0,
+    "order": 0.9793
+   }
+  },
+  {
+   "doc_id": "mx07",
+   "page": 37,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 245,
+   "pdf_inspector": {
+    "chars": 1748,
+    "recall": 0.9837,
+    "order": 0.9837
+   },
+   "liteparse": {
+    "chars": 1733,
+    "recall": 0.9918,
+    "order": 0.9918
+   },
+   "pypdf": {
+    "chars": 1781,
+    "recall": 0.9918,
+    "order": 0.9592
+   }
+  },
+  {
+   "doc_id": "mx07",
+   "page": 42,
+   "stratum": "mixed",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 228,
+   "pdf_inspector": {
+    "chars": 123,
+    "recall": 0.0746,
+    "order": 0.0746
+   },
+   "liteparse": {
+    "chars": 113,
+    "recall": 0.0746,
+    "order": 0.0746
+   },
+   "pypdf": {
+    "chars": 132,
+    "recall": 0.0746,
+    "order": 0.0746
+   }
+  },
+  {
+   "doc_id": "mx08",
+   "page": 4,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 80,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 519,
+    "recall": 0.9875,
+    "order": 0.9875
+   },
+   "pypdf": {
+    "chars": 520,
+    "recall": 0.9875,
+    "order": 0.9875
+   }
+  },
+  {
+   "doc_id": "mx08",
+   "page": 6,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 233,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 1619,
+    "recall": 0.9957,
+    "order": 0.9957
+   },
+   "pypdf": {
+    "chars": 1620,
+    "recall": 0.9957,
+    "order": 0.9957
+   }
+  },
+  {
+   "doc_id": "mx08",
+   "page": 7,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 97,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 3872,
+    "recall": 0.9897,
+    "order": 0.9897
+   },
+   "pypdf": {
+    "chars": 3872,
+    "recall": 0.9897,
+    "order": 0.9897
+   }
+  },
+  {
+   "doc_id": "mx08",
+   "page": 8,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 37,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 881,
+    "recall": 0.973,
+    "order": 0.973
+   },
+   "pypdf": {
+    "chars": 883,
+    "recall": 0.973,
+    "order": 0.973
+   }
+  },
+  {
+   "doc_id": "mx08",
+   "page": 9,
+   "stratum": "mixed",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 267,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 2855,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 2850,
+    "recall": 1.0,
+    "order": 1.0
+   }
+  },
+  {
+   "doc_id": "rf02",
+   "page": 7,
+   "stratum": "reader_failure",
+   "presence_label": "usable",
+   "understanding_label": "needs_ocr",
+   "note": "support for scientifc letters and figures needs toe understood by llm",
+   "reference_tokens": 580,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 3770,
+    "recall": 0.9534,
+    "order": 0.6586
+   },
+   "pypdf": {
+    "chars": 3853,
+    "recall": 0.9552,
+    "order": 0.9534
+   }
+  },
+  {
+   "doc_id": "rf03",
+   "page": 6,
+   "stratum": "reader_failure",
+   "presence_label": "usable",
+   "understanding_label": "needs_ocr",
+   "note": "support for scientifc letters and figures needs toe understood by llm",
+   "reference_tokens": 480,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 3629,
+    "recall": 0.9938,
+    "order": 0.525
+   },
+   "pypdf": {
+    "chars": 3722,
+    "recall": 0.9938,
+    "order": 0.9917
+   }
+  },
+  {
+   "doc_id": "rf04",
+   "page": 4,
+   "stratum": "reader_failure",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "needs dual column support",
+   "reference_tokens": 897,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 5422,
+    "recall": 0.9777,
+    "order": 0.5295
+   },
+   "pypdf": {
+    "chars": 5548,
+    "recall": 0.9777,
+    "order": 0.9777
+   }
+  },
+  {
+   "doc_id": "rf04",
+   "page": 6,
+   "stratum": "reader_failure",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "needs dual column and table support",
+   "reference_tokens": 761,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 4719,
+    "recall": 0.9763,
+    "order": 0.5322
+   },
+   "pypdf": {
+    "chars": 4841,
+    "recall": 0.9763,
+    "order": 0.9737
+   }
+  },
+  {
+   "doc_id": "rf06",
+   "page": 19,
+   "stratum": "reader_failure",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 80,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 102,
+    "recall": 0.05,
+    "order": 0.05
+   },
+   "pypdf": {
+    "chars": 115,
+    "recall": 0.05,
+    "order": 0.05
+   }
+  },
+  {
+   "doc_id": "rf06",
+   "page": 65,
+   "stratum": "reader_failure",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 379,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 2163,
+    "recall": 0.7177,
+    "order": 0.4433
+   },
+   "pypdf": {
+    "chars": 2300,
+    "recall": 0.7309,
+    "order": 0.7071
+   }
+  },
+  {
+   "doc_id": "rf06",
+   "page": 67,
+   "stratum": "reader_failure",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 115,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 764,
+    "recall": 0.0348,
+    "order": 0.0261
+   },
+   "pypdf": {
+    "chars": 803,
+    "recall": 0.0435,
+    "order": 0.0261
+   }
+  },
+  {
+   "doc_id": "rf07",
+   "page": 27,
+   "stratum": "reader_failure",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 140,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 1009,
+    "recall": 0.7786,
+    "order": 0.7643
+   },
+   "pypdf": {
+    "chars": 1050,
+    "recall": 0.7857,
+    "order": 0.7357
+   }
+  },
+  {
+   "doc_id": "rf07",
+   "page": 29,
+   "stratum": "reader_failure",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 137,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 874,
+    "recall": 0.7664,
+    "order": 0.7299
+   },
+   "pypdf": {
+    "chars": 893,
+    "recall": 0.7664,
+    "order": 0.7518
+   }
+  },
+  {
+   "doc_id": "rf07",
+   "page": 47,
+   "stratum": "reader_failure",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 151,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 865,
+    "recall": 0.7417,
+    "order": 0.6954
+   },
+   "pypdf": {
+    "chars": 896,
+    "recall": 0.7483,
+    "order": 0.7219
+   }
+  },
+  {
+   "doc_id": "rf07",
+   "page": 49,
+   "stratum": "reader_failure",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 33,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 19,
+    "recall": 0.0606,
+    "order": 0.0303
+   },
+   "pypdf": {
+    "chars": 23,
+    "recall": 0.0606,
+    "order": 0.0606
+   }
+  },
+  {
+   "doc_id": "rf08",
+   "page": 1,
+   "stratum": "reader_failure",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 34,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "rf08",
+   "page": 10,
+   "stratum": "reader_failure",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 238,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 1253,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 1283,
+    "recall": 1.0,
+    "order": 1.0
+   }
+  },
+  {
+   "doc_id": "rf08",
+   "page": 16,
+   "stratum": "reader_failure",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 232,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 1242,
+    "recall": 0.9914,
+    "order": 0.9914
+   },
+   "pypdf": {
+    "chars": 1272,
+    "recall": 0.9914,
+    "order": 0.9914
+   }
+  },
+  {
+   "doc_id": "rf08",
+   "page": 20,
+   "stratum": "reader_failure",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 216,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 1191,
+    "recall": 1.0,
+    "order": 1.0
+   },
+   "pypdf": {
+    "chars": 1221,
+    "recall": 1.0,
+    "order": 1.0
+   }
+  },
+  {
+   "doc_id": "tl01",
+   "page": 14,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "usable",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 226,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 1447,
+    "recall": 0.8319,
+    "order": 0.8186
+   },
+   "pypdf": {
+    "chars": 1414,
+    "recall": 0.9779,
+    "order": 0.9381
+   }
+  },
+  {
+   "doc_id": "tl01",
+   "page": 23,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "usable",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 217,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 1464,
+    "recall": 0.8618,
+    "order": 0.8618
+   },
+   "pypdf": {
+    "chars": 1447,
+    "recall": 0.9631,
+    "order": 0.8571
+   }
+  },
+  {
+   "doc_id": "tl01",
+   "page": 34,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs llm help to make sense of the figure",
+   "reference_tokens": 30,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 14,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "pypdf": {
+    "chars": 13,
+    "recall": 0.0,
+    "order": 0.0
+   }
+  },
+  {
+   "doc_id": "tl01",
+   "page": 39,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs llm help to make sense of the figure",
+   "reference_tokens": 11,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 101,
+    "recall": 0.6364,
+    "order": 0.6364
+   },
+   "pypdf": {
+    "chars": 104,
+    "recall": 0.6364,
+    "order": 0.4545
+   }
+  },
+  {
+   "doc_id": "tl01",
+   "page": 42,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "usable",
+   "understanding_label": "needs_ocr",
+   "note": "needs llm help to make sense of the figure",
+   "reference_tokens": 13,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 39,
+    "recall": 0.1538,
+    "order": 0.1538
+   },
+   "pypdf": {
+    "chars": 38,
+    "recall": 0.2308,
+    "order": 0.2308
+   }
+  },
+  {
+   "doc_id": "tl01",
+   "page": 59,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs llm help to make sense of the figure",
+   "reference_tokens": 23,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 29,
+    "recall": 0.0435,
+    "order": 0.0435
+   },
+   "pypdf": {
+    "chars": 44,
+    "recall": 0.0435,
+    "order": 0.0435
+   }
+  },
+  {
+   "doc_id": "tl01",
+   "page": 61,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs llm help to make sense of the figure",
+   "reference_tokens": 24,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 2,
+    "recall": 0.0417,
+    "order": 0.0417
+   },
+   "pypdf": {
+    "chars": 3,
+    "recall": 0.0417,
+    "order": 0.0417
+   }
+  },
+  {
+   "doc_id": "tl01",
+   "page": 66,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "",
+   "reference_tokens": 25,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 2,
+    "recall": 0.04,
+    "order": 0.04
+   },
+   "pypdf": {
+    "chars": 3,
+    "recall": 0.04,
+    "order": 0.04
+   }
+  },
+  {
+   "doc_id": "tl03",
+   "page": 1,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "",
+   "reference_tokens": 46,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 237,
+    "recall": 0.7391,
+    "order": 0.7391
+   },
+   "pypdf": {
+    "chars": 247,
+    "recall": 0.7391,
+    "order": 0.7391
+   }
+  },
+  {
+   "doc_id": "tl03",
+   "page": 5,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "usable",
+   "understanding_label": "usable",
+   "note": "needs table extraction support",
+   "reference_tokens": 354,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 2152,
+    "recall": 0.7627,
+    "order": 0.7401
+   },
+   "pypdf": {
+    "chars": 2088,
+    "recall": 0.935,
+    "order": 0.8503
+   }
+  },
+  {
+   "doc_id": "tl03",
+   "page": 9,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs llm support for figure",
+   "reference_tokens": 15,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 97,
+    "recall": 0.8667,
+    "order": 0.8667
+   },
+   "pypdf": {
+    "chars": 99,
+    "recall": 0.8667,
+    "order": 0.8667
+   }
+  },
+  {
+   "doc_id": "tl03",
+   "page": 11,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs llm support for figure",
+   "reference_tokens": 37,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 209,
+    "recall": 0.4595,
+    "order": 0.3784
+   },
+   "pypdf": {
+    "chars": 252,
+    "recall": 0.4595,
+    "order": 0.4595
+   }
+  },
+  {
+   "doc_id": "tl03",
+   "page": 15,
+   "stratum": "scan_with_text_layer",
+   "presence_label": "needs_ocr",
+   "understanding_label": "needs_ocr",
+   "note": "needs llm support for figure",
+   "reference_tokens": 56,
+   "pdf_inspector": {
+    "chars": 0,
+    "recall": 0.0,
+    "order": 0.0
+   },
+   "liteparse": {
+    "chars": 175,
+    "recall": 0.2857,
+    "order": 0.2857
+   },
+   "pypdf": {
+    "chars": 187,
+    "recall": 0.3393,
+    "order": 0.3393
+   }
+  }
+ ]
+}

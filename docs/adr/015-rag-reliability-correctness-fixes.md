@@ -1,8 +1,8 @@
 # ADR-015: RAG Reliability and Correctness Fixes
 
-**Status**: Accepted
-**Date**: 2026-05-27
-**Change**: `rag-reliability-correctness-fixes`
+- **Status**: Accepted
+- **Date**: 2026-05-27
+- **Change**: `rag-reliability-correctness-fixes`
 
 ## Context
 

@@ -1,10 +1,10 @@
 # Experiment 28 Results: PDF classification prevalence (task 5.5)
 
-**ID**: `28-pdf-classification-prevalence-2026-09-09`  
-**Date run**: 2026-09-09  
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  
-**Status**: FAIL  
-**Raw data**: [`output/classifications.json`](./output/classifications.json)
+- **ID**: `28-pdf-classification-prevalence-2026-09-09`
+- **Date run**: 2026-09-09
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: FAIL
+- **Raw data**: [`output/classifications.json`](./output/classifications.json)
 
 ---
 

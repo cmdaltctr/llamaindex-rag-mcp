@@ -1,9 +1,9 @@
 # TDR-021: Release notes must ride a `BREAKING CHANGE` footer on an included commit type
 
-**Date:** 2026-09-01
-**Status:** Accepted
-**Deciders:** Aizat
-**Tags:** release | changelog | semantic-release | ci
+- **Date:** 2026-09-01
+- **Status:** Accepted
+- **Deciders:** Aizat
+- **Tags:** release | changelog | semantic-release | ci
 
 ## Context
 

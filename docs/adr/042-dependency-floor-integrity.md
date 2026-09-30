@@ -1,9 +1,9 @@
 # ADR-042: Dependency Floor Integrity
 
-**Date:** 2026-08-12
-**Status:** Accepted
-**Scopes:** ADR-039 (mcp 2.0), ADR-040 (huggingface-hub 1.0), ADR-041 (onnxruntime 1.28)
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-12
+- **Status:** Accepted
+- **Scopes:** ADR-039 (mcp 2.0), ADR-040 (huggingface-hub 1.0), ADR-041 (onnxruntime 1.28)
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

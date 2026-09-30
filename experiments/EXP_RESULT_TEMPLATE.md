@@ -1,11 +1,11 @@
 # Experiment <N> Results: <Descriptive Title>
 
-**ID**: `<experiment-directory-name>`  
-**Date run**: YYYY-MM-DD  
-**Operator**: <human operator> with <AI/build agent, if used>  
-**Status**: PASS | FAIL | INCONCLUSIVE | PARTIAL  
-**Outcome**: <one-sentence decision, e.g. "Ship as opt-in only; do not flip defaults.">  
-**Raw data**: [`eval_results.json`](./eval_results.json) or <external artifact pointer>
+- **ID**: `<experiment-directory-name>`
+- **Date run**: YYYY-MM-DD
+- **Operator**: <human operator> with <AI/build agent, if used>
+- **Status**: PASS | FAIL | INCONCLUSIVE | PARTIAL
+- **Outcome**: <one-sentence decision, e.g. "Ship as opt-in only; do not flip defaults.">
+- **Raw data**: [`eval_results.json`](./eval_results.json) or <external artifact pointer>
 
 ---
 

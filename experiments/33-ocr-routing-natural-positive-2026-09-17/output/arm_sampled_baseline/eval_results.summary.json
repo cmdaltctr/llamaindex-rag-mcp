@@ -1,0 +1,467 @@
+{
+  "experiment": "33-ocr-routing-natural-positive-2026-09-17",
+  "stage": "A",
+  "verdict": "EVALUABLE",
+  "triggers_fired": [
+    "false_negative_trigger"
+  ],
+  "recommend_calibration_proposal": true,
+  "thresholds_changed": false,
+  "read_errors": [],
+  "primary": {
+    "needs_ocr_documents": 18,
+    "routing_recall": 0.5556,
+    "routing_recall_wilson95": [
+      0.3372,
+      0.7544
+    ],
+    "false_negative_count": 8,
+    "false_negative_ids": [
+      "bd04",
+      "mx02",
+      "mx07",
+      "tl02",
+      "tl07",
+      "tl08",
+      "rf06",
+      "rf07"
+    ]
+  },
+  "false_negative_detail": [
+    {
+      "doc_id": "bd04",
+      "stratum": "born_digital",
+      "pdf_type": "text_based",
+      "pdf_confidence": 1.0,
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "needs_ocr_pages_at_risk": 6,
+      "pages": 31
+    },
+    {
+      "doc_id": "mx02",
+      "stratum": "mixed",
+      "pdf_type": "text_based",
+      "pdf_confidence": 1.0,
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "needs_ocr_pages_at_risk": 3,
+      "pages": 19
+    },
+    {
+      "doc_id": "mx07",
+      "stratum": "mixed",
+      "pdf_type": "text_based",
+      "pdf_confidence": 1.0,
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "needs_ocr_pages_at_risk": 7,
+      "pages": 46
+    },
+    {
+      "doc_id": "tl02",
+      "stratum": "scan_with_text_layer",
+      "pdf_type": "text_based",
+      "pdf_confidence": 1.0,
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "needs_ocr_pages_at_risk": 33,
+      "pages": 49
+    },
+    {
+      "doc_id": "tl07",
+      "stratum": "scan_with_text_layer",
+      "pdf_type": "text_based",
+      "pdf_confidence": 1.0,
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": 3,
+      "extraction_fallback_backend": "liteparse",
+      "needs_ocr_pages_at_risk": 1,
+      "pages": 3
+    },
+    {
+      "doc_id": "tl08",
+      "stratum": "scan_with_text_layer",
+      "pdf_type": "text_based",
+      "pdf_confidence": 1.0,
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": 4,
+      "extraction_fallback_backend": "liteparse",
+      "needs_ocr_pages_at_risk": 1,
+      "pages": 4
+    },
+    {
+      "doc_id": "rf06",
+      "stratum": "reader_failure",
+      "pdf_type": "text_based",
+      "pdf_confidence": 0.875,
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": 89,
+      "extraction_fallback_backend": "liteparse",
+      "needs_ocr_pages_at_risk": 43,
+      "pages": 89
+    },
+    {
+      "doc_id": "rf07",
+      "stratum": "reader_failure",
+      "pdf_type": "text_based",
+      "pdf_confidence": 0.75,
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": 63,
+      "extraction_fallback_backend": "liteparse",
+      "needs_ocr_pages_at_risk": 17,
+      "pages": 63
+    }
+  ],
+  "secondary": {
+    "routing_precision": 0.9091,
+    "false_positive_count": 1,
+    "false_positive_rate": 0.0455,
+    "false_positive_ids": [
+      "mx08"
+    ],
+    "born_digital_false_positive_ids": [],
+    "unnecessary_ocr_pages": 121,
+    "routed_documents": 11,
+    "routed_pages": 395,
+    "projected_ocr_seconds": {
+      "label": "PROJECTION \u2014 no OCR ran",
+      "best": 13311.5,
+      "worst": 42028.0
+    }
+  },
+  "by_stratum": {
+    "born_digital": {
+      "usable/fast_path": 7,
+      "needs_ocr/fast_path": 1
+    },
+    "image_only_scan": {
+      "needs_ocr/routed": 8
+    },
+    "mixed": {
+      "usable/fast_path": 5,
+      "needs_ocr/fast_path": 2,
+      "usable/routed": 1
+    },
+    "reader_failure": {
+      "usable/fast_path": 6,
+      "needs_ocr/fast_path": 2
+    },
+    "scan_with_text_layer": {
+      "needs_ocr/routed": 2,
+      "needs_ocr/fast_path": 3,
+      "usable/fast_path": 3
+    }
+  },
+  "confusion": {
+    "documents_scored": 40,
+    "needs_ocr_documents": 18,
+    "usable_documents": 22,
+    "true_positive": 10,
+    "false_negative_count": 8,
+    "false_positive_count": 1,
+    "true_negative": 21,
+    "routing_recall": 0.5556,
+    "routing_recall_wilson95": [
+      0.3372,
+      0.7544
+    ],
+    "routing_precision": 0.9091,
+    "false_positive_rate": 0.0455,
+    "false_negative_ids": [
+      "bd04",
+      "mx02",
+      "mx07",
+      "tl02",
+      "tl07",
+      "tl08",
+      "rf06",
+      "rf07"
+    ],
+    "false_positive_ids": [
+      "mx08"
+    ]
+  },
+  "ambiguous_sensitivity": {
+    "ambiguous_ids": [],
+    "as_needs_ocr": {
+      "documents_scored": 40,
+      "needs_ocr_documents": 18,
+      "usable_documents": 22,
+      "true_positive": 10,
+      "false_negative_count": 8,
+      "false_positive_count": 1,
+      "true_negative": 21,
+      "routing_recall": 0.5556,
+      "routing_recall_wilson95": [
+        0.3372,
+        0.7544
+      ],
+      "routing_precision": 0.9091,
+      "false_positive_rate": 0.0455,
+      "false_negative_ids": [
+        "bd04",
+        "mx02",
+        "mx07",
+        "tl02",
+        "tl07",
+        "tl08",
+        "rf06",
+        "rf07"
+      ],
+      "false_positive_ids": [
+        "mx08"
+      ]
+    },
+    "as_usable": {
+      "documents_scored": 40,
+      "needs_ocr_documents": 18,
+      "usable_documents": 22,
+      "true_positive": 10,
+      "false_negative_count": 8,
+      "false_positive_count": 1,
+      "true_negative": 21,
+      "routing_recall": 0.5556,
+      "routing_recall_wilson95": [
+        0.3372,
+        0.7544
+      ],
+      "routing_precision": 0.9091,
+      "false_positive_rate": 0.0455,
+      "false_negative_ids": [
+        "bd04",
+        "mx02",
+        "mx07",
+        "tl02",
+        "tl07",
+        "tl08",
+        "rf06",
+        "rf07"
+      ],
+      "false_positive_ids": [
+        "mx08"
+      ]
+    }
+  },
+  "unrecoverable_routes": [],
+  "arm": "sampled_baseline",
+  "reader_quality": [
+    {
+      "doc_id": "bd01",
+      "stratum": "born_digital",
+      "fast_path_token_recall": 0.971,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "bd02",
+      "stratum": "born_digital",
+      "fast_path_token_recall": 0.8383,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "bd03",
+      "stratum": "born_digital",
+      "fast_path_token_recall": 0.9513,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "bd04",
+      "stratum": "born_digital",
+      "fast_path_token_recall": 0.9158,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "bd05",
+      "stratum": "born_digital",
+      "fast_path_token_recall": 0.9711,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "bd06",
+      "stratum": "born_digital",
+      "fast_path_token_recall": 0.9216,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "bd07",
+      "stratum": "born_digital",
+      "fast_path_token_recall": 0.9252,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "bd08",
+      "stratum": "born_digital",
+      "fast_path_token_recall": 0.9877,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "mx01",
+      "stratum": "mixed",
+      "fast_path_token_recall": 0.9207,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "mx02",
+      "stratum": "mixed",
+      "fast_path_token_recall": 0.8516,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "mx03",
+      "stratum": "mixed",
+      "fast_path_token_recall": 0.8954,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "mx04",
+      "stratum": "mixed",
+      "fast_path_token_recall": 0.94,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "mx05",
+      "stratum": "mixed",
+      "fast_path_token_recall": 0.8415,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "mx06",
+      "stratum": "mixed",
+      "fast_path_token_recall": 0.9016,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "mx07",
+      "stratum": "mixed",
+      "fast_path_token_recall": 0.9082,
+      "reader_quality_loss": false,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "tl02",
+      "stratum": "scan_with_text_layer",
+      "fast_path_token_recall": 0.0149,
+      "reader_quality_loss": true,
+      "attributed_to": "pdf_inspector"
+    },
+    {
+      "doc_id": "tl04",
+      "stratum": "scan_with_text_layer",
+      "fast_path_token_recall": 0.8888,
+      "reader_quality_loss": false,
+      "attributed_to": "liteparse"
+    },
+    {
+      "doc_id": "tl05",
+      "stratum": "scan_with_text_layer",
+      "fast_path_token_recall": 0.9753,
+      "reader_quality_loss": false,
+      "attributed_to": "liteparse"
+    },
+    {
+      "doc_id": "tl06",
+      "stratum": "scan_with_text_layer",
+      "fast_path_token_recall": 0.8881,
+      "reader_quality_loss": false,
+      "attributed_to": "liteparse"
+    },
+    {
+      "doc_id": "tl07",
+      "stratum": "scan_with_text_layer",
+      "fast_path_token_recall": 0.9292,
+      "reader_quality_loss": false,
+      "attributed_to": "liteparse"
+    },
+    {
+      "doc_id": "tl08",
+      "stratum": "scan_with_text_layer",
+      "fast_path_token_recall": 0.9554,
+      "reader_quality_loss": false,
+      "attributed_to": "liteparse"
+    },
+    {
+      "doc_id": "rf01",
+      "stratum": "reader_failure",
+      "fast_path_token_recall": 1.0,
+      "reader_quality_loss": false,
+      "attributed_to": "liteparse"
+    },
+    {
+      "doc_id": "rf02",
+      "stratum": "reader_failure",
+      "fast_path_token_recall": 0.9286,
+      "reader_quality_loss": false,
+      "attributed_to": "liteparse"
+    },
+    {
+      "doc_id": "rf03",
+      "stratum": "reader_failure",
+      "fast_path_token_recall": 0.9747,
+      "reader_quality_loss": false,
+      "attributed_to": "liteparse"
+    },
+    {
+      "doc_id": "rf04",
+      "stratum": "reader_failure",
+      "fast_path_token_recall": 0.9752,
+      "reader_quality_loss": false,
+      "attributed_to": "liteparse"
+    },
+    {
+      "doc_id": "rf05",
+      "stratum": "reader_failure",
+      "fast_path_token_recall": 0.8597,
+      "reader_quality_loss": false,
+      "attributed_to": "liteparse"
+    },
+    {
+      "doc_id": "rf06",
+      "stratum": "reader_failure",
+      "fast_path_token_recall": 0.2361,
+      "reader_quality_loss": true,
+      "attributed_to": "liteparse"
+    },
+    {
+      "doc_id": "rf07",
+      "stratum": "reader_failure",
+      "fast_path_token_recall": 0.4694,
+      "reader_quality_loss": true,
+      "attributed_to": "liteparse"
+    },
+    {
+      "doc_id": "rf08",
+      "stratum": "reader_failure",
+      "fast_path_token_recall": 0.9878,
+      "reader_quality_loss": false,
+      "attributed_to": "liteparse"
+    }
+  ],
+  "read_seconds_total": 9.27,
+  "run_identity": {
+    "plan": "7ef6c39271be5de34d2ac2ee5274cd04d5dc3ae146b2a7ac03d9365dfaa368a3",
+    "ground_truth": "cd4960ba36bddd3cd665a9142592457945fe2234c4a37bbfb81a0bfe1041c6bf",
+    "corpus_manifest": "3b05d580dec2a9bf59a27dba24974822c83c56c32f67b9b778738fd523991cab",
+    "runtime_manifest": "56e8126af8bb355c083b0d931581311ebe702d202079b9de3b9ad2a6b2653130",
+    "code": {
+      "route.py": "8fb8b613eede4e4027e07914bd7c3a6f334fa0396456a25cdbfe2b15475043bf"
+    }
+  }
+}

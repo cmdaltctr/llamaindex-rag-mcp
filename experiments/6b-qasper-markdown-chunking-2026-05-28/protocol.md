@@ -1,10 +1,10 @@
 # Experiment 6b: Evidence-Level Markdown Chunking on Qasper
 
-**ID**: `qasper-evidence-markdown-chunking-2026-05-28`
-**Date**: 2026-05-28
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with build agent
-**Status**: COMPLETE — `--source qasper` is the canonical run. HiCBench was investigated and found unavailable; it is retained only as historical context, not as the active corpus.
-**Related OpenSpec change**: `2-rag-retrieval-quality-improvements`
+- **ID**: `qasper-evidence-markdown-chunking-2026-05-28`
+- **Date**: 2026-05-28
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with build agent
+- **Status**: COMPLETE — `--source qasper` is the canonical run. HiCBench was investigated and found unavailable; it is retained only as historical context, not as the active corpus.
+- **Related OpenSpec change**: `2-rag-retrieval-quality-improvements`
 
 ---
 

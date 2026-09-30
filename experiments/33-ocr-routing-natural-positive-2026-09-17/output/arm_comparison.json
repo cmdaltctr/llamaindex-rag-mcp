@@ -1,0 +1,31 @@
+{
+  "arms": {
+    "sampled_baseline": {
+      "routing_recall": 0.5556,
+      "false_negative_count": 8,
+      "false_positive_count": 1,
+      "routed_pages": 395
+    },
+    "full_scan_candidate": {
+      "routing_recall": 0.6111,
+      "false_negative_count": 7,
+      "false_positive_count": 1,
+      "routed_pages": 444
+    }
+  },
+  "arm_divergence": [
+    {
+      "doc_id": "tl02",
+      "stratum": "scan_with_text_layer",
+      "label": "needs_ocr",
+      "sampled_baseline": {
+        "ocr_required": false,
+        "pages_needing_ocr": 0
+      },
+      "full_scan_candidate": {
+        "ocr_required": true,
+        "pages_needing_ocr": 45
+      }
+    }
+  ]
+}

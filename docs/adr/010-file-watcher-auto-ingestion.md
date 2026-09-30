@@ -1,9 +1,9 @@
 # ADR-010: File Watcher for Automatic Document Ingestion
 
-**Status**: Accepted
-**Update:** Cloud constraint superseded by ADR-024 — local-first, cloud allowed as opt-in.
-**Date**: 2026-05-19
-**Change**: `add-file-watcher`
+- **Status**: Accepted
+- **Update:** Cloud constraint superseded by ADR-024 — local-first, cloud allowed as opt-in.
+- **Date**: 2026-05-19
+- **Change**: `add-file-watcher`
 
 ## Context
 

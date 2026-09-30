@@ -1,10 +1,10 @@
 # Experiment 26 — Query-instruction ablation (task 5.3)
 
-**ID**: `26-query-instruction-ablation-2026-09-08`
-**Date planned**: 2026-09-08
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
-**Status**: PLANNED (validity gates frozen 2026-09-08, task 1.6)
-**Relation**: `improve-rag-input-quality-5` task 5.3; experiment 22 baseline; task 4.8 identity rule
+- **ID**: `26-query-instruction-ablation-2026-09-08`
+- **Date planned**: 2026-09-08
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: PLANNED (validity gates frozen 2026-09-08, task 1.6)
+- **Relation**: `improve-rag-input-quality-5` task 5.3; experiment 22 baseline; task 4.8 identity rule
 
 ## Why this experiment exists
 

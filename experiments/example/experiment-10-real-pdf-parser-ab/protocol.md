@@ -1,8 +1,8 @@
 # Experiment 10 — Real-PDF parser A/B: pypdf vs LiteParse
 
-**Template ID:** `example/experiment-10-real-pdf-parser-ab`  
-**Status:** PLANNED  
-**Role:** repaired replacement for the current invalid Markdown-based PDF experiment
+- **Template ID:** `example/experiment-10-real-pdf-parser-ab`
+- **Status:** PLANNED
+- **Role:** repaired replacement for the current invalid Markdown-based PDF experiment
 
 ## 1. Research question
 

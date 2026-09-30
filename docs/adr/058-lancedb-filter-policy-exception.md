@@ -1,8 +1,8 @@
 # ADR-058: LanceDB Filter Policy Exception
 
-**Date:** 2026-09-02
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-09-02
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

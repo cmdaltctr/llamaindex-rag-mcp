@@ -1,9 +1,9 @@
 # Experiment 6 Results: Markdown-Aware Chunking Quality
 
-**Date run**: 2026-05-27
-**Operator**: AI agent (build phase)
-**Status**: PARTIAL — non-regression confirmed; no measurable lift on this corpus.
-**Outcome**: Ship the Markdown branch anyway (structural improvement; corpus saturates baseline).
+- **Date run**: 2026-05-27
+- **Operator**: AI agent (build phase)
+- **Status**: PARTIAL — non-regression confirmed; no measurable lift on this corpus.
+- **Outcome**: Ship the Markdown branch anyway (structural improvement; corpus saturates baseline).
 
 ---
 

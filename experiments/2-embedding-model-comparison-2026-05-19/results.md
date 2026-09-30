@@ -1,8 +1,8 @@
 # Experiment 2: Embedding Model Retrieval Quality Comparison — Results
 
-**Date run**: 19 May 2026 (run 2 — all 3 models)
-**Purpose**: Compare retrieval quality between `nomic-embed-text` (768-dim), `qwen3-embedding:0.6b` (1024-dim), and `qwen3-embedding:8b` (4096-dim)
-**Method**: For 17 queries across 6 documents, does each model retrieve the correct document in the top-K results? Reranking disabled.
+- **Date run**: 19 May 2026 (run 2 — all 3 models)
+- **Purpose**: Compare retrieval quality between `nomic-embed-text` (768-dim), `qwen3-embedding:0.6b` (1024-dim), and `qwen3-embedding:8b` (4096-dim)
+- **Method**: For 17 queries across 6 documents, does each model retrieve the correct document in the top-K results? Reranking disabled.
 
 ---
 

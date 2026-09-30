@@ -1,9 +1,9 @@
 # TDR-004: `--no-build` flag incompatible with editable installs in CI
 
-**Date:** 2026-06-28
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Tags:** ci | uv | sonarqube | security
+- **Date:** 2026-06-28
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Tags:** ci | uv | sonarqube | security
 
 ## Context
 

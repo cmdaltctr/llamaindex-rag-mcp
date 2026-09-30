@@ -1,9 +1,9 @@
 # Experiment: Embedding Model Retrieval Quality Comparison
 
-**ID**: `embedding-model-comparison-2026-05-19`
-**Date**: 2026-05-19
-**Operator**: Dr Muhammad Aizat Bin Md Hawari
-**Status**: PASS
+- **ID**: `embedding-model-comparison-2026-05-19`
+- **Date**: 2026-05-19
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari
+- **Status**: PASS
 
 ---
 

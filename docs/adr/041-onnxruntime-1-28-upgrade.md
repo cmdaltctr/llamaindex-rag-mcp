@@ -1,9 +1,9 @@
 # ADR-041: onnxruntime 1.28.0 Upgrade
 
-**Date:** 2026-08-12
-**Status:** Accepted
-**Scopes:** ADR-005 (ONNX Runtime reranker), ADR-029 (CoreML disabled for reranker — the CoreML provider is still present in 1.28.0; the dynamic-shape limitation is a CoreML graph compilation constraint, not an onnxruntime version issue)
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-08-12
+- **Status:** Accepted
+- **Scopes:** ADR-005 (ONNX Runtime reranker), ADR-029 (CoreML disabled for reranker — the CoreML provider is still present in 1.28.0; the dynamic-shape limitation is a CoreML graph compilation constraint, not an onnxruntime version issue)
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

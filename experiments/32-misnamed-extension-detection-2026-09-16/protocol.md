@@ -1,10 +1,10 @@
 # Protocol: Misnamed-extension content detection (Experiment 32)
 
-**ID**: `32-misnamed-extension-detection-2026-09-16`
-**Date**: 2026-09-16
-**Operator**: AI agent (for Dr Muhammad Aizat Bin Md Hawari)
-**Status**: PASS (5/5 gates)
-**Change**: `pin-magika-detection` (evidence for ADR-068 verification)
+- **ID**: `32-misnamed-extension-detection-2026-09-16`
+- **Date**: 2026-09-16
+- **Operator**: AI agent (for Dr Muhammad Aizat Bin Md Hawari)
+- **Status**: PASS (5/5 gates)
+- **Change**: `pin-magika-detection` (evidence for ADR-068 verification)
 
 ## Purpose
 

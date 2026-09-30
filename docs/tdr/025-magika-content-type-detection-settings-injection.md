@@ -1,9 +1,9 @@
 # TDR-025: Content-type detection silently degraded to suffix routing in direct-Engine processes — settings now threaded through the detector
 
-**Date:** 2026-09-15
-**Status:** Accepted (amended same day — verified consequence scope of detection below)
-**Deciders:** Aizat
-**Tags:** magika | ingestion | settings-injection | dependency-injection | codebase-map
+- **Date:** 2026-09-15
+- **Status:** Accepted (amended same day — verified consequence scope of detection below)
+- **Deciders:** Aizat
+- **Tags:** magika | ingestion | settings-injection | dependency-injection | codebase-map
 
 ## Context
 

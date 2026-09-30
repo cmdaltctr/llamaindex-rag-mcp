@@ -1,8 +1,8 @@
 # ADR-061: Engine-Scoped Embedding Provider
 
-**Date:** 2026-09-08
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Date:** 2026-09-08
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
 

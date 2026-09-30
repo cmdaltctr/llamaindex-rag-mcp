@@ -11,6 +11,10 @@ The measured corpus SHALL include genuinely OCR-required PDFs and genuinely non-
 - **THEN** the experiment SHALL NOT claim held-out OCR recall
 - **AND** the result SHALL be incomplete for the primary safety question
 
+#### Scenario: Only synthetic positives are present
+- **WHEN** every OCR-positive document in the corpus is synthetic
+- **THEN** the experiment SHALL NOT claim natural held-out OCR recall
+
 ### Requirement: OCR need is labelled independently
 
 Ground-truth OCR need SHALL be assessed independently from the classifier and current routing output.
@@ -19,6 +23,49 @@ Ground-truth OCR need SHALL be assessed independently from the classifier and cu
 - **WHEN** `pdf-inspector` labels a PDF as `mixed`
 - **THEN** the ground-truth label SHALL still come from page/content assessment
 - **AND** `mixed` SHALL NOT automatically mean that whole-document OCR is correct
+
+### Requirement: Scans with an existing OCR text layer are a distinct class
+
+The natural corpus SHALL include scanned PDFs carrying an existing OCR text layer, labelled apart from image-only scans and reader-failure PDFs.
+
+#### Scenario: Junk OCR text layer
+- **WHEN** a page's existing text layer does not match its rendered page image under the frozen usability rule
+- **THEN** the page SHALL be labelled `needs_ocr`
+- **AND** the label SHALL NOT be decided by character count alone
+- **AND** a fast-path route of a document above tolerance SHALL count as a false negative
+
+#### Scenario: Faithful OCR text layer
+- **WHEN** the existing text layer matches the rendered page image
+- **THEN** the page SHALL be labelled `usable`
+- **AND** a fast-path route SHALL count as correct
+
+### Requirement: Unrecoverable content is labelled apart from OCR need
+
+Labels SHALL include `unrecoverable` for content that no reader or OCR engine can be expected to recover.
+
+#### Scenario: Stage A scoring
+- **WHEN** a document is labelled `unrecoverable`
+- **THEN** it SHALL be excluded from routing recall and precision denominators
+- **AND** its routing decision SHALL be reported separately
+
+#### Scenario: Stage B output on unrecoverable pages
+- **WHEN** real OCR runs on an unrecoverable page
+- **THEN** the result SHALL record whether a failure was reported or text was emitted
+- **AND** emitted text SHALL NOT be counted as recovery
+
+### Requirement: Synthetic degraded documents are reported apart
+
+Synthetic documents SHALL be labelled synthetic and SHALL NOT contribute to natural held-out measurements.
+
+#### Scenario: Character error rate
+- **WHEN** real OCR runs on a synthetic document
+- **THEN** CER SHALL be computed against the source PDF text
+- **AND** degradation parameters, seed, and source hash SHALL be recorded
+
+#### Scenario: Boundary probe
+- **WHEN** synthetic documents probe the page-fraction boundary
+- **THEN** results SHALL be reported as exploratory
+- **AND** the frozen thresholds SHALL NOT change
 
 ### Requirement: False negatives are a primary safety outcome
 

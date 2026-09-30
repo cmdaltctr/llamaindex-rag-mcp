@@ -1,9 +1,9 @@
 # ADR-001: Use uv as Package Manager
 
-**Date:** 2026-05-11
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Git Commits:** `5594176`
+- **Date:** 2026-05-11
+- **Status:** Accepted
+- **Deciders:** Dr Muhammad Aizat Bin Md Hawari
+- **Git Commits:** `5594176`
 
 ## Context
 

@@ -1,8 +1,8 @@
 # Experiment 3: Results
 
-**Date**: 2026-05-21 (re-run)
-**Operator**: build agent (automated)
-**Status**: PASS
+- **Date**: 2026-05-21 (re-run)
+- **Operator**: build agent (automated)
+- **Status**: PASS
 
 ---
 

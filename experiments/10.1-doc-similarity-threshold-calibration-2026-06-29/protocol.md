@@ -1,9 +1,9 @@
 # Experiment 10.1: DOC_SIMILARITY_THRESHOLD Calibration
 
-**ID**: `10.1-doc-similarity-threshold-calibration-2026-06-29`  
-**Date planned**: 2026-06-29  
-**Status**: PLANNED  
-**Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; informs ADR-023
+- **ID**: `10.1-doc-similarity-threshold-calibration-2026-06-29`
+- **Date planned**: 2026-06-29
+- **Status**: PLANNED
+- **Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; informs ADR-023
 
 ---
 

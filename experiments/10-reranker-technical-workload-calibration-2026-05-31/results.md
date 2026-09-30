@@ -1,11 +1,11 @@
 # Experiment 10 Results: Reranker Technical Workload Calibration
 
-**ID**: `10-reranker-technical-workload-calibration-2026-05-31`
-**Date run**: 2026-05-31
-**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
-**Status**: FAIL for current reranker policy; INCONCLUSIVE for effective pool-size sensitivity
-**Outcome**: Reranking with an effective candidate pool of 500 substantially degrades FreshStack technical retrieval. The intended `RERANK_MAX_FETCH` sweep did not vary the effective fetch size, so this experiment does not prove pool size is irrelevant.
-**Raw data**: [`output/eval_results.json`](./output/eval_results.json), [`output/eval_results.summary.json`](./output/eval_results.summary.json)
+- **ID**: `10-reranker-technical-workload-calibration-2026-05-31`
+- **Date run**: 2026-05-31
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+- **Status**: FAIL for current reranker policy; INCONCLUSIVE for effective pool-size sensitivity
+- **Outcome**: Reranking with an effective candidate pool of 500 substantially degrades FreshStack technical retrieval. The intended `RERANK_MAX_FETCH` sweep did not vary the effective fetch size, so this experiment does not prove pool size is irrelevant.
+- **Raw data**: [`output/eval_results.json`](./output/eval_results.json), [`output/eval_results.summary.json`](./output/eval_results.summary.json)
 
 ---
 
