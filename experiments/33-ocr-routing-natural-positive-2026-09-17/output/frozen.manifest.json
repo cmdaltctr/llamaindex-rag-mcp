@@ -8,7 +8,7 @@
     },
     "plan": {
       "path": "plan.json",
-      "sha256": "5a575196898c72cb429f93f06f7eaf6a9cd6751fc3d3cd32704acfd8b617b755"
+      "sha256": "b2e3c05b92f3bd36c4445dfd3e79c78b0d9f19488b4432f9c7995781a324ce9a"
     },
     "dev_exclusions": {
       "path": "dev_exclusions.json",
@@ -81,7 +81,7 @@
     },
     {
       "utc": "2026-09-30",
-      "reason": "protocol.md header reformatted (commit 1738cdf) and Status line updated after archive; plan.json amended to record this re-digest",
+      "reason": "protocol.md header reformatted (commit 1738cdf) and Status line updated after archive; plan.json amended to record this re-digest; plan.json status field updated",
       "superseded": {
         "protocol": "985b3d283a65d200e32d0dff7715c2bac21ca9b4913dc578f77f15f188629425",
         "plan": "93742f13493f4e1a55e7ca3edc9fb971b95d600ec3c31e7e657cea7bfc04ebf6"
