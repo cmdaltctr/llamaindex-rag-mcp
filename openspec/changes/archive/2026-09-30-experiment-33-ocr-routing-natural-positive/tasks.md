@@ -37,22 +37,24 @@
 
 - [x] 5.1 Select clean born-digital source PDFs and extract their reference text.
 - [x] 5.2 Render, degrade (skew 0.5 to 2 degrees, Gaussian noise, JPEG quality 40 to 60, slight blur), and re-wrap as PDF; record parameters, seed, and source SHA-256.
-- [ ] 5.3 Optional: operator prints and re-scans a small subset.
 - [x] 5.4 Optional: run a page-fraction boundary probe through the Stage A harness and report it as exploratory.
 
-## 6. Authorise and run Stage B if needed
+## 6. Local OCR tier measurement
 
-- [ ] 6.1 Record separate operator approval naming the OCR subset, timeout, and runtime budget.
-- [ ] 6.2 Provision and fingerprint the OCR worker.
-- [ ] 6.3 Run real OCR only on the authorised subset.
-- [ ] 6.4 Measure evidence recoverability, Recall@K, MRR@10, elapsed OCR time, and failures.
-- [ ] 6.5 Measure CER on synthetic documents against the source PDF text.
-- [ ] 6.6 Record unrecoverable-page outcomes: failure reported or text emitted.
+> **Descoped 2026-09-29 (operator decision).** These tasks were dropped, not done:
+> 5.3 (print and re-scan a subset), 6.1 to 6.6 (Stage B: real OCR run, evidence
+> recovery, CER, unrecoverable-page outcomes) and 6.8 (page versus document
+> routing). Stage B needs a separate operator approval before any real OCR run,
+> and would now use dots.mocr as the primary engine
+> (`modular-ocr-workers-dots-mocr`). The small worker review in Experiment 34
+> covers less: 4 pages, no Recall@K, MRR@10 or CER. Task 6.8 moved to NiftyPM
+> AIE-101 as its own experiment, after Experiment 37. The `document` default
+> stays until that comparison runs.
+
 - [x] 6.7 Measure the local OCR tier (pdf-inspector selective OCR, force mode) on natural pages labelled needs_ocr: token recall, confidence calibration, escalation share, seconds per page; evidence gate for change page-level-ocr-routing.
-- [ ] 6.8 Compare `OCR_ROUTING_UNIT=page` against `document` on the authorised mixed-PDF subset: Recall@K, MRR@10, pages sent to OCR, seconds per document. Carried from archived change `page-level-ocr-routing` (its task 6.1). If `page` wins, open a separate `v3` proposal to make it the default; that change empties `PAGE_ROUTING_ONLY_EMBED_KEYS` and bumps `_INDEX_IDENTITY_SCHEMA` together. Do not change the default here.
 
 ## 7. Report and close
 
-- [ ] 7.1 State whether the current gate has direct natural-positive recall evidence; synthetic documents do not count.
-- [ ] 7.2 Preserve ambiguous, unrecoverable, timeout, and failure cases.
-- [ ] 7.3 If threshold recalibration is warranted, create a separate OpenSpec proposal; do not change defaults here.
+- [x] 7.1 State whether the current gate has direct natural-positive recall evidence; synthetic documents do not count.
+- [x] 7.2 Preserve ambiguous, unrecoverable, timeout, and failure cases.
+- [x] 7.3 If threshold recalibration is warranted, create a separate OpenSpec proposal; do not change defaults here.
