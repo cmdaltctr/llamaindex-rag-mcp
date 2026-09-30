@@ -1,0 +1,123 @@
+{
+  "experiment_id": "39-local-tier-escalation-2026-09-30",
+  "protocol_version": 1,
+  "status": "PLANNED",
+  "change_ref": "openspec/changes/experiment-39-local-tier-escalation",
+  "niftypm": "AIE-100",
+  "source_data": {
+    "rows": "experiments/33-ocr-routing-natural-positive-2026-09-17/output/local_ocr/pages.json",
+    "rows_sha256": "e6223d1536293b6860cd8eda9d48b2e383139e3e6c2f5e095a36f2b9822a711f",
+    "texts": "experiments/33-ocr-routing-natural-positive-2026-09-17/output/.local_ocr_text/<doc>/p<NNN>.md",
+    "labels_sha256": "cd4960ba36bddd3cd665a9142592457945fe2234c4a37bbfb81a0bfe1041c6bf",
+    "precondition": "freeze.py --check prints 'freeze verified'",
+    "engine": {
+      "pdf_inspector": "1.17.0",
+      "model": "pp-ocrv6-small@oar-ocr-v0.7.0",
+      "onnxruntime": "1.28.0",
+      "mode": "force"
+    },
+    "counts": {
+      "rows": 464,
+      "texts": 464,
+      "gated_needs_ocr": 399,
+      "figure_only": 65,
+      "io06": 66,
+      "gated_without_io06": 333
+    }
+  },
+  "non_latin": {
+    "io01": {
+      "script": "devanagari",
+      "pages": 48
+    },
+    "io02": {
+      "script": "arabic",
+      "pages": 16
+    },
+    "io03": {
+      "script": "arabic",
+      "pages": 5
+    },
+    "io07": {
+      "script": "bengali",
+      "pages": 60
+    },
+    "total": 129,
+    "basis": "Unicode block count of Experiment 33 reference transcriptions, 2026-09-30 (ADR-071 erratum)"
+  },
+  "oracle_O": {
+    "value": 0.5163,
+    "rule": "share of the 399 gated pages with body_recall < 0.5",
+    "computed": "2026-09-30, ground truth, no candidate scored"
+  },
+  "prior_look": "author counted letters by Unicode block over saved text of io01, io02, io03, io07, io06, rf06, mx01, pooled per document, before writing this plan; no candidate scored per page",
+  "candidates": {
+    "C0": "escalate on empty or whitespace text, confidence < 0.8 or None, or hosted_recommended (shipped ADR-069 post-check)",
+    "C1": {
+      "rule": "escalate when CJK share >= 0.05 or output empty",
+      "cjk_groups": [
+        "CJK Unified Ideographs and extensions",
+        "CJK Compatibility Ideographs",
+        "Hiragana",
+        "Katakana",
+        "Hangul"
+      ],
+      "letters": "str.isalpha",
+      "threshold_reason": "stray CJK in Latin-script output about 0.0001 of letters; 0.05 is 500 times above"
+    },
+    "C3": "C0 or C1",
+    "sweep": {
+      "base": "C0",
+      "cuts": [
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.9
+      ],
+      "gated": [
+        0.8
+      ]
+    },
+    "C4": {
+      "exploratory": true,
+      "signals": [
+        "discarded-region count parsed from warnings",
+        "chars per page"
+      ],
+      "target": "AUC, io06 body_recall < 0.5 against modern Latin print body_recall >= 0.8",
+      "follow_up_if_auc_ge": 0.8
+    }
+  },
+  "gates": {
+    "G1": {
+      "rule": "non-Latin pages kept == 0 of 129",
+      "reason": "local recall 0.000 on every one"
+    },
+    "G2": {
+      "rule": "kept pages with body_recall < 0.5 / kept pages <= 0.05, population without io06 (333)",
+      "reason": "halves ADR-069's 0.113; the 0.9 cut reaches 0.025"
+    },
+    "G3": {
+      "rule": "escalated share <= 0.566 (O + 0.05), gated population 399",
+      "reason": "O is the floor; 0.05 is about 20 wasted worker calls (about 13 min at 38.2 s per page); below the 0.9 cut's 0.597"
+    }
+  },
+  "reported_beside_gates": [
+    "kept-bad share with io06",
+    "per-document escalation share",
+    "figure-only diagnostic"
+  ],
+  "selection": "lowest escalated share among passing candidates; tie to the simpler rule: C0, C1, C3",
+  "reproduction_check": {
+    "C0_escalation": 0.469,
+    "C0_kept_below_0_5": 0.113,
+    "tolerance": 0.001,
+    "source": "Experiment 33 report, confidence calibration table, cut 0.8"
+  },
+  "ocr": "none",
+  "downloads": "none",
+  "packages": "none (standard library)",
+  "decision_register": [],
+  "amendments": []
+}
