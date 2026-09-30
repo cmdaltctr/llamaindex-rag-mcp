@@ -1,6 +1,6 @@
 # Spec Delta
 
-Baseline note: the first requirement below builds on the version in the in-flight change `page-level-ocr-routing`. This change is applied after that change archives (see tasks 0.1).
+Baseline note: this delta is rebased on the archived `page-level-ocr-routing` change (archived 2026-09-28). The routing requirement below matches the archived text except for the OCR-route wording, and the page-level routing requirement is modified so that escalated pages go to the OCR routes (task 0.1).
 
 ## MODIFIED Requirements
 
@@ -152,3 +152,72 @@ The fingerprints SHALL be recorded for every source through the existing index-i
 - **GIVEN** the source bytes, OCR routing configuration, and resolved fingerprints of both routes are unchanged
 - **WHEN** the source is ingested again
 - **THEN** the worker fingerprints SHALL NOT alone prevent the existing `skipped_unchanged` result
+
+### Requirement: Page-level OCR routing SHALL OCR only pages that need it
+
+When `OCR_ROUTING_UNIT=page` and OCR is enabled, the pdf-inspector path SHALL decide OCR need per page from a scan of every page. Pages that do not need OCR SHALL keep native pdf-inspector Markdown. Pages that need OCR SHALL be processed by the local OCR tier. A page SHALL escalate to the OCR routes only when the local tier returns no text or only whitespace, reports no confidence or a confidence below the configured minimum, or recommends hosted OCR. Escalated pages SHALL go in one page-listed request to the primary OCR route, or to the fallback route when the primary is unavailable before dispatch. The OCR routes SHALL receive only escalated pages. The emitted document SHALL join pages in page order and SHALL carry scalar counts of native, local-OCR, worker and unresolved pages, which SHALL sum to the page count. The default routing unit SHALL remain `document`.
+
+The four existing OCR diagnostics SHALL remain scalars and SHALL keep their document-unit meaning. `ocr_required` SHALL be true when at least one page was flagged. `ocr_used` SHALL be true when OCR produced the text of at least one page, by either tier. `pages_needing_ocr` SHALL remain the count of flagged pages. `ocr_backend` SHALL name the one backend that produced all of the document's text, and SHALL be `mixed` when more than one produced text, so that it never names a backend that produced only part of a document.
+
+#### Scenario: Page-source counts sum to the page count
+
+- **GIVEN** the `page` routing unit and any ingested PDF
+- **WHEN** the adapter emits its document
+- **THEN** the native, local-OCR, worker and unresolved page counts SHALL sum to `page_count`
+
+#### Scenario: A document read by two backends reports mixed
+
+- **GIVEN** the `page` routing unit and a PDF whose text comes partly from native extraction and partly from OCR
+- **WHEN** the adapter emits its document
+- **THEN** `ocr_backend` SHALL be `mixed`
+- **AND** it SHALL NOT name either contributing backend alone
+
+#### Scenario: The document unit emits no page-source counts
+
+- **GIVEN** no routing unit is configured
+- **WHEN** a PDF is ingested
+- **THEN** the emitted metadata SHALL NOT carry the native, local-OCR, worker or unresolved page counts
+
+#### Scenario: Only flagged pages are OCRed
+
+- **GIVEN** the `page` routing unit and a 20-page PDF with 3 pages needing OCR
+- **WHEN** the PDF is ingested
+- **THEN** the 17 other pages SHALL keep native Markdown
+- **AND** only the 3 flagged pages SHALL be processed by the local OCR tier
+
+#### Scenario: A page the local tier cannot read escalates
+
+- **GIVEN** the `page` routing unit and a flagged page the local tier returns no text for
+- **AND** the worker returns usable, non-empty Markdown for that page
+- **WHEN** the PDF is ingested
+- **THEN** that page SHALL be sent to the worker
+- **AND** the metadata SHALL count it as a worker page
+
+#### Scenario: Unreadable local OCR pages escalate alone
+
+- **GIVEN** the local OCR tier returns no text for 1 of 3 flagged pages
+- **AND** an OCR route is available
+- **AND** the worker returns usable, non-empty Markdown for the escalated page
+- **WHEN** the PDF is ingested
+- **THEN** exactly that page SHALL be sent to the worker
+- **AND** the metadata SHALL count 1 worker page and 2 local-OCR pages
+
+#### Scenario: Missing worker keeps local OCR text
+
+- **GIVEN** a page escalates and both OCR routes are unavailable
+- **WHEN** the PDF is ingested
+- **THEN** the page SHALL keep its local OCR text, or native text when local OCR produced none
+- **AND** the page SHALL be counted as unresolved without failing the file
+
+#### Scenario: Missing local OCR runtime degrades to native text
+
+- **GIVEN** the `page` routing unit and no usable PDFium library or ONNX Runtime
+- **WHEN** a PDF with flagged pages is ingested
+- **THEN** flagged pages SHALL keep native text and be counted as unresolved
+- **AND** a warning SHALL name the missing runtime once per operation
+
+#### Scenario: Document unit is unchanged
+
+- **GIVEN** no routing unit is configured
+- **WHEN** a PDF is ingested
+- **THEN** routing SHALL follow the whole-PDF behaviour of the `document` unit

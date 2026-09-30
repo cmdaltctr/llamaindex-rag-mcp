@@ -6,7 +6,7 @@
 
 ## 0. Baseline
 
-- [ ] 0.1 After `page-level-ocr-routing` archives, rebase this change's `pdf-reader` delta on the archived spec. Re-copy the routing requirement if its archived text differs. Add a MODIFIED block for "Page-level OCR routing SHALL OCR only pages that need it", so that escalated pages go to "the OCR routes" instead of "the PaddleOCR-VL worker". Verify: `openspec validate modular-ocr-workers-dots-mocr --strict` passes, and `grep -n "PaddleOCR-VL worker" openspec/changes/modular-ocr-workers-dots-mocr/specs/pdf-reader/spec.md` finds nothing.
+- [x] 0.1 After `page-level-ocr-routing` archives, rebase this change's `pdf-reader` delta on the archived spec. Re-copy the routing requirement if its archived text differs. Add a MODIFIED block for "Page-level OCR routing SHALL OCR only pages that need it", so that escalated pages go to "the OCR routes" instead of "the PaddleOCR-VL worker". Verify: `openspec validate modular-ocr-workers-dots-mocr --strict` passes, and `grep -n "PaddleOCR-VL worker" openspec/changes/modular-ocr-workers-dots-mocr/specs/pdf-reader/spec.md` finds nothing.
 
 ## 1. Worker core and layout
 
