@@ -18,6 +18,6 @@
 
 ## 4. Close
 
-- [ ] 4.1 Write `report.md` and `analysis.py`, set the status, and update the EXP_README row. Verify: the verdict names the winning rule or none, and states the `io06` finding.
+- [x] 4.1 Write `report.md` and `analysis.py`, set the status, and update the EXP_README row. Verify: the verdict names the winning rule or none, and states the `io06` finding.
 - [ ] 4.2 Update NiftyPM AIE-100 and `niftypm/omrg.json`. Verify: the task links the report.
-- [ ] 4.3 If a rule other than C0 wins, open a separate proposal to change the post-check in `page_routing.py`. Verify: proposal id recorded in the report.
+- [x] 4.3 If a rule other than C0 wins, open a separate proposal to change the post-check in `page_routing.py`. Verify: proposal id recorded in the report.

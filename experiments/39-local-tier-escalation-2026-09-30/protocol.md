@@ -3,7 +3,7 @@
 - **ID**: `39-local-tier-escalation-2026-09-30`
 - **Date planned**: 2026-09-30
 - **Operator**: Dr Muhammad Aizat Bin Md Hawari, with Claude Code (plan)
-- **Status**: PLANNED (ready to run; no approval needed)
+- **Status**: FAIL (no candidate passes G1 to G3; run 2026-10-06, see [`report.md`](report.md))
 - **Relation**: OpenSpec change `experiment-39-local-tier-escalation`; ADR-071 decision 4 and erratum; ADR-069 decision 2; NiftyPM AIE-100
 - **Plan**: [`plan.json`](plan.json)
 

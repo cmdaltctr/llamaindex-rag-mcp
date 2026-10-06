@@ -1,7 +1,7 @@
 {
   "experiment_id": "39-local-tier-escalation-2026-09-30",
   "protocol_version": 1,
-  "status": "PLANNED",
+  "status": "FAIL",
   "change_ref": "openspec/changes/experiment-39-local-tier-escalation",
   "niftypm": "AIE-100",
   "source_data": {
