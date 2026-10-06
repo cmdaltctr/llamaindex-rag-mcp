@@ -13,8 +13,8 @@
 
 ## 3. Run and summarise
 
-- [ ] 3.1 Score C0, C1, C3, the sweep and C4. Verify: `output/rules.json` has one decision per page per rule.
-- [ ] 3.2 Run `summarise_eval.py`: O, escalated share, kept-below-0.5 share (with and without `io06`), non-Latin pages kept, per-document escalation, and C4 AUCs. Verify: `output/summary.json` committed, and the C0 values at the 0.8 cut reproduce Experiment 33 (escalation 0.469, kept-below-0.5 0.113) within 0.001.
+- [x] 3.1 Score C0, C1, C3, the sweep and C4. Verify: `output/rules.json` has one decision per page per rule.
+- [x] 3.2 Run `summarise_eval.py`: O, escalated share, kept-below-0.5 share (with and without `io06`), non-Latin pages kept, per-document escalation, and C4 AUCs. Verify: `output/summary.json` committed, and the C0 values at the 0.8 cut reproduce Experiment 33 (escalation 0.469, kept-below-0.5 0.113) within 0.001.
 
 ## 4. Close
 

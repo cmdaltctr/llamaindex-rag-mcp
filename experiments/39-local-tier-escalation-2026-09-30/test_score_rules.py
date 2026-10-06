@@ -115,3 +115,67 @@ def test_discarded_regions_sums_the_warnings() -> None:
     assert discarded_regions([]) == 0
     assert discarded_regions(["discarded 3 regions without usable recognition output"]) == 3
     assert discarded_regions(["discarded 2 regions x", "other", "discarded 5 regions y"]) == 7
+
+
+# ── summarise_eval: AUC, gates and selection ──────────────────────────
+
+from summarise_eval import auc, kept_bad, rule_metrics, select  # noqa: E402
+
+
+def _page(doc: str, recall: float, escalate: bool) -> dict:
+    return {"doc_id": doc, "body_recall": recall, "escalate": {"R": escalate}}
+
+
+def test_auc_separates_ties_and_inverts() -> None:
+    assert auc([3, 4], [1, 2]) == 1.0
+    assert auc([1, 2], [3, 4]) == 0.0
+    assert auc([2], [2]) == 0.5
+    assert auc([], [1]) != auc([], [1])  # NaN when a side is empty
+
+
+def test_kept_bad_counts_only_kept_pages_below_half_recall() -> None:
+    pages = [_page("a", 0.2, False), _page("a", 0.9, False), _page("a", 0.1, True)]
+    assert kept_bad(pages, "R") == (2, 1)
+
+
+def test_g1_fails_when_one_non_latin_page_is_kept() -> None:
+    pages = [_page("io02", 0.0, True)] * 3 + [_page("io02", 0.0, False)]
+    pages += [_page("bd02", 0.95, False)] * 4
+    assert not rule_metrics(pages, "R", 0.5)["gates"]["G1"]
+    pages[3] = _page("io02", 0.0, True)
+    assert rule_metrics(pages, "R", 0.5)["gates"]["G1"]
+
+
+def test_g2_ignores_io06_and_bounds_the_kept_bad_share() -> None:
+    clean = [_page("bd02", 0.95, False)] * 19
+    bad = [_page("bd02", 0.1, False)]
+    io06_bad = [_page("io06", 0.1, False)] * 10
+    # 1 bad of 20 kept, io06 left out: share 0.05 passes (bound is inclusive).
+    assert rule_metrics(clean + bad + io06_bad, "R", 0.5)["gates"]["G2"]
+    assert not rule_metrics(clean[:-1] + bad * 2 + io06_bad, "R", 0.5)["gates"]["G2"]
+
+
+def test_g3_bound_is_oracle_plus_allowance() -> None:
+    # Oracle 0.5. Bound 0.55: 11 of 20 escalated passes, 12 of 20 fails.
+    def pages(escalated: int) -> list[dict]:
+        return [_page("bd02", 0.1 if i < 10 else 0.9, i < escalated) for i in range(20)]
+
+    assert rule_metrics(pages(11), "R", 0.5)["gates"]["G3"]
+    assert not rule_metrics(pages(12), "R", 0.5)["gates"]["G3"]
+
+
+def _gates(passed: bool, escalated: float) -> dict:
+    return {"gates": {"G1": passed, "G2": True, "G3": True}, "escalated_share": escalated}
+
+
+def test_select_takes_lowest_escalation_and_breaks_ties_simply() -> None:
+    assert (
+        select({"C0": _gates(True, 0.5), "C1": _gates(True, 0.4), "C3": _gates(True, 0.6)}) == "C1"
+    )
+    assert (
+        select({"C0": _gates(True, 0.5), "C1": _gates(True, 0.5), "C3": _gates(True, 0.5)}) == "C0"
+    )
+    assert (
+        select({"C0": _gates(False, 0.5), "C1": _gates(False, 0.4), "C3": _gates(False, 0.6)})
+        is None
+    )
