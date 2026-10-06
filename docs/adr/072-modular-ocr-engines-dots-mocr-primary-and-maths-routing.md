@@ -3,7 +3,7 @@
 **Date:** 2026-10-06
 **Status:** Proposed
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Change:** `openspec/changes/modular-ocr-workers-dots-mocr/`
+**Change:** `openspec/changes/archive/2026-10-06-modular-ocr-workers-dots-mocr/`
 **Related:** [ADR-062](062-isolate-paddleocr-vl-in-a-versioned-ocr-worker.md) (isolated OCR worker), [ADR-069](069-page-level-ocr-routing-and-the-pdfium-runtime.md) (page-level routing), [ADR-071](071-ocr-routing-natural-positive-findings.md) (natural-positive findings)
 **Evidence:** `experiments/34-worker-sample-review-2026-09-19/report.md`, `experiments/37-dots-mocr-routing-acceptance-2026-09-30/report.md`
 
@@ -150,7 +150,7 @@ None of these blocks acceptance, and none changes detector code in this change.
 
 ## References
 
-- `openspec/changes/modular-ocr-workers-dots-mocr/design.md` (D1 to D9)
+- `openspec/changes/archive/2026-10-06-modular-ocr-workers-dots-mocr/design.md` (D1 to D9)
 - `experiments/34-worker-sample-review-2026-09-19/protocol.md` (A2, A4) and `report.md`
 - `experiments/37-dots-mocr-routing-acceptance-2026-09-30/report.md`, `protocol.md` (A1), `output/summary.json`
 - `ocr-workers/engines/dots-mocr/LICENCE-NOTES.md`
