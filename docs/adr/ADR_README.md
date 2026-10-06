@@ -78,7 +78,7 @@ development of OMRG — Opinionated Modular RAG.
 | [069](./069-page-level-ocr-routing-and-the-pdfium-runtime.md) | Page-Level OCR Routing with a Local Tier, and the PDFium Runtime                            | 2026-09-18 | Accepted |
 | [070](./070-normalise-reader-output-before-chunking.md) | Normalise Reader Output Before Chunking — Remove Markup, Never Content | 2026-09-25 | Accepted |
 | [071](./071-ocr-routing-natural-positive-findings.md) | OCR Routing on Natural Documents: Findings and Decisions | 2026-09-29 | Accepted |
-| [072](./072-modular-ocr-engines-dots-mocr-primary-and-maths-routing.md) | Modular OCR Engines, dots.mocr as Primary Engine, and Maths-Page Routing | 2026-10-06 | Proposed |
+| [072](./072-modular-ocr-engines-dots-mocr-primary-and-maths-routing.md) | Modular OCR Engines, dots.mocr as Primary Engine, and Maths-Page Routing | 2026-10-06 | Accepted |
 
 ## Convention
 

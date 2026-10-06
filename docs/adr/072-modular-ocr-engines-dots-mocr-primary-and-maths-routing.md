@@ -1,7 +1,7 @@
 # ADR-072: Modular OCR Engines, dots.mocr as Primary Engine, and Maths-Page Routing
 
 **Date:** 2026-10-06
-**Status:** Proposed
+**Status:** Accepted (2026-10-06, PR #104 merged to `v3`)
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Change:** `openspec/changes/archive/2026-10-06-modular-ocr-workers-dots-mocr/`
 **Related:** [ADR-062](062-isolate-paddleocr-vl-in-a-versioned-ocr-worker.md) (isolated OCR worker), [ADR-069](069-page-level-ocr-routing-and-the-pdfium-runtime.md) (page-level routing), [ADR-071](071-ocr-routing-natural-positive-findings.md) (natural-positive findings)
