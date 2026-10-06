@@ -118,6 +118,19 @@
   "ocr": "none",
   "downloads": "none",
   "packages": "none (standard library)",
-  "decision_register": [],
+  "decision_register": [
+    {
+      "id": "DR1",
+      "date": "2026-10-06",
+      "decision": "C4 operational definitions, fixed before any rule is scored. Positives: io06 gated pages with body_recall < 0.5. Negatives: rows outside io06, io01, io02, io03 and io07 with body_recall >= 0.8 (modern Latin print). Signal direction: a higher discarded-region count and a lower chars per page mean more likely positive. AUC is reported one-sided in that direction and two-sided as max(AUC, 1 - AUC). The follow-up trigger (AUC >= 0.8) reads the one-sided value.",
+      "reason": "The plan names the two populations without a document list or a direction. C4 is exploratory and no gate depends on it."
+    },
+    {
+      "id": "DR2",
+      "date": "2026-10-06",
+      "decision": "Run against the saved texts and the freeze check in the v3 worktree, passed with --e33-dir. The rows file hash is checked against source_data.rows_sha256.",
+      "reason": "The 464 saved texts and the corpus PDFs are gitignored. They exist in the v3 worktree only. freeze.py --check fails in this worktree because the corpus is missing, and prints 'freeze verified' in v3."
+    }
+  ],
   "amendments": []
 }

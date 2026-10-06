@@ -8,8 +8,8 @@
 
 ## 2. Implementation
 
-- [ ] 2.1 Write `score_rules.py` with the script-group helper (design D4) and the candidate rules. Verify: unit tests on fixed strings pass (a clean Spanish line has CJK share 0; a line of CJK and Latin fragments has share ≥ 0.05; empty output escalates).
-- [ ] 2.2 Run `freeze.py --check` for Experiment 33, then load the 464 rows and saved texts. Verify: 464 rows, 464 text files, 399 `needs_ocr` rows, and every row's `body_recall` matches `pages.json`.
+- [x] 2.1 Write `score_rules.py` with the script-group helper (design D4) and the candidate rules. Verify: unit tests on fixed strings pass (a clean Spanish line has CJK share 0; a line of CJK and Latin fragments has share ≥ 0.05; empty output escalates).
+- [x] 2.2 Run `freeze.py --check` for Experiment 33, then load the 464 rows and saved texts. Verify: 464 rows, 464 text files, 399 `needs_ocr` rows, and every row's `body_recall` matches `pages.json`.
 
 ## 3. Run and summarise
 
