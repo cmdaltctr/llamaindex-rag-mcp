@@ -1,0 +1,2149 @@
+{
+ "engines": {
+  "paddleocr-vl": {
+   "runs": {
+    "E-maths": {
+     "pages": {
+      "eq01:2": {
+       "status": "ok",
+       "chars": 4238,
+       "seconds": 87.15,
+       "includes_start": true,
+       "utc": "2026-10-05T09:24:58Z"
+      },
+      "eq01:3": {
+       "status": "ok",
+       "chars": 5864,
+       "seconds": 133.33,
+       "includes_start": false,
+       "utc": "2026-10-05T09:27:11Z"
+      },
+      "eq01:4": {
+       "status": "ok",
+       "chars": 5465,
+       "seconds": 94.2,
+       "includes_start": false,
+       "utc": "2026-10-05T09:28:46Z"
+      },
+      "eq01:5": {
+       "status": "ok",
+       "chars": 5413,
+       "seconds": 105.62,
+       "includes_start": false,
+       "utc": "2026-10-05T09:30:31Z"
+      },
+      "eq01:10": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.45,
+       "includes_start": false,
+       "utc": "2026-10-05T09:35:32Z"
+      },
+      "eq01:11": {
+       "status": "ok",
+       "chars": 3512,
+       "seconds": 92.67,
+       "includes_start": true,
+       "utc": "2026-10-05T09:37:04Z"
+      },
+      "eq01:12": {
+       "status": "ok",
+       "chars": 4393,
+       "seconds": 95.08,
+       "includes_start": false,
+       "utc": "2026-10-05T09:38:40Z"
+      },
+      "eq01:14": {
+       "status": "ok",
+       "chars": 2371,
+       "seconds": 50.21,
+       "includes_start": false,
+       "utc": "2026-10-05T09:39:30Z"
+      },
+      "mp01:4": {
+       "status": "ok",
+       "chars": 3736,
+       "seconds": 70.63,
+       "includes_start": false,
+       "utc": "2026-10-05T09:40:40Z"
+      },
+      "mp01:5": {
+       "status": "ok",
+       "chars": 3893,
+       "seconds": 82.18,
+       "includes_start": false,
+       "utc": "2026-10-05T09:42:03Z"
+      },
+      "mp01:8": {
+       "status": "ok",
+       "chars": 3633,
+       "seconds": 78.23,
+       "includes_start": false,
+       "utc": "2026-10-05T09:43:21Z"
+      },
+      "mp01:10": {
+       "status": "ok",
+       "chars": 4351,
+       "seconds": 94.41,
+       "includes_start": false,
+       "utc": "2026-10-05T09:44:55Z"
+      },
+      "mp01:11": {
+       "status": "ok",
+       "chars": 4515,
+       "seconds": 101.67,
+       "includes_start": false,
+       "utc": "2026-10-05T09:46:37Z"
+      },
+      "mp01:16": {
+       "status": "ok",
+       "chars": 3754,
+       "seconds": 85.26,
+       "includes_start": false,
+       "utc": "2026-10-05T09:48:02Z"
+      },
+      "mp01:21": {
+       "status": "ok",
+       "chars": 4045,
+       "seconds": 93.44,
+       "includes_start": false,
+       "utc": "2026-10-05T09:49:36Z"
+      },
+      "mp01:22": {
+       "status": "ok",
+       "chars": 4189,
+       "seconds": 90.48,
+       "includes_start": false,
+       "utc": "2026-10-05T09:51:06Z"
+      },
+      "mp05:1": {
+       "status": "ok",
+       "chars": 1381,
+       "seconds": 51.37,
+       "includes_start": false,
+       "utc": "2026-10-05T09:51:58Z"
+      },
+      "mp05:3": {
+       "status": "ok",
+       "chars": 1654,
+       "seconds": 76.56,
+       "includes_start": false,
+       "utc": "2026-10-05T09:53:14Z"
+      },
+      "mp05:9": {
+       "status": "ok",
+       "chars": 1137,
+       "seconds": 52.89,
+       "includes_start": false,
+       "utc": "2026-10-05T09:54:07Z"
+      },
+      "mp05:10": {
+       "status": "ok",
+       "chars": 2078,
+       "seconds": 61.24,
+       "includes_start": false,
+       "utc": "2026-10-05T09:55:09Z"
+      },
+      "mp05:11": {
+       "status": "ok",
+       "chars": 2065,
+       "seconds": 69.09,
+       "includes_start": false,
+       "utc": "2026-10-05T09:56:18Z"
+      },
+      "mp05:12": {
+       "status": "ok",
+       "chars": 2182,
+       "seconds": 66.35,
+       "includes_start": false,
+       "utc": "2026-10-05T09:57:24Z"
+      },
+      "mp05:13": {
+       "status": "ok",
+       "chars": 1867,
+       "seconds": 68.14,
+       "includes_start": false,
+       "utc": "2026-10-05T09:58:32Z"
+      },
+      "mp05:15": {
+       "status": "ok",
+       "chars": 1787,
+       "seconds": 83.4,
+       "includes_start": false,
+       "utc": "2026-10-05T09:59:56Z"
+      },
+      "mp03:2": {
+       "status": "ok",
+       "chars": 2747,
+       "seconds": 62.62,
+       "includes_start": false,
+       "utc": "2026-10-05T10:00:58Z"
+      },
+      "mp03:3": {
+       "status": "ok",
+       "chars": 2916,
+       "seconds": 61.11,
+       "includes_start": false,
+       "utc": "2026-10-05T10:01:59Z"
+      },
+      "mp03:8": {
+       "status": "ok",
+       "chars": 2755,
+       "seconds": 73.52,
+       "includes_start": false,
+       "utc": "2026-10-05T10:03:13Z"
+      },
+      "mp03:9": {
+       "status": "ok",
+       "chars": 2900,
+       "seconds": 72.98,
+       "includes_start": false,
+       "utc": "2026-10-05T10:04:26Z"
+      },
+      "mp03:12": {
+       "status": "ok",
+       "chars": 2363,
+       "seconds": 62.02,
+       "includes_start": false,
+       "utc": "2026-10-05T10:05:28Z"
+      },
+      "mp03:13": {
+       "status": "ok",
+       "chars": 2975,
+       "seconds": 63.13,
+       "includes_start": false,
+       "utc": "2026-10-05T10:06:31Z"
+      },
+      "mp03:17": {
+       "status": "ok",
+       "chars": 2039,
+       "seconds": 52.72,
+       "includes_start": false,
+       "utc": "2026-10-05T10:07:24Z"
+      },
+      "mp03:20": {
+       "status": "ok",
+       "chars": 2496,
+       "seconds": 66.21,
+       "includes_start": false,
+       "utc": "2026-10-05T10:08:30Z"
+      },
+      "mp04:7": {
+       "status": "ok",
+       "chars": 2887,
+       "seconds": 75.57,
+       "includes_start": false,
+       "utc": "2026-10-05T10:09:46Z"
+      },
+      "mp04:9": {
+       "status": "ok",
+       "chars": 9282,
+       "seconds": 62.0,
+       "includes_start": false,
+       "utc": "2026-10-05T10:10:48Z"
+      },
+      "mp04:12": {
+       "status": "ok",
+       "chars": 3393,
+       "seconds": 63.19,
+       "includes_start": false,
+       "utc": "2026-10-05T10:11:51Z"
+      },
+      "mp04:14": {
+       "status": "ok",
+       "chars": 2942,
+       "seconds": 101.35,
+       "includes_start": false,
+       "utc": "2026-10-05T10:13:32Z"
+      },
+      "mp04:15": {
+       "status": "ok",
+       "chars": 3507,
+       "seconds": 67.64,
+       "includes_start": false,
+       "utc": "2026-10-05T10:14:40Z"
+      },
+      "mp04:17": {
+       "status": "ok",
+       "chars": 2843,
+       "seconds": 92.9,
+       "includes_start": false,
+       "utc": "2026-10-05T10:16:13Z"
+      },
+      "mp04:19": {
+       "status": "ok",
+       "chars": 3935,
+       "seconds": 73.91,
+       "includes_start": false,
+       "utc": "2026-10-05T10:17:27Z"
+      },
+      "mp04:22": {
+       "status": "ok",
+       "chars": 2963,
+       "seconds": 94.18,
+       "includes_start": false,
+       "utc": "2026-10-05T10:19:01Z"
+      }
+     },
+     "total": 40
+    },
+    "E-scan": {
+     "pages": {
+      "io06:16": {
+       "status": "ok",
+       "chars": 1005,
+       "seconds": 44.78,
+       "includes_start": false,
+       "utc": "2026-10-05T10:19:46Z"
+      },
+      "io06:28": {
+       "status": "ok",
+       "chars": 1178,
+       "seconds": 32.48,
+       "includes_start": false,
+       "utc": "2026-10-05T10:20:18Z"
+      },
+      "io06:30": {
+       "status": "ok",
+       "chars": 1264,
+       "seconds": 36.79,
+       "includes_start": false,
+       "utc": "2026-10-05T10:20:55Z"
+      },
+      "io06:45": {
+       "status": "ok",
+       "chars": 1183,
+       "seconds": 33.12,
+       "includes_start": false,
+       "utc": "2026-10-05T10:21:28Z"
+      },
+      "io06:46": {
+       "status": "ok",
+       "chars": 1046,
+       "seconds": 23.24,
+       "includes_start": false,
+       "utc": "2026-10-05T10:21:52Z"
+      },
+      "io06:53": {
+       "status": "error",
+       "code": "empty_markdown",
+       "message": "empty_markdown: PaddleOCR-VL produced empty Markdown",
+       "seconds": 8.26,
+       "includes_start": false,
+       "utc": "2026-10-05T10:22:00Z"
+      },
+      "io06:62": {
+       "status": "ok",
+       "chars": 1261,
+       "seconds": 38.68,
+       "includes_start": false,
+       "utc": "2026-10-05T10:22:39Z"
+      },
+      "io06:63": {
+       "status": "ok",
+       "chars": 1318,
+       "seconds": 43.92,
+       "includes_start": false,
+       "utc": "2026-10-05T10:23:22Z"
+      },
+      "io06:65": {
+       "status": "error",
+       "code": "empty_markdown",
+       "message": "empty_markdown: PaddleOCR-VL produced empty Markdown",
+       "seconds": 3.23,
+       "includes_start": false,
+       "utc": "2026-10-05T10:23:26Z"
+      },
+      "io06:68": {
+       "status": "ok",
+       "chars": 1361,
+       "seconds": 42.93,
+       "includes_start": false,
+       "utc": "2026-10-05T10:24:09Z"
+      },
+      "io06:75": {
+       "status": "ok",
+       "chars": 221,
+       "seconds": 9.35,
+       "includes_start": false,
+       "utc": "2026-10-05T10:24:18Z"
+      },
+      "io06:78": {
+       "status": "ok",
+       "chars": 119,
+       "seconds": 3.36,
+       "includes_start": false,
+       "utc": "2026-10-05T10:24:21Z"
+      },
+      "io04:1": {
+       "status": "ok",
+       "chars": 49,
+       "seconds": 9.02,
+       "includes_start": false,
+       "utc": "2026-10-05T10:24:30Z"
+      },
+      "io04:4": {
+       "status": "ok",
+       "chars": 12251,
+       "seconds": 159.06,
+       "includes_start": false,
+       "utc": "2026-10-05T10:27:10Z"
+      },
+      "io04:16": {
+       "status": "ok",
+       "chars": 7854,
+       "seconds": 141.7,
+       "includes_start": false,
+       "utc": "2026-10-05T10:29:31Z"
+      },
+      "io04:17": {
+       "status": "ok",
+       "chars": 4621,
+       "seconds": 96.2,
+       "includes_start": false,
+       "utc": "2026-10-05T10:31:08Z"
+      },
+      "io04:18": {
+       "status": "ok",
+       "chars": 9975,
+       "seconds": 154.9,
+       "includes_start": false,
+       "utc": "2026-10-05T10:33:42Z"
+      },
+      "io04:20": {
+       "status": "ok",
+       "chars": 9443,
+       "seconds": 130.68,
+       "includes_start": false,
+       "utc": "2026-10-05T10:35:53Z"
+      },
+      "io04:33": {
+       "status": "ok",
+       "chars": 13433,
+       "seconds": 240.96,
+       "includes_start": false,
+       "utc": "2026-10-05T10:39:54Z"
+      },
+      "io04:42": {
+       "status": "ok",
+       "chars": 10434,
+       "seconds": 204.62,
+       "includes_start": false,
+       "utc": "2026-10-05T10:43:19Z"
+      },
+      "io04:44": {
+       "status": "ok",
+       "chars": 12610,
+       "seconds": 176.29,
+       "includes_start": false,
+       "utc": "2026-10-05T10:46:15Z"
+      },
+      "io04:47": {
+       "status": "ok",
+       "chars": 15685,
+       "seconds": 208.67,
+       "includes_start": false,
+       "utc": "2026-10-05T10:49:44Z"
+      },
+      "io04:49": {
+       "status": "ok",
+       "chars": 4105,
+       "seconds": 96.39,
+       "includes_start": false,
+       "utc": "2026-10-05T10:51:20Z"
+      },
+      "io04:52": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.46,
+       "includes_start": false,
+       "utc": "2026-10-05T10:56:21Z"
+      },
+      "tl03:2": {
+       "status": "ok",
+       "chars": 1987,
+       "seconds": 54.19,
+       "includes_start": true,
+       "utc": "2026-10-05T10:57:15Z"
+      },
+      "tl03:3": {
+       "status": "ok",
+       "chars": 1230,
+       "seconds": 76.74,
+       "includes_start": false,
+       "utc": "2026-10-05T10:58:32Z"
+      },
+      "tl03:5": {
+       "status": "ok",
+       "chars": 2887,
+       "seconds": 47.16,
+       "includes_start": false,
+       "utc": "2026-10-05T10:59:19Z"
+      },
+      "tl03:8": {
+       "status": "ok",
+       "chars": 1206,
+       "seconds": 14.14,
+       "includes_start": false,
+       "utc": "2026-10-05T10:59:33Z"
+      }
+     },
+     "total": 28
+    },
+    "E-script": {
+     "pages": {
+      "io01:2": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.51,
+       "includes_start": false,
+       "utc": "2026-10-05T11:04:34Z"
+      },
+      "io01:3": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.46,
+       "includes_start": true,
+       "utc": "2026-10-05T11:09:34Z"
+      },
+      "io01:4": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.41,
+       "includes_start": true,
+       "utc": "2026-10-05T11:14:34Z"
+      },
+      "io01:5": {
+       "status": "ok",
+       "chars": 705,
+       "seconds": 30.93,
+       "includes_start": true,
+       "utc": "2026-10-05T11:15:05Z"
+      },
+      "io01:6": {
+       "status": "ok",
+       "chars": 668,
+       "seconds": 31.27,
+       "includes_start": false,
+       "utc": "2026-10-05T11:15:37Z"
+      },
+      "io01:7": {
+       "status": "ok",
+       "chars": 674,
+       "seconds": 26.64,
+       "includes_start": false,
+       "utc": "2026-10-05T11:16:03Z"
+      },
+      "io01:8": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.46,
+       "includes_start": false,
+       "utc": "2026-10-05T11:21:04Z"
+      },
+      "io01:9": {
+       "status": "ok",
+       "chars": 689,
+       "seconds": 35.47,
+       "includes_start": true,
+       "utc": "2026-10-05T11:21:39Z"
+      },
+      "io01:10": {
+       "status": "ok",
+       "chars": 629,
+       "seconds": 34.43,
+       "includes_start": false,
+       "utc": "2026-10-05T11:22:14Z"
+      },
+      "io01:11": {
+       "status": "ok",
+       "chars": 609,
+       "seconds": 38.9,
+       "includes_start": false,
+       "utc": "2026-10-05T11:22:53Z"
+      },
+      "io01:12": {
+       "status": "ok",
+       "chars": 688,
+       "seconds": 29.64,
+       "includes_start": false,
+       "utc": "2026-10-05T11:23:22Z"
+      },
+      "io01:13": {
+       "status": "ok",
+       "chars": 581,
+       "seconds": 49.12,
+       "includes_start": false,
+       "utc": "2026-10-05T11:24:12Z"
+      },
+      "io01:14": {
+       "status": "ok",
+       "chars": 615,
+       "seconds": 36.07,
+       "includes_start": false,
+       "utc": "2026-10-05T11:24:48Z"
+      },
+      "io01:15": {
+       "status": "ok",
+       "chars": 752,
+       "seconds": 25.61,
+       "includes_start": false,
+       "utc": "2026-10-05T11:25:13Z"
+      },
+      "io01:16": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.5,
+       "includes_start": false,
+       "utc": "2026-10-05T11:30:14Z"
+      },
+      "io01:17": {
+       "status": "ok",
+       "chars": 1123,
+       "seconds": 44.16,
+       "includes_start": true,
+       "utc": "2026-10-05T11:30:58Z"
+      },
+      "io01:18": {
+       "status": "ok",
+       "chars": 769,
+       "seconds": 33.17,
+       "includes_start": false,
+       "utc": "2026-10-05T11:31:31Z"
+      },
+      "io01:19": {
+       "status": "ok",
+       "chars": 745,
+       "seconds": 30.01,
+       "includes_start": false,
+       "utc": "2026-10-05T11:32:01Z"
+      },
+      "io01:20": {
+       "status": "ok",
+       "chars": 690,
+       "seconds": 29.76,
+       "includes_start": false,
+       "utc": "2026-10-05T11:32:31Z"
+      },
+      "io01:21": {
+       "status": "ok",
+       "chars": 713,
+       "seconds": 27.64,
+       "includes_start": false,
+       "utc": "2026-10-05T11:32:59Z"
+      },
+      "io01:22": {
+       "status": "ok",
+       "chars": 637,
+       "seconds": 25.11,
+       "includes_start": false,
+       "utc": "2026-10-05T11:33:24Z"
+      },
+      "io01:23": {
+       "status": "ok",
+       "chars": 767,
+       "seconds": 43.86,
+       "includes_start": false,
+       "utc": "2026-10-05T11:34:08Z"
+      },
+      "io01:24": {
+       "status": "ok",
+       "chars": 1006,
+       "seconds": 56.92,
+       "includes_start": false,
+       "utc": "2026-10-05T11:35:05Z"
+      },
+      "io01:25": {
+       "status": "ok",
+       "chars": 794,
+       "seconds": 30.39,
+       "includes_start": false,
+       "utc": "2026-10-05T11:35:35Z"
+      },
+      "io01:26": {
+       "status": "ok",
+       "chars": 746,
+       "seconds": 42.67,
+       "includes_start": false,
+       "utc": "2026-10-05T11:36:18Z"
+      },
+      "io01:27": {
+       "status": "ok",
+       "chars": 662,
+       "seconds": 36.18,
+       "includes_start": false,
+       "utc": "2026-10-05T11:36:54Z"
+      },
+      "io01:28": {
+       "status": "ok",
+       "chars": 529,
+       "seconds": 22.53,
+       "includes_start": false,
+       "utc": "2026-10-05T11:37:17Z"
+      },
+      "io01:29": {
+       "status": "ok",
+       "chars": 774,
+       "seconds": 27.0,
+       "includes_start": false,
+       "utc": "2026-10-05T11:37:44Z"
+      },
+      "io01:30": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.35,
+       "includes_start": false,
+       "utc": "2026-10-05T11:42:44Z"
+      },
+      "io01:31": {
+       "status": "ok",
+       "chars": 473,
+       "seconds": 26.23,
+       "includes_start": true,
+       "utc": "2026-10-05T11:43:10Z"
+      },
+      "io01:32": {
+       "status": "ok",
+       "chars": 676,
+       "seconds": 28.03,
+       "includes_start": false,
+       "utc": "2026-10-05T11:43:38Z"
+      },
+      "io01:33": {
+       "status": "ok",
+       "chars": 608,
+       "seconds": 20.23,
+       "includes_start": false,
+       "utc": "2026-10-05T11:43:59Z"
+      },
+      "io01:34": {
+       "status": "ok",
+       "chars": 673,
+       "seconds": 21.48,
+       "includes_start": false,
+       "utc": "2026-10-05T11:44:20Z"
+      },
+      "io01:35": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.3,
+       "includes_start": false,
+       "utc": "2026-10-05T11:49:20Z"
+      },
+      "io01:36": {
+       "status": "ok",
+       "chars": 746,
+       "seconds": 28.8,
+       "includes_start": true,
+       "utc": "2026-10-05T11:49:49Z"
+      },
+      "io01:37": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.35,
+       "includes_start": false,
+       "utc": "2026-10-05T11:54:50Z"
+      },
+      "io01:38": {
+       "status": "ok",
+       "chars": 732,
+       "seconds": 40.76,
+       "includes_start": true,
+       "utc": "2026-10-05T11:55:30Z"
+      },
+      "io01:39": {
+       "status": "ok",
+       "chars": 733,
+       "seconds": 29.53,
+       "includes_start": false,
+       "utc": "2026-10-05T11:56:00Z"
+      },
+      "io01:40": {
+       "status": "ok",
+       "chars": 748,
+       "seconds": 33.72,
+       "includes_start": false,
+       "utc": "2026-10-05T11:56:34Z"
+      },
+      "io01:41": {
+       "status": "ok",
+       "chars": 789,
+       "seconds": 29.82,
+       "includes_start": false,
+       "utc": "2026-10-05T11:57:04Z"
+      },
+      "io01:42": {
+       "status": "ok",
+       "chars": 740,
+       "seconds": 30.65,
+       "includes_start": false,
+       "utc": "2026-10-05T11:57:34Z"
+      },
+      "io01:43": {
+       "status": "ok",
+       "chars": 625,
+       "seconds": 34.71,
+       "includes_start": false,
+       "utc": "2026-10-05T11:58:09Z"
+      },
+      "io01:44": {
+       "status": "ok",
+       "chars": 712,
+       "seconds": 35.88,
+       "includes_start": false,
+       "utc": "2026-10-05T11:58:45Z"
+      },
+      "io01:45": {
+       "status": "ok",
+       "chars": 595,
+       "seconds": 27.12,
+       "includes_start": false,
+       "utc": "2026-10-05T11:59:12Z"
+      },
+      "io01:46": {
+       "status": "ok",
+       "chars": 704,
+       "seconds": 46.23,
+       "includes_start": false,
+       "utc": "2026-10-05T11:59:58Z"
+      },
+      "io01:47": {
+       "status": "ok",
+       "chars": 2692,
+       "seconds": 73.28,
+       "includes_start": false,
+       "utc": "2026-10-05T12:01:12Z"
+      },
+      "io01:48": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.47,
+       "includes_start": false,
+       "utc": "2026-10-05T12:06:12Z"
+      },
+      "io01:49": {
+       "status": "ok",
+       "chars": 519,
+       "seconds": 50.02,
+       "includes_start": true,
+       "utc": "2026-10-05T12:07:02Z"
+      },
+      "io02:1": {
+       "status": "ok",
+       "chars": 641,
+       "seconds": 48.15,
+       "includes_start": false,
+       "utc": "2026-10-05T12:07:50Z"
+      },
+      "io02:2": {
+       "status": "ok",
+       "chars": 3128,
+       "seconds": 108.5,
+       "includes_start": false,
+       "utc": "2026-10-05T12:09:39Z"
+      },
+      "io02:3": {
+       "status": "ok",
+       "chars": 2434,
+       "seconds": 85.74,
+       "includes_start": false,
+       "utc": "2026-10-05T12:11:05Z"
+      },
+      "io02:4": {
+       "status": "ok",
+       "chars": 2089,
+       "seconds": 73.44,
+       "includes_start": false,
+       "utc": "2026-10-05T12:12:18Z"
+      },
+      "io02:5": {
+       "status": "ok",
+       "chars": 3645,
+       "seconds": 115.38,
+       "includes_start": false,
+       "utc": "2026-10-05T12:14:13Z"
+      },
+      "io02:6": {
+       "status": "ok",
+       "chars": 3193,
+       "seconds": 109.58,
+       "includes_start": false,
+       "utc": "2026-10-05T12:16:03Z"
+      },
+      "io02:7": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.4,
+       "includes_start": false,
+       "utc": "2026-10-05T12:21:04Z"
+      },
+      "io02:8": {
+       "status": "ok",
+       "chars": 3136,
+       "seconds": 96.11,
+       "includes_start": true,
+       "utc": "2026-10-05T12:22:40Z"
+      },
+      "io02:9": {
+       "status": "ok",
+       "chars": 2843,
+       "seconds": 83.96,
+       "includes_start": false,
+       "utc": "2026-10-05T12:24:04Z"
+      },
+      "io02:10": {
+       "status": "ok",
+       "chars": 3676,
+       "seconds": 117.26,
+       "includes_start": false,
+       "utc": "2026-10-05T12:26:01Z"
+      },
+      "io02:11": {
+       "status": "ok",
+       "chars": 3587,
+       "seconds": 118.89,
+       "includes_start": false,
+       "utc": "2026-10-05T12:28:00Z"
+      },
+      "io02:12": {
+       "status": "ok",
+       "chars": 3053,
+       "seconds": 59.09,
+       "includes_start": false,
+       "utc": "2026-10-05T12:28:59Z"
+      },
+      "io02:13": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.33,
+       "includes_start": false,
+       "utc": "2026-10-05T12:33:59Z"
+      },
+      "io02:14": {
+       "status": "ok",
+       "chars": 3225,
+       "seconds": 83.87,
+       "includes_start": true,
+       "utc": "2026-10-05T12:35:23Z"
+      },
+      "io02:15": {
+       "status": "ok",
+       "chars": 1052,
+       "seconds": 37.01,
+       "includes_start": false,
+       "utc": "2026-10-05T12:36:00Z"
+      },
+      "io02:16": {
+       "status": "ok",
+       "chars": 638,
+       "seconds": 58.44,
+       "includes_start": false,
+       "utc": "2026-10-05T12:36:59Z"
+      },
+      "io03:1": {
+       "status": "ok",
+       "chars": 5068,
+       "seconds": 114.51,
+       "includes_start": false,
+       "utc": "2026-10-05T12:38:53Z"
+      },
+      "io03:2": {
+       "status": "ok",
+       "chars": 8545,
+       "seconds": 224.12,
+       "includes_start": false,
+       "utc": "2026-10-05T12:42:37Z"
+      },
+      "io03:3": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.29,
+       "includes_start": false,
+       "utc": "2026-10-05T12:47:38Z"
+      },
+      "io03:4": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.24,
+       "includes_start": true,
+       "utc": "2026-10-05T12:52:38Z"
+      },
+      "io03:5": {
+       "status": "ok",
+       "chars": 1680,
+       "seconds": 55.49,
+       "includes_start": true,
+       "utc": "2026-10-05T12:53:33Z"
+      },
+      "io07:2": {
+       "status": "ok",
+       "chars": 306,
+       "seconds": 16.89,
+       "includes_start": false,
+       "utc": "2026-10-05T12:53:50Z"
+      },
+      "io07:4": {
+       "status": "ok",
+       "chars": 305,
+       "seconds": 16.38,
+       "includes_start": false,
+       "utc": "2026-10-05T12:54:07Z"
+      },
+      "io07:6": {
+       "status": "ok",
+       "chars": 1077,
+       "seconds": 29.64,
+       "includes_start": false,
+       "utc": "2026-10-05T12:54:36Z"
+      },
+      "io07:7": {
+       "status": "ok",
+       "chars": 1188,
+       "seconds": 30.48,
+       "includes_start": false,
+       "utc": "2026-10-05T12:55:07Z"
+      },
+      "io07:8": {
+       "status": "ok",
+       "chars": 1075,
+       "seconds": 39.52,
+       "includes_start": false,
+       "utc": "2026-10-05T12:55:46Z"
+      },
+      "io07:9": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.24,
+       "includes_start": false,
+       "utc": "2026-10-05T13:00:47Z"
+      },
+      "io07:10": {
+       "status": "ok",
+       "chars": 547,
+       "seconds": 34.96,
+       "includes_start": true,
+       "utc": "2026-10-05T13:01:22Z"
+      },
+      "io07:11": {
+       "status": "ok",
+       "chars": 554,
+       "seconds": 27.04,
+       "includes_start": false,
+       "utc": "2026-10-05T13:01:49Z"
+      },
+      "io07:12": {
+       "status": "ok",
+       "chars": 541,
+       "seconds": 28.25,
+       "includes_start": false,
+       "utc": "2026-10-05T13:02:17Z"
+      },
+      "io07:13": {
+       "status": "ok",
+       "chars": 723,
+       "seconds": 26.16,
+       "includes_start": false,
+       "utc": "2026-10-05T13:02:43Z"
+      },
+      "io07:14": {
+       "status": "ok",
+       "chars": 902,
+       "seconds": 25.77,
+       "includes_start": false,
+       "utc": "2026-10-05T13:03:09Z"
+      },
+      "io07:15": {
+       "status": "ok",
+       "chars": 876,
+       "seconds": 23.63,
+       "includes_start": false,
+       "utc": "2026-10-05T13:03:33Z"
+      },
+      "io07:16": {
+       "status": "ok",
+       "chars": 935,
+       "seconds": 30.09,
+       "includes_start": false,
+       "utc": "2026-10-05T13:04:03Z"
+      },
+      "io07:17": {
+       "status": "ok",
+       "chars": 1087,
+       "seconds": 33.21,
+       "includes_start": false,
+       "utc": "2026-10-05T13:04:36Z"
+      },
+      "io07:18": {
+       "status": "ok",
+       "chars": 1232,
+       "seconds": 31.78,
+       "includes_start": false,
+       "utc": "2026-10-05T13:05:08Z"
+      },
+      "io07:19": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.35,
+       "includes_start": false,
+       "utc": "2026-10-05T13:10:08Z"
+      },
+      "io07:20": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.34,
+       "includes_start": true,
+       "utc": "2026-10-05T13:15:09Z"
+      },
+      "io07:21": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.35,
+       "includes_start": true,
+       "utc": "2026-10-05T13:20:09Z"
+      },
+      "io07:22": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.39,
+       "includes_start": true,
+       "utc": "2026-10-05T13:25:09Z"
+      },
+      "io07:23": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.35,
+       "includes_start": true,
+       "utc": "2026-10-05T13:30:10Z"
+      },
+      "io07:24": {
+       "status": "ok",
+       "chars": 721,
+       "seconds": 29.13,
+       "includes_start": true,
+       "utc": "2026-10-05T13:30:39Z"
+      },
+      "io07:25": {
+       "status": "ok",
+       "chars": 669,
+       "seconds": 23.13,
+       "includes_start": false,
+       "utc": "2026-10-05T13:31:02Z"
+      },
+      "io07:26": {
+       "status": "ok",
+       "chars": 645,
+       "seconds": 21.24,
+       "includes_start": false,
+       "utc": "2026-10-05T13:31:23Z"
+      },
+      "io07:27": {
+       "status": "ok",
+       "chars": 639,
+       "seconds": 17.98,
+       "includes_start": false,
+       "utc": "2026-10-05T13:31:41Z"
+      },
+      "io07:28": {
+       "status": "ok",
+       "chars": 723,
+       "seconds": 22.01,
+       "includes_start": false,
+       "utc": "2026-10-05T13:32:03Z"
+      },
+      "io07:29": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.35,
+       "includes_start": false,
+       "utc": "2026-10-05T13:37:04Z"
+      },
+      "io07:30": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.34,
+       "includes_start": true,
+       "utc": "2026-10-05T13:42:04Z"
+      },
+      "io07:31": {
+       "status": "ok",
+       "chars": 1071,
+       "seconds": 34.91,
+       "includes_start": true,
+       "utc": "2026-10-05T13:42:39Z"
+      },
+      "io07:32": {
+       "status": "ok",
+       "chars": 620,
+       "seconds": 27.86,
+       "includes_start": false,
+       "utc": "2026-10-05T13:43:07Z"
+      },
+      "io07:33": {
+       "status": "ok",
+       "chars": 534,
+       "seconds": 26.77,
+       "includes_start": false,
+       "utc": "2026-10-05T13:43:34Z"
+      },
+      "io07:34": {
+       "status": "ok",
+       "chars": 564,
+       "seconds": 26.58,
+       "includes_start": false,
+       "utc": "2026-10-05T13:44:00Z"
+      },
+      "io07:35": {
+       "status": "ok",
+       "chars": 531,
+       "seconds": 29.2,
+       "includes_start": false,
+       "utc": "2026-10-05T13:44:29Z"
+      },
+      "io07:36": {
+       "status": "ok",
+       "chars": 547,
+       "seconds": 24.89,
+       "includes_start": false,
+       "utc": "2026-10-05T13:44:54Z"
+      },
+      "io07:37": {
+       "status": "ok",
+       "chars": 548,
+       "seconds": 29.42,
+       "includes_start": false,
+       "utc": "2026-10-05T13:45:24Z"
+      },
+      "io07:38": {
+       "status": "ok",
+       "chars": 591,
+       "seconds": 27.05,
+       "includes_start": false,
+       "utc": "2026-10-05T13:45:51Z"
+      },
+      "io07:39": {
+       "status": "ok",
+       "chars": 563,
+       "seconds": 28.44,
+       "includes_start": false,
+       "utc": "2026-10-05T13:46:19Z"
+      },
+      "io07:40": {
+       "status": "ok",
+       "chars": 537,
+       "seconds": 28.52,
+       "includes_start": false,
+       "utc": "2026-10-05T13:46:48Z"
+      },
+      "io07:41": {
+       "status": "ok",
+       "chars": 524,
+       "seconds": 28.61,
+       "includes_start": false,
+       "utc": "2026-10-05T13:47:17Z"
+      },
+      "io07:42": {
+       "status": "ok",
+       "chars": 542,
+       "seconds": 28.44,
+       "includes_start": false,
+       "utc": "2026-10-05T13:47:45Z"
+      },
+      "io07:43": {
+       "status": "ok",
+       "chars": 713,
+       "seconds": 26.6,
+       "includes_start": false,
+       "utc": "2026-10-05T13:48:12Z"
+      },
+      "io07:44": {
+       "status": "ok",
+       "chars": 666,
+       "seconds": 26.09,
+       "includes_start": false,
+       "utc": "2026-10-05T13:48:38Z"
+      },
+      "io07:45": {
+       "status": "ok",
+       "chars": 623,
+       "seconds": 19.47,
+       "includes_start": false,
+       "utc": "2026-10-05T13:48:57Z"
+      },
+      "io07:46": {
+       "status": "ok",
+       "chars": 595,
+       "seconds": 25.87,
+       "includes_start": false,
+       "utc": "2026-10-05T13:49:23Z"
+      },
+      "io07:47": {
+       "status": "ok",
+       "chars": 566,
+       "seconds": 20.09,
+       "includes_start": false,
+       "utc": "2026-10-05T13:49:43Z"
+      },
+      "io07:48": {
+       "status": "ok",
+       "chars": 602,
+       "seconds": 29.54,
+       "includes_start": false,
+       "utc": "2026-10-05T13:50:13Z"
+      },
+      "io07:49": {
+       "status": "ok",
+       "chars": 1444,
+       "seconds": 74.63,
+       "includes_start": false,
+       "utc": "2026-10-05T13:51:27Z"
+      },
+      "io07:50": {
+       "status": "ok",
+       "chars": 563,
+       "seconds": 28.85,
+       "includes_start": false,
+       "utc": "2026-10-05T13:51:56Z"
+      },
+      "io07:51": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.3,
+       "includes_start": false,
+       "utc": "2026-10-05T13:56:57Z"
+      },
+      "io07:52": {
+       "status": "ok",
+       "chars": 949,
+       "seconds": 35.83,
+       "includes_start": true,
+       "utc": "2026-10-05T13:57:32Z"
+      },
+      "io07:53": {
+       "status": "ok",
+       "chars": 766,
+       "seconds": 26.05,
+       "includes_start": false,
+       "utc": "2026-10-05T13:57:59Z"
+      },
+      "io07:54": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.27,
+       "includes_start": false,
+       "utc": "2026-10-05T14:02:59Z"
+      },
+      "io07:55": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.25,
+       "includes_start": true,
+       "utc": "2026-10-05T14:07:59Z"
+      },
+      "io07:56": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.25,
+       "includes_start": true,
+       "utc": "2026-10-05T14:12:59Z"
+      },
+      "io07:57": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.21,
+       "includes_start": true,
+       "utc": "2026-10-05T14:18:00Z"
+      },
+      "io07:58": {
+       "status": "ok",
+       "chars": 1134,
+       "seconds": 35.02,
+       "includes_start": true,
+       "utc": "2026-10-05T14:18:35Z"
+      },
+      "io07:59": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.2,
+       "includes_start": false,
+       "utc": "2026-10-05T14:23:35Z"
+      },
+      "io07:60": {
+       "status": "ok",
+       "chars": 580,
+       "seconds": 32.94,
+       "includes_start": true,
+       "utc": "2026-10-05T14:24:08Z"
+      },
+      "io07:61": {
+       "status": "ok",
+       "chars": 551,
+       "seconds": 27.85,
+       "includes_start": false,
+       "utc": "2026-10-05T14:24:36Z"
+      },
+      "io07:62": {
+       "status": "ok",
+       "chars": 550,
+       "seconds": 26.01,
+       "includes_start": false,
+       "utc": "2026-10-05T14:25:02Z"
+      },
+      "io07:63": {
+       "status": "ok",
+       "chars": 298,
+       "seconds": 11.07,
+       "includes_start": false,
+       "utc": "2026-10-05T14:25:13Z"
+      },
+      "rf06:1": {
+       "status": "ok",
+       "chars": 246,
+       "seconds": 20.47,
+       "includes_start": false,
+       "utc": "2026-10-05T14:25:33Z"
+      },
+      "rf06:3": {
+       "status": "ok",
+       "chars": 1772,
+       "seconds": 80.27,
+       "includes_start": false,
+       "utc": "2026-10-05T14:26:54Z"
+      },
+      "rf06:4": {
+       "status": "ok",
+       "chars": 1013,
+       "seconds": 49.91,
+       "includes_start": false,
+       "utc": "2026-10-05T14:27:44Z"
+      },
+      "rf06:7": {
+       "status": "ok",
+       "chars": 721,
+       "seconds": 66.62,
+       "includes_start": false,
+       "utc": "2026-10-05T14:28:50Z"
+      },
+      "rf06:11": {
+       "status": "ok",
+       "chars": 967,
+       "seconds": 45.33,
+       "includes_start": false,
+       "utc": "2026-10-05T14:29:36Z"
+      },
+      "rf06:15": {
+       "status": "ok",
+       "chars": 594,
+       "seconds": 44.73,
+       "includes_start": false,
+       "utc": "2026-10-05T14:30:20Z"
+      },
+      "rf06:19": {
+       "status": "ok",
+       "chars": 454,
+       "seconds": 50.07,
+       "includes_start": false,
+       "utc": "2026-10-05T14:31:10Z"
+      },
+      "rf06:23": {
+       "status": "ok",
+       "chars": 657,
+       "seconds": 27.62,
+       "includes_start": false,
+       "utc": "2026-10-05T14:31:38Z"
+      },
+      "rf06:24": {
+       "status": "ok",
+       "chars": 899,
+       "seconds": 54.28,
+       "includes_start": false,
+       "utc": "2026-10-05T14:32:32Z"
+      },
+      "rf06:25": {
+       "status": "ok",
+       "chars": 447,
+       "seconds": 15.47,
+       "includes_start": false,
+       "utc": "2026-10-05T14:32:48Z"
+      },
+      "rf06:27": {
+       "status": "ok",
+       "chars": 401,
+       "seconds": 26.86,
+       "includes_start": false,
+       "utc": "2026-10-05T14:33:15Z"
+      },
+      "rf06:29": {
+       "status": "ok",
+       "chars": 258,
+       "seconds": 30.66,
+       "includes_start": false,
+       "utc": "2026-10-05T14:33:45Z"
+      },
+      "rf06:31": {
+       "status": "ok",
+       "chars": 643,
+       "seconds": 21.83,
+       "includes_start": false,
+       "utc": "2026-10-05T14:34:07Z"
+      },
+      "rf06:32": {
+       "status": "ok",
+       "chars": 865,
+       "seconds": 29.06,
+       "includes_start": false,
+       "utc": "2026-10-05T14:34:36Z"
+      },
+      "rf06:33": {
+       "status": "ok",
+       "chars": 888,
+       "seconds": 33.1,
+       "includes_start": false,
+       "utc": "2026-10-05T14:35:09Z"
+      },
+      "rf06:39": {
+       "status": "ok",
+       "chars": 331,
+       "seconds": 22.63,
+       "includes_start": false,
+       "utc": "2026-10-05T14:35:32Z"
+      },
+      "rf06:42": {
+       "status": "ok",
+       "chars": 868,
+       "seconds": 55.9,
+       "includes_start": false,
+       "utc": "2026-10-05T14:36:28Z"
+      },
+      "rf06:43": {
+       "status": "ok",
+       "chars": 1572,
+       "seconds": 47.6,
+       "includes_start": false,
+       "utc": "2026-10-05T14:37:16Z"
+      },
+      "rf06:44": {
+       "status": "ok",
+       "chars": 553,
+       "seconds": 18.94,
+       "includes_start": false,
+       "utc": "2026-10-05T14:37:35Z"
+      },
+      "rf06:45": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.32,
+       "includes_start": false,
+       "utc": "2026-10-05T14:42:35Z"
+      },
+      "rf06:46": {
+       "status": "ok",
+       "chars": 581,
+       "seconds": 32.35,
+       "includes_start": true,
+       "utc": "2026-10-05T14:43:07Z"
+      },
+      "rf06:47": {
+       "status": "ok",
+       "chars": 1685,
+       "seconds": 54.72,
+       "includes_start": false,
+       "utc": "2026-10-05T14:44:02Z"
+      },
+      "rf06:48": {
+       "status": "ok",
+       "chars": 509,
+       "seconds": 17.13,
+       "includes_start": false,
+       "utc": "2026-10-05T14:44:19Z"
+      },
+      "rf06:49": {
+       "status": "ok",
+       "chars": 1713,
+       "seconds": 56.27,
+       "includes_start": false,
+       "utc": "2026-10-05T14:45:15Z"
+      },
+      "rf06:50": {
+       "status": "ok",
+       "chars": 1052,
+       "seconds": 33.42,
+       "includes_start": false,
+       "utc": "2026-10-05T14:45:49Z"
+      },
+      "rf06:51": {
+       "status": "ok",
+       "chars": 2125,
+       "seconds": 63.06,
+       "includes_start": false,
+       "utc": "2026-10-05T14:46:52Z"
+      },
+      "rf06:52": {
+       "status": "ok",
+       "chars": 810,
+       "seconds": 30.29,
+       "includes_start": false,
+       "utc": "2026-10-05T14:47:22Z"
+      },
+      "rf06:53": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.25,
+       "includes_start": false,
+       "utc": "2026-10-05T14:52:23Z"
+      },
+      "rf06:57": {
+       "status": "ok",
+       "chars": 472,
+       "seconds": 28.91,
+       "includes_start": true,
+       "utc": "2026-10-05T14:52:51Z"
+      },
+      "rf06:60": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.25,
+       "includes_start": false,
+       "utc": "2026-10-05T14:57:52Z"
+      },
+      "rf06:61": {
+       "status": "ok",
+       "chars": 936,
+       "seconds": 30.73,
+       "includes_start": true,
+       "utc": "2026-10-05T14:58:23Z"
+      },
+      "rf06:62": {
+       "status": "ok",
+       "chars": 1189,
+       "seconds": 56.06,
+       "includes_start": false,
+       "utc": "2026-10-05T14:59:19Z"
+      },
+      "rf06:63": {
+       "status": "ok",
+       "chars": 896,
+       "seconds": 27.16,
+       "includes_start": false,
+       "utc": "2026-10-05T14:59:46Z"
+      },
+      "rf06:64": {
+       "status": "ok",
+       "chars": 449,
+       "seconds": 14.6,
+       "includes_start": false,
+       "utc": "2026-10-05T15:00:00Z"
+      },
+      "rf06:65": {
+       "status": "ok",
+       "chars": 1887,
+       "seconds": 75.62,
+       "includes_start": false,
+       "utc": "2026-10-05T15:01:16Z"
+      },
+      "rf06:67": {
+       "status": "ok",
+       "chars": 863,
+       "seconds": 35.02,
+       "includes_start": false,
+       "utc": "2026-10-05T15:01:51Z"
+      },
+      "rf06:73": {
+       "status": "ok",
+       "chars": 743,
+       "seconds": 40.17,
+       "includes_start": false,
+       "utc": "2026-10-05T15:02:31Z"
+      },
+      "rf06:79": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.27,
+       "includes_start": false,
+       "utc": "2026-10-05T15:07:32Z"
+      },
+      "rf06:83": {
+       "status": "ok",
+       "chars": 602,
+       "seconds": 34.43,
+       "includes_start": true,
+       "utc": "2026-10-05T15:08:06Z"
+      },
+      "rf06:85": {
+       "status": "ok",
+       "chars": 1669,
+       "seconds": 64.95,
+       "includes_start": false,
+       "utc": "2026-10-05T15:09:11Z"
+      },
+      "rf06:86": {
+       "status": "ok",
+       "chars": 2116,
+       "seconds": 100.86,
+       "includes_start": false,
+       "utc": "2026-10-05T15:10:52Z"
+      },
+      "rf06:87": {
+       "status": "ok",
+       "chars": 1976,
+       "seconds": 58.5,
+       "includes_start": false,
+       "utc": "2026-10-05T15:11:50Z"
+      },
+      "rf06:88": {
+       "status": "ok",
+       "chars": 890,
+       "seconds": 26.71,
+       "includes_start": false,
+       "utc": "2026-10-05T15:12:17Z"
+      },
+      "rf07:4": {
+       "status": "ok",
+       "chars": 9035,
+       "seconds": 56.44,
+       "includes_start": false,
+       "utc": "2026-10-05T15:13:14Z"
+      },
+      "rf07:5": {
+       "status": "ok",
+       "chars": 1565,
+       "seconds": 86.02,
+       "includes_start": false,
+       "utc": "2026-10-05T15:14:40Z"
+      },
+      "rf07:6": {
+       "status": "ok",
+       "chars": 929,
+       "seconds": 41.55,
+       "includes_start": false,
+       "utc": "2026-10-05T15:15:21Z"
+      },
+      "rf07:9": {
+       "status": "ok",
+       "chars": 970,
+       "seconds": 54.05,
+       "includes_start": false,
+       "utc": "2026-10-05T15:16:15Z"
+      },
+      "rf07:10": {
+       "status": "ok",
+       "chars": 1242,
+       "seconds": 54.97,
+       "includes_start": false,
+       "utc": "2026-10-05T15:17:10Z"
+      },
+      "rf07:11": {
+       "status": "ok",
+       "chars": 954,
+       "seconds": 47.52,
+       "includes_start": false,
+       "utc": "2026-10-05T15:17:58Z"
+      },
+      "rf07:13": {
+       "status": "error",
+       "code": "timeout",
+       "message": "timeout: no terminal response within 300.0 seconds",
+       "seconds": 300.21,
+       "includes_start": false,
+       "utc": "2026-10-05T15:22:58Z"
+      },
+      "rf07:17": {
+       "status": "ok",
+       "chars": 250,
+       "seconds": 19.86,
+       "includes_start": true,
+       "utc": "2026-10-05T15:23:18Z"
+      },
+      "rf07:21": {
+       "status": "ok",
+       "chars": 148,
+       "seconds": 19.74,
+       "includes_start": false,
+       "utc": "2026-10-05T15:23:38Z"
+      },
+      "rf07:27": {
+       "status": "ok",
+       "chars": 862,
+       "seconds": 47.43,
+       "includes_start": false,
+       "utc": "2026-10-05T15:24:25Z"
+      },
+      "rf07:29": {
+       "status": "ok",
+       "chars": 845,
+       "seconds": 45.61,
+       "includes_start": false,
+       "utc": "2026-10-05T15:25:11Z"
+      },
+      "rf07:31": {
+       "status": "ok",
+       "chars": 52,
+       "seconds": 13.18,
+       "includes_start": false,
+       "utc": "2026-10-05T15:25:24Z"
+      },
+      "rf07:37": {
+       "status": "ok",
+       "chars": 124,
+       "seconds": 13.49,
+       "includes_start": false,
+       "utc": "2026-10-05T15:25:38Z"
+      },
+      "rf07:47": {
+       "status": "ok",
+       "chars": 921,
+       "seconds": 40.37,
+       "includes_start": false,
+       "utc": "2026-10-05T15:26:18Z"
+      },
+      "rf07:49": {
+       "status": "ok",
+       "chars": 265,
+       "seconds": 16.15,
+       "includes_start": false,
+       "utc": "2026-10-05T15:26:34Z"
+      },
+      "rf07:51": {
+       "status": "ok",
+       "chars": 103,
+       "seconds": 12.47,
+       "includes_start": false,
+       "utc": "2026-10-05T15:26:47Z"
+      },
+      "rf07:55": {
+       "status": "ok",
+       "chars": 298,
+       "seconds": 16.84,
+       "includes_start": false,
+       "utc": "2026-10-05T15:27:03Z"
+      }
+     },
+     "total": 189
+    }
+   },
+   "fingerprint": {
+    "backend_id": "paddleocr_vl",
+    "model": [
+     "PaddleOCR-VL",
+     "1.6"
+    ],
+    "pipeline": [
+     "paddleocr-vl",
+     "predict+restructure_pages"
+    ],
+    "protocol_version": "1.1",
+    "packages": {
+     "omrg-ocr-paddleocr-vl": "0.1.0",
+     "omrg-ocr-worker-core": "0.1.0",
+     "paddleocr": "3.7.0",
+     "paddlepaddle": "3.3.1",
+     "paddlex": "3.7.2"
+    }
+   },
+   "process_generations": 35,
+   "peak_footprint_bytes": 15685857472
+  }
+ },
+ "pid": null,
+ "started_utc": "2026-10-05T09:23:31Z",
+ "finished_utc": "2026-10-05T15:27:04Z",
+ "page_lists": {
+  "E-maths": [
+   "eq01:2",
+   "eq01:3",
+   "eq01:4",
+   "eq01:5",
+   "eq01:10",
+   "eq01:11",
+   "eq01:12",
+   "eq01:14",
+   "mp01:4",
+   "mp01:5",
+   "mp01:8",
+   "mp01:10",
+   "mp01:11",
+   "mp01:16",
+   "mp01:21",
+   "mp01:22",
+   "mp05:1",
+   "mp05:3",
+   "mp05:9",
+   "mp05:10",
+   "mp05:11",
+   "mp05:12",
+   "mp05:13",
+   "mp05:15",
+   "mp03:2",
+   "mp03:3",
+   "mp03:8",
+   "mp03:9",
+   "mp03:12",
+   "mp03:13",
+   "mp03:17",
+   "mp03:20",
+   "mp04:7",
+   "mp04:9",
+   "mp04:12",
+   "mp04:14",
+   "mp04:15",
+   "mp04:17",
+   "mp04:19",
+   "mp04:22"
+  ],
+  "E-scan": [
+   "io06:16",
+   "io06:28",
+   "io06:30",
+   "io06:45",
+   "io06:46",
+   "io06:53",
+   "io06:62",
+   "io06:63",
+   "io06:65",
+   "io06:68",
+   "io06:75",
+   "io06:78",
+   "io04:1",
+   "io04:4",
+   "io04:16",
+   "io04:17",
+   "io04:18",
+   "io04:20",
+   "io04:33",
+   "io04:42",
+   "io04:44",
+   "io04:47",
+   "io04:49",
+   "io04:52",
+   "tl03:2",
+   "tl03:3",
+   "tl03:5",
+   "tl03:8"
+  ],
+  "E-script": [
+   "io01:2",
+   "io01:3",
+   "io01:4",
+   "io01:5",
+   "io01:6",
+   "io01:7",
+   "io01:8",
+   "io01:9",
+   "io01:10",
+   "io01:11",
+   "io01:12",
+   "io01:13",
+   "io01:14",
+   "io01:15",
+   "io01:16",
+   "io01:17",
+   "io01:18",
+   "io01:19",
+   "io01:20",
+   "io01:21",
+   "io01:22",
+   "io01:23",
+   "io01:24",
+   "io01:25",
+   "io01:26",
+   "io01:27",
+   "io01:28",
+   "io01:29",
+   "io01:30",
+   "io01:31",
+   "io01:32",
+   "io01:33",
+   "io01:34",
+   "io01:35",
+   "io01:36",
+   "io01:37",
+   "io01:38",
+   "io01:39",
+   "io01:40",
+   "io01:41",
+   "io01:42",
+   "io01:43",
+   "io01:44",
+   "io01:45",
+   "io01:46",
+   "io01:47",
+   "io01:48",
+   "io01:49",
+   "io02:1",
+   "io02:2",
+   "io02:3",
+   "io02:4",
+   "io02:5",
+   "io02:6",
+   "io02:7",
+   "io02:8",
+   "io02:9",
+   "io02:10",
+   "io02:11",
+   "io02:12",
+   "io02:13",
+   "io02:14",
+   "io02:15",
+   "io02:16",
+   "io03:1",
+   "io03:2",
+   "io03:3",
+   "io03:4",
+   "io03:5",
+   "io07:2",
+   "io07:4",
+   "io07:6",
+   "io07:7",
+   "io07:8",
+   "io07:9",
+   "io07:10",
+   "io07:11",
+   "io07:12",
+   "io07:13",
+   "io07:14",
+   "io07:15",
+   "io07:16",
+   "io07:17",
+   "io07:18",
+   "io07:19",
+   "io07:20",
+   "io07:21",
+   "io07:22",
+   "io07:23",
+   "io07:24",
+   "io07:25",
+   "io07:26",
+   "io07:27",
+   "io07:28",
+   "io07:29",
+   "io07:30",
+   "io07:31",
+   "io07:32",
+   "io07:33",
+   "io07:34",
+   "io07:35",
+   "io07:36",
+   "io07:37",
+   "io07:38",
+   "io07:39",
+   "io07:40",
+   "io07:41",
+   "io07:42",
+   "io07:43",
+   "io07:44",
+   "io07:45",
+   "io07:46",
+   "io07:47",
+   "io07:48",
+   "io07:49",
+   "io07:50",
+   "io07:51",
+   "io07:52",
+   "io07:53",
+   "io07:54",
+   "io07:55",
+   "io07:56",
+   "io07:57",
+   "io07:58",
+   "io07:59",
+   "io07:60",
+   "io07:61",
+   "io07:62",
+   "io07:63",
+   "rf06:1",
+   "rf06:3",
+   "rf06:4",
+   "rf06:7",
+   "rf06:11",
+   "rf06:15",
+   "rf06:19",
+   "rf06:23",
+   "rf06:24",
+   "rf06:25",
+   "rf06:27",
+   "rf06:29",
+   "rf06:31",
+   "rf06:32",
+   "rf06:33",
+   "rf06:39",
+   "rf06:42",
+   "rf06:43",
+   "rf06:44",
+   "rf06:45",
+   "rf06:46",
+   "rf06:47",
+   "rf06:48",
+   "rf06:49",
+   "rf06:50",
+   "rf06:51",
+   "rf06:52",
+   "rf06:53",
+   "rf06:57",
+   "rf06:60",
+   "rf06:61",
+   "rf06:62",
+   "rf06:63",
+   "rf06:64",
+   "rf06:65",
+   "rf06:67",
+   "rf06:73",
+   "rf06:79",
+   "rf06:83",
+   "rf06:85",
+   "rf06:86",
+   "rf06:87",
+   "rf06:88",
+   "rf07:4",
+   "rf07:5",
+   "rf07:6",
+   "rf07:9",
+   "rf07:10",
+   "rf07:11",
+   "rf07:13",
+   "rf07:17",
+   "rf07:21",
+   "rf07:27",
+   "rf07:29",
+   "rf07:31",
+   "rf07:37",
+   "rf07:47",
+   "rf07:49",
+   "rf07:51",
+   "rf07:55"
+  ]
+ },
+ "current": null,
+ "heartbeat_utc": "2026-10-05T15:27:04Z"
+}

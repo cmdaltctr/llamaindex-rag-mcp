@@ -1,0 +1,302 @@
+{
+ "engine": "dots-mocr",
+ "katex": "0.16.22",
+ "runs": [
+  "E-maths",
+  "E-scan"
+ ],
+ "rule": "each $$...$$ block and each $...$ inline span; throwOnError true; strict ignore",
+ "totals": {
+  "E-maths": {
+   "formulas": 1863,
+   "errors": 0,
+   "pages_with_formulas": 40,
+   "pages_not_ok_skipped": 0
+  },
+  "E-scan": {
+   "formulas": 30,
+   "errors": 0,
+   "pages_with_formulas": 6,
+   "pages_not_ok_skipped": 0
+  }
+ },
+ "overall": {
+  "formulas": 1893,
+  "errors": 0,
+  "error_rate": 0
+ },
+ "pages": {
+  "E-maths eq01:2": {
+   "formulas": 30,
+   "errors": []
+  },
+  "E-maths eq01:3": {
+   "formulas": 40,
+   "errors": []
+  },
+  "E-maths eq01:4": {
+   "formulas": 54,
+   "errors": []
+  },
+  "E-maths eq01:5": {
+   "formulas": 39,
+   "errors": []
+  },
+  "E-maths eq01:10": {
+   "formulas": 16,
+   "errors": []
+  },
+  "E-maths eq01:11": {
+   "formulas": 22,
+   "errors": []
+  },
+  "E-maths eq01:12": {
+   "formulas": 20,
+   "errors": []
+  },
+  "E-maths eq01:14": {
+   "formulas": 31,
+   "errors": []
+  },
+  "E-maths mp01:4": {
+   "formulas": 75,
+   "errors": []
+  },
+  "E-maths mp01:5": {
+   "formulas": 91,
+   "errors": []
+  },
+  "E-maths mp01:8": {
+   "formulas": 81,
+   "errors": []
+  },
+  "E-maths mp01:10": {
+   "formulas": 113,
+   "errors": []
+  },
+  "E-maths mp01:11": {
+   "formulas": 119,
+   "errors": []
+  },
+  "E-maths mp01:16": {
+   "formulas": 49,
+   "errors": []
+  },
+  "E-maths mp01:21": {
+   "formulas": 100,
+   "errors": []
+  },
+  "E-maths mp01:22": {
+   "formulas": 125,
+   "errors": []
+  },
+  "E-maths mp05:1": {
+   "formulas": 15,
+   "errors": []
+  },
+  "E-maths mp05:3": {
+   "formulas": 32,
+   "errors": []
+  },
+  "E-maths mp05:9": {
+   "formulas": 11,
+   "errors": []
+  },
+  "E-maths mp05:10": {
+   "formulas": 22,
+   "errors": []
+  },
+  "E-maths mp05:11": {
+   "formulas": 26,
+   "errors": []
+  },
+  "E-maths mp05:12": {
+   "formulas": 24,
+   "errors": []
+  },
+  "E-maths mp05:13": {
+   "formulas": 19,
+   "errors": []
+  },
+  "E-maths mp05:15": {
+   "formulas": 27,
+   "errors": []
+  },
+  "E-maths mp03:2": {
+   "formulas": 52,
+   "errors": []
+  },
+  "E-maths mp03:3": {
+   "formulas": 44,
+   "errors": []
+  },
+  "E-maths mp03:8": {
+   "formulas": 70,
+   "errors": []
+  },
+  "E-maths mp03:9": {
+   "formulas": 65,
+   "errors": []
+  },
+  "E-maths mp03:12": {
+   "formulas": 22,
+   "errors": []
+  },
+  "E-maths mp03:13": {
+   "formulas": 46,
+   "errors": []
+  },
+  "E-maths mp03:17": {
+   "formulas": 26,
+   "errors": []
+  },
+  "E-maths mp03:20": {
+   "formulas": 34,
+   "errors": []
+  },
+  "E-maths mp04:7": {
+   "formulas": 15,
+   "errors": []
+  },
+  "E-maths mp04:9": {
+   "formulas": 17,
+   "errors": []
+  },
+  "E-maths mp04:12": {
+   "formulas": 24,
+   "errors": []
+  },
+  "E-maths mp04:14": {
+   "formulas": 52,
+   "errors": []
+  },
+  "E-maths mp04:15": {
+   "formulas": 41,
+   "errors": []
+  },
+  "E-maths mp04:17": {
+   "formulas": 39,
+   "errors": []
+  },
+  "E-maths mp04:19": {
+   "formulas": 81,
+   "errors": []
+  },
+  "E-maths mp04:22": {
+   "formulas": 54,
+   "errors": []
+  },
+  "E-scan io06:16": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:28": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:30": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:45": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:46": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:53": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:62": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:63": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:65": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:68": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:75": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:78": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:1": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:4": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:16": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:17": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:18": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:20": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:33": {
+   "formulas": 5,
+   "errors": []
+  },
+  "E-scan io04:42": {
+   "formulas": 2,
+   "errors": []
+  },
+  "E-scan io04:44": {
+   "formulas": 1,
+   "errors": []
+  },
+  "E-scan io04:47": {
+   "formulas": 6,
+   "errors": []
+  },
+  "E-scan io04:49": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:52": {
+   "formulas": 3,
+   "errors": []
+  },
+  "E-scan tl03:2": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan tl03:3": {
+   "formulas": 13,
+   "errors": []
+  },
+  "E-scan tl03:5": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan tl03:8": {
+   "formulas": 0,
+   "errors": []
+  }
+ }
+}

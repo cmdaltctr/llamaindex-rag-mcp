@@ -1,0 +1,687 @@
+{
+ "experiment_id": "37-dots-mocr-routing-acceptance-2026-09-30",
+ "protocol_version": 2,
+ "omrg_commit": "f5c43dc24a95f12fd181776167681fc25ea32c00",
+ "maths_detector_version": 1,
+ "inputs": {
+  "maths_labels_sha256": "324ef438171c27ad388130691f4e9bbc0e29d69e320f38495732e99c5fc8ffbc",
+  "noise_verdicts_sha256": "3f3a3cd2e4a6dc5766980e73a34501f9b055ffbbeb14772e6f99aa7575946634"
+ },
+ "gates": {
+  "G1": {
+   "rule": "flagged pages among D-neg pages labelled no_maths == 0",
+   "measured": 0,
+   "pass": true
+  },
+  "G2": {
+   "rule": "dots-mocr KaTeX error rate over formulas emitted in E-maths and E-scan <= 0.05",
+   "measured": 0,
+   "formulas": 1893,
+   "errors": 0,
+   "pass": true
+  },
+  "G3": {
+   "rule": "operator verdict recorded for every page on the noise list, both engines",
+   "measured": "41 / 41",
+   "pass": true
+  }
+ },
+ "verdict": "PASS",
+ "detection": {
+  "D-pos": {
+   "tp": 81,
+   "fp": 10,
+   "fn": 0,
+   "tn": 15,
+   "precision": 0.8901,
+   "recall": 1.0,
+   "maths_pages_missed": [],
+   "per_document": {
+    "eq01": {
+     "pages": 14,
+     "flagged": 11,
+     "flagged_share": 0.7857,
+     "maths_condition": true,
+     "tp": 10,
+     "fp": 1,
+     "fn": 0
+    },
+    "mp01": {
+     "pages": 23,
+     "flagged": 20,
+     "flagged_share": 0.8696,
+     "maths_condition": true,
+     "tp": 18,
+     "fp": 2,
+     "fn": 0
+    },
+    "mp05": {
+     "pages": 20,
+     "flagged": 17,
+     "flagged_share": 0.85,
+     "maths_condition": true,
+     "tp": 16,
+     "fp": 1,
+     "fn": 0
+    },
+    "mp03": {
+     "pages": 21,
+     "flagged": 21,
+     "flagged_share": 1.0,
+     "maths_condition": true,
+     "tp": 20,
+     "fp": 1,
+     "fn": 0
+    },
+    "mp04": {
+     "pages": 28,
+     "flagged": 22,
+     "flagged_share": 0.7857,
+     "maths_condition": true,
+     "tp": 17,
+     "fp": 5,
+     "fn": 0
+    }
+   }
+  },
+  "D-neg": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 1,
+   "tn": 64,
+   "precision": 1.0,
+   "recall": 0.6667,
+   "maths_pages_missed": [
+    {
+     "page": "bd02:3",
+     "fonts": [
+      "AdvOT1ef757c0",
+      "AdvOT1ef757c0+20",
+      "AdvOT1ef757c0+fb",
+      "AdvOT310e2d14+22",
+      "AdvOT7d6df7ab.I",
+      "AdvOTd3a5f740",
+      "AdvOTd3a5f740+fb",
+      "AdvP4C4E59",
+      "AdvminionMathEx",
+      "AdvminionMathIt",
+      "AdvminionSymbols"
+     ]
+    }
+   ],
+   "per_document": {
+    "bd01": {
+     "pages": 6,
+     "flagged": 0,
+     "flagged_share": 0.0,
+     "maths_condition": false,
+     "tp": 0,
+     "fp": 0,
+     "fn": 0
+    },
+    "bd02": {
+     "pages": 12,
+     "flagged": 0,
+     "flagged_share": 0.0,
+     "maths_condition": false,
+     "tp": 0,
+     "fp": 0,
+     "fn": 1
+    },
+    "bd03": {
+     "pages": 25,
+     "flagged": 2,
+     "flagged_share": 0.08,
+     "maths_condition": false,
+     "tp": 2,
+     "fp": 0,
+     "fn": 0
+    },
+    "pc01": {
+     "pages": 24,
+     "flagged": 0,
+     "flagged_share": 0.0,
+     "maths_condition": false,
+     "tp": 0,
+     "fp": 0,
+     "fn": 0
+    }
+   }
+  }
+ },
+ "engines": {
+  "dots-mocr": {
+   "runs": {
+    "E-maths": {
+     "pages": 40,
+     "outcomes": {
+      "ok": 40
+     },
+     "median_s_per_ok_page": 54.6
+    },
+    "E-scan": {
+     "pages": 28,
+     "outcomes": {
+      "ok": 28
+     },
+     "median_s_per_ok_page": 27.2
+    },
+    "E-script": {
+     "pages": 189,
+     "outcomes": {
+      "ok": 189
+     },
+     "median_s_per_ok_page": 32.9
+    }
+   },
+   "pages": 257,
+   "ok": 257,
+   "median_s_per_ok_page": 37.0,
+   "engine_seconds_total_h": 3.31,
+   "peak_footprint_gib": 22.2,
+   "worker_process_generations": 1,
+   "fingerprint": {
+    "backend_id": "dots_mocr",
+    "model": [
+     "rednote-hilab/dots.mocr",
+     "e539fbb52280393adc081b289ec597430a0f9031"
+    ],
+    "pipeline": [
+     "dots-mocr-layout",
+     "prompt_layout_all_en+omrg-mps-1+layout-1"
+    ],
+    "protocol_version": "1.1",
+    "packages": {
+     "accelerate": "1.15.0",
+     "omrg-ocr-dots-mocr": "0.1.0",
+     "omrg-ocr-worker-core": "0.1.0",
+     "pillow": "12.3.0",
+     "pypdfium2": "5.13.0",
+     "qwen-vl-utils": "0.0.14",
+     "torch": "2.14.0",
+     "torchvision": "0.29.0",
+     "transformers": "4.57.6"
+    }
+   }
+  },
+  "paddleocr-vl": {
+   "runs": {
+    "E-maths": {
+     "pages": 40,
+     "outcomes": {
+      "ok": 39,
+      "timeout": 1
+     },
+     "median_s_per_ok_page": 73.5
+    },
+    "E-scan": {
+     "pages": 28,
+     "outcomes": {
+      "ok": 25,
+      "empty_markdown": 2,
+      "timeout": 1
+     },
+     "median_s_per_ok_page": 46.0
+    },
+    "E-script": {
+     "pages": 189,
+     "outcomes": {
+      "timeout": 32,
+      "ok": 157
+     },
+     "median_s_per_ok_page": 30.2
+    }
+   },
+   "pages": 257,
+   "ok": 221,
+   "median_s_per_ok_page": 40.2,
+   "engine_seconds_total_h": 6.06,
+   "peak_footprint_gib": 14.6,
+   "worker_process_generations": 35,
+   "fingerprint": {
+    "backend_id": "paddleocr_vl",
+    "model": [
+     "PaddleOCR-VL",
+     "1.6"
+    ],
+    "pipeline": [
+     "paddleocr-vl",
+     "predict+restructure_pages"
+    ],
+    "protocol_version": "1.1",
+    "packages": {
+     "omrg-ocr-paddleocr-vl": "0.1.0",
+     "omrg-ocr-worker-core": "0.1.0",
+     "paddleocr": "3.7.0",
+     "paddlepaddle": "3.3.1",
+     "paddlex": "3.7.2"
+    }
+   }
+  }
+ },
+ "katex": {
+  "dots-mocr": {
+   "overall": {
+    "formulas": 1893,
+    "errors": 0,
+    "error_rate": 0
+   },
+   "by_run": {
+    "E-maths": {
+     "formulas": 1863,
+     "errors": 0,
+     "pages_with_formulas": 40,
+     "pages_not_ok_skipped": 0
+    },
+    "E-scan": {
+     "formulas": 30,
+     "errors": 0,
+     "pages_with_formulas": 6,
+     "pages_not_ok_skipped": 0
+    }
+   }
+  },
+  "paddleocr-vl": {
+   "overall": {
+    "formulas": 1792,
+    "errors": 2,
+    "error_rate": 0.0011
+   },
+   "by_run": {
+    "E-maths": {
+     "formulas": 1759,
+     "errors": 2,
+     "pages_with_formulas": 39,
+     "pages_not_ok_skipped": 1
+    },
+    "E-scan": {
+     "formulas": 33,
+     "errors": 0,
+     "pages_with_formulas": 10,
+     "pages_not_ok_skipped": 3
+    }
+   }
+  }
+ },
+ "script_recall": {
+  "dots-mocr": {
+   "ALL": {
+    "scored_pages": 189,
+    "pages_without_output": 0,
+    "all": {
+     "n": 189,
+     "median": 0.8889,
+     "mean": 0.853,
+     "share_ge_0_8": 0.7778,
+     "share_lt_0_5": 0.037
+    },
+    "with_output": {
+     "n": 189,
+     "median": 0.8889,
+     "mean": 0.853,
+     "share_ge_0_8": 0.7778,
+     "share_lt_0_5": 0.037
+    },
+    "local_tier_same_pages": {
+     "n": 189,
+     "median": 0.0,
+     "mean": 0.1124,
+     "share_ge_0_8": 0.0106,
+     "share_lt_0_5": 0.9365
+    },
+    "engine_same_pages_as_local": {
+     "n": 189,
+     "median": 0.8889,
+     "mean": 0.853,
+     "share_ge_0_8": 0.7778,
+     "share_lt_0_5": 0.037
+    }
+   },
+   "arabic": {
+    "scored_pages": 21,
+    "pages_without_output": 0,
+    "all": {
+     "n": 21,
+     "median": 0.8725,
+     "mean": 0.8228,
+     "share_ge_0_8": 0.5714,
+     "share_lt_0_5": 0.0
+    },
+    "with_output": {
+     "n": 21,
+     "median": 0.8725,
+     "mean": 0.8228,
+     "share_ge_0_8": 0.5714,
+     "share_lt_0_5": 0.0
+    },
+    "local_tier_same_pages": {
+     "n": 21,
+     "median": 0.0,
+     "mean": 0.0056,
+     "share_ge_0_8": 0.0,
+     "share_lt_0_5": 1.0
+    },
+    "engine_same_pages_as_local": {
+     "n": 21,
+     "median": 0.8725,
+     "mean": 0.8228,
+     "share_ge_0_8": 0.5714,
+     "share_lt_0_5": 0.0
+    }
+   },
+   "bengali": {
+    "scored_pages": 60,
+    "pages_without_output": 0,
+    "all": {
+     "n": 60,
+     "median": 0.887,
+     "mean": 0.8742,
+     "share_ge_0_8": 0.9167,
+     "share_lt_0_5": 0.0
+    },
+    "with_output": {
+     "n": 60,
+     "median": 0.887,
+     "mean": 0.8742,
+     "share_ge_0_8": 0.9167,
+     "share_lt_0_5": 0.0
+    },
+    "local_tier_same_pages": {
+     "n": 60,
+     "median": 0.0,
+     "mean": 0.0,
+     "share_ge_0_8": 0.0,
+     "share_lt_0_5": 1.0
+    },
+    "engine_same_pages_as_local": {
+     "n": 60,
+     "median": 0.887,
+     "mean": 0.8742,
+     "share_ge_0_8": 0.9167,
+     "share_lt_0_5": 0.0
+    }
+   },
+   "devanagari": {
+    "scored_pages": 48,
+    "pages_without_output": 0,
+    "all": {
+     "n": 48,
+     "median": 0.985,
+     "mean": 0.9808,
+     "share_ge_0_8": 1.0,
+     "share_lt_0_5": 0.0
+    },
+    "with_output": {
+     "n": 48,
+     "median": 0.985,
+     "mean": 0.9808,
+     "share_ge_0_8": 1.0,
+     "share_lt_0_5": 0.0
+    },
+    "local_tier_same_pages": {
+     "n": 48,
+     "median": 0.0,
+     "mean": 0.0191,
+     "share_ge_0_8": 0.0,
+     "share_lt_0_5": 1.0
+    },
+    "engine_same_pages_as_local": {
+     "n": 48,
+     "median": 0.985,
+     "mean": 0.9808,
+     "share_ge_0_8": 1.0,
+     "share_lt_0_5": 0.0
+    }
+   },
+   "latin_handwriting": {
+    "scored_pages": 60,
+    "pages_without_output": 0,
+    "all": {
+     "n": 60,
+     "median": 0.8121,
+     "mean": 0.7402,
+     "share_ge_0_8": 0.5333,
+     "share_lt_0_5": 0.1167
+    },
+    "with_output": {
+     "n": 60,
+     "median": 0.8121,
+     "mean": 0.7402,
+     "share_ge_0_8": 0.5333,
+     "share_lt_0_5": 0.1167
+    },
+    "local_tier_same_pages": {
+     "n": 60,
+     "median": 0.3096,
+     "mean": 0.3368,
+     "share_ge_0_8": 0.0333,
+     "share_lt_0_5": 0.8
+    },
+    "engine_same_pages_as_local": {
+     "n": 60,
+     "median": 0.8121,
+     "mean": 0.7402,
+     "share_ge_0_8": 0.5333,
+     "share_lt_0_5": 0.1167
+    }
+   }
+  },
+  "paddleocr-vl": {
+   "ALL": {
+    "scored_pages": 189,
+    "pages_without_output": 32,
+    "all": {
+     "n": 189,
+     "median": 0.6095,
+     "mean": 0.54,
+     "share_ge_0_8": 0.2434,
+     "share_lt_0_5": 0.3492
+    },
+    "with_output": {
+     "n": 157,
+     "median": 0.6571,
+     "mean": 0.6501,
+     "share_ge_0_8": 0.293,
+     "share_lt_0_5": 0.2166
+    },
+    "local_tier_same_pages": {
+     "n": 189,
+     "median": 0.0,
+     "mean": 0.1124,
+     "share_ge_0_8": 0.0106,
+     "share_lt_0_5": 0.9365
+    },
+    "engine_same_pages_as_local": {
+     "n": 189,
+     "median": 0.6095,
+     "mean": 0.54,
+     "share_ge_0_8": 0.2434,
+     "share_lt_0_5": 0.3492
+    }
+   },
+   "arabic": {
+    "scored_pages": 21,
+    "pages_without_output": 4,
+    "all": {
+     "n": 21,
+     "median": 0.6435,
+     "mean": 0.526,
+     "share_ge_0_8": 0.0,
+     "share_lt_0_5": 0.2857
+    },
+    "with_output": {
+     "n": 17,
+     "median": 0.6735,
+     "mean": 0.6497,
+     "share_ge_0_8": 0.0,
+     "share_lt_0_5": 0.1176
+    },
+    "local_tier_same_pages": {
+     "n": 21,
+     "median": 0.0,
+     "mean": 0.0056,
+     "share_ge_0_8": 0.0,
+     "share_lt_0_5": 1.0
+    },
+    "engine_same_pages_as_local": {
+     "n": 21,
+     "median": 0.6435,
+     "mean": 0.526,
+     "share_ge_0_8": 0.0,
+     "share_lt_0_5": 0.2857
+    }
+   },
+   "bengali": {
+    "scored_pages": 60,
+    "pages_without_output": 14,
+    "all": {
+     "n": 60,
+     "median": 0.5062,
+     "mean": 0.409,
+     "share_ge_0_8": 0.0167,
+     "share_lt_0_5": 0.4833
+    },
+    "with_output": {
+     "n": 46,
+     "median": 0.5852,
+     "mean": 0.5335,
+     "share_ge_0_8": 0.0217,
+     "share_lt_0_5": 0.3261
+    },
+    "local_tier_same_pages": {
+     "n": 60,
+     "median": 0.0,
+     "mean": 0.0,
+     "share_ge_0_8": 0.0,
+     "share_lt_0_5": 1.0
+    },
+    "engine_same_pages_as_local": {
+     "n": 60,
+     "median": 0.5062,
+     "mean": 0.409,
+     "share_ge_0_8": 0.0167,
+     "share_lt_0_5": 0.4833
+    }
+   },
+   "devanagari": {
+    "scored_pages": 48,
+    "pages_without_output": 9,
+    "all": {
+     "n": 48,
+     "median": 0.8749,
+     "mean": 0.6931,
+     "share_ge_0_8": 0.7292,
+     "share_lt_0_5": 0.2292
+    },
+    "with_output": {
+     "n": 39,
+     "median": 0.8923,
+     "mean": 0.8531,
+     "share_ge_0_8": 0.8974,
+     "share_lt_0_5": 0.0513
+    },
+    "local_tier_same_pages": {
+     "n": 48,
+     "median": 0.0,
+     "mean": 0.0191,
+     "share_ge_0_8": 0.0,
+     "share_lt_0_5": 1.0
+    },
+    "engine_same_pages_as_local": {
+     "n": 48,
+     "median": 0.8749,
+     "mean": 0.6931,
+     "share_ge_0_8": 0.7292,
+     "share_lt_0_5": 0.2292
+    }
+   },
+   "latin_handwriting": {
+    "scored_pages": 60,
+    "pages_without_output": 5,
+    "all": {
+     "n": 60,
+     "median": 0.5959,
+     "mean": 0.5535,
+     "share_ge_0_8": 0.1667,
+     "share_lt_0_5": 0.3333
+    },
+    "with_output": {
+     "n": 55,
+     "median": 0.6075,
+     "mean": 0.6038,
+     "share_ge_0_8": 0.1818,
+     "share_lt_0_5": 0.2727
+    },
+    "local_tier_same_pages": {
+     "n": 60,
+     "median": 0.3096,
+     "mean": 0.3368,
+     "share_ge_0_8": 0.0333,
+     "share_lt_0_5": 0.8
+    },
+    "engine_same_pages_as_local": {
+     "n": 60,
+     "median": 0.5959,
+     "mean": 0.5535,
+     "share_ge_0_8": 0.1667,
+     "share_lt_0_5": 0.3333
+    }
+   }
+  }
+ },
+ "noise": {
+  "dots-mocr": {
+   "verdicts": 21,
+   "noise": [],
+   "by_source": {
+    "screen": 2,
+    "audit": 5,
+    "protocol": 1,
+    "paired": 13
+   }
+  },
+  "paddleocr-vl": {
+   "verdicts": 20,
+   "noise": [],
+   "by_source": {
+    "screen": 10,
+    "audit": 5,
+    "protocol": 0,
+    "paired": 5
+   }
+  }
+ },
+ "findings": [
+  {
+   "id": "F1",
+   "what": "dots.mocr drops rotated tables or charts",
+   "example": "tl03:8",
+   "evidence": "dots-mocr 45 characters (caption only); paddleocr-vl 1,206 characters with the rotated table (DR-5)"
+  },
+  {
+   "id": "F2",
+   "what": "the maths detector misses renamed Minion Math fonts",
+   "example": "bd02:3",
+   "evidence": "AdvminionMathIt, AdvminionMathEx, AdvminionSymbols not on MATHS_FONT_PATTERNS"
+  },
+  {
+   "id": "F3",
+   "what": "the maths detector cannot see Word + MathType maths",
+   "example": "1106.0083v2 (rejected mp02)",
+   "evidence": "Symbol and MT Extra fonts (DR-2)"
+  },
+  {
+   "id": "F4",
+   "what": "PaddleOCR-VL on CPU times out at the 300 s default",
+   "evidence": "36 of 257 pages without output; 35 worker processes (each timeout restarts the model)"
+  },
+  {
+   "id": "F5",
+   "what": "dots.mocr peak memory above the smoke-test figure",
+   "evidence": "22.2 GiB here vs 9.5 GiB in the 2026-10-04 smoke test"
+  }
+ ],
+ "notes": [
+  "2026-10-05 09:23 UTC: run switched from engine-major sequential to both engines in parallel (dots-mocr GPU, paddleocr-vl CPU) to save time; 20 dots-mocr pages were finished before the switch. Same pages, same code paths; timings measured under concurrent load."
+ ]
+}

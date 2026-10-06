@@ -1,0 +1,207 @@
+[
+ {
+  "key": "eq01:2|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "eq01:2|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "eq01:5|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "eq01:5|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io04:18|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io04:18|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:16|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:16|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:28|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:28|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:30|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:30|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:45|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:45|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:46|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:46|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:53|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:62|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:62|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:63|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:63|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:68|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "io06:68|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp01:10|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp01:10|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp01:22|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp01:22|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp03:2|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp03:2|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp03:9|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp03:9|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp04:14|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp04:14|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp05:10|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp05:10|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp05:11|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "mp05:11|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "tl03:2|dots-mocr",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "tl03:2|paddleocr-vl",
+  "verdict": "clean",
+  "note": ""
+ },
+ {
+  "key": "tl03:8|dots-mocr",
+  "verdict": "noise",
+  "note": "surprisingly, dots-mocr did not detect the horiozontal table"
+ },
+ {
+  "key": "tl03:8|paddleocr-vl",
+  "verdict": "clean",
+  "note": "it detects everything, good."
+ }
+]

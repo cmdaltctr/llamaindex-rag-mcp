@@ -1,0 +1,3453 @@
+{
+ "rule": "DR-4: unsupported >= 10 and share >= 0.15, or a 20+ char line repeated 3+ times; plus 5 audit pages per engine (seed 37); plus protocol-named io06:53; plus every other engine with output on those pages (paired)",
+ "screened_utc": "2026-10-05T20:48:21Z",
+ "flagged_count": {
+  "dots-mocr": 2,
+  "paddleocr-vl": 10
+ },
+ "review_list": {
+  "dots-mocr": [
+   "eq01:2",
+   "eq01:5",
+   "io04:18",
+   "io06:16",
+   "io06:28",
+   "io06:30",
+   "io06:45",
+   "io06:46",
+   "io06:53",
+   "io06:62",
+   "io06:63",
+   "io06:68",
+   "mp01:10",
+   "mp01:22",
+   "mp03:2",
+   "mp03:9",
+   "mp04:14",
+   "mp05:10",
+   "mp05:11",
+   "tl03:2",
+   "tl03:8"
+  ],
+  "paddleocr-vl": [
+   "eq01:2",
+   "eq01:5",
+   "io04:18",
+   "io06:16",
+   "io06:28",
+   "io06:30",
+   "io06:45",
+   "io06:46",
+   "io06:62",
+   "io06:63",
+   "io06:68",
+   "mp01:10",
+   "mp01:22",
+   "mp03:2",
+   "mp03:9",
+   "mp04:14",
+   "mp05:10",
+   "mp05:11",
+   "tl03:2",
+   "tl03:8"
+  ]
+ },
+ "no_output": {
+  "dots-mocr": [],
+  "paddleocr-vl": [
+   "eq01:10 (timeout)",
+   "io06:53 (empty_markdown)",
+   "io06:65 (empty_markdown)",
+   "io04:52 (timeout)"
+  ]
+ },
+ "pages": {
+  "eq01:2": {
+   "run": "E-maths",
+   "doc_id": "eq01",
+   "page": 2,
+   "reference_tokens": 483,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 462,
+     "unsupported": 14,
+     "unsupported_share": 0.0303,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "posterior",
+      "model",
+      "parameters",
+      "we",
+      "value",
+      "conditional",
+      "and",
+      "likelihood",
+      "distributions",
+      "do",
+      "efficiently",
+      "reasonable",
+      "over"
+     ],
+     "audit": true
+    },
+    "paddleocr-vl": {
+     "tokens": 462,
+     "unsupported": 14,
+     "unsupported_share": 0.0303,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "posterior",
+      "model",
+      "parameters",
+      "we",
+      "value",
+      "conditional",
+      "and",
+      "likelihood",
+      "distributions",
+      "do",
+      "efficiently",
+      "reasonable",
+      "over"
+     ],
+     "paired": true
+    }
+   }
+  },
+  "eq01:3": {
+   "run": "E-maths",
+   "doc_id": "eq01",
+   "page": 3,
+   "reference_tokens": 452,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 404,
+     "unsupported": 7,
+     "unsupported_share": 0.0173,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "posterior",
+      "datapoint",
+      "term",
+      "naïve",
+      "transformation",
+      "choosing",
+      "appropriate"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 404,
+     "unsupported": 7,
+     "unsupported_share": 0.0173,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "posterior",
+      "datapoint",
+      "term",
+      "naïve",
+      "transformation",
+      "choosing",
+      "appropriate"
+     ]
+    }
+   }
+  },
+  "eq01:4": {
+   "run": "E-maths",
+   "doc_id": "eq01",
+   "page": 4,
+   "reference_tokens": 477,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 432,
+     "unsupported": 10,
+     "unsupported_share": 0.0231,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "of",
+      "settings",
+      "and",
+      "distribution",
+      "encouraging",
+      "with",
+      "marginal",
+      "function",
+      "subsequently",
+      "variable"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 396,
+     "unsupported": 8,
+     "unsupported_share": 0.0202,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "settings",
+      "and",
+      "encouraging",
+      "with",
+      "marginal",
+      "function",
+      "subsequently",
+      "variable"
+     ]
+    }
+   }
+  },
+  "eq01:5": {
+   "run": "E-maths",
+   "doc_id": "eq01",
+   "page": 5,
+   "reference_tokens": 498,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 462,
+     "unsupported": 9,
+     "unsupported_share": 0.0195,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "parameters",
+      "gaussian",
+      "let",
+      "an",
+      "which",
+      "computations",
+      "model",
+      "approximate"
+     ],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 448,
+     "unsupported": 9,
+     "unsupported_share": 0.0201,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "parameters",
+      "gaussian",
+      "let",
+      "which",
+      "computations",
+      "model",
+      "approximate",
+      "structure"
+     ],
+     "audit": true
+    }
+   }
+  },
+  "eq01:10": {
+   "run": "E-maths",
+   "doc_id": "eq01",
+   "page": 10,
+   "reference_tokens": 178,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 142,
+     "unsupported": 2,
+     "unsupported_share": 0.0141,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "coordinates",
+      "and"
+     ]
+    }
+   }
+  },
+  "eq01:11": {
+   "run": "E-maths",
+   "doc_id": "eq01",
+   "page": 11,
+   "reference_tokens": 328,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 264,
+     "unsupported": 4,
+     "unsupported_share": 0.0152,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "let",
+      "likelihood",
+      "than"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 264,
+     "unsupported": 4,
+     "unsupported_share": 0.0152,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "let",
+      "likelihood",
+      "than"
+     ]
+    }
+   }
+  },
+  "eq01:12": {
+   "run": "E-maths",
+   "doc_id": "eq01",
+   "page": 12,
+   "reference_tokens": 339,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 289,
+     "unsupported": 2,
+     "unsupported_share": 0.0069,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "posterior",
+      "term"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 289,
+     "unsupported": 3,
+     "unsupported_share": 0.0104,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "posterior",
+      "et",
+      "term"
+     ]
+    }
+   }
+  },
+  "eq01:14": {
+   "run": "E-maths",
+   "doc_id": "eq01",
+   "page": 14,
+   "reference_tokens": 145,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 124,
+     "unsupported": 11,
+     "unsupported_share": 0.0887,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "and",
+      "prior",
+      "for",
+      "of",
+      "the",
+      "functions",
+      "to",
+      "model"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 124,
+     "unsupported": 11,
+     "unsupported_share": 0.0887,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "and",
+      "prior",
+      "for",
+      "of",
+      "the",
+      "functions",
+      "to",
+      "model"
+     ]
+    }
+   }
+  },
+  "mp01:4": {
+   "run": "E-maths",
+   "doc_id": "mp01",
+   "page": 4,
+   "reference_tokens": 424,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 419,
+     "unsupported": 57,
+     "unsupported_share": 0.136,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "of",
+      "from",
+      "an",
+      "all",
+      "graph",
+      "in",
+      "problem",
+      "reduction",
+      "time",
+      "modular",
+      "subgraphs",
+      "consider",
+      "subgraph",
+      "homomorphism",
+      "to",
+      "is",
+      "mapping",
+      "that",
+      "for",
+      "let",
+      "the",
+      "isomorphism",
+      "automorphism",
+      "with",
+      "function",
+      "be",
+      "one",
+      "are",
+      "whether",
+      "class",
+      "where",
+      "satisfy",
+      "modulo",
+      "colorful",
+      "on",
+      "which",
+      "functions",
+      "some",
+      "may",
+      "randomized"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 411,
+     "unsupported": 51,
+     "unsupported_share": 0.1241,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "from",
+      "an",
+      "of",
+      "all",
+      "graph",
+      "in",
+      "problem",
+      "reduction",
+      "time",
+      "consider",
+      "subgraph",
+      "to",
+      "is",
+      "mapping",
+      "that",
+      "for",
+      "let",
+      "the",
+      "with",
+      "function",
+      "be",
+      "one",
+      "are",
+      "whether",
+      "class",
+      "where",
+      "satisfy",
+      "modulo",
+      "colorful",
+      "on",
+      "which",
+      "functions",
+      "some",
+      "may",
+      "randomized",
+      "solves",
+      "have"
+     ]
+    }
+   }
+  },
+  "mp01:5": {
+   "run": "E-maths",
+   "doc_id": "mp01",
+   "page": 5,
+   "reference_tokens": 463,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 422,
+     "unsupported": 61,
+     "unsupported_share": 0.1445,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "mod",
+      "for",
+      "to",
+      "in",
+      "the",
+      "class",
+      "all",
+      "that",
+      "modulo",
+      "integer",
+      "let",
+      "graph",
+      "by",
+      "th",
+      "counting",
+      "of",
+      "with",
+      "problem",
+      "vertex",
+      "pattern",
+      "and",
+      "under",
+      "eth",
+      "time",
+      "where",
+      "establish",
+      "odd",
+      "coloring",
+      "set",
+      "colors",
+      "factor",
+      "no",
+      "vertices",
+      "consistency",
+      "gadget",
+      "adding",
+      "connecting",
+      "precisely",
+      "whereas"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 422,
+     "unsupported": 58,
+     "unsupported_share": 0.1374,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "mod",
+      "for",
+      "to",
+      "in",
+      "the",
+      "class",
+      "all",
+      "that",
+      "modulo",
+      "integer",
+      "let",
+      "graph",
+      "by",
+      "th",
+      "counting",
+      "of",
+      "with",
+      "problem",
+      "vertex",
+      "pattern",
+      "and",
+      "under",
+      "time",
+      "where",
+      "establish",
+      "odd",
+      "coloring",
+      "set",
+      "colors",
+      "factor",
+      "no",
+      "vertices",
+      "consistency",
+      "gadget",
+      "adding",
+      "connecting",
+      "precisely",
+      "whereas"
+     ]
+    }
+   }
+  },
+  "mp01:8": {
+   "run": "E-maths",
+   "doc_id": "mp01",
+   "page": 8,
+   "reference_tokens": 459,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 434,
+     "unsupported": 54,
+     "unsupported_share": 0.1244,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "set",
+      "let",
+      "size",
+      "of",
+      "modulo",
+      "time",
+      "demands",
+      "exactly",
+      "counting",
+      "rigid",
+      "in",
+      "matching",
+      "graph",
+      "with",
+      "degree",
+      "vertices",
+      "automorphism",
+      "vertex",
+      "that",
+      "every",
+      "satisfies",
+      "all",
+      "most",
+      "add",
+      "each",
+      "component",
+      "remove",
+      "where",
+      "times",
+      "coloring",
+      "demand"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 432,
+     "unsupported": 52,
+     "unsupported_share": 0.1204,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "set",
+      "let",
+      "size",
+      "of",
+      "modulo",
+      "time",
+      "demands",
+      "exactly",
+      "rigid",
+      "in",
+      "matching",
+      "graph",
+      "with",
+      "degree",
+      "vertices",
+      "automorphism",
+      "vertex",
+      "that",
+      "every",
+      "satisfies",
+      "all",
+      "most",
+      "add",
+      "each",
+      "component",
+      "remove",
+      "where",
+      "times",
+      "coloring",
+      "demand"
+     ]
+    }
+   }
+  },
+  "mp01:10": {
+   "run": "E-maths",
+   "doc_id": "mp01",
+   "page": 10,
+   "reference_tokens": 515,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 444,
+     "unsupported": 71,
+     "unsupported_share": 0.1599,
+     "repeated_lines": [],
+     "flagged": true,
+     "unsupported_sample": [
+      "that",
+      "of",
+      "graph",
+      "matching",
+      "let",
+      "and",
+      "between",
+      "canonical",
+      "to",
+      "with",
+      "the",
+      "in",
+      "all",
+      "each",
+      "set",
+      "for",
+      "class",
+      "connected",
+      "graphs",
+      "automorphisms",
+      "is",
+      "function",
+      "where",
+      "an",
+      "on",
+      "sequence",
+      "write",
+      "have",
+      "so",
+      "connect",
+      "bidirected",
+      "homomorphism",
+      "unique"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 439,
+     "unsupported": 68,
+     "unsupported_share": 0.1549,
+     "repeated_lines": [],
+     "flagged": true,
+     "unsupported_sample": [
+      "that",
+      "of",
+      "graph",
+      "matching",
+      "let",
+      "and",
+      "canonical",
+      "to",
+      "with",
+      "the",
+      "in",
+      "each",
+      "between",
+      "set",
+      "for",
+      "class",
+      "connected",
+      "graphs",
+      "automorphisms",
+      "function",
+      "path",
+      "where",
+      "an",
+      "on",
+      "sequence",
+      "all",
+      "write",
+      "have",
+      "so",
+      "connect",
+      "bidirected",
+      "homomorphism",
+      "unique"
+     ]
+    }
+   }
+  },
+  "mp01:11": {
+   "run": "E-maths",
+   "doc_id": "mp01",
+   "page": 11,
+   "reference_tokens": 620,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 582,
+     "unsupported": 65,
+     "unsupported_share": 0.1117,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "in",
+      "that",
+      "of",
+      "path",
+      "let",
+      "then",
+      "since",
+      "the",
+      "all",
+      "are",
+      "colorful",
+      "layer",
+      "between",
+      "define",
+      "and",
+      "setting",
+      "have",
+      "if",
+      "to",
+      "is",
+      "some",
+      "an",
+      "say",
+      "length",
+      "canonical",
+      "form",
+      "involution",
+      "jumpy",
+      "as",
+      "when",
+      "applying",
+      "now",
+      "bad",
+      "move",
+      "ever"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 582,
+     "unsupported": 65,
+     "unsupported_share": 0.1117,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "in",
+      "that",
+      "of",
+      "path",
+      "let",
+      "then",
+      "since",
+      "the",
+      "all",
+      "are",
+      "colorful",
+      "layer",
+      "jump",
+      "between",
+      "define",
+      "and",
+      "setting",
+      "have",
+      "if",
+      "to",
+      "is",
+      "some",
+      "an",
+      "say",
+      "length",
+      "canonical",
+      "form",
+      "involution",
+      "as",
+      "when",
+      "applying",
+      "now",
+      "bad",
+      "ever"
+     ]
+    }
+   }
+  },
+  "mp01:16": {
+   "run": "E-maths",
+   "doc_id": "mp01",
+   "page": 16,
+   "reference_tokens": 503,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 489,
+     "unsupported": 27,
+     "unsupported_share": 0.0552,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "of",
+      "colorful",
+      "to",
+      "subgraphs",
+      "the",
+      "time",
+      "by",
+      "probability",
+      "if",
+      "all",
+      "return",
+      "that",
+      "an",
+      "subgraph",
+      "variables",
+      "this",
+      "be",
+      "where",
+      "pattern"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 492,
+     "unsupported": 27,
+     "unsupported_share": 0.0549,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "of",
+      "colorful",
+      "to",
+      "mod",
+      "the",
+      "time",
+      "by",
+      "probability",
+      "if",
+      "all",
+      "return",
+      "that",
+      "an",
+      "subgraph",
+      "variables",
+      "this",
+      "be",
+      "where",
+      "pattern"
+     ]
+    }
+   }
+  },
+  "mp01:21": {
+   "run": "E-maths",
+   "doc_id": "mp01",
+   "page": 21,
+   "reference_tokens": 456,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 401,
+     "unsupported": 54,
+     "unsupported_share": 0.1347,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "of",
+      "that",
+      "time",
+      "in",
+      "to",
+      "matching",
+      "haf",
+      "demands",
+      "let",
+      "set",
+      "all",
+      "subsets",
+      "the",
+      "thus",
+      "corresponding",
+      "by",
+      "most",
+      "since",
+      "bijection",
+      "between",
+      "define",
+      "embedding",
+      "image",
+      "because",
+      "unique",
+      "vertex",
+      "mapping",
+      "degree",
+      "vertices",
+      "extend"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 400,
+     "unsupported": 54,
+     "unsupported_share": 0.135,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "of",
+      "that",
+      "time",
+      "in",
+      "to",
+      "matching",
+      "demands",
+      "let",
+      "set",
+      "all",
+      "subsets",
+      "the",
+      "haf",
+      "thus",
+      "corresponding",
+      "half",
+      "by",
+      "most",
+      "since",
+      "bijection",
+      "between",
+      "define",
+      "embedding",
+      "image",
+      "because",
+      "unique",
+      "vertex",
+      "mapping",
+      "degree",
+      "vertices",
+      "extend"
+     ]
+    }
+   }
+  },
+  "mp01:22": {
+   "run": "E-maths",
+   "doc_id": "mp01",
+   "page": 22,
+   "reference_tokens": 432,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 389,
+     "unsupported": 74,
+     "unsupported_share": 0.1902,
+     "repeated_lines": [],
+     "flagged": true,
+     "unsupported_sample": [
+      "of",
+      "length",
+      "let",
+      "an",
+      "and",
+      "since",
+      "between",
+      "that",
+      "have",
+      "in",
+      "vertices",
+      "set",
+      "unique",
+      "exactly",
+      "embedding",
+      "all",
+      "this",
+      "is",
+      "with",
+      "properties",
+      "demands",
+      "bijection",
+      "claim",
+      "implies",
+      "get",
+      "subgraph",
+      "vertex",
+      "by",
+      "define",
+      "each",
+      "now",
+      "from",
+      "obtain",
+      "some",
+      "function",
+      "any",
+      "at",
+      "only"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 389,
+     "unsupported": 74,
+     "unsupported_share": 0.1902,
+     "repeated_lines": [],
+     "flagged": true,
+     "unsupported_sample": [
+      "of",
+      "length",
+      "let",
+      "an",
+      "and",
+      "since",
+      "between",
+      "that",
+      "have",
+      "in",
+      "vertices",
+      "set",
+      "unique",
+      "exactly",
+      "embedding",
+      "all",
+      "this",
+      "is",
+      "with",
+      "properties",
+      "demands",
+      "bijection",
+      "claim",
+      "implies",
+      "get",
+      "subgraph",
+      "vertex",
+      "by",
+      "define",
+      "each",
+      "now",
+      "from",
+      "obtain",
+      "some",
+      "function",
+      "any",
+      "at",
+      "only"
+     ]
+    }
+   }
+  },
+  "mp05:1": {
+   "run": "E-maths",
+   "doc_id": "mp05",
+   "page": 1,
+   "reference_tokens": 150,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 149,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    },
+    "paddleocr-vl": {
+     "tokens": 102,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    }
+   }
+  },
+  "mp05:3": {
+   "run": "E-maths",
+   "doc_id": "mp05",
+   "page": 3,
+   "reference_tokens": 98,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 93,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    },
+    "paddleocr-vl": {
+     "tokens": 87,
+     "unsupported": 1,
+     "unsupported_share": 0.0115,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "re"
+     ]
+    }
+   }
+  },
+  "mp05:9": {
+   "run": "E-maths",
+   "doc_id": "mp05",
+   "page": 9,
+   "reference_tokens": 71,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 71,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    },
+    "paddleocr-vl": {
+     "tokens": 71,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    }
+   }
+  },
+  "mp05:10": {
+   "run": "E-maths",
+   "doc_id": "mp05",
+   "page": 10,
+   "reference_tokens": 113,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 113,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 112,
+     "unsupported": 1,
+     "unsupported_share": 0.0089,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "nonnegative"
+     ],
+     "audit": true
+    }
+   }
+  },
+  "mp05:11": {
+   "run": "E-maths",
+   "doc_id": "mp05",
+   "page": 11,
+   "reference_tokens": 137,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 137,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [],
+     "audit": true
+    },
+    "paddleocr-vl": {
+     "tokens": 137,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [],
+     "paired": true
+    }
+   }
+  },
+  "mp05:12": {
+   "run": "E-maths",
+   "doc_id": "mp05",
+   "page": 12,
+   "reference_tokens": 96,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 96,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    },
+    "paddleocr-vl": {
+     "tokens": 96,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    }
+   }
+  },
+  "mp05:13": {
+   "run": "E-maths",
+   "doc_id": "mp05",
+   "page": 13,
+   "reference_tokens": 70,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 70,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    },
+    "paddleocr-vl": {
+     "tokens": 64,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    }
+   }
+  },
+  "mp05:15": {
+   "run": "E-maths",
+   "doc_id": "mp05",
+   "page": 15,
+   "reference_tokens": 160,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 160,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    },
+    "paddleocr-vl": {
+     "tokens": 160,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    }
+   }
+  },
+  "mp03:2": {
+   "run": "E-maths",
+   "doc_id": "mp03",
+   "page": 2,
+   "reference_tokens": 369,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 329,
+     "unsupported": 9,
+     "unsupported_share": 0.0274,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "over",
+      "this",
+      "by",
+      "elliptic",
+      "let",
+      "conjecture",
+      "dyer",
+      "independently",
+      "geometry"
+     ],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 329,
+     "unsupported": 11,
+     "unsupported_share": 0.0334,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "over",
+      "this",
+      "by",
+      "elliptic",
+      "invariant",
+      "is",
+      "let",
+      "conjecture",
+      "dyer",
+      "independently",
+      "geometry"
+     ],
+     "audit": true
+    }
+   }
+  },
+  "mp03:3": {
+   "run": "E-maths",
+   "doc_id": "mp03",
+   "page": 3,
+   "reference_tokens": 427,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 387,
+     "unsupported": 12,
+     "unsupported_share": 0.031,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "néron",
+      "rational",
+      "birational",
+      "and",
+      "allows",
+      "show",
+      "shioda",
+      "over",
+      "their",
+      "points",
+      "interesting",
+      "introduction"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 387,
+     "unsupported": 12,
+     "unsupported_share": 0.031,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "néron",
+      "rational",
+      "birational",
+      "and",
+      "allows",
+      "show",
+      "shioda",
+      "over",
+      "their",
+      "points",
+      "interesting",
+      "introduction"
+     ]
+    }
+   }
+  },
+  "mp03:8": {
+   "run": "E-maths",
+   "doc_id": "mp03",
+   "page": 8,
+   "reference_tokens": 275,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 255,
+     "unsupported": 4,
+     "unsupported_share": 0.0157,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "let",
+      "colloquially",
+      "is"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 255,
+     "unsupported": 4,
+     "unsupported_share": 0.0157,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "let",
+      "colloquially",
+      "is"
+     ]
+    }
+   }
+  },
+  "mp03:9": {
+   "run": "E-maths",
+   "doc_id": "mp03",
+   "page": 9,
+   "reference_tokens": 328,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 263,
+     "unsupported": 6,
+     "unsupported_share": 0.0228,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "thus",
+      "and",
+      "image",
+      "degree",
+      "follows",
+      "from"
+     ],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 263,
+     "unsupported": 6,
+     "unsupported_share": 0.0228,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "thus",
+      "and",
+      "image",
+      "degree",
+      "follows",
+      "from"
+     ],
+     "audit": true
+    }
+   }
+  },
+  "mp03:12": {
+   "run": "E-maths",
+   "doc_id": "mp03",
+   "page": 12,
+   "reference_tokens": 242,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 200,
+     "unsupported": 8,
+     "unsupported_share": 0.04,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "multiplicity",
+      "where",
+      "we",
+      "varieties",
+      "variety",
+      "subsection"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 201,
+     "unsupported": 6,
+     "unsupported_share": 0.0299,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "where",
+      "we",
+      "varieties",
+      "variety",
+      "multiplicity",
+      "subsection"
+     ]
+    }
+   }
+  },
+  "mp03:13": {
+   "run": "E-maths",
+   "doc_id": "mp03",
+   "page": 13,
+   "reference_tokens": 326,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 278,
+     "unsupported": 9,
+     "unsupported_share": 0.0324,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "of",
+      "fermat",
+      "varieties",
+      "we",
+      "remarkably",
+      "calculations",
+      "divides",
+      "integer",
+      "convenience"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 279,
+     "unsupported": 10,
+     "unsupported_share": 0.0358,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "of",
+      "fermat",
+      "varieties",
+      "we",
+      "remarkably",
+      "calculations",
+      "divides",
+      "integer",
+      "convenience",
+      "do"
+     ]
+    }
+   }
+  },
+  "mp03:17": {
+   "run": "E-maths",
+   "doc_id": "mp03",
+   "page": 17,
+   "reference_tokens": 150,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 97,
+     "unsupported": 2,
+     "unsupported_share": 0.0206,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "last",
+      "definition"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 97,
+     "unsupported": 2,
+     "unsupported_share": 0.0206,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "last",
+      "definition"
+     ]
+    }
+   }
+  },
+  "mp03:20": {
+   "run": "E-maths",
+   "doc_id": "mp03",
+   "page": 20,
+   "reference_tokens": 343,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 311,
+     "unsupported": 11,
+     "unsupported_share": 0.0354,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "the",
+      "over",
+      "with",
+      "that",
+      "simple",
+      "variety",
+      "kowalski",
+      "dieudonné",
+      "automorphic",
+      "variétés",
+      "algébriques"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 311,
+     "unsupported": 12,
+     "unsupported_share": 0.0386,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "the",
+      "isotrival",
+      "over",
+      "with",
+      "that",
+      "simple",
+      "variety",
+      "kowalski",
+      "dieudonné",
+      "automorphic",
+      "variétés",
+      "algébriques"
+     ]
+    }
+   }
+  },
+  "mp04:7": {
+   "run": "E-maths",
+   "doc_id": "mp04",
+   "page": 7,
+   "reference_tokens": 332,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 286,
+     "unsupported": 13,
+     "unsupported_share": 0.0455,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "th",
+      "correspond",
+      "quantum",
+      "matrix",
+      "vectors",
+      "vector",
+      "would",
+      "states",
+      "start",
+      "amplitudes",
+      "configuration",
+      "bits"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 286,
+     "unsupported": 13,
+     "unsupported_share": 0.0455,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "th",
+      "correspond",
+      "quantum",
+      "matrix",
+      "vectors",
+      "vector",
+      "would",
+      "states",
+      "start",
+      "amplitudes",
+      "configuration",
+      "bits"
+     ]
+    }
+   }
+  },
+  "mp04:9": {
+   "run": "E-maths",
+   "doc_id": "mp04",
+   "page": 9,
+   "reference_tokens": 497,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 484,
+     "unsupported": 18,
+     "unsupported_share": 0.0372,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "gates",
+      "the",
+      "fredkin",
+      "first",
+      "showing",
+      "computation",
+      "bennett",
+      "by",
+      "method",
+      "reverse",
+      "designing",
+      "reset",
+      "record",
+      "enable",
+      "have",
+      "technique"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 486,
+     "unsupported": 19,
+     "unsupported_share": 0.0391,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "gates",
+      "the",
+      "fredkin",
+      "input",
+      "first",
+      "showing",
+      "computation",
+      "bennett",
+      "by",
+      "method",
+      "reverse",
+      "designing",
+      "reset",
+      "record",
+      "enable",
+      "have",
+      "technique"
+     ]
+    }
+   }
+  },
+  "mp04:12": {
+   "run": "E-maths",
+   "doc_id": "mp04",
+   "page": 12,
+   "reference_tokens": 543,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 507,
+     "unsupported": 29,
+     "unsupported_share": 0.0572,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "schönhage",
+      "pseudocode",
+      "operation",
+      "working",
+      "th",
+      "have",
+      "been",
+      "complicated",
+      "results",
+      "because",
+      "exactly",
+      "any",
+      "amplitude",
+      "measuring",
+      "overall",
+      "measurements",
+      "one",
+      "algorithm",
+      "choice",
+      "algorithms",
+      "efficiencies",
+      "intermediate",
+      "1994",
+      "data",
+      "computers",
+      "reasons",
+      "increase"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 508,
+     "unsupported": 27,
+     "unsupported_share": 0.0531,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "schönhage",
+      "operation",
+      "working",
+      "have",
+      "been",
+      "complicated",
+      "results",
+      "because",
+      "exactly",
+      "any",
+      "amplitude",
+      "measuring",
+      "overall",
+      "measurements",
+      "one",
+      "algorithm",
+      "choice",
+      "algorithms",
+      "efficiencies",
+      "intermediate",
+      "1994",
+      "data",
+      "computers",
+      "reasons",
+      "increase"
+     ]
+    }
+   }
+  },
+  "mp04:14": {
+   "run": "E-maths",
+   "doc_id": "mp04",
+   "page": 14,
+   "reference_tokens": 360,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 293,
+     "unsupported": 6,
+     "unsupported_share": 0.0205,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "quantum",
+      "fourier",
+      "matrices",
+      "obtained",
+      "phases",
+      "th"
+     ],
+     "audit": true
+    },
+    "paddleocr-vl": {
+     "tokens": 293,
+     "unsupported": 6,
+     "unsupported_share": 0.0205,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "quantum",
+      "fourier",
+      "matrices",
+      "obtained",
+      "phases",
+      "th"
+     ],
+     "paired": true
+    }
+   }
+  },
+  "mp04:15": {
+   "run": "E-maths",
+   "doc_id": "mp04",
+   "page": 15,
+   "reference_tokens": 510,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 459,
+     "unsupported": 17,
+     "unsupported_share": 0.037,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "the",
+      "is",
+      "physically",
+      "computation",
+      "coppersmith",
+      "fourier",
+      "transform",
+      "factoring",
+      "technique",
+      "integer",
+      "interested",
+      "long",
+      "asymptotically",
+      "classical",
+      "finding",
+      "element"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 458,
+     "unsupported": 17,
+     "unsupported_share": 0.0371,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "the",
+      "is",
+      "physically",
+      "computation",
+      "copersmith",
+      "fourier",
+      "transform",
+      "factoring",
+      "technique",
+      "integer",
+      "interested",
+      "long",
+      "asymptotically",
+      "classical",
+      "finding",
+      "element"
+     ]
+    }
+   }
+  },
+  "mp04:17": {
+   "run": "E-maths",
+   "doc_id": "mp04",
+   "page": 17,
+   "reference_tokens": 329,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 265,
+     "unsupported": 7,
+     "unsupported_share": 0.0264,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "observe",
+      "in",
+      "particular",
+      "phase",
+      "integral",
+      "bounded"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 265,
+     "unsupported": 7,
+     "unsupported_share": 0.0264,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "observe",
+      "in",
+      "particular",
+      "phase",
+      "integral",
+      "bounded"
+     ]
+    }
+   }
+  },
+  "mp04:19": {
+   "run": "E-maths",
+   "doc_id": "mp04",
+   "page": 19,
+   "reference_tokens": 576,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 530,
+     "unsupported": 12,
+     "unsupported_share": 0.0226,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "1979",
+      "example",
+      "functional",
+      "observed",
+      "number",
+      "expensive",
+      "algorithm",
+      "candidate",
+      "expected",
+      "trials",
+      "element",
+      "th"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 533,
+     "unsupported": 13,
+     "unsupported_share": 0.0244,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "1979",
+      "example",
+      "functional",
+      "observed",
+      "number",
+      "totiant",
+      "expensive",
+      "algorithm",
+      "candidate",
+      "expected",
+      "trials",
+      "element",
+      "th"
+     ]
+    }
+   }
+  },
+  "mp04:22": {
+   "run": "E-maths",
+   "doc_id": "mp04",
+   "page": 22,
+   "reference_tokens": 381,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 346,
+     "unsupported": 5,
+     "unsupported_share": 0.0145,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "the",
+      "at",
+      "possible",
+      "dividing",
+      "about"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 347,
+     "unsupported": 6,
+     "unsupported_share": 0.0173,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "the",
+      "at",
+      "20q",
+      "possible",
+      "dividing",
+      "about"
+     ]
+    }
+   }
+  },
+  "io06:16": {
+   "run": "E-scan",
+   "doc_id": "io06",
+   "page": 16,
+   "reference_tokens": 142,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 137,
+     "unsupported": 10,
+     "unsupported_share": 0.073,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "personæ",
+      "ciuili",
+      "collateralibus",
+      "prohbitio",
+      "40r",
+      "vrisconsultus",
+      "laicis",
+      "egales",
+      "gradū"
+     ],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 138,
+     "unsupported": 47,
+     "unsupported_share": 0.3406,
+     "repeated_lines": [],
+     "flagged": true,
+     "unsupported_sample": [
+      "funt",
+      "gradæ",
+      "perfonæ",
+      "ciuli",
+      "diuerfimode",
+      "10",
+      "ciule",
+      "diuerfitas",
+      "vitroque",
+      "vique",
+      "prohibito",
+      "16",
+      "fingulis",
+      "reperi",
+      "unt",
+      "leptem",
+      "proximio",
+      "remotorem",
+      "vrifconfultus",
+      "fcre",
+      "feratur",
+      "laicis",
+      "cauis",
+      "ecclefaiticus",
+      "iequitur",
+      "egales",
+      "gradū"
+     ]
+    }
+   }
+  },
+  "io06:28": {
+   "run": "E-scan",
+   "doc_id": "io06",
+   "page": 28,
+   "reference_tokens": 179,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 172,
+     "unsupported": 9,
+     "unsupported_share": 0.0523,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "progenie",
+      "primus",
+      "cuius",
+      "personæ",
+      "incipiat",
+      "obs",
+      "inferioribus",
+      "dinumeratione",
+      "rematiores"
+     ],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 172,
+     "unsupported": 45,
+     "unsupported_share": 0.2616,
+     "repeated_lines": [],
+     "flagged": true,
+     "unsupported_sample": [
+      "funt",
+      "effe",
+      "confideratur",
+      "feu",
+      "tranitus",
+      "feipfum",
+      "eff",
+      "fibi",
+      "ipfi",
+      "potteft",
+      "fed",
+      "il",
+      "progenie",
+      "ftirpe",
+      "defendunt",
+      "fic",
+      "primus",
+      "ciuli",
+      "succeliones",
+      "perfona",
+      "cuius",
+      "fuccelione",
+      "matgmonia",
+      "perfonæ",
+      "forores",
+      "incipiat",
+      "fimititudinem",
+      "fcalarum",
+      "definitur",
+      "afcenfus",
+      "inferioribus",
+      "perfonis",
+      "fuperiores",
+      "defcenfus",
+      "fuperioribus",
+      "quai",
+      "nafcitur",
+      "hastenus",
+      "quifque"
+     ]
+    }
+   }
+  },
+  "io06:30": {
+   "run": "E-scan",
+   "doc_id": "io06",
+   "page": 30,
+   "reference_tokens": 177,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 168,
+     "unsupported": 14,
+     "unsupported_share": 0.0833,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "frater",
+      "foror",
+      "supputationis",
+      "connotatur",
+      "sequemur",
+      "singulis",
+      "secundo",
+      "paternus",
+      "inferiore",
+      "transuerfali",
+      "vterinus",
+      "forores",
+      "verfalis",
+      "fororis"
+     ],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 166,
+     "unsupported": 57,
+     "unsupported_share": 0.3434,
+     "repeated_lines": [],
+     "flagged": true,
+     "unsupported_sample": [
+      "funt",
+      "effe",
+      "fecundo",
+      "toidemque",
+      "fue",
+      "ciuli",
+      "poffunt",
+      "fed",
+      "different",
+      "augment",
+      "poteci",
+      "frater",
+      "velioror",
+      "fic",
+      "effect",
+      "perfone",
+      "praallegatis",
+      "confanguinitatis",
+      "vtriufque",
+      "fupputationis",
+      "diuerfitas",
+      "connotatur",
+      "iuftinianum",
+      "fequemur",
+      "perfonis",
+      "qua",
+      "fingulis",
+      "fex",
+      "perfona",
+      "iuftiniano",
+      "duplicata",
+      "iatus",
+      "fuperiori",
+      "paternus",
+      "auiar",
+      "inferiore",
+      "transuerfali",
+      "confanguineus",
+      "vterinus",
+      "forores"
+     ]
+    }
+   }
+  },
+  "io06:45": {
+   "run": "E-scan",
+   "doc_id": "io06",
+   "page": 45,
+   "reference_tokens": 176,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 168,
+     "unsupported": 10,
+     "unsupported_share": 0.0595,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "persona",
+      "iure",
+      "gradum",
+      "generationes",
+      "tantum",
+      "generatione",
+      "due",
+      "dicitur",
+      "nomine"
+     ],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 168,
+     "unsupported": 42,
+     "unsupported_share": 0.25,
+     "repeated_lines": [],
+     "flagged": true,
+     "unsupported_sample": [
+      "fit",
+      "fue",
+      "perfonam",
+      "fecundo",
+      "computation",
+      "ciule",
+      "iure",
+      "ciuli",
+      "regule",
+      "personae",
+      "generationes",
+      "perfona",
+      "fcilicet",
+      "queritur",
+      "infit",
+      "cart",
+      "filius",
+      "vlerlori",
+      "finguli",
+      "feu",
+      "tantum",
+      "generatione",
+      "cententur",
+      "nepotes",
+      "perfonæ",
+      "duç",
+      "primogenitum",
+      "fed",
+      "co",
+      "fic",
+      "dicitur",
+      "frates",
+      "different",
+      "nomine",
+      "augment",
+      "fecunda"
+     ]
+    }
+   }
+  },
+  "io06:46": {
+   "run": "E-scan",
+   "doc_id": "io06",
+   "page": 46,
+   "reference_tokens": 151,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 143,
+     "unsupported": 13,
+     "unsupported_share": 0.0909,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "petrucium",
+      "personæ",
+      "seruit",
+      "iure",
+      "ciuili",
+      "ascendentibus",
+      "ascendendo",
+      "descendere",
+      "due",
+      "modo",
+      "numerando"
+     ],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 141,
+     "unsupported": 44,
+     "unsupported_share": 0.3121,
+     "repeated_lines": [],
+     "flagged": true,
+     "unsupported_sample": [
+      "petrucium",
+      "perfona",
+      "funt",
+      "ftipes",
+      "iure",
+      "ciuli",
+      "aquali",
+      "forores",
+      "confobrinos",
+      "inaquali",
+      "diftat",
+      "ftipite",
+      "patruum",
+      "aunculum",
+      "matereram",
+      "velnepotem",
+      "forore",
+      "defcendentibus",
+      "siqui",
+      "fcre",
+      "quo故gadu",
+      "diftet",
+      "alcendendo",
+      "ftipitem",
+      "defcendere",
+      "pefonae",
+      "due",
+      "perfone",
+      "fique",
+      "diftabit",
+      "inaequali",
+      "modo",
+      "numerando",
+      "anus",
+      "ausus",
+      "perfonæ",
+      "ficque",
+      "diftabunt",
+      "ciçili",
+      "familib"
+     ]
+    }
+   }
+  },
+  "io06:53": {
+   "run": "E-scan",
+   "doc_id": "io06",
+   "page": 53,
+   "reference_tokens": 16,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 10,
+     "unsupported": 1,
+     "unsupported_share": 0.1,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "si"
+     ],
+     "protocol_named": true
+    }
+   }
+  },
+  "io06:62": {
+   "run": "E-scan",
+   "doc_id": "io06",
+   "page": 62,
+   "reference_tokens": 185,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 171,
+     "unsupported": 18,
+     "unsupported_share": 0.1053,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "quæ",
+      "referamus",
+      "resoluemus",
+      "subiecto",
+      "quæstio",
+      "baptisauit",
+      "illo",
+      "ecclesia",
+      "lenauit",
+      "fit",
+      "regeneratio",
+      "opiniones",
+      "cognit",
+      "deliberis",
+      "loquendi",
+      "dicitur",
+      "lenare"
+     ],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 172,
+     "unsupported": 65,
+     "unsupported_share": 0.3779,
+     "repeated_lines": [],
+     "flagged": true,
+     "unsupported_sample": [
+      "cum",
+      "fpirit",
+      "priufquam",
+      "fingulatim",
+      "fpiritualis",
+      "referamus",
+      "quaifdam",
+      "quæftiones",
+      "refoluemus",
+      "baptifmum",
+      "prefenti",
+      "lubiceto",
+      "imprimique",
+      "cauba",
+      "baptifmi",
+      "crit",
+      "que",
+      "pio",
+      "fur",
+      "baptisfaut",
+      "confequenter",
+      "manit",
+      "refpondetur",
+      "baptifaut",
+      "poftea",
+      "eccleia",
+      "eft",
+      "fuiffe",
+      "impreflum",
+      "fit",
+      "regeneratio",
+      "què",
+      "eccelia",
+      "prefbyteri",
+      "diftinct",
+      "fumma",
+      "fexti",
+      "quzeltio",
+      "poterst",
+      "baptifono"
+     ]
+    }
+   }
+  },
+  "io06:63": {
+   "run": "E-scan",
+   "doc_id": "io06",
+   "page": 63,
+   "reference_tokens": 195,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 182,
+     "unsupported": 12,
+     "unsupported_share": 0.0659,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "ludouici",
+      "senis",
+      "sententia",
+      "panormitanus",
+      "dispositio",
+      "vniuersitate",
+      "filium",
+      "possint",
+      "alter",
+      "dissolutum",
+      "chilpericum",
+      "adoueram"
+     ],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 183,
+     "unsupported": 66,
+     "unsupported_share": 0.3607,
+     "repeated_lines": [],
+     "flagged": true,
+     "unsupported_sample": [
+      "facro",
+      "vniuerfitatem",
+      "fent",
+      "contração",
+      "cod",
+      "justinere",
+      "liminação",
+      "affirmatia",
+      "eft",
+      "confuetudo",
+      "fit",
+      "ipfos",
+      "fuos",
+      "christianiffimi",
+      "noftri",
+      "perufinus",
+      "fpir",
+      "quzīlio",
+      "vīrum",
+      "spirituali",
+      "queri",
+      "univerfitatem",
+      "reip",
+      "diuerfas",
+      "fententias",
+      "senis",
+      "vniuerfitas",
+      "baptifet",
+      "baptifetur",
+      "baptifimate",
+      "confecr",
+      "dift",
+      "fi",
+      "fententia",
+      "affirmatium",
+      "panormitanus",
+      "fyndicum",
+      "dipofitio",
+      "refoluitur",
+      "perfonas"
+     ]
+    }
+   }
+  },
+  "io06:65": {
+   "run": "E-scan",
+   "doc_id": "io06",
+   "page": 65,
+   "reference_tokens": 21,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 8,
+     "unsupported": 3,
+     "unsupported_share": 0.375,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "pim",
+      "ma",
+      "un"
+     ]
+    }
+   }
+  },
+  "io06:68": {
+   "run": "E-scan",
+   "doc_id": "io06",
+   "page": 68,
+   "reference_tokens": 198,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 190,
+     "unsupported": 13,
+     "unsupported_share": 0.0684,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "martinus",
+      "sacro",
+      "spirit",
+      "cognitam",
+      "obitū",
+      "canonisitis",
+      "mea",
+      "cōmater",
+      "concubinam",
+      "matrimonium",
+      "conuenit",
+      "sibit"
+     ],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 186,
+     "unsupported": 59,
+     "unsupported_share": 0.3172,
+     "repeated_lines": [],
+     "flagged": true,
+     "unsupported_sample": [
+      "fi",
+      "baptifati",
+      "fue",
+      "baptifantis",
+      "martinus",
+      "qua",
+      "poft",
+      "hac",
+      "fuscipire",
+      "facro",
+      "et",
+      "contra",
+      "cod",
+      "coniugern",
+      "fpir",
+      "fcifcitatur",
+      "ii",
+      "levantis",
+      "ténentis",
+      "cognitrim",
+      "pofta",
+      "fpirit",
+      "nondum",
+      "fpiritualis",
+      "tranfit",
+      "fpiritus",
+      "fpiritualem",
+      "obitú",
+      "canonitis",
+      "verfus",
+      "mibi",
+      "cuins",
+      "meanatum",
+      "lemasi",
+      "cômater",
+      "lemanit",
+      "potfata",
+      "verabor",
+      "concubinam",
+      "matrimonium"
+     ]
+    }
+   }
+  },
+  "io06:75": {
+   "run": "E-scan",
+   "doc_id": "io06",
+   "page": 75,
+   "reference_tokens": 18,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 14,
+     "unsupported": 1,
+     "unsupported_share": 0.0714,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "cognatione"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 14,
+     "unsupported": 6,
+     "unsupported_share": 0.4286,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "fpirituali",
+      "cognatione",
+      "catechifmo",
+      "di",
+      "um"
+     ]
+    }
+   }
+  },
+  "io06:78": {
+   "run": "E-scan",
+   "doc_id": "io06",
+   "page": 78,
+   "reference_tokens": 3,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 0,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    },
+    "paddleocr-vl": {
+     "tokens": 0,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    }
+   }
+  },
+  "io04:1": {
+   "run": "E-scan",
+   "doc_id": "io04",
+   "page": 1,
+   "reference_tokens": 28,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 23,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    },
+    "paddleocr-vl": {
+     "tokens": 6,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    }
+   }
+  },
+  "io04:4": {
+   "run": "E-scan",
+   "doc_id": "io04",
+   "page": 4,
+   "reference_tokens": 2090,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 2064,
+     "unsupported": 22,
+     "unsupported_share": 0.0107,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "provided",
+      "building",
+      "winter",
+      "apprehensions",
+      "consumer",
+      "covered",
+      "protection",
+      "feeding",
+      "notice",
+      "handling",
+      "drainage",
+      "perfume",
+      "convenient",
+      "further",
+      "manner",
+      "harvesting",
+      "interfered",
+      "hauling",
+      "tannin",
+      "valuable"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 2062,
+     "unsupported": 28,
+     "unsupported_share": 0.0136,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "provided",
+      "building",
+      "winter",
+      "apprehensions",
+      "consumer",
+      "covered",
+      "orole",
+      "protection",
+      "feeding",
+      "notice",
+      "handling",
+      "retiring",
+      "drainage",
+      "perfume",
+      "convenient",
+      "northwest",
+      "cf",
+      "wooded",
+      "further",
+      "manner",
+      "harvesting",
+      "interfered",
+      "hauling",
+      "tannin",
+      "meroury",
+      "valuable"
+     ]
+    }
+   }
+  },
+  "io04:16": {
+   "run": "E-scan",
+   "doc_id": "io04",
+   "page": 16,
+   "reference_tokens": 1365,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 1352,
+     "unsupported": 6,
+     "unsupported_share": 0.0044,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "common",
+      "forward",
+      "construction",
+      "admit",
+      "potatoes",
+      "prevent"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 1352,
+     "unsupported": 6,
+     "unsupported_share": 0.0044,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "common",
+      "forward",
+      "construction",
+      "admit",
+      "potatoes",
+      "prevent"
+     ]
+    }
+   }
+  },
+  "io04:17": {
+   "run": "E-scan",
+   "doc_id": "io04",
+   "page": 17,
+   "reference_tokens": 716,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 710,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": []
+    },
+    "paddleocr-vl": {
+     "tokens": 713,
+     "unsupported": 2,
+     "unsupported_share": 0.0028,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "amer",
+      "agr1"
+     ]
+    }
+   }
+  },
+  "io04:18": {
+   "run": "E-scan",
+   "doc_id": "io04",
+   "page": 18,
+   "reference_tokens": 1808,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 1788,
+     "unsupported": 16,
+     "unsupported_share": 0.0089,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "condition",
+      "animals",
+      "provisions",
+      "rendering",
+      "excessively",
+      "otherwise",
+      "number",
+      "montana",
+      "sometimes",
+      "industry",
+      "contracted",
+      "indefinite",
+      "aimlessly",
+      "circular",
+      "beneath",
+      "cotton"
+     ],
+     "audit": true
+    },
+    "paddleocr-vl": {
+     "tokens": 1787,
+     "unsupported": 18,
+     "unsupported_share": 0.0101,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "condition",
+      "animals",
+      "provisions",
+      "rendering",
+      "excessively",
+      "windows",
+      "otherwise",
+      "number",
+      "montana",
+      "sometimes",
+      "homeranch",
+      "industry",
+      "contracted",
+      "indefinite",
+      "aimlessly",
+      "circular",
+      "beneath",
+      "cotton"
+     ],
+     "paired": true
+    }
+   }
+  },
+  "io04:20": {
+   "run": "E-scan",
+   "doc_id": "io04",
+   "page": 20,
+   "reference_tokens": 1650,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 1633,
+     "unsupported": 14,
+     "unsupported_share": 0.0086,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "setting",
+      "cultivation",
+      "advantages",
+      "barnyard",
+      "management",
+      "produce",
+      "projects",
+      "minnesota",
+      "diblets",
+      "rainfall",
+      "produces",
+      "diseases",
+      "excellent",
+      "criticised"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 1633,
+     "unsupported": 13,
+     "unsupported_share": 0.008,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "setting",
+      "cultivation",
+      "advantages",
+      "barnyard",
+      "management",
+      "produce",
+      "projects",
+      "minnesota",
+      "rainfall",
+      "produces",
+      "diseases",
+      "excellent",
+      "criticised"
+     ]
+    }
+   }
+  },
+  "io04:33": {
+   "run": "E-scan",
+   "doc_id": "io04",
+   "page": 33,
+   "reference_tokens": 2332,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 2055,
+     "unsupported": 30,
+     "unsupported_share": 0.0146,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "something",
+      "irrigation",
+      "undeveloped",
+      "richest",
+      "population",
+      "dollars",
+      "deposits",
+      "surrounding",
+      "improved",
+      "constant",
+      "developing",
+      "people",
+      "giving",
+      "tenderfoot",
+      "unbearably",
+      "invigorating",
+      "agricultural",
+      "difficult",
+      "elevation",
+      "storage",
+      "thoroughly",
+      "ormsby",
+      "elsewhere",
+      "transformation",
+      "nebraska",
+      "newcomers",
+      "additional",
+      "threshing",
+      "considerable"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 2049,
+     "unsupported": 39,
+     "unsupported_share": 0.019,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "something",
+      "irrigation",
+      "undeveloped",
+      "equitable",
+      "springtime",
+      "richest",
+      "population",
+      "dollars",
+      "deposits",
+      "surrounding",
+      "cubie",
+      "place",
+      "improved",
+      "anyone",
+      "constant",
+      "developing",
+      "people",
+      "giving",
+      "tenderfoot",
+      "unbearably",
+      "invigorating",
+      "agricultural",
+      "difficult",
+      "elevation",
+      "storage",
+      "thoroughly",
+      "ormsby",
+      "elsewhere",
+      "sagebrush",
+      "light",
+      "transformation",
+      "nebraska",
+      "newcomers",
+      "ensures",
+      "additional",
+      "threshing",
+      "considerable",
+      "eling"
+     ]
+    }
+   }
+  },
+  "io04:42": {
+   "run": "E-scan",
+   "doc_id": "io04",
+   "page": 42,
+   "reference_tokens": 1622,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 1532,
+     "unsupported": 26,
+     "unsupported_share": 0.017,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "illustrated",
+      "sarsaparilla",
+      "arrangement",
+      "cyclopedia",
+      "edition",
+      "latitude",
+      "descriptive",
+      "professor",
+      "signal",
+      "under",
+      "interest",
+      "comprehensive",
+      "manufacture",
+      "fermentation",
+      "scotland",
+      "present",
+      "bladder",
+      "become",
+      "curing",
+      "continual",
+      "heretofore",
+      "consisting",
+      "thousands",
+      "empleo"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 1549,
+     "unsupported": 59,
+     "unsupported_share": 0.0381,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "illustrated",
+      "sarsaparilla",
+      "and",
+      "arrangement",
+      "cyclopedia",
+      "edition",
+      "with",
+      "any",
+      "latitude",
+      "to",
+      "descriptive",
+      "price",
+      "treatise",
+      "professor",
+      "signal",
+      "interest",
+      "comprehensive",
+      "manufacture",
+      "fermentation",
+      "use",
+      "silo",
+      "scotland",
+      "anaesthetic",
+      "present",
+      "gatarrh",
+      "bladder",
+      "become",
+      "curing",
+      "terribly",
+      "continual",
+      "fore",
+      "horse",
+      "underquoted",
+      "you",
+      "nt",
+      "consisting",
+      "avril",
+      "thousands",
+      "holtmfg",
+      "free"
+     ]
+    }
+   }
+  },
+  "io04:44": {
+   "run": "E-scan",
+   "doc_id": "io04",
+   "page": 44,
+   "reference_tokens": 2180,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 2172,
+     "unsupported": 1,
+     "unsupported_share": 0.0005,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "illusory"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 2166,
+     "unsupported": 10,
+     "unsupported_share": 0.0046,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "size",
+      "not",
+      "liorse",
+      "stemwinders",
+      "eredulous",
+      "seissors",
+      "stiffjoints",
+      "became",
+      "scaled"
+     ]
+    }
+   }
+  },
+  "io04:47": {
+   "run": "E-scan",
+   "doc_id": "io04",
+   "page": 47,
+   "reference_tokens": 2567,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 2545,
+     "unsupported": 5,
+     "unsupported_share": 0.002,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "opportunistically",
+      "by",
+      "88",
+      "estab",
+      "lished"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 2544,
+     "unsupported": 7,
+     "unsupported_share": 0.0028,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "opportunity",
+      "pickling",
+      "88",
+      "anyone",
+      "chinna",
+      "tinsoayinrr",
+      "plane"
+     ]
+    }
+   }
+  },
+  "io04:49": {
+   "run": "E-scan",
+   "doc_id": "io04",
+   "page": 49,
+   "reference_tokens": 644,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 589,
+     "unsupported": 2,
+     "unsupported_share": 0.0034,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "or",
+      "d1198"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 623,
+     "unsupported": 4,
+     "unsupported_share": 0.0064,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "atale",
+      "creat",
+      "postpaid",
+      "d1908"
+     ]
+    }
+   }
+  },
+  "io04:52": {
+   "run": "E-scan",
+   "doc_id": "io04",
+   "page": 52,
+   "reference_tokens": 928,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 897,
+     "unsupported": 6,
+     "unsupported_share": 0.0067,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "cent",
+      "elcin",
+      "driving",
+      "bit",
+      "cott",
+      "captain"
+     ]
+    }
+   }
+  },
+  "tl03:2": {
+   "run": "E-scan",
+   "doc_id": "tl03",
+   "page": 2,
+   "reference_tokens": 308,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 307,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [],
+     "paired": true
+    },
+    "paddleocr-vl": {
+     "tokens": 307,
+     "unsupported": 1,
+     "unsupported_share": 0.0033,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "aimes"
+     ],
+     "audit": true
+    }
+   }
+  },
+  "tl03:3": {
+   "run": "E-scan",
+   "doc_id": "tl03",
+   "page": 3,
+   "reference_tokens": 154,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 148,
+     "unsupported": 1,
+     "unsupported_share": 0.0068,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "ft"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 148,
+     "unsupported": 1,
+     "unsupported_share": 0.0068,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "ft"
+     ]
+    }
+   }
+  },
+  "tl03:5": {
+   "run": "E-scan",
+   "doc_id": "tl03",
+   "page": 5,
+   "reference_tokens": 354,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 332,
+     "unsupported": 1,
+     "unsupported_share": 0.003,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "superposed"
+     ]
+    },
+    "paddleocr-vl": {
+     "tokens": 329,
+     "unsupported": 2,
+     "unsupported_share": 0.0061,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [
+      "strangaged",
+      "superposed"
+     ]
+    }
+   }
+  },
+  "tl03:8": {
+   "run": "E-scan",
+   "doc_id": "tl03",
+   "page": 8,
+   "reference_tokens": 13,
+   "engines": {
+    "dots-mocr": {
+     "tokens": 4,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [],
+     "audit": true
+    },
+    "paddleocr-vl": {
+     "tokens": 10,
+     "unsupported": 0,
+     "unsupported_share": 0.0,
+     "repeated_lines": [],
+     "flagged": false,
+     "unsupported_sample": [],
+     "paired": true
+    }
+   }
+  }
+ }
+}

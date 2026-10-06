@@ -3,7 +3,7 @@
 - **ID**: `37-dots-mocr-routing-acceptance-2026-09-30`
 - **Date planned**: 2026-09-30
 - **Operator**: Dr Muhammad Aizat Bin Md Hawari, with Claude Code (plan)
-- **Status**: PLANNED (blocked on the engine build and on operator OCR authorisation)
+- **Status**: PASS (2026-10-06: G1, G2 and G3 pass; see [report.md](report.md))
 - **Relation**: OpenSpec change `modular-ocr-workers-dots-mocr`, tasks 7.1 to 7.3; Experiment 34 (A2, A4); Experiment 33 task 6.7; ADR-071 decision 7
 - **Plan**: [`plan.json`](plan.json) (page lists, gates, budget and authorisation block)
 
@@ -19,7 +19,7 @@ Three questions stay open after Experiment 34:
 
 ## Hypotheses
 
-1. **H1 (detection, negative controls).** The detector flags zero pages in the negative-control set.
+1. **H1 (detection, negative controls).** The detector flags zero pages in the negative-control set that the operator labels `no_maths` (amendment A1).
 2. **H2 (converter).** At most 5% of the formulas dots.mocr emits on the maths and scanned sets fail to render in KaTeX 0.16.22.
 3. **H3 (noise, operator review).** The operator accepts the list of pages where either engine emits text that is not on the page image.
 4. **Q4 (reported, not gated).** dots.mocr and PaddleOCR-VL token recall on the script and handwriting set, by writing system, beside the Experiment 33 local-tier recall.
@@ -68,7 +68,7 @@ PDFs sit in gitignored `corpus/`. Provenance and hashes go in `sources.json`.
 | Set | Contents | Pages | Ground truth | Status |
 | --- | --- | ---: | --- | --- |
 | Maths positives | at least 5 arXiv maths-heavy papers from different fields and years. One is pdfLaTeX with `glyphtounicode` (Unicode-mapped maths font). One is a Word paper with Cambria Math. | all pages for detection; up to 8 maths pages per paper for engines (seed 37) | operator page label `maths` / `no_maths` from the page image | to source |
-| Negative controls | Experiment 34 `bd01`, `bd02`, `bd03`; one prose-only LaTeX paper | all pages, detection only | every page is `no_maths` by construction; the operator confirms the prose-only paper | to source (prose paper) |
+| Negative controls | Experiment 34 `bd01`, `bd02`, `bd03`; one prose-only LaTeX paper | all pages, detection only | the operator labels every page `maths` or `no_maths` (amendment A1) | to source (prose paper) |
 | Scanned set | Experiment 34 sampled pages of `io04` (12), `io06` (12), `tl03` (4) | 28 | operator review of noise (H3) | page list frozen in `plan.json` |
 | Script and handwriting set | Experiment 33 pages whose frozen body label is `needs_ocr` in `io01`, `io02`, `io03`, `io07`, `rf06`, `rf07` | 189 | Experiment 33 reference transcriptions (`output/.transcripts`, body split in `output/.transcripts_split`) | page list frozen in `plan.json` |
 
@@ -105,7 +105,7 @@ Checkpoint after each document. Write each page's Markdown to `output/<engine>/<
 
 ### Primary (gated)
 
-- **Negative-control flags**: flagged pages in `D-neg`. Gate: 0.
+- **Negative-control flags**: flagged pages in `D-neg` that the operator labels `no_maths`. Gate: 0 (amendment A1). Flagged pages labelled `maths` are reported as true positives.
 - **KaTeX error rate (dots.mocr)**: formulas that fail to render ÷ formulas emitted, over `E-maths` and `E-scan`. A formula is each `$$…$$` block and each `$…$` inline span in the emitted Markdown. Gate: ≤ 0.05.
 - **Noise list review**: pages where the operator marks emitted text as absent from the page image, per engine. Gate: the operator records a verdict for every listed page.
 
@@ -131,7 +131,7 @@ Checkpoint after each document. Write each page's Markdown to `output/<engine>/<
 
 | Gate | Rule | Source |
 | --- | --- | --- |
-| G1 | 0 flagged pages in `D-neg` | task 7.3 |
+| G1 | 0 flagged pages among `D-neg` pages labelled `no_maths` (amendment A1) | task 7.3, amended |
 | G2 | dots.mocr KaTeX error rate ≤ 0.05 | task 7.3 |
 | G3 | operator verdict recorded for every page on the noise list | task 7.3 |
 
@@ -174,6 +174,17 @@ Rates come from Experiment 34: dots.mocr median over 43 page runs on MPS; Paddle
 | `output/pages.json` | per-page rows: seconds, formulas, KaTeX errors, recall |
 | `output/summary.json` | gates and reported values (committed) |
 | `report.md` | verdict and the operator's noise review |
+
+## Amendments
+
+### A1 (2026-10-04): G1 counts only pages labelled `no_maths`
+
+- **Trigger**: `D-neg` flagged `bd03` p4 (`CMMI10`) and p6 (`CMSY10`). On p6 the multiplication sign in formulas such as `Chl a (mg/mL) = 0.0127 × A663 − 0.0027 × A645` is set in a maths font. Under the maths rule these pages may be maths, so "`no_maths` by construction" does not hold for `bd03`.
+- **Change**: the operator labels every page of `bd01`, `bd02`, `bd03` and `pc01` from page images. G1 counts flagged pages among the pages labelled `no_maths`. The original rule was "0 flagged pages in `D-neg`".
+- **Why**: G1 exists to catch false alarms on pages without maths. A flag on a page with real maths is a true positive.
+- **Rejected options**: replace `bd03` (loses a realistic born-digital paper with sporadic maths); loosen the detector (drops real inline maths).
+- **Approval**: operator, 2026-10-04. The rule changes the wording of tasks.md 7.3, so the implementation session must accept A1 before it ticks 7.3.
+- **Blindness note**: the operator read a description of `bd03` p6 before labelling. The report records this.
 
 ## References
 

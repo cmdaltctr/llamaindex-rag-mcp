@@ -1,0 +1,179 @@
+{
+ "reviewer": "operator (Dr Muhammad Aizat Bin Md Hawari)",
+ "merged_utc": "2026-10-06T10:21:32Z",
+ "screen_rule": "DR-4: unsupported >= 10 and share >= 0.15, or a 20+ char line repeated 3+ times; plus 5 audit pages per engine (seed 37); plus protocol-named io06:53; plus every other engine with output on those pages (paired)",
+ "verdicts": {
+  "dots-mocr": {
+   "eq01:2": {
+    "verdict": "clean",
+    "source": "audit"
+   },
+   "eq01:5": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "io04:18": {
+    "verdict": "clean",
+    "source": "audit"
+   },
+   "io06:16": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "io06:28": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "io06:30": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "io06:45": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "io06:46": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "io06:53": {
+    "verdict": "clean",
+    "source": "protocol"
+   },
+   "io06:62": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "io06:63": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "io06:68": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "mp01:10": {
+    "verdict": "clean",
+    "source": "screen"
+   },
+   "mp01:22": {
+    "verdict": "clean",
+    "source": "screen"
+   },
+   "mp03:2": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "mp03:9": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "mp04:14": {
+    "verdict": "clean",
+    "source": "audit"
+   },
+   "mp05:10": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "mp05:11": {
+    "verdict": "clean",
+    "source": "audit"
+   },
+   "tl03:2": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "tl03:8": {
+    "verdict": "clean",
+    "source": "audit",
+    "note": "surprisingly, dots-mocr did not detect the horiozontal table",
+    "operator_verdict_first": "noise",
+    "corrected": "2026-10-06, operator: the 45-character output is on the page; the problem is a dropped rotated table/chart, recorded as finding F-omission, not as noise"
+   }
+  },
+  "paddleocr-vl": {
+   "eq01:2": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "eq01:5": {
+    "verdict": "clean",
+    "source": "audit"
+   },
+   "io04:18": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "io06:16": {
+    "verdict": "clean",
+    "source": "screen"
+   },
+   "io06:28": {
+    "verdict": "clean",
+    "source": "screen"
+   },
+   "io06:30": {
+    "verdict": "clean",
+    "source": "screen"
+   },
+   "io06:45": {
+    "verdict": "clean",
+    "source": "screen"
+   },
+   "io06:46": {
+    "verdict": "clean",
+    "source": "screen"
+   },
+   "io06:62": {
+    "verdict": "clean",
+    "source": "screen"
+   },
+   "io06:63": {
+    "verdict": "clean",
+    "source": "screen"
+   },
+   "io06:68": {
+    "verdict": "clean",
+    "source": "screen"
+   },
+   "mp01:10": {
+    "verdict": "clean",
+    "source": "screen"
+   },
+   "mp01:22": {
+    "verdict": "clean",
+    "source": "screen"
+   },
+   "mp03:2": {
+    "verdict": "clean",
+    "source": "audit"
+   },
+   "mp03:9": {
+    "verdict": "clean",
+    "source": "audit"
+   },
+   "mp04:14": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "mp05:10": {
+    "verdict": "clean",
+    "source": "audit"
+   },
+   "mp05:11": {
+    "verdict": "clean",
+    "source": "paired"
+   },
+   "tl03:2": {
+    "verdict": "clean",
+    "source": "audit"
+   },
+   "tl03:8": {
+    "verdict": "clean",
+    "source": "paired",
+    "note": "it detects everything, good."
+   }
+  }
+ }
+}

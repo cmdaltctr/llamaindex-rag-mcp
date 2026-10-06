@@ -1,0 +1,1683 @@
+{
+ "engine": "paddleocr-vl",
+ "e_script_pages_planned": 189,
+ "e_script_pages_finished": 189,
+ "tokeniser": "experiments/33-.../build_labels.py tokens() and recall(), imported",
+ "reference": "body_text of the split transcript when present, else the first transcription (local_ocr._reference)",
+ "by_writing_system": {
+  "ALL": {
+   "scored_pages": 189,
+   "pages_without_output": 32,
+   "all": {
+    "n": 189,
+    "median": 0.6095,
+    "mean": 0.54,
+    "share_ge_0_8": 0.2434,
+    "share_lt_0_5": 0.3492
+   },
+   "with_output": {
+    "n": 157,
+    "median": 0.6571,
+    "mean": 0.6501,
+    "share_ge_0_8": 0.293,
+    "share_lt_0_5": 0.2166
+   },
+   "local_tier_same_pages": {
+    "n": 189,
+    "median": 0.0,
+    "mean": 0.1124,
+    "share_ge_0_8": 0.0106,
+    "share_lt_0_5": 0.9365
+   },
+   "engine_same_pages_as_local": {
+    "n": 189,
+    "median": 0.6095,
+    "mean": 0.54,
+    "share_ge_0_8": 0.2434,
+    "share_lt_0_5": 0.3492
+   }
+  },
+  "arabic": {
+   "scored_pages": 21,
+   "pages_without_output": 4,
+   "all": {
+    "n": 21,
+    "median": 0.6435,
+    "mean": 0.526,
+    "share_ge_0_8": 0.0,
+    "share_lt_0_5": 0.2857
+   },
+   "with_output": {
+    "n": 17,
+    "median": 0.6735,
+    "mean": 0.6497,
+    "share_ge_0_8": 0.0,
+    "share_lt_0_5": 0.1176
+   },
+   "local_tier_same_pages": {
+    "n": 21,
+    "median": 0.0,
+    "mean": 0.0056,
+    "share_ge_0_8": 0.0,
+    "share_lt_0_5": 1.0
+   },
+   "engine_same_pages_as_local": {
+    "n": 21,
+    "median": 0.6435,
+    "mean": 0.526,
+    "share_ge_0_8": 0.0,
+    "share_lt_0_5": 0.2857
+   }
+  },
+  "bengali": {
+   "scored_pages": 60,
+   "pages_without_output": 14,
+   "all": {
+    "n": 60,
+    "median": 0.5062,
+    "mean": 0.409,
+    "share_ge_0_8": 0.0167,
+    "share_lt_0_5": 0.4833
+   },
+   "with_output": {
+    "n": 46,
+    "median": 0.5852,
+    "mean": 0.5335,
+    "share_ge_0_8": 0.0217,
+    "share_lt_0_5": 0.3261
+   },
+   "local_tier_same_pages": {
+    "n": 60,
+    "median": 0.0,
+    "mean": 0.0,
+    "share_ge_0_8": 0.0,
+    "share_lt_0_5": 1.0
+   },
+   "engine_same_pages_as_local": {
+    "n": 60,
+    "median": 0.5062,
+    "mean": 0.409,
+    "share_ge_0_8": 0.0167,
+    "share_lt_0_5": 0.4833
+   }
+  },
+  "devanagari": {
+   "scored_pages": 48,
+   "pages_without_output": 9,
+   "all": {
+    "n": 48,
+    "median": 0.8749,
+    "mean": 0.6931,
+    "share_ge_0_8": 0.7292,
+    "share_lt_0_5": 0.2292
+   },
+   "with_output": {
+    "n": 39,
+    "median": 0.8923,
+    "mean": 0.8531,
+    "share_ge_0_8": 0.8974,
+    "share_lt_0_5": 0.0513
+   },
+   "local_tier_same_pages": {
+    "n": 48,
+    "median": 0.0,
+    "mean": 0.0191,
+    "share_ge_0_8": 0.0,
+    "share_lt_0_5": 1.0
+   },
+   "engine_same_pages_as_local": {
+    "n": 48,
+    "median": 0.8749,
+    "mean": 0.6931,
+    "share_ge_0_8": 0.7292,
+    "share_lt_0_5": 0.2292
+   }
+  },
+  "latin_handwriting": {
+   "scored_pages": 60,
+   "pages_without_output": 5,
+   "all": {
+    "n": 60,
+    "median": 0.5959,
+    "mean": 0.5535,
+    "share_ge_0_8": 0.1667,
+    "share_lt_0_5": 0.3333
+   },
+   "with_output": {
+    "n": 55,
+    "median": 0.6075,
+    "mean": 0.6038,
+    "share_ge_0_8": 0.1818,
+    "share_lt_0_5": 0.2727
+   },
+   "local_tier_same_pages": {
+    "n": 60,
+    "median": 0.3096,
+    "mean": 0.3368,
+    "share_ge_0_8": 0.0333,
+    "share_lt_0_5": 0.8
+   },
+   "engine_same_pages_as_local": {
+    "n": 60,
+    "median": 0.5959,
+    "mean": 0.5535,
+    "share_ge_0_8": 0.1667,
+    "share_lt_0_5": 0.3333
+   }
+  }
+ },
+ "pages": {
+  "io01:2": {
+   "writing_system": "devanagari",
+   "reference_tokens": 29,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.069
+  },
+  "io01:3": {
+   "writing_system": "devanagari",
+   "reference_tokens": 66,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io01:4": {
+   "writing_system": "devanagari",
+   "reference_tokens": 80,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.075
+  },
+  "io01:5": {
+   "writing_system": "devanagari",
+   "reference_tokens": 65,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8923,
+   "local_tier_recall": 0.0
+  },
+  "io01:6": {
+   "writing_system": "devanagari",
+   "reference_tokens": 70,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9,
+   "local_tier_recall": 0.0
+  },
+  "io01:7": {
+   "writing_system": "devanagari",
+   "reference_tokens": 73,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9178,
+   "local_tier_recall": 0.0
+  },
+  "io01:8": {
+   "writing_system": "devanagari",
+   "reference_tokens": 85,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0118
+  },
+  "io01:9": {
+   "writing_system": "devanagari",
+   "reference_tokens": 62,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7903,
+   "local_tier_recall": 0.0
+  },
+  "io01:10": {
+   "writing_system": "devanagari",
+   "reference_tokens": 67,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9403,
+   "local_tier_recall": 0.0299
+  },
+  "io01:11": {
+   "writing_system": "devanagari",
+   "reference_tokens": 60,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9333,
+   "local_tier_recall": 0.0
+  },
+  "io01:12": {
+   "writing_system": "devanagari",
+   "reference_tokens": 71,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9014,
+   "local_tier_recall": 0.0
+  },
+  "io01:13": {
+   "writing_system": "devanagari",
+   "reference_tokens": 43,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.907,
+   "local_tier_recall": 0.0
+  },
+  "io01:14": {
+   "writing_system": "devanagari",
+   "reference_tokens": 57,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9123,
+   "local_tier_recall": 0.0
+  },
+  "io01:15": {
+   "writing_system": "devanagari",
+   "reference_tokens": 63,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9365,
+   "local_tier_recall": 0.0
+  },
+  "io01:16": {
+   "writing_system": "devanagari",
+   "reference_tokens": 56,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io01:17": {
+   "writing_system": "devanagari",
+   "reference_tokens": 41,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.878,
+   "local_tier_recall": 0.0732
+  },
+  "io01:18": {
+   "writing_system": "devanagari",
+   "reference_tokens": 52,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8846,
+   "local_tier_recall": 0.0192
+  },
+  "io01:19": {
+   "writing_system": "devanagari",
+   "reference_tokens": 76,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8421,
+   "local_tier_recall": 0.0263
+  },
+  "io01:20": {
+   "writing_system": "devanagari",
+   "reference_tokens": 65,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8923,
+   "local_tier_recall": 0.0
+  },
+  "io01:21": {
+   "writing_system": "devanagari",
+   "reference_tokens": 78,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8718,
+   "local_tier_recall": 0.0
+  },
+  "io01:22": {
+   "writing_system": "devanagari",
+   "reference_tokens": 68,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8676,
+   "local_tier_recall": 0.0
+  },
+  "io01:23": {
+   "writing_system": "devanagari",
+   "reference_tokens": 43,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8605,
+   "local_tier_recall": 0.0
+  },
+  "io01:24": {
+   "writing_system": "devanagari",
+   "reference_tokens": 44,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9091,
+   "local_tier_recall": 0.0
+  },
+  "io01:25": {
+   "writing_system": "devanagari",
+   "reference_tokens": 70,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6857,
+   "local_tier_recall": 0.0
+  },
+  "io01:26": {
+   "writing_system": "devanagari",
+   "reference_tokens": 50,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.94,
+   "local_tier_recall": 0.0
+  },
+  "io01:27": {
+   "writing_system": "devanagari",
+   "reference_tokens": 60,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8833,
+   "local_tier_recall": 0.0167
+  },
+  "io01:28": {
+   "writing_system": "devanagari",
+   "reference_tokens": 46,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.913,
+   "local_tier_recall": 0.0
+  },
+  "io01:29": {
+   "writing_system": "devanagari",
+   "reference_tokens": 79,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8228,
+   "local_tier_recall": 0.0
+  },
+  "io01:30": {
+   "writing_system": "devanagari",
+   "reference_tokens": 95,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io01:31": {
+   "writing_system": "devanagari",
+   "reference_tokens": 46,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8478,
+   "local_tier_recall": 0.0
+  },
+  "io01:32": {
+   "writing_system": "devanagari",
+   "reference_tokens": 74,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9324,
+   "local_tier_recall": 0.0
+  },
+  "io01:33": {
+   "writing_system": "devanagari",
+   "reference_tokens": 72,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8472,
+   "local_tier_recall": 0.0
+  },
+  "io01:34": {
+   "writing_system": "devanagari",
+   "reference_tokens": 71,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.831,
+   "local_tier_recall": 0.0
+  },
+  "io01:35": {
+   "writing_system": "devanagari",
+   "reference_tokens": 84,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io01:36": {
+   "writing_system": "devanagari",
+   "reference_tokens": 88,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9432,
+   "local_tier_recall": 0.0114
+  },
+  "io01:37": {
+   "writing_system": "devanagari",
+   "reference_tokens": 75,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io01:38": {
+   "writing_system": "devanagari",
+   "reference_tokens": 80,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.3375,
+   "local_tier_recall": 0.0125
+  },
+  "io01:39": {
+   "writing_system": "devanagari",
+   "reference_tokens": 74,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8784,
+   "local_tier_recall": 0.0
+  },
+  "io01:40": {
+   "writing_system": "devanagari",
+   "reference_tokens": 72,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8611,
+   "local_tier_recall": 0.0
+  },
+  "io01:41": {
+   "writing_system": "devanagari",
+   "reference_tokens": 94,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9043,
+   "local_tier_recall": 0.0638
+  },
+  "io01:42": {
+   "writing_system": "devanagari",
+   "reference_tokens": 83,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9518,
+   "local_tier_recall": 0.0
+  },
+  "io01:43": {
+   "writing_system": "devanagari",
+   "reference_tokens": 79,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9494,
+   "local_tier_recall": 0.0
+  },
+  "io01:44": {
+   "writing_system": "devanagari",
+   "reference_tokens": 84,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9286,
+   "local_tier_recall": 0.0833
+  },
+  "io01:45": {
+   "writing_system": "devanagari",
+   "reference_tokens": 70,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8714,
+   "local_tier_recall": 0.0286
+  },
+  "io01:46": {
+   "writing_system": "devanagari",
+   "reference_tokens": 64,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8125,
+   "local_tier_recall": 0.0312
+  },
+  "io01:47": {
+   "writing_system": "devanagari",
+   "reference_tokens": 118,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.1271,
+   "local_tier_recall": 0.0593
+  },
+  "io01:48": {
+   "writing_system": "devanagari",
+   "reference_tokens": 124,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0081
+  },
+  "io01:49": {
+   "writing_system": "devanagari",
+   "reference_tokens": 57,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9649,
+   "local_tier_recall": 0.2982
+  },
+  "io02:1": {
+   "writing_system": "arabic",
+   "reference_tokens": 98,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6735,
+   "local_tier_recall": 0.0
+  },
+  "io02:2": {
+   "writing_system": "arabic",
+   "reference_tokens": 555,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6613,
+   "local_tier_recall": 0.0126
+  },
+  "io02:3": {
+   "writing_system": "arabic",
+   "reference_tokens": 394,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7563,
+   "local_tier_recall": 0.0
+  },
+  "io02:4": {
+   "writing_system": "arabic",
+   "reference_tokens": 354,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7768,
+   "local_tier_recall": 0.0
+  },
+  "io02:5": {
+   "writing_system": "arabic",
+   "reference_tokens": 549,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6211,
+   "local_tier_recall": 0.0
+  },
+  "io02:6": {
+   "writing_system": "arabic",
+   "reference_tokens": 548,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7555,
+   "local_tier_recall": 0.0018
+  },
+  "io02:7": {
+   "writing_system": "arabic",
+   "reference_tokens": 580,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0276
+  },
+  "io02:8": {
+   "writing_system": "arabic",
+   "reference_tokens": 519,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6435,
+   "local_tier_recall": 0.0
+  },
+  "io02:9": {
+   "writing_system": "arabic",
+   "reference_tokens": 451,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.745,
+   "local_tier_recall": 0.0022
+  },
+  "io02:10": {
+   "writing_system": "arabic",
+   "reference_tokens": 625,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7424,
+   "local_tier_recall": 0.0
+  },
+  "io02:11": {
+   "writing_system": "arabic",
+   "reference_tokens": 589,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7572,
+   "local_tier_recall": 0.0017
+  },
+  "io02:12": {
+   "writing_system": "arabic",
+   "reference_tokens": 492,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7703,
+   "local_tier_recall": 0.0
+  },
+  "io02:13": {
+   "writing_system": "arabic",
+   "reference_tokens": 445,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0315
+  },
+  "io02:14": {
+   "writing_system": "arabic",
+   "reference_tokens": 563,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7425,
+   "local_tier_recall": 0.0053
+  },
+  "io02:15": {
+   "writing_system": "arabic",
+   "reference_tokens": 211,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6398,
+   "local_tier_recall": 0.0047
+  },
+  "io02:16": {
+   "writing_system": "arabic",
+   "reference_tokens": 67,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.597,
+   "local_tier_recall": 0.0299
+  },
+  "io03:1": {
+   "writing_system": "arabic",
+   "reference_tokens": 950,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.3379,
+   "local_tier_recall": 0.0
+  },
+  "io03:2": {
+   "writing_system": "arabic",
+   "reference_tokens": 1635,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.2985,
+   "local_tier_recall": 0.0
+  },
+  "io03:3": {
+   "writing_system": "arabic",
+   "reference_tokens": 2055,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io03:4": {
+   "writing_system": "arabic",
+   "reference_tokens": 1465,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io03:5": {
+   "writing_system": "arabic",
+   "reference_tokens": 315,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.527,
+   "local_tier_recall": 0.0
+  },
+  "io07:2": {
+   "writing_system": "bengali",
+   "reference_tokens": 17,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4118,
+   "local_tier_recall": 0.0
+  },
+  "io07:4": {
+   "writing_system": "bengali",
+   "reference_tokens": 36,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6389,
+   "local_tier_recall": 0.0
+  },
+  "io07:6": {
+   "writing_system": "bengali",
+   "reference_tokens": 86,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5698,
+   "local_tier_recall": 0.0
+  },
+  "io07:7": {
+   "writing_system": "bengali",
+   "reference_tokens": 106,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6792,
+   "local_tier_recall": 0.0
+  },
+  "io07:8": {
+   "writing_system": "bengali",
+   "reference_tokens": 96,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7292,
+   "local_tier_recall": 0.0
+  },
+  "io07:9": {
+   "writing_system": "bengali",
+   "reference_tokens": 108,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:10": {
+   "writing_system": "bengali",
+   "reference_tokens": 58,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5862,
+   "local_tier_recall": 0.0
+  },
+  "io07:11": {
+   "writing_system": "bengali",
+   "reference_tokens": 54,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5926,
+   "local_tier_recall": 0.0
+  },
+  "io07:12": {
+   "writing_system": "bengali",
+   "reference_tokens": 58,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6379,
+   "local_tier_recall": 0.0
+  },
+  "io07:13": {
+   "writing_system": "bengali",
+   "reference_tokens": 64,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.2656,
+   "local_tier_recall": 0.0
+  },
+  "io07:14": {
+   "writing_system": "bengali",
+   "reference_tokens": 89,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4831,
+   "local_tier_recall": 0.0
+  },
+  "io07:15": {
+   "writing_system": "bengali",
+   "reference_tokens": 87,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5172,
+   "local_tier_recall": 0.0
+  },
+  "io07:16": {
+   "writing_system": "bengali",
+   "reference_tokens": 85,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:17": {
+   "writing_system": "bengali",
+   "reference_tokens": 121,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5124,
+   "local_tier_recall": 0.0
+  },
+  "io07:18": {
+   "writing_system": "bengali",
+   "reference_tokens": 129,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.2016,
+   "local_tier_recall": 0.0
+  },
+  "io07:19": {
+   "writing_system": "bengali",
+   "reference_tokens": 137,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:20": {
+   "writing_system": "bengali",
+   "reference_tokens": 105,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:21": {
+   "writing_system": "bengali",
+   "reference_tokens": 78,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:22": {
+   "writing_system": "bengali",
+   "reference_tokens": 73,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:23": {
+   "writing_system": "bengali",
+   "reference_tokens": 81,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:24": {
+   "writing_system": "bengali",
+   "reference_tokens": 70,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5857,
+   "local_tier_recall": 0.0
+  },
+  "io07:25": {
+   "writing_system": "bengali",
+   "reference_tokens": 66,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.2424,
+   "local_tier_recall": 0.0
+  },
+  "io07:26": {
+   "writing_system": "bengali",
+   "reference_tokens": 65,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4462,
+   "local_tier_recall": 0.0
+  },
+  "io07:27": {
+   "writing_system": "bengali",
+   "reference_tokens": 73,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4932,
+   "local_tier_recall": 0.0
+  },
+  "io07:28": {
+   "writing_system": "bengali",
+   "reference_tokens": 65,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5846,
+   "local_tier_recall": 0.0
+  },
+  "io07:29": {
+   "writing_system": "bengali",
+   "reference_tokens": 134,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:30": {
+   "writing_system": "bengali",
+   "reference_tokens": 142,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:31": {
+   "writing_system": "bengali",
+   "reference_tokens": 126,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5952,
+   "local_tier_recall": 0.0
+  },
+  "io07:32": {
+   "writing_system": "bengali",
+   "reference_tokens": 49,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.3878,
+   "local_tier_recall": 0.0
+  },
+  "io07:33": {
+   "writing_system": "bengali",
+   "reference_tokens": 56,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6071,
+   "local_tier_recall": 0.0
+  },
+  "io07:34": {
+   "writing_system": "bengali",
+   "reference_tokens": 55,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4727,
+   "local_tier_recall": 0.0
+  },
+  "io07:35": {
+   "writing_system": "bengali",
+   "reference_tokens": 56,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.625,
+   "local_tier_recall": 0.0
+  },
+  "io07:36": {
+   "writing_system": "bengali",
+   "reference_tokens": 55,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6182,
+   "local_tier_recall": 0.0
+  },
+  "io07:37": {
+   "writing_system": "bengali",
+   "reference_tokens": 64,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4531,
+   "local_tier_recall": 0.0
+  },
+  "io07:38": {
+   "writing_system": "bengali",
+   "reference_tokens": 48,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5833,
+   "local_tier_recall": 0.0
+  },
+  "io07:39": {
+   "writing_system": "bengali",
+   "reference_tokens": 51,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4706,
+   "local_tier_recall": 0.0
+  },
+  "io07:40": {
+   "writing_system": "bengali",
+   "reference_tokens": 60,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.3833,
+   "local_tier_recall": 0.0
+  },
+  "io07:41": {
+   "writing_system": "bengali",
+   "reference_tokens": 64,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5781,
+   "local_tier_recall": 0.0
+  },
+  "io07:42": {
+   "writing_system": "bengali",
+   "reference_tokens": 60,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.65,
+   "local_tier_recall": 0.0
+  },
+  "io07:43": {
+   "writing_system": "bengali",
+   "reference_tokens": 73,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8219,
+   "local_tier_recall": 0.0
+  },
+  "io07:44": {
+   "writing_system": "bengali",
+   "reference_tokens": 83,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6988,
+   "local_tier_recall": 0.0
+  },
+  "io07:45": {
+   "writing_system": "bengali",
+   "reference_tokens": 59,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6441,
+   "local_tier_recall": 0.0
+  },
+  "io07:46": {
+   "writing_system": "bengali",
+   "reference_tokens": 51,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6471,
+   "local_tier_recall": 0.0
+  },
+  "io07:47": {
+   "writing_system": "bengali",
+   "reference_tokens": 70,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6571,
+   "local_tier_recall": 0.0
+  },
+  "io07:48": {
+   "writing_system": "bengali",
+   "reference_tokens": 69,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7101,
+   "local_tier_recall": 0.0
+  },
+  "io07:49": {
+   "writing_system": "bengali",
+   "reference_tokens": 49,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6939,
+   "local_tier_recall": 0.0
+  },
+  "io07:50": {
+   "writing_system": "bengali",
+   "reference_tokens": 66,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6212,
+   "local_tier_recall": 0.0
+  },
+  "io07:51": {
+   "writing_system": "bengali",
+   "reference_tokens": 151,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:52": {
+   "writing_system": "bengali",
+   "reference_tokens": 105,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6095,
+   "local_tier_recall": 0.0
+  },
+  "io07:53": {
+   "writing_system": "bengali",
+   "reference_tokens": 72,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7361,
+   "local_tier_recall": 0.0
+  },
+  "io07:54": {
+   "writing_system": "bengali",
+   "reference_tokens": 114,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:55": {
+   "writing_system": "bengali",
+   "reference_tokens": 143,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:56": {
+   "writing_system": "bengali",
+   "reference_tokens": 138,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:57": {
+   "writing_system": "bengali",
+   "reference_tokens": 123,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:58": {
+   "writing_system": "bengali",
+   "reference_tokens": 131,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.0076,
+   "local_tier_recall": 0.0
+  },
+  "io07:59": {
+   "writing_system": "bengali",
+   "reference_tokens": 68,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0
+  },
+  "io07:60": {
+   "writing_system": "bengali",
+   "reference_tokens": 44,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4318,
+   "local_tier_recall": 0.0
+  },
+  "io07:61": {
+   "writing_system": "bengali",
+   "reference_tokens": 55,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6182,
+   "local_tier_recall": 0.0
+  },
+  "io07:62": {
+   "writing_system": "bengali",
+   "reference_tokens": 59,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5424,
+   "local_tier_recall": 0.0
+  },
+  "io07:63": {
+   "writing_system": "bengali",
+   "reference_tokens": 32,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5,
+   "local_tier_recall": 0.0
+  },
+  "rf06:1": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 44,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.75,
+   "local_tier_recall": 0.7273
+  },
+  "rf06:3": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 268,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8022,
+   "local_tier_recall": 0.5933
+  },
+  "rf06:4": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 137,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7883,
+   "local_tier_recall": 0.5109
+  },
+  "rf06:7": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 136,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5074,
+   "local_tier_recall": 0.1765
+  },
+  "rf06:11": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 140,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.3429,
+   "local_tier_recall": 0.0571
+  },
+  "rf06:15": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 94,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5426,
+   "local_tier_recall": 0.234
+  },
+  "rf06:19": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 69,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4348,
+   "local_tier_recall": 0.1739
+  },
+  "rf06:23": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 107,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6075,
+   "local_tier_recall": 0.3645
+  },
+  "rf06:24": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 154,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8052,
+   "local_tier_recall": 0.461
+  },
+  "rf06:25": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 72,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7222,
+   "local_tier_recall": 0.4444
+  },
+  "rf06:27": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 38,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5263,
+   "local_tier_recall": 0.4474
+  },
+  "rf06:29": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 41,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4146,
+   "local_tier_recall": 0.3171
+  },
+  "rf06:31": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 93,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7312,
+   "local_tier_recall": 0.2796
+  },
+  "rf06:32": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 146,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8014,
+   "local_tier_recall": 0.4521
+  },
+  "rf06:33": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 141,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7376,
+   "local_tier_recall": 0.4326
+  },
+  "rf06:39": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 46,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.3261,
+   "local_tier_recall": 0.4565
+  },
+  "rf06:42": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 113,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5752,
+   "local_tier_recall": 0.5575
+  },
+  "rf06:43": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 250,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.42,
+   "local_tier_recall": 0.18
+  },
+  "rf06:44": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 96,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6667,
+   "local_tier_recall": 0.3021
+  },
+  "rf06:45": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 311,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.1994
+  },
+  "rf06:46": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 103,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5825,
+   "local_tier_recall": 0.2621
+  },
+  "rf06:47": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 259,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6641,
+   "local_tier_recall": 0.2664
+  },
+  "rf06:48": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 92,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7283,
+   "local_tier_recall": 0.413
+  },
+  "rf06:49": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 288,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4965,
+   "local_tier_recall": 0.1458
+  },
+  "rf06:50": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 172,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5988,
+   "local_tier_recall": 0.1628
+  },
+  "rf06:51": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 351,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5926,
+   "local_tier_recall": 0.2536
+  },
+  "rf06:52": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 147,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5102,
+   "local_tier_recall": 0.1973
+  },
+  "rf06:53": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 119,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.0924
+  },
+  "rf06:57": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 52,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.2692,
+   "local_tier_recall": 0.4615
+  },
+  "rf06:60": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 136,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.5809
+  },
+  "rf06:61": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 138,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.587,
+   "local_tier_recall": 0.0725
+  },
+  "rf06:62": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 187,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7754,
+   "local_tier_recall": 0.1283
+  },
+  "rf06:63": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 156,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6154,
+   "local_tier_recall": 0.1731
+  },
+  "rf06:64": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 72,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5694,
+   "local_tier_recall": 0.1111
+  },
+  "rf06:65": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 370,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6973,
+   "local_tier_recall": 0.7378
+  },
+  "rf06:67": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 112,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6696,
+   "local_tier_recall": 0.0714
+  },
+  "rf06:73": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 114,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6667,
+   "local_tier_recall": 0.1228
+  },
+  "rf06:79": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 92,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.4457
+  },
+  "rf06:83": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 52,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6346,
+   "local_tier_recall": 0.5385
+  },
+  "rf06:85": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 286,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.7413,
+   "local_tier_recall": 0.1748
+  },
+  "rf06:86": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 350,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8171,
+   "local_tier_recall": 0.4429
+  },
+  "rf06:87": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 321,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8006,
+   "local_tier_recall": 0.3489
+  },
+  "rf06:88": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 141,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8652,
+   "local_tier_recall": 0.4539
+  },
+  "rf07:4": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 48,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.9583,
+   "local_tier_recall": 0.6875
+  },
+  "rf07:5": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 236,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4788,
+   "local_tier_recall": 0.0636
+  },
+  "rf07:6": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 110,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4273,
+   "local_tier_recall": 0.0182
+  },
+  "rf07:9": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 147,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6531,
+   "local_tier_recall": 0.0816
+  },
+  "rf07:10": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 187,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6631,
+   "local_tier_recall": 0.0374
+  },
+  "rf07:11": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 145,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.5931,
+   "local_tier_recall": 0.0897
+  },
+  "rf07:13": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 110,
+   "status": "timeout",
+   "has_output": false,
+   "recall": 0.0,
+   "local_tier_recall": 0.1
+  },
+  "rf07:17": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 21,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.3333,
+   "local_tier_recall": 0.1429
+  },
+  "rf07:21": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 31,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4839,
+   "local_tier_recall": 0.3548
+  },
+  "rf07:27": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 128,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8672,
+   "local_tier_recall": 0.875
+  },
+  "rf07:29": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 130,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8538,
+   "local_tier_recall": 0.8385
+  },
+  "rf07:31": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 12,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.0833,
+   "local_tier_recall": 0.6667
+  },
+  "rf07:37": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 25,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.6,
+   "local_tier_recall": 0.36
+  },
+  "rf07:47": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 139,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.8201,
+   "local_tier_recall": 0.7554
+  },
+  "rf07:49": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 27,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4074,
+   "local_tier_recall": 0.4074
+  },
+  "rf07:51": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 21,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.4286,
+   "local_tier_recall": 0.4286
+  },
+  "rf07:55": {
+   "writing_system": "latin_handwriting",
+   "reference_tokens": 40,
+   "status": "ok",
+   "has_output": true,
+   "recall": 0.175,
+   "local_tier_recall": 0.275
+  }
+ }
+}

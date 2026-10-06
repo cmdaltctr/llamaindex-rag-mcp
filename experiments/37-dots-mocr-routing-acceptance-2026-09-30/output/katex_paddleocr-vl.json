@@ -1,0 +1,298 @@
+{
+ "engine": "paddleocr-vl",
+ "katex": "0.16.22",
+ "runs": [
+  "E-maths",
+  "E-scan"
+ ],
+ "rule": "each $$...$$ block and each $...$ inline span; throwOnError true; strict ignore",
+ "totals": {
+  "E-maths": {
+   "formulas": 1759,
+   "errors": 2,
+   "pages_with_formulas": 39,
+   "pages_not_ok_skipped": 1
+  },
+  "E-scan": {
+   "formulas": 33,
+   "errors": 0,
+   "pages_with_formulas": 10,
+   "pages_not_ok_skipped": 3
+  }
+ },
+ "overall": {
+  "formulas": 1792,
+  "errors": 2,
+  "error_rate": 0.0011
+ },
+ "pages": {
+  "E-maths eq01:2": {
+   "formulas": 27,
+   "errors": []
+  },
+  "E-maths eq01:3": {
+   "formulas": 41,
+   "errors": []
+  },
+  "E-maths eq01:4": {
+   "formulas": 47,
+   "errors": []
+  },
+  "E-maths eq01:5": {
+   "formulas": 40,
+   "errors": []
+  },
+  "E-maths eq01:11": {
+   "formulas": 22,
+   "errors": []
+  },
+  "E-maths eq01:12": {
+   "formulas": 19,
+   "errors": []
+  },
+  "E-maths eq01:14": {
+   "formulas": 22,
+   "errors": []
+  },
+  "E-maths mp01:4": {
+   "formulas": 80,
+   "errors": []
+  },
+  "E-maths mp01:5": {
+   "formulas": 85,
+   "errors": []
+  },
+  "E-maths mp01:8": {
+   "formulas": 71,
+   "errors": []
+  },
+  "E-maths mp01:10": {
+   "formulas": 115,
+   "errors": []
+  },
+  "E-maths mp01:11": {
+   "formulas": 120,
+   "errors": []
+  },
+  "E-maths mp01:16": {
+   "formulas": 51,
+   "errors": []
+  },
+  "E-maths mp01:21": {
+   "formulas": 93,
+   "errors": []
+  },
+  "E-maths mp01:22": {
+   "formulas": 136,
+   "errors": []
+  },
+  "E-maths mp05:1": {
+   "formulas": 12,
+   "errors": []
+  },
+  "E-maths mp05:3": {
+   "formulas": 30,
+   "errors": []
+  },
+  "E-maths mp05:9": {
+   "formulas": 10,
+   "errors": []
+  },
+  "E-maths mp05:10": {
+   "formulas": 22,
+   "errors": []
+  },
+  "E-maths mp05:11": {
+   "formulas": 25,
+   "errors": []
+  },
+  "E-maths mp05:12": {
+   "formulas": 22,
+   "errors": []
+  },
+  "E-maths mp05:13": {
+   "formulas": 18,
+   "errors": []
+  },
+  "E-maths mp05:15": {
+   "formulas": 26,
+   "errors": []
+  },
+  "E-maths mp03:2": {
+   "formulas": 52,
+   "errors": []
+  },
+  "E-maths mp03:3": {
+   "formulas": 35,
+   "errors": []
+  },
+  "E-maths mp03:8": {
+   "formulas": 71,
+   "errors": []
+  },
+  "E-maths mp03:9": {
+   "formulas": 63,
+   "errors": []
+  },
+  "E-maths mp03:12": {
+   "formulas": 14,
+   "errors": [
+    {
+     "display": true,
+     "body": " \\varepsilon=\\left\\{\\begin{array}{l l}{0}&{{i f2\\not\\mid d{o r}4\\not\\mid q-1}}\\\\ {1}&{{i f2|d{a n d}4|q-1}}\\end{array}\\right.+\\left\\{\\begin{array}{l l}{0}&{{i f3\\not\\mid d}}\\\\ {1}&{{i f3|d{a n d}3\\not\\mid q-1}}\\\\ {2}&{{i f3|d{a n d}3|q-1.}\\end{array}\\right. ",
+     "message": "KaTeX parse error: Expected '}', got '\\end' at position 240: …d{a n d}3|q-1.}\\̲e̲n̲d̲{array}\\right. "
+    }
+   ]
+  },
+  "E-maths mp03:13": {
+   "formulas": 44,
+   "errors": []
+  },
+  "E-maths mp03:17": {
+   "formulas": 25,
+   "errors": [
+    {
+     "display": true,
+     "body": " \\begin{align*}g(\\chi,\\psi)&=-\\sum_{x\\in\\mathbb{F}_{p^{2}f}^{\\times}}\\chi(x)\\psi(x)\\\\&=-\\sum_{x\\in\\mathbb{F}_{p^{2}f}^{\\times}/\\mathbb{F}_{p^{f}}^{\\times}}\\chi(x)\\sum_{y\\in\\mathbb{F}_{p^{f}}^{\\times}}\\psi(xy)\\\\&=-\\sum_{x\\in\\mathbb{F}_{p^{2}f}^{\\times}/\\mathbb{F}_{p^{f}}^{\\times}}\\chi(x)\\left\\{\\begin",
+     "message": "KaTeX parse error: Double subscript at position 470: …thbb{F}_{p}^{x}_̲{f}}\\chi(x)p^{f…"
+    }
+   ]
+  },
+  "E-maths mp03:20": {
+   "formulas": 29,
+   "errors": []
+  },
+  "E-maths mp04:7": {
+   "formulas": 15,
+   "errors": []
+  },
+  "E-maths mp04:9": {
+   "formulas": 15,
+   "errors": []
+  },
+  "E-maths mp04:12": {
+   "formulas": 11,
+   "errors": []
+  },
+  "E-maths mp04:14": {
+   "formulas": 47,
+   "errors": []
+  },
+  "E-maths mp04:15": {
+   "formulas": 39,
+   "errors": []
+  },
+  "E-maths mp04:17": {
+   "formulas": 39,
+   "errors": []
+  },
+  "E-maths mp04:19": {
+   "formulas": 76,
+   "errors": []
+  },
+  "E-maths mp04:22": {
+   "formulas": 50,
+   "errors": []
+  },
+  "E-scan io06:16": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:28": {
+   "formulas": 1,
+   "errors": []
+  },
+  "E-scan io06:30": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:45": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:46": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:62": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:63": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:68": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:75": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io06:78": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:1": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:4": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:16": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:17": {
+   "formulas": 1,
+   "errors": []
+  },
+  "E-scan io04:18": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:20": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan io04:33": {
+   "formulas": 5,
+   "errors": []
+  },
+  "E-scan io04:42": {
+   "formulas": 3,
+   "errors": []
+  },
+  "E-scan io04:44": {
+   "formulas": 2,
+   "errors": []
+  },
+  "E-scan io04:47": {
+   "formulas": 7,
+   "errors": []
+  },
+  "E-scan io04:49": {
+   "formulas": 0,
+   "errors": []
+  },
+  "E-scan tl03:2": {
+   "formulas": 1,
+   "errors": []
+  },
+  "E-scan tl03:3": {
+   "formulas": 9,
+   "errors": []
+  },
+  "E-scan tl03:5": {
+   "formulas": 2,
+   "errors": []
+  },
+  "E-scan tl03:8": {
+   "formulas": 2,
+   "errors": []
+  }
+ }
+}

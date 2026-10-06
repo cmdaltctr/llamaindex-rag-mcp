@@ -1,18 +1,35 @@
 {
   "experiment_id": "37-dots-mocr-routing-acceptance-2026-09-30",
-  "protocol_version": 1,
-  "status": "PLANNED",
+  "protocol_version": 2,
+  "status": "PASS",
   "change_ref": "openspec/changes/modular-ocr-workers-dots-mocr (tasks 7.1-7.3)",
   "niftypm": null,
-  "blocked_on": [
-    "modular-ocr-workers-dots-mocr sections 0-6 merged (detector, routes, engines)",
-    "operator provisions dots-mocr with --accept-model-licence (licence clauses 3.3(c), 5.2)",
-    "operator OCR authorisation below",
-    "operator maths page labels for the maths positives and the prose-only control"
+  "blocked_on": [],
+  "resolved_blockers": [
+    {
+      "was": "modular-ocr-workers-dots-mocr sections 0-6 merged (detector, routes, engines)",
+      "resolved": "2026-10-04: experiment branch rebased onto 7113571, which holds sections 0-6; see system_identity"
+    },
+    {
+      "was": "operator provisions dots-mocr with --accept-model-licence (licence clauses 3.3(c), 5.2)",
+      "resolved": "2026-10-04: operator provisioned both engines and accepted the dots.mocr licence; see system_identity.dots_mocr_licence"
+    },
+    {
+      "was": "operator approval of the paper list (Gate A)",
+      "resolved": "2026-10-04: operator chose option 1 (five maths papers, special slots inside the five, plus one prose control); see sources.json"
+    },
+    {
+      "was": "operator maths page labels",
+      "resolved": "2026-10-05: 173 pages labelled and frozen (Gate B)"
+    },
+    {
+      "was": "operator OCR authorisation",
+      "resolved": "2026-10-05: option 1 approved (Gate C)"
+    }
   ],
   "sets": {
     "maths_positives": {
-      "status": "TO SOURCE",
+      "status": "SOURCED 2026-10-04 (Gate A, option 1)",
       "min_papers": 5,
       "must_include": [
         "pdfLaTeX paper built with glyphtounicode (Unicode-mapped maths font)",
@@ -20,17 +37,73 @@
       ],
       "diversity": "different fields and years",
       "engine_pages": "up to 8 maths-labelled pages per paper, seeded sample (seed 37) when a paper has more",
-      "detection_pages": "all pages"
+      "detection_pages": "all pages",
+      "documents": [
+        "eq01",
+        "mp01",
+        "mp03",
+        "mp04",
+        "mp05"
+      ],
+      "slot_fill": {
+        "pdfLaTeX with glyphtounicode": "mp01",
+        "Word with Cambria Math": "mp05 (backup; mp02 rejected)"
+      },
+      "engine_page_list": [
+        "eq01:2",
+        "eq01:3",
+        "eq01:4",
+        "eq01:5",
+        "eq01:10",
+        "eq01:11",
+        "eq01:12",
+        "eq01:14",
+        "mp01:4",
+        "mp01:5",
+        "mp01:8",
+        "mp01:10",
+        "mp01:11",
+        "mp01:16",
+        "mp01:21",
+        "mp01:22",
+        "mp05:1",
+        "mp05:3",
+        "mp05:9",
+        "mp05:10",
+        "mp05:11",
+        "mp05:12",
+        "mp05:13",
+        "mp05:15",
+        "mp03:2",
+        "mp03:3",
+        "mp03:8",
+        "mp03:9",
+        "mp03:12",
+        "mp03:13",
+        "mp03:17",
+        "mp03:20",
+        "mp04:7",
+        "mp04:9",
+        "mp04:12",
+        "mp04:14",
+        "mp04:15",
+        "mp04:17",
+        "mp04:19",
+        "mp04:22"
+      ],
+      "engine_page_rule": "maths-labelled pages per paper; random.Random(37).sample(pages, 8) per paper when more than 8 (run_ocr.py page_lists)"
     },
     "negative_controls": {
       "documents": [
         "bd01",
         "bd02",
         "bd03",
-        "<prose-only LaTeX paper, TO SOURCE>"
+        "pc01"
       ],
       "source": "experiments/34-worker-sample-review-2026-09-19/corpus (bd01-bd03)",
-      "detection_pages": "all pages"
+      "detection_pages": "all pages",
+      "prose_only_source": "arXiv 2210.02978v1 (pc01), see sources.json",
+      "label_pages": "all pages, operator labels (A1)"
     },
     "scanned": {
       "source": "experiments/34-worker-sample-review-2026-09-19/sample.json (roles: problem)",
@@ -1141,17 +1214,83 @@
   "labels": {
     "maths_rule": "maths when the page image shows at least one mathematical expression typeset as mathematics: a display equation, or an inline expression with a variable, operator or Greek letter; section numbers and plain numerals are not maths",
     "maths_labels_file": "maths_labels.json",
-    "maths_labels_sha256": null,
+    "maths_labels_sha256": "324ef438171c27ad388130691f4e9bbc0e29d69e320f38495732e99c5fc8ffbc",
     "experiment_33": "frozen labels and reference transcriptions reused; never relabel; freeze.py --check before use",
-    "token_rule": "experiments/33-ocr-routing-natural-positive-2026-09-17/build_labels.py tokens() and recall(), imported"
+    "token_rule": "experiments/33-ocr-routing-natural-positive-2026-09-17/build_labels.py tokens() and recall(), imported",
+    "maths_labels_status": "FROZEN 2026-10-05: 173 of 173 pages (84 maths, 89 no_maths), operator labels from page images; merged from output/maths_labels_download.json (132 pages) and output/maths_labels_remaining_download.json (41 pages)"
   },
   "system_identity": {
-    "omrg_commit": null,
-    "maths_detector_version": null,
-    "dots_mocr_fingerprint": null,
-    "paddleocr_vl_fingerprint": null,
+    "omrg_commit": "f5c43dc24a95f12fd181776167681fc25ea32c00",
+    "omrg_commit_note": "experiment branch rebased onto 7113571 (feat/modular-ocr-workers-dots-mocr, sections 0-6) on 2026-10-04; f5c43dc adds only the planning docs",
+    "omrg_code_commit": "7113571814425c158f5fcaabca077f4bde7e9139",
+    "maths_detector_version": 1,
+    "engines_location": "OCR_WORKERS_DIR=../llamaindex-rag-mcp-feat-modular-ocr-workers-dots-mocr/ocr-workers (engine code equal to 7113571; uncommitted changes there touch only smoke tests, smoke results and docs)",
+    "model_cache": "OMRG_OCR_MODEL_CACHE=~/Development/DATA/omrg/ocr-models",
+    "dots_mocr_licence": {
+      "accepted_by": "operator (Dr Muhammad Aizat Bin Md Hawari)",
+      "date": "2026-10-04",
+      "how": "provision.py --accept-model-licence, run by the operator in the implementation worktree"
+    },
+    "fingerprints_read": "2026-10-04, live `<engine>/.venv/bin/python -m omrg_ocr_worker_core --capabilities`, offline; host fingerprint_from_output() returned available=True for both",
+    "dots_mocr_fingerprint": {
+      "backend_id": "dots_mocr",
+      "model": {
+        "identity": "rednote-hilab/dots.mocr",
+        "revision": "e539fbb52280393adc081b289ec597430a0f9031"
+      },
+      "output_schema": {
+        "id": "omrg.ocr.parse_output",
+        "version": "1"
+      },
+      "packages": {
+        "accelerate": "1.15.0",
+        "omrg-ocr-dots-mocr": "0.1.0",
+        "omrg-ocr-worker-core": "0.1.0",
+        "pillow": "12.3.0",
+        "pypdfium2": "5.13.0",
+        "qwen-vl-utils": "0.0.14",
+        "torch": "2.14.0",
+        "torchvision": "0.29.0",
+        "transformers": "4.57.6"
+      },
+      "pipeline": {
+        "identity": "dots-mocr-layout",
+        "revision": "prompt_layout_all_en+omrg-mps-1+layout-1"
+      },
+      "protocol_version": "1.1"
+    },
+    "paddleocr_vl_fingerprint": {
+      "backend_id": "paddleocr_vl",
+      "model": {
+        "identity": "PaddleOCR-VL",
+        "revision": "1.6"
+      },
+      "output_schema": {
+        "id": "omrg.ocr.parse_output",
+        "version": "1"
+      },
+      "packages": {
+        "omrg-ocr-paddleocr-vl": "0.1.0",
+        "omrg-ocr-worker-core": "0.1.0",
+        "paddleocr": "3.7.0",
+        "paddlepaddle": "3.3.1",
+        "paddlex": "3.7.2"
+      },
+      "pipeline": {
+        "identity": "paddleocr-vl",
+        "revision": "predict+restructure_pages"
+      },
+      "protocol_version": "1.1"
+    },
     "dots_mocr_revision": "e539fbb52280393adc081b289ec597430a0f9031",
-    "katex": "0.16.22"
+    "katex": "0.16.22",
+    "hardware": "Apple M5 Pro, 48 GB; dots.mocr on MPS bfloat16, PaddleOCR-VL on CPU",
+    "smoke_rates_2026-10-04": {
+      "dots_mocr_s_per_scanned_page": 17.6,
+      "dots_mocr_model_load_s": 55,
+      "dots_mocr_peak_footprint_gib": 9.5,
+      "paddleocr_vl_s_per_page_cpu": 73
+    }
   },
   "runs": [
     {
@@ -1219,8 +1358,10 @@
   "path_under_test": "host OcrRoutes with the engine named as primary; page-listed requests (protocol 1.1)",
   "gates": {
     "G1": {
-      "rule": "flagged pages in D-neg == 0",
-      "source": "tasks.md 7.3"
+      "rule": "flagged pages among D-neg pages labelled no_maths == 0",
+      "original_rule": "flagged pages in D-neg == 0",
+      "amended_by": "A1",
+      "source": "tasks.md 7.3, amended (implementation session must accept A1)"
     },
     "G2": {
       "rule": "dots-mocr KaTeX error rate over formulas emitted in E-maths and E-scan <= 0.05",
@@ -1261,16 +1402,289 @@
     ]
   },
   "ocr_authorisation": {
-    "approved": false,
-    "approved_by": null,
-    "date": null,
-    "subset": null,
-    "per_request_timeout_s": null,
+    "approved": true,
+    "approved_by": "operator (Dr Muhammad Aizat Bin Md Hawari)",
+    "date": "2026-10-05",
+    "subset": "option 1, full run: 257 pages per engine (E-maths 40, E-scan 28, E-script 189), both engines",
+    "per_request_timeout_s": 300,
     "runtime_budget_h": null,
-    "note": "No OCR runs until the operator fills this block. The dots.mocr licence is accepted by the operator at provisioning, never by an agent."
+    "note": "No OCR runs until the operator fills this block. The dots.mocr licence is accepted by the operator at provisioning, never by an agent.",
+    "per_request_timeout_note": "one page per request; request_timeout = max(OCR_WORKER_REQUEST_TIMEOUT 300, 1 x OCR_WORKER_SECONDS_PER_PAGE 120) = 300 s, defaults kept",
+    "runtime_budget_note": "no cap set by the operator; run detached in the background, checkpoint per page, resumable after stop or shutdown",
+    "estimate_h": "about 6.5 to 8 typical, up to 14.4 worst case"
   },
   "checkpointing": "per document; atomic .tmp then rename; --resume skips finished pages",
   "network": "off during engine runs (HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1)",
-  "amendments": [],
-  "decision_register": []
+  "amendments": [
+    {
+      "id": "A1",
+      "date": "2026-10-04",
+      "approved_by": "operator",
+      "protocol_version": "1 -> 2",
+      "change": "G1 counts flagged pages among negative-control pages labelled no_maths; bd01, bd02, bd03 and pc01 are labelled page by page",
+      "trigger": "DR-1: D-neg flags bd03 p4 (CMMI10) and p6 (CMSY10, multiplication sign in chlorophyll formulas)",
+      "rejected": [
+        "replace bd03",
+        "loosen the detector"
+      ],
+      "needs": "implementation session accepts A1 before ticking tasks.md 7.3",
+      "blindness_note": "operator read a description of bd03 p6 before labelling"
+    }
+  ],
+  "decision_register": [
+    {
+      "id": "DR-1",
+      "date": "2026-10-04",
+      "status": "CLOSED 2026-10-05",
+      "question": "D-neg flags bd03 p4 (CMMI10) and p6 (CMSY10). Are these pages maths under the maths rule?",
+      "evidence": "run_detection.py --run D-neg, output/detection.json. p6 draws the multiplication sign in CMSY10 inside chlorophyll formulas of the form 'Chl a (mg/mL) = 0.0127 x A663 - 0.0027 x A645'; p4 draws glyphs in CMMI10 next to '3 +'. Page images: output/.pages/bd03/p004.png, p006.png. bd01 and bd02: 0 flagged. D-neg update 2026-10-04: pc01 (prose-only control) 0/24 flagged; D-neg total 2 of 67 pages.",
+      "consequence": "If maths: bd03 is not maths-free, the 'no_maths by construction' assumption fails, and the negative-control set needs an amendment (label bd03 pages, or replace bd03). If not maths: a detector false positive, and the failure rule applies (fix in the implementation worktree, bump MATHS_DETECTOR_VERSION, rerun D-neg).",
+      "decision": "Option 1: label all bd01-bd03 pages, amend G1 to count only pages labelled no_maths",
+      "outcome": "Operator labelled bd03 p4 and p6 maths (p6 note: chemical equation). Both flags are true positives; G1 passes under A1."
+    },
+    {
+      "id": "DR-2",
+      "date": "2026-10-04",
+      "status": "DECIDED",
+      "question": "Word + Cambria Math slot: 1106.0083v2 (Lin) is Word 2007 but its equations use Symbol and MT Extra, not Cambria Math.",
+      "decision": "Use the approved backup 2002.10527v1 (mp05, Word 2010, CambriaMath embedded). Keep mp02 on disk as a recorded rejection.",
+      "finding": "Word papers whose equations come from MathType or Equation Editor 3.0 use Symbol / MT Extra, which the maths list does not include. The detector cannot see that maths. Report it beside the unmatched-font list in 7.2; it is outside the experiment sets."
+    },
+    {
+      "id": "DR-3",
+      "date": "2026-10-05",
+      "status": "DECIDED",
+      "question": "How to score pages with no output in Q4 recall?",
+      "decision": "Report two views: 'all' (a page with no output scores 0.0) and 'with_output'. Chosen before PaddleOCR-VL finished; the protocol did not say.",
+      "applies_to": "score_recall.py"
+    },
+    {
+      "id": "DR-4",
+      "date": "2026-10-05",
+      "status": "DECIDED before results were seen",
+      "question": "Which pages form each engine's noise list (G3)? The protocol says the operator marks noise but not how pages are chosen for review.",
+      "decision": "Automatic screen, then operator review. Reference = pypdf text layer (E-maths) or Experiment 33 transcription, all text (E-scan). Engine prose = Markdown minus formulas, HTML tags and image links. Tokens = Experiment 33 tokens(). Listed when unsupported tokens >= 10 and >= 15 % of engine tokens, or a 20+ character line repeats 3+ times. Plus 5 unflagged audit pages per engine (seed 37) to check the screen. Pages with no output are reported, not reviewed.",
+      "applies_to": "make_noise_review.py",
+      "limits": "Formulas are not screened (maths fonts drop symbols from the text layer); invented formulas are caught only by the operator on listed pages.",
+      "amendment_2026-10-05": "After the first screen: io06 p53 (named in protocol.md as Experiment 34 bleed-through noise) is added to the list for every engine with output. The screen missed it because dots-mocr emitted only 10 tokens there. Thresholds unchanged; audit draw unchanged (taken before the addition). Finding: the token screen cannot see noise on near-blank pages.",
+      "amendment_2026-10-05b": "Operator decision during Gate D: on every page that is on either engine's list (21 pages), every engine with output gets a verdict ('paired'). 23 verdicts became 41 (dots-mocr 21, paddleocr-vl 20; paddleocr-vl has no output on io06:53). Gives a paired comparison on the same pages and shows the screen's misses. Earlier verdict slots unchanged."
+    },
+    {
+      "id": "DR-5",
+      "date": "2026-10-06",
+      "status": "DECIDED",
+      "question": "tl03 p8: dots-mocr output is 45 characters, all on the page, but it drops the rotated table/chart. Noise or omission?",
+      "decision": "Clean under the noise rule (text absent from the page image). Recorded as a separate finding: dots.mocr drops rotated tables or charts (tl03 p8; PaddleOCR-VL read them, 1,206 characters).",
+      "by": "operator"
+    }
+  ],
+  "detection_results": {
+    "scored": "2026-10-05 against maths_labels.json sha256 324ef438...; flags from output/detection.json (MATHS_DETECTOR_VERSION 1)",
+    "D-pos": {
+      "pages": 106,
+      "tp": 81,
+      "fp": 10,
+      "fn": 0,
+      "tn": 15,
+      "precision": 0.89,
+      "recall": 1.0
+    },
+    "D-neg": {
+      "pages": 67,
+      "tp": 2,
+      "fp": 0,
+      "fn": 1,
+      "tn": 64,
+      "flagged_no_maths_pages": 0
+    },
+    "G1": "PASS under A1 (0 flagged pages among 64 negative-control pages labelled no_maths)",
+    "missed_maths_pages": [
+      {
+        "page": "bd02:3",
+        "fonts": [
+          "AdvminionMathIt",
+          "AdvminionMathEx",
+          "AdvminionSymbols"
+        ],
+        "note": "Minion Math fonts renamed by the typesetting system (Adv prefix); not on the maths list. A finding under the interpretation rules, not a gate failure."
+      }
+    ],
+    "false_alarm_pages": [
+      "eq01:6",
+      "mp01:1",
+      "mp01:3",
+      "mp05:17",
+      "mp03:21",
+      "mp04:1",
+      "mp04:5",
+      "mp04:8",
+      "mp04:24",
+      "mp04:27"
+    ]
+  },
+  "engine_execution": "engine-major: dots-mocr runs E-maths, E-scan, E-script, then paddleocr-vl runs the same; one page per protocol 1.1 request; one worker process per engine",
+  "results_dots_mocr": {
+    "recorded": "2026-10-05, after dots-mocr finished 257/257 pages with 0 errors (PaddleOCR-VL still running)",
+    "G2": {
+      "status": "PASS",
+      "rule": "error rate <= 0.05",
+      "formulas": 1893,
+      "errors": 0,
+      "error_rate": 0,
+      "by_run": {
+        "E-maths": {
+          "formulas": 1863,
+          "errors": 0,
+          "pages_with_formulas": 40,
+          "pages_not_ok_skipped": 0
+        },
+        "E-scan": {
+          "formulas": 30,
+          "errors": 0,
+          "pages_with_formulas": 6,
+          "pages_not_ok_skipped": 0
+        }
+      },
+      "note": "Protocol count includes 17 dollar-price pairs on io04 pages (e.g. '$2.50 per day, $') parsed as inline formulas; they render without error. Without them: 1876 formulas, 0 errors. Checker self-test (katex_selftest.md): 6 formulas, 3 broken, 3 reported.",
+      "katex": "0.16.22"
+    },
+    "Q4_recall": {
+      "reported_not_gated": true,
+      "by_writing_system": {
+        "ALL": {
+          "pages": 189,
+          "engine_median": 0.8889,
+          "engine_share_ge_0_8": 0.7778,
+          "engine_share_lt_0_5": 0.037,
+          "local_tier_median": 0.0
+        },
+        "arabic": {
+          "pages": 21,
+          "engine_median": 0.8725,
+          "engine_share_ge_0_8": 0.5714,
+          "engine_share_lt_0_5": 0.0,
+          "local_tier_median": 0.0
+        },
+        "bengali": {
+          "pages": 60,
+          "engine_median": 0.887,
+          "engine_share_ge_0_8": 0.9167,
+          "engine_share_lt_0_5": 0.0,
+          "local_tier_median": 0.0
+        },
+        "devanagari": {
+          "pages": 48,
+          "engine_median": 0.985,
+          "engine_share_ge_0_8": 1.0,
+          "engine_share_lt_0_5": 0.0,
+          "local_tier_median": 0.0
+        },
+        "latin_handwriting": {
+          "pages": 60,
+          "engine_median": 0.8121,
+          "engine_share_ge_0_8": 0.5333,
+          "engine_share_lt_0_5": 0.1167,
+          "local_tier_median": 0.3096
+        }
+      },
+      "caveat": "Reference transcriptions are Gemini output (Experiment 33), not human ground truth. Recall measures agreement with them, not correctness."
+    },
+    "runtime": {
+      "engine_seconds_sum_h": 3.31,
+      "median_s_per_page": 37.0,
+      "peak_footprint_gib": 22.2,
+      "worker_process_generations": 1,
+      "errors": 0,
+      "note": "MPS bfloat16; first 20 E-maths pages ran alone, the rest in parallel with paddleocr-vl on CPU"
+    }
+  },
+  "results_paddleocr_vl": {
+    "recorded": "2026-10-05, after paddleocr-vl finished 257/257 pages (221 ok, 34 timeout at 300 s, 2 empty_markdown); no retries (timeouts at the default limit count as failures of the as-built system)",
+    "katex_reported_not_gated": {
+      "formulas": 1792,
+      "errors": 2,
+      "error_rate": 0.0011,
+      "by_run": {
+        "E-maths": {
+          "formulas": 1759,
+          "errors": 2,
+          "pages_with_formulas": 39,
+          "pages_not_ok_skipped": 1
+        },
+        "E-scan": {
+          "formulas": 33,
+          "errors": 0,
+          "pages_with_formulas": 10,
+          "pages_not_ok_skipped": 3
+        }
+      }
+    },
+    "Q4_recall": {
+      "reported_not_gated": true,
+      "no_output_scores_zero": true,
+      "by_writing_system": {
+        "ALL": {
+          "pages": 189,
+          "no_output": 32,
+          "median_all": 0.6095,
+          "median_with_output": 0.6571,
+          "share_ge_0_8": 0.2434,
+          "share_lt_0_5": 0.3492
+        },
+        "arabic": {
+          "pages": 21,
+          "no_output": 4,
+          "median_all": 0.6435,
+          "median_with_output": 0.6735,
+          "share_ge_0_8": 0.0,
+          "share_lt_0_5": 0.2857
+        },
+        "bengali": {
+          "pages": 60,
+          "no_output": 14,
+          "median_all": 0.5062,
+          "median_with_output": 0.5852,
+          "share_ge_0_8": 0.0167,
+          "share_lt_0_5": 0.4833
+        },
+        "devanagari": {
+          "pages": 48,
+          "no_output": 9,
+          "median_all": 0.8749,
+          "median_with_output": 0.8923,
+          "share_ge_0_8": 0.7292,
+          "share_lt_0_5": 0.2292
+        },
+        "latin_handwriting": {
+          "pages": 60,
+          "no_output": 5,
+          "median_all": 0.5959,
+          "median_with_output": 0.6075,
+          "share_ge_0_8": 0.1667,
+          "share_lt_0_5": 0.3333
+        }
+      }
+    },
+    "runtime": {
+      "engine_seconds_sum_h": 6.06,
+      "median_s_per_page": 40.2,
+      "peak_footprint_gib": 14.6,
+      "worker_process_generations": 35,
+      "note": "each timeout ends the worker process (fatal code) and the next page reloads the model; ran on CPU in parallel with dots-mocr on MPS"
+    }
+  },
+  "execution_note": "2026-10-05 09:23 UTC: run switched from engine-major sequential to both engines in parallel (dots-mocr GPU, paddleocr-vl CPU) to save time; 20 dots-mocr pages were finished before the switch. Same pages, same code paths; timings measured under concurrent load.",
+  "results_G3": {
+    "status": "PASS",
+    "rule": "operator verdict recorded for every page on the noise list, both engines",
+    "verdicts_file": "noise_verdicts.json",
+    "verdicts_sha256": "3f3a3cd2e4a6dc5766980e73a34501f9b055ffbbeb14772e6f99aa7575946634",
+    "recorded": "2026-10-06, 41 of 41 verdicts (dots-mocr 21, paddleocr-vl 20)",
+    "noise": {
+      "dots-mocr": [],
+      "paddleocr-vl": []
+    },
+    "correction": "tl03:8 dots-mocr first marked noise; operator re-recorded it as clean on 2026-10-06 (DR-5). The raw download output/noise_verdicts_download.json is kept unchanged."
+  },
+  "report": "report.md (2026-10-06)"
 }
