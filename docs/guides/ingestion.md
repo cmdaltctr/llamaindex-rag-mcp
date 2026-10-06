@@ -228,7 +228,8 @@ source once on its next ingest. See
 `pdf-inspector` reads text out of a PDF. It cannot read text that is only
 an image. A scanned page therefore comes back empty or nearly empty, and
 that content never reaches the index. The OCR fallback sends those PDFs
-to an isolated PaddleOCR-VL worker instead.
+to isolated OCR engines: dots-mocr is the default primary engine, with
+PaddleOCR-VL as fallback when the primary is unavailable before dispatch.
 
 **Routing is on by default** at the promoted gate
 ([ADR-065](../adr/065-ocr-fallback-gate-promoted-to-packaged-default.md)):
@@ -237,9 +238,11 @@ thresholds. Experiment 29 validated the gate on an operator-approved
 17-PDF collection — zero false routes on the held-out papers, both
 genuinely-needy documents caught.
 
-OCR is still expensive: 34–106 seconds per page against roughly one
-second per file on the fast path. A 20-page scanned document costs
-twenty minutes. The thresholds exist so that cost lands only on files
+OCR is expensive. Earlier PaddleOCR-VL measurements took 34–106 seconds
+per page against roughly one second per file on the fast path.
+dots.mocr took 7–56 seconds per page using Metal Performance Shaders (MPS)
+on Apple Silicon in Experiment 34. Time depends on the page and hardware.
+The thresholds exist so that cost lands only on files
 that need it, and with no worker provisioned an OCR-required PDF
 degrades to its partial extraction plus an actionable warning rather
 than failing. Set `OCR_FALLBACK_ENABLED=false` to opt out entirely.
@@ -256,24 +259,29 @@ characters per page with only 10 of 991 pages flagged. That defect was
 fixed on 2026-09-10: `mixed` is no longer in the unconditional routing
 set and now routes by the calibrated thresholds.
 
-The worker is a separate project in `ocr-worker/` with its own lockfile.
-It owns every Paddle package. The OMRG main install has none of them, and
-a normal `uv sync` never pulls them in.
+Workers live under `ocr-workers/`. The shared `core/` package owns the
+protocol, framing loop, validation and capability command. Each project
+under `engines/<engine>/` has its own environment and lockfile.
+Paddle and PyTorch packages stay in those environments; the OMRG main
+install does not install them.
 
 ### Routing policy
 
-Every PDF starts on `pdf-inspector`. The routing seam only looks at the
-evidence `pdf-inspector` already produced: `pdf_type`, `pdf_confidence`,
-the count of pages flagged for OCR, and the page count.
+On the `pdf_inspector` path, the routing seam uses `pdf_type`,
+`pdf_confidence`, the count of pages flagged for OCR, and the page count.
+When maths routing is enabled, it also reads the PDF's font resources.
 
-With OCR enabled and the worker available, a PDF routes when either rule fires:
+Under the default `document` unit, with OCR enabled and a route available,
+a PDF routes when any condition below holds:
 
 1. `pdf_type` is `scanned` or `image_based`. This is unconditional and
    ignores the thresholds, because both labels mean the whole document
    is pictures and no threshold can change that.
-2. Anything else — including `mixed` and `text_based` — routes only if
+2. Other types, including `mixed` and `text_based`, route if
    `pdf_confidence` falls below a positive `OCR_FALLBACK_MIN_CONFIDENCE`,
    or the flagged-page proportion reaches a positive `OCR_FALLBACK_PAGE_FRACTION`.
+3. With maths routing enabled, the maths-page proportion reaches a positive
+   `OCR_MATHS_PAGE_FRACTION` (default `0.10`).
 
 `mixed` sits in the second group. It means "some pages carry text and
 some do not", which the page-fraction threshold can evaluate. The whole
@@ -290,22 +298,47 @@ provisioned, an OCR-required PDF keeps its partial extraction and the
 batch continues with an actionable warning.
 
 Layout complexity is not a rule. Multi-column and table-heavy PDFs stay
-on the fast path when their text extracts cleanly. Experiment 24
-confirmed the fast-path Markdown is byte-identical with the fallback
+on the fast path when their text extracts cleanly and no maths condition
+applies. Experiment 24 confirmed the fast-path Markdown is byte-identical with the fallback
 enabled and disabled.
 
 The whole PDF goes to the worker, not individual pages. There is no
 page-level stitching between the two readers — **under the default
 `document` unit**. The opt-in `page` unit below changes exactly that.
 
+### Maths pages and engine selection
+
+The maths detector uses a closed, versioned font list. It recognises
+Computer Modern and Latin Modern maths, AMS and Euler symbols, and
+OpenType maths fonts such as Cambria Math and STIX. A Unicode map does
+not prevent a match: correct characters alone do not preserve equation
+structure. The detector reads font resources without rendering pages or
+calling a model. Unreadable resources flag no pages. Equations drawn as
+images or vector paths without recognised fonts are outside its scope.
+
+Under `document`, the maths condition sends the whole PDF to OCR. Under
+`page`, maths pages skip the local tier and join locally escalated pages
+in one request. A page in both groups is sent once. Maths pages keep
+native text and count as unresolved if no route supplies usable text.
+
+Set `OCR_MATHS_ROUTING_ENABLED=false` to disable this detector and its
+routing. `OCR_MATHS_PAGE_FRACTION=0.0` disables only the document-unit
+condition. The master OCR switch still applies.
+
+Every worker request selects the primary route first. The fallback is
+selected only when the primary is unavailable before dispatch. A failure
+after dispatch is a per-file error and never retries on the other route.
+If both routes resolve to the same command and working directory, they
+share one client. Startup logs name the resolved routes and availability.
+
 ### Page-level routing (opt-in, `OCR_ROUTING_UNIT=page`)
 
 Setting `OCR_ROUTING_UNIT=page` routes per page instead of per file
 ([ADR-069](../adr/069-page-level-ocr-routing-and-the-pdfium-runtime.md)).
-Every page is scanned; flagged pages run through pdf-inspector's local
+Every page is scanned; flagged non-maths pages run through pdf-inspector's local
 OCR (PP-OCRv6 Small on ONNX Runtime, CPU, no PyTorch) at roughly 0.75 s
 median per page; pages the local tier cannot read escalate to the
-worker in **one** request carrying exactly those pages; the result
+worker in **one** request with any directly routed maths pages. The result
 merges back into one document in page order.
 
 A page escalates when the local attempt returns empty or
@@ -327,7 +360,7 @@ The emitted document carries four scalar counts that sum to
 | `ocr_pages_unresolved` | Escalated pages no tier resolved; they keep their best available text |
 
 `ocr_backend` names a backend only when it alone produced the text
-(`pdf_inspector`, `pdf_inspector_ocr`, `paddleocr_vl`); anything else
+(`pdf_inspector`, `pdf_inspector_ocr`, `dots_mocr`, `paddleocr_vl`); anything else
 is `mixed`. A 200-page document whose worker read one page reports
 `mixed`, not `paddleocr_vl` — naming the higher tier would be false.
 
@@ -361,9 +394,9 @@ the cache root.
 Switching an install to `page` reindexes its sources once: the routing
 unit, the escalation threshold and the resolved model identity join
 the source index identity under that unit, and a different engine
-reads the pages. On `document` the identity is unchanged and nothing
-reindexes. The local tier's quality residual is accepted and named in
-ADR-069; the deferred retrieval experiment gates any future default
+reads the pages. The modular-engine upgrade also changes identity for
+`document` installs, as described below. The local tier's quality residual
+is accepted and named in ADR-069; the deferred retrieval experiment gates any future default
 change.
 
 ### Configuration
@@ -377,65 +410,122 @@ change.
 | `OCR_LOCAL_MIN_CONFIDENCE`    | `0.8`   | Escalation cut for the local tier (page unit only).               |
 | `OCR_LOCAL_OFFLINE`           | `false` | Forbid the model download.                                        |
 | `OCR_LOCAL_MODEL_DIRECTORY`   | empty   | Model artifact leaf directory; empty means the default cache.     |
-| `OCR_WORKER_COMMAND`          | empty   | Command that starts the worker. Empty means unavailable.         |
-| `OCR_WORKER_ENV_DIR`          | empty   | Worker virtual-environment directory.                            |
-| `OCR_WORKER_REQUEST_TIMEOUT`  | `300.0` | Seconds to wait for one parse response.                          |
+| `OCR_WORKERS_DIR`             | empty   | Absolute path to `ocr-workers`; empty disables folder-based routes. |
+| `OCR_ENGINE_PRIMARY`          | `dots-mocr` | Engine selected first for every worker request. |
+| `OCR_ENGINE_FALLBACK`         | `paddleocr-vl` | Engine used when the primary is unavailable before dispatch; empty disables fallback. |
+| `OCR_WORKER_COMMAND`          | empty   | Explicit command overriding the primary only; empty uses named routes. |
+| `OCR_WORKER_ENV_DIR`          | empty   | Working directory for the explicit command. |
+| `OCR_WORKER_REQUEST_TIMEOUT`  | `300.0` | Minimum parse-response timeout in seconds. |
+| `OCR_WORKER_SECONDS_PER_PAGE` | `120.0` | Timeout allowance per requested page in seconds. |
+| `OCR_MATHS_ROUTING_ENABLED`   | `true`  | Detect maths fonts and route affected pages. |
+| `OCR_MATHS_PAGE_FRACTION`     | `0.10`  | Maths-page proportion that routes a whole PDF; `0.0` disables this document-unit condition. |
 
-Both `0.0` thresholds disable their conditions. With OCR enabled and both
-thresholds at `0.0`, only `scanned` and `image_based` route to the worker.
-Mixed PDFs remain on the fast path.
+The timeout is `max(OCR_WORKER_REQUEST_TIMEOUT, requested_pages * OCR_WORKER_SECONDS_PER_PAGE)`.
+With the defaults, a 14-page request gets 1,680 seconds.
+
+Both `0.0` gate thresholds disable their conditions. Under `document`,
+with maths routing also disabled, only `scanned` and `image_based` PDFs
+then route. The page unit follows its per-page rules instead.
 
 The first three fields form the promoted routing gate.
-The last three are operational: how to reach the worker. Keep them separate.
 `0.5` / `0.10` are the values Experiment 29 approved on the frozen plan's
 10% flagged-page tolerance; Experiment 23 calibrated `0.5` / `0.5` on the
 committed calibration fixtures.
 
 ### Routing identity and existing indexes
 
-Schema 5 includes the sorted unconditional routing types in source identity.
-It changes identity for all sources, including non-PDF sources and sources
-with OCR disabled. Reading an index does not rebuild it. The next ingestion
-attempt can reprocess and re-embed previously indexed source bytes.
-Keep preserved experiment databases out of ingestion and migration tests.
+Source identity includes the sorted unconditional routing types, both
+route fingerprints, and the maths-routing flag, fraction and detector
+version. These fields apply to every source, including non-PDF sources
+and sources with OCR disabled. This branch uses schema 6, shared with
+reader-output normalisation; the added payload also changes earlier
+schema-6 digests.
 
-### Provision the worker
+The upgrade causes one-off reprocessing on the next ingestion. Later
+changes to either engine fingerprint or maths-routing input also change
+identity. Reading an index does not rebuild it. Keep preserved experiment
+databases out of ingestion and migration tests.
 
-```bash
-cd ocr-worker
-python3 provision.py                # Python 3.12
-python3 provision.py --python 3.11  # or 3.13
-python3 provision.py --dry-run      # resolve only, install nothing
-```
+<a id="provision-the-worker"></a>
 
-The script syncs from the worker's own `uv.lock` with `uv sync --locked`
-and never touches the OMRG environment. It rejects any interpreter
-outside 3.11 to 3.13 before installing anything. Do not run `uv sync`
-from the repository root to provision the worker: that installs OMRG.
+### Provision the engines
 
-Then point OMRG at it:
+Run from the intended feature worktree root after approving the package
+installation and model downloads:
 
 ```bash
-OCR_FALLBACK_ENABLED=true
-OCR_FALLBACK_MIN_CONFIDENCE=0.5
-OCR_FALLBACK_PAGE_FRACTION=0.10
-OCR_WORKER_COMMAND="uv run python -m omrg_ocr_worker"
-OCR_WORKER_ENV_DIR=/absolute/path/to/ocr-worker
+python3 ocr-workers/provision.py paddleocr-vl                 # Python 3.12
+python3 ocr-workers/provision.py paddleocr-vl --python 3.11   # or 3.13
+python3 ocr-workers/provision.py paddleocr-vl --dry-run       # install nothing
 ```
+
+Read [the dots.mocr licence notes](../../ocr-workers/engines/dots-mocr/LICENCE-NOTES.md)
+before provisioning dots-mocr. Its terms cover permission to digitise
+publications, sensitive personal data, revised terms and dispute resolution.
+Only an operator who accepts those terms should run:
+
+```bash
+python3 ocr-workers/provision.py dots-mocr --accept-model-licence
+```
+
+The script syncs each engine's `uv.lock` with `uv sync --locked` and runs
+its fetch command when one is declared. It rejects Python outside
+3.11–3.13 and never changes the OMRG environment. A root-level `uv sync`
+installs OMRG; it does not provision engines.
+
+Set the route configuration in `.env`:
+
+```dotenv
+OCR_WORKERS_DIR=/absolute/path/to/ocr-workers
+OCR_ENGINE_PRIMARY=dots-mocr
+OCR_ENGINE_FALLBACK=paddleocr-vl
+OCR_WORKER_COMMAND=
+OCR_WORKER_ENV_DIR=
+```
+
+Each engine starts from `engines/<engine>/` using its `.venv` interpreter
+and `python -m omrg_ocr_worker_core`. An empty `OCR_WORKERS_DIR` makes
+folder-based routes unavailable. An explicit command can still supply
+the primary route.
+
+**Migration from the single worker:**
+
+1. Preserve existing model caches before removing an old worker directory.
+2. Provision the required engines under the new layout.
+3. Set `OCR_WORKERS_DIR` to the absolute `ocr-workers` path.
+4. Clear `OCR_WORKER_COMMAND` and `OCR_WORKER_ENV_DIR` to use named routes.
+5. Check the startup log for the selected routes and their availability.
+
+A retained `OCR_WORKER_COMMAND` overrides the primary engine setting.
+For the moved Paddle engine, use its `.venv/bin/python` executable with
+`-m omrg_ocr_worker_core` and set `OCR_WORKER_ENV_DIR` to the engine
+project directory. The fallback still resolves from `OCR_WORKERS_DIR`.
+
+Each engine uses `<engine folder>/.model-cache/` by default. Set
+`OMRG_OCR_MODEL_CACHE` consistently during provisioning and execution to
+use `$OMRG_OCR_MODEL_CACHE/<engine>/` outside the worktree. See the
+[Paddle cache record](../../ocr-workers/engines/paddleocr-vl/DATA_LOCATIONS.md)
+for preserved weights.
+
+Experiment 37 measured a peak of about 22 GiB of MPS memory for dots.mocr
+on Apple Silicon over 257 pages. One-page smoke tests showed only
+7–9.5 GiB. CPU execution is slower. For limited memory, set
+`OCR_ENGINE_PRIMARY=paddleocr-vl`. Leave dots-mocr unprovisioned if you
+do not accept its licence; a provisioned Paddle fallback can serve every
+worker request.
 
 ### Worker lifecycle
 
-The worker is lazy and long-lived, and the engine owns it.
+Each route has a lazy, long-lived worker owned by the OMRG engine or
+by the standalone ingestion operation. Identical routes share one client.
 
 1. Building an engine starts nothing. A metadata-only capability probe
    runs at the composition boundary. It reads versions and identities
-   only: it does not initialise Paddle, import model code, or load
-   weights.
-2. A clean PDF never starts the worker.
-3. The first PDF that actually dispatches starts one subprocess.
-4. Later OCR requests reuse that subprocess. One request is in flight at
-   a time.
-5. Engine shutdown closes it.
+   only: it does not initialise a model runtime or load weights.
+2. A PDF that no OCR condition selects starts no parsing worker.
+3. The first dispatch starts the selected route's subprocess.
+4. Later requests reuse that subprocess, with one request in flight per client.
+5. Owner shutdown closes every distinct route client.
 6. A timeout, crash, closed output stream, or protocol violation
    discards the handle. The next OCR request starts a fresh process. The
    failed request is never replayed automatically.
@@ -458,7 +548,9 @@ is a protocol failure, not a silent downgrade.
 
 The capability probe reports availability, protocol version, every
 worker package with its exact version, pipeline identity and revision,
-model identity and revision, and output-schema identity and version.
+model identity and revision, output-schema identity and version, and
+`backend_id`. Diagnostics use the answering engine's `backend_id`.
+A legacy worker without that field reports the generic `ocr_worker`.
 Missing, unusable, malformed, and incompatible workers all collapse to
 ONE stable unavailable fingerprint. The reason lives in the log, never
 in the fingerprint.
@@ -468,8 +560,8 @@ in the fingerprint.
 If a PDF needs OCR but no usable worker exists **before dispatch**,
 ingestion keeps `pdf-inspector`'s partial Markdown, marks the result
 degraded through the OCR metadata, logs an actionable warning naming
-`OCR_WORKER_COMMAND`, and continues the batch. Nothing is fabricated and
-no other file fails.
+`OCR_WORKERS_DIR` or the explicit `OCR_WORKER_COMMAND`, and continues
+the batch. Nothing is fabricated and no other file fails.
 
 If the worker fails **after** a complete request was written and
 flushed, that file returns a structured error instead. The partial
@@ -479,15 +571,20 @@ continues with the next file.
 
 ### OCR metadata on every PDF
 
-Four keys are stamped on both branches, so an operator can tell what
-happened by reading a retrieval result:
+Four base keys are stamped on both branches, so an operator can tell
+what happened by reading a retrieval result:
 
 | Key                 | Meaning                                   |
 | ------------------- | ----------------------------------------- |
-| `ocr_required`      | The routing gate said this PDF needs OCR. |
+| `ocr_required`      | The OCR gate or maths condition selected this PDF. |
 | `ocr_used`          | The worker actually parsed it.            |
-| `ocr_backend`       | `pdf_inspector` or `paddleocr_vl`.        |
+| `ocr_backend`       | `pdf_inspector`, `dots_mocr` or `paddleocr_vl`; legacy workers can report `ocr_worker`. |
 | `pages_needing_ocr` | Scalar count of flagged pages.            |
+
+When maths routing is enabled, `pages_maths_font` also records the
+number of pages with recognised maths fonts. It is separate from
+`pages_needing_ocr`, which counts pages flagged by pdf-inspector.
+Disabling maths routing omits `pages_maths_font`.
 
 Under the `page` routing unit two of these generalise: `ocr_used` is
 true when OCR produced the text of at least one page, local or worker;
@@ -504,12 +601,13 @@ Read them together:
 | `ocr_required` | `ocr_used` | `ocr_backend`   | What happened                                    |
 | -------------- | ---------- | --------------- | ------------------------------------------------ |
 | `false`        | `false`    | `pdf_inspector` | Fast path. Clean text extraction.                |
-| `true`         | `true`     | `paddleocr_vl`  | OCR fallback. Worker output.                     |
+| `true`         | `true`     | `dots_mocr`     | Primary engine output.                           |
+| `true`         | `true`     | `paddleocr_vl`  | Paddle engine output, including fallback use.     |
 | `true`         | `false`    | `pdf_inspector` | Degraded. Worker unavailable; partial text only. |
 
 `pages_needing_ocr` is stored as a count, never as the page list
 `pdf-inspector` returns internally: no vector store accepts a list-valued
-metadata field. All four keys are in `EXCLUDED_EMBED_METADATA_KEYS`, so
+metadata field. All these keys are in `EXCLUDED_EMBED_METADATA_KEYS`, so
 they are stored and returned but never embedded and never sent to an LLM.
 
 pdf-inspector decides which pages need OCR from a sample of at most 8

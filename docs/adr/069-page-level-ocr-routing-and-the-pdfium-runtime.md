@@ -122,7 +122,8 @@ downloading unless offline mode forbids it.
   the model identity and reindexes exactly then — the moment the
   emitted text could change.
 - The worker's Paddle-side page forwarding is validated only by the
-  operator-gated smoke test (`ocr-worker/smoke_test.py --provision`),
+  operator-gated smoke test (now
+  `ocr-workers/engines/paddleocr-vl/smoke_test.py --provision`),
   which task 4.3 extended with a page-listed request.
 
 ## Addendum (2026-09-28)

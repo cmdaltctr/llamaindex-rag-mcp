@@ -529,7 +529,7 @@ the registry must stay in agreement (a guard test enforces this).
 | `pypdf` | `plain` | Yes |
 | `pypdfium2` | `plain` | Yes |
 
-### OCR fallback and the isolated worker
+### OCR fallback and isolated engines
 
 The calibrated routing gate — which PDFs deserve OCR:
 
@@ -539,17 +539,55 @@ The calibrated routing gate — which PDFs deserve OCR:
 | `OCR_FALLBACK_MIN_CONFIDENCE` | `0.5` | Confidence floor for text-based PDFs. `0.0` is the never-trigger sentinel |
 | `OCR_FALLBACK_PAGE_FRACTION` | `0.10` | Flagged-page proportion that triggers OCR. `0.0` is the never-trigger sentinel |
 
-Worker operation — how to reach the worker:
+Engine routes and operation:
 
 | Variable | Default | What it does |
 |---|---|---|
-| `OCR_WORKER_COMMAND` | empty | Command that starts the worker. Empty means unavailable |
-| `OCR_WORKER_ENV_DIR` | empty | Worker virtual-environment directory |
-| `OCR_WORKER_REQUEST_TIMEOUT` | `300.0` | Seconds to wait for one parse response |
+| `OCR_WORKERS_DIR` | empty | Absolute path to `ocr-workers`. Empty disables folder-based routes |
+| `OCR_ENGINE_PRIMARY` | `dots-mocr` | Engine selected for every worker request |
+| `OCR_ENGINE_FALLBACK` | `paddleocr-vl` | Engine selected when the primary is unavailable before dispatch. Empty disables this route |
+| `OCR_WORKER_COMMAND` | empty | Explicit command overriding the primary route only. Empty uses the engine settings |
+| `OCR_WORKER_ENV_DIR` | empty | Working directory for the explicit command |
+| `OCR_WORKER_REQUEST_TIMEOUT` | `300.0` | Minimum timeout in seconds for one parse response |
+| `OCR_WORKER_SECONDS_PER_PAGE` | `120.0` | Per-page timeout allowance in seconds |
+| `OCR_MATHS_ROUTING_ENABLED` | `true` | Detect maths fonts on the pdf-inspector path and route affected pages |
+| `OCR_MATHS_PAGE_FRACTION` | `0.10` | Maths-page fraction that routes a whole document. Range 0.0–1.0; `0.0` disables this condition |
 
-Both groups are top-level fields beside `PDF_READER`, resolved once at
-the composition root and injected. Keep them apart: the gate is
-calibrated evidence, the worker fields are machine configuration.
+These settings are flat, top-level fields beside `PDF_READER`, resolved
+once at the composition root and injected. The timeout is
+`max(OCR_WORKER_REQUEST_TIMEOUT, requested_pages * OCR_WORKER_SECONDS_PER_PAGE)`.
+A 14-page request gets 1,680 seconds with the defaults.
+
+An unknown or unprovisioned engine is unavailable. If both routes are
+unavailable, the PDF keeps its available text. A worker failure after
+dispatch fails that file without retrying on the other engine.
+
+Maths pages skip local OCR under `OCR_ROUTING_UNIT=page`. Under
+`document`, the maths fraction adds a condition to the existing gate.
+`OCR_MATHS_PAGE_FRACTION=0.0` affects only the document unit. Use
+`OCR_MATHS_ROUTING_ENABLED=false` to disable maths routing for either unit.
+The master switch `OCR_FALLBACK_ENABLED=false` disables all OCR routing.
+
+Each engine has its own environment under `ocr-workers/engines/<engine>`.
+dots-mocr needs explicit model-licence acceptance. Over 257 pages,
+Experiment 37 measured a peak of about 22 GiB of Apple Silicon GPU memory
+through Metal Performance Shaders (MPS). One-page smoke tests showed only
+7–9.5 GiB, so plan for the larger figure. PaddleOCR-VL peaked at about
+15 GiB on CPU in the same run. CPU execution is slower. Set
+`OCR_ENGINE_PRIMARY=paddleocr-vl` on machines with limited memory.
+PyTorch and Paddle packages stay outside the OMRG environment.
+
+**Migration:** re-provision the required engines, set `OCR_WORKERS_DIR`,
+and clear `OCR_WORKER_COMMAND` to use named routes. An existing explicit
+command continues to override the primary, even when
+`OCR_ENGINE_PRIMARY=dots-mocr`. Update its executable, module and working
+directory if retaining that override. See
+[provisioning and migration](ingestion.md#provision-the-engines).
+
+`OMRG_OCR_MODEL_CACHE` is a process-level variable read by the worker core.
+When set, engine `<name>` uses `$OMRG_OCR_MODEL_CACHE/<name>/`; otherwise
+it uses its own `.model-cache/` directory. Set it consistently for
+provisioning and worker execution to preserve weights outside worktrees.
 
 ### OCR routing unit and the local OCR tier
 
@@ -590,8 +628,10 @@ missing.
 Identity consequences: an install that switches to `page` reindexes
 its sources once — a different engine reads the pages — and the
 payload additionally records the escalation threshold and the
-resolved model identity. On `document` the identity is byte-for-byte
-what it was; nothing reindexes.
+resolved model identity. The modular-engine upgrade separately changes
+identity for every source, including `document` installs: both route
+fingerprints and the maths-routing settings participate. Sources
+reprocess on their next ingestion; reading an index does not rebuild it.
 
 The packaged default is the promoted gate validated by Experiment 29
 ([ADR-065](../adr/065-ocr-fallback-gate-promoted-to-packaged-default.md)):
@@ -600,11 +640,11 @@ enabling the flag while leaving the thresholds at `0.0` silently misses
 threshold-flagged documents. With no worker provisioned, an OCR-required
 PDF keeps its partial extraction and the batch continues with an
 actionable warning. Set `OCR_FALLBACK_ENABLED=false` to disable routing
-entirely, or set both thresholds to `0.0` for classification-only
-routing, in which only `scanned` and `image_based` PDFs route.
+entirely. For classification-only routing under `document`, set both
+gate thresholds to `0.0` and disable maths routing. Only `scanned` and
+`image_based` PDFs then route.
 
-Full behaviour — provisioning, lifecycle, protocol, degraded path and
-the four OCR metadata keys — is in
+Full behaviour, including provisioning and OCR metadata, is in
 [the ingestion guide](ingestion.md#ocr-fallback-for-scanned-pdfs).
 
 ### Document backend
@@ -684,19 +724,19 @@ These settings are part of the index identity:
 | `EMBEDDING__TOKENIZER_MODEL` and `EMBEDDING__TOKENIZER_REVISION` | They set the Markdown token budget, so chunk boundaries move |
 | The **resolved** Markdown splitter | Model-token-aware or legacy fallback. The resolved value is recorded, not the configured one, so a corpus chunked under the fallback does not stay "matching" forever once the tokenizer becomes loadable |
 | `OCR_FALLBACK_ENABLED`, `OCR_FALLBACK_MIN_CONFIDENCE`, `OCR_FALLBACK_PAGE_FRACTION` | They decide which reader produced the text |
-| `OCR_ROUTING_UNIT` and, under `page`, the escalation threshold and the resolved local model identity | They decide which engine read each page and which pages the worker rereads. Recorded only when the unit is not `document`, so a default install's identity is unchanged |
-| The resolved OCR worker fingerprint | Availability, protocol version, every package and exact version, pipeline identity and revision, model identity and revision, output-schema identity and version |
+| `OCR_ROUTING_UNIT` and, under `page`, the escalation threshold and the resolved local model identity | They decide which engine reads each page. These local-tier fields are recorded only when the unit is not `document` |
+| Both resolved OCR route fingerprints | Availability, protocol version, every package and exact version, pipeline identity and revision, model identity and revision, output-schema identity and version, and backend identifier |
+| `OCR_MATHS_ROUTING_ENABLED`, `OCR_MATHS_PAGE_FRACTION` and the detector version | They decide whether maths pages reach OCR; recorded for every source |
 
 Two consequences worth planning for:
 
-1. **Provisioning the worker invalidates previously indexed sources —
-   including non-PDF ones.** The fingerprint is one field of a single
-   shared identity payload, not a per-file-type one. A PDF indexed while
-   the worker was unavailable is re-ingested once the worker appears,
-   which is the point; the Markdown and code files alongside it are
-   re-ingested too. Upgrading the worker's packages, model, pipeline,
-   protocol, or output schema has the same effect. Plan the re-ingest,
-   or provision the worker before you build the corpus.
+1. **Provisioning either engine changes identity for previously indexed
+   sources, including non-PDF sources.** Both route fingerprints belong
+   to the shared identity payload. A previously unavailable route
+   becoming available causes re-ingestion, including when it is the
+   fallback route. Package, model, pipeline, protocol and output-schema
+   changes have the same effect. Provision the required engines before
+   building the corpus, or plan for re-ingestion.
 2. **`EMBEDDING__QUERY_INSTRUCTION` deliberately does NOT count.** It
    changes query vectors only, never stored ones, so it is excluded from
    the identity on purpose. Set it, change it, or clear it freely: a
