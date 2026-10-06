@@ -5,6 +5,12 @@
 **Deciders:** Aizat
 **Tags:** ocr | ocr-worker | paddleocr | protocol-1.1 | experiment-34
 
+## Current code location
+
+Paths below record the original fix. The shared subset-PDF helper now
+lives in `ocr-workers/core/src/omrg_ocr_worker_core/pages.py`; its Paddle
+caller lives in `ocr-workers/engines/paddleocr-vl/src/omrg_ocr_paddleocr_vl/engine.py`.
+
 ## Context
 
 The worker protocol gained a page-listed request in 1.1 (change

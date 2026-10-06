@@ -1,0 +1,27 @@
+{
+  "backend_id": "dots_mocr",
+  "model": {
+    "identity": "rednote-hilab/dots.mocr",
+    "revision": "e539fbb52280393adc081b289ec597430a0f9031"
+  },
+  "output_schema": {
+    "id": "omrg.ocr.parse_output",
+    "version": "1"
+  },
+  "packages": {
+    "accelerate": "1.15.0",
+    "omrg-ocr-dots-mocr": "0.1.0",
+    "omrg-ocr-worker-core": "0.1.0",
+    "pillow": "12.3.0",
+    "pypdfium2": "5.13.0",
+    "qwen-vl-utils": "0.0.14",
+    "torch": "2.14.0",
+    "torchvision": "0.29.0",
+    "transformers": "4.57.6"
+  },
+  "pipeline": {
+    "identity": "dots-mocr-layout",
+    "revision": "prompt_layout_all_en+omrg-mps-1+layout-1"
+  },
+  "protocol_version": "1.1"
+}

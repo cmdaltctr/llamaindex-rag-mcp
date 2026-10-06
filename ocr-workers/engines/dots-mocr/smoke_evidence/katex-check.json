@@ -1,0 +1,17 @@
+{
+ "katex": "0.16.22",
+ "files": [
+  {
+   "file": "ocr-workers/engines/dots-mocr/smoke_evidence/eq01-p011.md",
+   "display": 4,
+   "inline": 18,
+   "errors": []
+  },
+  {
+   "file": "ocr-workers/engines/dots-mocr/smoke_evidence/io06-p028.md",
+   "display": 0,
+   "inline": 0,
+   "errors": []
+  }
+ ]
+}

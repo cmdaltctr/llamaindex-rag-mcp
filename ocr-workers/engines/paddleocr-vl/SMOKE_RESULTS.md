@@ -183,3 +183,53 @@ existing `AIK_py_LFI` alerts at the evidence-write calls in
 The main-environment Paddle-free check ran before every provisioned smoke run and passed. A final metadata check also reported `Paddle-free` for the root OMRG environment.
 
 The worker owns the Paddle packages, virtual environment, and model cache. No sibling worktree was modified. No file under `experiments/` was modified or executed.
+
+## Modular-engine addendum (2026-10-04)
+
+Change `modular-ocr-workers-dots-mocr`, tasks 2.1 and 2.2. The engine now
+runs on the shared worker core (`python -m omrg_ocr_worker_core`).
+
+Machine: Apple M5 Pro, 48 GB, macOS 27.0, uv 0.12.18. Model weights came
+from `OMRG_OCR_MODEL_CACHE=~/Development/DATA/omrg/ocr-models`, whose
+`paddleocr-vl` entry is an APFS clone of the preserved cache. The runs
+downloaded no model files. The cache size did not change (2,014,328 KB).
+
+### Provisioning (task 2.2)
+
+| Python | `provision.py paddleocr-vl` | Seconds | `--capabilities` |
+| --- | --- | --- | --- |
+| 3.11.16 | exit 0 | 33 | protocol 1.1, `backend_id` `paddleocr_vl` |
+| 3.12.14 | exit 0 | 21 | protocol 1.1, `backend_id` `paddleocr_vl` |
+| 3.13.15 | exit 0 | 21 | protocol 1.1, `backend_id` `paddleocr_vl` |
+
+The capability JSON was byte-identical on all three versions:
+
+```json
+{"backend_id":"paddleocr_vl","model":{"identity":"PaddleOCR-VL","revision":"1.6"},"output_schema":{"id":"omrg.ocr.parse_output","version":"1"},"packages":{"omrg-ocr-paddleocr-vl":"0.1.0","omrg-ocr-worker-core":"0.1.0","paddleocr":"3.7.0","paddlepaddle":"3.3.1","paddlex":"3.7.2"},"pipeline":{"identity":"paddleocr-vl","revision":"predict+restructure_pages"},"protocol_version":"1.1"}
+```
+
+The environment stays on Python 3.12 after the runs.
+
+### Output unchanged (task 2.1)
+
+1. Default smoke test, Python 3.12:
+   `python3 ocr-workers/engines/paddleocr-vl/smoke_test.py --python 3.12 --provision`.
+   Result: PASSED. Whole-document parse 34.99 s, then a page-listed parse
+   of page 1. This run refreshed `smoke_evidence/parse-python-3-12.json`,
+   which dated from protocol 1.0. The pipeline identity in that file
+   changed to `paddleocr-vl`, as the 2026-09-07 addendum above records.
+2. `bd03` pages 1–2 against Experiment 34:
+
+   ```bash
+   python3 ocr-workers/engines/paddleocr-vl/smoke_test.py --python 3.12 --provision \
+     --fixture <exp33>/corpus/natural/bd03.pdf --pages 1,2 \
+     --compare-dir experiments/34-worker-sample-review-2026-09-19/output/worker/bd03
+   ```
+
+   Result: PASSED. One page-listed request took 146.30 s (Experiment 34
+   recorded 156.2 s for the same request). `p001.md` (4,159 bytes) and
+   `p002.md` (3,745 bytes) are byte-identical to the Experiment 34 files.
+   Copies are in `smoke_evidence/pages-python-3-12-bd03-p00{1,2}.md`.
+
+The comparison was checked against a reference copy with one byte
+changed in `p002.md`. It reported the difference at byte 100 and exited 1.

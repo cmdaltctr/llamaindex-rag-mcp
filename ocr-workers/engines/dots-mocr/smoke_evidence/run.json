@@ -1,0 +1,21 @@
+{
+  "cases": [
+    {
+      "case": "eq01",
+      "chars": 3590,
+      "ok": true,
+      "page": 11,
+      "seconds": 73.8
+    },
+    {
+      "case": "io06",
+      "chars": 1173,
+      "ok": true,
+      "page": 28,
+      "seconds": 17.6
+    }
+  ],
+  "network": "denied by sandbox-exec",
+  "note": "the first case's seconds include model load",
+  "peak_memory_footprint_bytes": 10242885336
+}

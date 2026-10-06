@@ -5,6 +5,12 @@
 **Deciders:** Aizat
 **Tags:** ocr | ocr-worker | paddleocr | protocol-1.1 | experiment-34
 
+## Current code location
+
+Paths below record the original fix at commit `d3460bf`. The Paddle
+implementation now lives in
+`ocr-workers/engines/paddleocr-vl/src/omrg_ocr_paddleocr_vl/engine.py`.
+
 ## Context
 
 A protocol 1.1 page-listed request returns the joined Markdown and

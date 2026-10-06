@@ -377,6 +377,90 @@ def _validate_parse_response(
     return markdown
 
 
+def _run_page_check(plan: dict[str, Any], environment: dict[str, str]) -> int:
+    """Parse the listed pages in one request and compare them to a reference.
+
+    Used instead of the whole-document parse when ``--pages`` is given, so a
+    long fixture does not hit the parse timeout. With ``--compare-dir``, each
+    page's Markdown must equal ``<dir>/pNNN.md`` byte for byte (task 2.1).
+    """
+    pages: list[int] = plan["pages"]
+    request_id = SMOKE_REQUEST_ID + "-pages"
+    request = json.dumps(
+        {
+            "id": request_id,
+            "pages": pages,
+            "protocol_version": PAGES_PROTOCOL_VERSION,
+            "type": REQUEST_TYPE_PARSE,
+            "pdf_path": plan["fixture"],
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    started = time.perf_counter()
+    try:
+        parse = subprocess.run(  # noqa: S603 - fixed argv, no shell
+            plan["parse_command"],
+            input=request + "\n",
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            cwd=WORKER_DIR,
+            env=environment,
+            timeout=1800,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        print("error: page-listed parse timed out after 1800 seconds", file=sys.stderr)
+        return 1
+    print(f"page-listed parse elapsed seconds: {time.perf_counter() - started:.2f}")
+    lines = [entry for entry in parse.stdout.splitlines() if entry.strip()]
+    if parse.returncode != 0 or len(lines) != 1:
+        print(f"worker exit status: {parse.returncode}", file=sys.stderr)
+        print(f"worker stderr: {parse.stderr[-2000:]}", file=sys.stderr)
+        print("error: page-listed parse did not emit exactly one response line", file=sys.stderr)
+        return 1
+    try:
+        response = json.loads(lines[0])
+        _validate_parse_response(lines[0], plan["fixture"], expected_id=request_id, pages=pages)
+    except (json.JSONDecodeError, SmokeTestError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    print(f"page-listed parse response valid for pages {pages}")
+
+    evidence_name = plan["python_version"].replace(".", "-")
+    fixture_stem = Path(plan["fixture"]).stem
+    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    failed = False
+    for page, text in zip(pages, response["pages_markdown"], strict=True):
+        name = f"p{page:03d}.md"
+        (EVIDENCE_DIR / f"pages-python-{evidence_name}-{fixture_stem}-{name}").write_text(
+            text, encoding="utf-8"
+        )
+        if plan.get("compare_dir") is None:
+            continue
+        expected = (Path(plan["compare_dir"]) / name).read_bytes()
+        actual = text.encode("utf-8")
+        if actual == expected:
+            print(f"{name}: identical to reference ({len(actual)} bytes)")
+            continue
+        failed = True
+        offset = next(
+            (i for i, (a, b) in enumerate(zip(actual, expected, strict=False)) if a != b),
+            min(len(actual), len(expected)),
+        )
+        print(
+            f"{name}: DIFFERS from reference at byte {offset} "
+            f"({len(actual)} vs {len(expected)} bytes)",
+            file=sys.stderr,
+        )
+    if failed:
+        print("error: page Markdown differs from the reference", file=sys.stderr)
+        return 1
+    print("OCR PASSED")
+    return 0
+
+
 def _run_provisioned(plan: dict[str, Any]) -> int:
     """Provision, probe, and parse once. Operator-approved path only."""
     environment = _worker_environment()
@@ -423,6 +507,8 @@ def _run_provisioned(plan: dict[str, Any]) -> int:
         return 1
     print(f"capability fingerprint: {json.dumps(fingerprint, sort_keys=True)}")
     print("capability probe valid: protocol, packages, pipeline, model, output schema")
+    if plan.get("pages") is not None:
+        return _run_page_check(plan, environment)
 
     request = json.dumps(
         {
@@ -567,6 +653,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_false",
         help="dry-run: validate and print the plan only (default)",
     )
+    parser.add_argument(
+        "--pages",
+        default=None,
+        help="comma-separated 1-based pages: parse only these, in one request",
+    )
+    parser.add_argument(
+        "--compare-dir",
+        default=None,
+        help="with --pages: folder of reference pNNN.md files to match byte for byte",
+    )
     parser.set_defaults(provision=False)
     args = parser.parse_args(argv)
 
@@ -582,6 +678,10 @@ def main(argv: list[str] | None = None) -> int:
     except (SmokeTestError, provision.UnsupportedPythonError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+    if args.pages:
+        plan["pages"] = [int(page) for page in args.pages.split(",")]
+    if args.compare_dir:
+        plan["compare_dir"] = str(Path(args.compare_dir).expanduser().resolve())
 
     version_text = plan["python_version"]
     interpreter = check_interpreter_available(version_text)

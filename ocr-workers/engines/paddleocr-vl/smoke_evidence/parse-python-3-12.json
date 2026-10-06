@@ -11,11 +11,11 @@
       "version": "1"
     },
     "page_count": 1,
-    "pipeline": "PaddleOCRVL",
+    "pipeline": "paddleocr-vl",
     "pipeline_revision": "predict+restructure_pages",
     "reader": "paddleocr-vl"
   },
   "ok": true,
-  "protocol_version": "1.0",
+  "protocol_version": "1.1",
   "type": "parse_result"
 }
