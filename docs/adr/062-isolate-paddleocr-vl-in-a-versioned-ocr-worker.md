@@ -4,6 +4,17 @@
 - **Status:** Accepted — the worker architecture is implemented, tested, and explicitly approved by the operator on 2026-09-14; the OCR default disposition is governed by ADR-065
 - **Deciders:** Dr Muhammad Aizat Bin Md Hawari (OCR default decision, 2026-09-10; worker architecture approval, 2026-09-14)
 
+## Current worker locations
+
+The paths below record the layout at the time of this decision. The
+modular-engine change moves PaddleOCR-VL to
+`ocr-workers/engines/paddleocr-vl/`, shared protocol and capability code
+to `ocr-workers/core/`, and provisioning to `ocr-workers/provision.py`.
+Preserved smoke evidence is in
+[`ocr-workers/engines/paddleocr-vl/SMOKE_RESULTS.md`](../../ocr-workers/engines/paddleocr-vl/SMOKE_RESULTS.md).
+Use the [current provisioning guide](../guides/ingestion.md#provision-the-engines)
+for installation commands.
+
 ## Recovery correction (2026-09-09)
 
 The earlier status change from Proposed to Accepted was not backed by recorded

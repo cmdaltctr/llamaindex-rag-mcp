@@ -1,0 +1,546 @@
+{
+ "rule": "maths when the page image shows at least one mathematical expression typeset as mathematics: a display equation, or an inline expression with a variable, operator or Greek letter; section numbers and plain numerals are not maths",
+ "labeller": "operator (Dr Muhammad Aizat Bin Md Hawari)",
+ "merged_utc": "2026-10-05T08:01:15Z",
+ "source": "operator labels from page images (output/maths_labels.html), detector flags hidden",
+ "documents": {
+  "eq01": {
+   "1": {
+    "label": "no_maths"
+   },
+   "2": {
+    "label": "maths"
+   },
+   "3": {
+    "label": "maths"
+   },
+   "4": {
+    "label": "maths"
+   },
+   "5": {
+    "label": "maths"
+   },
+   "6": {
+    "label": "no_maths"
+   },
+   "7": {
+    "label": "maths"
+   },
+   "8": {
+    "label": "no_maths"
+   },
+   "9": {
+    "label": "no_maths"
+   },
+   "10": {
+    "label": "maths"
+   },
+   "11": {
+    "label": "maths"
+   },
+   "12": {
+    "label": "maths"
+   },
+   "13": {
+    "label": "maths"
+   },
+   "14": {
+    "label": "maths"
+   }
+  },
+  "mp01": {
+   "1": {
+    "label": "no_maths"
+   },
+   "2": {
+    "label": "maths"
+   },
+   "3": {
+    "label": "no_maths"
+   },
+   "4": {
+    "label": "maths"
+   },
+   "5": {
+    "label": "maths"
+   },
+   "6": {
+    "label": "maths"
+   },
+   "7": {
+    "label": "maths"
+   },
+   "8": {
+    "label": "maths"
+   },
+   "9": {
+    "label": "maths"
+   },
+   "10": {
+    "label": "maths"
+   },
+   "11": {
+    "label": "maths"
+   },
+   "12": {
+    "label": "maths"
+   },
+   "13": {
+    "label": "no_maths"
+   },
+   "14": {
+    "label": "no_maths"
+   },
+   "15": {
+    "label": "no_maths"
+   },
+   "16": {
+    "label": "maths"
+   },
+   "17": {
+    "label": "maths"
+   },
+   "18": {
+    "label": "maths"
+   },
+   "19": {
+    "label": "maths"
+   },
+   "20": {
+    "label": "maths"
+   },
+   "21": {
+    "label": "maths"
+   },
+   "22": {
+    "label": "maths"
+   },
+   "23": {
+    "label": "maths"
+   }
+  },
+  "mp05": {
+   "1": {
+    "label": "maths"
+   },
+   "2": {
+    "label": "maths"
+   },
+   "3": {
+    "label": "maths"
+   },
+   "4": {
+    "label": "maths"
+   },
+   "5": {
+    "label": "maths"
+   },
+   "6": {
+    "label": "maths"
+   },
+   "7": {
+    "label": "maths"
+   },
+   "8": {
+    "label": "maths"
+   },
+   "9": {
+    "label": "maths"
+   },
+   "10": {
+    "label": "maths"
+   },
+   "11": {
+    "label": "maths"
+   },
+   "12": {
+    "label": "maths"
+   },
+   "13": {
+    "label": "maths"
+   },
+   "14": {
+    "label": "maths"
+   },
+   "15": {
+    "label": "maths"
+   },
+   "16": {
+    "label": "maths"
+   },
+   "17": {
+    "label": "no_maths"
+   },
+   "18": {
+    "label": "no_maths"
+   },
+   "19": {
+    "label": "no_maths"
+   },
+   "20": {
+    "label": "no_maths"
+   }
+  },
+  "mp03": {
+   "1": {
+    "label": "maths"
+   },
+   "2": {
+    "label": "maths"
+   },
+   "3": {
+    "label": "maths"
+   },
+   "4": {
+    "label": "maths"
+   },
+   "5": {
+    "label": "maths"
+   },
+   "6": {
+    "label": "maths"
+   },
+   "7": {
+    "label": "maths"
+   },
+   "8": {
+    "label": "maths"
+   },
+   "9": {
+    "label": "maths"
+   },
+   "10": {
+    "label": "maths"
+   },
+   "11": {
+    "label": "maths"
+   },
+   "12": {
+    "label": "maths"
+   },
+   "13": {
+    "label": "maths"
+   },
+   "14": {
+    "label": "maths"
+   },
+   "15": {
+    "label": "maths"
+   },
+   "16": {
+    "label": "maths"
+   },
+   "17": {
+    "label": "maths"
+   },
+   "18": {
+    "label": "maths"
+   },
+   "19": {
+    "label": "maths"
+   },
+   "20": {
+    "label": "maths"
+   },
+   "21": {
+    "label": "no_maths"
+   }
+  },
+  "mp04": {
+   "1": {
+    "label": "no_maths"
+   },
+   "2": {
+    "label": "no_maths"
+   },
+   "3": {
+    "label": "no_maths"
+   },
+   "4": {
+    "label": "no_maths"
+   },
+   "5": {
+    "label": "no_maths"
+   },
+   "6": {
+    "label": "maths"
+   },
+   "7": {
+    "label": "maths"
+   },
+   "8": {
+    "label": "no_maths"
+   },
+   "9": {
+    "label": "maths"
+   },
+   "10": {
+    "label": "maths"
+   },
+   "11": {
+    "label": "maths"
+   },
+   "12": {
+    "label": "maths"
+   },
+   "13": {
+    "label": "maths"
+   },
+   "14": {
+    "label": "maths"
+   },
+   "15": {
+    "label": "maths"
+   },
+   "16": {
+    "label": "maths"
+   },
+   "17": {
+    "label": "maths"
+   },
+   "18": {
+    "label": "maths"
+   },
+   "19": {
+    "label": "maths"
+   },
+   "20": {
+    "label": "maths"
+   },
+   "21": {
+    "label": "maths"
+   },
+   "22": {
+    "label": "maths"
+   },
+   "23": {
+    "label": "maths"
+   },
+   "24": {
+    "label": "no_maths"
+   },
+   "25": {
+    "label": "no_maths"
+   },
+   "26": {
+    "label": "no_maths"
+   },
+   "27": {
+    "label": "no_maths"
+   },
+   "28": {
+    "label": "no_maths"
+   }
+  },
+  "pc01": {
+   "1": {
+    "label": "no_maths"
+   },
+   "2": {
+    "label": "no_maths"
+   },
+   "3": {
+    "label": "no_maths"
+   },
+   "4": {
+    "label": "no_maths"
+   },
+   "5": {
+    "label": "no_maths"
+   },
+   "6": {
+    "label": "no_maths"
+   },
+   "7": {
+    "label": "no_maths"
+   },
+   "8": {
+    "label": "no_maths"
+   },
+   "9": {
+    "label": "no_maths"
+   },
+   "10": {
+    "label": "no_maths"
+   },
+   "11": {
+    "label": "no_maths"
+   },
+   "12": {
+    "label": "no_maths"
+   },
+   "13": {
+    "label": "no_maths"
+   },
+   "14": {
+    "label": "no_maths"
+   },
+   "15": {
+    "label": "no_maths"
+   },
+   "16": {
+    "label": "no_maths"
+   },
+   "17": {
+    "label": "no_maths"
+   },
+   "18": {
+    "label": "no_maths"
+   },
+   "19": {
+    "label": "no_maths"
+   },
+   "20": {
+    "label": "no_maths"
+   },
+   "21": {
+    "label": "no_maths"
+   },
+   "22": {
+    "label": "no_maths"
+   },
+   "23": {
+    "label": "no_maths"
+   },
+   "24": {
+    "label": "no_maths"
+   }
+  },
+  "bd03": {
+   "4": {
+    "label": "maths"
+   },
+   "6": {
+    "label": "maths",
+    "note": "chemical equation"
+   },
+   "1": {
+    "label": "no_maths"
+   },
+   "2": {
+    "label": "no_maths"
+   },
+   "3": {
+    "label": "no_maths"
+   },
+   "5": {
+    "label": "no_maths"
+   },
+   "7": {
+    "label": "no_maths"
+   },
+   "8": {
+    "label": "no_maths"
+   },
+   "9": {
+    "label": "no_maths"
+   },
+   "10": {
+    "label": "no_maths"
+   },
+   "11": {
+    "label": "no_maths"
+   },
+   "12": {
+    "label": "no_maths"
+   },
+   "13": {
+    "label": "no_maths"
+   },
+   "14": {
+    "label": "no_maths"
+   },
+   "15": {
+    "label": "no_maths"
+   },
+   "16": {
+    "label": "no_maths"
+   },
+   "17": {
+    "label": "no_maths"
+   },
+   "18": {
+    "label": "no_maths"
+   },
+   "19": {
+    "label": "no_maths"
+   },
+   "20": {
+    "label": "no_maths"
+   },
+   "21": {
+    "label": "no_maths"
+   },
+   "22": {
+    "label": "no_maths"
+   },
+   "23": {
+    "label": "no_maths"
+   },
+   "24": {
+    "label": "no_maths"
+   },
+   "25": {
+    "label": "no_maths"
+   }
+  },
+  "bd01": {
+   "1": {
+    "label": "no_maths"
+   },
+   "2": {
+    "label": "no_maths"
+   },
+   "3": {
+    "label": "no_maths"
+   },
+   "4": {
+    "label": "no_maths"
+   },
+   "5": {
+    "label": "no_maths"
+   },
+   "6": {
+    "label": "no_maths"
+   }
+  },
+  "bd02": {
+   "1": {
+    "label": "no_maths"
+   },
+   "2": {
+    "label": "no_maths"
+   },
+   "3": {
+    "label": "maths"
+   },
+   "4": {
+    "label": "no_maths"
+   },
+   "5": {
+    "label": "no_maths"
+   },
+   "6": {
+    "label": "no_maths"
+   },
+   "7": {
+    "label": "no_maths"
+   },
+   "8": {
+    "label": "no_maths"
+   },
+   "9": {
+    "label": "no_maths"
+   },
+   "10": {
+    "label": "no_maths"
+   },
+   "11": {
+    "label": "no_maths"
+   },
+   "12": {
+    "label": "no_maths"
+   }
+  }
+ }
+}

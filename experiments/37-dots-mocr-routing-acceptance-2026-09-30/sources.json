@@ -1,0 +1,242 @@
+{
+  "description": "Experiment 37 document provenance. Reused documents point at their Experiment 33 or 34 record; the SHA-256 was recomputed on 2026-10-04 and matches. New documents carry their own URL, licence, version and SHA-256. PDFs live in gitignored corpus/ (symlinks to the v3 worktree for reused documents).",
+  "reused_from": {
+    "experiment_33": "experiments/33-ocr-routing-natural-positive-2026-09-17/sources.json (freeze.py --check verified 2026-10-04)",
+    "experiment_34": "experiments/34-worker-sample-review-2026-09-19/protocol.md (eq01 = arXiv 1312.6114v11)"
+  },
+  "documents": [
+    {
+      "doc_id": "bd01",
+      "set": "negative_control",
+      "origin": "experiment_33",
+      "local_path": "corpus/natural/bd01.pdf",
+      "page_count": 6,
+      "sha256": "80c2a5283be05dc07c84d2530df139f94e0df09ff55a1c827edde984d99fee22",
+      "label_pages": true
+    },
+    {
+      "doc_id": "bd02",
+      "set": "negative_control",
+      "origin": "experiment_33",
+      "local_path": "corpus/natural/bd02.pdf",
+      "page_count": 12,
+      "sha256": "716c6108395e506ed9d30f2da8ed14d318a06285fa85980a180517dc3cf01009",
+      "label_pages": true
+    },
+    {
+      "doc_id": "bd03",
+      "set": "negative_control",
+      "origin": "experiment_33",
+      "local_path": "corpus/natural/bd03.pdf",
+      "page_count": 25,
+      "sha256": "f32811922af4671de6fdf1f306d16eb1d8ba3c17007646418784016579d04578",
+      "label_pages": true
+    },
+    {
+      "doc_id": "io04",
+      "set": "scanned",
+      "origin": "experiment_33",
+      "local_path": "corpus/natural/io04.pdf",
+      "page_count": 52,
+      "sha256": "acda23173911e63b770475bb8c5d42291cf929056632374cbe3b3059ea9911e0"
+    },
+    {
+      "doc_id": "io06",
+      "set": "scanned",
+      "origin": "experiment_33",
+      "local_path": "corpus/natural/io06.pdf",
+      "page_count": 78,
+      "sha256": "78e32f452590de64799dfd8568bec700042b6abfff250bbfad87c1f6a2c65614"
+    },
+    {
+      "doc_id": "tl03",
+      "set": "scanned",
+      "origin": "experiment_33",
+      "local_path": "corpus/natural/tl03.pdf",
+      "page_count": 26,
+      "sha256": "e46385e89a9005eb3b74dc52a6111177f059618b2b3e2f104fe4ff560b0a5f5a"
+    },
+    {
+      "doc_id": "io01",
+      "set": "script_handwriting",
+      "origin": "experiment_33",
+      "local_path": "corpus/natural/io01.pdf",
+      "page_count": 49,
+      "sha256": "a00589f5f675aa111d4ed5261401fa6b43a02efc46a46e193d6cb4b7169c3c01"
+    },
+    {
+      "doc_id": "io02",
+      "set": "script_handwriting",
+      "origin": "experiment_33",
+      "local_path": "corpus/natural/io02.pdf",
+      "page_count": 16,
+      "sha256": "deb63aa687c2b2a4525e5846b33dfff2b498b52a2f2379cd48e8e1a774def0b0"
+    },
+    {
+      "doc_id": "io03",
+      "set": "script_handwriting",
+      "origin": "experiment_33",
+      "local_path": "corpus/natural/io03.pdf",
+      "page_count": 5,
+      "sha256": "c64807a52f0d746f1557dbe6a1568221e4a845fa2e9cc39aacc8f0bfc1266754"
+    },
+    {
+      "doc_id": "io07",
+      "set": "script_handwriting",
+      "origin": "experiment_33",
+      "local_path": "corpus/natural/io07.pdf",
+      "page_count": 66,
+      "sha256": "9e288b798368747bb1448a0b760f554642cdb211fcbd8865ab703fcc4c661c19"
+    },
+    {
+      "doc_id": "rf06",
+      "set": "script_handwriting",
+      "origin": "experiment_33",
+      "local_path": "corpus/natural/rf06.pdf",
+      "page_count": 89,
+      "sha256": "b385f878b7788c245f1d41c06dd8b9d592d8620899eeed4d98289341fa99dfb9"
+    },
+    {
+      "doc_id": "rf07",
+      "set": "script_handwriting",
+      "origin": "experiment_33",
+      "local_path": "corpus/natural/rf07.pdf",
+      "page_count": 63,
+      "sha256": "0a5b8762d151659545b6bd8775462236559c017ffb1b306d8fb3c283cf8ac215"
+    },
+    {
+      "doc_id": "eq01",
+      "set": "maths_positive",
+      "label_pages": true,
+      "origin": "experiment_34",
+      "title": "Auto-Encoding Variational Bayes",
+      "first_author": "Kingma",
+      "year": 2013,
+      "field": "stat.ML",
+      "source": "arxiv",
+      "source_identifier": "1312.6114v11",
+      "pdf_url": "https://arxiv.org/pdf/1312.6114v11",
+      "licence": "arXiv non-exclusive distribution licence",
+      "local_path": "corpus/exp34/eq01.pdf",
+      "page_count": 14,
+      "bytes": 3926758,
+      "sha256": "bdcb63b79ed88f64f8ee2d43a721930d01dde5441a4dba20ecaa2342b34e017c"
+    },
+    {
+      "doc_id": "mp01",
+      "set": "maths_positive",
+      "slot": "pdfLaTeX with glyphtounicode",
+      "label_pages": true,
+      "origin": "new",
+      "title": "Modular counting of subgraphs: Matchings, matching-splittable graphs, and paths",
+      "first_author": "Curticapean",
+      "year": 2021,
+      "field": "cs.CC (ESA 2021, lipics-v2021.cls v3.1.1)",
+      "source": "arxiv",
+      "source_identifier": "2107.00629v1",
+      "pdf_url": "https://arxiv.org/pdf/2107.00629v1",
+      "licence": "CC BY 4.0",
+      "local_path": "corpus/maths/mp01.pdf",
+      "page_count": 23,
+      "bytes": 840928,
+      "sha256": "c161931a077f21a0c2669ecf6be29c54cf97ddd6ec2d92821bfe9f95c9c093c5",
+      "downloaded": "2026-10-04",
+      "slot_check": "Producer pdfTeX-1.40.21; all 12 LMMath* fonts and MSAM10/MSBM10 carry /ToUnicode (glyphtounicode confirmed)"
+    },
+    {
+      "doc_id": "mp05",
+      "set": "maths_positive",
+      "slot": "Word with Cambria Math",
+      "label_pages": true,
+      "origin": "new",
+      "title": "Regularization by epsilon-metric. II",
+      "first_author": "Ivashchuk",
+      "year": 2020,
+      "field": "hep-th",
+      "source": "arxiv",
+      "source_identifier": "2002.10527v1",
+      "pdf_url": "https://arxiv.org/pdf/2002.10527v1",
+      "licence": "arXiv non-exclusive distribution licence",
+      "local_path": "corpus/maths/mp05.pdf",
+      "page_count": 20,
+      "bytes": 581697,
+      "sha256": "0155f5fbd0acdfa5b5a6eb26b402c8fc7344b2de902233cbd44cbba0b3fe6fb0",
+      "downloaded": "2026-10-04",
+      "slot_check": "Producer Microsoft Word 2010; CambriaMath embedded (backup used because mp02 has no Cambria Math)"
+    },
+    {
+      "doc_id": "mp03",
+      "set": "maths_positive",
+      "label_pages": true,
+      "origin": "new",
+      "title": "Elliptic curves with large rank over function fields",
+      "first_author": "Ulmer",
+      "year": 2004,
+      "field": "math.NT",
+      "source": "arxiv",
+      "source_identifier": "math/0109163v2",
+      "pdf_url": "https://arxiv.org/pdf/math/0109163v2",
+      "licence": "arXiv assumed licence (1991-2003 submissions)",
+      "local_path": "corpus/maths/mp03.pdf",
+      "page_count": 21,
+      "bytes": 217861,
+      "sha256": "fe6bd2c89d5c7fa7f06d838126a208fa0db7d0b03dc288cbab9f8a1a0fee32a2",
+      "downloaded": "2026-10-04"
+    },
+    {
+      "doc_id": "mp04",
+      "set": "maths_positive",
+      "label_pages": true,
+      "origin": "new",
+      "title": "Polynomial-Time Algorithms for Prime Factorization and Discrete Logarithms on a Quantum Computer",
+      "first_author": "Shor",
+      "year": 1996,
+      "field": "quant-ph",
+      "source": "arxiv",
+      "source_identifier": "quant-ph/9508027v2",
+      "pdf_url": "https://arxiv.org/pdf/quant-ph/9508027v2",
+      "licence": "arXiv assumed licence (1991-2003 submissions)",
+      "local_path": "corpus/maths/mp04.pdf",
+      "page_count": 28,
+      "bytes": 315663,
+      "sha256": "96ba03bbfa27ea6a9ab5f1795cb62166948a6de4d8da84f9f43044bb5ab58838",
+      "downloaded": "2026-10-04"
+    },
+    {
+      "doc_id": "pc01",
+      "set": "negative_control",
+      "slot": "prose-only LaTeX paper",
+      "label_pages": true,
+      "origin": "new",
+      "title": "Remembering Netizens: An interview with Ronda Hauben",
+      "first_author": "Miller",
+      "year": 2022,
+      "field": "cs.CY",
+      "source": "arxiv",
+      "source_identifier": "2210.02978v1",
+      "pdf_url": "https://arxiv.org/pdf/2210.02978v1",
+      "licence": "arXiv non-exclusive distribution licence",
+      "local_path": "corpus/maths/pc01.pdf",
+      "page_count": 24,
+      "bytes": 549218,
+      "sha256": "09bc12b79ed9895f2a444588a3ee01f795a96cf08220dd6832ea677409c0c5bb",
+      "downloaded": "2026-10-04",
+      "slot_check": "Producer pdfTeX-1.40.21; fonts SF* (cm-super text) and Umj (CJK), no maths font"
+    }
+  ],
+  "rejected": [
+    {
+      "doc_id": "mp02",
+      "slot": "Word with Cambria Math",
+      "title": "Gap opening of single-layer graphene under continuum model",
+      "first_author": "Lin",
+      "source_identifier": "1106.0083v2",
+      "local_path": "corpus/maths/mp02.pdf",
+      "page_count": 17,
+      "bytes": 419561,
+      "sha256": "68ad7a0696ed90e7e5de68bfe924fbef559de445e507d98d41e5731a57d7007f",
+      "downloaded": "2026-10-04",
+      "reason": "Producer Microsoft Office Word 2007, but the equations use Symbol and MT Extra (MathType / Equation Editor 3.0), not Cambria Math. Neither font is on the maths list, so the detector cannot see Word + MathType maths. Kept on disk, not in any run."
+    }
+  ]
+}

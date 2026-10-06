@@ -38,6 +38,9 @@ from typing import Any
 
 from ..ocr_worker.client import OcrWorkerError
 from ..ocr_worker.protocol import PAGES_PROTOCOL_VERSION, ParseSuccess
+from ..ocr_worker.routes import OcrRoutes, backend_id_of, request_timeout
+from .maths_routing import detect_maths_pages, maths_condition, split_page_routes
+from .maths_routing import stamp_maths_count as _stamp_maths
 from .ocr_policy import OCR_UNCONDITIONAL_TYPES
 from .page_routing import (
     OCR_BACKEND_LOCAL_OCR,
@@ -46,7 +49,6 @@ from .page_routing import (
     PAGE_SOURCE_UNRESOLVED,
     PAGE_SOURCE_WORKER,
     LocalOcrPage,
-    PageEvidence,
     PageResult,
     local_ocr,
     merge_pages,
@@ -55,11 +57,9 @@ from .page_routing import (
 
 logger = logging.getLogger(__name__)
 
-#: Diagnostic backend identifiers (task 2.10). The fast path and the
-#: degraded path both ran pdf-inspector alone; only the worker path
-#: may claim the isolated backend.
+#: The fast and degraded paths ran pdf-inspector alone. A worker result
+#: names the answering engine's ``backend_id`` (design D6).
 OCR_BACKEND_FAST_PATH = "pdf_inspector"
-OCR_BACKEND_WORKER_PATH = "paddleocr_vl"
 
 
 class OcrPostDispatchError(RuntimeError):
@@ -113,13 +113,14 @@ class OcrRoutedPdfInspector:
             inner: The concrete pdf-inspector reader instance.
             settings: Injected settings carrying the routing gate and
                 the worker request timeout.
-            ocr_client: Injected managed OCR worker client (engine- or
-                operation-owned). ``None`` means no worker is wired —
-                OCR-required files degrade deterministically.
+            ocr_client: Injected :class:`OcrRoutes` (engine- or
+                operation-owned), or one managed client, which becomes a
+                primary-only route pair. ``None`` means no worker is
+                wired: OCR-required files degrade deterministically.
         """
         self._inner = inner
         self._settings = settings
-        self._ocr_client = ocr_client
+        self._routes = OcrRoutes.of(ocr_client)
 
     def load_data(self, file: Path, *args: Any, **kwargs: Any) -> list:
         """Read one PDF, routing it through the OCR gate.
@@ -149,13 +150,16 @@ class OcrRoutedPdfInspector:
         if getattr(self._settings, "ocr_routing_unit", "document") == "page":
             return self._page_unit_documents(file, documents[0])
         evidence = documents[0].metadata
+        page_count = int(evidence.get("page_count", 0))
+        maths_pages = detect_maths_pages(file, self._settings)
+        _stamp_maths(evidence, maths_pages)
         required = ocr_required_by_gate(
             pdf_type=str(evidence.get("pdf_type", "")),
             pdf_confidence=float(evidence.get("pdf_confidence", 1.0)),
             pages_needing_ocr=int(evidence.get("pages_needing_ocr", 0)),
-            page_count=int(evidence.get("page_count", 0)),
+            page_count=page_count,
             settings=self._settings,
-        )
+        ) or maths_condition(maths_pages, page_count, self._settings)
         if not required:
             _stamp_ocr_diagnostics(
                 evidence,
@@ -165,8 +169,8 @@ class OcrRoutedPdfInspector:
             )
             return documents
 
-        client = self._ocr_client
-        if client is None or not client.fingerprint.available:
+        client = self._routes.select()
+        if client is None:
             _stamp_ocr_diagnostics(
                 evidence,
                 ocr_required=True,
@@ -176,9 +180,10 @@ class OcrRoutedPdfInspector:
             pdf_type = evidence.get("pdf_type", "")
             logger.warning(
                 "OCR required for %s (pdf_type=%s, %s page(s) flagged) but the "
-                "isolated worker is unavailable — keeping the partial "
-                "pdf-inspector extraction. Provision the worker environment "
-                "and set OCR_WORKER_COMMAND to enable document understanding.",
+                "OCR routes are unavailable — keeping the partial "
+                "pdf-inspector extraction. Provision an engine and set "
+                "OCR_WORKERS_DIR (or OCR_WORKER_COMMAND) to enable document "
+                "understanding.",
                 getattr(file, "name", file),
                 pdf_type,
                 "classification-flagged"
@@ -188,12 +193,14 @@ class OcrRoutedPdfInspector:
             return documents
 
         try:
-            result = client.parse(str(file))
+            result = client.parse(str(file), timeout=request_timeout(self._settings, page_count))
         except OcrWorkerError as exc:
             raise OcrPostDispatchError(exc.code, exc.message) from exc
-        return self._worker_document(evidence, result)
+        return self._worker_document(evidence, result, backend_id_of(client))
 
-    def _worker_document(self, evidence: dict[str, Any], result: ParseSuccess) -> list:
+    def _worker_document(
+        self, evidence: dict[str, Any], result: ParseSuccess, backend: str
+    ) -> list:
         """Build the worker-path document, preserving provenance metadata."""
         from llama_index.core import Document
 
@@ -202,7 +209,7 @@ class OcrRoutedPdfInspector:
             merged,
             ocr_required=True,
             ocr_used=True,
-            ocr_backend=OCR_BACKEND_WORKER_PATH,
+            ocr_backend=backend,
         )
         return [Document(text=result.markdown, metadata=merged)]
 
@@ -240,13 +247,16 @@ class OcrRoutedPdfInspector:
         evidence = page_evidence(file)
         page_count = len(evidence)
         flagged = {entry.page for entry in evidence if entry.needs_ocr}
+        maths_pages = detect_maths_pages(file, self._settings)
+        # Maths pages skip the local tier and join the one worker request.
+        direct, local_pages_wanted = split_page_routes(flagged, maths_pages)
 
         results: list[PageResult] = []
         placed: set[int] = set()
-        escalated: dict[int, LocalOcrPage] = {}
-        if flagged:
+        escalated: dict[int, LocalOcrPage | None] = dict.fromkeys(direct)
+        if local_pages_wanted:
             try:
-                local_pages = local_ocr(file, sorted(flagged), settings=self._settings)
+                local_pages = local_ocr(file, local_pages_wanted, settings=self._settings)
             except Exception as exc:  # noqa: BLE001 - a missing runtime degrades, never fails
                 logger.warning(
                     "Local OCR tier unavailable for %s (%s: %s); %d flagged page(s) "
@@ -254,7 +264,7 @@ class OcrRoutedPdfInspector:
                     getattr(file, "name", file),
                     type(exc).__name__,
                     exc,
-                    len(flagged),
+                    len(local_pages_wanted),
                 )
             else:
                 for page in local_pages:
@@ -266,7 +276,9 @@ class OcrRoutedPdfInspector:
                         )
                         placed.add(page.page)
 
-        worker_text = self._escalated_worker_text(file, sorted(escalated)) if escalated else {}
+        worker_text, backend = (
+            self._escalated_worker_text(file, sorted(escalated)) if escalated else ({}, None)
+        )
 
         for entry in evidence:
             if entry.page in placed:
@@ -275,7 +287,9 @@ class OcrRoutedPdfInspector:
                 text = worker_text.get(entry.page, "")
                 if text:
                     results.append(
-                        PageResult(page=entry.page, text=text, source=PAGE_SOURCE_WORKER)
+                        PageResult(
+                            page=entry.page, text=text, source=PAGE_SOURCE_WORKER, producer=backend
+                        )
                     )
                 else:
                     # The escalation did not resolve this page: the worker
@@ -283,12 +297,13 @@ class OcrRoutedPdfInspector:
                     # best available text is kept; no marker is inserted.
                     # Kept local OCR text still names its producer.
                     local_page = escalated[entry.page]
+                    local_text = local_page.text if local_page is not None else ""
                     results.append(
                         PageResult(
                             page=entry.page,
-                            text=self._fallback_text(local_page, entry),
+                            text=local_text if local_text.strip() else entry.markdown,
                             source=PAGE_SOURCE_UNRESOLVED,
-                            producer=OCR_BACKEND_LOCAL_OCR if local_page.text.strip() else None,
+                            producer=OCR_BACKEND_LOCAL_OCR if local_text.strip() else None,
                         )
                     )
             elif entry.page in flagged:
@@ -308,11 +323,12 @@ class OcrRoutedPdfInspector:
         metadata["pages_needing_ocr"] = len(flagged)
         _stamp_ocr_diagnostics(
             metadata,
-            ocr_required=bool(flagged),
+            ocr_required=bool(flagged or direct),
             ocr_used=merged.ocr_used,
             ocr_backend=merged.ocr_backend,
         )
         metadata.update(merged.counts)
+        _stamp_maths(metadata, maths_pages)
 
         if not merged.text and inner_document.text:
             # ADR-066 rescue of last resort: the scan produced no text on
@@ -331,23 +347,26 @@ class OcrRoutedPdfInspector:
             )
             _stamp_ocr_diagnostics(
                 metadata,
-                ocr_required=bool(flagged),
+                ocr_required=bool(flagged or direct),
                 ocr_used=False,
                 ocr_backend=OCR_BACKEND_FAST_PATH,
             )
             return [Document(text=inner_document.text, metadata=metadata)]
         return [Document(text=merged.text, metadata=metadata)]
 
-    def _escalated_worker_text(self, file: Path, pages: list[int]) -> dict[int, str]:
-        """Dispatch the escalated pages in one request and attribute per page.
+    def _escalated_worker_text(
+        self, file: Path, pages: list[int]
+    ) -> tuple[dict[int, str], str | None]:
+        """Dispatch the escalated and maths pages in one request, per page.
 
         Args:
             file: Path to the PDF file.
-            pages: 1-based escalated page numbers, sorted.
+            pages: 1-based page numbers, sorted.
 
         Returns:
-            Page number to worker Markdown. An empty dict means the
-            escalation degraded: the worker is unavailable, cannot serve
+            Page number to worker Markdown, and the answering engine's
+            ``backend_id``. An empty dict means the
+            escalation degraded: no route is available, the route cannot serve
             page-listed requests (it speaks a protocol older than
             ``PAGES_PROTOCOL_VERSION``), or its response cannot be
             attributed per page. All three keep the best available text
@@ -359,16 +378,16 @@ class OcrRoutedPdfInspector:
                 document unit applies.
         """
         name = getattr(file, "name", file)
-        client = self._ocr_client
-        if client is None or not client.fingerprint.available:
+        client = self._routes.select()
+        if client is None:
             logger.warning(
-                "%d escalated page(s) in %s have no isolated worker; keeping the "
-                "best available text and counting them unresolved. Provision the "
-                "worker environment and set OCR_WORKER_COMMAND to enable it.",
+                "%d escalated page(s) in %s have no OCR route; keeping the "
+                "best available text and counting them unresolved. Provision an "
+                "engine and set OCR_WORKERS_DIR (or OCR_WORKER_COMMAND) to enable it.",
                 len(pages),
                 name,
             )
-            return {}
+            return {}, None
         if client.fingerprint.protocol_version != PAGES_PROTOCOL_VERSION:
             # A worker still on 1.0 during a rolling upgrade must never
             # receive a page-listed request: it would reject the 1.1
@@ -385,9 +404,11 @@ class OcrRoutedPdfInspector:
                 PAGES_PROTOCOL_VERSION,
                 client.fingerprint.protocol_version,
             )
-            return {}
+            return {}, None
         try:
-            result = client.parse(str(file), pages=pages)
+            result = client.parse(
+                str(file), pages=pages, timeout=request_timeout(self._settings, len(pages))
+            )
         except OcrWorkerError as exc:
             raise OcrPostDispatchError(exc.code, exc.message) from exc
         pages_markdown = result.pages_markdown
@@ -398,15 +419,8 @@ class OcrRoutedPdfInspector:
                 "best available text and count unresolved",
                 name,
             )
-            return {}
-        return dict(zip(pages, pages_markdown, strict=True))
-
-    @staticmethod
-    def _fallback_text(local_page: LocalOcrPage, entry: PageEvidence) -> str:
-        """Return the best text an unresolved escalated page can carry."""
-        if local_page.text.strip():
-            return local_page.text
-        return entry.markdown
+            return {}, None
+        return dict(zip(pages, pages_markdown, strict=True)), backend_id_of(client)
 
 
 def ocr_required_by_gate(

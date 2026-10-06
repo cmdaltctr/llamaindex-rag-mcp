@@ -1,10 +1,11 @@
 """Wire-level tests for the duplicated OCR worker JSON Lines protocol.
 
-The worker owns its protocol definitions and OMRG owns an identical
-twin (OpenSpec change improve-rag-input-quality-5, task 2.2a). The two
-modules never import each other, so these tests prove wire
-compatibility the only way possible: byte-identical encoding and
-mutual decoding.
+The worker core owns its protocol definitions and OMRG owns an
+identical twin (OpenSpec change improve-rag-input-quality-5, task 2.2a;
+moved to the worker core by modular-ocr-workers-dots-mocr, task 1.4).
+The two modules never import each other, so these tests prove wire
+compatibility the only way possible: byte-identical source files,
+byte-identical encoding and mutual decoding.
 """
 
 from __future__ import annotations
@@ -21,7 +22,9 @@ import pytest
 from omrg.integrations.ocr_worker import protocol as omrg_protocol
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-WORKER_SRC = REPO_ROOT / "ocr-worker" / "src"
+WORKER_SRC = REPO_ROOT / "ocr-workers" / "core" / "src"
+HOST_PACKAGE = REPO_ROOT / "src" / "omrg" / "integrations" / "ocr_worker"
+CORE_PACKAGE = WORKER_SRC / "omrg_ocr_worker_core"
 
 _MODULE_CACHE: dict[str, ModuleType] | None = None
 
@@ -33,7 +36,7 @@ def _modules() -> dict[str, ModuleType]:
         worker_src = str(WORKER_SRC)
         sys.path.insert(0, worker_src)
         try:
-            worker = importlib.import_module("omrg_ocr_worker.protocol")
+            worker = importlib.import_module("omrg_ocr_worker_core.protocol")
         finally:
             sys.path.remove(worker_src)
         _MODULE_CACHE = {"omrg": omrg_protocol, "worker": worker}
@@ -92,6 +95,39 @@ def _dumps(payload: dict[str, Any]) -> str:
     return json.dumps(payload)
 
 
+# ── Byte identity of the two copies (task 1.4) ────────────────────────────
+
+
+def _first_difference(left: bytes, right: bytes) -> int | None:
+    """Return the first differing byte offset, or ``None`` when equal."""
+    if left == right:
+        return None
+    for index, (a, b) in enumerate(zip(left, right, strict=False)):
+        if a != b:
+            return index
+    return min(len(left), len(right))
+
+
+@pytest.mark.parametrize("module", ["protocol.py", "validation.py"])
+def test_host_and_core_copies_are_byte_identical(module: str) -> None:
+    """The host twin and the worker-core copy must not differ by one byte."""
+    host = (HOST_PACKAGE / module).read_bytes()
+    core = (CORE_PACKAGE / module).read_bytes()
+    offset = _first_difference(host, core)
+    assert offset is None, (
+        f"{module}: host and worker-core copies differ at byte {offset}; copy one over the other"
+    )
+
+
+def test_one_byte_change_is_detected() -> None:
+    """The comparison above catches a single changed byte (it is not vacuous)."""
+    original = (CORE_PACKAGE / "protocol.py").read_bytes()
+    changed = bytearray(original)
+    changed[len(changed) // 2] ^= 0x01
+    assert _first_difference(original, bytes(changed)) == len(changed) // 2
+    assert _first_difference(original, original + b" ") == len(original)
+
+
 # ── Wire compatibility across the two independent copies ──────────────────
 
 
@@ -118,7 +154,7 @@ def test_twin_validation_modules_are_importable_and_agree() -> None:
     worker_src = str(WORKER_SRC)
     sys.path.insert(0, worker_src)
     try:
-        worker_validation = importlib.import_module("omrg_ocr_worker.validation")
+        worker_validation = importlib.import_module("omrg_ocr_worker_core.validation")
     finally:
         sys.path.remove(worker_src)
     from omrg.integrations.ocr_worker import validation as omrg_validation

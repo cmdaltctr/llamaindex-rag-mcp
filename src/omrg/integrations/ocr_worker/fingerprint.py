@@ -54,6 +54,8 @@ class OcrWorkerFingerprint:
         output_schema_id: Output-schema identity of successful parse
             responses.
         output_schema_version: Output-schema version.
+        backend_id: The engine's diagnostic backend identifier (for
+            example ``dots_mocr``); empty when the worker predates it.
     """
 
     available: bool
@@ -65,6 +67,7 @@ class OcrWorkerFingerprint:
     model_revision: str
     output_schema_id: str
     output_schema_version: str
+    backend_id: str = ""
 
 
 #: The ONE stable unavailable fingerprint (task 2.6, design D2.4).
@@ -81,6 +84,7 @@ UNAVAILABLE_OCR_WORKER_FINGERPRINT = OcrWorkerFingerprint(
     model_revision="",
     output_schema_id="",
     output_schema_version="",
+    backend_id="",
 )
 
 
@@ -125,6 +129,10 @@ def fingerprint_from_payload(payload: Mapping[str, Any]) -> OcrWorkerFingerprint
             f"with {OUTPUT_SCHEMA_ID!r}/{OUTPUT_SCHEMA_VERSION!r}"
         )
         return None
+    backend_id = payload.get("backend_id", "")
+    if not isinstance(backend_id, str):
+        _reject("capabilities payload field 'backend_id' must be a string")
+        return None
     packages = tuple(sorted((str(k), str(v)) for k, v in packages_raw.items()))
     return OcrWorkerFingerprint(
         available=True,
@@ -136,6 +144,7 @@ def fingerprint_from_payload(payload: Mapping[str, Any]) -> OcrWorkerFingerprint
         model_revision=model[1],
         output_schema_id=schema_id,
         output_schema_version=schema_version,
+        backend_id=backend_id,
     )
 
 

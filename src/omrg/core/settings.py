@@ -322,6 +322,19 @@ class EffectiveSettings(BaseModel):
     ocr_worker_env_dir: str = ""
     ocr_worker_request_timeout: float = Field(default=300.0, gt=0)
 
+    # ── OCR engine routes and maths routing (modular-ocr-workers-dots-mocr) ──
+    # Design D3: the primary route serves every OCR dispatch, the fallback
+    # only when the primary is unavailable before dispatch. An empty
+    # workers directory makes every route unavailable; an empty fallback
+    # name means no fallback. The explicit command above overrides the
+    # primary route only.
+    ocr_workers_dir: str = ""
+    ocr_engine_primary: str = "dots-mocr"
+    ocr_engine_fallback: str = "paddleocr-vl"
+    ocr_maths_routing_enabled: bool = True
+    ocr_maths_page_fraction: float = Field(default=0.10, ge=0.0, le=1.0)
+    ocr_worker_seconds_per_page: float = Field(default=120.0, ge=0.0)
+
     # ── Codebase map ──────────────────────────────────────────────
     magika_binary: str = "magika"
     doc_similarity_threshold: float = 0.85

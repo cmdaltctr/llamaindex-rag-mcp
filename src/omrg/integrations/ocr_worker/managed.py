@@ -9,7 +9,7 @@ owning engine (or ingest operation) shuts down.
 
 ``core/`` receives this collaborator by injection and never imports
 subprocess code itself; the composition boundary constructs it via
-``omrg.capabilities.build_managed_ocr_client``.
+``omrg.capabilities.build_ocr_routes``.
 """
 
 from __future__ import annotations
@@ -111,7 +111,13 @@ class ManagedOcrClient:
 
     # ── Dispatch ────────────────────────────────────────────────────
 
-    def parse(self, pdf_path: str, *, pages: Sequence[int] | None = None) -> ParseSuccess:
+    def parse(
+        self,
+        pdf_path: str,
+        *,
+        pages: Sequence[int] | None = None,
+        timeout: float | None = None,
+    ) -> ParseSuccess:
         """Dispatch one parse request to the worker, optionally page-listed.
 
         Args:
@@ -119,6 +125,9 @@ class ManagedOcrClient:
             pages: 1-based page numbers to parse (protocol 1.1, change
                 page-level-ocr-routing task 4.3). ``None`` parses the
                 whole document and speaks protocol 1.0.
+            timeout: Seconds to wait for this request's terminal
+                response; the client's request timeout when ``None``.
+                The routing seam scales it by page count (design D3).
 
         Returns:
             The terminal success envelope with structured Markdown;
@@ -141,7 +150,7 @@ class ManagedOcrClient:
             )
         client = self._ensure_client()
         try:
-            return client.parse(pdf_path, pages=pages)
+            return client.parse(pdf_path, pages=pages, timeout=timeout)
         except OcrWorkerError as exc:
             if exc.code in _FATAL_OCR_WORKER_CODES:
                 self._drop_client(client)

@@ -1,0 +1,12 @@
+# Experiment 37 local artefacts. PDFs and corpus/ are already ignored
+# repo-wide (experiments/**/*.pdf, experiments/**/corpus/). Page images,
+# engine Markdown and review pages are derived document content: keep local.
+output/dots-mocr/
+output/paddleocr-vl/
+output/.pages/
+output/*.tmp
+output/*.log
+output/*.html
+katex/
+analysis.ipynb
+output/run_ocr*.pid

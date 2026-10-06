@@ -35,6 +35,7 @@ from ..core.settings import OCR_ROUTING_UNITS, EmbeddingSettings
 
 load_dotenv()
 
+from .ocr_routes import OcrRouteSettingsMixin  # noqa: E402
 from .sources import LegacyBool  # noqa: E402
 from .storage import StorageValidationMixin, source_keys  # noqa: E402
 
@@ -95,7 +96,7 @@ def _validate_provider_value(
 # ── Root Settings model ─────────────────────────────────────────────
 
 
-class Settings(StorageValidationMixin, BaseSettings):
+class Settings(StorageValidationMixin, OcrRouteSettingsMixin, BaseSettings):
     """Resolved configuration for OMRG — Opinionated Modular RAG.
 
     Composes the per-subpackage settings models by **nesting** (PROPOSAL
@@ -206,11 +207,9 @@ class Settings(StorageValidationMixin, BaseSettings):
     ocr_local_model_directory: str = ""
 
     # ── OCR worker operation (task 2.6b) ──────────────────────────
-    # Operational settings, separate from the calibrated gate above:
-    # how to reach the worker, not which PDFs deserve it. Empty
-    # command = worker unavailable (stable fingerprint). No
-    # machine-specific path is ever hardcoded; everything arrives via
-    # the environment.
+    # How to reach a worker, not which PDFs deserve it. A non-empty
+    # command overrides the primary route only; the route fields live in
+    # OcrRouteSettingsMixin (config/ocr_routes.py). No path is hardcoded.
     ocr_worker_command: str = ""
     ocr_worker_env_dir: str = ""
     ocr_worker_request_timeout: float = Field(default=300.0, gt=0)

@@ -27,7 +27,7 @@ from .embed_exclusions import (  # re-exported: the historic import site
     scoped_excluded_keys,
 )
 from .normalise import NORMALISER_VERSION
-from .ocr_identity import ocr_fingerprint_payload, ocr_routing_payload
+from .ocr_identity import maths_routing_payload, ocr_fingerprint_payload, ocr_routing_payload
 
 SOURCE_CONTENT_HASH_KEY = "source_content_hash"
 SOURCE_ID_KEY = "source_id"
@@ -39,6 +39,9 @@ SOURCE_CHUNK_COUNT_KEY = "source_chunk_count"
 SOURCE_CHUNK_INDEX_KEY = "source_chunk_index"
 
 # Schema 6 adds reader normalisation inputs so old sources reprocess once.
+# It also covers the ocr_fallback_fingerprint and maths_routing blocks of
+# modular-ocr-workers-dots-mocr: both changes ship in one release, so they
+# share this single bump (design D7). The new blocks change every digest.
 _INDEX_IDENTITY_SCHEMA = 6
 _SOURCE_METADATA_KEYS = (
     SOURCE_CONTENT_HASH_KEY,
@@ -132,6 +135,7 @@ def build_index_identity(
     embed_model: Any = None,
     ocr_routing: dict[str, Any] | None = None,
     ocr_worker_fingerprint: Any = None,
+    ocr_fallback_fingerprint: Any = None,
     tokenizer: dict[str, str] | None = None,
     resolved_splitter: str = "legacy_fallback",
 ) -> str:
@@ -178,6 +182,8 @@ def build_index_identity(
         # Task 2.13 (design D8): unconditional members — see ocr_identity.
         "ocr_routing": routing,
         "ocr_worker_fingerprint": ocr_fingerprint_payload(ocr_worker_fingerprint),
+        "ocr_fallback_fingerprint": ocr_fingerprint_payload(ocr_fallback_fingerprint),
+        "maths_routing": maths_routing_payload(settings),
         "tokenizer": (
             tokenizer
             if tokenizer is not None

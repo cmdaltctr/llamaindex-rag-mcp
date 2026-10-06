@@ -22,7 +22,6 @@ from omrg.integrations.ocr_worker.managed import ManagedOcrClient
 from omrg.integrations.pdf.factory import build_pdf_reader
 from omrg.integrations.pdf.ocr_routing import (
     OCR_BACKEND_FAST_PATH,
-    OCR_BACKEND_WORKER_PATH,
     OcrRoutedPdfInspector,
 )
 from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
@@ -33,6 +32,9 @@ pdf_inspector_lib = pytest.importorskip(
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STUB_WORKER = REPO_ROOT / "tests" / "fixtures" / "ocr_worker" / "stub_worker.py"
+#: The stub worker's fingerprint reports this backend_id; the worker path
+#: stamps the answering engine's backend_id (modular-ocr-workers-dots-mocr).
+OCR_BACKEND_WORKER_PATH = "paddleocr_vl"
 CALIBRATION = REPO_ROOT / "tests" / "fixtures" / "pdf_baseline" / "calibration"
 
 

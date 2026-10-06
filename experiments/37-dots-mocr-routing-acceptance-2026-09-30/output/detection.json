@@ -1,0 +1,3120 @@
+{
+ "runs": {
+  "D-neg": {
+   "documents": {
+    "bd01": {
+     "sha256": "80c2a5283be05dc07c84d2530df139f94e0df09ff55a1c827edde984d99fee22",
+     "page_count": 6,
+     "flagged_pages": [],
+     "flagged_count": 0,
+     "flagged_share": 0.0,
+     "maths_condition": false,
+     "walk_agrees_with_detector": true,
+     "detector_seconds": 0.003,
+     "pages": [
+      {
+       "page": 1,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOTcb88df00",
+        "AdvOTea1a7398",
+        "AdvOTea1a7398+20",
+        "AdvOTea1a7398+fb",
+        "AdvOTf23bb480",
+        "AdvTT2876772e+27",
+        "AdvTTda6f6cb8.B",
+        "ArialBoldMT"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 2,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT125c650c",
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+20",
+        "AdvOT1ef757c0+fb",
+        "AdvOT7d6df7ab.I",
+        "AdvOTcb88df00",
+        "AdvOTcb88df00+20",
+        "AdvOTea1a7398",
+        "AdvTTda6f6cb8.B"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 3,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+20",
+        "AdvOT1ef757c0+fb",
+        "AdvOTcb88df00",
+        "AdvOTea1a7398",
+        "AdvTTda6f6cb8.B"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 4,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+20",
+        "AdvOT1ef757c0+fb",
+        "AdvOT7d6df7ab.I",
+        "AdvOTcb88df00",
+        "AdvOTea1a7398",
+        "AdvTTda6f6cb8.B"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 5,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+20",
+        "AdvOT1ef757c0+fb",
+        "AdvOTcb88df00",
+        "AdvOTea1a7398",
+        "AdvTTda6f6cb8.B"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 6,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+20",
+        "AdvOT1ef757c0+fb",
+        "AdvOTb65e897d.B",
+        "AdvOTb65e897d.B+20",
+        "AdvOTcb88df00",
+        "AdvOTea1a7398",
+        "AdvTTda6f6cb8.B"
+       ],
+       "walk_error": null
+      }
+     ]
+    },
+    "bd02": {
+     "sha256": "716c6108395e506ed9d30f2da8ed14d318a06285fa85980a180517dc3cf01009",
+     "page_count": 12,
+     "flagged_pages": [],
+     "flagged_count": 0,
+     "flagged_share": 0.0,
+     "maths_condition": false,
+     "walk_agrees_with_detector": true,
+     "detector_seconds": 0.004,
+     "pages": [
+      {
+       "page": 1,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT2c8ce45a",
+        "AdvOT9b12cd41",
+        "AdvOT9b12cd41+20",
+        "AdvOT9b12cd41+fb",
+        "AdvOTd168d80a.I",
+        "AdvOTd3a5f740",
+        "AdvOTd3a5f740+20"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 2,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+20",
+        "AdvOT1ef757c0+fb",
+        "AdvOT2c8ce45a",
+        "AdvOT310e2d14+20",
+        "AdvOT7d6df7ab.I",
+        "AdvOT9b12cd41",
+        "AdvOT9b12cd41+fb",
+        "AdvOTd168d80a.I",
+        "AdvOTd3a5f740"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 3,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+20",
+        "AdvOT1ef757c0+fb",
+        "AdvOT310e2d14+22",
+        "AdvOT7d6df7ab.I",
+        "AdvOTd3a5f740",
+        "AdvOTd3a5f740+fb",
+        "AdvP4C4E59",
+        "AdvminionMathEx",
+        "AdvminionMathIt",
+        "AdvminionSymbols"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 4,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+20",
+        "AdvOT1ef757c0+fb",
+        "AdvOT310e2d14",
+        "AdvOT749c1f5a.I",
+        "AdvOT7d6df7ab.I",
+        "AdvOTd3a5f740"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 5,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+fb",
+        "AdvOT2c8ce45a",
+        "AdvOT310e2d14",
+        "AdvOT7d6df7ab.I",
+        "AdvOT9b12cd41",
+        "AdvOT9b12cd41+fb",
+        "AdvOTd3a5f740"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 6,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT2c8ce45a",
+        "AdvOT9b12cd41",
+        "AdvOTd3a5f740"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 7,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+20",
+        "AdvOT1ef757c0+fb",
+        "AdvOT2c8ce45a",
+        "AdvOT2c8ce45a+20",
+        "AdvOT310e2d14",
+        "AdvOT7d6df7ab.I",
+        "AdvOT9b12cd41",
+        "AdvOT9b12cd41+20",
+        "AdvOT9b12cd41+fb",
+        "AdvOTd168d80a.I",
+        "AdvOTd3a5f740"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 8,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT2c8ce45a",
+        "AdvOT310e2d14",
+        "AdvOT9b12cd41",
+        "AdvOT9b12cd41+fb",
+        "AdvOTd168d80a.I",
+        "AdvOTd3a5f740"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 9,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+fb",
+        "AdvOT2c8ce45a",
+        "AdvOT9b12cd41",
+        "AdvOT9b12cd41+fb",
+        "AdvOTd168d80a.I",
+        "AdvOTd3a5f740"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 10,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+fb",
+        "AdvOT2c8ce45a",
+        "AdvOT7d6df7ab.I",
+        "AdvOT7d6df7ab.I+fb",
+        "AdvOT9b12cd41",
+        "AdvOTd3a5f740"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 11,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+20",
+        "AdvOT1ef757c0+fb",
+        "AdvOT7d6df7ab.I",
+        "AdvOTd3a5f740",
+        "AdvOTd3a5f740+20",
+        "AdvOTd3a5f740+fb"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 12,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "AdvOT1ef757c0",
+        "AdvOT1ef757c0+20",
+        "AdvOT1ef757c0+fb",
+        "AdvOT310e2d14",
+        "AdvOT7d6df7ab.I",
+        "AdvOTd3a5f740"
+       ],
+       "walk_error": null
+      }
+     ]
+    },
+    "bd03": {
+     "sha256": "f32811922af4671de6fdf1f306d16eb1d8ba3c17007646418784016579d04578",
+     "page_count": 25,
+     "flagged_pages": [
+      4,
+      6
+     ],
+     "flagged_count": 2,
+     "flagged_share": 0.08,
+     "maths_condition": false,
+     "walk_agrees_with_detector": true,
+     "detector_seconds": 0.011,
+     "pages": [
+      {
+       "page": 1,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdBoldCond",
+        "ArialMTStdBoldItalic",
+        "ArialMTStdCond",
+        "ArialMTStdItalic",
+        "ArialNarrowMTStd",
+        "GandhariUnicodeBold",
+        "GandhariUnicodeRoman",
+        "MinionProRegular",
+        "MyriadProRegular",
+        "UniversLTStd"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 2,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdBoldCond",
+        "ArialMTStdCond",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 3,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "GandhariUnicodeRoman",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 4,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10"
+       ],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdIdentityH",
+        "ArialMTStdItalic",
+        "ArialMTStdItalicIdentityH",
+        "CMR10",
+        "CMR7",
+        "GandhariUnicodeBold",
+        "GandhariUnicodeRoman",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 5,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdBoldItalic",
+        "ArialMTStdCond",
+        "GandhariUnicodeBold",
+        "MinionProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 6,
+       "flagged": true,
+       "maths_fonts": [
+        "CMSY10"
+       ],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdIdentityH",
+        "ArialMTStdItalic",
+        "ArialMTStdItalicIdentityH",
+        "CMR10",
+        "GandhariUnicodeBold",
+        "GandhariUnicodeRoman",
+        "MinionProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 7,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdCond",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 8,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdBoldItalic",
+        "ArialMTStdCond",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProBold",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 9,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdCond",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 10,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdBoldItalic",
+        "ArialMTStdCond",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProBold",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 11,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdBoldItalic",
+        "ArialMTStdCond",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProBold",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 12,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 13,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdBoldItalic",
+        "ArialMTStdCond",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProBold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 14,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdBoldItalic",
+        "ArialMTStdCond",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProBold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 15,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "GandhariUnicodeRoman",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 16,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdBoldItalic",
+        "ArialMTStdCond",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProBold",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 17,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 18,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "GandhariUnicodeRoman",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 19,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdBoldItalic",
+        "ArialMTStdCond",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 20,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "GandhariUnicodeRoman",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 21,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialUnicodeMS",
+        "GandhariUnicodeBold",
+        "MinionProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 22,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "GandhariUnicodeBold",
+        "MinionProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 23,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 24,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 25,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "ArialMTStd",
+        "ArialMTStdBold",
+        "ArialMTStdItalic",
+        "GandhariUnicodeBold",
+        "MinionProRegular",
+        "MyriadProRegular"
+       ],
+       "walk_error": null
+      }
+     ]
+    },
+    "pc01": {
+     "sha256": "09bc12b79ed9895f2a444588a3ee01f795a96cf08220dd6832ea677409c0c5bb",
+     "page_count": 24,
+     "flagged_pages": [],
+     "flagged_count": 0,
+     "flagged_share": 0.0,
+     "maths_condition": false,
+     "walk_agrees_with_detector": true,
+     "detector_seconds": 0.003,
+     "pages": [
+      {
+       "page": 1,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBX0900",
+        "SFRM0900",
+        "SFRM1000",
+        "SFRM1200",
+        "SFRM1728",
+        "SFSO0900",
+        "SFSX0900",
+        "SFTI0900",
+        "SFTI1000",
+        "SFTI1728",
+        "TimesRoman"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 2,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBX1440",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 3,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBX1440",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 4,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBX1440",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 5,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBX1440",
+        "SFRM1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 6,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBX1000",
+        "SFRM0600",
+        "SFRM0700",
+        "SFRM0800",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 7,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFRM0600",
+        "SFRM0700",
+        "SFRM0800",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 8,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFRM0600",
+        "SFRM0700",
+        "SFRM0800",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 9,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBX1000",
+        "SFRM0600",
+        "SFRM0700",
+        "SFRM0800",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 10,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBX1000",
+        "SFRM0600",
+        "SFRM0700",
+        "SFRM0800",
+        "SFRM1000",
+        "SFTI0800",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 11,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBI1000",
+        "SFBX1000",
+        "SFRM0600",
+        "SFRM0700",
+        "SFRM0800",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 12,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFRM0600",
+        "SFRM0700",
+        "SFRM0800",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 13,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFRM0600",
+        "SFRM0700",
+        "SFRM0800",
+        "SFRM1000",
+        "SFTI1000",
+        "Umj10",
+        "Umj14"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 14,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBI1000",
+        "SFBX1000",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 15,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBI1000",
+        "SFBX1000",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 16,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBI1000",
+        "SFBX1000",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 17,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFRM0600",
+        "SFRM0700",
+        "SFRM0800",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 18,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 19,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFRM0600",
+        "SFRM0700",
+        "SFRM0800",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 20,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFRM0600",
+        "SFRM0700",
+        "SFRM0800",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 21,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFBX1440",
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 22,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 23,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 24,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "SFRM1000",
+        "SFTI1000"
+       ],
+       "walk_error": null
+      }
+     ]
+    }
+   },
+   "omrg_commit": "f5c43dc24a95f12fd181776167681fc25ea32c00",
+   "started_utc": "2026-10-04T20:57:19Z",
+   "updated_utc": "2026-10-04T20:57:19Z"
+  },
+  "D-pos": {
+   "documents": {
+    "eq01": {
+     "sha256": "bdcb63b79ed88f64f8ee2d43a721930d01dde5441a4dba20ecaa2342b34e017c",
+     "page_count": 14,
+     "flagged_pages": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      10,
+      11,
+      12,
+      13,
+      14
+     ],
+     "flagged_count": 11,
+     "flagged_share": 0.7857,
+     "maths_condition": true,
+     "walk_agrees_with_detector": true,
+     "detector_seconds": 0.003,
+     "pages": [
+      {
+       "page": 1,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "NimbusMonLRegu",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu",
+        "NimbusRomNo9LReguItal",
+        "TimesRoman"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 2,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI7",
+        "CMMI9",
+        "CMMIB10",
+        "CMMIB7",
+        "CMSY10",
+        "CMSY5",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMR10",
+        "CMR7",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu",
+        "NimbusRomNo9LReguItal"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 3,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI5",
+        "CMMI7",
+        "CMMIB10",
+        "CMMIB5",
+        "CMMIB7",
+        "CMSY10",
+        "CMSY7",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMBX7",
+        "CMR10",
+        "CMR5",
+        "CMR7",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu",
+        "NimbusRomNo9LReguItal"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 4,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMEX9",
+        "CMMI10",
+        "CMMI5",
+        "CMMI6",
+        "CMMI7",
+        "CMMI9",
+        "CMMIB10",
+        "CMMIB5",
+        "CMMIB7",
+        "CMSY10",
+        "CMSY7",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMBX7",
+        "CMBX9",
+        "CMR10",
+        "CMR5",
+        "CMR7",
+        "CMR9",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu",
+        "NimbusRomNo9LReguItal"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 5,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI7",
+        "CMMIB10",
+        "CMMIB7",
+        "CMSY10",
+        "CMSY7",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMR10",
+        "CMR5",
+        "CMR7",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 6,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMSY10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMR10",
+        "CMR7",
+        "NimbusMonLRegu",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu",
+        "NimbusRomNo9LReguItal"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 7,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMMI7",
+        "CMMIB10",
+        "CMMIB7",
+        "CMSY10"
+       ],
+       "other_fonts": [
+        "BitstreamVeraSansRoman",
+        "CMBX10",
+        "CMBX7",
+        "CMR10",
+        "Cmb10",
+        "Cmmi10",
+        "Cmr10",
+        "Cmsy10",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu",
+        "NimbusRomNo9LReguItal"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 8,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "BitstreamVeraSansRoman",
+        "Cmmi10",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 9,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "CMR7",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu",
+        "NimbusRomNo9LReguItal"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 10,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI12",
+        "CMMI7",
+        "CMMI8",
+        "CMMIB10",
+        "CMMIB7",
+        "CMMIB8",
+        "CMSY10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMBX12",
+        "CMR10",
+        "CMR12",
+        "CMR7",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 11,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI7",
+        "CMMIB10",
+        "CMMIB7",
+        "CMSY10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMR10",
+        "CMR7",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 12,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI5",
+        "CMMI7",
+        "CMMIB10",
+        "CMMIB5",
+        "CMMIB7",
+        "CMSY10",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMBX7",
+        "CMR10",
+        "CMR5",
+        "CMR7",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 13,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI5",
+        "CMMI7",
+        "CMMIB10",
+        "CMMIB5",
+        "CMMIB7",
+        "CMSY10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMBX7",
+        "CMR10",
+        "CMR5",
+        "CMR7",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 14,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI7",
+        "CMMIB10",
+        "CMMIB7",
+        "CMSY10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMBX7",
+        "CMR10",
+        "CMR7",
+        "NimbusRomNo9LMedi",
+        "NimbusRomNo9LRegu"
+       ],
+       "walk_error": null
+      }
+     ]
+    },
+    "mp01": {
+     "sha256": "c161931a077f21a0c2669ecf6be29c54cf97ddd6ec2d92821bfe9f95c9c093c5",
+     "page_count": 23,
+     "flagged_pages": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+     ],
+     "flagged_count": 20,
+     "flagged_share": 0.8696,
+     "maths_condition": true,
+     "walk_agrees_with_detector": true,
+     "detector_seconds": 0.003,
+     "pages": [
+      {
+       "page": 1,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathItalic10Regular",
+        "LMMathItalic6Regular",
+        "LMMathItalic7Regular",
+        "LMMathItalic9Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols9Regular"
+       ],
+       "other_fonts": [
+        "FontAwesome5FreeRegular",
+        "FontAwesome5FreeSolid",
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman12Bold",
+        "LMRoman6Regular",
+        "LMRoman7Regular",
+        "LMRoman9Italic",
+        "LMRoman9Regular",
+        "LMSans10Bold",
+        "TimesRoman"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 2,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathItalic10Regular",
+        "LMMathItalic5Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Bold",
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 3,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathItalic10Regular",
+        "LMMathItalic6Regular",
+        "LMMathItalic7Regular",
+        "LMMathItalic9Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols9Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman9Italic",
+        "LMRoman9Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 4,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathItalic10Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols7Regular"
+       ],
+       "other_fonts": [
+        "LMRoman10Bold",
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 5,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathExtension10Regular",
+        "LMMathItalic10Regular",
+        "LMMathItalic12Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 6,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathExtension10Regular",
+        "LMMathItalic10Regular",
+        "LMMathItalic5Regular",
+        "LMMathItalic6Regular",
+        "LMMathItalic7Regular",
+        "LMMathItalic8Regular",
+        "LMMathItalic9Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols5Regular",
+        "LMMathSymbols7Regular",
+        "LMMathSymbols9Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMMono10Regular",
+        "LMRoman10Regular",
+        "LMRoman12Regular",
+        "LMRoman5Regular",
+        "LMRoman6Regular",
+        "LMRoman7Regular",
+        "LMRoman9Italic",
+        "LMRoman9Regular",
+        "LMSans10Bold",
+        "LMSans10Regular"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 7,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathItalic10Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular"
+       ],
+       "other_fonts": [
+        "LMRoman10Bold",
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 8,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathItalic10Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Bold",
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 9,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathExtension10Regular",
+        "LMMathItalic10Regular",
+        "LMMathItalic5Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Bold",
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman7Regular",
+        "LMRomanCaps10Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 10,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathItalic10Regular",
+        "LMMathItalic5Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols5Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Bold",
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman5Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 11,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathItalic10Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols7Regular"
+       ],
+       "other_fonts": [
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 12,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathItalic10Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Bold",
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman5Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 13,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "LMMono9Regular",
+        "LMRoman9Italic",
+        "LMRoman9Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 14,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "LMMono9Regular",
+        "LMRoman9Italic",
+        "LMRoman9Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 15,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "LMMono9Regular",
+        "LMRoman9Italic",
+        "LMRoman9Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 16,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathExtension10Regular",
+        "LMMathItalic10Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMMono9Regular",
+        "LMRoman10Regular",
+        "LMRoman7Regular",
+        "LMRoman9Italic",
+        "LMRoman9Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 17,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathExtension10Regular",
+        "LMMathItalic10Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMMono10Regular",
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 18,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathExtension10Regular",
+        "LMMathItalic10Regular",
+        "LMMathItalic7Regular",
+        "LMMathItalic8Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Bold",
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman12Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 19,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathExtension10Regular",
+        "LMMathItalic10Regular",
+        "LMMathItalic5Regular",
+        "LMMathItalic7Regular",
+        "LMMathItalic8Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols5Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Bold",
+        "LMRoman10Italic",
+        "LMRoman10Regular",
+        "LMRoman12Regular",
+        "LMRoman5Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 20,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathExtension10Regular",
+        "LMMathItalic10Regular",
+        "LMMathItalic5Regular",
+        "LMMathItalic6Regular",
+        "LMMathItalic7Regular",
+        "LMMathItalic9Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Bold",
+        "LMRoman10Regular",
+        "LMRoman7Regular",
+        "LMRoman9Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 21,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathExtension10Regular",
+        "LMMathItalic10Regular",
+        "LMMathItalic5Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols5Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Regular",
+        "LMRoman5Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 22,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathItalic10Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols5Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 23,
+       "flagged": true,
+       "maths_fonts": [
+        "LMMathExtension10Regular",
+        "LMMathItalic10Regular",
+        "LMMathItalic7Regular",
+        "LMMathSymbols10Regular",
+        "LMMathSymbols7Regular",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "LMRoman10Regular",
+        "LMRoman7Regular",
+        "LMSans10Bold"
+       ],
+       "walk_error": null
+      }
+     ]
+    },
+    "mp05": {
+     "sha256": "0155f5fbd0acdfa5b5a6eb26b402c8fc7344b2de902233cbd44cbba0b3fe6fb0",
+     "page_count": 20,
+     "flagged_pages": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+     ],
+     "flagged_count": 17,
+     "flagged_share": 0.85,
+     "maths_condition": true,
+     "walk_agrees_with_detector": true,
+     "detector_seconds": 0.002,
+     "pages": [
+      {
+       "page": 1,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "Arial",
+        "TimesNewRoman",
+        "TimesNewRoman,Bold",
+        "TimesNewRoman,BoldItalic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 2,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "Arial",
+        "Calibri",
+        "TimesNewRoman",
+        "TimesNewRoman,Bold",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 3,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "Arial",
+        "Calibri",
+        "TimesNewRoman",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 4,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "TimesNewRoman",
+        "TimesNewRoman,Bold",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 5,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "Calibri",
+        "TimesNewRoman",
+        "TimesNewRoman,Bold",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 6,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "TimesNewRoman",
+        "TimesNewRoman,Bold",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 7,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "Calibri",
+        "TimesNewRoman",
+        "TimesNewRoman,Bold",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 8,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "TimesNewRoman",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 9,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "Calibri",
+        "TimesNewRoman",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 10,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "Calibri",
+        "TimesNewRoman",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 11,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "TimesNewRoman",
+        "TimesNewRoman,Bold",
+        "TimesNewRoman,BoldItalic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 12,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "TimesNewRoman",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 13,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "TimesNewRoman"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 14,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "TimesNewRoman",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 15,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "TimesNewRoman",
+        "TimesNewRoman,Bold",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 16,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "TimesNewRoman"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 17,
+       "flagged": true,
+       "maths_fonts": [
+        "CambriaMath"
+       ],
+       "other_fonts": [
+        "TimesNewRoman",
+        "TimesNewRoman,Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 18,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "TimesNewRoman",
+        "TimesNewRoman,Bold"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 19,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "Helvetica",
+        "TimesNewRoman",
+        "TimesNewRoman,Bold",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 20,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "Helvetica",
+        "TimesNewRoman",
+        "TimesNewRoman,Bold",
+        "TimesNewRoman,Italic"
+       ],
+       "walk_error": null
+      }
+     ]
+    },
+    "mp03": {
+     "sha256": "fe6bd2c89d5c7fa7f06d838126a208fa0db7d0b03dc288cbab9f8a1a0fee32a2",
+     "page_count": 21,
+     "flagged_pages": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21
+     ],
+     "flagged_count": 21,
+     "flagged_share": 1.0,
+     "maths_condition": true,
+     "walk_agrees_with_detector": true,
+     "detector_seconds": 0.002,
+     "pages": [
+      {
+       "page": 1,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMMI8",
+        "CMSY8",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMBX8",
+        "CMCSC10",
+        "CMR10",
+        "CMR8",
+        "TimesRoman"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 2,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "CMSY8",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMCSC10",
+        "CMR10",
+        "CMR6",
+        "CMR8",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 3,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMCSC10",
+        "CMR10",
+        "CMR6",
+        "CMR8"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 4,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMMI8",
+        "CMSY10",
+        "CMSY8",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMCSC10",
+        "CMR10",
+        "CMR8"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 5,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI8",
+        "CMSY10",
+        "CMSY8",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMCSC10",
+        "CMR10",
+        "CMR8"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 6,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI8",
+        "CMSY10",
+        "CMSY8",
+        "MSAM10",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMCSC10",
+        "CMR10",
+        "CMR8"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 7,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "CMSY8",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMCSC10",
+        "CMR10",
+        "CMR6",
+        "CMR8"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 8,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "CMSY8",
+        "MSAM10"
+       ],
+       "other_fonts": [
+        "CMCSC10",
+        "CMR10",
+        "CMR8",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 9,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "CMSY8"
+       ],
+       "other_fonts": [
+        "CMCSC10",
+        "CMR10",
+        "CMR6",
+        "CMR8",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 10,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "CMSY8",
+        "MSAM10",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMCSC10",
+        "CMR10",
+        "CMR6",
+        "CMR8",
+        "CMR9"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 11,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "CMSY8",
+        "EUFM10",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMCSC10",
+        "CMR10",
+        "CMR8",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 12,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI8",
+        "CMSY10",
+        "MSAM10",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMCSC10",
+        "CMR10",
+        "CMR8",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 13,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "CMSY6",
+        "CMSY8",
+        "EUFM10",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMCSC10",
+        "CMR10",
+        "CMR6",
+        "CMR8",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 14,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "CMSY6",
+        "CMSY8",
+        "EUFM10",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMCSC10",
+        "CMR10",
+        "CMR6",
+        "CMR8"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 15,
+       "flagged": true,
+       "maths_fonts": [
+        "CMBSY10",
+        "CMEX10",
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "CMSY6",
+        "CMSY8",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMCSC10",
+        "CMR10",
+        "CMR6",
+        "CMR8",
+        "CMR9",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 16,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "CMSY8",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMCSC10",
+        "CMR10",
+        "CMR6",
+        "CMR8",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 17,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "CMSY6",
+        "CMSY8",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMCSC10",
+        "CMR10",
+        "CMR6",
+        "CMR8",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 18,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "CMSY6",
+        "CMSY8",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMCSC10",
+        "CMR10",
+        "CMR6",
+        "CMR8",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 19,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI6",
+        "CMMI8",
+        "CMSY10",
+        "EUFM10",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMCSC10",
+        "CMR10",
+        "CMR6",
+        "CMR8"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 20,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMMI8",
+        "CMMI9",
+        "CMSY10",
+        "EUFM10",
+        "MSBM10"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMBX9",
+        "CMCSC10",
+        "CMR10",
+        "CMR8",
+        "CMR9",
+        "CMTI10",
+        "CMTI8",
+        "CMTI9"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 21,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI9"
+       ],
+       "other_fonts": [
+        "CMBX9",
+        "CMCSC10",
+        "CMR10",
+        "CMR9",
+        "CMTI9"
+       ],
+       "walk_error": null
+      }
+     ]
+    },
+    "mp04": {
+     "sha256": "96ba03bbfa27ea6a9ab5f1795cb62166948a6de4d8da84f9f43044bb5ab58838",
+     "page_count": 28,
+     "flagged_pages": [
+      1,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      27
+     ],
+     "flagged_count": 22,
+     "flagged_share": 0.7857,
+     "maths_condition": true,
+     "walk_agrees_with_detector": true,
+     "detector_seconds": 0.003,
+     "pages": [
+      {
+       "page": 1,
+       "flagged": true,
+       "maths_fonts": [
+        "CMSY10",
+        "CMSY6",
+        "CMSY8"
+       ],
+       "other_fonts": [
+        "CMBX10",
+        "CMBX9",
+        "CMR10",
+        "CMR12",
+        "CMR17",
+        "CMR8",
+        "CMR9",
+        "TimesRoman"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 2,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "CMBX12",
+        "CMCSC10",
+        "CMR10",
+        "CMSL10",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 3,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "CMR10",
+        "CMR6",
+        "CMR7",
+        "CMR8",
+        "CMSL10",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 4,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "CMR10",
+        "CMSL10",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 5,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMMI7",
+        "CMSY10"
+       ],
+       "other_fonts": [
+        "CMBX12",
+        "CMR10",
+        "CMSL10",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 6,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI5",
+        "CMMI7",
+        "CMSY10",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR7",
+        "CMSL10",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 7,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMSY10",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR7",
+        "CMSL10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 8,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10"
+       ],
+       "other_fonts": [
+        "CMBX12",
+        "CMR10",
+        "CMSL10",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 9,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR7",
+        "CMR8",
+        "CMSL10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 10,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMMI5",
+        "CMMI7",
+        "CMMI8",
+        "CMSY10",
+        "CMSY6"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR6",
+        "CMR7",
+        "CMR8",
+        "CMSL10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 11,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMMI5",
+        "CMMI7",
+        "CMSY10"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR7",
+        "CMSL10",
+        "CMTI10",
+        "CMTT10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 12,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMMI7",
+        "CMSY10",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR7",
+        "CMSL10",
+        "CMTI10",
+        "CMTT10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 13,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI5",
+        "CMMI7",
+        "CMSY10",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMBX12",
+        "CMR10",
+        "CMR5",
+        "CMR7",
+        "CMSL10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 14,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI5",
+        "CMMI7",
+        "CMSY10",
+        "CMSY5",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR5",
+        "CMR7",
+        "CMSL10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 15,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI7",
+        "CMSY10",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMBX12",
+        "CMR10",
+        "CMR7",
+        "CMSL10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 16,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI5",
+        "CMMI7",
+        "CMSY10",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR7",
+        "CMSL10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 17,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI5",
+        "CMMI7",
+        "CMSY10",
+        "CMSY5",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR5",
+        "CMR7",
+        "CMSL10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 18,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI7",
+        "CMSY10"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR7",
+        "CMR9",
+        "CMSL10",
+        "CMTI9"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 19,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI7",
+        "CMSY10",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMBX12",
+        "CMR10",
+        "CMR7",
+        "CMSL10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 20,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI5",
+        "CMMI7",
+        "CMSY10",
+        "CMSY5",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR7",
+        "CMSL10",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 21,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI7",
+        "CMSY10",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR7",
+        "CMSL10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 22,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI7",
+        "CMSY10",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR7",
+        "CMSL10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 23,
+       "flagged": true,
+       "maths_fonts": [
+        "CMEX10",
+        "CMMI10",
+        "CMMI5",
+        "CMMI7",
+        "CMSY10",
+        "CMSY7"
+       ],
+       "other_fonts": [
+        "CMR10",
+        "CMR7",
+        "CMSL10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 24,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI10",
+        "CMSY10"
+       ],
+       "other_fonts": [
+        "CMBX12",
+        "CMR10",
+        "CMSL10",
+        "CMTI10"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 25,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "CMBX12",
+        "CMCSC10",
+        "CMR10",
+        "CMR8",
+        "CMSL10",
+        "CMTI8"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 26,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "CMCSC10",
+        "CMR10",
+        "CMR8",
+        "CMSL10",
+        "CMTI8"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 27,
+       "flagged": true,
+       "maths_fonts": [
+        "CMMI6",
+        "CMMI8",
+        "CMSY8"
+       ],
+       "other_fonts": [
+        "CMCSC10",
+        "CMR10",
+        "CMR8",
+        "CMSL10",
+        "CMTI8"
+       ],
+       "walk_error": null
+      },
+      {
+       "page": 28,
+       "flagged": false,
+       "maths_fonts": [],
+       "other_fonts": [
+        "CMCSC10",
+        "CMR10",
+        "CMR8",
+        "CMSL10",
+        "CMTI8"
+       ],
+       "walk_error": null
+      }
+     ]
+    }
+   },
+   "omrg_commit": "f5c43dc24a95f12fd181776167681fc25ea32c00",
+   "started_utc": "2026-10-04T20:57:19Z",
+   "updated_utc": "2026-10-04T20:57:19Z"
+  }
+ },
+ "maths_detector_version": 1,
+ "maths_font_patterns": [
+  "^(CMMI|CMMIB|CMSY|CMBSY|CMEX)\\d+$",
+  "^LMMath(Italic|Symbols|Extension)\\d+",
+  "^LatinModernMath",
+  "^(MSAM|MSBM|EUFM|EUSM|EUEX)\\d+$",
+  "^(CambriaMath|STIXMath|STIXTwoMath|XITSMath|TeXGyre\\w+Math|LibertinusMath|AsanaMath|FiraMath)"
+ ],
+ "settings": {
+  "ocr_maths_routing_enabled": true,
+  "ocr_maths_page_fraction": 0.1
+ }
+}

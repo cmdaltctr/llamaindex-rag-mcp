@@ -1,0 +1,20 @@
+# Shared OCR worker core (OpenSpec change modular-ocr-workers-dots-mocr,
+# design D1). Every engine project depends on this package through a uv
+# path source. It must stay free of Paddle and PyTorch: standard library
+# plus pypdf only.
+[project]
+name = "omrg-ocr-worker-core"
+version = "0.1.0"
+description = "Shared JSON Lines protocol, framing loop and engine contract for OMRG OCR engines"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    # Page checks and subset PDFs for page-listed requests (TDR-027).
+    "pypdf",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/omrg_ocr_worker_core"]

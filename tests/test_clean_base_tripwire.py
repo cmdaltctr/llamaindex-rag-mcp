@@ -65,7 +65,10 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 3143
+_BASE_EXECUTED = 3309
+# Re-baselined at modular-ocr-workers-dots-mocr (2026-09-30): the worker
+# core, dots-mocr engine, route, maths-page and route-identity suites,
+# plus the ported worker-loop and provisioning cases — +166 (3143 -> 3309).
 # Re-baselined at the PR #101 review fix (2026-09-28): whitespace-only
 # local OCR on an unresolved page keeps native text — +1 (3142 -> 3143).
 # Re-baselined at the PR #100 review fix (2026-09-28): an entity-encoded
@@ -206,7 +209,10 @@ _BASE_EXECUTED = 3143
 # seven-tool discovery rename, plus five CLI transport cases for
 # `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
-_BASE_SKIPPED = 131  # Reference count before the environment adjustments below.
+_BASE_SKIPPED = 133  # Reference count before the environment adjustments below.
+# +2 at modular-ocr-workers-dots-mocr: the real-eq01 detector case and the
+# real dots.mocr patch case run only when OMRG_EQ01_PDF or
+# OMRG_DOTS_MOCR_MODEL_DIR names a local copy (131 -> 133).
 # Four historical-prefix cases need ignored ground truth. New safety
 # regressions are synthetic and always run. Preserve both exact counts
 # when that optional historical input is absent (as in a fresh checkout).

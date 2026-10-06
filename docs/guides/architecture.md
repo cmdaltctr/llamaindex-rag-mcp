@@ -387,6 +387,70 @@ ChromaDB is confined to `core/vectordb/chroma.py`; LanceDB is confined to
 `core/vectordb/lance_filter.py`. Contracts fail the build if either
 library is imported anywhere else.
 
+### OCR engines and maths routing
+
+OCR engines live outside the OMRG environment:
+
+```text
+ocr-workers/
+  core/                  shared protocol, validation, framing and engine contract
+  engines/dots-mocr/     primary engine, isolated PyTorch environment
+  engines/paddleocr-vl/  fallback engine, isolated Paddle environment
+  provision.py           provisions one named engine from its lockfile
+```
+
+Each engine registers exactly one `omrg.ocr_engine` entry point in its
+own environment. The shared core reports unavailable when it finds zero
+or multiple engines. The host resolves engine folders by name without
+branching on engine names. See the
+[add-an-engine checklist](../../ocr-workers/README.md#add-an-engine).
+
+`capabilities.build_ocr_routes` constructs an `OcrRoutes` pair from
+injected settings. `OCR_ENGINE_PRIMARY=dots-mocr` and
+`OCR_ENGINE_FALLBACK=paddleocr-vl` are the defaults. `OCR_WORKERS_DIR`
+locates the engine projects. An explicit `OCR_WORKER_COMMAND` overrides
+only the primary, with `OCR_WORKER_ENV_DIR` as its working directory.
+Operators migrating to named routes must clear that override after
+re-provisioning. See [migration](ingestion.md#provision-the-engines).
+
+Before each worker dispatch, `OcrRoutes.select()` chooses an available
+primary, otherwise the fallback. If neither is available, the existing
+partial-text behaviour applies. A post-dispatch failure remains a
+per-file error without a cross-route retry. Each client starts its parsing
+subprocess lazily. Identical commands and working directories share a
+client; owner shutdown closes each distinct client. The timeout grows
+with requested page count, with `OCR_WORKER_REQUEST_TIMEOUT` as its floor.
+
+`integrations/pdf/maths_pages.py` reads font resources using `pypdf`.
+Its closed, versioned font list includes maths fonts with Unicode maps.
+`maths_routing.py` keeps the routing decisions outside the reader wrapper:
+
+- Under `document`, a maths-page share of at least
+  `OCR_MATHS_PAGE_FRACTION` selects the whole PDF. The default is `0.10`;
+  `0.0` disables this condition.
+- Under `page`, maths pages skip local OCR and join locally escalated
+  pages in one worker request. Unresolved maths pages keep native text.
+
+`OCR_MATHS_ROUTING_ENABLED=false` disables maths routing, and the master
+`OCR_FALLBACK_ENABLED=false` disables all OCR routing. The answering
+fingerprint supplies `ocr_backend`; documents with several text producers
+report `mixed`. The scalar `pages_maths_font` stays out of embedding and
+language-model metadata text.
+
+Source identity includes both route fingerprints and a maths-routing
+block for every source. The upgrade causes one-off reprocessing on the
+next ingest. This branch shares schema 6 with reader-output normalisation;
+the added payload also invalidates earlier schema-6 digests.
+
+The dots-mocr engine needs explicit model-licence acceptance. It checks
+model-code hashes before loading and parses offline. Experiment 37 measured
+a peak of about 22 GiB of Apple Silicon GPU memory through Metal
+Performance Shaders (MPS) over 257 pages; one-page smoke tests showed
+only 7–9.5 GiB. CPU execution is slower. Operators with limited memory
+can select `OCR_ENGINE_PRIMARY=paddleocr-vl`. Neither runtime enters the
+OMRG base environment. `OMRG_OCR_MODEL_CACHE` can keep per-engine weights
+outside worktrees.
+
 ### A new setting
 
 - Belongs to one area? Add it to that area's `settings.py`
@@ -417,7 +481,7 @@ peers stays an integration.
 Every Python module under `src/omrg/integrations/`, classified. A contract
 test fails when a module is missing from this table.
 
-<!-- integration-inventory:start count=21 -->
+<!-- integration-inventory:start count=24 -->
 
 | Module                                   | Availability                                                   | Selector                                                            | Shared contract                               | Fallback owner                                                                    | Disposition                                                         |
 | ---------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -426,14 +490,17 @@ test fails when a module is missing from this table.
 | `omrg.integrations.leidenalg`         | Optional `community-leiden` extra                              | `COMMUNITY_ALGORITHM=leiden`, via `core/community/registry.py`      | Flat partition callable                       | None; explicit selection fails startup                                            | External adapter behind the community registry                      |
 | `omrg.integrations.magika`            | Optional executable                                            | `MAGIKA_BINARY` selects the binary path, not an implementation      | `FileEntry` detection results                 | `core/codebase/codebase_map.py` suffix detection                                  | Capability integration; remains unregistered                        |
 | `omrg.integrations.ocr_worker`        | Native                                                         | None                                                                | `OcrWorkerClient` and protocol types          | None                                                                              | Facade; exports the worker client and protocol types                |
-| `omrg.integrations.ocr_worker.client` | Native                                                         | `OCR_FALLBACK_ENABLED` and `OCR_WORKER_COMMAND`                     | JSON Lines request/response client            | `integrations/pdf/ocr_routing.py` before dispatch                                 | Subprocess capability adapter; injected into core                   |
-| `omrg.integrations.ocr_worker.fingerprint` | Native                                                      | `OCR_WORKER_COMMAND --capabilities`                                 | Frozen `OcrWorkerFingerprint`                 | Stable unavailable fingerprint                                                     | Capability probe; invalid probes have one stable identity           |
-| `omrg.integrations.ocr_worker.managed` | Native                                                         | `OCR_FALLBACK_ENABLED` and `OCR_WORKER_COMMAND`                     | Owner-scoped `ManagedOcrClient` lifecycle     | `capabilities.build_managed_ocr_client` unavailable path                          | Composition-boundary wrapper; injected into core                    |
+| `omrg.integrations.ocr_worker.client` | Native                                                         | `OCR_FALLBACK_ENABLED` and resolved route command                  | JSON Lines request/response client            | `integrations/pdf/ocr_routing.py` before dispatch                                 | Subprocess capability adapter; injected into core                   |
+| `omrg.integrations.ocr_worker.fingerprint` | Native                                                      | Resolved route command with `--capabilities`                       | Frozen `OcrWorkerFingerprint`                 | Stable unavailable fingerprint                                                     | Capability probe; invalid probes have one stable identity           |
+| `omrg.integrations.ocr_worker.managed` | Native                                                         | `OCR_FALLBACK_ENABLED` and resolved route command                  | Owner-scoped `ManagedOcrClient` lifecycle     | `capabilities.build_ocr_routes` unavailable path                                   | Composition-boundary wrapper; injected into core                    |
 | `omrg.integrations.ocr_worker.protocol` | Native                                                       | None                                                                | Versioned JSON Lines envelopes                 | None                                                                              | Wire-protocol twin (1.1: optional request `pages`, response `pages_markdown`); tests keep its independent copy compatible      |
-| `omrg.integrations.ocr_worker.validation` | Native                                                    | None                                                                | Protocol violation codes and payload checks    | None                                                                              | Split from `protocol.py` at the 500-line ceiling; twinned in `ocr-worker/` the same way |
+| `omrg.integrations.ocr_worker.routes` | Native | `OCR_WORKERS_DIR`, `OCR_ENGINE_PRIMARY`, `OCR_ENGINE_FALLBACK`, `OCR_WORKER_COMMAND` | `OcrRoutes` (primary, fallback) and `select()` | Unknown or unprovisioned engine → stable unavailable fingerprint | Resolves engines by folder name; fallback only before dispatch; per-page timeout scaling |
+| `omrg.integrations.ocr_worker.validation` | Native                                                    | None                                                                | Protocol violation codes and payload checks    | None                                                                              | Split from `protocol.py` at the 500-line ceiling; byte-identical twin in `ocr-workers/core/` |
 | `omrg.integrations.pdf`               | Native                                                         | None                                                                | `get_pdf_reader(reader)`                      | None                                                                              | Public facade exposing the factory                                  |
 | `omrg.integrations.pdf.factory`       | Native                                                         | `PDF_READER=auto`                                                   | Reader instance with `load_data`              | Factory itself (LiteParse → pypdfium2 → pypdf probe, for direct `auto` callers)   | Registry-backed factory; `auto` stays ordered capability resolution |
 | `omrg.integrations.pdf.liteparse`     | Base dependency (despite the stale docstring naming an extra)  | `PDF_READER=liteparse`                                              | `load_data`                                   | `compose.resolve_pdf_reader` `auto` probe                                         | Registered reader strategy                                          |
+| `omrg.integrations.pdf.maths_pages` | Base, via `pypdf` | `OCR_MATHS_ROUTING_ENABLED` | `maths_font_pages` frozenset of 1-based pages | Unreadable font resources → no pages flagged | Closed, versioned maths-font list (`MATHS_DETECTOR_VERSION`) |
+| `omrg.integrations.pdf.maths_routing` | Native | `OCR_MATHS_ROUTING_ENABLED`, `OCR_MATHS_PAGE_FRACTION` | Document-unit condition and page-unit split | Disabled → routing unchanged | Maths-page decisions the pdf-inspector seam calls |
 | `omrg.integrations.pdf.ocr_policy`    | Native                                                         | None                                                                | `OCR_UNCONDITIONAL_TYPES` frozenset           | None                                                                              | Pure routing-policy constant; shared by routing and identity        |
 | `omrg.integrations.pdf.ocr_routing`   | Native                                                         | `PDF_READER=pdf_inspector` and `OCR_FALLBACK_*`                     | `OcrRoutedPdfInspector` and OCR diagnostics  | Keeps partial pdf-inspector Markdown before dispatch                              | Calibrated routing gate around the pdf-inspector strategy           |
 | `omrg.integrations.pdf.page_routing` | Base dependency (`pdf-inspector`) | `OCR_ROUTING_UNIT=page` (opt-in; `document` is the default) | `page_evidence`, `local_ocr`, `resolve_local_model_identity`, `merge_pages` | Full page scan raises — the page unit has no sampled evidence to fall back to | Page-unit OCR routing: per-page evidence, the local tier with its post-check, and the merge back to one document |

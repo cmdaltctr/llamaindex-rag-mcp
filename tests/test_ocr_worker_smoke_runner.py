@@ -1,6 +1,6 @@
 """Testable surface of the OCR worker smoke-test runner (task 2.15).
 
-The runner (``ocr-worker/smoke_test.py``) is separate from the main
+The runner (``ocr-workers/engines/paddleocr-vl/smoke_test.py``) is separate from the main
 pytest suite on purpose. These tests cover ONLY its deterministic
 surface: argument validation, the supported-Python range rejection,
 dry-run plan resolution, and the main-environment Paddle-free
@@ -19,7 +19,8 @@ from typing import Any
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-WORKER_DIR = REPO_ROOT / "ocr-worker"
+WORKER_DIR = REPO_ROOT / "ocr-workers" / "engines" / "paddleocr-vl"
+WORKERS_DIR = REPO_ROOT / "ocr-workers"
 CAL_SCANNED = REPO_ROOT / "tests" / "fixtures" / "pdf_baseline" / "calibration" / "cal_scanned.pdf"
 CAL_TABLE_TEXT = (
     REPO_ROOT / "tests" / "fixtures" / "pdf_baseline" / "calibration" / "cal_table_text.pdf"
@@ -85,7 +86,8 @@ def test_dry_run_plan_resolves_every_command() -> None:
     plan = smoke.build_plan("3.12", CAL_SCANNED, provision_requested=False)
     assert plan["fixture"] == str(CAL_SCANNED)
     assert plan["provision_command"][1:] == [
-        str(WORKER_DIR / "provision.py"),
+        str(WORKERS_DIR / "provision.py"),
+        "paddleocr-vl",
         "--python",
         "3.12",
     ]
@@ -93,10 +95,10 @@ def test_dry_run_plan_resolves_every_command() -> None:
     assert plan["probe_command"] == [
         worker_python,
         "-m",
-        "omrg_ocr_worker",
+        "omrg_ocr_worker_core",
         "--capabilities",
     ]
-    assert plan["parse_command"] == [worker_python, "-m", "omrg_ocr_worker"]
+    assert plan["parse_command"] == [worker_python, "-m", "omrg_ocr_worker_core"]
 
 
 def test_main_dry_run_prints_plan_and_runs_no_subprocess(

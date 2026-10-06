@@ -9,7 +9,9 @@ this way: the pre-change pin recorded schema 3 with top-level keys
 neither OCR block; the diff to this file shows the schema-4 extension
 (OCR routing + resolved worker fingerprint), and the schema-5 extension
 (unconditional routing types in the OCR routing payload), followed by
-schema 6 (reader normalisation version and toggle).
+schema 6 (reader normalisation version and toggle). Schema 6 also carries
+the fallback-route fingerprint and the maths-routing block of change
+modular-ocr-workers-dots-mocr, which shares the one bump (design D7).
 
 The payload is captured by wrapping the module-local ``json`` binding, so
 the recorded structure is exactly what gets canonicalised and hashed —
@@ -36,6 +38,8 @@ EXPECTED_TOP_LEVEL_KEYS = {
     "chunking",
     "ocr_routing",
     "ocr_worker_fingerprint",
+    "ocr_fallback_fingerprint",
+    "maths_routing",
     "metadata_shape",
     "normalisation",
 }
@@ -74,6 +78,7 @@ EXPECTED_OCR_FINGERPRINT_KEYS = {
     "model_revision",
     "output_schema_id",
     "output_schema_version",
+    "backend_id",
 }
 EXPECTED_METADATA_SHAPE_KEYS = {
     "extraction_mode",
@@ -150,6 +155,12 @@ def test_index_identity_payload_shape_is_recorded(monkeypatch: pytest.MonkeyPatc
     assert set(payload["chunking"]["settings"]) == EXPECTED_CHUNKING_SETTINGS_KEYS
     assert set(payload["ocr_routing"]) == EXPECTED_OCR_ROUTING_KEYS
     assert set(payload["ocr_worker_fingerprint"]) == EXPECTED_OCR_FINGERPRINT_KEYS
+    assert set(payload["ocr_fallback_fingerprint"]) == EXPECTED_OCR_FINGERPRINT_KEYS
+    assert payload["maths_routing"] == {
+        "enabled": True,
+        "page_fraction": 0.10,
+        "detector_version": 1,
+    }
     assert set(payload["metadata_shape"]) == EXPECTED_METADATA_SHAPE_KEYS
     assert payload["normalisation"] == {"enabled": True, "version": 2}
 

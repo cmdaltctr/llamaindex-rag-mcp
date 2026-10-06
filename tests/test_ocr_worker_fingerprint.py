@@ -11,6 +11,7 @@ running (design D2.4).
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from collections.abc import Iterator
@@ -178,17 +179,41 @@ def test_capabilities_command_is_one_shot() -> None:
     assert completed.stdout.strip() != ""
 
 
-def test_real_worker_capabilities_command_is_one_shot() -> None:
-    """``python -m omrg_ocr_worker --capabilities`` prints and exits.
+def _paddle_engine_path(tmp_path: Path) -> str:
+    """Return a PYTHONPATH that registers the Paddle engine from source.
 
-    Runs against the real worker package from ocr-worker/src in the
-    MAIN environment: the capabilities module must be importable and
-    one-shot without Paddle (the import boundary test pins the rest).
+    The engine is registered by a ``.dist-info`` folder carrying its
+    ``omrg.ocr_engine`` entry point; nothing is installed.
     """
-    worker_src = REPO_ROOT / "ocr-worker" / "src"
+    dist = tmp_path / "omrg_ocr_paddleocr_vl-0.0.dist-info"
+    dist.mkdir(parents=True)
+    (dist / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: omrg-ocr-paddleocr-vl\nVersion: 0.0\n", encoding="utf-8"
+    )
+    (dist / "entry_points.txt").write_text(
+        "[omrg.ocr_engine]\npaddleocr-vl = omrg_ocr_paddleocr_vl.engine:ENGINE\n",
+        encoding="utf-8",
+    )
+    workers = REPO_ROOT / "ocr-workers"
+    return os.pathsep.join(
+        [
+            str(tmp_path),
+            str(workers / "core" / "src"),
+            str(workers / "engines" / "paddleocr-vl" / "src"),
+        ]
+    )
+
+
+def test_real_worker_capabilities_command_is_one_shot(tmp_path: Path) -> None:
+    """``python -m omrg_ocr_worker_core --capabilities`` prints and exits.
+
+    Runs the real worker core with the real Paddle engine registered, in
+    the MAIN environment: the capabilities command must be importable
+    and one-shot without Paddle (the import boundary test pins the rest).
+    """
     completed = subprocess.run(
-        [sys.executable, "-m", "omrg_ocr_worker", "--capabilities"],
-        cwd=worker_src,
+        [sys.executable, "-m", "omrg_ocr_worker_core", "--capabilities"],
+        env={**os.environ, "PYTHONPATH": _paddle_engine_path(tmp_path)},
         capture_output=True,
         text=True,
         timeout=30,
@@ -198,17 +223,23 @@ def test_real_worker_capabilities_command_is_one_shot() -> None:
     assert completed.stdout.strip() != ""
 
 
-def test_real_worker_fingerprint_via_probe(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_real_worker_fingerprint_via_probe(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """The probe accepts the real worker's capabilities payload."""
-    worker_src = REPO_ROOT / "ocr-worker" / "src"
-    monkeypatch.setenv("PYTHONPATH", str(worker_src))
-    fingerprint = probe_ocr_worker([sys.executable, "-m", "omrg_ocr_worker"], timeout=PROBE_TIMEOUT)
+    monkeypatch.setenv("PYTHONPATH", _paddle_engine_path(tmp_path))
+    fingerprint = probe_ocr_worker(
+        [sys.executable, "-m", "omrg_ocr_worker_core"], timeout=PROBE_TIMEOUT
+    )
     assert fingerprint.available is True
     assert fingerprint.protocol_version == "1.1"
-    assert "omrg-ocr-worker" in dict(fingerprint.packages)
+    assert fingerprint.backend_id == "paddleocr_vl"
+    packages = dict(fingerprint.packages)
+    assert "omrg-ocr-worker-core" in packages
+    assert "omrg-ocr-worker" not in packages
 
 
-def test_real_worker_fingerprint_declares_paddlex(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_real_worker_fingerprint_declares_paddlex(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     """The fingerprint carries PaddleX, the pipeline's delegation target.
 
     ``PaddleOCRVL.predict`` and ``restructure_pages`` delegate to the
@@ -217,8 +248,9 @@ def test_real_worker_fingerprint_declares_paddlex(monkeypatch: pytest.MonkeyPatc
     worker identity; a Paddle-free environment reports
     ``not-installed`` for it, which is still a stable fingerprint value.
     """
-    worker_src = REPO_ROOT / "ocr-worker" / "src"
-    monkeypatch.setenv("PYTHONPATH", str(worker_src))
-    fingerprint = probe_ocr_worker([sys.executable, "-m", "omrg_ocr_worker"], timeout=PROBE_TIMEOUT)
+    monkeypatch.setenv("PYTHONPATH", _paddle_engine_path(tmp_path))
+    fingerprint = probe_ocr_worker(
+        [sys.executable, "-m", "omrg_ocr_worker_core"], timeout=PROBE_TIMEOUT
+    )
     assert fingerprint.available is True
     assert "paddlex" in dict(fingerprint.packages)
