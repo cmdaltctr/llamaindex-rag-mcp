@@ -287,11 +287,27 @@ def test_page_unit_identity_follows_the_escalation_threshold(effective_settings)
         effective_settings(ocr_routing_unit="page"), **_IDENTITY_KWARGS
     )
     raised_cut = build_index_identity(
-        effective_settings(ocr_routing_unit="page", ocr_local_min_confidence=0.9),
+        effective_settings(ocr_routing_unit="page", ocr_local_min_confidence=0.95),
         **_IDENTITY_KWARGS,
     )
 
     assert raised_cut != default_cut
+
+
+@pytest.mark.parametrize(("unit", "changes"), [("page", True), ("document", False)])
+def test_local_cut_default_change_only_moves_page_identity(
+    effective_settings, unit: str, changes: bool
+) -> None:
+    """The previous 0.8 cut differs from the default only for page routing."""
+    from omrg.core.ingestion.source_state import build_index_identity
+
+    previous = build_index_identity(
+        effective_settings(ocr_routing_unit=unit, ocr_local_min_confidence=0.8),
+        **_IDENTITY_KWARGS,
+    )
+    current = build_index_identity(effective_settings(ocr_routing_unit=unit), **_IDENTITY_KWARGS)
+
+    assert (previous != current) is changes
 
 
 # ── Scenario: degraded extraction recovers when OCR becomes available ─────

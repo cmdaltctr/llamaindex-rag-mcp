@@ -343,8 +343,9 @@ merges back into one document in page order.
 
 A page escalates when the local attempt returns empty or
 whitespace-only text, reports confidence below
-`OCR_LOCAL_MIN_CONFIDENCE` (0.8, calibrated in Experiment 33 task 6.7:
-escalation 46.9%, wrongly kept 11.3%), or flags `hosted_recommended`.
+`OCR_LOCAL_MIN_CONFIDENCE` (0.9, supported by Experiments 33, 37 and 39:
+escalation 59.6%, wrongly kept 2.5% on the 399 flagged pages re-scored in
+Experiment 39), or flags `hosted_recommended`.
 Unreported confidence escalates too. There is deliberately no script or
 typography pre-check: the failure classes announce themselves after the
 attempt, and no measured signal predicts them beforehand.
@@ -394,7 +395,10 @@ the cache root.
 Switching an install to `page` reindexes its sources once: the routing
 unit, the escalation threshold and the resolved model identity join
 the source index identity under that unit, and a different engine
-reads the pages. The modular-engine upgrade also changes identity for
+reads the pages. Raising the default cut from 0.8 to 0.9 also re-indexes
+page-unit sources once on their next ingest. Explicit operator values
+still apply. This cut change leaves the `document` unit's identity unchanged.
+The modular-engine upgrade also changes identity for
 `document` installs, as described below. The local tier's quality residual
 is accepted and named in ADR-069; the deferred retrieval experiment gates any future default
 change.
@@ -407,7 +411,7 @@ change.
 | `OCR_FALLBACK_MIN_CONFIDENCE` | `0.5`   | Confidence floor for text-based PDFs. `0.0` never triggers.      |
 | `OCR_FALLBACK_PAGE_FRACTION`  | `0.10`  | Flagged-page proportion that triggers OCR. `0.0` never triggers. |
 | `OCR_ROUTING_UNIT`            | `document` | `page` opts into per-page routing (see above).                 |
-| `OCR_LOCAL_MIN_CONFIDENCE`    | `0.8`   | Escalation cut for the local tier (page unit only).               |
+| `OCR_LOCAL_MIN_CONFIDENCE`    | `0.9`   | Escalation cut for the local tier (page unit only).               |
 | `OCR_LOCAL_OFFLINE`           | `false` | Forbid the model download.                                        |
 | `OCR_LOCAL_MODEL_DIRECTORY`   | empty   | Model artifact leaf directory; empty means the default cache.     |
 | `OCR_WORKERS_DIR`             | empty   | Absolute path to `ocr-workers`; empty disables folder-based routes. |

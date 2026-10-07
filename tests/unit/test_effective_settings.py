@@ -26,6 +26,17 @@ def test_effective_settings_is_frozen() -> None:
         settings.collection_name = "other"  # type: ignore[misc]
 
 
+def test_local_ocr_confidence_defaults_agree() -> None:
+    """The resolver and injected settings share the calibrated 0.9 default."""
+    from omrg.config import Settings
+
+    assert (
+        Settings.model_fields["ocr_local_min_confidence"].default
+        == EffectiveSettings().ocr_local_min_confidence
+        == 0.9
+    )
+
+
 def test_two_instances_are_independent() -> None:
     """A model_copy overlay must not mutate the instance it was copied from.
 
