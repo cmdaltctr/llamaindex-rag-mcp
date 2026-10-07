@@ -11,7 +11,7 @@
 ## 2. Rescue text extraction
 
 - [x] 2.1 Run `freeze.py --check` for Experiment 33, then extract per-page text with the shipped `liteparse` (OCR off) and `pypdf` adapters and the shipped normaliser for all 40 documents. Verify: `output/rescue_text.json` has 1,123 rows per tier, with reader versions and a SHA-256 per page text.
-- [ ] 2.2 Score each text against the body reference with the imported Experiment 33 token rule, and assign `junk`, `healthy`, `grey` or `excluded`. Verify: recomputed `pypdf` recall equals the frozen `r_pypdf` within 0.0001 on every page, else stop.
+- [ ] 2.2 Score each text against the body reference with the imported Experiment 33 token rule, and assign `junk`, `healthy`, `grey` or `excluded`. Verify: recomputed `pypdf` recall against the full transcription equals the frozen `r_pypdf` within 0.0001 on every page, else stop (approved amendment A2). Quality classes continue to use body recall.
 
 ## 3. Candidate A
 

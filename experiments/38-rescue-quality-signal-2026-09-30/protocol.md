@@ -3,7 +3,7 @@
 - **ID**: `38-rescue-quality-signal-2026-09-30`
 - **Date planned**: 2026-09-30
 - **Operator**: Dr Muhammad Aizat Bin Md Hawari, with Claude Code (plan)
-- **Status**: BLOCKED (2026-10-07: body recall disagrees with frozen all-transcription `r_pypdf`; see `report.md`). Both operator approvals remain recorded in `plan.json`.
+- **Status**: READY TO RUN (2026-10-07: operator approved amendment A2, separating all-text sanity checks from body-only quality classes). Both dependency approvals remain recorded in `plan.json`.
 - **Relation**: OpenSpec change `experiment-38-rescue-quality-signal`; ADR-071 decision 3; TDR-024; NiftyPM AIE-99
 - **Plan**: [`plan.json`](plan.json)
 
@@ -58,7 +58,7 @@ If the operator does not approve `wordfreq`, A1 becomes the word-shape ratio in 
 
 1. Run `uv run python experiments/33-ocr-routing-natural-positive-2026-09-17/freeze.py --check`. Continue only on `freeze verified`.
 2. Extract per-page text with the shipped `liteparse` adapter (OCR off, its default) and the shipped `pypdf` adapter, then apply the shipped reader-output normaliser. Write `output/rescue_text.json` with reader versions and a SHA-256 per page.
-3. Score each text against the body reference and classify it. Stop if recomputed `pypdf` recall differs from the frozen `r_pypdf` by more than 0.0001 on any page.
+3. Check `pypdf` recall against the full transcription and frozen `r_pypdf`. Stop on any difference above 0.0001. Classify quality using body recall. Amendment A2, approved on 2026-10-07 before candidate scoring, corrects the sanity-check reference; Experiment 33 records `r_pypdf` against all text. Frozen data, quality thresholds, gates, prompt and adoption margin stay unchanged.
 4. Score candidate A.
 5. Download the pinned Julia 1 ONNX files (after approval). Run P0. Stop and ask if P0 fails.
 6. Score candidate B. Record CPU seconds per page.

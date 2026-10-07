@@ -34,7 +34,7 @@
 
 The run extracts per-page text with the shipped `liteparse` adapter (OCR off, its default) and the shipped `pypdf` adapter, then applies the shipped reader-output normaliser. The primary population is LiteParse text, because LiteParse is the first rescue tier and the tier that hid `rf06` and `rf07`. `pypdf` text is a secondary population.
 
-A sanity check guards the tokeniser: recomputed `pypdf` recall must equal the frozen `r_pypdf` on every page within 0.0001. If it does not, the run stops.
+A sanity check guards the tokeniser: recomputed `pypdf` recall against the full transcription (`output/.transcripts`) must equal the frozen `r_pypdf` on every page within 0.0001. If it does not, the run stops. Quality classes use the body reference in D2. Amendment A2, approved on 2026-10-07 before candidate scoring, separates these references because Experiment 33 records `r_pypdf` against the full transcription.
 
 Alternative: score only the text the shipped chain returned for each document. Rejected as the primary population. Most documents are never rescued, so the count of scored pages would drop to a few hundred, dominated by two documents. It stays as the document-level view (D5).
 

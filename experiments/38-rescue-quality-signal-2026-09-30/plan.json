@@ -1,7 +1,7 @@
 {
   "experiment_id": "38-rescue-quality-signal-2026-09-30",
   "protocol_version": 1,
-  "status": "BLOCKED",
+  "status": "READY TO RUN",
   "change_ref": "openspec/changes/experiment-38-rescue-quality-signal",
   "niftypm": "AIE-99",
   "source_data": {
@@ -17,7 +17,7 @@
   "text_under_test": {
     "primary": "liteparse adapter page text, OCR off, shipped normaliser applied",
     "secondary": "pypdf adapter page text, shipped normaliser applied",
-    "sanity_check": "recomputed pypdf recall equals frozen r_pypdf within 0.0001 on every page, else stop"
+    "sanity_check": "recomputed pypdf recall against the full transcription (output/.transcripts) equals frozen r_pypdf within 0.0001 on every page, else stop; quality classes use body recall"
   },
   "classes": {
     "junk": "recall < 0.50 and at least one token",
@@ -202,6 +202,17 @@
       "reason": "Experiment 39 (FAIL, report on branch feat/experiment-39-local-tier-escalation) left io06 and Latin handwriting open. The follow-up reuses this experiment's signal, prompt and threshold.",
       "touches_gates_candidates_thresholds_or_margin": false,
       "made_before_run": true
+    },
+    {
+      "id": "A2",
+      "date": "2026-10-07",
+      "status": "APPROVED by operator",
+      "change": "Compare all-text pypdf recall with frozen r_pypdf for the sanity check; continue using body-only recall for quality classes.",
+      "reason": "Experiment 33 build_labels._evidence calculates r_pypdf against the full transcription. The initial check stopped on bd02 p005: full-text recall 0.3078556263 agrees with frozen 0.3079; body recall is 0.9666666667. Saved and newly extracted pypdf text agree against each reference.",
+      "touches_gates_candidates_thresholds_or_margin": false,
+      "made_before_run": false,
+      "made_before_candidate_scoring": true,
+      "original_failure_evidence": "output/recall_check.json at commit adbbf36"
     }
   ]
 }
