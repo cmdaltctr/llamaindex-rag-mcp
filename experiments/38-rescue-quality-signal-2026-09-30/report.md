@@ -90,11 +90,10 @@ The main recommendation is neither signal. The conditional production proposal i
 - All eight import-linter contracts kept; strict OpenSpec validation passed.
 - Models, page text and logs stay in gitignored local folders. Frozen Experiment 33 files and production settings/indexes were not changed.
 - Main verdict, follow-up, runners, analysis and index are committed at `10012ac`. Six exact Gitleaks exceptions were approved on 2026-10-07; all enabled commit hooks passed.
-- NiftyPM AIE-99 remains pending because its MCP tools are unavailable. The cached `niftypm/omrg.json` mirror was restored from v3, with its results description prepared locally; cloud completion stays false and `last_synced` is unchanged.
-- Nothing was pushed or archived. The Experiment 39 change was not merged or cherry-picked. Model files are retained locally while workflow completion is blocked.
-
-1. Enable NiftyPM tools before updating and verifying AIE-99 against the restored mirror.
-2. Complete task 7.2 only after the cloud task and local mirror agree.
+- NiftyPM AIE-99 was updated, completed and read back on 2026-10-07 (`completed_on=2026-10-07T19:14:20.593Z`). Its description links report file `f!trntW8Rm`, attached to the task and downloaded with an exact SHA-256 match to the committed `d7c9145` report snapshot (10,985 bytes).
+- The local `niftypm/omrg.json` completion and description match the verified cloud task. MCP automatic sync emptied the cache arrays; the preserved v3 snapshot was restored and only AIE-99 was refreshed. Other cached records and the full-project `last_synced` timestamp were preserved.
+- The native Nifty document read still returns 403; that unused document is not the report reference. The verified file attachment fulfils task 7.2.
+- The OpenSpec change is archived at [2026-10-07-experiment-38-rescue-quality-signal](../../openspec/changes/archive/2026-10-07-experiment-38-rescue-quality-signal/), with its six requirements synced to the baseline. The Experiment 39 change was not merged or cherry-picked. Models, page text and the worktree are retained. No Experiment 38 branch push was performed.
 
 ## Reproduce
 
@@ -106,7 +105,7 @@ Saved metadata: [rescue_text.json](output/rescue_text.json), [candidate_a.json](
 
 | Dimension | Evidence and status |
 | --- | --- |
-| Completeness | 15/16 tasks checked. Six added requirements mapped. Task 6.1's summary is committed; only task 7.2 remains blocked. |
+| Completeness | 16/16 tasks checked. Six added requirements mapped. Task 6.1's summary is committed; task 7.2's cloud and local state were verified. |
 | Correctness | All eight specified scenarios have implementation/test evidence. 80 experiment tests passed; two documentation checks also passed. |
 | Coherence | D1 to D7 followed, including approved A2. Frozen thresholds, gates, request and revisions match the original plan at `497204b`. |
 
@@ -121,4 +120,4 @@ Saved metadata: [rescue_text.json](output/rescue_text.json), [candidate_a.json](
 
 All saved summary artefact hashes and 464 local text hashes were verified. Resume completed without rescoring for A, B and the local follow-up. The notebook was generated and is gitignored. Analysis ran with the non-interactive plotting backend; its display warning does not affect the tables or plots created in memory.
 
-**Workflow verification:** task 6.1 is complete with its summary committed at `10012ac`. Task 7.2 requires live NiftyPM access before archive. The restored mirror contains the prepared description and remains explicitly unsynced; its cached completion flag is false.
+**Workflow verification:** all 16 tasks are complete and the change is archived. The report attachment was verified byte-for-byte, AIE-99's completion was read back, and the local mirror agrees. Final fast tests, targeted checks and strict spec validation passed. The native-document read and automatic-cache-sync issues are outside this experiment; the supported file attachment and restored snapshot resolved its workflow requirements.

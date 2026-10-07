@@ -2,7 +2,7 @@
   "experiment_id": "38-rescue-quality-signal-2026-09-30",
   "protocol_version": 1,
   "status": "FAIL",
-  "change_ref": "openspec/changes/experiment-38-rescue-quality-signal",
+  "change_ref": "openspec/changes/archive/2026-10-07-experiment-38-rescue-quality-signal",
   "niftypm": "AIE-99",
   "source_data": {
     "experiment": "33-ocr-routing-natural-positive-2026-09-17",

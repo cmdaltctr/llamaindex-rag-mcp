@@ -34,7 +34,7 @@
 ## 7. Close
 
 - [x] 7.1 Write `report.md` and `analysis.py`, set the status, and update the EXP_README row. Verify: the verdict line names the recommended signal or none.
-- [ ] 7.2 Update NiftyPM AIE-99 and `niftypm/omrg.json`. Verify: the task description links the report.
+- [x] 7.2 Update NiftyPM AIE-99 and `niftypm/omrg.json`. Verify: the task description links the report.
 - [x] 7.3 If a candidate is recommended, open a separate proposal for the production change (and a runtime ADR if it is Julia 1). Verify: proposal id recorded in the report.
 
 ## 8. Post-verdict follow-up (feeds Experiment 39)
