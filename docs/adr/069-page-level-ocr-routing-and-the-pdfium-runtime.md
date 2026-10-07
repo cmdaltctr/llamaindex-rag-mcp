@@ -62,22 +62,6 @@ downloading unless offline mode forbids it.
    (0.8, from the calibration above; unreported confidence escalates
    too), or `hosted_recommended` — and the escalated pages go to the
    worker in ONE request.
-
-   **Amendment (2026-10-07):** the default cut is now 0.9. Explicit operator
-   values still apply. [Experiment 39](../../experiments/39-local-tier-escalation-2026-09-30/report.md)
-   re-scored 399 flagged Experiment 33 pages. At 0.9, 238 pages escalate
-   (59.6%), and 4 of 161 kept pages have body recall below 0.5 (2.5%).
-   No non-Latin page is kept. The 0.9 cut passes G1 and G2 but misses
-   **G3**, the escalation budget: 238 pages against a bound of 225
-   (59.6% against 56.6%). We accept that miss because
-   [Experiment 37](../../experiments/37-dots-mocr-routing-acceptance-2026-09-30/report.md)
-   measured high dots.mocr recall on pages the local tier cannot read.
-   Its 37 s median per page implies about 31 extra worker minutes per
-   399 flagged pages, for the 51 additional escalations. This choice follows
-   the results on one corpus; it was not pre-registered. One bad `io06`
-   page remains kept. Experiment 37 used Gemini references, not human
-   ground truth. Page-unit installs using the previous default re-index
-   once; this cut change leaves document-unit identities unchanged.
 3. **Worker protocol 1.1** carries the page list. A request with
    `pages` speaks 1.1; any other request speaks 1.0, the minimum
    version that expresses it, so a worker still on 1.0 keeps serving
@@ -129,7 +113,7 @@ downloading unless offline mode forbids it.
 - The tier halves rather than removes worker cost: on the Experiment 33
   corpus 46.9% of flagged pages still escalate.
 - Residual risk is accepted and named: 11.3% of kept pages fall below
-  0.5 recall, and the `io06` blind spot (confident, half-wrong
+  0.8 recall, and the `io06` blind spot (confident, half-wrong
   early-modern typography) survives the confidence cut. The deferred
   retrieval experiment (task 6.1) gates any future default change; the
   default remains `document`.
@@ -157,3 +141,26 @@ downloading unless offline mode forbids it.
   `pdf_inspector_ocr` when `ocr_backend` is derived, and sets
   `ocr_used`, as the diagnostics contract requires. Both keys are excluded from embedding,
   so the index identity does not change.
+
+## Addendum (2026-10-07)
+
+Decision 2 now uses a default cut of 0.9. Explicit operator values still
+apply. [Experiment 39](../../experiments/39-local-tier-escalation-2026-09-30/report.md)
+re-scored 399 flagged Experiment 33 pages. At 0.9, 238 pages escalate
+(59.6%), and 4 of 161 kept pages have body recall below 0.5 (2.5%).
+No non-Latin page is kept. The 0.9 cut passes G1 and G2 but misses
+**G3**, the escalation budget: 238 pages against a bound of 225
+(59.6% against 56.6%). We accept that miss because
+[Experiment 37](../../experiments/37-dots-mocr-routing-acceptance-2026-09-30/report.md)
+measured high dots.mocr recall on pages the local tier cannot read.
+Its 37 s median per page implies about 31 extra worker minutes per
+399 flagged pages, for the 51 additional escalations. This choice follows
+the results on one corpus; it was not pre-registered. One bad `io06`
+page remains kept. Experiment 37 used Gemini references, not human
+ground truth. Page-unit installs using the previous default re-index
+once; this cut change leaves document-unit identities unchanged.
+
+The original Consequences figures describe the previous 0.8 confidence
+cut. Its 11.3% figure refers to kept pages with body recall below 0.5.
+The original phrase "below 0.8 recall" is a typographical error, confirmed
+by the Experiment 33 calibration and Experiment 39 reproduction.

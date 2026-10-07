@@ -105,6 +105,15 @@ Escalated share: C0 0.508, C1 0.108, C3 0.554, C0@0.9 0.646. Rules that escalate
 3. Decide whether to accept the 0.9 cut. It keeps 0 non-Latin pages and 0.026 bad pages. It escalates 238 pages against 187 for C0, which is 51 more worker calls (about 33 minutes at 38.2 s per page) per 399 pages. It fails G3: 238 pages escalated against a bound of 225.
 4. For `io06`, a rule needs per-line or per-character confidence. Open a new protocol, with operator approval, if the early-modern book case matters.
 
+### Follow-up decision (2026-10-07)
+
+The operator chose option 3 in the separate
+[`raise-local-ocr-min-confidence-to-0-9` change](../../openspec/changes/archive/2026-10-07-raise-local-ocr-min-confidence-to-0-9/proposal.md).
+Commit `0ea1316` sets the default to 0.9, with the additional worker cost
+and G3 miss accepted explicitly. Experiment 37's worker recall supports
+that choice. The experiment remains **FAIL** under its original gates.
+Its 0.8 baseline and saved results stay unchanged.
+
 ## Limits
 
 - One local model, one corpus. The corpus holds no CJK document, so C1 is untested on real CJK text.
