@@ -5,8 +5,8 @@
 ## 1. Plan and approvals
 
 - [x] 1.1 Commit `experiments/38-rescue-quality-signal-2026-09-30/protocol.md` and `plan.json` before any run, with the margin (0.10), the false-positive ceiling (0.02), the junk definition and the Julia question fixed. Verify: `git log` shows the commit before any `output/` file exists.
-- [ ] 1.2 Operator approves `wordfreq` as an experiment-only tool (`uv run --with wordfreq==<pin>`), or chooses the word-shape fallback. Verify: decision recorded in `plan.json` `decision_register`; a fallback choice is an amendment dated before the run.
-- [ ] 1.3 Operator approves the Julia 1 ONNX download (about 580 MB, revision `82a2fad`). Verify: decision recorded in `plan.json` `decision_register`.
+- [x] 1.2 Operator approves `wordfreq` as an experiment-only tool (`uv run --with wordfreq==<pin>`), or chooses the word-shape fallback. Verify: decision recorded in `plan.json` `decision_register`; a fallback choice is an amendment dated before the run.
+- [x] 1.3 Operator approves the Julia 1 ONNX download (about 580 MB, revision `82a2fad`). Verify: decision recorded in `plan.json` `decision_register`.
 
 ## 2. Rescue text extraction
 
@@ -15,7 +15,7 @@
 
 ## 3. Candidate A
 
-- [ ] 3.1 Implement A1, A2 and `s_A` as in design D3. Verify: unit tests on fixed strings (a clean Spanish sentence scores ≥ 0.8; a mixed CJK and Latin junk line scores < 0.5).
+- [x] 3.1 Implement A1, A2 and `s_A` as in design D3. Verify: unit tests on fixed strings (a clean Spanish sentence scores ≥ 0.8; a mixed CJK and Latin junk line scores < 0.5).
 - [ ] 3.2 Score every eligible page. Verify: `output/candidate_a.json` has one score per eligible page and tier.
 
 ## 4. Candidate B runtime
@@ -36,3 +36,10 @@
 - [ ] 7.1 Write `report.md` and `analysis.py`, set the status, and update the EXP_README row. Verify: the verdict line names the recommended signal or none.
 - [ ] 7.2 Update NiftyPM AIE-99 and `niftypm/omrg.json`. Verify: the task description links the report.
 - [ ] 7.3 If a candidate is recommended, open a separate proposal for the production change (and a runtime ADR if it is Julia 1). Verify: proposal id recorded in the report.
+
+## 8. Post-verdict follow-up (feeds Experiment 39)
+
+Runs only after the G1 to G3 verdict in 6.1. It follows Experiment 39 (report on branch `feat/experiment-39-local-tier-escalation`). It tests whether a text signal catches the pages a confidence cut misses: `io06` and Latin handwriting (`rf06`, `rf07`). It adds no new design and no new OCR. It changes no gate, candidate, threshold or margin.
+
+- [ ] 8.1 Score the selected signal on the 464 saved local OCR texts of Experiment 33 (`experiments/33-ocr-routing-natural-positive-2026-09-17/output/.local_ocr_text/<doc>/p<NNN>.md`, rows in `output/local_ocr/pages.json`, frozen `body_recall`). Use the selected candidate (A or Julia 1). If neither is selected, score both. Reuse the same signal code, the same frozen prompt wording and the same decision threshold. Verify: `freeze.py --check` passes first, and `output/local_text_signal.json` has one score per page.
+- [ ] 8.2 Report AUC for separating pages with `body_recall` < 0.5 from the rest, on the 399 gated pages and on `io06` alone (13 bad of 66). Compare with Experiment 39's characters-per-page AUC of 0.788 and its follow-up trigger of 0.8. Verify: the numbers are in `output/summary.json` and `report.md`, and the report says whether the signal catches `io06`, `rf06` and `rf07`.

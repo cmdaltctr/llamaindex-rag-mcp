@@ -26,6 +26,7 @@
 - Changing TDR-024, the reader chain, the gate thresholds or any default.
 - Choosing the production runtime for Julia 1. That is a separate ADR.
 - Fixing `mx02`, `mx07`, `tl07`, `tl08` (detection) or `bd04` (definition).
+- Making OpenJev (Verdict: 151M parameters, 512-token cap, English banking training) an arm of this experiment. Any OpenJev test for retrieval use is a separate experiment.
 
 ## Decisions
 
@@ -85,6 +86,16 @@ Because `rf06` holds about a third of the junk pages, the report also gives a do
 | any | yes | yes | B, with a runtime ADR |
 | no | no | any | neither; record why |
 | no | yes | no | neither; the operator decides whether B's gain alone justifies it |
+
+### D7. Post-verdict follow-up on local OCR text
+
+After the verdict, the selected signal is scored on the 464 saved local OCR texts of Experiment 33. This is the gap Experiment 39 left: its confidence cut and script rule cannot see `io06` (confident, half-wrong) or Latin handwriting (`rf06`, `rf07`).
+
+- It reuses the frozen signal code, prompt wording and threshold. Nothing is retuned.
+- The main measure is AUC for body recall below 0.5, on the 399 gated pages and on `io06` alone. AUC needs no threshold. The baseline is Experiment 39's characters-per-page AUC of 0.788, with a follow-up trigger of 0.8.
+- `rf06` and `rf07` text stays local. Candidate A and Julia 1 both run on this machine, so no hosted API sees it.
+- Limit: local OCR text of these pages is short and noisy compared with the rescue text the signal was built on. A low AUC may reflect that and not the signal.
+- If the AUC reaches 0.8, a new protocol is needed before any production use, because the local-tier decision has its own gates (Experiment 39).
 
 ## Risks / Trade-offs
 

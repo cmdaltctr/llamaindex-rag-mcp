@@ -1,7 +1,7 @@
 {
   "experiment_id": "38-rescue-quality-signal-2026-09-30",
   "protocol_version": 1,
-  "status": "PLANNED",
+  "status": "READY TO RUN",
   "change_ref": "openspec/changes/experiment-38-rescue-quality-signal",
   "niftypm": "AIE-99",
   "source_data": {
@@ -57,7 +57,7 @@
           "hi",
           "bn"
         ],
-        "version": null
+        "version": "3.1.1"
       },
       "A2": {
         "name": "script consistency",
@@ -184,15 +184,24 @@
   "production_change": "none; a recommendation opens a separate proposal",
   "decision_register": [
     {
-      "item": "wordfreq as an experiment-only tool (uv run --with)",
-      "status": "PENDING operator approval",
-      "date": null
+      "item": "wordfreq as an experiment-only tool (uv run --with wordfreq==3.1.1)",
+      "status": "APPROVED by operator: approve all",
+      "date": "2026-10-07"
     },
     {
-      "item": "Julia 1 ONNX download, about 580 MB",
-      "status": "PENDING operator approval",
-      "date": null
+      "item": "Julia 1 ONNX download, approximately 614 MB including tokeniser",
+      "status": "APPROVED by operator: approve all",
+      "date": "2026-10-07"
     }
   ],
-  "amendments": []
+  "amendments": [
+    {
+      "id": "A1",
+      "date": "2026-10-07",
+      "change": "Added a post-verdict follow-up (tasks 8.1 and 8.2, design D7): score the selected signal on the 464 saved Experiment 33 local OCR texts and report AUC for body_recall < 0.5 on the 399 gated pages and on io06. Added a Non-Goal: OpenJev (Verdict) is not an arm of this experiment.",
+      "reason": "Experiment 39 (FAIL, report on branch feat/experiment-39-local-tier-escalation) left io06 and Latin handwriting open. The follow-up reuses this experiment's signal, prompt and threshold.",
+      "touches_gates_candidates_thresholds_or_margin": false,
+      "made_before_run": true
+    }
+  ]
 }
