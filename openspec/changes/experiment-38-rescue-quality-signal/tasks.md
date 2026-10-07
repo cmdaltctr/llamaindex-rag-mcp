@@ -29,7 +29,7 @@
 
 ## 6. Summarise
 
-- [ ] 6.1 Run `summarise_eval.py`: junk recall and healthy false-positive rate at both operating points, per-document recall, document-cluster bootstrap intervals (seed 38), McNemar, document routing for all 40 documents, and G1 to G3. Verify: `output/summary.json` committed, and the outcome follows the design D6 table.
+- [x] 6.1 Run `summarise_eval.py`: junk recall and healthy false-positive rate at both operating points, per-document recall, document-cluster bootstrap intervals (seed 38), McNemar, document routing for all 40 documents, and G1 to G3. Verify: `output/summary.json` committed, and the outcome follows the design D6 table.
 
 ## 7. Close
 

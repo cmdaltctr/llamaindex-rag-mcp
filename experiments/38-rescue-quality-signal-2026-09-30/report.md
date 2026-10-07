@@ -89,12 +89,12 @@ The main recommendation is neither signal. The conditional production proposal i
 - Experiment tests: 80 passed (82 including the documentation link checks). New tests failed before implementation; the A2 drift test also failed with its guard removed.
 - All eight import-linter contracts kept; strict OpenSpec validation passed.
 - Models, page text and logs stay in gitignored local folders. Frozen Experiment 33 files and production settings/indexes were not changed.
-- Main verdict and follow-up are saved. Six exact Gitleaks exceptions were approved on 2026-10-07; the enabled secret-scanning hook passed. The results commit awaits the final pre-commit test run.
+- Main verdict, follow-up, runners, analysis and index are committed at `10012ac`. Six exact Gitleaks exceptions were approved on 2026-10-07; all enabled commit hooks passed.
 - NiftyPM AIE-99 remains pending because its MCP tools are unavailable. The cached `niftypm/omrg.json` mirror was restored from v3, with its results description prepared locally; cloud completion stays false and `last_synced` is unchanged.
 - Nothing was pushed or archived. The Experiment 39 change was not merged or cherry-picked. Model files are retained locally while workflow completion is blocked.
 
-1. Finish the enabled commit hooks and save the results commit.
-2. Enable NiftyPM tools before updating and verifying AIE-99 against the restored mirror.
+1. Enable NiftyPM tools before updating and verifying AIE-99 against the restored mirror.
+2. Complete task 7.2 only after the cloud task and local mirror agree.
 
 ## Reproduce
 
@@ -106,7 +106,7 @@ Saved metadata: [rescue_text.json](output/rescue_text.json), [candidate_a.json](
 
 | Dimension | Evidence and status |
 | --- | --- |
-| Completeness | 14/16 tasks checked. Six added requirements mapped. Tasks 6.1 and 7.2 remain blocked. |
+| Completeness | 15/16 tasks checked. Six added requirements mapped. Task 6.1's summary is committed; only task 7.2 remains blocked. |
 | Correctness | All eight specified scenarios have implementation/test evidence. 80 experiment tests passed; two documentation checks also passed. |
 | Coherence | D1 to D7 followed, including approved A2. Frozen thresholds, gates, request and revisions match the original plan at `497204b`. |
 
@@ -121,4 +121,4 @@ Saved metadata: [rescue_text.json](output/rescue_text.json), [candidate_a.json](
 
 All saved summary artefact hashes and 464 local text hashes were verified. Resume completed without rescoring for A, B and the local follow-up. The notebook was generated and is gitignored. Analysis ran with the non-interactive plotting backend; its display warning does not affect the tables or plots created in memory.
 
-**Workflow verification:** the six exact digest scan exceptions are approved and the secret scan passes. Task 6.1 awaits the results commit; task 7.2 requires NiftyPM access. The restored mirror contains the prepared description and remains explicitly unsynced.
+**Workflow verification:** task 6.1 is complete with its summary committed at `10012ac`. Task 7.2 requires live NiftyPM access before archive. The restored mirror contains the prepared description and remains explicitly unsynced; its cached completion flag is false.
