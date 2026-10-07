@@ -3,7 +3,7 @@
 - **ID**: `38-rescue-quality-signal-2026-09-30`
 - **Date planned**: 2026-09-30
 - **Operator**: Dr Muhammad Aizat Bin Md Hawari, with Claude Code (plan)
-- **Status**: READY TO RUN (both operator approvals recorded on 2026-10-07 in `plan.json` `decision_register`)
+- **Status**: BLOCKED (2026-10-07: body recall disagrees with frozen all-transcription `r_pypdf`; see `report.md`). Both operator approvals remain recorded in `plan.json`.
 - **Relation**: OpenSpec change `experiment-38-rescue-quality-signal`; ADR-071 decision 3; TDR-024; NiftyPM AIE-99
 - **Plan**: [`plan.json`](plan.json)
 

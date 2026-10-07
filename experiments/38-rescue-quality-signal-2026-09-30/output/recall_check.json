@@ -1,0 +1,61 @@
+{
+  "tolerance": 0.0001,
+  "passed": [
+    {
+      "doc_id": "bd01",
+      "page": 1,
+      "body_recall": 0.9565217391304348,
+      "frozen_r_pypdf": 0.9565,
+      "body_reference_tokens": 276,
+      "frozen_all_reference_tokens": 276
+    },
+    {
+      "doc_id": "bd01",
+      "page": 2,
+      "body_recall": 0.9953874538745388,
+      "frozen_r_pypdf": 0.9954,
+      "body_reference_tokens": 1084,
+      "frozen_all_reference_tokens": 1084
+    },
+    {
+      "doc_id": "bd01",
+      "page": 3,
+      "body_recall": 0.9885764499121266,
+      "frozen_r_pypdf": 0.9886,
+      "body_reference_tokens": 1138,
+      "frozen_all_reference_tokens": 1138
+    },
+    {
+      "doc_id": "bd01",
+      "page": 4,
+      "body_recall": 0.9883720930232558,
+      "frozen_r_pypdf": 0.9884,
+      "body_reference_tokens": 1204,
+      "frozen_all_reference_tokens": 1204
+    },
+    {
+      "doc_id": "bd01",
+      "page": 5,
+      "body_recall": 0.9888,
+      "frozen_r_pypdf": 0.9888,
+      "body_reference_tokens": 1250,
+      "frozen_all_reference_tokens": 1250
+    },
+    {
+      "doc_id": "bd01",
+      "page": 6,
+      "body_recall": 0.9858490566037735,
+      "frozen_r_pypdf": 0.9858,
+      "body_reference_tokens": 212,
+      "frozen_all_reference_tokens": 212
+    }
+  ],
+  "failed": {
+    "doc_id": "bd02",
+    "page": 5,
+    "body_recall": 0.9666666666666667,
+    "frozen_r_pypdf": 0.3079,
+    "body_reference_tokens": 150,
+    "frozen_all_reference_tokens": 471
+  }
+}

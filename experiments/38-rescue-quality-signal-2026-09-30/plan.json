@@ -1,7 +1,7 @@
 {
   "experiment_id": "38-rescue-quality-signal-2026-09-30",
   "protocol_version": 1,
-  "status": "READY TO RUN",
+  "status": "BLOCKED",
   "change_ref": "openspec/changes/experiment-38-rescue-quality-signal",
   "niftypm": "AIE-99",
   "source_data": {
