@@ -202,7 +202,8 @@ class Settings(StorageValidationMixin, OcrRouteSettingsMixin, BaseSettings):
     # Flat names: the nested delimiter binds only to nested blocks, so a
     # nested spelling is discarded in silence (config/legacy.py aliases).
     ocr_routing_unit: str = "document"
-    ocr_local_min_confidence: float = Field(default=0.8, ge=0.0, le=1.0)  # exp 33 t6.7
+    # Experiments 33, 37 and 39 support the 0.9 cut.
+    ocr_local_min_confidence: float = Field(default=0.9, ge=0.0, le=1.0)
     ocr_local_offline: LegacyBool = False
     ocr_local_model_directory: str = ""
 

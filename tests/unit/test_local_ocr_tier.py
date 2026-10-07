@@ -186,7 +186,7 @@ def test_readable_page_does_not_escalate(monkeypatch, tmp_path, effective_settin
         [
             SimpleNamespace(
                 pages=[
-                    _ocr_page(1, "readable", _provenance(confidence=0.8)),
+                    _ocr_page(1, "readable", _provenance(confidence=0.9)),
                 ]
             )
         ]
@@ -221,10 +221,15 @@ def test_whitespace_only_text_escalates(monkeypatch, tmp_path, effective_setting
     assert "empty_text" in result.reasons
 
 
-def test_confidence_below_the_cut_escalates(monkeypatch, tmp_path, effective_settings):
-    """The calibrated 0.8 cut: below it, the worker rereads the page."""
+@pytest.mark.parametrize("confidence", [0.79, 0.85])
+def test_confidence_below_the_cut_escalates(monkeypatch, tmp_path, effective_settings, confidence):
+    """Below the default 0.9 cut, the worker rereads the page."""
     calls = _Calls(
-        [SimpleNamespace(pages=[_ocr_page(1, "confident enough?", _provenance(confidence=0.79))])]
+        [
+            SimpleNamespace(
+                pages=[_ocr_page(1, "confident enough?", _provenance(confidence=confidence))]
+            )
+        ]
     )
     _stub_process(monkeypatch, calls)
 
@@ -333,12 +338,12 @@ def test_payload_gains_the_model_only_when_resolved_and_page_unit(effective_sett
     unresolved = ocr_routing_payload(page, local_model_identity=None)
 
     assert with_model["local_tier"] == {
-        "min_confidence": 0.8,
+        "min_confidence": 0.9,
         "model": "pp-ocrv6-small@oar-ocr-v0.7.0",
     }
     # Absence means unresolved (runtime missing): the identity moves when it
     # appears, which is correct, because the tier's text changes with it.
-    assert unresolved["local_tier"] == {"min_confidence": 0.8}
+    assert unresolved["local_tier"] == {"min_confidence": 0.9}
 
 
 def test_document_unit_ignores_a_resolved_model(effective_settings):
@@ -373,7 +378,7 @@ def test_resolved_payload_probes_only_when_the_tier_can_run(monkeypatch, effecti
     )
 
     assert probed == [{"offline": False}]
-    assert payload["local_tier"] == {"min_confidence": 0.8, "model": "m@r1"}
+    assert payload["local_tier"] == {"min_confidence": 0.9, "model": "m@r1"}
 
 
 # ── The resolution probe itself ────────────────────────────────────────────

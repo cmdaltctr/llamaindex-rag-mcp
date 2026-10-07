@@ -304,10 +304,9 @@ class EffectiveSettings(BaseModel):
 
     # ── OCR routing unit and local tier (change page-level-ocr-routing) ──
     # "document" is the shipped whole-PDF behaviour; "page" is opt-in and
-    # routes page by page. The local minimum confidence comes from
-    # Experiment 33 task 6.7.
+    # routes page by page. Experiments 33, 37 and 39 support the 0.9 cut.
     ocr_routing_unit: str = "document"  # see OCR_ROUTING_UNITS
-    ocr_local_min_confidence: float = Field(default=0.8, ge=0.0, le=1.0)
+    ocr_local_min_confidence: float = Field(default=0.9, ge=0.0, le=1.0)
     ocr_local_offline: bool = False
     ocr_local_model_directory: str = ""
 
