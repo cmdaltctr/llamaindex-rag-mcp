@@ -3,7 +3,7 @@
 - **ID**: `38-rescue-quality-signal-2026-09-30`
 - **Date planned**: 2026-09-30
 - **Operator**: Dr Muhammad Aizat Bin Md Hawari, with Claude Code (plan)
-- **Status**: READY TO RUN (2026-10-07: operator approved amendment A2, separating all-text sanity checks from body-only quality classes). Both dependency approvals remain recorded in `plan.json`.
+- **Status**: FAIL (2026-10-07: neither candidate passes the rescue gates; the 464-text follow-up is complete). Amendment A2 and both dependency approvals remain recorded in `plan.json`. See `report.md` for results and outstanding workflow blockers.
 - **Relation**: OpenSpec change `experiment-38-rescue-quality-signal`; ADR-071 decision 3; TDR-024; NiftyPM AIE-99
 - **Plan**: [`plan.json`](plan.json)
 

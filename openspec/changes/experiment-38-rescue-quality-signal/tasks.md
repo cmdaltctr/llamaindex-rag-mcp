@@ -11,21 +11,21 @@
 ## 2. Rescue text extraction
 
 - [x] 2.1 Run `freeze.py --check` for Experiment 33, then extract per-page text with the shipped `liteparse` (OCR off) and `pypdf` adapters and the shipped normaliser for all 40 documents. Verify: `output/rescue_text.json` has 1,123 rows per tier, with reader versions and a SHA-256 per page text.
-- [ ] 2.2 Score each text against the body reference with the imported Experiment 33 token rule, and assign `junk`, `healthy`, `grey` or `excluded`. Verify: recomputed `pypdf` recall against the full transcription equals the frozen `r_pypdf` within 0.0001 on every page, else stop (approved amendment A2). Quality classes continue to use body recall.
+- [x] 2.2 Score each text against the body reference with the imported Experiment 33 token rule, and assign `junk`, `healthy`, `grey` or `excluded`. Verify: recomputed `pypdf` recall against the full transcription equals the frozen `r_pypdf` within 0.0001 on every page, else stop (approved amendment A2). Quality classes continue to use body recall.
 
 ## 3. Candidate A
 
 - [x] 3.1 Implement A1, A2 and `s_A` as in design D3. Verify: unit tests on fixed strings (a clean Spanish sentence scores ≥ 0.8; a mixed CJK and Latin junk line scores < 0.5).
-- [ ] 3.2 Score every eligible page. Verify: `output/candidate_a.json` has one score per eligible page and tier.
+- [x] 3.2 Score every eligible page. Verify: `output/candidate_a.json` has one score per eligible page and tier.
 
 ## 4. Candidate B runtime
 
-- [ ] 4.1 Download the pinned Julia 1 ONNX files into gitignored `output/.models/` and record their SHA-256. Verify: hashes in `plan.json`.
-- [ ] 4.2 Port the request encoder to numpy and run parity check P0 on `parity-cases.json`. Verify: ≥ 99 of 100 argmax matches and ≤ 0.01 absolute logit error, and the type mix of the cases recorded. On failure, stop and ask the operator.
+- [x] 4.1 Download the pinned Julia 1 ONNX files into gitignored `output/.models/` and record their SHA-256. Verify: hashes in `plan.json`.
+- [x] 4.2 Port the request encoder to numpy and run parity check P0 on `parity-cases.json`. Verify: ≥ 99 of 100 argmax matches and ≤ 0.01 absolute logit error, and the type mix of the cases recorded. On failure, stop and ask the operator.
 
 ## 5. Candidate B
 
-- [ ] 5.1 Score every eligible page with the fixed request (design D4). Verify: `output/candidate_b.json` has `P(yes)` per page and tier, and CPU seconds per page.
+- [x] 5.1 Score every eligible page with the fixed request (design D4). Verify: `output/candidate_b.json` has `P(yes)` per page and tier, and CPU seconds per page.
 
 ## 6. Summarise
 
@@ -33,13 +33,13 @@
 
 ## 7. Close
 
-- [ ] 7.1 Write `report.md` and `analysis.py`, set the status, and update the EXP_README row. Verify: the verdict line names the recommended signal or none.
+- [x] 7.1 Write `report.md` and `analysis.py`, set the status, and update the EXP_README row. Verify: the verdict line names the recommended signal or none.
 - [ ] 7.2 Update NiftyPM AIE-99 and `niftypm/omrg.json`. Verify: the task description links the report.
-- [ ] 7.3 If a candidate is recommended, open a separate proposal for the production change (and a runtime ADR if it is Julia 1). Verify: proposal id recorded in the report.
+- [x] 7.3 If a candidate is recommended, open a separate proposal for the production change (and a runtime ADR if it is Julia 1). Verify: proposal id recorded in the report.
 
 ## 8. Post-verdict follow-up (feeds Experiment 39)
 
 Runs only after the G1 to G3 verdict in 6.1. It follows Experiment 39 (report on branch `feat/experiment-39-local-tier-escalation`). It tests whether a text signal catches the pages a confidence cut misses: `io06` and Latin handwriting (`rf06`, `rf07`). It adds no new design and no new OCR. It changes no gate, candidate, threshold or margin.
 
-- [ ] 8.1 Score the selected signal on the 464 saved local OCR texts of Experiment 33 (`experiments/33-ocr-routing-natural-positive-2026-09-17/output/.local_ocr_text/<doc>/p<NNN>.md`, rows in `output/local_ocr/pages.json`, frozen `body_recall`). Use the selected candidate (A or Julia 1). If neither is selected, score both. Reuse the same signal code, the same frozen prompt wording and the same decision threshold. Verify: `freeze.py --check` passes first, and `output/local_text_signal.json` has one score per page.
-- [ ] 8.2 Report AUC for separating pages with `body_recall` < 0.5 from the rest, on the 399 gated pages and on `io06` alone (13 bad of 66). Compare with Experiment 39's characters-per-page AUC of 0.788 and its follow-up trigger of 0.8. Verify: the numbers are in `output/summary.json` and `report.md`, and the report says whether the signal catches `io06`, `rf06` and `rf07`.
+- [x] 8.1 Score the selected signal on the 464 saved local OCR texts of Experiment 33 (`experiments/33-ocr-routing-natural-positive-2026-09-17/output/.local_ocr_text/<doc>/p<NNN>.md`, rows in `output/local_ocr/pages.json`, frozen `body_recall`). Use the selected candidate (A or Julia 1). If neither is selected, score both. Reuse the same signal code, the same frozen prompt wording and the same decision threshold. Verify: `freeze.py --check` passes first, and `output/local_text_signal.json` has one score per page.
+- [x] 8.2 Report AUC for separating pages with `body_recall` < 0.5 from the rest, on the 399 gated pages and on `io06` alone (13 bad of 66). Compare with Experiment 39's characters-per-page AUC of 0.788 and its follow-up trigger of 0.8. Verify: the numbers are in `output/summary.json` and `report.md`, and the report says whether the signal catches `io06`, `rf06` and `rf07`.

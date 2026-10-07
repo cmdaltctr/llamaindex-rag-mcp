@@ -32,6 +32,12 @@ def body_reference(source: Path, doc_id: str, page: int, rule: Any) -> list[str]
     return rule.tokens(text)
 
 
+def all_text_reference(source: Path, doc_id: str, page: int, rule: Any) -> list[str]:
+    """Read the full transcription used by Experiment 33's frozen r_pypdf."""
+    path = source / "output" / ".transcripts" / doc_id / f"p{page:03d}.json"
+    return rule.tokens(read_json(path).get("transcription") or "")
+
+
 def classify_page(text: str, reference: list[str], frozen_label: str, rule: Any) -> dict:
     """Apply design D2 using the imported frozen multiset token rule."""
     count = len(rule.tokens(text))
@@ -57,11 +63,11 @@ def classify_page(text: str, reference: list[str], frozen_label: str, rule: Any)
 
 
 def verify_pypdf_recall(observed: float, frozen: float, doc_id: str, page: int) -> None:
-    """Stop whenever a page's body recall disagrees with frozen r_pypdf."""
+    """Stop whenever a page's all-text recall disagrees with frozen r_pypdf."""
     if abs(Decimal(str(observed)) - Decimal(str(frozen))) > Decimal("0.0001"):
         raise ValueError(
             f"pypdf recall mismatch: {doc_id} p{page:03d}, "
-            f"body={observed:.8f}, frozen r_pypdf={frozen:.8f}"
+            f"all_text={observed:.8f}, frozen r_pypdf={frozen:.8f}"
         )
 
 
@@ -79,8 +85,20 @@ def label_rescue(source: Path, resume: bool) -> None:
     code_hash = sha256(Path(__file__))
     if payload.get("labelled_documents") and not resume:
         raise ValueError("classification checkpoint exists; use --resume")
+    amended = False
     if payload.get("classification_sha256", code_hash) != code_hash:
-        raise ValueError("classification code changed; resume refused")
+        approved_a2 = any(
+            item["id"] == "A2" and item.get("status", "").startswith("APPROVED")
+            for item in plan.get("amendments", [])
+        )
+        if not approved_a2 or payload.get("classification_amendment") == "A2":
+            raise ValueError("classification code changed; resume refused")
+        original_check = OUTPUT / "recall_check_before_a2.json"
+        if not original_check.exists():
+            atomic_json(original_check, read_json(OUTPUT / "recall_check.json"))
+        payload["labelled_documents"] = []
+        amended = True
+        print("[A2] approved reference correction: rechecking every document", flush=True)
     rule = load_token_rule(source)
     evidence = {
         (r["doc_id"], r["page"]): r
@@ -88,11 +106,12 @@ def label_rescue(source: Path, resume: bool) -> None:
     }
     checked = (
         read_json(OUTPUT / "recall_check.json")
-        if resume and (OUTPUT / "recall_check.json").exists()
-        else {"tolerance": 0.0001, "passed": [], "failed": None}
+        if resume and not amended and (OUTPUT / "recall_check.json").exists()
+        else {"tolerance": 0.0001, "reference": "full transcription", "passed": [], "failed": None}
     )
     payload.setdefault("labelled_documents", [])
     payload["classification_sha256"] = code_hash
+    payload["classification_amendment"] = "A2"
     for doc_id in payload["completed_documents"]:
         if doc_id in payload["labelled_documents"]:
             continue
@@ -109,16 +128,20 @@ def label_rescue(source: Path, resume: bool) -> None:
             frozen = evidence[(doc_id, page)]
             result = classify_page(texts[row["tier"]][page - 1], reference, frozen["label"], rule)
             if row["tier"] == "pypdf":
+                full_reference = all_text_reference(source, doc_id, page, rule)
+                all_recall = rule.recall(texts["pypdf"][page - 1], full_reference)
+                result["all_text_recall"] = all_recall
                 check = {
                     "doc_id": doc_id,
                     "page": page,
                     "body_recall": result["body_recall"],
+                    "all_text_recall": all_recall,
                     "frozen_r_pypdf": frozen["r_pypdf"],
                     "body_reference_tokens": len(reference),
                     "frozen_all_reference_tokens": frozen["reference_tokens"],
                 }
                 try:
-                    verify_pypdf_recall(result["body_recall"], frozen["r_pypdf"], doc_id, page)
+                    verify_pypdf_recall(all_recall, frozen["r_pypdf"], doc_id, page)
                 except ValueError:
                     checked["failed"] = check
                     atomic_json(OUTPUT / "recall_check.json", checked)

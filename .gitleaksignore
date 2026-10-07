@@ -86,3 +86,13 @@ experiments/25-token-chunking-ablation-2026-09-08/verify_accounting.py:generic-a
 # pinned public Hugging Face commit revision of Qwen/Qwen3-Embedding-4B,
 # recorded as chunking-context provenance. Not a secret.
 experiments/24-ocr-routing-eval-2026-09-08/output/task_5_1_analysis.json:generic-api-key:327
+
+# Experiment 38: verified SHA-256 digests of the public Julia tokeniser and
+# frozen Experiment 33 token-rule source. Approved on 2026-10-07; each
+# exception covers only the reported file and line, with default rules kept.
+experiments/38-rescue-quality-signal-2026-09-30/plan.json:generic-api-key:92
+experiments/38-rescue-quality-signal-2026-09-30/output/parity.json:generic-api-key:22
+experiments/38-rescue-quality-signal-2026-09-30/output/summary.json:generic-api-key:4641
+experiments/38-rescue-quality-signal-2026-09-30/output/candidate_b.json:generic-api-key:6
+experiments/38-rescue-quality-signal-2026-09-30/output/candidate_b.json:generic-api-key:36
+experiments/38-rescue-quality-signal-2026-09-30/output/candidate_a.json:generic-api-key:6

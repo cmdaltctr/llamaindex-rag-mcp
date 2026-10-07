@@ -76,3 +76,93 @@ def test_body_reference_falls_back_only_if_split_absent(scoring, rule, tmp_path)
     target.parent.mkdir(parents=True)
     target.write_text(json.dumps({"transcription": "Full transcription"}))
     assert scoring.body_reference(tmp_path, "test", 1, rule) == ["full", "transcription"]
+
+
+@pytest.fixture
+def synthetic_run(scoring, tmp_path, monkeypatch):
+    import subprocess
+    from types import SimpleNamespace
+
+    import experiment_io as io
+    import extract_rescue_text as extraction
+
+    source = tmp_path / "source"
+    output = tmp_path / "run" / "output"
+    source.mkdir()
+    original_rule = EXP.parent / "33-ocr-routing-natural-positive-2026-09-17" / "build_labels.py"
+    (source / "build_labels.py").write_text(original_rule.read_text())
+    text = "palabra " * 10
+    files = {
+        "sources.json": {},
+        "labels.json": {},
+        "output/frozen.manifest.json": {},
+        "output/.transcripts/test/p001.json": {"transcription": text + "figura " * 10},
+        "output/.transcripts_split/test/p001.json": {"body_text": text},
+        "output/page_evidence.json": {
+            "pages": [
+                {
+                    "doc_id": "test",
+                    "page": 1,
+                    "label": "usable",
+                    "r_pypdf": 0.5,
+                    "reference_tokens": 20,
+                }
+            ]
+        },
+    }
+    for relative, data in files.items():
+        io.atomic_json(source / relative, data)
+    io.atomic_json(
+        tmp_path / "run" / "plan.json",
+        {
+            "source_data": {"documents": 1, "pages": 1},
+            "decision_register": [{"status": "APPROVED", "date": "2026-10-07"}] * 2,
+            "amendments": [{"id": "A2", "status": "APPROVED by operator"}],
+        },
+    )
+    monkeypatch.setattr(io, "EXP_DIR", tmp_path / "run")
+    monkeypatch.setattr(scoring, "OUTPUT", output)
+    monkeypatch.setattr(extraction, "OUTPUT", output)
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *a, **k: SimpleNamespace(returncode=0, stdout="freeze verified", stderr=""),
+    )
+    for tier in ("liteparse", "pypdf"):
+        io.atomic_json(output / ".rescue_text" / "test" / f"{tier}.json", [text])
+    payload = {
+        "identity": extraction.extraction_identity(source),
+        "completed_documents": ["test"],
+        "rows": [
+            {"doc_id": "test", "page": 1, "tier": tier, "text_sha256": io.text_sha256(text)}
+            for tier in ("liteparse", "pypdf")
+        ],
+    }
+    io.atomic_json(output / "rescue_text.json", payload)
+    return source, output
+
+
+def test_a2_sanity_uses_all_text_while_quality_uses_body(scoring, synthetic_run):
+    source, output = synthetic_run
+    scoring.label_rescue(source, False)
+    result = json.loads((output / "rescue_text.json").read_text())
+    assert all(row["body_recall"] == 1.0 and row["class"] == "healthy" for row in result["rows"])
+    checks = json.loads((output / "recall_check.json").read_text())
+    assert checks["passed"][0]["all_text_recall"] == 0.5
+    assert checks["failed"] is None
+
+
+def test_a2_still_stops_on_all_text_drift(scoring, synthetic_run):
+    source, output = synthetic_run
+    target = source / "output" / "page_evidence.json"
+    evidence = json.loads(target.read_text())
+    evidence["pages"][0]["r_pypdf"] = 0.4
+    target.write_text(json.dumps(evidence))
+    import extract_rescue_text as extraction
+
+    target = output / "rescue_text.json"
+    payload = json.loads(target.read_text())
+    payload["identity"] = extraction.extraction_identity(source)
+    target.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="pypdf recall mismatch"):
+        scoring.label_rescue(source, False)
