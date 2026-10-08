@@ -1,15 +1,89 @@
-# Experiment 38: FAIL, recommend neither rescue-quality signal
+# Experiment 38: FAIL, no signal passes all gates; Jev and local OpenJev come closest
 
 - **ID**: `38-rescue-quality-signal-2026-09-30`
-- **Date run**: 2026-10-07
-- **Operator**: Dr Muhammad Aizat Bin Md Hawari, with Pi
-- **Verdict**: Neither A nor Julia 1 passes the rescue gates. Production stays unchanged.
-- **Protocol**: [protocol.md](protocol.md), [plan.json](plan.json)
-- **Raw results**: [summary.json](output/summary.json), [local_text_signal.json](output/local_text_signal.json)
+- **Date run**: 2026-10-07 (pilot run, then rerun under amendment A3 on the same day)
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari, with Pi (pilot) and Claude Code (A3 rerun)
+- **Verdict**: FAIL. At held-out thresholds no candidate passes G1, G2 and G3. Hosted Jev and local OpenJev both pass G1 and G2 and flag 12 to 14 healthy pages against an allowance of 11. Production stays unchanged.
+- **Protocol**: [protocol.md](protocol.md), [plan.json](plan.json) (amendment A3, wordings, candidates B2 and D)
+- **Raw results**: [lodo_summary.json](output/lodo_summary.json) (A3 verdict), [summary.json](output/summary.json) (pilot), [jev_summary.json](output/jev_summary.json), [local_text_signal.json](output/local_text_signal.json)
 
 ## Bottom line
 
-Candidate A catches junk at the allowed page cost, but its false positives cluster in healthy document `rf05`. Julia's scores reject many healthy pages; at the allowed cost it catches no junk. Candidate A ranks bad local OCR text well in the follow-up. Its rescue threshold sends too many good local OCR pages for another pass.
+- Local OpenJev 27B (MLX 4-bit, page text stays on the machine) ranks junk best: AUC 0.956 with W3. It catches 69 of 89 junk pages with W1 and routes no usable document, but flags 14 healthy pages, so it fails G3.
+- Hosted Jev is the other useful signal. It ranks junk below healthy pages with AUC 0.878 to 0.922 and catches 56 to 60 of 89 junk pages without routing a usable document.
+- It fails because of one gate by one page. With the best wording, it flags 12 of 565 healthy pages (2.12%) against a 2% ceiling (11 pages).
+- Julia 1 cannot do this task. Its AUC stays between 0.48 and 0.54 across three wordings and two input lengths. That is random ordering.
+- Candidate A catches 37 of 89 junk pages but newly routes usable `rf05` and flags 18 healthy pages.
+- The A-then-Jev cascade sends 28% of pages to Jev and catches 50 junk pages. It fails G2 on `rf04`.
+- The pilot numbers below the A3 section used a threshold chosen on the test pages. The A3 section replaces them for the verdict.
+
+## Rerun under amendment A3 (verdict)
+
+Amendment A3 (operator, 2026-10-07) changed three things before the rerun. Hosted Jev became registered candidate C. Every equal-cost threshold now uses leave-one-document-out: each document is flagged with a threshold chosen only on the other documents' healthy LiteParse pages. Three question wordings were registered before scoring, and both models pick one per document by nested leave-one-document-out.
+
+### Held-out results (LiteParse tier, gates as frozen)
+
+| Candidate | What it is | Junk flagged | Healthy flagged | G1 | G2 | G3 | Δ vs A | McNemar p |
+| --- | --- | ---: | ---: | --- | --- | --- | ---: | ---: |
+| A | `wordfreq` + script checks | 37/89 | 18/565 | PASS | FAIL (`rf05`) | FAIL | | |
+| B | Julia, whole page, W1 | 0/89 | 14/565 | FAIL | PASS | FAIL | −0.416 | 1.0 |
+| B2 | Julia, first 2,000 characters, W1 | 0/89 | 12/565 | FAIL | PASS | FAIL | −0.416 | 1.0 |
+| B_sel | Julia, wording chosen per document | 2/89 | 12/565 | FAIL | FAIL (`rf04`) | FAIL | −0.393 | 1.0 |
+| C | Jev, first 2,000 characters, W1 | 60/89 | 14/565 | PASS | PASS | FAIL | +0.258 | 0.00006 |
+| **C_sel** | **Jev, wording chosen per document** | **56/89** | **12/565** | PASS | PASS | FAIL | +0.213 | 0.0004 |
+| E | OpenJev 27B local, first 2,000 characters, W1 | 69/89 | 14/565 | PASS | PASS | FAIL | +0.360 | 2e-10 |
+| E_sel | OpenJev, wording chosen per document | 68/89 | 12/565 | PASS | FAIL (`tl06`) | FAIL | +0.348 | 5e-10 |
+| D | Cascade: A screens 20%, Jev confirms | 50/89 | 11/565 | PASS | FAIL (`rf04`) | PASS | +0.146 | 0.005 |
+| D_julia | Cascade: A screens 20%, Julia confirms | 16/89 | 10/565 | FAIL | FAIL | PASS | | |
+| D_openjev | Cascade: A screens 20%, OpenJev confirms | 59/89 | 11/565 | PASS | FAIL (`rf05`) | PASS | +0.247 | 2e-07 |
+
+- "Healthy flagged" uses the frozen 2% ceiling: 11 of 565 pages. C_sel's 12 false positives sit in `bd07` (5), `tl03` (4), `tl02` (2) and `tl04` (1).
+- Nested selection chose W3 for Julia in all 32 documents with eligible pages. Jev chose W3 in 31 and W2 in 1.
+- The 95% document-cluster interval for junk recall is wide for every signal: C 0.048 to 0.882, C_sel 0.048 to 0.808, D 0.000 to 0.822. Junk is concentrated in `rf06` (41 of 89 LiteParse junk pages).
+- On the pypdf tier, C flags 60 junk and 4 healthy pages; C_sel flags 50 junk and 11 healthy pages.
+
+### Ranking quality per wording (AUC, junk scored below healthy)
+
+| Model | W1: frozen question | W2: question with yes/no descriptions | W3: statement form |
+| --- | ---: | ---: | ---: |
+| Julia, LiteParse | 0.498 | 0.482 | 0.543 |
+| Julia, pypdf | 0.408 | 0.546 | 0.497 |
+| Jev, LiteParse | 0.878 | 0.913 | 0.922 |
+| Jev, pypdf | 0.827 | 0.899 | 0.890 |
+| OpenJev, LiteParse | 0.878 | 0.902 | **0.956** |
+| OpenJev, pypdf | 0.823 | 0.842 | 0.871 |
+
+All Jev calls returned model `jev-1.13.0`. Nested selection chose W3 for OpenJev in all 32 documents. Wordings and the selection rule are in `plan.json` under `wordings`.
+
+### Why Julia fails
+
+- The encoder matches the publisher's `julia/data.py` token for token. A `noul` request differs from the parity-tested `choice` path only by its head text and type id 2. Full `noul` logit parity needs the PyTorch reference, which this experiment does not install.
+- The publisher's `inference-policy.json` states `"calibration": null` and "long-context task accuracy not established".
+- Input length is not the cause: B (whole page) and B2 (first 2,000 characters) give the same result.
+- Wording is not the cause: three wordings all stay near AUC 0.5.
+
+### Cascade D sensitivity
+
+| A screen rate | Junk flagged (Jev / Julia) | Healthy flagged (Jev / Julia) | Gates (Jev / Julia) | Pages sent to model |
+| ---: | ---: | ---: | --- | ---: |
+| 0.10 | 48 / 35 | 11 / 13 | all pass / fails G1, G3 | 19% |
+| **0.20 (registered)** | 50 / 16 | 11 / 10 | fails G2 (`rf04`) / fails G1, G2 | 28% |
+| 0.30 | 50 / 3 | 12 / 11 | fails G2, G3 / fails G1 | 38% |
+
+Julia was given the same cascade (candidate D_julia, registered at the operator's request). It never routes `rf06` and `rf07`, so it fails G1 at every rate, and it catches fewer junk pages than A alone. OpenJev as confirmer (candidate D_openjev) catches 54, 59 and 62 junk pages at screen rates 0.10, 0.20 and 0.30, but newly routes usable `rf05` at every rate, so it fails G2. The Jev 0.10 row passes every gate, but it is a sensitivity setting. Promoting it after seeing the result would be selecting on the test data.
+
+### Local OpenJev setup and cost
+
+- Model: `openjev/openjev-MLX-4bit` (Loop AI, CC BY-NC 4.0, research use). Weights and tokeniser matched the published `SHA256SUMS`; only `README.md` differed.
+- Runtime: the publisher's `helper/shim.py` (sha `81a22f1b`) and `shim_mlx.py` at revision `1c341f65`, mlx 0.32.2, mlx-lm 0.31.3, Python 3.12, isolated venv, no PyTorch. Server bound to `127.0.0.1`, Hugging Face offline mode on.
+- Speed on this Mac: 6.2 to 7.5 seconds per page, one request at a time. All three wordings took about 7.5 hours.
+- Page text never left the machine.
+
+### Cost of hosted Jev
+
+- Page text (first 2,000 characters, including personal records) leaves the machine for every scored page.
+- The A3 rerun sent 3,966 requests (1,322 for W1, 2,644 for W2 and W3) and about 2.85 million input tokens. Mean latency was 0.28 s per request.
+- Jev has closed weights, and `jev-latest` is an alias that can change model.
 
 ## Setup and checks
 
@@ -73,15 +147,25 @@ Candidate A exceeds the baseline by 0.109291 AUC and reaches the 0.8 follow-up t
 
 A catches every bad `io06` and `rf06` page at this threshold, and 10 of 12 bad `rf07` pages. It also flags nearly every good `io06` page. Julia catches none of their bad pages at its frozen threshold. A's ranking warrants a separate protocol for local OCR, with that tier's own gates and new threshold validation. This experiment does not set a production threshold.
 
+## Pilot hosted Jev arm (superseded)
+
+The first Jev scoring used one threshold chosen on the test pages (0.28) and passed G1 to G3 with 60/89 junk and 10/565 healthy pages. Leave-one-document-out thresholds (above) replace this result. Raw pilot output: [jev_summary.json](output/jev_summary.json).
+
 ## Limits and next actions
 
-1. Equal-cost thresholds were chosen on these test pages; production needs validation on new documents.
-2. `rf06` clusters many junk pages; document resampling gives broad intervals.
-3. `wordfreq` has no Latin-language lexicon. This limits A on `io06`; its Latin-script words still use the listed languages.
-4. Published parity covers no `noul` requests. The fixed Julia question was not searched or changed.
-5. Saved local OCR markdown has a different text distribution from reader-rescue text.
+1. The A3 rerun is not blind. The pilot had already shown Jev ahead on the same 40 documents, and A3 was written after that.
+2. `rf06` holds 41 of 89 LiteParse junk pages, so every junk-recall interval is wide.
+3. The 2% ceiling allows 11 healthy pages; C_sel flags 12. One page decides the verdict. More healthy documents would give a stabler rate.
+4. `wordfreq` has no Latin-language lexicon. This limits A on `io06`.
+5. Julia `noul` logit parity is unverified. The structural check rules out an encoder bug but not a model-side difference.
+6. Saved local OCR markdown has a different text distribution from reader-rescue text. The local follow-up was not rerun with Jev wordings.
 
-The main recommendation is neither signal. The conditional production proposal in task 7.3 does not apply. Keep TDR-024 and production defaults unchanged. A new local-tier protocol is the next scientific step.
+No production change. Next steps for the operator:
+
+1. Decide whether page text may go to TypeSafe in production. Without that approval, Jev cannot be adopted on any result.
+2. If yes, test Jev W3 on new documents with more healthy pages, using the same held-out rules and gates.
+3. Drop Julia 1 from further rescue-quality work.
+4. Consider local OpenJev as the privacy-safe option. It needs a commercial licence for production and is about 25 times slower than hosted Jev on this Mac. The smaller OpenJev Flash 9B (5 GB) is untested here.
 
 ## Validation and workflow status
 

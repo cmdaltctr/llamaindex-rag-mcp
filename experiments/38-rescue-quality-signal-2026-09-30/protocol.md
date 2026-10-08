@@ -3,7 +3,7 @@
 - **ID**: `38-rescue-quality-signal-2026-09-30`
 - **Date planned**: 2026-09-30
 - **Operator**: Dr Muhammad Aizat Bin Md Hawari, with Claude Code (plan)
-- **Status**: FAIL (2026-10-07: neither candidate passes the rescue gates; the 464-text follow-up is complete). Amendment A2 and both dependency approvals remain recorded in `plan.json`. See `report.md` for results and outstanding workflow blockers.
+- **Status**: FAIL (2026-10-08, A3 rerun). At leave-one-document-out thresholds no candidate passes G1 to G3. Hosted Jev and local OpenJev pass G1 and G2 and flag 12 to 14 healthy pages against an 11-page ceiling. See `report.md`.
 - **Relation**: OpenSpec change `experiment-38-rescue-quality-signal`; ADR-071 decision 3; TDR-024; NiftyPM AIE-99
 - **Plan**: [`plan.json`](plan.json)
 
@@ -15,7 +15,8 @@ Experiment 33 missed `rf06` and `rf07`, two handwritten Spanish academic records
 
 1. **H1.** Candidate A (deterministic checks) passes gates G1 to G3.
 2. **H2.** Candidate B (Julia 1) passes G1 to G3 and beats candidate A's junk recall by at least 0.10 at equal cost.
-3. **P0 (precondition for H2).** Julia 1 runs through ONNX Runtime, with no PyTorch, and matches the published reference logits.
+3. **H3.** Candidate C (hosted Jev, same question as B) passes G1 to G3 and beats candidate A's junk recall by at least 0.10 at equal cost.
+4. **P0 (precondition for H2).** Julia 1 runs through ONNX Runtime, with no PyTorch, and matches the published reference logits.
 
 ## What "junk" means
 
@@ -38,6 +39,7 @@ Estimate from frozen `r_pypdf`: 953 eligible pages, about 105 non-empty junk pag
 | --- | --- | --- | --- |
 | A | A1 real-word ratio (`wordfreq` Zipf ≥ 1.0 in `en es fr de it pt nl ar hi bn`) and A2 script consistency (share of letters in the most frequent Unicode script) | `s_A = min(A1, A2)` | `s_A < 0.50` |
 | B | Julia 1, `noul` request, options `["no", "yes"]`, question "Is this text readable writing in a natural language, rather than garbled or broken OCR output?" | `s_B = P(yes)` | `s_B < 0.50` |
+| C | Hosted Jev (`jev-latest`, TypeSafe `/v1/systemone`), `noul` question, same wording as B, state = first 2,000 characters of page text, no `criteria` | `s_C` = noul (P(yes)) | `s_C` below threshold |
 | Baseline | today (TDR-024): no signal | none | never flags |
 
 If the operator does not approve `wordfreq`, A1 becomes the word-shape ratio in design D3. That switch is an amendment recorded before the run.
@@ -46,7 +48,7 @@ If the operator does not approve `wordfreq`, A1 becomes the word-shape ratio in 
 
 | Type | Variable | Values |
 | --- | --- | --- |
-| Independent | Signal | A, B, baseline |
+| Independent | Signal | A, B, C, baseline |
 | Dependent | Junk recall | flagged junk ÷ junk, LiteParse text |
 | Dependent | Healthy false-positive rate | flagged healthy ÷ healthy |
 | Dependent | Document routing | the 40 documents under simulated routing |
@@ -62,7 +64,8 @@ If the operator does not approve `wordfreq`, A1 becomes the word-shape ratio in 
 4. Score candidate A.
 5. Download the pinned Julia 1 ONNX files (after approval). Run P0. Stop and ask if P0 fails.
 6. Score candidate B. Record CPU seconds per page.
-7. Summarise: `output/summary.json`, then `report.md`.
+7. Score candidate C with `jev_hosted.py` (needs `TYPESAFE_API_KEY`; page text leaves the machine; operator approved 2026-10-07). Stop if the returned model id changes.
+8. Summarise: `output/summary.json`, then `report.md`.
 
 Checkpoint after each document. Write outputs atomically (`.tmp`, then rename).
 
@@ -112,6 +115,8 @@ Document routing is simulated with the unchanged `0.10` fraction. A document rou
 
 **Julia 1 is adopted only if its junk recall at the equal-cost threshold beats candidate A's by at least 0.10 absolute, an exact one-sided McNemar test on the junk pages gives p < 0.05, and it passes G1, G2, G3 and P0.**
 
+**Hosted Jev is adopted only under the same rule against candidate A (0.10 margin, McNemar p < 0.05, G1, G2, G3), and only after a separate operator decision on sending page text to a third party.** Jev is closed weights and `jev-latest` is an alias; the run stores the returned model id for every page.
+
 Why 0.10: with about 105 junk pages, the 95% interval on a recall between 0.5 and 0.9 has a half-width of 0.06 to 0.10. A smaller gap is inside sampling noise on this corpus. Julia 1 also costs more than the checks: a 580 MB download, a new runtime path, a model identity in the index identity, and about 0.18 s per page on CPU (publisher's figure). The checks cost nothing. The McNemar test uses the pairing: both candidates score the same pages.
 
 ## Interpretation rules
@@ -124,7 +129,7 @@ Why 0.10: with about 105 junk pages, the 95% interval on a recall between 0.5 an
 | no | yes | no | neither; the operator decides whether B's gain alone justifies it |
 
 - `rf06` holds about a third of the junk pages. The report gives per-document recall and a document-cluster bootstrap interval (2,000 resamples, seed 38) beside every pooled recall.
-- The equal-cost threshold is chosen on the test pages, for both candidates alike. A production threshold needs its own check on new documents.
+- Equal-cost thresholds use leave-one-document-out (amendment A3): for each document, the threshold comes from the healthy pages of the other documents, then flags that document's pages. Report pooled recall and false-positive rate from these held-out flags. The single-threshold figures stay as a diagnostic. A production threshold still needs a check on new documents.
 - A recommendation changes nothing in production. It opens a separate proposal (and an ADR for the runtime, if B).
 
 ## What to do if the experiment fails

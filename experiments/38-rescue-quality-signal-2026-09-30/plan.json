@@ -99,11 +99,70 @@
     },
     "baseline": {
       "rule": "TDR-024 today: never flags"
+    },
+    "C": {
+      "model": "jev-latest (TypeSafe hosted System One; response model id recorded per page)",
+      "endpoint": "https://api.typesafe.ai/v1/systemone",
+      "request": {
+        "type": "noul",
+        "question": "Is this text readable writing in a natural language, rather than garbled or broken OCR output?",
+        "state": "first 2000 characters of page text",
+        "head_characters": 2000,
+        "criteria": "none"
+      },
+      "score": "noul (P(yes))",
+      "as_designed_flag": "score < 0.50",
+      "equal_cost": "threshold chosen on these pages by the same rule as A and B",
+      "status": "post-verdict arm under amendment A3; cannot change the frozen main verdict"
+    },
+    "B2": {
+      "basis": "candidate B (same pinned model, encoder, question and options)",
+      "state": "first 2000 characters of page text, the same input as candidate C",
+      "reason": "B read whole pages up to 8192 tokens; the publisher's inference-policy.json states calibration null and long-context task accuracy not established",
+      "score": "P(yes)",
+      "status": "registered 2026-10-07 under A3 before scoring"
+    },
+    "D": {
+      "name": "cascade: A screens, hosted Jev (W1, candidate C scores) confirms",
+      "screen": "A flags a page as suspect when s_A is below the A threshold that flags 20% of the other documents' healthy LiteParse pages",
+      "confirm": "Jev scores only suspect pages; a page is flagged when it is suspect and s_C is below a threshold chosen on the other documents so the combined healthy false-positive rate is at most 0.02",
+      "primary_screen_rate": 0.2,
+      "sensitivity_screen_rates": [
+        0.1,
+        0.3
+      ],
+      "reported": "held-out flags, gates G1 to G3, share of pages sent to Jev",
+      "status": "registered 2026-10-07 under A3 before D was computed; offline from saved A and C scores"
+    },
+    "D_julia": {
+      "name": "cascade: A screens, Julia 1 confirms (B2 scores, first 2000 characters, W1)",
+      "rule": "identical to D: same screen rates 0.20 primary, 0.10 and 0.30 sensitivity, same held-out thresholds",
+      "reason": "operator asked for a fair comparison: D used Jev only",
+      "status": "registered 2026-10-07 under A3 before D_julia was computed; offline from saved A and B2 scores"
+    },
+    "E": {
+      "model": "openjev/openjev-MLX-4bit (Loop AI OpenJev, CC BY-NC 4.0, research use)",
+      "runtime": "helper/shim.py and shim_mlx.py at revision 1c341f65bfe5d50fdb935c71e9739c9e0938d6c4 (helper sha 81a22f1b), mlx 0.32.2, mlx-lm 0.31.3, transformers 5.17.0, Python 3.12, isolated venv; server bound to 127.0.0.1, HF_HUB_OFFLINE=1",
+      "readout_env": {
+        "READOUT_T": "0.85",
+        "READOUT_NOUL_T": "1.829074",
+        "READOUT_NOUL_BIAS": "0",
+        "READOUT_TARGETED": "1",
+        "READOUT_INSTR_STYLE": "pyrepr",
+        "SHIM_STAGGER": "1"
+      },
+      "request": "same /v1/systemone noul request as C: wordings W1 to W3, first 2000 characters of page text",
+      "candidates_reported": [
+        "E (W1)",
+        "E_sel (wording chosen per document by nested leave-one-document-out)",
+        "D_openjev (A screens, OpenJev W1 confirms, same rates as D)"
+      ],
+      "status": "registered 2026-10-07 under A3 before any OpenJev scoring; operator approved the 15 GB download and the non-commercial licence for this research run"
     }
   },
   "operating_points": [
     "as designed (0.50)",
-    "equal cost: threshold where healthy false-positive rate = 0.02, chosen per candidate on these pages"
+    "equal cost: per held-out document, threshold where healthy false-positive rate = 0.02 on the other documents' healthy pages (A3)"
   ],
   "gates": {
     "G1": {
@@ -180,7 +239,7 @@
     "fast_path_s_per_page": 0.008,
     "basis": "Experiment 34 state files; Experiment 33 read time 9.27 s over 1,123 pages"
   },
-  "cloud": "none; hosted Jev (TypeSafe AI) rejected: closed weights, page text would leave the machine",
+  "cloud": "none for A and B; hosted Jev (TypeSafe AI) approved by operator on 2026-10-07 for arm C only under amendment A3: first 2000 characters of each page text, including personal records, are sent to api.typesafe.ai; closed weights",
   "production_change": "none; a recommendation opens a separate proposal",
   "decision_register": [
     {
@@ -213,6 +272,54 @@
       "made_before_run": false,
       "made_before_candidate_scoring": true,
       "original_failure_evidence": "output/recall_check.json at commit adbbf36"
+    },
+    {
+      "id": "A3",
+      "date": "2026-10-07",
+      "status": "APPROVED by operator",
+      "change": "Jev (TypeSafe jev-latest) becomes registered candidate C in the protocol, with the same Julia question, flag rule and gates G1 to G3. Equal-cost thresholds move to leave-one-document-out so a threshold is never chosen on the pages it is tested on. The whole experiment is rerun with A, B and C; the first run is a pilot.",
+      "reason": "Operator decision 2026-10-07: nothing is committed or merged to v3, so the protocol is edited in place.",
+      "touches_gates_candidates_thresholds_or_margin": true,
+      "made_before_run": false,
+      "limits": [
+        "Not blind: the pilot already showed Jev ahead on the same 40 documents.",
+        "Jev is closed weights; jev-latest is an alias, every row stores the returned model id.",
+        "Page text (first 2000 characters) is sent to api.typesafe.ai."
+      ],
+      "rerun_required": true,
+      "additions": [
+        {
+          "date": "2026-10-07",
+          "made_before_scoring": true,
+          "change": "Register B2: Julia 1 on the first 2000 characters of each page, so B and C read the same input. Noul parity is structural only: the encoder is token-identical to the publisher's julia/data.py and differs from the parity-tested choice path only by head text and qtype id 2; full noul logit parity needs the PyTorch reference (Ask)."
+        }
+      ]
     }
-  ]
+  ],
+  "wordings": {
+    "registered": "2026-10-07, before any wording was scored",
+    "state": "first 2000 characters of page text for both models",
+    "W1": {
+      "question": "Is this text readable writing in a natural language, rather than garbled or broken OCR output?",
+      "false": "no",
+      "true": "yes",
+      "note": "frozen question; Julia W1 = B2, Jev W1 = C"
+    },
+    "W2": {
+      "question": "Is this OCR text usable as the real content of the page?",
+      "false": "Garbled OCR: random characters, broken or invented words, symbols inside words, or text that does not form real words, sentences or labels",
+      "true": "Usable text: real words in any language, including tables, lists, headings, numbers and short labels, even with a few OCR errors"
+    },
+    "W3": {
+      "question": "This page text is mostly real words in a natural language, with only minor OCR errors.",
+      "false": "no",
+      "true": "yes"
+    },
+    "how_sent": {
+      "julia": "noul options [false, true] as written",
+      "jev": "noul instructions = question; criteria {true, false} only when not plain yes/no"
+    },
+    "selection": "nested leave-one-document-out: for each held-out document, pick the wording with the highest junk-vs-healthy AUC on the other documents' LiteParse pages, then take that wording's equal-cost threshold from the same other documents",
+    "report": "all wordings are reported; the nested selection is the result used for gates"
+  }
 }

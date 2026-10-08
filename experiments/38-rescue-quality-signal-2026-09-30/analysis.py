@@ -112,3 +112,33 @@ axes[1].set_ylim(0, 1)
 axes[1].legend()
 figure.tight_layout()
 plt.show()
+
+# %% [markdown]
+# ## Amendment A3: held-out (leave-one-document-out) verdict
+# Read from `lodo_summary.json`. Skipped when the file is absent.
+
+# %%
+lodo_path = ROOT / "output" / "lodo_summary.json"
+lodo_table = None
+if lodo_path.exists():
+    lodo = json.loads(lodo_path.read_text(encoding="utf-8"))
+    lodo_table = pd.DataFrame(
+        [
+            {
+                "candidate": name,
+                "junk_flagged": data["populations"]["liteparse"]["junk_flagged"],
+                "healthy_flagged": data["populations"]["liteparse"]["healthy_false_positives"],
+                **data["gates"],
+            }
+            for name, data in lodo["candidates"].items()
+        ]
+    )
+    print(lodo_table.to_string(index=False))
+    ceiling = int(0.02 * lodo["candidates"]["A"]["populations"]["liteparse"]["healthy_pages"])
+    axis = lodo_table.plot.scatter(x="healthy_flagged", y="junk_flagged", figsize=(6, 4))
+    for _, row in lodo_table.iterrows():
+        axis.annotate(row["candidate"], (row["healthy_flagged"], row["junk_flagged"]))
+    axis.axvline(ceiling + 0.5, linestyle=":", label="G3 ceiling")
+    axis.set_title("Held-out thresholds: junk caught against healthy pages flagged")
+    axis.legend()
+    plt.show()

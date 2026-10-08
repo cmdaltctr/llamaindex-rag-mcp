@@ -40,3 +40,41 @@ def test_analysis_loads_saved_results_without_running_models(tmp_path, monkeypat
     assert len(namespace["main_table"]) == 8
     assert len(namespace["followup_table"]) == 4
     assert namespace["main_table"]["junk_recall"].tolist() == [0.5] * 8
+    assert namespace["lodo_table"] is None
+
+
+def test_analysis_reads_the_held_out_verdict_when_present(tmp_path, monkeypatch):
+    monkeypatch.setenv("MPLBACKEND", "Agg")
+    target = tmp_path / "analysis.py"
+    shutil.copyfile(Path(__file__).with_name("analysis.py"), target)
+    output = tmp_path / "output"
+    output.mkdir()
+    measure = {
+        "threshold": 0.5,
+        "junk_recall": 0.5,
+        "healthy_false_positive_rate": 0.01,
+        "junk_flagged": 1,
+        "junk_pages": 2,
+        "healthy_false_positives": 1,
+        "healthy_pages": 100,
+        "per_document": {"test": {"junk_pages": 2, "junk_recall": 0.5}},
+    }
+    point = {"populations": {"liteparse": measure, "pypdf": measure}}
+    summary = {
+        "candidates": {
+            n: {"operating_points": {"as_designed": point, "equal_cost": point}} for n in "AB"
+        },
+        "local_text_followup": {
+            "signals": {n: {"gated": {"auc": 0.9}, "io06": {"auc": 0.8}} for n in "AB"}
+        },
+    }
+    (output / "summary.json").write_text(json.dumps(summary))
+    held = {"junk_flagged": 5, "healthy_false_positives": 12, "healthy_pages": 565}
+    lodo = {
+        "candidates": {
+            n: {"populations": {"liteparse": held}, "gates": {"G1": True}} for n in ("A", "C")
+        }
+    }
+    (output / "lodo_summary.json").write_text(json.dumps(lodo))
+    namespace = runpy.run_path(str(target))
+    assert namespace["lodo_table"]["healthy_flagged"].tolist() == [12, 12]
