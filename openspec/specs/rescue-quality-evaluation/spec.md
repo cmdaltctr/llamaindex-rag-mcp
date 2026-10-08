@@ -48,14 +48,21 @@ The evaluation SHALL report whether `rf06` and `rf07` would route to OCR when th
 - **WHEN** the candidate flags at least 10% of the pages of `rf06` and of `rf07`
 - **THEN** both documents count as routed for that candidate
 
-### Requirement: Candidate models SHALL run locally without PyTorch in OMRG
+### Requirement: Candidate models SHALL run locally by default and hosted models SHALL need operator approval
 
-Every candidate SHALL run on the operator's machine. No page text SHALL leave the machine. The evaluation SHALL NOT add PyTorch to the OMRG install. A model download SHALL wait for operator approval.
+Every candidate SHALL run on the operator's machine unless the operator approves a hosted service in the plan before any page text is sent. A hosted candidate SHALL be registered in `plan.json` under a dated amendment that names the provider and the text sent. The evaluation SHALL NOT add PyTorch to the OMRG core dependencies. The optional `torch` extra MAY be used without approval (ADR-073). A model download SHALL wait for operator approval.
 
 #### Scenario: Hosted model proposed
 
 - **WHEN** a candidate needs a hosted service that receives page text
-- **THEN** it is excluded from the evaluation
+- **THEN** it is excluded until the operator approves it in a dated plan amendment
+- **AND** the amendment names the provider and the text sent
+
+#### Scenario: Hosted model approved
+
+- **WHEN** the operator approves a hosted service in a plan amendment
+- **THEN** the run sends only the text named in the amendment
+- **AND** the report states that page text left the machine
 
 #### Scenario: ONNX route does not match the reference model
 
