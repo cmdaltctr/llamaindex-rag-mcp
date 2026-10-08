@@ -79,6 +79,8 @@ development of OMRG — Opinionated Modular RAG.
 | [070](./070-normalise-reader-output-before-chunking.md) | Normalise Reader Output Before Chunking — Remove Markup, Never Content | 2026-09-25 | Accepted |
 | [071](./071-ocr-routing-natural-positive-findings.md) | OCR Routing on Natural Documents: Findings and Decisions | 2026-09-29 | Accepted |
 | [072](./072-modular-ocr-engines-dots-mocr-primary-and-maths-routing.md) | Modular OCR Engines, dots.mocr as Primary Engine, and Maths-Page Routing | 2026-10-06 | Proposed |
+| [073](./073-make-the-torch-extra-a-normal-choice.md) | Make the Optional `torch` Extra a Normal Choice | 2026-10-08 | Accepted |
+| [074](./074-run-local-decision-models-through-llama-cpp-q8-0-gguf.md) | Run Local Decision Models Through llama.cpp Q8_0 GGUF | 2026-10-08 | Proposed |
 
 ## Convention
 

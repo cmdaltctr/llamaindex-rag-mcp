@@ -1,0 +1,5 @@
+# Derived page text and model files stay local.
+output/.rescue_text/
+output/.models/
+output/.logs/
+analysis.ipynb

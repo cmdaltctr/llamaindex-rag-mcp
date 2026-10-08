@@ -1,0 +1,21 @@
+{
+  "method": "40 fixed LiteParse pages (every 16th pair), one request at a time, two warm-up requests excluded, nothing else on the GPU",
+  "unit": "seconds per page",
+  "MLX 4-bit (I)": {
+    "mean_s": 0.701,
+    "median_s": 0.673,
+    "p95_s": 1.097
+  },
+  "MLX 8-bit (K)": {
+    "mean_s": 1.127,
+    "median_s": 0.919,
+    "p95_s": 2.095
+  },
+  "GGUF Q8_0 (J)": {
+    "mean_s": 0.839,
+    "median_s": 0.82,
+    "p95_s": 1.422
+  },
+  "note": "per-request times saved inside the scoring files include queue waiting for MLX (four requests at once, one served at a time) and are not used for speed",
+  "script": "measure_speed.py"
+}

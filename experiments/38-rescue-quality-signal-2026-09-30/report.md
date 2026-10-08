@@ -1,0 +1,405 @@
+# Experiment 38: FAIL, no signal passes all gates; Jev, OpenJev and Clef-flash come closest
+
+- **ID**: `38-rescue-quality-signal-2026-09-30`
+- **Date run**: 2026-10-07 (pilot run, then rerun under amendment A3 on the same day)
+- **Operator**: Dr Muhammad Aizat Bin Md Hawari, with Pi (pilot) and Claude Code (A3 rerun)
+- **Verdict**: FAIL. At held-out thresholds no candidate passes G1, G2 and G3. Hosted Jev, local OpenJev and Clef-flash on W1 (hosted, MLX 8-bit and llama.cpp Q8_0) pass G1 and G2 and flag 12 to 14 good pages against a limit of 11. On Clef-flash W2 and W3 every build also sends usable documents to OCR. Production stays unchanged.
+- **Protocol**: [protocol.md](protocol.md), [plan.json](plan.json) (amendment A3, wordings, candidates B2 and D)
+- **Raw results**: [lodo_summary.json](output/lodo_summary.json) (A3 verdict), [summary.json](output/summary.json) (pilot), [jev_summary.json](output/jev_summary.json), [local_text_signal.json](output/local_text_signal.json), [clef_flash_variants.json](output/clef_flash_variants.json), [clef_flash_speed.json](output/clef_flash_speed.json)
+
+## Names used in this report
+
+| Label | Plain name | What it is |
+| --- | --- | --- |
+| A | Word check | Counts real words (`wordfreq` lexicon) and checks the text uses one alphabet. Local, instant. |
+| B | Julia 1 | Small local AI model (SupersonicLabs Julia 1, ONNX), whole page. |
+| B2 | Julia 1, page head | Julia 1 on the first 2,000 characters, the same input Jev gets. |
+| C | Jev | TypeSafe's hosted AI model. Page text leaves the machine. |
+| E | OpenJev | Loop AI's open copy of Jev, 27B, MLX 4-bit, run locally. |
+| F | OpenJev Flash 9B | Smaller Loop AI model, 9B, MLX 4-bit, run locally. About 2.4 times faster than E. |
+| B3 | Julia 1, choice request | Julia 1 on the first 2,000 characters, sent as a `choice` request (the path the parity check covered) instead of yes/no. |
+| G | Clef (Cloudflare, 27B, hosted) | Stopped at 13 of 40 documents by the free daily limit. Left out of every table. |
+| H | Clef-flash, hosted | Cloudflare's 9B model on Workers AI. Apache 2.0. Page text leaves the machine. |
+| I | Clef-flash, MLX 4-bit | The same model run locally with MLX, 4-bit (6.2 GB). |
+| J | Clef-flash, llama.cpp Q8_0 | `ggml-org/Clef-Flash-GGUF` Q8_0 (9.7 GB), llama.cpp build b11510. |
+| K | Clef-flash, MLX 8-bit | The same model run locally with MLX, 8-bit (10.7 GB). |
+| D | Word check then Jev | Word check screens every page; Jev scores only the doubtful ones. |
+| D_julia, D_openjev | Word check then Julia 1, or then OpenJev | Same cascade with a different second model. |
+| `_sel` suffix | Best wording | The question wording is chosen per document from the other documents. |
+| W1 | Original question | "Is this text readable writing in a natural language, rather than garbled or broken OCR output?" |
+| W2 | Question with descriptions | "Is this OCR text usable as the real content of the page?" plus yes and no descriptions. |
+| C1 | Choice wording (Julia 1 only) | Same question, options "garbled or broken OCR output" and "readable writing in a natural language". |
+| W3 | Statement form | "This page text is mostly real words in a natural language, with only minor OCR errors." |
+
+## Bottom line
+
+- Clef-flash (Cloudflare, 9B, Apache 2.0) ranks junk as well as the best models: AUC 0.880 to 0.966 across hosted and three local builds on three wordings, and it catches 60 to 64 of 89 junk pages. On W1, hosted, MLX 8-bit and llama.cpp Q8_0 pass G1 and G2 and fail G3 by 2 or 3 good pages. On W2 and W3, which rank junk better, every build also fails G2 by sending usable documents to OCR (`tl06` every time). Its licence allows commercial use, unlike OpenJev.
+- Between the two local 8-bit builds, llama.cpp Q8_0 is closer to hosted on all three wordings, faster (0.84 s against 1.13 s a page) and smaller than MLX 8-bit, and both give the same gate outcome. MLX 4-bit drifts on 96 to 177 pages per wording and fails G2 on every wording.
+- Local OpenJev 27B (MLX 4-bit, page text stays on the machine) ranks junk best: AUC 0.956 with W3. It catches 69 of 89 junk pages with W1 and routes no usable document, but flags 14 healthy pages, so it fails G3.
+- Hosted Jev is the other useful signal. It ranks junk below healthy pages with AUC 0.878 to 0.922 and catches 56 to 60 of 89 junk pages without routing a usable document.
+- It fails because of one gate by one page. With the best wording, it flags 12 of 565 healthy pages (2.12%) against a 2% ceiling (11 pages).
+- Julia 1 cannot do this task. Its AUC stays between 0.48 and 0.54 across three wordings and two input lengths. That is random ordering.
+- A (word check) catches 37 of 89 junk pages but newly routes usable `rf05` and flags 18 healthy pages.
+- The A-then-Jev cascade sends 28% of pages to Jev and catches 50 junk pages. It fails G2 on `rf04`.
+- The pilot numbers below the A3 section used a threshold chosen on the test pages. The A3 section replaces them for the verdict.
+
+## Conclusion
+
+The verdict stays FAIL. No candidate passed G1, G2 and G3 at held-out thresholds. The gates were fixed before the run, and they do not move after it.
+
+The best decision models are still much better than what production does today:
+
+| Arm | `rf06` and `rf07` sent to OCR | Usable documents newly sent to OCR | Good pages flagged (of 565) |
+| --- | --- | --- | ---: |
+| Production today (no check, TDR-024) | neither | none | 0 |
+| Word check (A) | both | `rf05` | 18 |
+| Clef-flash, llama.cpp Q8_0, W1 (J) | both | none | 13 (2.3%) |
+
+- Without a decision model, the two junk documents stay on the fast path and reach the index as junk. The word check catches them, but it also sends a usable document to OCR.
+- Clef-flash Q8_0 on W1 catches 64 of 89 junk pages. It sends both junk documents to OCR and no usable document.
+- The 2% ceiling is strict on purpose. It keeps flagged pages well below the 10% share that sends a whole document to OCR. A flagged good page costs OCR time only when it helps push its document over that share. In this set, the 13 flags sent no usable document to OCR, so the 2 pages over the ceiling cost no OCR time.
+
+A narrow miss reported as FAIL, followed by a new test on new data, is normal practice:
+
+- Good practice in machine learning evaluation fixes the metric and the decision threshold before results are seen. A threshold chosen on the test data cannot be used in deployment (*Good practices for evaluation of machine learning systems*, arXiv:2412.03700).
+- After a narrow miss, adding observations to the same analysis is a protocol breach. A larger sample for a reason independent of the result is acceptable ([Garcia, *What can change after preregistration?*](https://manuelgarcia.info/guides/research/guide/changes-after-preregistration)).
+- Registered reports publish results whether or not they pass. This is how they prevent publication bias ([Preregistration (science)](https://en.wikipedia.org/wiki/Preregistration_(science))).
+
+So this experiment records the FAIL, and Clef-flash Q8_0 goes to a new confirmatory experiment on new documents (see Limits and next actions).
+
+## Rerun under amendment A3 (verdict)
+
+Amendment A3 (operator, 2026-10-07) changed three things before the rerun. Hosted Jev became registered candidate C. Every equal-cost threshold now uses leave-one-document-out: each document is flagged with a threshold chosen only on the other documents' healthy LiteParse pages. Three question wordings were registered before scoring, and both models pick one per document by nested leave-one-document-out.
+
+### Held-out results (LiteParse tier, gates as frozen)
+
+| Candidate | What it is | Junk flagged | Healthy flagged | G1 | G2 | G3 | Δ vs A | McNemar p |
+| --- | --- | ---: | ---: | --- | --- | --- | ---: | ---: |
+| A (word check) | `wordfreq` + script checks | 37/89 | 18/565 | PASS | FAIL (`rf05`) | FAIL | | |
+| B (Julia 1) | Julia, whole page, W1 | 0/89 | 14/565 | FAIL | PASS | FAIL | −0.416 | 1.0 |
+| B2 (Julia 1, page head) | Julia, first 2,000 characters, W1 | 0/89 | 12/565 | FAIL | PASS | FAIL | −0.416 | 1.0 |
+| B_sel (Julia 1, best wording) | Julia, wording chosen per document | 2/89 | 12/565 | FAIL | FAIL (`rf04`) | FAIL | −0.393 | 1.0 |
+| C (Jev) | Jev, first 2,000 characters, W1 | 60/89 | 14/565 | PASS | PASS | FAIL | +0.258 | 0.00006 |
+| **C_sel** | **Jev, wording chosen per document** | **56/89** | **12/565** | PASS | PASS | FAIL | +0.213 | 0.0004 |
+| E (OpenJev) | OpenJev 27B local, first 2,000 characters, W1 | 69/89 | 14/565 | PASS | PASS | FAIL | +0.360 | 2e-10 |
+| B3 (Julia 1, choice request) | Julia 1, choice request, first 2,000 characters, C1 | 0/89 | 12/565 | FAIL | FAIL (`rf04`) | FAIL | −0.416 | 1.0 |
+| F (OpenJev Flash 9B) | OpenJev Flash 9B local, first 2,000 characters, W1 | 55/89 | 13/565 | PASS | FAIL (`tl05`, `tl06`) | FAIL | +0.202 | 0.0015 |
+| F_sel (OpenJev Flash 9B, best wording) | OpenJev Flash 9B, wording chosen per document | 64/89 | 12/565 | PASS | FAIL (`rf02`) | FAIL | +0.303 | 2e-07 |
+| E_sel (OpenJev, best wording) | OpenJev, wording chosen per document | 68/89 | 12/565 | PASS | FAIL (`tl06`) | FAIL | +0.348 | 5e-10 |
+| D (word check then Jev) | Cascade: A screens 20%, Jev confirms | 50/89 | 11/565 | PASS | FAIL (`rf04`) | PASS | +0.146 | 0.005 |
+| D_julia (word check then Julia 1) | Cascade: A screens 20%, Julia confirms | 16/89 | 10/565 | FAIL | FAIL | PASS | | |
+| D_flash (word check then OpenJev Flash 9B) | Cascade: word check screens 20%, Flash 9B confirms | 53/89 | 11/565 | PASS | FAIL (`rf02`, `rf04`) | PASS | +0.180 | 2e-04 |
+| D_openjev (word check then OpenJev) | Cascade: A screens 20%, OpenJev confirms | 59/89 | 11/565 | PASS | FAIL (`rf05`) | PASS | +0.247 | 2e-07 |
+
+- "Healthy flagged" uses the frozen 2% ceiling: 11 of 565 pages. C_sel's 12 false positives sit in `bd07` (5), `tl03` (4), `tl02` (2) and `tl04` (1).
+- Nested selection chose W3 for Julia in all 32 documents with eligible pages. Jev chose W3 in 31 and W2 in 1.
+- The 95% document-cluster interval for junk recall is wide for every signal: C 0.048 to 0.882, C_sel 0.048 to 0.808, D 0.000 to 0.822. Junk is concentrated in `rf06` (41 of 89 LiteParse junk pages).
+- On the pypdf tier, C flags 60 junk and 4 healthy pages; C_sel flags 50 junk and 11 healthy pages.
+
+### Ranking quality per wording (AUC, junk scored below healthy)
+
+| Model | W1 (original question) | W2 (question with descriptions) | W3 (statement form) |
+| --- | ---: | ---: | ---: |
+| B (Julia 1), LiteParse | 0.498 | 0.482 | 0.543 |
+| B (Julia 1), pypdf | 0.408 | 0.546 | 0.497 |
+| C (Jev), LiteParse | 0.878 | 0.913 | 0.922 |
+| C (Jev), pypdf | 0.827 | 0.899 | 0.890 |
+| F (Flash 9B), LiteParse | 0.848 | 0.817 | 0.902 |
+| F (Flash 9B), pypdf | 0.789 | 0.771 | 0.864 |
+| E (OpenJev), LiteParse | 0.878 | 0.902 | **0.956** |
+| E (OpenJev), pypdf | 0.823 | 0.842 | 0.871 |
+
+All Jev calls returned model `jev-1.13.0`. Nested selection chose W3 for OpenJev in all 32 documents. Wordings and the selection rule are in `plan.json` under `wordings`.
+
+### Why Julia fails
+
+- The encoder matches the publisher's `julia/data.py` token for token. A `noul` request differs from the parity-tested `choice` path only by its head text and type id 2. Full `noul` logit parity needs the PyTorch reference, which this experiment does not install.
+- The publisher's `inference-policy.json` states `"calibration": null` and "long-context task accuracy not established".
+- Input length is not the cause: B (whole page) and B2 (first 2,000 characters) give the same result.
+- Wording is not the cause: three wordings all stay near AUC 0.5.
+
+### Cascade D (word check then a model) sensitivity
+
+| Word check (A) screen rate | Junk flagged (Jev / Julia) | Healthy flagged (Jev / Julia) | Gates (Jev / Julia) | Pages sent to model |
+| ---: | ---: | ---: | --- | ---: |
+| 0.10 | 48 / 35 | 11 / 13 | all pass / fails G1, G3 | 19% |
+| **0.20 (registered)** | 50 / 16 | 11 / 10 | fails G2 (`rf04`) / fails G1, G2 | 28% |
+| 0.30 | 50 / 3 | 12 / 11 | fails G2, G3 / fails G1 | 38% |
+
+Julia was given the same cascade (candidate D_julia, registered at the operator's request). It never routes `rf06` and `rf07`, so it fails G1 at every rate, and it catches fewer junk pages than A alone. OpenJev as confirmer (candidate D_openjev) catches 54, 59 and 62 junk pages at screen rates 0.10, 0.20 and 0.30, but newly routes usable `rf05` at every rate, so it fails G2. The Jev 0.10 row passes every gate, but it is a sensitivity setting. Promoting it after seeing the result would be selecting on the test data.
+
+### Julia 1 with a choice request (B3)
+
+The yes/no (`noul`) path was never parity-tested; the `choice` path was (100/100 cases). B3 sends the same question as a `choice` request. Result: AUC 0.159 on LiteParse and 0.329 on pypdf. Scores are crushed against 1.0 (junk median 1.000, healthy 0.992), so the low AUC comes from saturation, not a usable backwards signal. A clearly garbled test string also scored 1.0 for "readable". Swapping the option order flips the answer cleanly, so the code is correct. The `noul` path was not the cause: Julia 1 cannot separate junk from readable text under either request type.
+
+### OpenJev Flash 9B (F)
+
+- Model: `openjev/OpenJev-Flash-9B-MLX-4bit` (5.0 GB, CC BY-NC 4.0, research use). Same helper hash (`81a22f1b`) and runtime as E, with the 9B's own `READOUT_*` settings. No checksum list is published for this repo, so the file size matched Hugging Face's listing as the only integrity check.
+- Speed: about 3.1 seconds per page, 1.1 to 1.2 hours per wording, 3.4 hours for all three. E took 7.7 hours.
+- Quality: AUC 0.848, 0.817 and 0.902 for W1, W2 and W3, against 0.878, 0.902 and 0.956 for E.
+- Held-out gates: F passes G1 and fails G2 and G3 at every setting. F_sel catches 64 junk pages but newly routes usable `rf02`. The cascade D_flash passes G3 but routes usable `rf02` and `rf04`. Flash 9B is roughly three AUC points to five points behind the 27B.
+
+### Clef-flash (Cloudflare): every run, hosted and local
+
+Cloudflare's Clef-flash (9B, Apache 2.0, same request format as Jev) was scored hosted on Cloudflare Workers AI (H, Praxis account) and in three local builds that run on this Mac (I, J, K). Each of the four was scored on all three wordings (W1, W2, W3), 1,322 page/tier pairs each. The hosted run sent the first 2,000 characters of every page to Cloudflare. Cloudflare states it does not train on customer content, and it does not document how long it keeps inputs. The local builds keep page text on the machine.
+
+Hosted Clef-flash returns only the name `clef-flash`, with no version, so a silent model update could not be detected. The three hosted wordings used 2.3 million input tokens, about $0.20 at $0.09 per million tokens. Hosted latency was 0.40 s per request with four requests at a time.
+
+The Praxis account is on Workers Free (10,000 Neurons a day). The daily limit stopped hosted Clef (27B, candidate G) at 13 of 40 documents on W1. G is left out of every table here.
+
+#### Every run in one table (ranking quality, LiteParse tier)
+
+AUC is the chance that a junk page scores below a healthy page. 0.5 is guessing and 1.0 is perfect.
+
+| Run | Where it runs | Bits | Download | W1 AUC | W2 AUC | W3 AUC |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Hosted (H) | Cloudflare Workers AI | not published | none | 0.909 | 0.961 | 0.948 |
+| MLX 4-bit (I) | This Mac, MLX | 4 | 6.2 GB | 0.880 | 0.966 | 0.940 |
+| MLX 8-bit (K) | This Mac, MLX | 8 | 10.7 GB | 0.909 | 0.962 | 0.948 |
+| llama.cpp Q8_0 (J) | This Mac, llama.cpp b11510 | 8 | 9.7 GB | 0.910 | 0.962 | 0.948 |
+| llama.cpp Q4_K_M | This Mac, llama.cpp b11510 | 4 | 6.5 GB | not scored | not scored | not scored |
+| Hosted Clef 27B (G) | Cloudflare Workers AI | not published | none | stopped at 13 of 40 documents | not run | not run |
+
+All four complete runs rank junk almost the same on W2 (0.961 to 0.966) and W3 (0.940 to 0.948). On W1 the 4-bit MLX build ranks lower (0.880 against 0.909 hosted).
+
+#### How closely each local build reproduces hosted Clef-flash (all 1,322 page/tier pairs per wording)
+
+Hosted Clef-flash is the reference. A "side flip" is a page that falls below 0.5 in one run and at or above it in the other.
+
+| Build | Runtime | Bits | Wording | Correlation | Average difference | Largest difference | Pages off by more than 0.10 | Side flips |
+| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| MLX 4-bit (I) | MLX | 4 | W1 | 0.9539 | 0.0486 | 0.659 | 177 | 74 |
+| MLX 4-bit (I) | MLX | 4 | W2 | 0.9826 | 0.0607 | 0.304 | 168 | 32 |
+| MLX 4-bit (I) | MLX | 4 | W3 | 0.9671 | 0.0302 | 0.597 | 96 | 37 |
+| MLX 8-bit (K) | MLX | 8 | W1 | 0.9992 | 0.0058 | 0.129 | 3 | 18 |
+| MLX 8-bit (K) | MLX | 8 | W2 | 0.9998 | 0.0031 | 0.033 | 0 | 4 |
+| MLX 8-bit (K) | MLX | 8 | W3 | 0.9994 | 0.0038 | 0.141 | 2 | 1 |
+| llama.cpp Q8_0 (J) | llama.cpp | 8 | W1 | 0.9997 | 0.0034 | 0.115 | 1 | 12 |
+| llama.cpp Q8_0 (J) | llama.cpp | 8 | W2 | 0.9999 | 0.0019 | 0.035 | 0 | 1 |
+| llama.cpp Q8_0 (J) | llama.cpp | 8 | W3 | 0.9998 | 0.0026 | 0.096 | 0 | 2 |
+| llama.cpp Q4_K_M | llama.cpp | 4 | W1 (94 pages only)* | 0.9991* | 0.0045* | 0.108* | 1* | 0* |
+
+\* Q4_K_M was checked on 94 pages only (`bd01`, `rf06`). 87% of those pages are junk, against 13% in the full set, so the check is too weak to compare with the other rows. Per-page scores were not saved. Its first test missed the "no page off by more than 0.10" mark by 0.008, and that is why Q8_0 was tried.
+
+| Build | Download | Seconds per page |
+| --- | ---: | ---: |
+| MLX 4-bit (I) | 6.2 GB | 0.70 |
+| MLX 8-bit (K) | 10.7 GB | 1.13 |
+| llama.cpp Q8_0 (J) | 9.7 GB | 0.84 |
+
+Speed is measured one request at a time on 40 fixed pages, with nothing else on the GPU ([measure_speed.py](measure_speed.py), [clef_flash_speed.json](output/clef_flash_speed.json)). The times saved inside the scoring files are not used. The MLX server answers one request at a time, so those times include waiting in a queue.
+
+#### MLX 8-bit against llama.cpp Q8_0, head to head (each cell: MLX 8-bit / llama.cpp Q8_0)
+
+Both are 8-bit builds of the same model, so this isolates the runtime. They do not use identical quantisation schemes, so the comparison is close, not exact.
+
+| Wording | Average difference from hosted | Largest difference | Pages off by more than 0.10 | Side flips | Pages closer to hosted (of 1,322) | Correlation between the two builds |
+| --- | --- | --- | --- | --- | --- | ---: |
+| W1 | 0.0058 / 0.0034 | 0.129 / 0.115 | 3 / 1 | 18 / 12 | 506 / 816 | 0.9992 |
+| W2 | 0.0031 / 0.0019 | 0.033 / 0.035 | 0 / 0 | 4 / 1 | 437 / 885 | 0.9998 |
+| W3 | 0.0038 / 0.0026 | 0.141 / 0.096 | 2 / 0 | 1 / 2 | 562 / 760 | 0.9996 |
+
+- **llama.cpp Q8_0 is the closer 8-bit build on all three wordings.** It has the lower average difference and is closer to hosted on more pages. It is also faster (0.84 s against 1.13 s a page) and smaller. MLX 8-bit has fewer side flips on W3 only (1 against 2).
+- **The gaps are small.** Both builds correlate with hosted above 0.999 on every wording, and with each other above 0.999.
+- **Same gate outcome.** Both builds catch the same number of junk pages and send the same usable documents to OCR on every wording.
+- **The "no page off by more than 0.10" mark.** I fixed it on the 94-page test. llama.cpp Q8_0 meets it on W2 and W3 and misses it on W1 by 0.015 (one page at 0.115). MLX 8-bit meets it on W2 only. It misses on W1 (0.129) and W3 (0.141). The report records these as near-passes and does not move the mark.
+- **Bit depth matters more than runtime.** MLX 4-bit differs from hosted on 177, 168 and 96 pages on W1, W2 and W3. Its worst gap is a junk page scored 0.86 against 0.20 hosted (W1).
+- **My first MLX against llama.cpp comparison was not like for like.** It put MLX 4-bit against llama.cpp Q8_0. The MLX 8-bit runs correct that.
+
+#### Held-out gates for every build and every wording
+
+Each document's cut-off comes only from the other documents. Each row uses one fixed wording for every document. Limit: 11 good pages flagged.
+
+| Build | Bits | Wording | Junk caught | Good pages flagged | G1 / G2 / G3 | Newly routed usable documents |
+| --- | ---: | --- | ---: | ---: | --- | --- |
+| Hosted (H) | not published | W1 | 63/89 | 14/565 | PASS / PASS / FAIL | none |
+| Hosted (H) | not published | W2 | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` |
+| Hosted (H) | not published | W3 | 64/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` |
+| MLX 4-bit (I) | 4 | W1 | 62/89 | 14/565 | PASS / FAIL / FAIL | `tl06` |
+| MLX 4-bit (I) | 4 | W2 | 60/89 | 15/565 | PASS / FAIL / FAIL | `tl06`, `rf05` |
+| MLX 4-bit (I) | 4 | W3 | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06` |
+| MLX 8-bit (K) | 8 | W1 | 64/89 | 14/565 | PASS / PASS / FAIL | none |
+| MLX 8-bit (K) | 8 | W2 | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` |
+| MLX 8-bit (K) | 8 | W3 | 64/89 | 13/565 | PASS / FAIL / FAIL | `tl04`, `tl06`, `rf02` |
+| llama.cpp Q8_0 (J) | 8 | W1 | 64/89 | 13/565 | PASS / PASS / FAIL | none |
+| llama.cpp Q8_0 (J) | 8 | W2 | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` |
+| llama.cpp Q8_0 (J) | 8 | W3 | 64/89 | 13/565 | PASS / FAIL / FAIL | `tl04`, `tl06`, `rf02` |
+
+- **No row passes all three gates.** All 12 rows fail G3 with 12 to 15 good pages flagged. Hosted Clef-flash is among them, so self-hosting is not the cause of the failure.
+- **Only W1 passes G2, and only for three builds.** On W1, hosted, MLX 8-bit and llama.cpp Q8_0 send no usable document to OCR. On W2 and W3 every build sends usable documents to OCR, and `tl06` is among them every time. W2 and W3 rank junk better (AUC up to 0.966) but cost a usable document.
+- **Junk caught varies little.** 60 to 64 of 89 across all rows (67% to 72%).
+- **The two self-hosted 8-bit builds match each other on every wording** (same junk count, same usable documents sent, same gate outcome). They differ from hosted on W3, where both also send `tl04`. MLX 4-bit is the only build that fails G2 on W1.
+
+Script: [gates_by_wording.py](gates_by_wording.py). Output: [clef_flash_gates_by_wording.json](output/clef_flash_gates_by_wording.json). The script has no test of its own. It calls `evaluate`, `held_out` and `lodo_thresholds`, which are tested.
+
+#### Held-out gates with the wording chosen per document
+
+W1 is the fixed wording in the first four rows. In the `_sel` rows each held-out document uses the wording that ranked best on the other documents. "vs word check" is the extra junk caught as a share of the 89 junk pages.
+
+| Run | Junk caught | Good pages flagged | G1 / G2 / G3 | Newly routed usable documents | vs word check |
+| --- | ---: | ---: | --- | --- | ---: |
+| Hosted (H), W1 | 63/89 | 14/565 | PASS / PASS / FAIL | none | +0.292 |
+| MLX 4-bit (I), W1 | 62/89 | 14/565 | PASS / FAIL / FAIL | `tl06` | +0.281 |
+| MLX 8-bit (K), W1 | 64/89 | 14/565 | PASS / PASS / FAIL | none | +0.303 |
+| llama.cpp Q8_0 (J), W1 | 64/89 | 13/565 | PASS / PASS / FAIL | none | +0.303 |
+| Hosted, best wording (H_sel) | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` | +0.281 |
+| MLX 4-bit, best wording (I_sel) | 60/89 | 15/565 | PASS / FAIL / FAIL | `tl06`, `rf05` | +0.258 |
+| MLX 8-bit, best wording (K_sel) | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` | +0.281 |
+| llama.cpp Q8_0, best wording (J_sel) | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` | +0.281 |
+
+Word check then Clef-flash (candidate D variants: the word check screens 20% of pages and 28% go to the model):
+
+| Build | Junk caught | Good pages flagged | G1 / G2 / G3 | Newly routed usable documents |
+| --- | ---: | ---: | --- | --- |
+| Hosted (H) | 54/89 | 13/565 | PASS / PASS / FAIL | none |
+| MLX 4-bit (I) | 52/89 | 10/565 | PASS / FAIL / PASS | `tl06` |
+| MLX 8-bit (K) | 55/89 | 13/565 | PASS / PASS / FAIL | none |
+| llama.cpp Q8_0 (J) | 54/89 | 13/565 | PASS / PASS / FAIL | none |
+
+MLX 4-bit's cascade passes G3 with 10 good pages flagged, but fails G2 on `tl06`. The other three catch 54 to 55 junk pages and flag 13 to 13 good pages, so they fail G3.
+
+#### What was not run
+
+- **llama.cpp Q4_K_M on the full set.** Only the 94-page check was done, and its scores were not saved.
+- **Hosted Clef (27B).** It stopped at 13 of 40 documents on W1, at the free daily limit.
+- **Page images.** Clef-flash accepts images. None were sent to any build.
+- **A second hosted run.** The hosted API returns no model version, so repeatability over time is unknown.
+- **More documents.** All results use the same 40 documents. G3 is decided by one or two pages.
+
+### Local OpenJev setup and cost
+
+- Model: `openjev/openjev-MLX-4bit` (Loop AI, CC BY-NC 4.0, research use). Weights and tokeniser matched the published `SHA256SUMS`; only `README.md` differed.
+- Runtime: the publisher's `helper/shim.py` (sha `81a22f1b`) and `shim_mlx.py` at revision `1c341f65`, mlx 0.32.2, mlx-lm 0.31.3, Python 3.12, isolated venv, no PyTorch. Server bound to `127.0.0.1`, Hugging Face offline mode on.
+- Speed on this Mac: 6.2 to 7.5 seconds per page, one request at a time. All three wordings took about 7.5 hours.
+- Page text never left the machine.
+
+### Cost of hosted Jev
+
+- Page text (first 2,000 characters, including personal records) leaves the machine for every scored page.
+- The A3 rerun sent 3,966 requests (1,322 for W1, 2,644 for W2 and W3) and about 2.85 million input tokens. Mean latency was 0.28 s per request.
+- Jev has closed weights, and `jev-latest` is an alias that can change model.
+
+## Setup and checks
+
+Both rescue tiers were extracted from all 40 frozen Experiment 33 documents: 1,123 pages each. LiteParse 2.11.1 ran with OCR disabled; pypdf 6.16.2 used the shipped adapter. The shipped normaliser was version 2.
+
+| Tier | Junk | Healthy | Grey (not scored) | Excluded |
+| --- | ---: | ---: | ---: | ---: |
+| LiteParse | 89 | 565 | 38 | 431 |
+| pypdf | 89 | 579 | 24 | 431 |
+
+The original size estimates used all-text `r_pypdf`; actual body-only classes differ. Every candidate scored 654 LiteParse and 668 pypdf page/tier pairs.
+
+The operator approved `wordfreq==3.1.1` and the pinned Julia download on 2026-10-07. Amendment A2, committed at `f74abb1` before candidate scoring, checks all-text recall against frozen `r_pypdf` and uses body recall for quality. All 1,123 checks passed; the largest difference was 0.00005 against a 0.0001 limit. The first failed check remains in [recall_check_before_a2.json](output/recall_check_before_a2.json).
+
+Julia used ONNX revision `82a2fadf8fccfccdc5fd4e1009ba8f1a265eb7a8` and ONNX Runtime on CPU, without PyTorch. P0 passed: 100/100 argmax matches, maximum absolute logit error 0.0001037121. The encoder used the published policy, `max_length=8192`, `head_length=512`, strict encoding. All published parity cases are `choice`; none tests `noul`, the yes/no type used here.
+
+## Rescue results
+
+Junk recall is the share of junk pages flagged. Healthy false-positive rate is the share of healthy pages flagged. A page is flagged when its score is strictly below the threshold. Equal-cost thresholds preserve ties; finite counts give 11/565 (1.947%) instead of exactly 2%.
+
+| Signal | Operating point | Threshold | Junk flagged | Healthy flagged | G1: both misses route | G2: no new usable route | G3: ≤2% healthy flags |
+| --- | --- | ---: | ---: | ---: | --- | --- | --- |
+| A (word check) | As designed | 0.50 | 5/89 (5.62%) | 0/565 (0%) | FAIL | PASS | PASS |
+| A (word check) | Equal cost | 0.8834080717 | 37/89 (41.57%) | 11/565 (1.95%) | PASS | FAIL | PASS |
+| B (Julia 1) | As designed | 0.50 | 65/89 (73.03%) | 356/565 (63.01%) | PASS | FAIL | FAIL |
+| B (Julia 1) | Equal cost | 0.0030147846 | 0/89 (0%) | 11/565 (1.95%) | FAIL | PASS | PASS |
+
+At equal cost, A flags 25/89 pages of `rf06` and 7/63 of `rf07`. Both reach the unchanged 10% routing fraction. It also flags 3/25 pages of usable `rf05`, which newly routes. Projected wasted OCR: 25 pages, 955 seconds with dots.mocr, or 580 to 4,102.5 seconds with PaddleOCR-VL. Julia flags no rescue page of either motivating miss at equal cost.
+
+Julia's original threshold newly routes nine usable documents: `tl04`, `tl05`, `tl06`, `rf01`, `rf02`, `rf03`, `rf04`, `rf05`, `rf08`. The baseline routes stay in the simulation. The JSON contains all 40 documents at both operating points.
+
+The 95% document-cluster bootstrap intervals for LiteParse junk recall are A: 0.000–0.197 (as designed), 0.048–0.540 (equal cost); Julia: 0.543–0.820 and 0.000–0.000. Each uses 2,000 document resamples, seed 38. Per-document recall is saved in the summary.
+
+Julia's equal-cost recall difference from A is −0.4157303371. Exact one-sided McNemar gives 37 A-only detections, 0 Julia-only detections, p=1.0. The required +0.10 margin and p<0.05 are not met.
+
+Secondary pypdf uses the same LiteParse thresholds. A flags 5/89 junk and 0/579 healthy as designed; at equal cost, 36/89 junk and 15/579 healthy. Julia flags 79/89 junk and 433/579 healthy as designed; at equal cost, 0/89 junk and 45/579 healthy. These diagnostic rates do not determine adoption.
+
+Mean CPU time per scored page/tier: A 0.000633 seconds, Julia 0.333167 seconds. Julia used two CPU threads; mean wall time was 0.167930 seconds. Loading the model is outside the per-page timings.
+
+## Post-verdict local OCR follow-up
+
+Both signals scored all 464 saved texts after `freeze verified`, since the main verdict selected neither. The same signal code, prompt and equal-cost thresholds were reused. No threshold or question was retuned. The primary follow-up population is the 399 pages whose frozen `body_label` is `needs_ocr`; 206 have saved `body_recall` below 0.5.
+
+AUC measures how well lower scores separate bad text from good text: 1.0 is perfect separation, 0.5 is tied/random ranking. Experiment 39's characters-per-page baseline is 0.788; its follow-up trigger is 0.8.
+
+| Signal | AUC, 399 gated pages | AUC, `io06` (66 pages) | Bad flagged, gated | Good flagged, gated |
+| --- | ---: | ---: | ---: | ---: |
+| A (word check) | 0.897291 | 0.876633 | 202/206 | 65/193 |
+| B (Julia 1) | 0.575406 | 0.445573 | 0/206 | 2/193 |
+
+Candidate A exceeds the baseline by 0.109291 AUC and reaches the 0.8 follow-up trigger. Its fixed threshold is unsuitable for direct local-tier use:
+
+| Signal | Document | Bad pages flagged | Good pages flagged | AUC |
+| --- | --- | ---: | ---: | ---: |
+| A (word check) | `io06` | 13/13 | 52/53 | 0.876633 |
+| A (word check) | `rf06` | 36/36 | 6/7 | 0.876984 |
+| A (word check) | `rf07` | 10/12 | 3/5 | 0.783333 |
+| B (Julia 1) | `io06` | 0/13 | 0/53 | 0.445573 |
+| B (Julia 1) | `rf06` | 0/36 | 0/7 | 0.273810 |
+| B (Julia 1) | `rf07` | 0/12 | 0/5 | 0.450000 |
+
+A catches every bad `io06` and `rf06` page at this threshold, and 10 of 12 bad `rf07` pages. It also flags nearly every good `io06` page. Julia catches none of their bad pages at its frozen threshold. A's ranking warrants a separate protocol for local OCR, with that tier's own gates and new threshold validation. This experiment does not set a production threshold.
+
+## Pilot hosted Jev arm (superseded)
+
+The first Jev scoring used one threshold chosen on the test pages (0.28) and passed G1 to G3 with 60/89 junk and 10/565 healthy pages. Leave-one-document-out thresholds (above) replace this result. Raw pilot output: [jev_summary.json](output/jev_summary.json).
+
+## Limits and next actions
+
+1. The A3 rerun is not blind. The pilot had already shown Jev ahead on the same 40 documents, and A3 was written after that.
+2. `rf06` holds 41 of 89 LiteParse junk pages, so every junk-recall interval is wide.
+3. The 2% ceiling allows 11 healthy pages; C_sel flags 12. One page decides the verdict. More healthy documents would give a stabler rate.
+4. `wordfreq` has no Latin-language lexicon. This limits A on `io06`.
+5. Julia `noul` logit parity is unverified. The structural check rules out an encoder bug but not a model-side difference.
+6. Saved local OCR markdown has a different text distribution from reader-rescue text. The local follow-up was not rerun with Jev wordings.
+
+No production change. Next steps for the operator:
+
+1. Run a confirmatory experiment (Experiment 42, OpenSpec change `experiment-42-clef-flash-confirmation`) on Clef-flash, `ggml-org/Clef-Flash-GGUF` Q8_0, llama.cpp b11510 or later, wording W1. It is local, Apache 2.0 and matched hosted scores on all 1,322 page/tier pairs.
+   - Use new documents only. Include more healthy pages than this set, and more than one document with junk text.
+   - Fit one threshold on all 40 Experiment 38 documents before the run. Do not refit it on the new documents.
+   - Arms: production today (no check) as the control; word check (A) as the cheap comparator; Clef-flash Q8_0 as the treatment.
+   - Keep G1 to G3, and record before the run whether G2 (usable documents sent to OCR) is the primary gate.
+2. ADR-074 (Proposed) records llama.cpp Q8_0 GGUF as the local runtime for decision models. Adoption as a quality gate waits for step 1.
+3. Drop Julia 1 from further rescue-quality work.
+4. Keep Jev and OpenJev as reference arms only. Jev sends page text to TypeSafe, and OpenJev's licence (CC BY-NC 4.0) does not allow production use.
+
+## Validation and workflow status
+
+- Full fast suite: 3,307 passed, 140 skipped, 19 deselected, overall coverage 93%.
+- Experiment tests: 80 passed (82 including the documentation link checks). New tests failed before implementation; the A2 drift test also failed with its guard removed.
+- All eight import-linter contracts kept; strict OpenSpec validation passed.
+- Models, page text and logs stay in gitignored local folders. Frozen Experiment 33 files and production settings/indexes were not changed.
+- Main verdict, follow-up, runners, analysis and index are committed at `10012ac`. Six exact Gitleaks exceptions were approved on 2026-10-07; all enabled commit hooks passed.
+- NiftyPM AIE-99 was updated, completed and read back on 2026-10-07 (`completed_on=2026-10-07T19:14:20.593Z`). Its description links report file `f!trntW8Rm`, attached to the task and downloaded with an exact SHA-256 match to the committed `d7c9145` report snapshot (10,985 bytes).
+- The local `niftypm/omrg.json` completion and description match the verified cloud task. MCP automatic sync emptied the cache arrays; the preserved v3 snapshot was restored and only AIE-99 was refreshed. Other cached records and the full-project `last_synced` timestamp were preserved.
+- The native Nifty document read still returns 403; that unused document is not the report reference. The verified file attachment fulfils task 7.2.
+- The OpenSpec change is archived at [2026-10-07-experiment-38-rescue-quality-signal](../../openspec/changes/archive/2026-10-07-experiment-38-rescue-quality-signal/), with its six requirements synced to the baseline. The Experiment 39 change was not merged or cherry-picked. Models, page text and the worktree are retained. No Experiment 38 branch push was performed.
+
+## Reproduce
+
+Set `EXP33_SOURCE` to the frozen Experiment 33 directory. Pass it with `--source-exp "$EXP33_SOURCE"` to extraction, classification, candidate scoring, summary and local-text scoring. Use `uv run --locked --with wordfreq==3.1.1` for A and the local follow-up; use `--resume` to reuse complete documents. Julia's pinned download runner and P0 runner are `download_julia.py` and `julia_onnx.py`.
+
+Saved metadata: [rescue_text.json](output/rescue_text.json), [candidate_a.json](output/candidate_a.json), [candidate_b.json](output/candidate_b.json), [parity.json](output/parity.json), [summary.json](output/summary.json), [local_text_signal.json](output/local_text_signal.json). [analysis.py](analysis.py) loads these results without running experiments.
+
+## OpenSpec verification (2026-10-07)
+
+| Dimension | Evidence and status |
+| --- | --- |
+| Completeness | 16/16 tasks checked. Six added requirements mapped. Task 6.1's summary is committed; task 7.2's cloud and local state were verified. |
+| Correctness | All eight specified scenarios have implementation/test evidence. 80 experiment tests passed; two documentation checks also passed. |
+| Coherence | D1 to D7 followed, including approved A2. Frozen thresholds, gates, request and revisions match the original plan at `497204b`. |
+
+| Requirement | Implementation and checks |
+| --- | --- |
+| Frozen body-based junk classes | `score_candidates.py:41`, `test_labels.py`; all-page all-text sanity check passed. |
+| Fixed adoption margin | `summarise_eval.py:15`, `test_summary.py`; original 0.10 margin and exact one-sided paired test preserved. |
+| Page/document false-positive cost | `summarise_eval.py:22`, `test_summary.py`; both operating points and all 40 routing rows saved. |
+| Motivating misses | `summarise_eval.py:49`, `test_summary.py`; `rf06` and `rf07` evaluated at the unchanged 0.10 fraction. |
+| Local inference, no PyTorch | `julia_onnx.py:19`, `test_julia.py`, `test_download.py`, `test_signals.py`; P0 passed and hosted candidate rejected before source access. |
+| Unchanged production behaviour | No diff under `src/`, `pyproject.toml` or `uv.lock`; the winning-signal proposal condition is not met. |
+
+All saved summary artefact hashes and 464 local text hashes were verified. Resume completed without rescoring for A, B and the local follow-up. The notebook was generated and is gitignored. Analysis ran with the non-interactive plotting backend; its display warning does not affect the tables or plots created in memory.
+
+**Workflow verification:** all 16 tasks are complete and the change is archived. The report attachment was verified byte-for-byte, AIE-99's completion was read back, and the local mirror agrees. Final fast tests, targeted checks and strict spec validation passed. The native-document read and automatic-cache-sync issues are outside this experiment; the supported file attachment and restored snapshot resolved its workflow requirements.

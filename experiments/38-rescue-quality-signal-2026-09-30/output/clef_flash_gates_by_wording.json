@@ -1,0 +1,149 @@
+{
+  "Hosted (H)|W1": {
+    "junk_flagged": 63,
+    "good_flagged": 14,
+    "gates": {
+      "G1": true,
+      "G2": true,
+      "G3": false
+    },
+    "newly_routed_usable": []
+  },
+  "Hosted (H)|W2": {
+    "junk_flagged": 62,
+    "good_flagged": 12,
+    "gates": {
+      "G1": true,
+      "G2": false,
+      "G3": false
+    },
+    "newly_routed_usable": [
+      "tl06",
+      "rf02"
+    ]
+  },
+  "Hosted (H)|W3": {
+    "junk_flagged": 64,
+    "good_flagged": 12,
+    "gates": {
+      "G1": true,
+      "G2": false,
+      "G3": false
+    },
+    "newly_routed_usable": [
+      "tl06",
+      "rf02"
+    ]
+  },
+  "MLX 4-bit (I)|W1": {
+    "junk_flagged": 62,
+    "good_flagged": 14,
+    "gates": {
+      "G1": true,
+      "G2": false,
+      "G3": false
+    },
+    "newly_routed_usable": [
+      "tl06"
+    ]
+  },
+  "MLX 4-bit (I)|W2": {
+    "junk_flagged": 60,
+    "good_flagged": 15,
+    "gates": {
+      "G1": true,
+      "G2": false,
+      "G3": false
+    },
+    "newly_routed_usable": [
+      "tl06",
+      "rf05"
+    ]
+  },
+  "MLX 4-bit (I)|W3": {
+    "junk_flagged": 62,
+    "good_flagged": 12,
+    "gates": {
+      "G1": true,
+      "G2": false,
+      "G3": false
+    },
+    "newly_routed_usable": [
+      "tl06"
+    ]
+  },
+  "MLX 8-bit (K)|W1": {
+    "junk_flagged": 64,
+    "good_flagged": 14,
+    "gates": {
+      "G1": true,
+      "G2": true,
+      "G3": false
+    },
+    "newly_routed_usable": []
+  },
+  "MLX 8-bit (K)|W2": {
+    "junk_flagged": 62,
+    "good_flagged": 12,
+    "gates": {
+      "G1": true,
+      "G2": false,
+      "G3": false
+    },
+    "newly_routed_usable": [
+      "tl06",
+      "rf02"
+    ]
+  },
+  "MLX 8-bit (K)|W3": {
+    "junk_flagged": 64,
+    "good_flagged": 13,
+    "gates": {
+      "G1": true,
+      "G2": false,
+      "G3": false
+    },
+    "newly_routed_usable": [
+      "tl04",
+      "tl06",
+      "rf02"
+    ]
+  },
+  "llama.cpp Q8_0 (J)|W1": {
+    "junk_flagged": 64,
+    "good_flagged": 13,
+    "gates": {
+      "G1": true,
+      "G2": true,
+      "G3": false
+    },
+    "newly_routed_usable": []
+  },
+  "llama.cpp Q8_0 (J)|W2": {
+    "junk_flagged": 62,
+    "good_flagged": 12,
+    "gates": {
+      "G1": true,
+      "G2": false,
+      "G3": false
+    },
+    "newly_routed_usable": [
+      "tl06",
+      "rf02"
+    ]
+  },
+  "llama.cpp Q8_0 (J)|W3": {
+    "junk_flagged": 64,
+    "good_flagged": 13,
+    "gates": {
+      "G1": true,
+      "G2": false,
+      "G3": false
+    },
+    "newly_routed_usable": [
+      "tl04",
+      "tl06",
+      "rf02"
+    ]
+  }
+}

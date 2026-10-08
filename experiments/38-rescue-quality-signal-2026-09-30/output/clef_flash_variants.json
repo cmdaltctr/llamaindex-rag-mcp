@@ -1,0 +1,153 @@
+{
+  "reference": "hosted Clef-flash (H), wording W1",
+  "shared_pages": 1322,
+  "variants": {
+    "MLX 4-bit (I)": {
+      "pairs": 1322,
+      "pearson": 0.9539117877866996,
+      "mean_abs_diff": 0.04859379727685325,
+      "max_abs_diff": 0.6588,
+      "pages_over_0_10": 177,
+      "side_flips": 74,
+      "on_shared_pages": {
+        "pairs": 1322,
+        "pearson": 0.9539117877866996,
+        "mean_abs_diff": 0.04859379727685325,
+        "max_abs_diff": 0.6588,
+        "pages_over_0_10": 177,
+        "side_flips": 74
+      },
+      "size_gb": 6.2,
+      "runtime": "MLX",
+      "bits": 4
+    },
+    "MLX 8-bit (K)": {
+      "pairs": 1322,
+      "pearson": 0.999212848330397,
+      "mean_abs_diff": 0.005806354009077156,
+      "max_abs_diff": 0.1286,
+      "pages_over_0_10": 3,
+      "side_flips": 18,
+      "on_shared_pages": {
+        "pairs": 1322,
+        "pearson": 0.999212848330397,
+        "mean_abs_diff": 0.005806354009077156,
+        "max_abs_diff": 0.1286,
+        "pages_over_0_10": 3,
+        "side_flips": 18
+      },
+      "size_gb": 10.7,
+      "runtime": "MLX",
+      "bits": 8
+    },
+    "GGUF Q8_0 (J)": {
+      "pairs": 1322,
+      "pearson": 0.9996903889249071,
+      "mean_abs_diff": 0.0033702963940368635,
+      "max_abs_diff": 0.11484820938520313,
+      "pages_over_0_10": 1,
+      "side_flips": 12,
+      "on_shared_pages": {
+        "pairs": 1322,
+        "pearson": 0.9996903889249071,
+        "mean_abs_diff": 0.0033702963940368635,
+        "max_abs_diff": 0.11484820938520313,
+        "pages_over_0_10": 1,
+        "side_flips": 12
+      },
+      "size_gb": 9.7,
+      "runtime": "llama.cpp",
+      "bits": 8
+    }
+  },
+  "by_wording": {
+    "MLX 4-bit (I)": {
+      "W1": {
+        "pairs": 1322,
+        "pearson": 0.9539117877866996,
+        "mean_abs_diff": 0.04859379727685325,
+        "max_abs_diff": 0.6588,
+        "pages_over_0_10": 177,
+        "side_flips": 74
+      },
+      "W2": {
+        "pairs": 1322,
+        "pearson": 0.9826111395271037,
+        "mean_abs_diff": 0.0606875189107413,
+        "max_abs_diff": 0.30439999999999995,
+        "pages_over_0_10": 168,
+        "side_flips": 32
+      },
+      "W3": {
+        "pairs": 1322,
+        "pearson": 0.9671461111325941,
+        "mean_abs_diff": 0.03018948562783661,
+        "max_abs_diff": 0.5969,
+        "pages_over_0_10": 96,
+        "side_flips": 37
+      }
+    },
+    "MLX 8-bit (K)": {
+      "W1": {
+        "pairs": 1322,
+        "pearson": 0.999212848330397,
+        "mean_abs_diff": 0.005806354009077156,
+        "max_abs_diff": 0.1286,
+        "pages_over_0_10": 3,
+        "side_flips": 18
+      },
+      "W2": {
+        "pairs": 1322,
+        "pearson": 0.9998194248456101,
+        "mean_abs_diff": 0.0031461422087745846,
+        "max_abs_diff": 0.03320000000000001,
+        "pages_over_0_10": 0,
+        "side_flips": 4
+      },
+      "W3": {
+        "pairs": 1322,
+        "pearson": 0.9993965043778226,
+        "mean_abs_diff": 0.003769213313161877,
+        "max_abs_diff": 0.14129999999999998,
+        "pages_over_0_10": 2,
+        "side_flips": 1
+      }
+    },
+    "GGUF Q8_0 (J)": {
+      "W1": {
+        "pairs": 1322,
+        "pearson": 0.9996903889249071,
+        "mean_abs_diff": 0.0033702963940368635,
+        "max_abs_diff": 0.11484820938520313,
+        "pages_over_0_10": 1,
+        "side_flips": 12
+      },
+      "W2": {
+        "pairs": 1322,
+        "pearson": 0.9999087845125196,
+        "mean_abs_diff": 0.001925321637587444,
+        "max_abs_diff": 0.03470241356404263,
+        "pages_over_0_10": 0,
+        "side_flips": 1
+      },
+      "W3": {
+        "pairs": 1322,
+        "pearson": 0.9997624448052692,
+        "mean_abs_diff": 0.0025587411305692848,
+        "max_abs_diff": 0.09642025930462511,
+        "pages_over_0_10": 0,
+        "side_flips": 2
+      }
+    }
+  },
+  "gguf_q4_k_m_94_page_check": {
+    "pairs": 94,
+    "pearson": 0.9991,
+    "mean_abs_diff": 0.0045,
+    "max_abs_diff": 0.1081,
+    "side_flips": 0,
+    "size_gb": 6.5,
+    "runtime": "llama.cpp",
+    "bits": 4
+  }
+}
