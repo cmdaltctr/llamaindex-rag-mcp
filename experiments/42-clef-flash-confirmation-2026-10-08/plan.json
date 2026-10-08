@@ -1,0 +1,219 @@
+{
+  "experiment_id": "42-clef-flash-confirmation-2026-10-08",
+  "protocol_version": 1,
+  "status": "planned",
+  "change_ref": "openspec/changes/experiment-42-clef-flash-confirmation",
+  "niftypm": null,
+  "question": "Does Clef-flash Q8_0 with wording W1, at a threshold frozen on Experiment 38, pass the rescue-quality gates on documents it has never seen?",
+  "prior_evidence": {
+    "experiment": "38-rescue-quality-signal-2026-09-30",
+    "verdict": "FAIL",
+    "candidate_J_W1_held_out": {
+      "junk_caught": "64/89",
+      "healthy_flagged": "13/565",
+      "G1": "PASS",
+      "G2": "PASS",
+      "G3": "FAIL (ceiling 11 pages)"
+    },
+    "candidate_A_held_out": {
+      "junk_caught": "37/89",
+      "healthy_flagged": "18/565",
+      "G1": "PASS",
+      "G2": "FAIL (rf05)",
+      "G3": "FAIL"
+    },
+    "largest_junk_cluster": {"rf06": "41 of 89 LiteParse junk pages"}
+  },
+  "arms": {
+    "control": {
+      "name": "production today (TDR-024)",
+      "signal": "none",
+      "flag_rule": "never flags",
+      "routing": "shipped gate run on the new documents at a pinned commit (Experiment 33 route.py pattern)"
+    },
+    "comparator": {
+      "name": "word check, candidate A from Experiment 38",
+      "code": "experiments/38-rescue-quality-signal-2026-09-30/candidate_a.py, unchanged; code hash recorded at run time",
+      "lexicon": "wordfreq==3.1.1, experiment-only (uv run --with)",
+      "score": "min(A1, A2)",
+      "flag_rule": "score < thresholds.word_check_a.value"
+    },
+    "treatment": {
+      "name": "Clef-flash, llama.cpp Q8_0",
+      "model": "ggml-org/Clef-Flash-GGUF, Clef-Flash-Q8_0.gguf (9.7 GB, Apache 2.0, base Cloudflare/clef-flash)",
+      "model_sha256": null,
+      "model_sha256_source": "Hugging Face LFS metadata for Clef-Flash-Q8_0.gguf; recorded in task 4.2 before scoring",
+      "runtime": "llama-server build b11510 or later (b11510 includes the Metal fix from PR #30100)",
+      "endpoint": "http://127.0.0.1:<port>/v1/systemone",
+      "bind": "127.0.0.1 only",
+      "concurrency": 1,
+      "client": "Experiment 38 score_wordings.py JevClient path for clefgguf; a copy is allowed only with a matching hash",
+      "request": {
+        "type": "noul",
+        "options": ["no", "yes"],
+        "question": "Is this text readable writing in a natural language, rather than garbled or broken OCR output?",
+        "state": "first 2000 characters of the normalised page text",
+        "head_characters": 2000,
+        "criteria": "none"
+      },
+      "score": "P(yes); lower is junkier",
+      "flag_rule": "score < thresholds.clef_flash_q8_0_w1.value",
+      "runtime_record": "ADR-074 (Proposed); AGENTS.md Critical Gotcha 16"
+    }
+  },
+  "thresholds": {
+    "fit_rule": "Experiment 38 equal-cost rule: the threshold where the healthy false-positive rate is 0.02 on the LiteParse healthy pages of all 40 Experiment 38 documents; ties kept; flag when the score is strictly below the threshold. One fit, not leave-one-document-out.",
+    "refit_on_new_documents": false,
+    "clef_flash_q8_0_w1": {
+      "value": null,
+      "input": "experiments/38-rescue-quality-signal-2026-09-30/output/wording_clefgguf_w1.json (LiteParse tier, 565 healthy pages)",
+      "input_sha256": null,
+      "commit": null,
+      "status": "to fit in task 2.1, before sourcing ends; frozen after commit"
+    },
+    "word_check_a": {
+      "value": null,
+      "expected": 0.8834080717,
+      "input": "committed Experiment 38 candidate A scores (LiteParse tier, 565 healthy pages)",
+      "input_sha256": null,
+      "commit": null,
+      "status": "to fit in task 2.2; a value other than the expected one stops the run"
+    }
+  },
+  "classes": {
+    "junk": "body token recall < 0.50 and at least one token",
+    "healthy": "body token recall >= 0.80",
+    "grey": "0.50 <= recall < 0.80, reported only",
+    "excluded": ["reference < 10 body tokens", "page illegible", "empty rescue text"],
+    "token_rule": "experiments/33-ocr-routing-natural-positive-2026-09-17/build_labels.py tokens and recall, imported",
+    "basis": "frozen Experiment 33 page rule thresholds"
+  },
+  "document_labels": {
+    "needs_ocr": "needs_ocr pages / pages >= 0.10",
+    "usable": "(needs_ocr + ambiguous) pages / pages < 0.10",
+    "junk_text_layer_document": "LiteParse junk pages / pages >= 0.10",
+    "basis": "Experiment 33 document rule"
+  },
+  "text_under_test": {
+    "primary": "liteparse adapter page text, OCR off, shipped normaliser applied",
+    "diagnostic": "pypdf adapter page text, shipped normaliser applied"
+  },
+  "sourcing": {
+    "licence": "open licence or public domain only",
+    "strata": ["born_digital", "mixed", "scan_with_text_layer", "reader_failure", "old_ocr_layer (handwriting, poor print, non-Latin scripts)"],
+    "seed": 42,
+    "procedure": null,
+    "procedure_status": "to write and get operator approval in task 1.4, before any download",
+    "exclusion": "any SHA-256 or source identifier in experiments/33-ocr-routing-natural-positive-2026-09-17/sources.json",
+    "selection_inputs": "metadata and labels only; no candidate score before the freeze",
+    "storage": "corpus/ (gitignored)"
+  },
+  "labelling": {
+    "render": "poppler pdftoppm, 150 dpi, 1600 px long side, PNG",
+    "reference_engine": null,
+    "reference_engine_status": "OD2, proposed dots.mocr (local, ADR-072)",
+    "body_text_rule": null,
+    "body_text_rule_status": "to write in task 3.3 before the split, following the Experiment 33 body-text amendment",
+    "operator_check": {
+      "sample": {"junk": 20, "healthy": 20, "grey_or_boundary": 20},
+      "max_class_disagreements": 3,
+      "on_fail": "stop; amendment before any score"
+    },
+    "freeze": "this experiment's freeze.py --check before every later step",
+    "network": "none"
+  },
+  "sample_size": {
+    "healthy_pages_min": 1000,
+    "junk_pages_min": 100,
+    "junk_pages_target": 150,
+    "junk_text_layer_documents_min": 6,
+    "junk_text_layer_documents_not_routed_by_control_min": 4,
+    "largest_document_share_of_junk_pages_max": 0.25,
+    "usable_documents_min": 40,
+    "expected_pages": "2000 to 2400 in 70 to 90 documents",
+    "reason": "2% of 1,000 healthy pages is 20 pages, so one page does not decide G3; junk spread over at least six documents so one document does not decide recall",
+    "g3_pass_probability": {
+      "method": "exact binomial, ceiling = floor(0.02 x healthy pages)",
+      "565": {"true_rate_0.015": 0.85, "true_rate_0.020": 0.54, "true_rate_0.023": 0.35},
+      "1000": {"true_rate_0.015": 0.92, "true_rate_0.020": 0.56, "true_rate_0.023": 0.31},
+      "1500": {"true_rate_0.015": 0.95, "true_rate_0.020": 0.55, "true_rate_0.023": 0.25},
+      "note": "a threshold fitted at 2% gives a rate near 2% on similar pages, so G3 is close to a coin toss at any size; this motivates OD1"
+    },
+    "on_miss": "stop before scoring; extend sourcing or record a dated amendment with a new power statement"
+  },
+  "routing_simulation": {
+    "fraction": 0.1,
+    "rule": "a document routes when flagged pages that the shipped chain rescued reach 10% of its pages, or when the control arm already routes it",
+    "projected_cost": "OCR seconds per newly routed document, dots.mocr 38.2 s per page and PaddleOCR-VL 23.2 to 164.1 s per page (Experiment 34)"
+  },
+  "gates": {
+    "G1": {"rule": "every document with a junk text layer routes"},
+    "G2": {"rule": "no usable document newly routes, compared with the control arm"},
+    "G3": {"rule": "healthy false-positive rate <= 0.02 at the frozen threshold"},
+    "margin": {"rule": "Clef-flash junk recall >= candidate A junk recall + 0.10, and exact one-sided McNemar on junk pages p < 0.05"},
+    "priority": null,
+    "priority_status": "OD1 open; G1 and the margin are primary under both options"
+  },
+  "runtime_checks": {
+    "llama_cpp_build": "llama-server --version reports b11510 or later",
+    "model_sha256": "equals arms.treatment.model_sha256",
+    "bind": "server listens on 127.0.0.1 only",
+    "concurrency": "one request at a time",
+    "reproduction": "the 40 fixed Experiment 38 speed pages (measure_speed.py) score within 0.01 of the committed J W1 scores",
+    "timing": "one request at a time, two warm-up requests excluded, nothing else on the GPU",
+    "on_fail": "stop"
+  },
+  "analysis": {
+    "population": "LiteParse tier primary; pypdf diagnostic",
+    "intervals": {"wilson": "95%", "bootstrap": "document-cluster, 2000 resamples, seed 42"},
+    "measures": [
+      "junk recall",
+      "healthy false-positive rate",
+      "per-document recall",
+      "routing for every document at fraction 0.10",
+      "exact one-sided McNemar, Clef-flash against A, junk pages",
+      "AUC, diagnostic only",
+      "false-positive rate at the frozen threshold x 0.9 and x 1.1, diagnostic only",
+      "Clef-flash seconds per page"
+    ]
+  },
+  "stopping_rules": [
+    "a sample_size minimum is missed after sourcing",
+    "operator label check exceeds 3 disagreements",
+    "freeze.py --check fails",
+    "any runtime check fails",
+    "more than 1% of requests fail after three retries"
+  ],
+  "amendment_rule": "dated, committed and listed in amendments before the data it affects is scored; after any score exists no amendment changes the thresholds, wording, gates, margin or gate priority; no interim look before every arm is scored and its output hashed",
+  "outcome_table": [
+    ["Clef-flash passes primary gates and margin", "A any", "PASS", "follow-up OpenSpec change to adopt the gate, plus ADR"],
+    ["Clef-flash fails", "A passes primary gates", "FAIL for Clef-flash", "record; operator decides whether A alone justifies a proposal"],
+    ["Clef-flash fails", "A fails", "FAIL", "record failed gate and pages; stop text-only rescue-signal work"]
+  ],
+  "cloud": "none; every arm and the reference transcription run on this machine",
+  "production_change": "none; a PASS opens a separate proposal and ADR",
+  "decision_register": [
+    {
+      "id": "OD1",
+      "item": "gate priority: option A (G2 primary, G3 secondary) or option B (G1, G2, G3 all primary)",
+      "recommendation": "A",
+      "status": "OPEN",
+      "date": null
+    },
+    {
+      "id": "OD2",
+      "item": "reference transcription engine: dots.mocr, another local engine, or a hosted model by amendment",
+      "recommendation": "dots.mocr",
+      "status": "OPEN",
+      "date": null
+    },
+    {
+      "id": "OD3",
+      "item": "reuse the Experiment 38 llama.cpp b11510 build and Q8_0 file if hashes match, or approve a fresh download",
+      "recommendation": "reuse",
+      "status": "OPEN",
+      "date": null
+    }
+  ],
+  "amendments": []
+}

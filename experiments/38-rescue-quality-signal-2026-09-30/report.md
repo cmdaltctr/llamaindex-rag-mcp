@@ -356,12 +356,12 @@ The first Jev scoring used one threshold chosen on the test pages (0.28) and pas
 
 No production change. Next steps for the operator:
 
-1. Run a confirmatory experiment (proposed: Experiment 40) on Clef-flash, `ggml-org/Clef-Flash-GGUF` Q8_0, llama.cpp b11510 or later, wording W1. It is local, Apache 2.0 and matched hosted scores on all 1,322 page/tier pairs.
+1. Run a confirmatory experiment (Experiment 42, OpenSpec change `experiment-42-clef-flash-confirmation`) on Clef-flash, `ggml-org/Clef-Flash-GGUF` Q8_0, llama.cpp b11510 or later, wording W1. It is local, Apache 2.0 and matched hosted scores on all 1,322 page/tier pairs.
    - Use new documents only. Include more healthy pages than this set, and more than one document with junk text.
    - Fit one threshold on all 40 Experiment 38 documents before the run. Do not refit it on the new documents.
    - Arms: production today (no check) as the control; word check (A) as the cheap comparator; Clef-flash Q8_0 as the treatment.
    - Keep G1 to G3, and record before the run whether G2 (usable documents sent to OCR) is the primary gate.
-2. Consider an ADR for llama.cpp Q8_0 GGUF as the local runtime for decision models. The runtime evidence is complete now. Adoption as a quality gate waits for step 1.
+2. ADR-074 (Proposed) records llama.cpp Q8_0 GGUF as the local runtime for decision models. Adoption as a quality gate waits for step 1.
 3. Drop Julia 1 from further rescue-quality work.
 4. Keep Jev and OpenJev as reference arms only. Jev sends page text to TypeSafe, and OpenJev's licence (CC BY-NC 4.0) does not allow production use.
 
