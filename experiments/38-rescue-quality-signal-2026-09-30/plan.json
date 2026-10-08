@@ -184,6 +184,57 @@
       "basis": "candidate B2 (same model, encoder, first 2000 characters) with request type choice instead of noul, wording C1",
       "reason": "operator asked 2026-10-08: the noul path was never parity-tested, the choice path was; this separates a noul fault from a model weakness",
       "status": "registered 2026-10-08 under A3 before scoring"
+    },
+    "G": {
+      "plain_name": "Clef (Cloudflare, hosted)",
+      "model": "@cf/cloudflare/clef (27B, base Qwen 3.8)",
+      "price": "$0.24 per M input tokens",
+      "endpoint": "https://api.cloudflare.com/client/v4/accounts/<Praxis account>/ai/run/@cf/cloudflare/<model>",
+      "licence": "Apache 2.0",
+      "request": "same noul request as C: wordings W1 to W3, first 2000 characters of page text, no criteria for W1",
+      "privacy": "first 2000 characters of every scored page, including records of named people, are sent to Cloudflare Workers AI. Cloudflare states it does not train on customer content; retention after inference is not documented.",
+      "response_model_id": "the API returns the bare names clef and clef-flash, so model drift cannot be detected from the id",
+      "status": "registered 2026-10-08 under A3 before any Clef scoring; operator approved the cloud route and the Praxis account"
+    },
+    "H": {
+      "plain_name": "Clef-flash (Cloudflare, hosted)",
+      "model": "@cf/cloudflare/clef-flash (9B, base Qwen 3.5)",
+      "price": "$0.09 per M input tokens",
+      "endpoint": "https://api.cloudflare.com/client/v4/accounts/<Praxis account>/ai/run/@cf/cloudflare/<model>",
+      "licence": "Apache 2.0",
+      "request": "same noul request as C: wordings W1 to W3, first 2000 characters of page text, no criteria for W1",
+      "privacy": "first 2000 characters of every scored page, including records of named people, are sent to Cloudflare Workers AI. Cloudflare states it does not train on customer content; retention after inference is not documented.",
+      "response_model_id": "the API returns the bare names clef and clef-flash, so model drift cannot be detected from the id",
+      "status": "registered 2026-10-08 under A3 before any Clef scoring; operator approved the cloud route and the Praxis account"
+    },
+    "I": {
+      "plain_name": "Clef-flash, local (MLX 4-bit)",
+      "model": "mlx-community/clef-flash-4bit (conversion of Cloudflare/clef-flash, Apache 2.0, 6.2 GB)",
+      "runtime": "clef_mlx.py from the same repo (audited 2026-10-08: no eval, exec or pickle; network code only for HF download by name and for http image links; neither used), own isolated venv with mlx-vlm >=0.7.4,<0.8, server bound to 127.0.0.1, HF_HUB_OFFLINE=1, no PyTorch",
+      "request": "same noul request as H: wordings W1 to W3, first 2000 characters of page text",
+      "validation": "first score two documents and compare with the 3,966 hosted Clef-flash (H) scores; continue only if they agree closely",
+      "privacy": "page text stays on this Mac",
+      "status": "registered 2026-10-08 under A3 before any local Clef scoring; operator approved the download"
+    },
+    "J": {
+      "plain_name": "Clef-flash, llama.cpp GGUF",
+      "model": "ggml-org/Clef-Flash-GGUF, Clef-Flash-Q4_K_M.gguf (6.5 GB, Apache 2.0, base Cloudflare/clef-flash)",
+      "runtime": "llama-server build b11510 (commit c35b66744, includes Metal fix PR #30100), official ggml-org release tarball with the published sha256 7367be31..., unpacked into output/.models/llamacpp (the installed ~/.llama-app build 11429 lacks the fix and is not used); server bound to 127.0.0.1",
+      "request": "same noul request as H and I: wordings W1 to W3, first 2000 characters of page text",
+      "parity_test": "score the same 94 pages (bd01, rf06) as the MLX check and compare with hosted Clef-flash (H) W1 scores. Pass: Pearson correlation above 0.99 and no page differing by more than 0.10",
+      "if_it_fails": "retry once with Clef-Flash-Q8_0.gguf (issue #30064: quantising the decision head breaks Clef), then stop and record why; MLX (I) stays the checked local route",
+      "privacy": "page text stays on this Mac",
+      "status": "registered 2026-10-08 under A3 before any llama.cpp scoring; operator approved the install and download"
+    },
+    "K": {
+      "plain_name": "Clef-flash, MLX 8-bit",
+      "model": "mlx-community/clef-flash-8bit (conversion of Cloudflare/clef-flash, Apache 2.0, 10.7 GB)",
+      "runtime": "same clef_mlx.py as candidate I (must be byte-identical to the audited copy), same isolated venv, server bound to 127.0.0.1, HF_HUB_OFFLINE=1. Started only after the llama-server run (J) finishes, so timings are not distorted by GPU sharing.",
+      "reason": "bit-depth control (operator, 2026-10-08): I is MLX 4-bit and J is GGUF Q8_0, so I against J mixes runtime with precision. K against J holds precision fixed at 8-bit.",
+      "request": "same noul request as H, I and J: wordings W1 to W3, first 2000 characters of page text",
+      "comparison": "all W1 pages (1,322 page/tier pairs) against hosted Clef-flash (H): Pearson correlation, mean and largest absolute difference, pages on the other side of 0.5; plus seconds per page and download size. Q4_K_M GGUF has only the 94-page check.",
+      "privacy": "page text stays on this Mac",
+      "status": "registered 2026-10-08 under A3 before any MLX 8-bit scoring; operator approved the 10.7 GB download"
     }
   },
   "operating_points": [

@@ -1,11 +1,11 @@
-# Experiment 38: FAIL, no signal passes all gates; Jev and local OpenJev come closest
+# Experiment 38: FAIL, no signal passes all gates; Jev, OpenJev and Clef-flash come closest
 
 - **ID**: `38-rescue-quality-signal-2026-09-30`
 - **Date run**: 2026-10-07 (pilot run, then rerun under amendment A3 on the same day)
 - **Operator**: Dr Muhammad Aizat Bin Md Hawari, with Pi (pilot) and Claude Code (A3 rerun)
-- **Verdict**: FAIL. At held-out thresholds no candidate passes G1, G2 and G3. Hosted Jev and local OpenJev both pass G1 and G2 and flag 12 to 14 healthy pages against an allowance of 11. Production stays unchanged.
+- **Verdict**: FAIL. At held-out thresholds no candidate passes G1, G2 and G3. Hosted Jev, local OpenJev and Clef-flash on W1 (hosted, MLX 8-bit and llama.cpp Q8_0) pass G1 and G2 and flag 12 to 14 good pages against a limit of 11. On Clef-flash W2 and W3 every build also sends usable documents to OCR. Production stays unchanged.
 - **Protocol**: [protocol.md](protocol.md), [plan.json](plan.json) (amendment A3, wordings, candidates B2 and D)
-- **Raw results**: [lodo_summary.json](output/lodo_summary.json) (A3 verdict), [summary.json](output/summary.json) (pilot), [jev_summary.json](output/jev_summary.json), [local_text_signal.json](output/local_text_signal.json)
+- **Raw results**: [lodo_summary.json](output/lodo_summary.json) (A3 verdict), [summary.json](output/summary.json) (pilot), [jev_summary.json](output/jev_summary.json), [local_text_signal.json](output/local_text_signal.json), [clef_flash_variants.json](output/clef_flash_variants.json), [clef_flash_speed.json](output/clef_flash_speed.json)
 
 ## Names used in this report
 
@@ -18,6 +18,11 @@
 | E | OpenJev | Loop AI's open copy of Jev, 27B, MLX 4-bit, run locally. |
 | F | OpenJev Flash 9B | Smaller Loop AI model, 9B, MLX 4-bit, run locally. About 2.4 times faster than E. |
 | B3 | Julia 1, choice request | Julia 1 on the first 2,000 characters, sent as a `choice` request (the path the parity check covered) instead of yes/no. |
+| G | Clef (Cloudflare, 27B, hosted) | Stopped at 13 of 40 documents by the free daily limit. Left out of every table. |
+| H | Clef-flash, hosted | Cloudflare's 9B model on Workers AI. Apache 2.0. Page text leaves the machine. |
+| I | Clef-flash, MLX 4-bit | The same model run locally with MLX, 4-bit (6.2 GB). |
+| J | Clef-flash, llama.cpp Q8_0 | `ggml-org/Clef-Flash-GGUF` Q8_0 (9.7 GB), llama.cpp build b11510. |
+| K | Clef-flash, MLX 8-bit | The same model run locally with MLX, 8-bit (10.7 GB). |
 | D | Word check then Jev | Word check screens every page; Jev scores only the doubtful ones. |
 | D_julia, D_openjev | Word check then Julia 1, or then OpenJev | Same cascade with a different second model. |
 | `_sel` suffix | Best wording | The question wording is chosen per document from the other documents. |
@@ -28,6 +33,8 @@
 
 ## Bottom line
 
+- Clef-flash (Cloudflare, 9B, Apache 2.0) ranks junk as well as the best models: AUC 0.880 to 0.966 across hosted and three local builds on three wordings, and it catches 60 to 64 of 89 junk pages. On W1, hosted, MLX 8-bit and llama.cpp Q8_0 pass G1 and G2 and fail G3 by 2 or 3 good pages. On W2 and W3, which rank junk better, every build also fails G2 by sending usable documents to OCR (`tl06` every time). Its licence allows commercial use, unlike OpenJev.
+- Between the two local 8-bit builds, llama.cpp Q8_0 is closer to hosted on all three wordings, faster (0.84 s against 1.13 s a page) and smaller than MLX 8-bit, and both give the same gate outcome. MLX 4-bit drifts on 96 to 177 pages per wording and fails G2 on every wording.
 - Local OpenJev 27B (MLX 4-bit, page text stays on the machine) ranks junk best: AUC 0.956 with W3. It catches 69 of 89 junk pages with W1 and routes no usable document, but flags 14 healthy pages, so it fails G3.
 - Hosted Jev is the other useful signal. It ranks junk below healthy pages with AUC 0.878 to 0.922 and catches 56 to 60 of 89 junk pages without routing a usable document.
 - It fails because of one gate by one page. With the best wording, it flags 12 of 565 healthy pages (2.12%) against a 2% ceiling (11 pages).
@@ -107,6 +114,133 @@ The yes/no (`noul`) path was never parity-tested; the `choice` path was (100/100
 - Speed: about 3.1 seconds per page, 1.1 to 1.2 hours per wording, 3.4 hours for all three. E took 7.7 hours.
 - Quality: AUC 0.848, 0.817 and 0.902 for W1, W2 and W3, against 0.878, 0.902 and 0.956 for E.
 - Held-out gates: F passes G1 and fails G2 and G3 at every setting. F_sel catches 64 junk pages but newly routes usable `rf02`. The cascade D_flash passes G3 but routes usable `rf02` and `rf04`. Flash 9B is roughly three AUC points to five points behind the 27B.
+
+### Clef-flash (Cloudflare): every run, hosted and local
+
+Cloudflare's Clef-flash (9B, Apache 2.0, same request format as Jev) was scored hosted on Cloudflare Workers AI (H, Praxis account) and in three local builds that run on this Mac (I, J, K). Each of the four was scored on all three wordings (W1, W2, W3), 1,322 page/tier pairs each. The hosted run sent the first 2,000 characters of every page to Cloudflare. Cloudflare states it does not train on customer content, and it does not document how long it keeps inputs. The local builds keep page text on the machine.
+
+Hosted Clef-flash returns only the name `clef-flash`, with no version, so a silent model update could not be detected. The three hosted wordings used 2.3 million input tokens, about $0.20 at $0.09 per million tokens. Hosted latency was 0.40 s per request with four requests at a time.
+
+The Praxis account is on Workers Free (10,000 Neurons a day). The daily limit stopped hosted Clef (27B, candidate G) at 13 of 40 documents on W1. G is left out of every table here.
+
+#### Every run in one table (ranking quality, LiteParse tier)
+
+AUC is the chance that a junk page scores below a healthy page. 0.5 is guessing and 1.0 is perfect.
+
+| Run | Where it runs | Bits | Download | W1 AUC | W2 AUC | W3 AUC |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Hosted (H) | Cloudflare Workers AI | not published | none | 0.909 | 0.961 | 0.948 |
+| MLX 4-bit (I) | This Mac, MLX | 4 | 6.2 GB | 0.880 | 0.966 | 0.940 |
+| MLX 8-bit (K) | This Mac, MLX | 8 | 10.7 GB | 0.909 | 0.962 | 0.948 |
+| llama.cpp Q8_0 (J) | This Mac, llama.cpp b11510 | 8 | 9.7 GB | 0.910 | 0.962 | 0.948 |
+| llama.cpp Q4_K_M | This Mac, llama.cpp b11510 | 4 | 6.5 GB | not scored | not scored | not scored |
+| Hosted Clef 27B (G) | Cloudflare Workers AI | not published | none | stopped at 13 of 40 documents | not run | not run |
+
+All four complete runs rank junk almost the same on W2 (0.961 to 0.966) and W3 (0.940 to 0.948). On W1 the 4-bit MLX build ranks lower (0.880 against 0.909 hosted).
+
+#### How closely each local build reproduces hosted Clef-flash (all 1,322 page/tier pairs per wording)
+
+Hosted Clef-flash is the reference. A "side flip" is a page that falls below 0.5 in one run and at or above it in the other.
+
+| Build | Runtime | Bits | Wording | Correlation | Average difference | Largest difference | Pages off by more than 0.10 | Side flips |
+| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| MLX 4-bit (I) | MLX | 4 | W1 | 0.9539 | 0.0486 | 0.659 | 177 | 74 |
+| MLX 4-bit (I) | MLX | 4 | W2 | 0.9826 | 0.0607 | 0.304 | 168 | 32 |
+| MLX 4-bit (I) | MLX | 4 | W3 | 0.9671 | 0.0302 | 0.597 | 96 | 37 |
+| MLX 8-bit (K) | MLX | 8 | W1 | 0.9992 | 0.0058 | 0.129 | 3 | 18 |
+| MLX 8-bit (K) | MLX | 8 | W2 | 0.9998 | 0.0031 | 0.033 | 0 | 4 |
+| MLX 8-bit (K) | MLX | 8 | W3 | 0.9994 | 0.0038 | 0.141 | 2 | 1 |
+| llama.cpp Q8_0 (J) | llama.cpp | 8 | W1 | 0.9997 | 0.0034 | 0.115 | 1 | 12 |
+| llama.cpp Q8_0 (J) | llama.cpp | 8 | W2 | 0.9999 | 0.0019 | 0.035 | 0 | 1 |
+| llama.cpp Q8_0 (J) | llama.cpp | 8 | W3 | 0.9998 | 0.0026 | 0.096 | 0 | 2 |
+| llama.cpp Q4_K_M | llama.cpp | 4 | W1 (94 pages only)* | 0.9991* | 0.0045* | 0.108* | 1* | 0* |
+
+\* Q4_K_M was checked on 94 pages only (`bd01`, `rf06`). 87% of those pages are junk, against 13% in the full set, so the check is too weak to compare with the other rows. Per-page scores were not saved. Its first test missed the "no page off by more than 0.10" mark by 0.008, and that is why Q8_0 was tried.
+
+| Build | Download | Seconds per page |
+| --- | ---: | ---: |
+| MLX 4-bit (I) | 6.2 GB | 0.70 |
+| MLX 8-bit (K) | 10.7 GB | 1.13 |
+| llama.cpp Q8_0 (J) | 9.7 GB | 0.84 |
+
+Speed is measured one request at a time on 40 fixed pages, with nothing else on the GPU ([measure_speed.py](measure_speed.py), [clef_flash_speed.json](output/clef_flash_speed.json)). The times saved inside the scoring files are not used. The MLX server answers one request at a time, so those times include waiting in a queue.
+
+#### MLX 8-bit against llama.cpp Q8_0, head to head (each cell: MLX 8-bit / llama.cpp Q8_0)
+
+Both are 8-bit builds of the same model, so this isolates the runtime. They do not use identical quantisation schemes, so the comparison is close, not exact.
+
+| Wording | Average difference from hosted | Largest difference | Pages off by more than 0.10 | Side flips | Pages closer to hosted (of 1,322) | Correlation between the two builds |
+| --- | --- | --- | --- | --- | --- | ---: |
+| W1 | 0.0058 / 0.0034 | 0.129 / 0.115 | 3 / 1 | 18 / 12 | 506 / 816 | 0.9992 |
+| W2 | 0.0031 / 0.0019 | 0.033 / 0.035 | 0 / 0 | 4 / 1 | 437 / 885 | 0.9998 |
+| W3 | 0.0038 / 0.0026 | 0.141 / 0.096 | 2 / 0 | 1 / 2 | 562 / 760 | 0.9996 |
+
+- **llama.cpp Q8_0 is the closer 8-bit build on all three wordings.** It has the lower average difference and is closer to hosted on more pages. It is also faster (0.84 s against 1.13 s a page) and smaller. MLX 8-bit has fewer side flips on W3 only (1 against 2).
+- **The gaps are small.** Both builds correlate with hosted above 0.999 on every wording, and with each other above 0.999.
+- **Same gate outcome.** Both builds catch the same number of junk pages and send the same usable documents to OCR on every wording.
+- **The "no page off by more than 0.10" mark.** I fixed it on the 94-page test. llama.cpp Q8_0 meets it on W2 and W3 and misses it on W1 by 0.015 (one page at 0.115). MLX 8-bit meets it on W2 only. It misses on W1 (0.129) and W3 (0.141). The report records these as near-passes and does not move the mark.
+- **Bit depth matters more than runtime.** MLX 4-bit differs from hosted on 177, 168 and 96 pages on W1, W2 and W3. Its worst gap is a junk page scored 0.86 against 0.20 hosted (W1).
+- **My first MLX against llama.cpp comparison was not like for like.** It put MLX 4-bit against llama.cpp Q8_0. The MLX 8-bit runs correct that.
+
+#### Held-out gates for every build and every wording
+
+Each document's cut-off comes only from the other documents. Each row uses one fixed wording for every document. Limit: 11 good pages flagged.
+
+| Build | Bits | Wording | Junk caught | Good pages flagged | G1 / G2 / G3 | Newly routed usable documents |
+| --- | ---: | --- | ---: | ---: | --- | --- |
+| Hosted (H) | not published | W1 | 63/89 | 14/565 | PASS / PASS / FAIL | none |
+| Hosted (H) | not published | W2 | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` |
+| Hosted (H) | not published | W3 | 64/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` |
+| MLX 4-bit (I) | 4 | W1 | 62/89 | 14/565 | PASS / FAIL / FAIL | `tl06` |
+| MLX 4-bit (I) | 4 | W2 | 60/89 | 15/565 | PASS / FAIL / FAIL | `tl06`, `rf05` |
+| MLX 4-bit (I) | 4 | W3 | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06` |
+| MLX 8-bit (K) | 8 | W1 | 64/89 | 14/565 | PASS / PASS / FAIL | none |
+| MLX 8-bit (K) | 8 | W2 | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` |
+| MLX 8-bit (K) | 8 | W3 | 64/89 | 13/565 | PASS / FAIL / FAIL | `tl04`, `tl06`, `rf02` |
+| llama.cpp Q8_0 (J) | 8 | W1 | 64/89 | 13/565 | PASS / PASS / FAIL | none |
+| llama.cpp Q8_0 (J) | 8 | W2 | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` |
+| llama.cpp Q8_0 (J) | 8 | W3 | 64/89 | 13/565 | PASS / FAIL / FAIL | `tl04`, `tl06`, `rf02` |
+
+- **No row passes all three gates.** All 12 rows fail G3 with 12 to 15 good pages flagged. Hosted Clef-flash is among them, so self-hosting is not the cause of the failure.
+- **Only W1 passes G2, and only for three builds.** On W1, hosted, MLX 8-bit and llama.cpp Q8_0 send no usable document to OCR. On W2 and W3 every build sends usable documents to OCR, and `tl06` is among them every time. W2 and W3 rank junk better (AUC up to 0.966) but cost a usable document.
+- **Junk caught varies little.** 60 to 64 of 89 across all rows (67% to 72%).
+- **The two self-hosted 8-bit builds match each other on every wording** (same junk count, same usable documents sent, same gate outcome). They differ from hosted on W3, where both also send `tl04`. MLX 4-bit is the only build that fails G2 on W1.
+
+Script: [gates_by_wording.py](gates_by_wording.py). Output: [clef_flash_gates_by_wording.json](output/clef_flash_gates_by_wording.json). The script has no test of its own. It calls `evaluate`, `held_out` and `lodo_thresholds`, which are tested.
+
+#### Held-out gates with the wording chosen per document
+
+W1 is the fixed wording in the first four rows. In the `_sel` rows each held-out document uses the wording that ranked best on the other documents. "vs word check" is the extra junk caught as a share of the 89 junk pages.
+
+| Run | Junk caught | Good pages flagged | G1 / G2 / G3 | Newly routed usable documents | vs word check |
+| --- | ---: | ---: | --- | --- | ---: |
+| Hosted (H), W1 | 63/89 | 14/565 | PASS / PASS / FAIL | none | +0.292 |
+| MLX 4-bit (I), W1 | 62/89 | 14/565 | PASS / FAIL / FAIL | `tl06` | +0.281 |
+| MLX 8-bit (K), W1 | 64/89 | 14/565 | PASS / PASS / FAIL | none | +0.303 |
+| llama.cpp Q8_0 (J), W1 | 64/89 | 13/565 | PASS / PASS / FAIL | none | +0.303 |
+| Hosted, best wording (H_sel) | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` | +0.281 |
+| MLX 4-bit, best wording (I_sel) | 60/89 | 15/565 | PASS / FAIL / FAIL | `tl06`, `rf05` | +0.258 |
+| MLX 8-bit, best wording (K_sel) | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` | +0.281 |
+| llama.cpp Q8_0, best wording (J_sel) | 62/89 | 12/565 | PASS / FAIL / FAIL | `tl06`, `rf02` | +0.281 |
+
+Word check then Clef-flash (candidate D variants: the word check screens 20% of pages and 28% go to the model):
+
+| Build | Junk caught | Good pages flagged | G1 / G2 / G3 | Newly routed usable documents |
+| --- | ---: | ---: | --- | --- |
+| Hosted (H) | 54/89 | 13/565 | PASS / PASS / FAIL | none |
+| MLX 4-bit (I) | 52/89 | 10/565 | PASS / FAIL / PASS | `tl06` |
+| MLX 8-bit (K) | 55/89 | 13/565 | PASS / PASS / FAIL | none |
+| llama.cpp Q8_0 (J) | 54/89 | 13/565 | PASS / PASS / FAIL | none |
+
+MLX 4-bit's cascade passes G3 with 10 good pages flagged, but fails G2 on `tl06`. The other three catch 54 to 55 junk pages and flag 13 to 13 good pages, so they fail G3.
+
+#### What was not run
+
+- **llama.cpp Q4_K_M on the full set.** Only the 94-page check was done, and its scores were not saved.
+- **Hosted Clef (27B).** It stopped at 13 of 40 documents on W1, at the free daily limit.
+- **Page images.** Clef-flash accepts images. None were sent to any build.
+- **A second hosted run.** The hosted API returns no model version, so repeatability over time is unknown.
+- **More documents.** All results use the same 40 documents. G3 is decided by one or two pages.
 
 ### Local OpenJev setup and cost
 

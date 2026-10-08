@@ -8,6 +8,7 @@ Both models read the first 2,000 characters of each page.
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 from experiment_io import (
@@ -20,10 +21,19 @@ from experiment_io import (
     text_sha256,
     verify_freeze,
 )
-from jev_hosted import HEAD_CHARACTERS, OPENJEV_ENDPOINT, JevClient, check_model, post, score_many
+from jev_hosted import (
+    HEAD_CHARACTERS,
+    OPENJEV_ENDPOINT,
+    WORKERS,
+    JevClient,
+    check_model,
+    post,
+    score_many,
+)
 from score_signals import eligible_rows, verify_coverage
 
 PLAIN = ("no", "yes")
+CLOUD = {"clef": ("G", "clef"), "clefflash": ("H", "clef-flash")}
 
 
 def julia_request(wording: dict) -> dict:
@@ -47,14 +57,34 @@ def scorer(model: str, wording: dict, plan: dict):
     if model == "jev":
         client = JevClient(wording["question"], criteria=jev_criteria(wording))
         return lambda texts: score_many(client, texts)
-    if model in ("openjev", "flash9b"):
+    if model in CLOUD:
+        token, account = (
+            os.environ.get("CLOUDFLARE_API_TOKEN"),
+            os.environ.get("CLOUDFLARE_ACCOUNT_ID"),
+        )
+        if not (token and account):
+            raise RuntimeError("CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set")
+        api_name = CLOUD[model][1]
+        endpoint = f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/@cf/cloudflare/{api_name}"
+        client = JevClient(
+            wording["question"],
+            key=token,
+            criteria=jev_criteria(wording),
+            model=api_name,
+            send=lambda body, key: post(body, key, endpoint=endpoint)["result"],
+        )
+        return lambda texts: score_many(client, texts)
+    if model in ("openjev", "flash9b", "clefmlx", "clefmlx8", "clefgguf"):
         client = JevClient(
             wording["question"],
             key="local",
             criteria=jev_criteria(wording),
             send=lambda body, key: post(body, key, endpoint=OPENJEV_ENDPOINT),
         )
-        return lambda texts: score_many(client, texts)
+        # llama-server stalled when four decision requests overlapped (60 s timeouts), so
+        # it gets one request at a time. The other local servers already queue requests.
+        workers = 1 if model == "clefgguf" else WORKERS
+        return lambda texts: score_many(client, texts, workers=workers)
     from julia_onnx import JuliaRuntime, yes_probability
 
     runtime = JuliaRuntime(plan, require_parity=True)
@@ -67,6 +97,10 @@ def scorer(model: str, wording: dict, plan: dict):
 def run(source: Path, model: str, name: str, resume: bool) -> None:
     """Score one model and wording over every junk and healthy page/tier pair."""
     plan = approved_plan()
+    if model in CLOUD and CLOUD[model][0] not in plan["candidates"]:
+        raise RuntimeError(
+            "register the Cloudflare candidate in plan.json before sending page text"
+        )
     wording = plan["wordings"][name]
     verify_freeze(source)
     rescue = read_json(OUTPUT / "rescue_text.json")
@@ -94,7 +128,7 @@ def run(source: Path, model: str, name: str, resume: bool) -> None:
         if any(text_sha256(t) != r["text_sha256"] for t, r in zip(pages, doc_rows, strict=True)):
             raise ValueError("saved page text hash differs from extraction")
         results = score([t[:HEAD_CHARACTERS] for t in pages])
-        if model in ("jev", "openjev", "flash9b"):
+        if model in ("jev", "openjev", "flash9b", "clefmlx", "clefmlx8", "clefgguf", *CLOUD):
             check_model(payload, {r["model"] for r in results})
         payload["rows"].extend({**r, **s} for r, s in zip(doc_rows, results, strict=True))
         payload["completed_documents"].append(doc_id)
@@ -108,7 +142,21 @@ def main() -> None:
     """Read runtime arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-exp", required=True, type=Path)
-    parser.add_argument("--model", required=True, choices=("julia", "jev", "openjev", "flash9b"))
+    parser.add_argument(
+        "--model",
+        required=True,
+        choices=(
+            "julia",
+            "jev",
+            "openjev",
+            "flash9b",
+            "clef",
+            "clefflash",
+            "clefmlx",
+            "clefmlx8",
+            "clefgguf",
+        ),
+    )
     parser.add_argument("--wording", required=True, choices=("W1", "W2", "W3", "C1"))
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()

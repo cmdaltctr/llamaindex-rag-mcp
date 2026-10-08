@@ -155,3 +155,85 @@ def test_julia_choice_wording_sends_a_choice_request_with_ordered_options():
     assert request["type"] == "choice"
     assert request["options"] == ["garbled", "readable"]
     assert sw.julia_request({"question": "Q", "false": "no", "true": "yes"})["type"] == "noul"
+
+
+def test_cloudflare_requests_use_the_praxis_endpoint_unwrap_result_and_name_the_model(monkeypatch):
+    import score_wordings as sw
+
+    seen = []
+
+    def fake_urlopen(request, timeout):
+        seen.append((request.full_url, json.loads(request.data)["model"]))
+        return io.BytesIO(
+            json.dumps({"result": reply(0.6, model="clef"), "success": True}).encode()
+        )
+
+    monkeypatch.setattr(jev.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok-secret")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct123")
+    score = sw.scorer("clefflash", {"question": "Q", "false": "no", "true": "yes"}, {})
+    assert [r["score"] for r in score(["page"])] == [0.6]
+    assert seen == [
+        (
+            "https://api.cloudflare.com/client/v4/accounts/acct123/ai/run/@cf/cloudflare/clef-flash",
+            "clef-flash",
+        )
+    ]
+
+
+def test_cloud_model_is_refused_until_registered_in_the_plan(monkeypatch, tmp_path):
+    import score_wordings as sw
+
+    monkeypatch.setattr(sw, "approved_plan", lambda: {"candidates": {}, "wordings": {"W1": {}}})
+    with pytest.raises(RuntimeError, match="register"):
+        sw.run(tmp_path, "clef", "W1", False)
+
+
+def test_cloudflare_scorer_needs_both_credentials(monkeypatch):
+    import score_wordings as sw
+
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+    with pytest.raises(RuntimeError, match="CLOUDFLARE_API_TOKEN"):
+        sw.scorer("clef", {"question": "Q", "false": "no", "true": "yes"}, {})
+
+
+def test_llama_server_gets_one_request_at_a_time(monkeypatch):
+    import threading
+    import time
+
+    import score_wordings as sw
+
+    state = {"now": 0, "peak": 0}
+    lock = threading.Lock()
+
+    def fake_urlopen(request, timeout):
+        with lock:
+            state["now"] += 1
+            state["peak"] = max(state["peak"], state["now"])
+        time.sleep(0.02)
+        with lock:
+            state["now"] -= 1
+        return io.BytesIO(json.dumps(reply(0.5, model="clef-flash")).encode())
+
+    monkeypatch.setattr(jev.urllib.request, "urlopen", fake_urlopen)
+    wording = {"question": "Q", "false": "no", "true": "yes"}
+    sw.scorer("clefgguf", wording, {})([f"page {n}" for n in range(12)])
+    assert state["peak"] == 1
+    state["peak"] = 0
+    sw.scorer("clefmlx", wording, {})([f"page {n}" for n in range(12)])
+    assert state["peak"] > 1
+
+
+def test_mlx_8bit_goes_to_the_local_server_and_has_its_own_score_file(monkeypatch):
+    import score_wordings as sw
+
+    seen = []
+
+    def fake_urlopen(request, timeout):
+        seen.append(request.full_url)
+        return io.BytesIO(json.dumps(reply(0.4, model="clef-flash")).encode())
+
+    monkeypatch.setattr(jev.urllib.request, "urlopen", fake_urlopen)
+    score = sw.scorer("clefmlx8", {"question": "Q", "false": "no", "true": "yes"}, {})
+    assert [r["score"] for r in score(["page"])] == [0.4]
+    assert seen == ["http://127.0.0.1:3000/v1/systemone"]

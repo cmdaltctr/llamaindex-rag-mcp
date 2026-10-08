@@ -110,3 +110,17 @@ def test_cascade_only_flags_pages_both_signals_suspect():
     a, c = rows(lambda cls, i: 0.1 if cls == "junk" else i / 100, lambda cls, i: 0.9)
     shifted, _ = cascade_select(a, c, screen_rate=0.20)
     assert not any(r["score"] < 0 and r["class"] == "junk" for r in shifted)
+
+
+def test_partial_score_files_are_left_out_of_the_summary(tmp_path):
+    import json
+
+    from summarise_lodo import load_complete
+
+    full = tmp_path / "full.json"
+    partial = tmp_path / "partial.json"
+    full.write_text(json.dumps({"completed_documents": [f"d{i}" for i in range(40)], "rows": [1]}))
+    partial.write_text(json.dumps({"completed_documents": ["d0"], "rows": [1]}))
+    assert load_complete(full) == [1]
+    assert load_complete(partial) is None
+    assert load_complete(tmp_path / "missing.json") is None

@@ -67,10 +67,10 @@ def post(
         except urllib.error.HTTPError as error:
             # Status only: the response body could echo page text or credentials.
             if error.code not in RETRY_STATUS or attempt == ATTEMPTS - 1:
-                raise RuntimeError(f"TypeSafe request failed with HTTP {error.code}") from None
+                raise RuntimeError(f"Request failed with HTTP {error.code}") from None
         except urllib.error.URLError:
             if attempt == ATTEMPTS - 1:
-                raise RuntimeError("TypeSafe request failed: network error") from None
+                raise RuntimeError("Request failed: network error") from None
         sleep(2**attempt)
     raise AssertionError("unreachable")
 
@@ -84,8 +84,10 @@ class JevClient:
         key: str | None = None,
         send: Callable = post,
         criteria: dict | None = None,
+        model: str = "jev-latest",
     ) -> None:
         self.question = question
+        self.model = model
         self.criteria = criteria
         self.key = key or os.environ.get("TYPESAFE_API_KEY")
         if not self.key:
@@ -95,7 +97,9 @@ class JevClient:
     def probability(self, text: str) -> dict:
         """Return the Noul score with the exact model id and token usage."""
         start = time.perf_counter()
-        reply = self.send(build_body(self.question, text, criteria=self.criteria), self.key)
+        reply = self.send(
+            build_body(self.question, text, model=self.model, criteria=self.criteria), self.key
+        )
         value = reply["answers"]["readable"]["noul"]
         if not isinstance(value, (int, float)) or not 0 <= value <= 1:
             raise ValueError("Jev score outside probability bounds")
@@ -108,9 +112,9 @@ class JevClient:
         }
 
 
-def score_many(client: JevClient, texts: list[str]) -> list[dict]:
+def score_many(client: JevClient, texts: list[str], workers: int = WORKERS) -> list[dict]:
     """Score pages in parallel while keeping input order."""
-    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+    with ThreadPoolExecutor(max_workers=workers) as pool:
         return list(pool.map(client.probability, texts))
 
 

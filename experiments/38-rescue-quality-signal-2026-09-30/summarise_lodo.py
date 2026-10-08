@@ -24,6 +24,11 @@ WORDING_FILES = {
     "C_sel": ("jev", "C"),
     "E_sel": ("openjev", "E"),
     "F_sel": ("flash9b", "F"),
+    "G_sel": ("clef", "G"),
+    "H_sel": ("clefflash", "H"),
+    "I_sel": ("clefmlx", "I"),
+    "J_sel": ("clefgguf", "J"),
+    "K_sel": ("clefmlx8", "K"),
 }
 
 
@@ -70,6 +75,18 @@ def adoption(results: dict, shifted: dict) -> dict:
     return out
 
 
+def load_complete(path: Path) -> list[dict] | None:
+    """Return the rows of a score file only when all 40 documents finished.
+
+    A run that stopped early (for example Clef 27B at the daily Cloudflare limit)
+    must not enter the summary: its cascade and coverage checks need every page.
+    """
+    if not path.exists():
+        return None
+    payload = read_json(path)
+    return payload["rows"] if len(payload["completed_documents"]) == 40 else None
+
+
 def load_wordings(model: str, w1: list[dict]) -> dict[str, list[dict]] | None:
     """Return W1 to W3 rows for one model, or None until both new wordings are scored."""
     paths = {w: OUTPUT / f"wording_{model}_{w.lower()}.json" for w in ("W2", "W3")}
@@ -92,17 +109,28 @@ def run(source: Path) -> None:
     shifted = {n: held_out(rows[n], lodo_thresholds(rows[n])) for n in BASE}
     extra: dict[str, Any] = {"thresholds": {n: lodo_thresholds(rows[n]) for n in BASE}}
     openjev_w1 = OUTPUT / "wording_openjev_w1.json"
-    if openjev_w1.exists():
-        rows["E"] = read_json(openjev_w1)["rows"]
+    if (complete := load_complete(openjev_w1)) is not None:
+        rows["E"] = complete
         shifted["E"] = held_out(rows["E"], lodo_thresholds(rows["E"]))
     julia_choice = OUTPUT / "wording_julia_c1.json"
-    if julia_choice.exists():
-        rows["B3"] = read_json(julia_choice)["rows"]
+    if (complete := load_complete(julia_choice)) is not None:
+        rows["B3"] = complete
         shifted["B3"] = held_out(rows["B3"], lodo_thresholds(rows["B3"]))
     flash_w1 = OUTPUT / "wording_flash9b_w1.json"
-    if flash_w1.exists():
-        rows["F"] = read_json(flash_w1)["rows"]
+    if (complete := load_complete(flash_w1)) is not None:
+        rows["F"] = complete
         shifted["F"] = held_out(rows["F"], lodo_thresholds(rows["F"]))
+    for key, model in (
+        ("G", "clef"),
+        ("H", "clefflash"),
+        ("I", "clefmlx"),
+        ("J", "clefgguf"),
+        ("K", "clefmlx8"),
+    ):
+        w1_path = OUTPUT / f"wording_{model}_w1.json"
+        if (complete := load_complete(w1_path)) is not None:
+            rows[key] = complete
+            shifted[key] = held_out(rows[key], lodo_thresholds(rows[key]))
     for name, (model, w1) in WORDING_FILES.items():
         if w1 not in rows:
             continue
@@ -127,6 +155,17 @@ def run(source: Path) -> None:
         shifted["D_flash"], extra["D_flash_share_sent"] = cascade_select(
             rows["A"], rows["F"], plan["candidates"]["D"]["primary_screen_rate"]
         )
+    for key, label in (
+        ("G", "D_clef"),
+        ("H", "D_clefflash"),
+        ("I", "D_clefmlx"),
+        ("J", "D_clefgguf"),
+        ("K", "D_clefmlx8"),
+    ):
+        if key in rows:
+            shifted[label], extra[f"{label}_share_sent"] = cascade_select(
+                rows["A"], rows[key], plan["candidates"]["D"]["primary_screen_rate"]
+            )
     for payload in shifted.values():
         verify_coverage(expected, payload)
     results = {n: evaluate(shifted[n], baseline, labels) for n in shifted}
