@@ -43,6 +43,30 @@
 - The A-then-Jev cascade sends 28% of pages to Jev and catches 50 junk pages. It fails G2 on `rf04`.
 - The pilot numbers below the A3 section used a threshold chosen on the test pages. The A3 section replaces them for the verdict.
 
+## Conclusion
+
+The verdict stays FAIL. No candidate passed G1, G2 and G3 at held-out thresholds. The gates were fixed before the run, and they do not move after it.
+
+The best decision models are still much better than what production does today:
+
+| Arm | `rf06` and `rf07` sent to OCR | Usable documents newly sent to OCR | Good pages flagged (of 565) |
+| --- | --- | --- | ---: |
+| Production today (no check, TDR-024) | neither | none | 0 |
+| Word check (A) | both | `rf05` | 18 |
+| Clef-flash, llama.cpp Q8_0, W1 (J) | both | none | 13 (2.3%) |
+
+- Without a decision model, the two junk documents stay on the fast path and reach the index as junk. The word check catches them, but it also sends a usable document to OCR.
+- Clef-flash Q8_0 on W1 catches 64 of 89 junk pages. It sends both junk documents to OCR and no usable document.
+- The 2% ceiling is strict on purpose. It keeps flagged pages well below the 10% share that sends a whole document to OCR. A flagged good page costs OCR time only when it helps push its document over that share. In this set, the 13 flags sent no usable document to OCR, so the 2 pages over the ceiling cost no OCR time.
+
+A narrow miss reported as FAIL, followed by a new test on new data, is normal practice:
+
+- Good practice in machine learning evaluation fixes the metric and the decision threshold before results are seen. A threshold chosen on the test data cannot be used in deployment (*Good practices for evaluation of machine learning systems*, arXiv:2412.03700).
+- After a narrow miss, adding observations to the same analysis is a protocol breach. A larger sample for a reason independent of the result is acceptable ([Garcia, *What can change after preregistration?*](https://manuelgarcia.info/guides/research/guide/changes-after-preregistration)).
+- Registered reports publish results whether or not they pass. This is how they prevent publication bias ([Preregistration (science)](https://en.wikipedia.org/wiki/Preregistration_(science))).
+
+So this experiment records the FAIL, and Clef-flash Q8_0 goes to a new confirmatory experiment on new documents (see Limits and next actions).
+
 ## Rerun under amendment A3 (verdict)
 
 Amendment A3 (operator, 2026-10-07) changed three things before the rerun. Hosted Jev became registered candidate C. Every equal-cost threshold now uses leave-one-document-out: each document is flagged with a threshold chosen only on the other documents' healthy LiteParse pages. Three question wordings were registered before scoring, and both models pick one per document by nested leave-one-document-out.
@@ -332,10 +356,14 @@ The first Jev scoring used one threshold chosen on the test pages (0.28) and pas
 
 No production change. Next steps for the operator:
 
-1. Decide whether page text may go to TypeSafe in production. Without that approval, Jev cannot be adopted on any result.
-2. If yes, test Jev W3 on new documents with more healthy pages, using the same held-out rules and gates.
+1. Run a confirmatory experiment (proposed: Experiment 40) on Clef-flash, `ggml-org/Clef-Flash-GGUF` Q8_0, llama.cpp b11510 or later, wording W1. It is local, Apache 2.0 and matched hosted scores on all 1,322 page/tier pairs.
+   - Use new documents only. Include more healthy pages than this set, and more than one document with junk text.
+   - Fit one threshold on all 40 Experiment 38 documents before the run. Do not refit it on the new documents.
+   - Arms: production today (no check) as the control; word check (A) as the cheap comparator; Clef-flash Q8_0 as the treatment.
+   - Keep G1 to G3, and record before the run whether G2 (usable documents sent to OCR) is the primary gate.
+2. Consider an ADR for llama.cpp Q8_0 GGUF as the local runtime for decision models. The runtime evidence is complete now. Adoption as a quality gate waits for step 1.
 3. Drop Julia 1 from further rescue-quality work.
-4. Consider local OpenJev as the privacy-safe option. It needs a commercial licence for production. The 27B is about 25 times slower than hosted Jev on this Mac, and the 9B about 11 times slower. The 9B is faster and a little weaker.
+4. Keep Jev and OpenJev as reference arms only. Jev sends page text to TypeSafe, and OpenJev's licence (CC BY-NC 4.0) does not allow production use.
 
 ## Validation and workflow status
 
