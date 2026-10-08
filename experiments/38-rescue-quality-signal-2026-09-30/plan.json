@@ -158,6 +158,32 @@
         "D_openjev (A screens, OpenJev W1 confirms, same rates as D)"
       ],
       "status": "registered 2026-10-07 under A3 before any OpenJev scoring; operator approved the 15 GB download and the non-commercial licence for this research run"
+    },
+    "F": {
+      "plain_name": "OpenJev Flash 9B",
+      "model": "openjev/OpenJev-Flash-9B-MLX-4bit (Loop AI, CC BY-NC 4.0, research use)",
+      "runtime": "same isolated venv and helper as E (shim.py hash 81a22f1b, from openjev/OpenJev-Flash-9B); server bound to 127.0.0.1, HF_HUB_OFFLINE=1",
+      "readout_env": {
+        "READOUT_T": "1.07",
+        "READOUT_NOUL_T": "1.074766",
+        "READOUT_NOUL_BIAS": "0",
+        "READOUT_TARGETED": "1",
+        "READOUT_INSTR_STYLE": "pyrepr",
+        "SHIM_STAGGER": "1"
+      },
+      "request": "same as E: wordings W1 to W3, first 2000 characters of page text",
+      "candidates_reported": [
+        "F (W1)",
+        "F_sel (best wording per document)",
+        "D_flash (word check then OpenJev Flash 9B)"
+      ],
+      "status": "registered 2026-10-08 under A3 before any Flash 9B scoring; operator approved"
+    },
+    "B3": {
+      "plain_name": "Julia 1, choice request",
+      "basis": "candidate B2 (same model, encoder, first 2000 characters) with request type choice instead of noul, wording C1",
+      "reason": "operator asked 2026-10-08: the noul path was never parity-tested, the choice path was; this separates a noul fault from a model weakness",
+      "status": "registered 2026-10-08 under A3 before scoring"
     }
   },
   "operating_points": [
@@ -320,6 +346,13 @@
       "jev": "noul instructions = question; criteria {true, false} only when not plain yes/no"
     },
     "selection": "nested leave-one-document-out: for each held-out document, pick the wording with the highest junk-vs-healthy AUC on the other documents' LiteParse pages, then take that wording's equal-cost threshold from the same other documents",
-    "report": "all wordings are reported; the nested selection is the result used for gates"
+    "report": "all wordings are reported; the nested selection is the result used for gates",
+    "C1": {
+      "type": "choice",
+      "question": "Is this text readable writing in a natural language, rather than garbled or broken OCR output?",
+      "false": "garbled or broken OCR output",
+      "true": "readable writing in a natural language",
+      "note": "Julia 1 only. Request type choice (the path the 100-case parity check covered), options ordered [false, true]; score = P(second option) from the two choice logits."
+    }
   }
 }

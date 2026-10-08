@@ -19,7 +19,12 @@ from signal_stats import bootstrap_interval, mcnemar, metrics
 from summarise_eval import gates, simulate_routing
 
 BASE = ("A", "B", "B2", "C")
-WORDING_FILES = {"B_sel": ("julia", "B2"), "C_sel": ("jev", "C"), "E_sel": ("openjev", "E")}
+WORDING_FILES = {
+    "B_sel": ("julia", "B2"),
+    "C_sel": ("jev", "C"),
+    "E_sel": ("openjev", "E"),
+    "F_sel": ("flash9b", "F"),
+}
 
 
 def evaluate(shifted: list[dict], baseline: list[dict], labels: dict) -> dict:
@@ -90,6 +95,14 @@ def run(source: Path) -> None:
     if openjev_w1.exists():
         rows["E"] = read_json(openjev_w1)["rows"]
         shifted["E"] = held_out(rows["E"], lodo_thresholds(rows["E"]))
+    julia_choice = OUTPUT / "wording_julia_c1.json"
+    if julia_choice.exists():
+        rows["B3"] = read_json(julia_choice)["rows"]
+        shifted["B3"] = held_out(rows["B3"], lodo_thresholds(rows["B3"]))
+    flash_w1 = OUTPUT / "wording_flash9b_w1.json"
+    if flash_w1.exists():
+        rows["F"] = read_json(flash_w1)["rows"]
+        shifted["F"] = held_out(rows["F"], lodo_thresholds(rows["F"]))
     for name, (model, w1) in WORDING_FILES.items():
         if w1 not in rows:
             continue
@@ -110,6 +123,10 @@ def run(source: Path) -> None:
         shifted["D_openjev"], extra["D_openjev_share_sent"] = cascade_select(
             rows["A"], rows["E"], plan["candidates"]["D"]["primary_screen_rate"]
         )
+    if "F" in rows:
+        shifted["D_flash"], extra["D_flash_share_sent"] = cascade_select(
+            rows["A"], rows["F"], plan["candidates"]["D"]["primary_screen_rate"]
+        )
     for payload in shifted.values():
         verify_coverage(expected, payload)
     results = {n: evaluate(shifted[n], baseline, labels) for n in shifted}
@@ -122,6 +139,9 @@ def run(source: Path) -> None:
         if "E" in rows:
             local, _ = cascade_select(rows["A"], rows["E"], rate)
             sensitivity[f"openjev_{rate}"] = evaluate(local, baseline, labels)
+        if "F" in rows:
+            flash, _ = cascade_select(rows["A"], rows["F"], rate)
+            sensitivity[f"flash_{rate}"] = evaluate(flash, baseline, labels)
     verdict = adoption(results, shifted)
     summary = {
         "experiment": plan["experiment_id"],

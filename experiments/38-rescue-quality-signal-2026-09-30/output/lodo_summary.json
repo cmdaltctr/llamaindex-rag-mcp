@@ -2016,6 +2016,815 @@
       },
       "newly_routed_usable": []
     },
+    "B3": {
+      "populations": {
+        "liteparse": {
+          "junk_pages": 89,
+          "junk_flagged": 0,
+          "junk_recall": 0.0,
+          "healthy_pages": 565,
+          "healthy_false_positives": 12,
+          "healthy_false_positive_rate": 0.021238938053097345,
+          "document_cluster_interval": {
+            "lower": 0.0,
+            "upper": 0.0,
+            "resamples": 2000,
+            "defined_resamples": 2000,
+            "seed": 38
+          }
+        },
+        "pypdf": {
+          "junk_pages": 89,
+          "junk_flagged": 0,
+          "junk_recall": 0.0,
+          "healthy_pages": 579,
+          "healthy_false_positives": 3,
+          "healthy_false_positive_rate": 0.0051813471502590676,
+          "document_cluster_interval": {
+            "lower": 0.0,
+            "upper": 0.0,
+            "resamples": 2000,
+            "defined_resamples": 2000,
+            "seed": 38
+          }
+        }
+      },
+      "routing": {
+        "bd01": {
+          "pages": 6,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd02": {
+          "pages": 12,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd03": {
+          "pages": 25,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd04": {
+          "pages": 31,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "bd05": {
+          "pages": 30,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd06": {
+          "pages": 9,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd07": {
+          "pages": 44,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd08": {
+          "pages": 11,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx01": {
+          "pages": 29,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx02": {
+          "pages": 19,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "mx03": {
+          "pages": 37,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx04": {
+          "pages": 34,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx05": {
+          "pages": 54,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx06": {
+          "pages": 29,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx07": {
+          "pages": 46,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "mx08": {
+          "pages": 13,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "io01": {
+          "pages": 49,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io02": {
+          "pages": 16,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io03": {
+          "pages": 5,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io04": {
+          "pages": 52,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io05": {
+          "pages": 8,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io06": {
+          "pages": 78,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io07": {
+          "pages": 66,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io08": {
+          "pages": 2,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl01": {
+          "pages": 80,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl02": {
+          "pages": 49,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl03": {
+          "pages": 26,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl04": {
+          "pages": 12,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl05": {
+          "pages": 12,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl06": {
+          "pages": 3,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl07": {
+          "pages": 3,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl08": {
+          "pages": 4,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf01": {
+          "pages": 1,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf02": {
+          "pages": 8,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf03": {
+          "pages": 7,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf04": {
+          "pages": 8,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 1,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": true
+        },
+        "rf05": {
+          "pages": 25,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf06": {
+          "pages": 89,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf07": {
+          "pages": 63,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf08": {
+          "pages": 28,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 1,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        }
+      },
+      "gates": {
+        "G1": false,
+        "G2": false,
+        "G3": false
+      },
+      "newly_routed_usable": [
+        "rf04"
+      ]
+    },
+    "F": {
+      "populations": {
+        "liteparse": {
+          "junk_pages": 89,
+          "junk_flagged": 55,
+          "junk_recall": 0.6179775280898876,
+          "healthy_pages": 565,
+          "healthy_false_positives": 13,
+          "healthy_false_positive_rate": 0.023008849557522124,
+          "document_cluster_interval": {
+            "lower": 0.06446572580645162,
+            "upper": 0.839632075471698,
+            "resamples": 2000,
+            "defined_resamples": 2000,
+            "seed": 38
+          }
+        },
+        "pypdf": {
+          "junk_pages": 89,
+          "junk_flagged": 57,
+          "junk_recall": 0.6404494382022472,
+          "healthy_pages": 579,
+          "healthy_false_positives": 4,
+          "healthy_false_positive_rate": 0.0069084628670120895,
+          "document_cluster_interval": {
+            "lower": 0.04756493506493507,
+            "upper": 0.8545493395493394,
+            "resamples": 2000,
+            "defined_resamples": 2000,
+            "seed": 38
+          }
+        }
+      },
+      "routing": {
+        "bd01": {
+          "pages": 6,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd02": {
+          "pages": 12,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd03": {
+          "pages": 25,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd04": {
+          "pages": 31,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "bd05": {
+          "pages": 30,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd06": {
+          "pages": 9,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd07": {
+          "pages": 44,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd08": {
+          "pages": 11,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx01": {
+          "pages": 29,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx02": {
+          "pages": 19,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "mx03": {
+          "pages": 37,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx04": {
+          "pages": 34,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx05": {
+          "pages": 54,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx06": {
+          "pages": 29,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx07": {
+          "pages": 46,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "mx08": {
+          "pages": 13,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "io01": {
+          "pages": 49,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io02": {
+          "pages": 16,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io03": {
+          "pages": 5,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io04": {
+          "pages": 52,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io05": {
+          "pages": 8,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io06": {
+          "pages": 78,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io07": {
+          "pages": 66,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io08": {
+          "pages": 2,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl01": {
+          "pages": 80,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl02": {
+          "pages": 49,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl03": {
+          "pages": 26,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl04": {
+          "pages": 12,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl05": {
+          "pages": 12,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 2,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": true
+        },
+        "tl06": {
+          "pages": 3,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 1,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": true
+        },
+        "tl07": {
+          "pages": 3,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 1,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl08": {
+          "pages": 4,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf01": {
+          "pages": 1,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf02": {
+          "pages": 8,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf03": {
+          "pages": 7,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf04": {
+          "pages": 8,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf05": {
+          "pages": 25,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf06": {
+          "pages": 89,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 40,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf07": {
+          "pages": 63,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 9,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf08": {
+          "pages": 28,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        }
+      },
+      "gates": {
+        "G1": true,
+        "G2": false,
+        "G3": false
+      },
+      "newly_routed_usable": [
+        "tl05",
+        "tl06"
+      ]
+    },
     "B_sel": {
       "populations": {
         "liteparse": {
@@ -3224,6 +4033,410 @@
       },
       "newly_routed_usable": [
         "tl06"
+      ]
+    },
+    "F_sel": {
+      "populations": {
+        "liteparse": {
+          "junk_pages": 89,
+          "junk_flagged": 64,
+          "junk_recall": 0.7191011235955056,
+          "healthy_pages": 565,
+          "healthy_false_positives": 12,
+          "healthy_false_positive_rate": 0.021238938053097345,
+          "document_cluster_interval": {
+            "lower": 0.04756493506493507,
+            "upper": 0.8973007623007623,
+            "resamples": 2000,
+            "defined_resamples": 2000,
+            "seed": 38
+          }
+        },
+        "pypdf": {
+          "junk_pages": 89,
+          "junk_flagged": 63,
+          "junk_recall": 0.7078651685393258,
+          "healthy_pages": 579,
+          "healthy_false_positives": 14,
+          "healthy_false_positive_rate": 0.024179620034542316,
+          "document_cluster_interval": {
+            "lower": 0.04756493506493507,
+            "upper": 0.8888888888888888,
+            "resamples": 2000,
+            "defined_resamples": 2000,
+            "seed": 38
+          }
+        }
+      },
+      "routing": {
+        "bd01": {
+          "pages": 6,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd02": {
+          "pages": 12,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd03": {
+          "pages": 25,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd04": {
+          "pages": 31,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "bd05": {
+          "pages": 30,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd06": {
+          "pages": 9,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd07": {
+          "pages": 44,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd08": {
+          "pages": 11,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx01": {
+          "pages": 29,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx02": {
+          "pages": 19,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "mx03": {
+          "pages": 37,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx04": {
+          "pages": 34,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx05": {
+          "pages": 54,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx06": {
+          "pages": 29,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx07": {
+          "pages": 46,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "mx08": {
+          "pages": 13,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "io01": {
+          "pages": 49,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io02": {
+          "pages": 16,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io03": {
+          "pages": 5,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io04": {
+          "pages": 52,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io05": {
+          "pages": 8,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io06": {
+          "pages": 78,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io07": {
+          "pages": 66,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io08": {
+          "pages": 2,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl01": {
+          "pages": 80,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl02": {
+          "pages": 49,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl03": {
+          "pages": 26,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl04": {
+          "pages": 12,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 1,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl05": {
+          "pages": 12,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 1,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl06": {
+          "pages": 3,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl07": {
+          "pages": 3,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl08": {
+          "pages": 4,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf01": {
+          "pages": 1,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf02": {
+          "pages": 8,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 1,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": true
+        },
+        "rf03": {
+          "pages": 7,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf04": {
+          "pages": 8,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf05": {
+          "pages": 25,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf06": {
+          "pages": 89,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 40,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf07": {
+          "pages": 63,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 12,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf08": {
+          "pages": 28,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        }
+      },
+      "gates": {
+        "G1": true,
+        "G2": false,
+        "G3": false
+      },
+      "newly_routed_usable": [
+        "rf02"
       ]
     },
     "D": {
@@ -4437,6 +5650,411 @@
       "newly_routed_usable": [
         "rf05"
       ]
+    },
+    "D_flash": {
+      "populations": {
+        "liteparse": {
+          "junk_pages": 89,
+          "junk_flagged": 53,
+          "junk_recall": 0.5955056179775281,
+          "healthy_pages": 565,
+          "healthy_false_positives": 11,
+          "healthy_false_positive_rate": 0.019469026548672566,
+          "document_cluster_interval": {
+            "lower": 0.04756493506493507,
+            "upper": 0.8240967044094625,
+            "resamples": 2000,
+            "defined_resamples": 2000,
+            "seed": 38
+          }
+        },
+        "pypdf": {
+          "junk_pages": 89,
+          "junk_flagged": 52,
+          "junk_recall": 0.5842696629213483,
+          "healthy_pages": 579,
+          "healthy_false_positives": 7,
+          "healthy_false_positive_rate": 0.012089810017271158,
+          "document_cluster_interval": {
+            "lower": 0.04756493506493507,
+            "upper": 0.8049042950513531,
+            "resamples": 2000,
+            "defined_resamples": 2000,
+            "seed": 38
+          }
+        }
+      },
+      "routing": {
+        "bd01": {
+          "pages": 6,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd02": {
+          "pages": 12,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd03": {
+          "pages": 25,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd04": {
+          "pages": 31,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "bd05": {
+          "pages": 30,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd06": {
+          "pages": 9,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd07": {
+          "pages": 44,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd08": {
+          "pages": 11,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx01": {
+          "pages": 29,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx02": {
+          "pages": 19,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "mx03": {
+          "pages": 37,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx04": {
+          "pages": 34,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx05": {
+          "pages": 54,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx06": {
+          "pages": 29,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx07": {
+          "pages": 46,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "mx08": {
+          "pages": 13,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "io01": {
+          "pages": 49,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io02": {
+          "pages": 16,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io03": {
+          "pages": 5,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io04": {
+          "pages": 52,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io05": {
+          "pages": 8,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io06": {
+          "pages": 78,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io07": {
+          "pages": 66,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io08": {
+          "pages": 2,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl01": {
+          "pages": 80,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl02": {
+          "pages": 49,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl03": {
+          "pages": 26,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl04": {
+          "pages": 12,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl05": {
+          "pages": 12,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 1,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl06": {
+          "pages": 3,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl07": {
+          "pages": 3,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl08": {
+          "pages": 4,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf01": {
+          "pages": 1,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf02": {
+          "pages": 8,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 1,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": true
+        },
+        "rf03": {
+          "pages": 7,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf04": {
+          "pages": 8,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 1,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": true
+        },
+        "rf05": {
+          "pages": 25,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 2,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf06": {
+          "pages": 89,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 39,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf07": {
+          "pages": 63,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 10,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf08": {
+          "pages": 28,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        }
+      },
+      "gates": {
+        "G1": true,
+        "G2": false,
+        "G3": true
+      },
+      "newly_routed_usable": [
+        "rf02",
+        "rf04"
+      ]
     }
   },
   "adoption": {
@@ -4446,12 +6064,16 @@
       "B2": false,
       "C": false,
       "E": false,
+      "B3": false,
+      "F": false,
       "B_sel": false,
       "C_sel": false,
       "E_sel": false,
+      "F_sel": false,
       "D": false,
       "D_julia": false,
-      "D_openjev": false
+      "D_openjev": false,
+      "D_flash": false
     },
     "B": {
       "delta_vs_a": -0.4157303370786517,
@@ -4493,6 +6115,26 @@
       },
       "adopt": false
     },
+    "B3": {
+      "delta_vs_a": -0.4157303370786517,
+      "mcnemar_vs_a": {
+        "a_only": 37,
+        "b_only": 0,
+        "discordant": 37,
+        "p_one_sided": 1.0
+      },
+      "adopt": false
+    },
+    "F": {
+      "delta_vs_a": 0.20224719101123595,
+      "mcnemar_vs_a": {
+        "a_only": 8,
+        "b_only": 26,
+        "discordant": 34,
+        "p_one_sided": 0.0014675278216600418
+      },
+      "adopt": false
+    },
     "B_sel": {
       "delta_vs_a": -0.39325842696629215,
       "mcnemar_vs_a": {
@@ -4523,6 +6165,16 @@
       },
       "adopt": false
     },
+    "F_sel": {
+      "delta_vs_a": 0.30337078651685395,
+      "mcnemar_vs_a": {
+        "a_only": 2,
+        "b_only": 29,
+        "discordant": 31,
+        "p_one_sided": 2.314336597919464e-07
+      },
+      "adopt": false
+    },
     "D": {
       "delta_vs_a": 0.14606741573033707,
       "mcnemar_vs_a": {
@@ -4550,6 +6202,16 @@
         "b_only": 22,
         "discordant": 22,
         "p_one_sided": 2.384185791015625e-07
+      },
+      "adopt": false
+    },
+    "D_flash": {
+      "delta_vs_a": 0.1797752808988764,
+      "mcnemar_vs_a": {
+        "a_only": 2,
+        "b_only": 18,
+        "discordant": 20,
+        "p_one_sided": 0.00020122528076171875
       },
       "adopt": false
     },
@@ -4806,8 +6468,46 @@
       "tl07": "W3",
       "tl08": "W3"
     },
+    "F_sel_chosen": {
+      "W3": 32
+    },
+    "F_sel_by_document": {
+      "bd01": "W3",
+      "bd02": "W3",
+      "bd03": "W3",
+      "bd04": "W3",
+      "bd05": "W3",
+      "bd06": "W3",
+      "bd07": "W3",
+      "bd08": "W3",
+      "mx01": "W3",
+      "mx02": "W3",
+      "mx03": "W3",
+      "mx04": "W3",
+      "mx05": "W3",
+      "mx06": "W3",
+      "mx07": "W3",
+      "mx08": "W3",
+      "rf01": "W3",
+      "rf02": "W3",
+      "rf03": "W3",
+      "rf04": "W3",
+      "rf05": "W3",
+      "rf06": "W3",
+      "rf07": "W3",
+      "rf08": "W3",
+      "tl01": "W3",
+      "tl02": "W3",
+      "tl03": "W3",
+      "tl04": "W3",
+      "tl05": "W3",
+      "tl06": "W3",
+      "tl07": "W3",
+      "tl08": "W3"
+    },
     "D_share_sent_to_jev": 0.2821482602118003,
-    "D_openjev_share_sent": 0.2821482602118003
+    "D_openjev_share_sent": 0.2821482602118003,
+    "D_flash_share_sent": 0.2821482602118003
   },
   "d_sensitivity": {
     "0.1": {
@@ -6014,6 +7714,410 @@
         "G1": true,
         "G2": false,
         "G3": false
+      },
+      "newly_routed_usable": [
+        "rf05"
+      ]
+    },
+    "flash_0.1": {
+      "populations": {
+        "liteparse": {
+          "junk_pages": 89,
+          "junk_flagged": 52,
+          "junk_recall": 0.5842696629213483,
+          "healthy_pages": 565,
+          "healthy_false_positives": 11,
+          "healthy_false_positive_rate": 0.019469026548672566,
+          "document_cluster_interval": {
+            "lower": 0.04756493506493507,
+            "upper": 0.8039266221952699,
+            "resamples": 2000,
+            "defined_resamples": 2000,
+            "seed": 38
+          }
+        },
+        "pypdf": {
+          "junk_pages": 89,
+          "junk_flagged": 49,
+          "junk_recall": 0.550561797752809,
+          "healthy_pages": 579,
+          "healthy_false_positives": 9,
+          "healthy_false_positive_rate": 0.015544041450777202,
+          "document_cluster_interval": {
+            "lower": 0.04756493506493507,
+            "upper": 0.7604203345070422,
+            "resamples": 2000,
+            "defined_resamples": 2000,
+            "seed": 38
+          }
+        }
+      },
+      "routing": {
+        "bd01": {
+          "pages": 6,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd02": {
+          "pages": 12,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd03": {
+          "pages": 25,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd04": {
+          "pages": 31,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "bd05": {
+          "pages": 30,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd06": {
+          "pages": 9,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd07": {
+          "pages": 44,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd08": {
+          "pages": 11,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx01": {
+          "pages": 29,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx02": {
+          "pages": 19,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "mx03": {
+          "pages": 37,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx04": {
+          "pages": 34,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx05": {
+          "pages": 54,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx06": {
+          "pages": 29,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx07": {
+          "pages": 46,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "mx08": {
+          "pages": 13,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "io01": {
+          "pages": 49,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io02": {
+          "pages": 16,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io03": {
+          "pages": 5,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io04": {
+          "pages": 52,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io05": {
+          "pages": 8,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io06": {
+          "pages": 78,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io07": {
+          "pages": 66,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io08": {
+          "pages": 2,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl01": {
+          "pages": 80,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl02": {
+          "pages": 49,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl03": {
+          "pages": 26,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl04": {
+          "pages": 12,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl05": {
+          "pages": 12,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl06": {
+          "pages": 3,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl07": {
+          "pages": 3,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl08": {
+          "pages": 4,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf01": {
+          "pages": 1,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf02": {
+          "pages": 8,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf03": {
+          "pages": 7,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf04": {
+          "pages": 8,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf05": {
+          "pages": 25,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 6,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": true
+        },
+        "rf06": {
+          "pages": 89,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 38,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf07": {
+          "pages": 63,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 9,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf08": {
+          "pages": 28,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        }
+      },
+      "gates": {
+        "G1": true,
+        "G2": false,
+        "G3": true
       },
       "newly_routed_usable": [
         "rf05"
@@ -7229,6 +9333,410 @@
       "newly_routed_usable": [
         "rf05"
       ]
+    },
+    "flash_0.3": {
+      "populations": {
+        "liteparse": {
+          "junk_pages": 89,
+          "junk_flagged": 51,
+          "junk_recall": 0.5730337078651685,
+          "healthy_pages": 565,
+          "healthy_false_positives": 11,
+          "healthy_false_positive_rate": 0.019469026548672566,
+          "document_cluster_interval": {
+            "lower": 0.02631578947368421,
+            "upper": 0.8265491651205936,
+            "resamples": 2000,
+            "defined_resamples": 2000,
+            "seed": 38
+          }
+        },
+        "pypdf": {
+          "junk_pages": 89,
+          "junk_flagged": 49,
+          "junk_recall": 0.550561797752809,
+          "healthy_pages": 579,
+          "healthy_false_positives": 6,
+          "healthy_false_positive_rate": 0.010362694300518135,
+          "document_cluster_interval": {
+            "lower": 0.045454545454545456,
+            "upper": 0.7817057104531953,
+            "resamples": 2000,
+            "defined_resamples": 2000,
+            "seed": 38
+          }
+        }
+      },
+      "routing": {
+        "bd01": {
+          "pages": 6,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd02": {
+          "pages": 12,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd03": {
+          "pages": 25,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd04": {
+          "pages": 31,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "bd05": {
+          "pages": 30,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd06": {
+          "pages": 9,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd07": {
+          "pages": 44,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "bd08": {
+          "pages": 11,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx01": {
+          "pages": 29,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx02": {
+          "pages": 19,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "mx03": {
+          "pages": 37,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx04": {
+          "pages": 34,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx05": {
+          "pages": 54,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx06": {
+          "pages": 29,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "mx07": {
+          "pages": 46,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "mx08": {
+          "pages": 13,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "io01": {
+          "pages": 49,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io02": {
+          "pages": 16,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io03": {
+          "pages": 5,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io04": {
+          "pages": 52,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io05": {
+          "pages": 8,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io06": {
+          "pages": 78,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io07": {
+          "pages": 66,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "io08": {
+          "pages": 2,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl01": {
+          "pages": 80,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl02": {
+          "pages": 49,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl03": {
+          "pages": 26,
+          "rescued_tier": null,
+          "flagged_rescue_pages": 0,
+          "prior_routed": true,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl04": {
+          "pages": 12,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl05": {
+          "pages": 12,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 2,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": true
+        },
+        "tl06": {
+          "pages": 3,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "tl07": {
+          "pages": 3,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "tl08": {
+          "pages": 4,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf01": {
+          "pages": 1,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf02": {
+          "pages": 8,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf03": {
+          "pages": 7,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf04": {
+          "pages": 8,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf05": {
+          "pages": 25,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        },
+        "rf06": {
+          "pages": 89,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 39,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf07": {
+          "pages": 63,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 10,
+          "prior_routed": false,
+          "routed": true,
+          "frozen_document_label": "needs_ocr",
+          "newly_routed_usable": false
+        },
+        "rf08": {
+          "pages": 28,
+          "rescued_tier": "liteparse",
+          "flagged_rescue_pages": 0,
+          "prior_routed": false,
+          "routed": false,
+          "frozen_document_label": "usable",
+          "newly_routed_usable": false
+        }
+      },
+      "gates": {
+        "G1": true,
+        "G2": false,
+        "G3": true
+      },
+      "newly_routed_usable": [
+        "tl05"
+      ]
     }
   },
   "artefact_sha256": {
@@ -7236,8 +9744,12 @@
     "candidate_b.json": "3da4337da9d3c2b69cc71a98a8111f87886c9580a8d87f9b39837a445c8fbe69",
     "candidate_b2.json": "9a79d5288d51ab0802c0fe85b7dfec1e13b4d182e5bffe14c91045833368d412",
     "candidate_c.json": "aed776659e1241a00619146de7db3b9ef47ddb0526023f9bf0de721e1eedba43",
+    "wording_flash9b_w1.json": "77c460df3b3f1ddc662f50b128ca13f68087c70a64523e5b617c31d7b9c07885",
+    "wording_flash9b_w2.json": "4d573df264c2d379a08613f730a13208975dacb241cc651939c9eb9980dff05b",
+    "wording_flash9b_w3.json": "a8f653573897d99971a3067cfe7504aab23720ef1e236a358ce29520f6b0a27b",
     "wording_jev_w2.json": "49ba07b8df3e17e4d825b37122efa121e336a37b49b9ce78f23ea1b7736984c6",
     "wording_jev_w3.json": "92cada13e03d148b1516288e1ac164d7793bcabfaabe5338c648716f112ce7df",
+    "wording_julia_c1.json": "4a4f2bdc817b75decd9fe0bb41c435165547040e600a888c251cc097a62a6622",
     "wording_julia_w2.json": "97446ad750c58561a8a8037cca7bba6563e24bb5b7a880667e293d597c38f035",
     "wording_julia_w3.json": "7fdba8e2faa59bfba83650d28ca93c03c2611c8c2c1965b42be6b7287bee3df1",
     "wording_openjev_w1.json": "fe2e3f6e4d5c1047fb6c4b0d816cc835078c6357401ab9736fc003d0c7c8367b",

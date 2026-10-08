@@ -16,11 +16,14 @@
 | B2 | Julia 1, page head | Julia 1 on the first 2,000 characters, the same input Jev gets. |
 | C | Jev | TypeSafe's hosted AI model. Page text leaves the machine. |
 | E | OpenJev | Loop AI's open copy of Jev, 27B, MLX 4-bit, run locally. |
+| F | OpenJev Flash 9B | Smaller Loop AI model, 9B, MLX 4-bit, run locally. About 2.4 times faster than E. |
+| B3 | Julia 1, choice request | Julia 1 on the first 2,000 characters, sent as a `choice` request (the path the parity check covered) instead of yes/no. |
 | D | Word check then Jev | Word check screens every page; Jev scores only the doubtful ones. |
 | D_julia, D_openjev | Word check then Julia 1, or then OpenJev | Same cascade with a different second model. |
 | `_sel` suffix | Best wording | The question wording is chosen per document from the other documents. |
 | W1 | Original question | "Is this text readable writing in a natural language, rather than garbled or broken OCR output?" |
 | W2 | Question with descriptions | "Is this OCR text usable as the real content of the page?" plus yes and no descriptions. |
+| C1 | Choice wording (Julia 1 only) | Same question, options "garbled or broken OCR output" and "readable writing in a natural language". |
 | W3 | Statement form | "This page text is mostly real words in a natural language, with only minor OCR errors." |
 
 ## Bottom line
@@ -48,9 +51,13 @@ Amendment A3 (operator, 2026-10-07) changed three things before the rerun. Hoste
 | C (Jev) | Jev, first 2,000 characters, W1 | 60/89 | 14/565 | PASS | PASS | FAIL | +0.258 | 0.00006 |
 | **C_sel** | **Jev, wording chosen per document** | **56/89** | **12/565** | PASS | PASS | FAIL | +0.213 | 0.0004 |
 | E (OpenJev) | OpenJev 27B local, first 2,000 characters, W1 | 69/89 | 14/565 | PASS | PASS | FAIL | +0.360 | 2e-10 |
+| B3 (Julia 1, choice request) | Julia 1, choice request, first 2,000 characters, C1 | 0/89 | 12/565 | FAIL | FAIL (`rf04`) | FAIL | −0.416 | 1.0 |
+| F (OpenJev Flash 9B) | OpenJev Flash 9B local, first 2,000 characters, W1 | 55/89 | 13/565 | PASS | FAIL (`tl05`, `tl06`) | FAIL | +0.202 | 0.0015 |
+| F_sel (OpenJev Flash 9B, best wording) | OpenJev Flash 9B, wording chosen per document | 64/89 | 12/565 | PASS | FAIL (`rf02`) | FAIL | +0.303 | 2e-07 |
 | E_sel (OpenJev, best wording) | OpenJev, wording chosen per document | 68/89 | 12/565 | PASS | FAIL (`tl06`) | FAIL | +0.348 | 5e-10 |
 | D (word check then Jev) | Cascade: A screens 20%, Jev confirms | 50/89 | 11/565 | PASS | FAIL (`rf04`) | PASS | +0.146 | 0.005 |
 | D_julia (word check then Julia 1) | Cascade: A screens 20%, Julia confirms | 16/89 | 10/565 | FAIL | FAIL | PASS | | |
+| D_flash (word check then OpenJev Flash 9B) | Cascade: word check screens 20%, Flash 9B confirms | 53/89 | 11/565 | PASS | FAIL (`rf02`, `rf04`) | PASS | +0.180 | 2e-04 |
 | D_openjev (word check then OpenJev) | Cascade: A screens 20%, OpenJev confirms | 59/89 | 11/565 | PASS | FAIL (`rf05`) | PASS | +0.247 | 2e-07 |
 
 - "Healthy flagged" uses the frozen 2% ceiling: 11 of 565 pages. C_sel's 12 false positives sit in `bd07` (5), `tl03` (4), `tl02` (2) and `tl04` (1).
@@ -66,6 +73,8 @@ Amendment A3 (operator, 2026-10-07) changed three things before the rerun. Hoste
 | B (Julia 1), pypdf | 0.408 | 0.546 | 0.497 |
 | C (Jev), LiteParse | 0.878 | 0.913 | 0.922 |
 | C (Jev), pypdf | 0.827 | 0.899 | 0.890 |
+| F (Flash 9B), LiteParse | 0.848 | 0.817 | 0.902 |
+| F (Flash 9B), pypdf | 0.789 | 0.771 | 0.864 |
 | E (OpenJev), LiteParse | 0.878 | 0.902 | **0.956** |
 | E (OpenJev), pypdf | 0.823 | 0.842 | 0.871 |
 
@@ -87,6 +96,17 @@ All Jev calls returned model `jev-1.13.0`. Nested selection chose W3 for OpenJev
 | 0.30 | 50 / 3 | 12 / 11 | fails G2, G3 / fails G1 | 38% |
 
 Julia was given the same cascade (candidate D_julia, registered at the operator's request). It never routes `rf06` and `rf07`, so it fails G1 at every rate, and it catches fewer junk pages than A alone. OpenJev as confirmer (candidate D_openjev) catches 54, 59 and 62 junk pages at screen rates 0.10, 0.20 and 0.30, but newly routes usable `rf05` at every rate, so it fails G2. The Jev 0.10 row passes every gate, but it is a sensitivity setting. Promoting it after seeing the result would be selecting on the test data.
+
+### Julia 1 with a choice request (B3)
+
+The yes/no (`noul`) path was never parity-tested; the `choice` path was (100/100 cases). B3 sends the same question as a `choice` request. Result: AUC 0.159 on LiteParse and 0.329 on pypdf. Scores are crushed against 1.0 (junk median 1.000, healthy 0.992), so the low AUC comes from saturation, not a usable backwards signal. A clearly garbled test string also scored 1.0 for "readable". Swapping the option order flips the answer cleanly, so the code is correct. The `noul` path was not the cause: Julia 1 cannot separate junk from readable text under either request type.
+
+### OpenJev Flash 9B (F)
+
+- Model: `openjev/OpenJev-Flash-9B-MLX-4bit` (5.0 GB, CC BY-NC 4.0, research use). Same helper hash (`81a22f1b`) and runtime as E, with the 9B's own `READOUT_*` settings. No checksum list is published for this repo, so the file size matched Hugging Face's listing as the only integrity check.
+- Speed: about 3.1 seconds per page, 1.1 to 1.2 hours per wording, 3.4 hours for all three. E took 7.7 hours.
+- Quality: AUC 0.848, 0.817 and 0.902 for W1, W2 and W3, against 0.878, 0.902 and 0.956 for E.
+- Held-out gates: F passes G1 and fails G2 and G3 at every setting. F_sel catches 64 junk pages but newly routes usable `rf02`. The cascade D_flash passes G3 but routes usable `rf02` and `rf04`. Flash 9B is roughly three AUC points to five points behind the 27B.
 
 ### Local OpenJev setup and cost
 
@@ -181,7 +201,7 @@ No production change. Next steps for the operator:
 1. Decide whether page text may go to TypeSafe in production. Without that approval, Jev cannot be adopted on any result.
 2. If yes, test Jev W3 on new documents with more healthy pages, using the same held-out rules and gates.
 3. Drop Julia 1 from further rescue-quality work.
-4. Consider local OpenJev as the privacy-safe option. It needs a commercial licence for production and is about 25 times slower than hosted Jev on this Mac. The smaller OpenJev Flash 9B (5 GB) is untested here.
+4. Consider local OpenJev as the privacy-safe option. It needs a commercial licence for production. The 27B is about 25 times slower than hosted Jev on this Mac, and the 9B about 11 times slower. The 9B is faster and a little weaker.
 
 ## Validation and workflow status
 

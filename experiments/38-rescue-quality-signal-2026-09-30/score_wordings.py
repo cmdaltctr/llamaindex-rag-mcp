@@ -29,7 +29,7 @@ PLAIN = ("no", "yes")
 def julia_request(wording: dict) -> dict:
     """Send the false and true descriptions as Julia's ordered noul options."""
     return {
-        "type": "noul",
+        "type": wording.get("type", "noul"),
         "question": wording["question"],
         "options": [wording["false"], wording["true"]],
     }
@@ -47,7 +47,7 @@ def scorer(model: str, wording: dict, plan: dict):
     if model == "jev":
         client = JevClient(wording["question"], criteria=jev_criteria(wording))
         return lambda texts: score_many(client, texts)
-    if model == "openjev":
+    if model in ("openjev", "flash9b"):
         client = JevClient(
             wording["question"],
             key="local",
@@ -94,7 +94,7 @@ def run(source: Path, model: str, name: str, resume: bool) -> None:
         if any(text_sha256(t) != r["text_sha256"] for t, r in zip(pages, doc_rows, strict=True)):
             raise ValueError("saved page text hash differs from extraction")
         results = score([t[:HEAD_CHARACTERS] for t in pages])
-        if model in ("jev", "openjev"):
+        if model in ("jev", "openjev", "flash9b"):
             check_model(payload, {r["model"] for r in results})
         payload["rows"].extend({**r, **s} for r, s in zip(doc_rows, results, strict=True))
         payload["completed_documents"].append(doc_id)
@@ -108,8 +108,8 @@ def main() -> None:
     """Read runtime arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-exp", required=True, type=Path)
-    parser.add_argument("--model", required=True, choices=("julia", "jev", "openjev"))
-    parser.add_argument("--wording", required=True, choices=("W1", "W2", "W3"))
+    parser.add_argument("--model", required=True, choices=("julia", "jev", "openjev", "flash9b"))
+    parser.add_argument("--wording", required=True, choices=("W1", "W2", "W3", "C1"))
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
     run(args.source_exp.resolve(), args.model, args.wording, args.resume)

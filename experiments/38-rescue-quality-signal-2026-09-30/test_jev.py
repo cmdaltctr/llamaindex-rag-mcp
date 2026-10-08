@@ -145,3 +145,13 @@ def test_openjev_requests_go_only_to_the_local_server(monkeypatch):
     score = sw.scorer("openjev", {"question": "Q", "false": "no", "true": "yes"}, {})
     assert [r["score"] for r in score(["page one", "page two"])] == [0.7, 0.7]
     assert seen and all(url == "http://127.0.0.1:3000/v1/systemone" for url in seen)
+
+
+def test_julia_choice_wording_sends_a_choice_request_with_ordered_options():
+    import score_wordings as sw
+
+    c1 = {"type": "choice", "question": "Q", "false": "garbled", "true": "readable"}
+    request = sw.julia_request(c1)
+    assert request["type"] == "choice"
+    assert request["options"] == ["garbled", "readable"]
+    assert sw.julia_request({"question": "Q", "false": "no", "true": "yes"})["type"] == "noul"
