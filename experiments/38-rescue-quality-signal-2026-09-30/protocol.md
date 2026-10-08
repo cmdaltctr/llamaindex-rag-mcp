@@ -37,9 +37,9 @@ Estimate from frozen `r_pypdf`: 953 eligible pages, about 105 non-empty junk pag
 
 | Candidate | Signal | Score (lower is junkier) | As-designed flag |
 | --- | --- | --- | --- |
-| A | A1 real-word ratio (`wordfreq` Zipf ≥ 1.0 in `en es fr de it pt nl ar hi bn`) and A2 script consistency (share of letters in the most frequent Unicode script) | `s_A = min(A1, A2)` | `s_A < 0.50` |
-| B | Julia 1, `noul` request, options `["no", "yes"]`, question "Is this text readable writing in a natural language, rather than garbled or broken OCR output?" | `s_B = P(yes)` | `s_B < 0.50` |
-| C | Hosted Jev (`jev-latest`, TypeSafe `/v1/systemone`), `noul` question, same wording as B, state = first 2,000 characters of page text, no `criteria` | `s_C` = noul (P(yes)) | `s_C` below threshold |
+| A (word check) | A1 real-word ratio (`wordfreq` Zipf ≥ 1.0 in `en es fr de it pt nl ar hi bn`) and A2 script consistency (share of letters in the most frequent Unicode script) | `s_A = min(A1, A2)` | `s_A < 0.50` |
+| B (Julia 1) | Julia 1, `noul` request, options `["no", "yes"]`, question "Is this text readable writing in a natural language, rather than garbled or broken OCR output?" | `s_B = P(yes)` | `s_B < 0.50` |
+| C (Jev) | Hosted Jev (`jev-latest`, TypeSafe `/v1/systemone`), `noul` question, same wording as B, state = first 2,000 characters of page text, no `criteria` | `s_C` = noul (P(yes)) | `s_C` below threshold |
 | Baseline | today (TDR-024): no signal | none | never flags |
 
 If the operator does not approve `wordfreq`, A1 becomes the word-shape ratio in design D3. That switch is an amendment recorded before the run.

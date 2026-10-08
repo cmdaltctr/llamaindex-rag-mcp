@@ -7,13 +7,29 @@
 - **Protocol**: [protocol.md](protocol.md), [plan.json](plan.json) (amendment A3, wordings, candidates B2 and D)
 - **Raw results**: [lodo_summary.json](output/lodo_summary.json) (A3 verdict), [summary.json](output/summary.json) (pilot), [jev_summary.json](output/jev_summary.json), [local_text_signal.json](output/local_text_signal.json)
 
+## Names used in this report
+
+| Label | Plain name | What it is |
+| --- | --- | --- |
+| A | Word check | Counts real words (`wordfreq` lexicon) and checks the text uses one alphabet. Local, instant. |
+| B | Julia 1 | Small local AI model (SupersonicLabs Julia 1, ONNX), whole page. |
+| B2 | Julia 1, page head | Julia 1 on the first 2,000 characters, the same input Jev gets. |
+| C | Jev | TypeSafe's hosted AI model. Page text leaves the machine. |
+| E | OpenJev | Loop AI's open copy of Jev, 27B, MLX 4-bit, run locally. |
+| D | Word check then Jev | Word check screens every page; Jev scores only the doubtful ones. |
+| D_julia, D_openjev | Word check then Julia 1, or then OpenJev | Same cascade with a different second model. |
+| `_sel` suffix | Best wording | The question wording is chosen per document from the other documents. |
+| W1 | Original question | "Is this text readable writing in a natural language, rather than garbled or broken OCR output?" |
+| W2 | Question with descriptions | "Is this OCR text usable as the real content of the page?" plus yes and no descriptions. |
+| W3 | Statement form | "This page text is mostly real words in a natural language, with only minor OCR errors." |
+
 ## Bottom line
 
 - Local OpenJev 27B (MLX 4-bit, page text stays on the machine) ranks junk best: AUC 0.956 with W3. It catches 69 of 89 junk pages with W1 and routes no usable document, but flags 14 healthy pages, so it fails G3.
 - Hosted Jev is the other useful signal. It ranks junk below healthy pages with AUC 0.878 to 0.922 and catches 56 to 60 of 89 junk pages without routing a usable document.
 - It fails because of one gate by one page. With the best wording, it flags 12 of 565 healthy pages (2.12%) against a 2% ceiling (11 pages).
 - Julia 1 cannot do this task. Its AUC stays between 0.48 and 0.54 across three wordings and two input lengths. That is random ordering.
-- Candidate A catches 37 of 89 junk pages but newly routes usable `rf05` and flags 18 healthy pages.
+- A (word check) catches 37 of 89 junk pages but newly routes usable `rf05` and flags 18 healthy pages.
 - The A-then-Jev cascade sends 28% of pages to Jev and catches 50 junk pages. It fails G2 on `rf04`.
 - The pilot numbers below the A3 section used a threshold chosen on the test pages. The A3 section replaces them for the verdict.
 
@@ -25,17 +41,17 @@ Amendment A3 (operator, 2026-10-07) changed three things before the rerun. Hoste
 
 | Candidate | What it is | Junk flagged | Healthy flagged | G1 | G2 | G3 | Δ vs A | McNemar p |
 | --- | --- | ---: | ---: | --- | --- | --- | ---: | ---: |
-| A | `wordfreq` + script checks | 37/89 | 18/565 | PASS | FAIL (`rf05`) | FAIL | | |
-| B | Julia, whole page, W1 | 0/89 | 14/565 | FAIL | PASS | FAIL | −0.416 | 1.0 |
-| B2 | Julia, first 2,000 characters, W1 | 0/89 | 12/565 | FAIL | PASS | FAIL | −0.416 | 1.0 |
-| B_sel | Julia, wording chosen per document | 2/89 | 12/565 | FAIL | FAIL (`rf04`) | FAIL | −0.393 | 1.0 |
-| C | Jev, first 2,000 characters, W1 | 60/89 | 14/565 | PASS | PASS | FAIL | +0.258 | 0.00006 |
+| A (word check) | `wordfreq` + script checks | 37/89 | 18/565 | PASS | FAIL (`rf05`) | FAIL | | |
+| B (Julia 1) | Julia, whole page, W1 | 0/89 | 14/565 | FAIL | PASS | FAIL | −0.416 | 1.0 |
+| B2 (Julia 1, page head) | Julia, first 2,000 characters, W1 | 0/89 | 12/565 | FAIL | PASS | FAIL | −0.416 | 1.0 |
+| B_sel (Julia 1, best wording) | Julia, wording chosen per document | 2/89 | 12/565 | FAIL | FAIL (`rf04`) | FAIL | −0.393 | 1.0 |
+| C (Jev) | Jev, first 2,000 characters, W1 | 60/89 | 14/565 | PASS | PASS | FAIL | +0.258 | 0.00006 |
 | **C_sel** | **Jev, wording chosen per document** | **56/89** | **12/565** | PASS | PASS | FAIL | +0.213 | 0.0004 |
-| E | OpenJev 27B local, first 2,000 characters, W1 | 69/89 | 14/565 | PASS | PASS | FAIL | +0.360 | 2e-10 |
-| E_sel | OpenJev, wording chosen per document | 68/89 | 12/565 | PASS | FAIL (`tl06`) | FAIL | +0.348 | 5e-10 |
-| D | Cascade: A screens 20%, Jev confirms | 50/89 | 11/565 | PASS | FAIL (`rf04`) | PASS | +0.146 | 0.005 |
-| D_julia | Cascade: A screens 20%, Julia confirms | 16/89 | 10/565 | FAIL | FAIL | PASS | | |
-| D_openjev | Cascade: A screens 20%, OpenJev confirms | 59/89 | 11/565 | PASS | FAIL (`rf05`) | PASS | +0.247 | 2e-07 |
+| E (OpenJev) | OpenJev 27B local, first 2,000 characters, W1 | 69/89 | 14/565 | PASS | PASS | FAIL | +0.360 | 2e-10 |
+| E_sel (OpenJev, best wording) | OpenJev, wording chosen per document | 68/89 | 12/565 | PASS | FAIL (`tl06`) | FAIL | +0.348 | 5e-10 |
+| D (word check then Jev) | Cascade: A screens 20%, Jev confirms | 50/89 | 11/565 | PASS | FAIL (`rf04`) | PASS | +0.146 | 0.005 |
+| D_julia (word check then Julia 1) | Cascade: A screens 20%, Julia confirms | 16/89 | 10/565 | FAIL | FAIL | PASS | | |
+| D_openjev (word check then OpenJev) | Cascade: A screens 20%, OpenJev confirms | 59/89 | 11/565 | PASS | FAIL (`rf05`) | PASS | +0.247 | 2e-07 |
 
 - "Healthy flagged" uses the frozen 2% ceiling: 11 of 565 pages. C_sel's 12 false positives sit in `bd07` (5), `tl03` (4), `tl02` (2) and `tl04` (1).
 - Nested selection chose W3 for Julia in all 32 documents with eligible pages. Jev chose W3 in 31 and W2 in 1.
@@ -44,14 +60,14 @@ Amendment A3 (operator, 2026-10-07) changed three things before the rerun. Hoste
 
 ### Ranking quality per wording (AUC, junk scored below healthy)
 
-| Model | W1: frozen question | W2: question with yes/no descriptions | W3: statement form |
+| Model | W1 (original question) | W2 (question with descriptions) | W3 (statement form) |
 | --- | ---: | ---: | ---: |
-| Julia, LiteParse | 0.498 | 0.482 | 0.543 |
-| Julia, pypdf | 0.408 | 0.546 | 0.497 |
-| Jev, LiteParse | 0.878 | 0.913 | 0.922 |
-| Jev, pypdf | 0.827 | 0.899 | 0.890 |
-| OpenJev, LiteParse | 0.878 | 0.902 | **0.956** |
-| OpenJev, pypdf | 0.823 | 0.842 | 0.871 |
+| B (Julia 1), LiteParse | 0.498 | 0.482 | 0.543 |
+| B (Julia 1), pypdf | 0.408 | 0.546 | 0.497 |
+| C (Jev), LiteParse | 0.878 | 0.913 | 0.922 |
+| C (Jev), pypdf | 0.827 | 0.899 | 0.890 |
+| E (OpenJev), LiteParse | 0.878 | 0.902 | **0.956** |
+| E (OpenJev), pypdf | 0.823 | 0.842 | 0.871 |
 
 All Jev calls returned model `jev-1.13.0`. Nested selection chose W3 for OpenJev in all 32 documents. Wordings and the selection rule are in `plan.json` under `wordings`.
 
@@ -62,9 +78,9 @@ All Jev calls returned model `jev-1.13.0`. Nested selection chose W3 for OpenJev
 - Input length is not the cause: B (whole page) and B2 (first 2,000 characters) give the same result.
 - Wording is not the cause: three wordings all stay near AUC 0.5.
 
-### Cascade D sensitivity
+### Cascade D (word check then a model) sensitivity
 
-| A screen rate | Junk flagged (Jev / Julia) | Healthy flagged (Jev / Julia) | Gates (Jev / Julia) | Pages sent to model |
+| Word check (A) screen rate | Junk flagged (Jev / Julia) | Healthy flagged (Jev / Julia) | Gates (Jev / Julia) | Pages sent to model |
 | ---: | ---: | ---: | --- | ---: |
 | 0.10 | 48 / 35 | 11 / 13 | all pass / fails G1, G3 | 19% |
 | **0.20 (registered)** | 50 / 16 | 11 / 10 | fails G2 (`rf04`) / fails G1, G2 | 28% |
@@ -106,10 +122,10 @@ Junk recall is the share of junk pages flagged. Healthy false-positive rate is t
 
 | Signal | Operating point | Threshold | Junk flagged | Healthy flagged | G1: both misses route | G2: no new usable route | G3: ≤2% healthy flags |
 | --- | --- | ---: | ---: | ---: | --- | --- | --- |
-| A | As designed | 0.50 | 5/89 (5.62%) | 0/565 (0%) | FAIL | PASS | PASS |
-| A | Equal cost | 0.8834080717 | 37/89 (41.57%) | 11/565 (1.95%) | PASS | FAIL | PASS |
-| Julia | As designed | 0.50 | 65/89 (73.03%) | 356/565 (63.01%) | PASS | FAIL | FAIL |
-| Julia | Equal cost | 0.0030147846 | 0/89 (0%) | 11/565 (1.95%) | FAIL | PASS | PASS |
+| A (word check) | As designed | 0.50 | 5/89 (5.62%) | 0/565 (0%) | FAIL | PASS | PASS |
+| A (word check) | Equal cost | 0.8834080717 | 37/89 (41.57%) | 11/565 (1.95%) | PASS | FAIL | PASS |
+| B (Julia 1) | As designed | 0.50 | 65/89 (73.03%) | 356/565 (63.01%) | PASS | FAIL | FAIL |
+| B (Julia 1) | Equal cost | 0.0030147846 | 0/89 (0%) | 11/565 (1.95%) | FAIL | PASS | PASS |
 
 At equal cost, A flags 25/89 pages of `rf06` and 7/63 of `rf07`. Both reach the unchanged 10% routing fraction. It also flags 3/25 pages of usable `rf05`, which newly routes. Projected wasted OCR: 25 pages, 955 seconds with dots.mocr, or 580 to 4,102.5 seconds with PaddleOCR-VL. Julia flags no rescue page of either motivating miss at equal cost.
 
@@ -131,19 +147,19 @@ AUC measures how well lower scores separate bad text from good text: 1.0 is perf
 
 | Signal | AUC, 399 gated pages | AUC, `io06` (66 pages) | Bad flagged, gated | Good flagged, gated |
 | --- | ---: | ---: | ---: | ---: |
-| A | 0.897291 | 0.876633 | 202/206 | 65/193 |
-| Julia | 0.575406 | 0.445573 | 0/206 | 2/193 |
+| A (word check) | 0.897291 | 0.876633 | 202/206 | 65/193 |
+| B (Julia 1) | 0.575406 | 0.445573 | 0/206 | 2/193 |
 
 Candidate A exceeds the baseline by 0.109291 AUC and reaches the 0.8 follow-up trigger. Its fixed threshold is unsuitable for direct local-tier use:
 
 | Signal | Document | Bad pages flagged | Good pages flagged | AUC |
 | --- | --- | ---: | ---: | ---: |
-| A | `io06` | 13/13 | 52/53 | 0.876633 |
-| A | `rf06` | 36/36 | 6/7 | 0.876984 |
-| A | `rf07` | 10/12 | 3/5 | 0.783333 |
-| Julia | `io06` | 0/13 | 0/53 | 0.445573 |
-| Julia | `rf06` | 0/36 | 0/7 | 0.273810 |
-| Julia | `rf07` | 0/12 | 0/5 | 0.450000 |
+| A (word check) | `io06` | 13/13 | 52/53 | 0.876633 |
+| A (word check) | `rf06` | 36/36 | 6/7 | 0.876984 |
+| A (word check) | `rf07` | 10/12 | 3/5 | 0.783333 |
+| B (Julia 1) | `io06` | 0/13 | 0/53 | 0.445573 |
+| B (Julia 1) | `rf06` | 0/36 | 0/7 | 0.273810 |
+| B (Julia 1) | `rf07` | 0/12 | 0/5 | 0.450000 |
 
 A catches every bad `io06` and `rf06` page at this threshold, and 10 of 12 bad `rf07` pages. It also flags nearly every good `io06` page. Julia catches none of their bad pages at its frozen threshold. A's ranking warrants a separate protocol for local OCR, with that tier's own gates and new threshold validation. This experiment does not set a production threshold.
 
