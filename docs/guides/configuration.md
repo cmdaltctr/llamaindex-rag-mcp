@@ -598,9 +598,15 @@ under it (change `page-level-ocr-routing`,
 | Variable | Default | What it does |
 |---|---|---|
 | `OCR_ROUTING_UNIT` | `document` | `document` keeps whole-PDF routing. `page` (opt-in) OCRs only flagged pages |
-| `OCR_LOCAL_MIN_CONFIDENCE` | `0.8` | Below this reported confidence a page escalates to the worker. Unreported confidence escalates too |
+| `OCR_LOCAL_MIN_CONFIDENCE` | `0.9` | Below this reported confidence a page escalates to the worker. Unreported confidence escalates too |
 | `OCR_LOCAL_OFFLINE` | `false` | `true` forbids the model download; a missing cached model then degrades |
 | `OCR_LOCAL_MODEL_DIRECTORY` | empty | Artifact directory (`<name>/<revision>` leaf) to load the model from. Empty means the library's default cache |
+
+The default cut is 0.9, supported by Experiments 33, 37 and 39. On the
+399 flagged pages re-scored in Experiment 39, 59.6% escalate and 2.5% of
+kept pages have body recall below 0.5. Explicit operator values still apply.
+Page-unit installs using the previous 0.8 default re-index once on their
+next ingest. The `document` unit keeps its identity for this cut change.
 
 These four names are **flat on purpose**. `pydantic-settings` resolves
 its `__` delimiter only into nested settings blocks, and the OCR

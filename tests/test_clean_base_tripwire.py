@@ -65,7 +65,10 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 3309
+_BASE_EXECUTED = 3313
+# Re-baselined at raise-local-ocr-min-confidence-to-0-9 (2026-10-07):
+# below-cut, default-agreement and page/document identity cases add 4
+# executed tests (3309 -> 3313); skips and deselections are unchanged.
 # Re-baselined at modular-ocr-workers-dots-mocr (2026-09-30): the worker
 # core, dots-mocr engine, route, maths-page and route-identity suites,
 # plus the ported worker-loop and provisioning cases — +166 (3143 -> 3309).

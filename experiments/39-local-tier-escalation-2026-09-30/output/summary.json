@@ -1,0 +1,1263 @@
+{
+  "experiment_id": "39-local-tier-escalation-2026-09-30",
+  "gated_pages": 399,
+  "O": 0.5162907268170426,
+  "gate_bounds": {
+    "G2_max": 0.05,
+    "G3_max": 0.5662907268170426
+  },
+  "reproduction": {
+    "observed": {
+      "C0_escalation": 0.46867167919799496,
+      "C0_kept_below_0_5": 0.11320754716981132
+    },
+    "drift": {
+      "C0_escalation": 0.000328320802005011,
+      "C0_kept_below_0_5": 0.00020754716981132015
+    },
+    "ok": true
+  },
+  "metrics": {
+    "C0": {
+      "escalated_share": 0.46867167919799496,
+      "kept": 212,
+      "kept_bad": 24,
+      "kept_bad_share_with_io06": 0.11320754716981132,
+      "kept_bad_share_without_io06": 0.10596026490066225,
+      "kept_without_io06": 151,
+      "non_latin_kept": 1,
+      "io06": {
+        "pages": 66,
+        "bad_pages": 13,
+        "bad_escalated_share": 0.38461538461538464,
+        "escalated_share": 0.07575757575757576
+      },
+      "gates": {
+        "G1": false,
+        "G2": false,
+        "G3": true
+      },
+      "per_document": {
+        "bd04": {
+          "pages": 6,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "bd07": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io01": {
+          "pages": 48,
+          "escalated": 48,
+          "share": 1.0
+        },
+        "io02": {
+          "pages": 16,
+          "escalated": 15,
+          "share": 0.9375
+        },
+        "io03": {
+          "pages": 5,
+          "escalated": 5,
+          "share": 1.0
+        },
+        "io04": {
+          "pages": 52,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io05": {
+          "pages": 7,
+          "escalated": 1,
+          "share": 0.14285714285714285
+        },
+        "io06": {
+          "pages": 66,
+          "escalated": 5,
+          "share": 0.07575757575757576
+        },
+        "io07": {
+          "pages": 60,
+          "escalated": 60,
+          "share": 1.0
+        },
+        "io08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx01": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx02": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx03": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx04": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx05": {
+          "pages": 4,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx06": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx07": {
+          "pages": 7,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "rf06": {
+          "pages": 43,
+          "escalated": 27,
+          "share": 0.627906976744186
+        },
+        "rf07": {
+          "pages": 17,
+          "escalated": 11,
+          "share": 0.6470588235294118
+        },
+        "rf08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl01": {
+          "pages": 13,
+          "escalated": 12,
+          "share": 0.9230769230769231
+        },
+        "tl02": {
+          "pages": 33,
+          "escalated": 2,
+          "share": 0.06060606060606061
+        },
+        "tl03": {
+          "pages": 3,
+          "escalated": 1,
+          "share": 0.3333333333333333
+        },
+        "tl07": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        }
+      }
+    },
+    "C1": {
+      "escalated_share": 0.2857142857142857,
+      "kept": 285,
+      "kept_bad": 94,
+      "kept_bad_share_with_io06": 0.3298245614035088,
+      "kept_bad_share_without_io06": 0.3755656108597285,
+      "kept_without_io06": 221,
+      "non_latin_kept": 19,
+      "io06": {
+        "pages": 66,
+        "bad_pages": 13,
+        "bad_escalated_share": 0.15384615384615385,
+        "escalated_share": 0.030303030303030304
+      },
+      "gates": {
+        "G1": false,
+        "G2": false,
+        "G3": true
+      },
+      "per_document": {
+        "bd04": {
+          "pages": 6,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "bd07": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io01": {
+          "pages": 48,
+          "escalated": 45,
+          "share": 0.9375
+        },
+        "io02": {
+          "pages": 16,
+          "escalated": 4,
+          "share": 0.25
+        },
+        "io03": {
+          "pages": 5,
+          "escalated": 1,
+          "share": 0.2
+        },
+        "io04": {
+          "pages": 52,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io05": {
+          "pages": 7,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io06": {
+          "pages": 66,
+          "escalated": 2,
+          "share": 0.030303030303030304
+        },
+        "io07": {
+          "pages": 60,
+          "escalated": 60,
+          "share": 1.0
+        },
+        "io08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx01": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx02": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx03": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx04": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx05": {
+          "pages": 4,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx06": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx07": {
+          "pages": 7,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "rf06": {
+          "pages": 43,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "rf07": {
+          "pages": 17,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "rf08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl01": {
+          "pages": 13,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl02": {
+          "pages": 33,
+          "escalated": 1,
+          "share": 0.030303030303030304
+        },
+        "tl03": {
+          "pages": 3,
+          "escalated": 1,
+          "share": 0.3333333333333333
+        },
+        "tl07": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        }
+      }
+    },
+    "C3": {
+      "escalated_share": 0.47117794486215536,
+      "kept": 211,
+      "kept_bad": 24,
+      "kept_bad_share_with_io06": 0.11374407582938388,
+      "kept_bad_share_without_io06": 0.10666666666666667,
+      "kept_without_io06": 150,
+      "non_latin_kept": 1,
+      "io06": {
+        "pages": 66,
+        "bad_pages": 13,
+        "bad_escalated_share": 0.38461538461538464,
+        "escalated_share": 0.07575757575757576
+      },
+      "gates": {
+        "G1": false,
+        "G2": false,
+        "G3": true
+      },
+      "per_document": {
+        "bd04": {
+          "pages": 6,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "bd07": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io01": {
+          "pages": 48,
+          "escalated": 48,
+          "share": 1.0
+        },
+        "io02": {
+          "pages": 16,
+          "escalated": 15,
+          "share": 0.9375
+        },
+        "io03": {
+          "pages": 5,
+          "escalated": 5,
+          "share": 1.0
+        },
+        "io04": {
+          "pages": 52,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io05": {
+          "pages": 7,
+          "escalated": 1,
+          "share": 0.14285714285714285
+        },
+        "io06": {
+          "pages": 66,
+          "escalated": 5,
+          "share": 0.07575757575757576
+        },
+        "io07": {
+          "pages": 60,
+          "escalated": 60,
+          "share": 1.0
+        },
+        "io08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx01": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx02": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx03": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx04": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx05": {
+          "pages": 4,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx06": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx07": {
+          "pages": 7,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "rf06": {
+          "pages": 43,
+          "escalated": 27,
+          "share": 0.627906976744186
+        },
+        "rf07": {
+          "pages": 17,
+          "escalated": 11,
+          "share": 0.6470588235294118
+        },
+        "rf08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl01": {
+          "pages": 13,
+          "escalated": 12,
+          "share": 0.9230769230769231
+        },
+        "tl02": {
+          "pages": 33,
+          "escalated": 3,
+          "share": 0.09090909090909091
+        },
+        "tl03": {
+          "pages": 3,
+          "escalated": 1,
+          "share": 0.3333333333333333
+        },
+        "tl07": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        }
+      }
+    },
+    "C0@0.5": {
+      "escalated_share": 0.015037593984962405,
+      "kept": 393,
+      "kept_bad": 200,
+      "kept_bad_share_with_io06": 0.5089058524173028,
+      "kept_bad_share_without_io06": 0.573170731707317,
+      "kept_without_io06": 328,
+      "non_latin_kept": 124,
+      "io06": {
+        "pages": 66,
+        "bad_pages": 13,
+        "bad_escalated_share": 0.07692307692307693,
+        "escalated_share": 0.015151515151515152
+      },
+      "gates": {
+        "G1": false,
+        "G2": false,
+        "G3": true
+      },
+      "per_document": {
+        "bd04": {
+          "pages": 6,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "bd07": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io01": {
+          "pages": 48,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io02": {
+          "pages": 16,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io03": {
+          "pages": 5,
+          "escalated": 1,
+          "share": 0.2
+        },
+        "io04": {
+          "pages": 52,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io05": {
+          "pages": 7,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io06": {
+          "pages": 66,
+          "escalated": 1,
+          "share": 0.015151515151515152
+        },
+        "io07": {
+          "pages": 60,
+          "escalated": 4,
+          "share": 0.06666666666666667
+        },
+        "io08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx01": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx02": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx03": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx04": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx05": {
+          "pages": 4,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx06": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx07": {
+          "pages": 7,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "rf06": {
+          "pages": 43,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "rf07": {
+          "pages": 17,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "rf08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl01": {
+          "pages": 13,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl02": {
+          "pages": 33,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl03": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl07": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        }
+      }
+    },
+    "C0@0.6": {
+      "escalated_share": 0.16040100250626566,
+      "kept": 335,
+      "kept_bad": 142,
+      "kept_bad_share_with_io06": 0.42388059701492536,
+      "kept_bad_share_without_io06": 0.48148148148148145,
+      "kept_without_io06": 270,
+      "non_latin_kept": 71,
+      "io06": {
+        "pages": 66,
+        "bad_pages": 13,
+        "bad_escalated_share": 0.07692307692307693,
+        "escalated_share": 0.015151515151515152
+      },
+      "gates": {
+        "G1": false,
+        "G2": false,
+        "G3": true
+      },
+      "per_document": {
+        "bd04": {
+          "pages": 6,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "bd07": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io01": {
+          "pages": 48,
+          "escalated": 6,
+          "share": 0.125
+        },
+        "io02": {
+          "pages": 16,
+          "escalated": 5,
+          "share": 0.3125
+        },
+        "io03": {
+          "pages": 5,
+          "escalated": 5,
+          "share": 1.0
+        },
+        "io04": {
+          "pages": 52,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io05": {
+          "pages": 7,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io06": {
+          "pages": 66,
+          "escalated": 1,
+          "share": 0.015151515151515152
+        },
+        "io07": {
+          "pages": 60,
+          "escalated": 42,
+          "share": 0.7
+        },
+        "io08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx01": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx02": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx03": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx04": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx05": {
+          "pages": 4,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx06": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx07": {
+          "pages": 7,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "rf06": {
+          "pages": 43,
+          "escalated": 1,
+          "share": 0.023255813953488372
+        },
+        "rf07": {
+          "pages": 17,
+          "escalated": 4,
+          "share": 0.23529411764705882
+        },
+        "rf08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl01": {
+          "pages": 13,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl02": {
+          "pages": 33,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl03": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl07": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        }
+      }
+    },
+    "C0@0.7": {
+      "escalated_share": 0.38095238095238093,
+      "kept": 247,
+      "kept_bad": 54,
+      "kept_bad_share_with_io06": 0.21862348178137653,
+      "kept_bad_share_without_io06": 0.23076923076923078,
+      "kept_without_io06": 182,
+      "non_latin_kept": 9,
+      "io06": {
+        "pages": 66,
+        "bad_pages": 13,
+        "bad_escalated_share": 0.07692307692307693,
+        "escalated_share": 0.015151515151515152
+      },
+      "gates": {
+        "G1": false,
+        "G2": false,
+        "G3": true
+      },
+      "per_document": {
+        "bd04": {
+          "pages": 6,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "bd07": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io01": {
+          "pages": 48,
+          "escalated": 44,
+          "share": 0.9166666666666666
+        },
+        "io02": {
+          "pages": 16,
+          "escalated": 11,
+          "share": 0.6875
+        },
+        "io03": {
+          "pages": 5,
+          "escalated": 5,
+          "share": 1.0
+        },
+        "io04": {
+          "pages": 52,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io05": {
+          "pages": 7,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io06": {
+          "pages": 66,
+          "escalated": 1,
+          "share": 0.015151515151515152
+        },
+        "io07": {
+          "pages": 60,
+          "escalated": 60,
+          "share": 1.0
+        },
+        "io08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx01": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx02": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx03": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx04": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx05": {
+          "pages": 4,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx06": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx07": {
+          "pages": 7,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "rf06": {
+          "pages": 43,
+          "escalated": 15,
+          "share": 0.3488372093023256
+        },
+        "rf07": {
+          "pages": 17,
+          "escalated": 6,
+          "share": 0.35294117647058826
+        },
+        "rf08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl01": {
+          "pages": 13,
+          "escalated": 10,
+          "share": 0.7692307692307693
+        },
+        "tl02": {
+          "pages": 33,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl03": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl07": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        }
+      }
+    },
+    "C0@0.8": {
+      "escalated_share": 0.46867167919799496,
+      "kept": 212,
+      "kept_bad": 24,
+      "kept_bad_share_with_io06": 0.11320754716981132,
+      "kept_bad_share_without_io06": 0.10596026490066225,
+      "kept_without_io06": 151,
+      "non_latin_kept": 1,
+      "io06": {
+        "pages": 66,
+        "bad_pages": 13,
+        "bad_escalated_share": 0.38461538461538464,
+        "escalated_share": 0.07575757575757576
+      },
+      "gates": {
+        "G1": false,
+        "G2": false,
+        "G3": true
+      },
+      "per_document": {
+        "bd04": {
+          "pages": 6,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "bd07": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io01": {
+          "pages": 48,
+          "escalated": 48,
+          "share": 1.0
+        },
+        "io02": {
+          "pages": 16,
+          "escalated": 15,
+          "share": 0.9375
+        },
+        "io03": {
+          "pages": 5,
+          "escalated": 5,
+          "share": 1.0
+        },
+        "io04": {
+          "pages": 52,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io05": {
+          "pages": 7,
+          "escalated": 1,
+          "share": 0.14285714285714285
+        },
+        "io06": {
+          "pages": 66,
+          "escalated": 5,
+          "share": 0.07575757575757576
+        },
+        "io07": {
+          "pages": 60,
+          "escalated": 60,
+          "share": 1.0
+        },
+        "io08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx01": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx02": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx03": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx04": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx05": {
+          "pages": 4,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx06": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx07": {
+          "pages": 7,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "rf06": {
+          "pages": 43,
+          "escalated": 27,
+          "share": 0.627906976744186
+        },
+        "rf07": {
+          "pages": 17,
+          "escalated": 11,
+          "share": 0.6470588235294118
+        },
+        "rf08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl01": {
+          "pages": 13,
+          "escalated": 12,
+          "share": 0.9230769230769231
+        },
+        "tl02": {
+          "pages": 33,
+          "escalated": 2,
+          "share": 0.06060606060606061
+        },
+        "tl03": {
+          "pages": 3,
+          "escalated": 1,
+          "share": 0.3333333333333333
+        },
+        "tl07": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        }
+      }
+    },
+    "C0@0.9": {
+      "escalated_share": 0.5964912280701754,
+      "kept": 161,
+      "kept_bad": 4,
+      "kept_bad_share_with_io06": 0.024844720496894408,
+      "kept_bad_share_without_io06": 0.02586206896551724,
+      "kept_without_io06": 116,
+      "non_latin_kept": 0,
+      "io06": {
+        "pages": 66,
+        "bad_pages": 13,
+        "bad_escalated_share": 0.9230769230769231,
+        "escalated_share": 0.3181818181818182
+      },
+      "gates": {
+        "G1": true,
+        "G2": true,
+        "G3": false
+      },
+      "per_document": {
+        "bd04": {
+          "pages": 6,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "bd07": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "io01": {
+          "pages": 48,
+          "escalated": 48,
+          "share": 1.0
+        },
+        "io02": {
+          "pages": 16,
+          "escalated": 16,
+          "share": 1.0
+        },
+        "io03": {
+          "pages": 5,
+          "escalated": 5,
+          "share": 1.0
+        },
+        "io04": {
+          "pages": 52,
+          "escalated": 1,
+          "share": 0.019230769230769232
+        },
+        "io05": {
+          "pages": 7,
+          "escalated": 3,
+          "share": 0.42857142857142855
+        },
+        "io06": {
+          "pages": 66,
+          "escalated": 21,
+          "share": 0.3181818181818182
+        },
+        "io07": {
+          "pages": 60,
+          "escalated": 60,
+          "share": 1.0
+        },
+        "io08": {
+          "pages": 1,
+          "escalated": 1,
+          "share": 1.0
+        },
+        "mx01": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx02": {
+          "pages": 3,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx03": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx04": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx05": {
+          "pages": 4,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx06": {
+          "pages": 2,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx07": {
+          "pages": 7,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "mx08": {
+          "pages": 1,
+          "escalated": 1,
+          "share": 1.0
+        },
+        "rf06": {
+          "pages": 43,
+          "escalated": 39,
+          "share": 0.9069767441860465
+        },
+        "rf07": {
+          "pages": 17,
+          "escalated": 12,
+          "share": 0.7058823529411765
+        },
+        "rf08": {
+          "pages": 1,
+          "escalated": 0,
+          "share": 0.0
+        },
+        "tl01": {
+          "pages": 13,
+          "escalated": 12,
+          "share": 0.9230769230769231
+        },
+        "tl02": {
+          "pages": 33,
+          "escalated": 15,
+          "share": 0.45454545454545453
+        },
+        "tl03": {
+          "pages": 3,
+          "escalated": 2,
+          "share": 0.6666666666666666
+        },
+        "tl07": {
+          "pages": 1,
+          "escalated": 1,
+          "share": 1.0
+        },
+        "tl08": {
+          "pages": 1,
+          "escalated": 1,
+          "share": 1.0
+        }
+      }
+    }
+  },
+  "figure_only_escalated_share": {
+    "C0": 0.5076923076923077,
+    "C1": 0.1076923076923077,
+    "C3": 0.5538461538461539,
+    "C0@0.5": 0.015384615384615385,
+    "C0@0.6": 0.03076923076923077,
+    "C0@0.7": 0.3384615384615385,
+    "C0@0.8": 0.5076923076923077,
+    "C0@0.9": 0.6461538461538462
+  },
+  "c4": {
+    "positives": 13,
+    "negatives": 143,
+    "discarded_regions": {
+      "auc_one_sided": 0.5801506186121571,
+      "auc_two_sided": 0.5801506186121571,
+      "follow_up": false
+    },
+    "chars_low_is_positive": {
+      "auc_one_sided": 0.7880580957504034,
+      "auc_two_sided": 0.7880580957504034,
+      "follow_up": false
+    }
+  },
+  "winner": null
+}
