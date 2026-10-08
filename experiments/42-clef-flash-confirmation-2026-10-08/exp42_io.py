@@ -61,7 +61,8 @@ def load_module(path: Path, name: str) -> ModuleType:
     """Import a source-experiment module by path, with its folder on sys.path."""
     folder = str(path.parent)
     if folder not in sys.path:
-        sys.path.insert(0, folder)
+        # Appended, so this experiment's own modules win on a name clash.
+        sys.path.append(folder)
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot import {path}")

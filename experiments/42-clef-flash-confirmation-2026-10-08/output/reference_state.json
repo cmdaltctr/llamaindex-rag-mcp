@@ -1,0 +1,86 @@
+{
+  "pages": {
+    "bd01:1": {
+      "status": "ok",
+      "chars": 3740,
+      "seconds": 56.52,
+      "includes_start": true,
+      "utc": "2026-10-08T23:38:55Z"
+    },
+    "bd01:2": {
+      "status": "ok",
+      "chars": 5172,
+      "seconds": 51.76,
+      "includes_start": false,
+      "utc": "2026-10-08T23:39:46Z"
+    },
+    "bd01:3": {
+      "status": "ok",
+      "chars": 3197,
+      "seconds": 42.2,
+      "includes_start": false,
+      "utc": "2026-10-08T23:40:29Z"
+    },
+    "bd01:4": {
+      "status": "ok",
+      "chars": 2321,
+      "seconds": 32.63,
+      "includes_start": false,
+      "utc": "2026-10-08T23:41:01Z"
+    },
+    "bd01:5": {
+      "status": "ok",
+      "chars": 3386,
+      "seconds": 42.26,
+      "includes_start": false,
+      "utc": "2026-10-08T23:41:43Z"
+    },
+    "bd01:6": {
+      "status": "ok",
+      "chars": 3013,
+      "seconds": 38.54,
+      "includes_start": false,
+      "utc": "2026-10-08T23:42:22Z"
+    },
+    "bd01:7": {
+      "status": "ok",
+      "chars": 1383,
+      "seconds": 25.04,
+      "includes_start": false,
+      "utc": "2026-10-08T23:42:47Z"
+    }
+  },
+  "pid": 81282,
+  "started_utc": "2026-10-08T23:37:58Z",
+  "finished_utc": null,
+  "offline_env": {
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1"
+  },
+  "sources_sha256": "1fb28b56bf19fae9b4174a7c63b9072a5d5856b50be6e3ff1fb8165f9574c911",
+  "total_pages": 192,
+  "engine": {
+    "backend_id": "dots_mocr",
+    "model": [
+      "rednote-hilab/dots.mocr",
+      "e539fbb52280393adc081b289ec597430a0f9031"
+    ],
+    "pipeline": [
+      "dots-mocr-layout",
+      "prompt_layout_all_en+omrg-mps-1+layout-1"
+    ],
+    "protocol_version": "1.1",
+    "packages": {
+      "accelerate": "1.15.0",
+      "omrg-ocr-dots-mocr": "0.1.0",
+      "omrg-ocr-worker-core": "0.1.0",
+      "pillow": "12.3.0",
+      "pypdfium2": "5.13.0",
+      "qwen-vl-utils": "0.0.14",
+      "torch": "2.14.0",
+      "torchvision": "0.29.0",
+      "transformers": "4.57.6"
+    }
+  },
+  "heartbeat_utc": "2026-10-08T23:42:47Z"
+}

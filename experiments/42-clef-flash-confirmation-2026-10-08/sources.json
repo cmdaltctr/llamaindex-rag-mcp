@@ -1,0 +1,1274 @@
+{
+  "documents": [
+    {
+      "doc_id": "bd01",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1186/s12864-023-09617-6",
+      "title": "WGCNA and transcriptome profiling reveal hub genes for key development stage seed size/oil content between wild and cultivated soybean",
+      "year": 2023,
+      "landing_url": "https://doi.org/10.1186/s12864-023-09617-6",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1186/s12864-023-09617-6",
+      "pdf_url": "https://bmcgenomics.biomedcentral.com/counter/pdf/10.1186/s12864-023-09617-6",
+      "page_count": 17,
+      "sha256": "d6ac7935d7dcf3f951d6127da8ea9fd84671c040c876918bbc65c413b77082e0",
+      "bytes": 3384809,
+      "local_path": "corpus/bd01.pdf"
+    },
+    {
+      "doc_id": "bd02",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1186/s12951-024-02974-8",
+      "title": "A supervised machine learning tool to predict the bactericidal efficiency of nanostructured surface",
+      "year": 2024,
+      "landing_url": "https://doi.org/10.1186/s12951-024-02974-8",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1186/s12951-024-02974-8",
+      "pdf_url": "https://jnanobiotechnology.biomedcentral.com/counter/pdf/10.1186/s12951-024-02974-8",
+      "page_count": 19,
+      "sha256": "334c3285d2a13a956e5d8a942d70061b1013e038aca788fc8629222d658f70ac",
+      "bytes": 3136100,
+      "local_path": "corpus/bd02.pdf"
+    },
+    {
+      "doc_id": "bd03",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.36038/2307-3497-2025-199-166-176",
+      "title": "Mercury and organic matter content in bottom sediments of the Barents and Kara Seas",
+      "year": 2025,
+      "landing_url": "https://doi.org/10.36038/2307-3497-2025-199-166-176",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.36038/2307-3497-2025-199-166-176",
+      "pdf_url": "https://trudy.vniro.ru/jour/article/download/504/502",
+      "page_count": 11,
+      "sha256": "2821cb9d06d64a68ca98c149a6a9a7b9ffd057e3ac9f9e21c81819741c875776",
+      "bytes": 7570867,
+      "local_path": "corpus/bd03.pdf"
+    },
+    {
+      "doc_id": "bd04",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.24039/rcv20221021446",
+      "title": "Mitigación del manganeso con zeolitas en aguas del Río Mantaro, Jauja, Junín",
+      "year": 2022,
+      "landing_url": "https://doi.org/10.24039/rcv20221021446",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.24039/rcv20221021446",
+      "pdf_url": "https://revistas.unfv.edu.pe/RCV/article/download/1446/2134",
+      "page_count": 11,
+      "sha256": "d836d8653b37dc201964b31357f9fcc33d636a599ec0c1a1b28a5104cd83ea67",
+      "bytes": 396465,
+      "local_path": "corpus/bd04.pdf"
+    },
+    {
+      "doc_id": "bd05",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.29245/2578-3009/2025/1.1259",
+      "title": "Advancing Brain Tumor Immunotherapy: The Role of Nanomedicine in Primary and Metastatic Brain Tumor",
+      "year": 2025,
+      "landing_url": "https://doi.org/10.29245/2578-3009/2025/1.1259",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.29245/2578-3009/2025/1.1259",
+      "pdf_url": "https://www.immunologyresearchjournal.com/articles/advancing-brain-tumor-immunotherapy-the-role-of-nanomedicine-in-primary-and-metastatic-brain-tumor.pdf",
+      "page_count": 13,
+      "sha256": "bc526f319a7e64548431c6842e2a49bc606d803d54a55d0bb1d9031ff16f4338",
+      "bytes": 3290856,
+      "local_path": "corpus/bd05.pdf"
+    },
+    {
+      "doc_id": "bd06",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1186/s12969-023-00795-x",
+      "title": "Identification of a variant in NLRP3 gene in a patient with Muckle-Wells syndrome: a case report and review of literature",
+      "year": 2023,
+      "landing_url": "https://doi.org/10.1186/s12969-023-00795-x",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1186/s12969-023-00795-x",
+      "pdf_url": "https://ped-rheum.biomedcentral.com/counter/pdf/10.1186/s12969-023-00795-x",
+      "page_count": 8,
+      "sha256": "10e50add401b7e5aff1350ea01fb1c095de131e5f92584c56f045e8bbdee08c6",
+      "bytes": 1408327,
+      "local_path": "corpus/bd06.pdf"
+    },
+    {
+      "doc_id": "bd07",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.3389/fpls.2022.803980",
+      "title": "Risk factors associated with cassava brown streak disease dissemination through seed pathways in Eastern D.R. Congo",
+      "year": 2022,
+      "landing_url": "https://doi.org/10.3389/fpls.2022.803980",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.3389/fpls.2022.803980",
+      "pdf_url": "https://www.frontiersin.org/articles/10.3389/fpls.2022.803980/pdf",
+      "page_count": 18,
+      "sha256": "32909ae16a2ec5601a3060676c8a1912666150c663f9238fffdfef2ae1cc25bb",
+      "bytes": 5431180,
+      "local_path": "corpus/bd07.pdf"
+    },
+    {
+      "doc_id": "bd08",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.23917/qist.v2i1.1470",
+      "title": "QUR'ANIC INSIGHTS ON RELIGIOUS MODERATION AND ITS RELEVANCE TO RELIGIOUS HARMONY IN INDONESIA",
+      "year": 2023,
+      "landing_url": "https://doi.org/10.23917/qist.v2i1.1470",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.23917/qist.v2i1.1470",
+      "pdf_url": "https://journals2.ums.ac.id/index.php/qist/article/download/1470/464",
+      "page_count": 14,
+      "sha256": "ddef66a9ceb52d540a2cff6ca47ca95fd6bcdde2d6f0d1a9e6f8c7e2054671b1",
+      "bytes": 432724,
+      "local_path": "corpus/bd08.pdf"
+    },
+    {
+      "doc_id": "bd09",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.4236/jwarp.2024.1610035",
+      "title": "Sustainable Water Management Through Pani Panchayats: Stakeholder Perspectives from Angul and Dhenkanal Districts of Odisha",
+      "year": 2024,
+      "landing_url": "https://doi.org/10.4236/jwarp.2024.1610035",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.4236/jwarp.2024.1610035",
+      "pdf_url": "https://www.scirp.org/pdf/jwarp20241610_19404985.pdf",
+      "page_count": 22,
+      "sha256": "cfe199111a1b0632701c99784a3eada694347579ca93df1596c21fb693fd469c",
+      "bytes": 1974163,
+      "local_path": "corpus/bd09.pdf"
+    },
+    {
+      "doc_id": "bd10",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.7759/cureus.69699",
+      "title": "Mortality and Associated Risk Factors in Patients With Candida auris: Insights From a Tertiary Care Hospital in Bahrain",
+      "year": 2024,
+      "landing_url": "https://doi.org/10.7759/cureus.69699",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.7759/cureus.69699",
+      "pdf_url": "https://www.cureus.com/articles/292115-mortality-and-associated-risk-factors-in-patients-with-candida-auris-insights-from-a-tertiary-care-hospital-in-bahrain.pdf",
+      "page_count": 9,
+      "sha256": "072fdf5b2ce02a32fcf9ef3fa065261340e603c72f5b7cc300b61da8a896ae96",
+      "bytes": 653951,
+      "local_path": "corpus/bd10.pdf"
+    },
+    {
+      "doc_id": "bd11",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1007/s00431-025-06290-7",
+      "title": "Physical activity level and influencing factors in pediatric Wolff-Parkinson-White syndrome patients: A case–control study",
+      "year": 2025,
+      "landing_url": "https://doi.org/10.1007/s00431-025-06290-7",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1007/s00431-025-06290-7",
+      "pdf_url": "https://link.springer.com/content/pdf/10.1007/s00431-025-06290-7.pdf",
+      "page_count": 11,
+      "sha256": "462cc876ce7c58a9386e8a8684489f72a6fc1f22112a43a9729f4aae44c9d210",
+      "bytes": 1188057,
+      "local_path": "corpus/bd11.pdf"
+    },
+    {
+      "doc_id": "bd12",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.5334/tismir.216",
+      "title": "Smartwatch-Based Audio–Gestural Insights in Violin Bow Stroke Analyses",
+      "year": 2025,
+      "landing_url": "https://doi.org/10.5334/tismir.216",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.5334/tismir.216",
+      "pdf_url": "https://transactions.ismir.net/articles/216/files/68b94fefa6b1a.pdf",
+      "page_count": 17,
+      "sha256": "3b286a07ef7bdc39a3af673016649005b6540f5a74708f60523e3b0e7364eb52",
+      "bytes": 3408089,
+      "local_path": "corpus/bd12.pdf"
+    },
+    {
+      "doc_id": "bd13",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1038/s41612-025-01113-w",
+      "title": "Accelerated shifts from heatwaves to heavy rainfall in a changing climate",
+      "year": 2025,
+      "landing_url": "https://doi.org/10.1038/s41612-025-01113-w",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1038/s41612-025-01113-w",
+      "pdf_url": "https://www.nature.com/articles/s41612-025-01113-w.pdf",
+      "page_count": 10,
+      "sha256": "bebb70a08741284d682bece3fc5d86606ce4128dd45fb83f8fc092db6134293e",
+      "bytes": 4372731,
+      "local_path": "corpus/bd13.pdf"
+    },
+    {
+      "doc_id": "bd14",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.31973/12dtdt82",
+      "title": "Evaluating waters of Al-Jabbab River east of Wasit government for drinking and agricultural purposes",
+      "year": 2024,
+      "landing_url": "https://doi.org/10.31973/12dtdt82",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.31973/12dtdt82",
+      "pdf_url": "https://aladabj.uobaghdad.edu.iq/index.php/aladabjournal/article/download/4262/3734",
+      "page_count": 12,
+      "sha256": "ee5880ea49edfbbcc7e7a4908f5374dc59890260b072e514aa486a3fed73d3a5",
+      "bytes": 709006,
+      "local_path": "corpus/bd14.pdf"
+    },
+    {
+      "doc_id": "bd15",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.32931/io2224r",
+      "title": "Carbosilane Dendrimers: Unique Models for Studying the Properties of New Polymeric Matter",
+      "year": 2023,
+      "landing_url": "https://doi.org/10.32931/io2224r",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.32931/io2224r",
+      "pdf_url": "http://ineosopen.org/f/io2224r.pdf",
+      "page_count": 17,
+      "sha256": "db2511ea92a27c21850105f0c65a040845b363de6d3f71770ed393d970a23a79",
+      "bytes": 2289804,
+      "local_path": "corpus/bd15.pdf"
+    },
+    {
+      "doc_id": "bd16",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1557/s43578-024-01391-9",
+      "title": "Atomic force microscopic investigations of transient early-stage bacterial adhesion and antibacterial activity of silver and ceria modified bioactive glass",
+      "year": 2024,
+      "landing_url": "https://doi.org/10.1557/s43578-024-01391-9",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1557/s43578-024-01391-9",
+      "pdf_url": "https://link.springer.com/content/pdf/10.1557/s43578-024-01391-9.pdf",
+      "page_count": 16,
+      "sha256": "006de370d010dc3ae8c43781366d45d8695f7e0ff214a988c3001f4d9d1b4d32",
+      "bytes": 5064182,
+      "local_path": "corpus/bd16.pdf"
+    },
+    {
+      "doc_id": "bd17",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.17762/jaz.v44is6.2681",
+      "title": "Antinutrient Phytic acid: Can be proved to be a Boon for Colorectal Cancer",
+      "year": 2023,
+      "landing_url": "https://doi.org/10.17762/jaz.v44is6.2681",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.17762/jaz.v44is6.2681",
+      "pdf_url": "http://jazindia.com/index.php/jaz/article/download/2681/2158",
+      "page_count": 8,
+      "sha256": "37926670b3402d1f4e302795a4ab07ab744a7eebd1d1d8c63ec8268534d4cb2f",
+      "bytes": 641339,
+      "local_path": "corpus/bd17.pdf"
+    },
+    {
+      "doc_id": "bd18",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1038/s41598-021-92332-7",
+      "title": "A genome-wide CRISPR/Cas9 screen to identify phagocytosis modulators in monocytic THP-1 cells",
+      "year": 2021,
+      "landing_url": "https://doi.org/10.1038/s41598-021-92332-7",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1038/s41598-021-92332-7",
+      "pdf_url": "https://www.nature.com/articles/s41598-021-92332-7.pdf",
+      "page_count": 11,
+      "sha256": "f0d482fc3096076fe16cf9a7ab48ef01cf76d2ca8fd78d4f3a5eafde972cfa74",
+      "bytes": 3178542,
+      "local_path": "corpus/bd18.pdf"
+    },
+    {
+      "doc_id": "bd19",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.16993/njtcg.77",
+      "title": "Exploring the Role of AI in Career Access Through a Social Justice Lens",
+      "year": 2025,
+      "landing_url": "https://doi.org/10.16993/njtcg.77",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.16993/njtcg.77",
+      "pdf_url": "https://njtcg.org/articles/77/files/67af27411f1a0.pdf",
+      "page_count": 13,
+      "sha256": "98ad9c882f85b5974b84d68acdb5c32d21f2b479b3cf6f8f125f0ec1b489d78b",
+      "bytes": 706680,
+      "local_path": "corpus/bd19.pdf"
+    },
+    {
+      "doc_id": "bd20",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1038/s41598-024-80009-w",
+      "title": "HDBind: encoding of molecular structure with hyperdimensional binary representations",
+      "year": 2024,
+      "landing_url": "https://doi.org/10.1038/s41598-024-80009-w",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1038/s41598-024-80009-w",
+      "pdf_url": "https://www.nature.com/articles/s41598-024-80009-w.pdf",
+      "page_count": 16,
+      "sha256": "69e75d119ebefc18776b14d53eef039694ce85f2cd407b149b33d6cdba1aaaf4",
+      "bytes": 6622203,
+      "local_path": "corpus/bd20.pdf"
+    },
+    {
+      "doc_id": "bd21",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.7176/jep/13-30-16",
+      "title": "Influence Of Facebook and Instagram Social Networking Sites Usage on Computer Science Students’ Academic Achievement in Tertiary Institutions in South East Zone, Nigeria",
+      "year": 2022,
+      "landing_url": "https://doi.org/10.7176/jep/13-30-16",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.7176/jep/13-30-16",
+      "pdf_url": "https://iiste.org/Journals/index.php/JEP/article/download/59752/61681",
+      "page_count": 12,
+      "sha256": "e13eecd24255a71e13c612c209b7254f4e92a891c9c06a0f8aa1cf19f312bf8a",
+      "bytes": 627005,
+      "local_path": "corpus/bd21.pdf"
+    },
+    {
+      "doc_id": "bd22",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.29244/jfs.v9i1.46680",
+      "title": "The Influence of Social Support, Self-Esteem, and Optimism on Resilience of High School Students During the Covid-19 Pandemic",
+      "year": 2024,
+      "landing_url": "https://doi.org/10.29244/jfs.v9i1.46680",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.29244/jfs.v9i1.46680",
+      "pdf_url": "https://journal.ipb.ac.id/jfs/article/download/46680/28503",
+      "page_count": 13,
+      "sha256": "dda5aae8aa36bba5dc13dbb9d7b5621697d276b7a0e7cd21c1a26201184db0f4",
+      "bytes": 245902,
+      "local_path": "corpus/bd22.pdf"
+    },
+    {
+      "doc_id": "bd23",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.31926/but.pa.2023.16.65.3.23",
+      "title": "Elements for a lesson: Beethoven Sonata op. 53 „Waldstein”",
+      "year": 2024,
+      "landing_url": "https://doi.org/10.31926/but.pa.2023.16.65.3.23",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.31926/but.pa.2023.16.65.3.23",
+      "pdf_url": "https://webbut.unitbv.ro/index.php/Series_VIII/article/download/6996/5340",
+      "page_count": 10,
+      "sha256": "bdfdb3c1b3bfdb3f7bc08216d06928f66242ece63588ebeee5662357fa9c9a4e",
+      "bytes": 296936,
+      "local_path": "corpus/bd23.pdf"
+    },
+    {
+      "doc_id": "bd24",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.3765/plsa.v8i1.5552",
+      "title": "Vocalic segments and the phonetic basis of weight in Norwegian",
+      "year": 2023,
+      "landing_url": "https://doi.org/10.3765/plsa.v8i1.5552",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.3765/plsa.v8i1.5552",
+      "pdf_url": "https://journals.linguisticsociety.org/proceedings/index.php/PLSA/article/download/5552/5196",
+      "page_count": 10,
+      "sha256": "964f32baaefe1162e033bf3966d5a2510a0e5a7b4dde292546e13f64276a0999",
+      "bytes": 529584,
+      "local_path": "corpus/bd24.pdf"
+    },
+    {
+      "doc_id": "bd25",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.31677/2311-0651-2022-37-3-107-112",
+      "title": "DEVELOPMENT OF THE CENTRAL ASIAN SHEPHERD DOG BREED IN HUMAN HANDS: BEFORE AND AFTER",
+      "year": 2022,
+      "landing_url": "https://doi.org/10.31677/2311-0651-2022-37-3-107-112",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.31677/2311-0651-2022-37-3-107-112",
+      "pdf_url": "https://innfoodsecr.elpub.ru/jour/article/download/733/553",
+      "page_count": 6,
+      "sha256": "8cbac4f278bc0e0adca35d9f679b75dbbfee5422648d75ac4811bede3177a4ab",
+      "bytes": 7383045,
+      "local_path": "corpus/bd25.pdf"
+    },
+    {
+      "doc_id": "bd26",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.3389/fcimb.2021.597431",
+      "title": "Effect of Electroacupuncture on Gut Microbiota in Participants With Knee Osteoarthritis",
+      "year": 2021,
+      "landing_url": "https://doi.org/10.3389/fcimb.2021.597431",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.3389/fcimb.2021.597431",
+      "pdf_url": "https://www.frontiersin.org/articles/10.3389/fcimb.2021.597431/pdf",
+      "page_count": 11,
+      "sha256": "68454f6d2b41904c8824a02fc570075bba927cdd3aa6f4e8240e224aafd494bc",
+      "bytes": 78674260,
+      "local_path": "corpus/bd26.pdf"
+    },
+    {
+      "doc_id": "bd27",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1038/s41598-022-26922-4",
+      "title": "Automatic air volume control system for ventilation of two patients using a single ventilator: a large animal model study",
+      "year": 2022,
+      "landing_url": "https://doi.org/10.1038/s41598-022-26922-4",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1038/s41598-022-26922-4",
+      "pdf_url": "https://www.nature.com/articles/s41598-022-26922-4.pdf",
+      "page_count": 13,
+      "sha256": "58457be7cbab6591f39ca3ae77f6b8a8d9c3d2d09df45de1f5da490f27e89178",
+      "bytes": 3812531,
+      "local_path": "corpus/bd27.pdf"
+    },
+    {
+      "doc_id": "bd28",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1186/s12909-023-04079-6",
+      "title": "The benefits of using atypical presentations and rare diseases in problem-based learning in undergraduate medical education",
+      "year": 2023,
+      "landing_url": "https://doi.org/10.1186/s12909-023-04079-6",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1186/s12909-023-04079-6",
+      "pdf_url": "https://bmcmededuc.biomedcentral.com/counter/pdf/10.1186/s12909-023-04079-6",
+      "page_count": 7,
+      "sha256": "e879ca13e0e32811b5f0b9b91f3819af92e65ffceb27cfe5c6c21cc9c258c083",
+      "bytes": 920621,
+      "local_path": "corpus/bd28.pdf"
+    },
+    {
+      "doc_id": "bd29",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.55559/sjahss.v1i11.63",
+      "title": "Linguistics in Social Media: An Analysis on the Writing Conventions of Students’ Blog Posts",
+      "year": 2022,
+      "landing_url": "https://doi.org/10.55559/sjahss.v1i11.63",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.55559/sjahss.v1i11.63",
+      "pdf_url": "https://sprinpub.com/sjahss/article/download/sjahss-1-11-3-15-23/176",
+      "page_count": 9,
+      "sha256": "57dc47a7b0d18f5dc5e199e1720bc076a1e5335d57e45d03e07c1d1fb4fbe01d",
+      "bytes": 145205,
+      "local_path": "corpus/bd29.pdf"
+    },
+    {
+      "doc_id": "bd30",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1038/s41467-024-53752-x",
+      "title": "High-parametric protein maps reveal the spatial organization in early-developing human lung",
+      "year": 2024,
+      "landing_url": "https://doi.org/10.1038/s41467-024-53752-x",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1038/s41467-024-53752-x",
+      "pdf_url": "https://www.nature.com/articles/s41467-024-53752-x.pdf",
+      "page_count": 19,
+      "sha256": "c0e2302d1f6c73e61cf495f64963e9f8bab6036ba100b4d6f0f5a6a364f466fe",
+      "bytes": 5530612,
+      "local_path": "corpus/bd30.pdf"
+    },
+    {
+      "doc_id": "bd31",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.7324/japs.2023.96024",
+      "title": "Job skill assessment of pharmacy students in South Karnataka:A cross-sectional study",
+      "year": 2023,
+      "landing_url": "https://doi.org/10.7324/japs.2023.96024",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.7324/japs.2023.96024",
+      "pdf_url": "https://japsonline.com/admin/php/uploads/3938_pdf.pdf",
+      "page_count": 7,
+      "sha256": "96ef72cec260d20d567385fc2291a692d7f24035caa8395b89ced30a375b111e",
+      "bytes": 5227649,
+      "local_path": "corpus/bd31.pdf"
+    },
+    {
+      "doc_id": "bd32",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.15343/0104-7809.202246574586i",
+      "title": "Comics for oral health education: construction, validation, and analysis of efficacy",
+      "year": 2022,
+      "landing_url": "https://doi.org/10.15343/0104-7809.202246574586i",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.15343/0104-7809.202246574586i",
+      "pdf_url": "https://revistamundodasaude.emnuvens.com.br/mundodasaude/article/download/1459/1251",
+      "page_count": 13,
+      "sha256": "23e98dd0de961553bd52d7c7eb4691aec2ed481ab6b363009c3f372b503fe839",
+      "bytes": 772760,
+      "local_path": "corpus/bd32.pdf"
+    },
+    {
+      "doc_id": "bd33",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1371/journal.pone.0248671",
+      "title": "Association between thrombocytopenia and 180-day prognosis of COVID-19 patients in intensive care units: A two-center observational study",
+      "year": 2021,
+      "landing_url": "https://doi.org/10.1371/journal.pone.0248671",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1371/journal.pone.0248671",
+      "pdf_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0248671&type=printable",
+      "page_count": 15,
+      "sha256": "98d6be7f7c70b9ae875e55ee1b3df05642723e03a33dd6e19493c6322ef66270",
+      "bytes": 916248,
+      "local_path": "corpus/bd33.pdf"
+    },
+    {
+      "doc_id": "bd34",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1037/met0000546",
+      "title": "Improving hierarchical models of individual differences: An extension of Goldberg’s bass-ackward method.",
+      "year": 2023,
+      "landing_url": "https://doi.org/10.1037/met0000546",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1037/met0000546",
+      "pdf_url": "https://osf.io/ksxwv/download",
+      "page_count": 20,
+      "sha256": "e8ed8bbfc56e040ffc488c24708d1d64f779a9845875b2afa2fe4cfe553da641",
+      "bytes": 660861,
+      "local_path": "corpus/bd34.pdf"
+    },
+    {
+      "doc_id": "bd35",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.17803/1994-1471.2024.160.3.027-043",
+      "title": "The Importance of the Structure of Federal Executive Authorities in Public Administration",
+      "year": 2024,
+      "landing_url": "https://doi.org/10.17803/1994-1471.2024.160.3.027-043",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.17803/1994-1471.2024.160.3.027-043",
+      "pdf_url": "https://aprp.msal.ru/jour/article/download/4458/2293",
+      "page_count": 17,
+      "sha256": "2985ed00a9358194e6ce011661dd08347f470b5cfd221be1c6faf1e44271e1ad",
+      "bytes": 447892,
+      "local_path": "corpus/bd35.pdf"
+    },
+    {
+      "doc_id": "bd36",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1038/s41593-024-01616-4",
+      "title": "Single-cell long-read sequencing-based mapping reveals specialized splicing patterns in developing and adult mouse and human brain",
+      "year": 2024,
+      "landing_url": "https://doi.org/10.1038/s41593-024-01616-4",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1038/s41593-024-01616-4",
+      "pdf_url": "https://www.nature.com/articles/s41593-024-01616-4.pdf",
+      "page_count": 23,
+      "sha256": "27a92d94c0559714a63b09a3f2aadddcdc505fd1d056643f9308ed8d827527cc",
+      "bytes": 5005870,
+      "local_path": "corpus/bd36.pdf"
+    },
+    {
+      "doc_id": "bd37",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.26661/2414-9594-2020-2-21",
+      "title": "ДИНАМІКА ОСОБОВИХ ІМЕН РАДЕХІВСЬКОГО РАЙОНУ ЛЬВІВСЬКОЇ ОБЛАСТІ",
+      "year": 2021,
+      "landing_url": "https://doi.org/10.26661/2414-9594-2020-2-21",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.26661/2414-9594-2020-2-21",
+      "pdf_url": "http://journalsofznu.zp.ua/index.php/philology/article/download/2114/2028",
+      "page_count": 9,
+      "sha256": "28a1ed7717a3a2481e4d3d2d9ffeb3184349ff8e509cca83ac67ae362add9711",
+      "bytes": 332797,
+      "local_path": "corpus/bd37.pdf"
+    },
+    {
+      "doc_id": "bd38",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1007/s00210-025-03900-x",
+      "title": "Obtusifolin improves cisplatin-induced hepatonephrotoxicity via the Nrf2/HO-1 signaling pathway",
+      "year": 2025,
+      "landing_url": "https://doi.org/10.1007/s00210-025-03900-x",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1007/s00210-025-03900-x",
+      "pdf_url": "https://link.springer.com/content/pdf/10.1007/s00210-025-03900-x.pdf",
+      "page_count": 16,
+      "sha256": "034b66c1f08733bec456decfc1a0614c2b3c65ca033a41a860cb6a8a3e505eac",
+      "bytes": 6183122,
+      "local_path": "corpus/bd38.pdf"
+    },
+    {
+      "doc_id": "bd39",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.71330/nucleus.60.01.1284",
+      "title": "Thorium Based Indian Nuclear Program",
+      "year": 2023,
+      "landing_url": "https://doi.org/10.71330/nucleus.60.01.1284",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.71330/nucleus.60.01.1284",
+      "pdf_url": "http://www.thenucleuspak.org.pk/index.php/Nucleus/article/download/1284/809",
+      "page_count": 4,
+      "sha256": "428a5c53059ae2aa405b7141132f7120d792206fe03549050111235bcad5a0dd",
+      "bytes": 365081,
+      "local_path": "corpus/bd39.pdf"
+    },
+    {
+      "doc_id": "bd40",
+      "stratum": "born_digital",
+      "source": "doi",
+      "source_identifier": "10.1007/s12283-022-00376-3",
+      "title": "Modelling road cycling as motion on a curve",
+      "year": 2022,
+      "landing_url": "https://doi.org/10.1007/s12283-022-00376-3",
+      "licence": "cc-by",
+      "licence_evidence": "OpenAlex best_oa_location.license for doi:10.1007/s12283-022-00376-3",
+      "pdf_url": "https://link.springer.com/content/pdf/10.1007/s12283-022-00376-3.pdf",
+      "page_count": 14,
+      "sha256": "808f5789adbacb64c593d1af154091ac617d0a600a43924841a1a1aa954bacf3",
+      "bytes": 2834935,
+      "local_path": "corpus/bd40.pdf"
+    },
+    {
+      "doc_id": "mx01",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20150003909",
+      "title": "JPL VLBI Analysis Center Report for 2012",
+      "year": 2013,
+      "landing_url": "https://ntrs.nasa.gov/citations/20150003909",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20150003909/downloads/20150003909.pdf",
+      "page_count": 4,
+      "sha256": "3ef94e0ced307bf1ae474456ceabc69867d1cd99ceaee9a71143333c534f76a9",
+      "bytes": 82848,
+      "local_path": "corpus/mx01.pdf"
+    },
+    {
+      "doc_id": "mx02",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20160001428",
+      "title": "UNNUMBERED OPERATIONAL AREAS (UNOA) PRL 229 SWMU Assessment Report Confirmatory Sampling Work Plan Addendum Revision 1",
+      "year": 2015,
+      "landing_url": "https://ntrs.nasa.gov/citations/20160001428",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20160001428/downloads/20160001428.pdf",
+      "page_count": 13,
+      "sha256": "e636da70a6847615645a8ddb2dd6ac897e5e7cde2ac27649d9f06719843f4230",
+      "bytes": 2642434,
+      "local_path": "corpus/mx02.pdf"
+    },
+    {
+      "doc_id": "mx03",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20210014231",
+      "title": "Report on Workshop on Artificial Intelligence in Strategic Planning and Science Prioritization ",
+      "year": 2021,
+      "landing_url": "https://ntrs.nasa.gov/citations/20210014231",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20210014231/downloads/Report%20on%20First%20Workshop%20on%20Artificial%20Intelligence%20in%20Strategic%20Planning%20and%20Science%20Prioritization%20-%20Final.docx.pdf",
+      "page_count": 22,
+      "sha256": "b5d25a9477775c406d86ffdef3490498e94d91cc9abfa5e3abace22715ccbae3",
+      "bytes": 198892,
+      "local_path": "corpus/mx03.pdf"
+    },
+    {
+      "doc_id": "mx04",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20130009901",
+      "title": "2011-2012 Dryden Center Innovation Fund End of the Year Report: Altitude-Compensating Rocket Nozzles",
+      "year": 2012,
+      "landing_url": "https://ntrs.nasa.gov/citations/20130009901",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20130009901/downloads/20130009901.pdf",
+      "page_count": 11,
+      "sha256": "db9536a1f566605f4bb35fc1cb13b5e5ef01f9ed533929767662e9d0bac98616",
+      "bytes": 596150,
+      "local_path": "corpus/mx04.pdf"
+    }
+  ],
+  "log": [
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1186/s12864-023-09617-6",
+      "doc_id": "bd01",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/su16031019",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1186/s12951-024-02974-8",
+      "doc_id": "bd02",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.36038/2307-3497-2025-199-166-176",
+      "doc_id": "bd03",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.24039/rcv20221021446",
+      "doc_id": "bd04",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3989/estgeogr.2025.1178",
+      "doc_id": null,
+      "result": "download failed: URLError"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.29245/2578-3009/2025/1.1259",
+      "doc_id": "bd05",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/ijms26010311",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1186/s12969-023-00795-x",
+      "doc_id": "bd06",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1155/2022/2114377",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/mi14010061",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/buildings13102460",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3389/fpls.2022.803980",
+      "doc_id": "bd07",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.23917/qist.v2i1.1470",
+      "doc_id": "bd08",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/pharmaceutics17111499",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.4236/jwarp.2024.1610035",
+      "doc_id": "bd09",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.7759/cureus.69699",
+      "doc_id": "bd10",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1007/s00431-025-06290-7",
+      "doc_id": "bd11",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1016/j.jhlto.2025.100314",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/brainsci13020327",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1001/jamanetworkopen.2023.20851",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.5334/tismir.216",
+      "doc_id": "bd12",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/diagnostics14192168",
+      "doc_id": null,
+      "result": "not a PDF"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1038/s41612-025-01113-w",
+      "doc_id": "bd13",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1002/msd2.12088",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1002/mco2.710",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/jne2040029",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.31957/jfp.v1i2.9",
+      "doc_id": null,
+      "result": "download failed: HTTPError 500"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1080/14778238.2024.2430233",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.7206/cemj.2658-0845.77",
+      "doc_id": null,
+      "result": "page count 32 outside 3-30"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.31973/12dtdt82",
+      "doc_id": "bd14",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/plants11192498",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1093/asjof/ojab018",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1093/mnras/stad1264",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1007/s11127-025-01313-1",
+      "doc_id": null,
+      "result": "page count 33 outside 3-30"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/polym13183164",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1210/endrev/bnac025",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.32931/io2224r",
+      "doc_id": "bd15",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1557/s43578-024-01391-9",
+      "doc_id": "bd16",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.17762/jaz.v44is6.2681",
+      "doc_id": "bd17",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1038/s41598-021-92332-7",
+      "doc_id": "bd18",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.16993/njtcg.77",
+      "doc_id": "bd19",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1038/s41598-024-80009-w",
+      "doc_id": "bd20",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.7176/jep/13-30-16",
+      "doc_id": "bd21",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1155/2023/9762856",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.29244/jfs.v9i1.46680",
+      "doc_id": "bd22",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1016/j.nuclphysb.2021.115469",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.31926/but.pa.2023.16.65.3.23",
+      "doc_id": "bd23",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/su152316226",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3765/plsa.v8i1.5552",
+      "doc_id": "bd24",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1055/s-0043-1774443",
+      "doc_id": null,
+      "result": "not a PDF"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.31677/2311-0651-2022-37-3-107-112",
+      "doc_id": "bd25",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3389/fcimb.2021.597431",
+      "doc_id": "bd26",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1038/s41598-022-26922-4",
+      "doc_id": "bd27",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1186/s12909-023-04079-6",
+      "doc_id": "bd28",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.5281/zenodo.6889825",
+      "doc_id": null,
+      "result": "download failed: HTTPError 410"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.55559/sjahss.v1i11.63",
+      "doc_id": "bd29",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1017/s0022377823001125",
+      "doc_id": null,
+      "result": "page count 48 outside 3-30"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1038/s41467-024-53752-x",
+      "doc_id": "bd30",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/ijms22084019",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.5380/biofix.v7i1.82112",
+      "doc_id": null,
+      "result": "download failed: URLError"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.7324/japs.2023.96024",
+      "doc_id": "bd31",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.15343/0104-7809.202246574586i",
+      "doc_id": "bd32",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1016/j.yebeh.2023.109291",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1371/journal.pone.0248671",
+      "doc_id": "bd33",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.30574/ijsra.2025.14.1.0187",
+      "doc_id": null,
+      "result": "download failed: URLError"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1037/met0000546",
+      "doc_id": "bd34",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1021/acs.chemmater.3c00327",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/su15021515",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/land11111899",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1016/j.euroecorev.2021.104007",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.17803/1994-1471.2024.160.3.027-043",
+      "doc_id": "bd35",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/en18010221",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.3390/life14091058",
+      "doc_id": null,
+      "result": "download failed: HTTPError 403"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1038/s41593-024-01616-4",
+      "doc_id": "bd36",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.26661/2414-9594-2020-2-21",
+      "doc_id": "bd37",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1007/s00210-025-03900-x",
+      "doc_id": "bd38",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1192/j.eurpsy.2022.146",
+      "doc_id": null,
+      "result": "download failed: HTTPError 404"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.71330/nucleus.60.01.1284",
+      "doc_id": "bd39",
+      "result": "kept"
+    },
+    {
+      "stratum": "born_digital",
+      "source_identifier": "10.1007/s12283-022-00376-3",
+      "doc_id": "bd40",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20140005389",
+      "doc_id": null,
+      "result": "page count 150 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20160006330",
+      "doc_id": null,
+      "result": "page count 85 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20110008288",
+      "doc_id": null,
+      "result": "page count 294 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20150003909",
+      "doc_id": "mx01",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20160001428",
+      "doc_id": "mx02",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20210024330",
+      "doc_id": null,
+      "result": "page count 533 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20220016017",
+      "doc_id": null,
+      "result": "page count 180 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20170004596",
+      "doc_id": null,
+      "result": "page count 118 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20210011344",
+      "doc_id": null,
+      "result": "page count 40 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20140005342",
+      "doc_id": null,
+      "result": "page count 37 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20170000679",
+      "doc_id": null,
+      "result": "page count 42 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20210014231",
+      "doc_id": "mx03",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20130009901",
+      "doc_id": "mx04",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20150003893",
+      "doc_id": null,
+      "result": "page count 3 outside 4-30"
+    }
+  ]
+}
