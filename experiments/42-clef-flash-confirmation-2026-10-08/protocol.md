@@ -83,7 +83,7 @@ A **document with a junk text layer** has LiteParse `junk` pages that reach 10% 
 | --- | --- |
 | Source | open-licence or public-domain PDFs; strata as Experiment 33 `SOURCING.md`, plus a stratum for scans with old OCR layers (handwriting, poor print, non-Latin scripts) |
 | Selection | seeded (seed 42), procedure fixed in `plan.json` before any download |
-| Exclusion | any SHA-256 or source identifier in Experiment 33 `sources.json` |
+| Exclusion | any SHA-256 or source identifier in Experiment 33 `sources.json` (Experiment 38 used these same 40 documents and has no corpus of its own) |
 | Local path | `experiments/42-clef-flash-confirmation-2026-10-08/corpus/` (gitignored) |
 | Renders | poppler, 150 dpi, 1,600 px long side (gitignored) |
 | Reference | local engine chosen in OD2 (proposed: dots.mocr), body text per the Experiment 33 body-text amendment (gitignored) |

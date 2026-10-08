@@ -20,7 +20,7 @@ def main() -> None:
     label = sys.argv[1]
     q = approved_plan()["wordings"]["W1"]["question"]
     rows = read_json(OUTPUT / "wording_clefflash_w1.json")["rows"]
-    # a fixed, spread-out sample: every 33rd liteparse pair
+    # a fixed, spread-out sample: every 16th liteparse pair
     sample = [r for r in rows if r["tier"] == "liteparse"][::16][:40]
     texts = {}
     for r in sample:
