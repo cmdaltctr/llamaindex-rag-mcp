@@ -176,8 +176,13 @@
     "render": "poppler pdftoppm, 150 dpi, 1600 px long side, PNG",
     "reference_engine": "dots-mocr via the shipped OCR worker host path (omrg.capabilities.build_ocr_routes, primary route only, no fallback), one page per request, HF_HUB_OFFLINE=1",
     "reference_engine_status": "OD2 approved 2026-10-09",
-    "body_text_rule": null,
-    "body_text_rule_status": "to write in task 3.3 before the split, following the Experiment 33 body-text amendment",
+    "body_text_rule": {
+      "written": "2026-10-09, before any split",
+      "rule": "Body text is the dots.mocr page Markdown produced by the shipped engine layout converter (omrg_ocr_dots_mocr.layout, CONVERTER_VERSION 1). The converter drops Picture cells (text inside figures, charts, drawings) and Page-header and Page-footer cells; it keeps Title, Section-header, Text, List-item, Table, Formula, Caption and Footnote. Before tokenising, HTML tags inside Table cells are replaced by a space (regex <[^>]+>), so tag names never count as reference tokens.",
+      "difference_from_experiment_33": "Experiment 33 counted page headers and footers as body text; here they are dropped by the engine. Recall measures how many reference tokens the rescue text holds, so a header present only in the rescue text does not change recall.",
+      "page_illegible": "dots.mocr returned an empty page (token cap, unparsable layout or worker error) while the LiteParse or pypdf text holds 10 or more tokens. An empty reference on a page whose rescue texts both hold fewer than 10 tokens is treated as a page with no text (reference below 10 tokens)."
+    },
+    "body_text_rule_status": "written 2026-10-09",
     "operator_check": {
       "sample": {
         "junk": 20,
@@ -342,6 +347,18 @@
       "date": "2026-10-09",
       "status": "RECORDED (no operator choice needed)",
       "item": "Renders: poppler is not installed on this machine and no new install was approved. Review renders use pypdfium2 at 150 dpi, long side raised to 1,600 px. The reference model reads the shipped dots-mocr engine render (pypdfium2, RENDER_DPI 200, long side raised to the engine minimum), because references go through the shipped worker path."
+    },
+    {
+      "id": "A4",
+      "date": "2026-10-09",
+      "status": "RECORDED (no operator choice needed)",
+      "item": "Page labels (Experiment 33 page_label) take r_best = max(recall of the LiteParse text, recall of the pypdf text) against the reference. Experiment 33 used pdftotext (poppler) and pypdf; poppler is not installed and no install was approved. LiteParse with OCR off reads the same text layer. Document labels then follow the unchanged Experiment 33 document_label rule."
+    },
+    {
+      "id": "A5",
+      "date": "2026-10-09",
+      "status": "RECORDED (no operator choice needed)",
+      "item": "llama-server runs with -b 8192 -ub 8192. With the default 512-token batch in embedding mode, the server rejected 2,000-character heads above 512 tokens (HTTP 500). With the larger batch the 40 reproduction pages match the committed Experiment 38 scores with maximum absolute difference 0.0 (output/runtime_check.json)."
     }
   ]
 }
