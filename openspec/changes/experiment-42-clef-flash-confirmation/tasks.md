@@ -4,16 +4,16 @@
 
 ## 1. Plan and operator decisions
 
-- [ ] 1.1 Commit `experiments/42-clef-flash-confirmation-2026-10-08/protocol.md` and `plan.json` (status `planned`) before any download or score. Verify: `git log` shows the commit before any `output/` or `corpus/` file exists.
-- [ ] 1.2 Operator records OD1 (gate priority, design D6) in `plan.json` `decision_register`, with the date. Verify: the entry exists and names option A or option B.
-- [ ] 1.3 Operator records OD2 (reference engine, design D4) and OD3 (runtime reuse, design D7) in `decision_register`. Verify: both entries exist; any hosted route has a dated amendment.
-- [ ] 1.4 Operator approves the seeded selection procedure and the source list (design D3) in `plan.json`. Verify: `sourcing.procedure` and `sourcing.seed` (42) are set and dated.
+- [x] 1.1 Commit `experiments/42-clef-flash-confirmation-2026-10-08/protocol.md` and `plan.json` (status `planned`) before any download or score. Verify: `git log` shows the commit before any `output/` or `corpus/` file exists.
+- [x] 1.2 Operator records OD1 (gate priority, design D6) in `plan.json` `decision_register`, with the date. Verify: the entry exists and names option A or option B.
+- [x] 1.3 Operator records OD2 (reference engine, design D4) and OD3 (runtime reuse, design D7) in `decision_register`. Verify: both entries exist; any hosted route has a dated amendment.
+- [x] 1.4 Operator approves the seeded selection procedure and the source list (design D3) in `plan.json`. Verify: `sourcing.procedure` and `sourcing.seed` (42) are set and dated.
 
 ## 2. Frozen thresholds (from Experiment 38 data only)
 
-- [ ] 2.1 Run Experiment 33 `freeze.py --check`, then fit the Clef-flash threshold on the J W1 scores of the 565 healthy LiteParse pages of all 40 Experiment 38 documents, with the Experiment 38 equal-cost rule. Write the value, the input SHA-256 and the commit to `plan.json` `thresholds.clef_flash_q8_0_w1`. Verify: a unit test reproduces the value from the committed input, and fails when one healthy score is changed.
-- [ ] 2.2 Fit the candidate A threshold by the same rule on the committed candidate A scores. Write it to `plan.json` `thresholds.word_check_a`. Verify: the value equals the Experiment 38 single-threshold result 0.8834080717, else stop and report the difference.
-- [ ] 2.3 Commit the frozen thresholds. Verify: the commit precedes any file under `corpus/`.
+- [x] 2.1 Run Experiment 33 `freeze.py --check`, then fit the Clef-flash threshold on the J W1 scores of the 565 healthy LiteParse pages of all 40 Experiment 38 documents, with the Experiment 38 equal-cost rule. Write the value, the input SHA-256 and the commit to `plan.json` `thresholds.clef_flash_q8_0_w1`. Verify: a unit test reproduces the value from the committed input, and fails when one healthy score is changed.
+- [x] 2.2 Fit the candidate A threshold by the same rule on the committed candidate A scores. Write it to `plan.json` `thresholds.word_check_a`. Verify: the value equals the Experiment 38 single-threshold result 0.8834080717, else stop and report the difference.
+- [x] 2.3 Commit the frozen thresholds. Verify: the commit precedes any file under `corpus/`.
 
 ## 3. Document sourcing and labels (local only)
 

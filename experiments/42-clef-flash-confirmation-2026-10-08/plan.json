@@ -145,7 +145,7 @@
             4,
             30
           ],
-          "source": "NASA NTRS citations search API, published 2010-2024, downloads available, stiType TECHNICAL_REPORT or CONFERENCE_PAPER; candidate list = first 300 by NTRS id ascending for query 'report'; random.Random(42).shuffle; PDF from downloads[].links.pdf; US government work"
+          "source": "NASA NTRS citations search API, query 'report', published.gte/published.lte = 2010-01-01 to 2024-12-31; first 300 records (three pages of 100), deduplicated, sorted by NTRS id ascending, random.Random(42).shuffle; keep records with distribution PUBLIC, a PDF download, a copyright record with no author, contractor, publisher or third-party flag, and stiType not PRESENTATION, POSTER or ABSTRACT; PDF from downloads[].links.pdf"
         },
         "scan_with_text_layer": {
           "quota": 12,
@@ -153,7 +153,7 @@
             4,
             30
           ],
-          "source": "NASA NTRS citations search API, published 1955-1985, same rule as mixed with query 'report'; scans with NTRS OCR layers"
+          "source": "NASA NTRS citations search API, query 'report', published.gte/published.lte = 1955-01-01 to 1985-12-31; first 300 records (three pages of 100), deduplicated, sorted by NTRS id ascending, random.Random(42).shuffle; keep records with distribution PUBLIC, a PDF download, a copyright record with no author, contractor, publisher or third-party flag, and stiType not PRESENTATION, POSTER or ABSTRACT; PDF from downloads[].links.pdf; scans with NTRS OCR layers"
         },
         "old_ocr_layer": {
           "quota": 18,
@@ -164,7 +164,8 @@
           "source": "Archive.org advancedsearch, mediatype:texts, licenseurl contains publicdomain, imagecount 4-30, item has a 'Text PDF' file; six groups of 3: Arabic, Urdu, Persian, Hindi, Bengali (language codes and names), and handwriting (subject:manuscript OR subject:handwriting OR subject:letters); per group, first 200 identifiers ascending, random.Random(42).shuffle, take in order"
         }
       },
-      "extension": "if task 3.7 misses a D3 target, continue down the same ordered lists (born_digital and mixed for healthy pages and usable documents; old_ocr_layer groups in round-robin for junk targets) and label the added documents; no candidate score exists at that point. Each extension round is listed in SOURCING.md and amendments."
+      "extension": "if task 3.7 misses a D3 target, continue down the same ordered lists (born_digital and mixed for healthy pages and usable documents; old_ocr_layer groups in round-robin for junk targets) and label the added documents; no candidate score exists at that point. Each extension round is listed in SOURCING.md and amendments.",
+      "revision_note": "2026-10-09, before any download: the NTRS stiType filter (TECHNICAL_REPORT, CONFERENCE_PAPER) matched almost no records because NTRS uses other type names; replaced by the copyright-field rule above. The OpenAlex and Archive.org lists are unchanged."
     },
     "procedure_status": "approved 2026-10-09",
     "exclusion": "any SHA-256 or source identifier in experiments/33-ocr-routing-natural-positive-2026-09-17/sources.json",
