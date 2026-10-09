@@ -145,7 +145,7 @@ Exact binomial and Wilson intervals, computed for this plan. More pages narrow t
 | Rescued junk LiteParse pages | ≥ 60 | McNemar and recall on more than one document's pages |
 | Rescued healthy LiteParse pages | ≥ 300 | G3 ceiling 6 pages; reported only (OD1 option A) |
 | Largest one-document share of junk pages | ≤ 25% | Experiment 38: `rf06` held 46% |
-| Overlap with Experiment 33 and 38 | 0 | SHA-256 and source identifier |
+| Overlap with Experiment 33 (Experiment 38 used the same 40 documents) | 0 | SHA-256 and source identifier |
 
 These targets are set from page and document counts only, before any label exists. They are lower than the first targets because the rescued population is small: 8 of the first 130 documents. G3 precision is lower as a result; at 300 healthy pages and a true rate of 2%, the 95% interval is about 1.0% to 4.3%. G3 does not decide the verdict (OD1).
 

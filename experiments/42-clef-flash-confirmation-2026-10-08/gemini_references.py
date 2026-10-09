@@ -102,6 +102,8 @@ def main() -> int:
         }
         for future in as_completed(futures):
             doc, page = futures[future]
+            if future.cancelled():
+                continue
             try:
                 record = future.result()
             except LABELLER.AccountError as exc:

@@ -185,7 +185,7 @@
     }
   },
   "labelling": {
-    "render": "pypdfium2, long side exactly 1600 px (the effect of pdftoppm -r 150 -scale-to 1600; amendment A3)",
+    "render": "pdftoppm -r 150 -scale-to 1600 (amendment A9; A3 withdrawn)",
     "reference_engine": "google/gemini-3.8-flash via OpenRouter, Experiment 33 label_pages.py PROMPT, SPLIT_PROMPT and _transcribe imported unchanged (temperature 0, JSON output, reasoning effort low)",
     "reference_engine_status": "OD2 revised by amendment A7, 2026-10-09",
     "body_text_rule": {
@@ -204,7 +204,7 @@
       "on_fail": "stop; amendment before any score"
     },
     "freeze": "this experiment's freeze.py --check before every later step",
-    "network": "none",
+    "network": "OpenRouter google/gemini-3.8-flash for reference transcription only (A7); scored arms run locally",
     "population": "rescued documents only (A8): the first 8 from the original 130 plus the screened ones; the other 122 original documents are not labelled (budget) and are reported as counts",
     "budget_usd_cap": 9.0
   },

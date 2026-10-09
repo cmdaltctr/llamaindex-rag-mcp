@@ -5,7 +5,7 @@
 - **Date**: 2026-10-09
 - **Protocol**: [`protocol.md`](protocol.md), plan [`plan.json`](plan.json) (amendments A1 to A9)
 - **OpenSpec change**: `experiment-42-clef-flash-confirmation`
-- **Source of every number**: `output/summary.json` (tables printed by `analysis.py` into `output/report_tables.md`)
+- **Source of every number**: `output/summary.json` supplies the evaluation tables (printed by `analysis.py` into `output/report_tables.md`). The other figures come from `output/set_check.json` (targets), `output/gemini_spend.json` (reference cost), `output/speed.json` (timing), `output/label_check.json` (label sample) and `output/diagnostic_all_pages.json` (post-verdict diagnostic).
 
 ## What was tested
 

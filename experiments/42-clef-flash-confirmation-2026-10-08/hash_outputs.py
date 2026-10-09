@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from exp42_io import OUTPUT, atomic_json, read_json, sha256
+from score_arms import FAIL_SHARE
 
 FILES = ("candidate_a.json", "clef_flash.json", "speed.json", "control_routing.json", "labels.json")
 
@@ -15,6 +16,8 @@ def main() -> None:
         expected = sum(r["class"] in {"junk", "healthy"} for r in labels["rows"])
         if len(payload["rows"]) + len(payload["failed"]) != expected:
             raise SystemExit(f"{name} is incomplete")
+        if len(payload["failed"]) > FAIL_SHARE * expected:
+            raise SystemExit(f"{name} exceeds the scoring failure limit")
     atomic_json(OUTPUT / "output_hashes.json", {"files": {n: sha256(OUTPUT / n) for n in FILES}})
     print("output hashes written", flush=True)
 
