@@ -62,6 +62,23 @@ The word check came within one document of passing the primary gates. It missed 
 - **Reference engine change (A7) and poppler (A9).** The labels come from the Experiment 33 procedure, imported unchanged and run on this machine's poppler 26.10.0. Experiment 33 used an earlier poppler build.
 - **Population change (A8).** The gates were restated for rescued documents before any label existed. The fast-path and OCR-routed documents (122 of the first 130) are outside this test.
 
+## Post-verdict diagnostic D1: every rescued page scored
+
+This diagnostic was run after the verdict. It does not change the verdict (`diagnostic_all_pages.py`, `output/diagnostic_all_pages.json`).
+
+The pre-registered routing simulation counts flags only on pages labelled junk or healthy. Production would score every rescued page. D1 scored all 602 non-empty LiteParse pages of the 68 rescued documents at the frozen thresholds, then applied the unchanged 10% routing share.
+
+| Arm | Junk-layer documents missed (G1) | Usable documents sent to OCR (G2) |
+| --- | --- | --- |
+| Word check (A) | `rs37` | `rs23`, `rs49` |
+| Clef-flash Q8_0 W1 | `rs06`, `rs10`, `rs17`, `rs58` | `rs11`, `rs23`, `rs32`, `rs34`, `rs49`, `rs57`, `rs59`, `st08` |
+
+**Reading.** Scoring every page does not change the result. Clef-flash routes `rs08` and `rs51`, but it flags 0 of the 20 pages of `rs06`, `rs10`, `rs17` and `rs58`. Those are Sevilla archive items with garbled old Latin and Spanish OCR, and Clef-flash scores them between 0.07 and 0.23, above the 0.0577 threshold. More usable documents route (8, not 6). The word check gets slightly worse (2 usable documents now route), but it stays well ahead of Clef-flash.
+
+**Cause.** The two Clef-flash failures share one cause. The W1 question asks whether text is readable writing in a natural language. The labels ask whether the text layer matches the printed page. Old OCR that keeps word-like Latin or Spanish passes the first question and fails the second. Faithful non-prose text (chart axes, grammar formulas, verse, a page-number index) fails the first question and passes the second. All 11 rescued healthy pages that Clef-flash flagged in the main run are text of this kind, with body recall 0.83 to 1.00.
+
+**Implication for a future proposal.** A rescue-quality check should measure faithfulness to the page, not how much the text looks like prose. A routing rule should also not send a short document to OCR on one flagged page. Either change is a new experiment on new documents.
+
 ## Conclusion and next action
 
 H1 and H2 fail; H3 (secondary) fails. Clef-flash Q8_0 W1 at the frozen threshold is not adopted as the rescue-quality gate.

@@ -1,0 +1,993 @@
+{
+  "thresholds": {
+    "A": 0.8834080717488789,
+    "clef": 0.057655346865763686
+  },
+  "arms": {
+    "A": {
+      "G1_missed_junk_layer_documents": [
+        "rs37"
+      ],
+      "G2_usable_documents_routed": [
+        "rs23",
+        "rs49"
+      ],
+      "routing": {
+        "st02": {
+          "pages": 10,
+          "flagged_pages": 2,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "st03": {
+          "pages": 29,
+          "flagged_pages": 1,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "st04": {
+          "pages": 4,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "st07": {
+          "pages": 12,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "st08": {
+          "pages": 10,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "st12": {
+          "pages": 7,
+          "flagged_pages": 3,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "oo02": {
+          "pages": 7,
+          "flagged_pages": 7,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "oo15": {
+          "pages": 12,
+          "flagged_pages": 5,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs01": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs02": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs03": {
+          "pages": 4,
+          "flagged_pages": 3,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs04": {
+          "pages": 6,
+          "flagged_pages": 2,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs05": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs06": {
+          "pages": 4,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs07": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs08": {
+          "pages": 12,
+          "flagged_pages": 11,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs09": {
+          "pages": 5,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs10": {
+          "pages": 4,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs11": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs12": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs13": {
+          "pages": 24,
+          "flagged_pages": 22,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs14": {
+          "pages": 7,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs15": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs16": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs17": {
+          "pages": 8,
+          "flagged_pages": 8,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs18": {
+          "pages": 9,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs19": {
+          "pages": 9,
+          "flagged_pages": 2,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs20": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs21": {
+          "pages": 4,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs22": {
+          "pages": 7,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs23": {
+          "pages": 9,
+          "flagged_pages": 1,
+          "routed": true,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs24": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs25": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs26": {
+          "pages": 30,
+          "flagged_pages": 2,
+          "routed": false,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs27": {
+          "pages": 9,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs28": {
+          "pages": 5,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs29": {
+          "pages": 4,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs30": {
+          "pages": 28,
+          "flagged_pages": 5,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs31": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs32": {
+          "pages": 9,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs33": {
+          "pages": 4,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs34": {
+          "pages": 3,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs35": {
+          "pages": 17,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs36": {
+          "pages": 7,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs37": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs38": {
+          "pages": 22,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs39": {
+          "pages": 5,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs40": {
+          "pages": 4,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs41": {
+          "pages": 3,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs42": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs43": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs44": {
+          "pages": 4,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs45": {
+          "pages": 12,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs46": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs47": {
+          "pages": 9,
+          "flagged_pages": 3,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs48": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs49": {
+          "pages": 13,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs50": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs51": {
+          "pages": 8,
+          "flagged_pages": 5,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs52": {
+          "pages": 4,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs53": {
+          "pages": 4,
+          "flagged_pages": 3,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs54": {
+          "pages": 12,
+          "flagged_pages": 12,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs55": {
+          "pages": 12,
+          "flagged_pages": 12,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs56": {
+          "pages": 4,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs57": {
+          "pages": 28,
+          "flagged_pages": 1,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs58": {
+          "pages": 4,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs59": {
+          "pages": 21,
+          "flagged_pages": 1,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs60": {
+          "pages": 4,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        }
+      }
+    },
+    "clef": {
+      "G1_missed_junk_layer_documents": [
+        "rs06",
+        "rs10",
+        "rs17",
+        "rs58"
+      ],
+      "G2_usable_documents_routed": [
+        "rs11",
+        "rs23",
+        "rs32",
+        "rs34",
+        "rs49",
+        "rs57",
+        "rs59",
+        "st08"
+      ],
+      "routing": {
+        "st02": {
+          "pages": 10,
+          "flagged_pages": 2,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "st03": {
+          "pages": 29,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "st04": {
+          "pages": 4,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "st07": {
+          "pages": 12,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "st08": {
+          "pages": 10,
+          "flagged_pages": 1,
+          "routed": true,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "st12": {
+          "pages": 7,
+          "flagged_pages": 7,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "oo02": {
+          "pages": 7,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "oo15": {
+          "pages": 12,
+          "flagged_pages": 8,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs01": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs02": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs03": {
+          "pages": 4,
+          "flagged_pages": 1,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs04": {
+          "pages": 6,
+          "flagged_pages": 2,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs05": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs06": {
+          "pages": 4,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs07": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs08": {
+          "pages": 12,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs09": {
+          "pages": 5,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs10": {
+          "pages": 4,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs11": {
+          "pages": 6,
+          "flagged_pages": 1,
+          "routed": true,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs12": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs13": {
+          "pages": 24,
+          "flagged_pages": 10,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs14": {
+          "pages": 7,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs15": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs16": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs17": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs18": {
+          "pages": 9,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs19": {
+          "pages": 9,
+          "flagged_pages": 9,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs20": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs21": {
+          "pages": 4,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs22": {
+          "pages": 7,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs23": {
+          "pages": 9,
+          "flagged_pages": 2,
+          "routed": true,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs24": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs25": {
+          "pages": 6,
+          "flagged_pages": 1,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs26": {
+          "pages": 30,
+          "flagged_pages": 3,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs27": {
+          "pages": 9,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs28": {
+          "pages": 5,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs29": {
+          "pages": 4,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs30": {
+          "pages": 28,
+          "flagged_pages": 7,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs31": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs32": {
+          "pages": 9,
+          "flagged_pages": 1,
+          "routed": true,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs33": {
+          "pages": 4,
+          "flagged_pages": 2,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs34": {
+          "pages": 3,
+          "flagged_pages": 1,
+          "routed": true,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs35": {
+          "pages": 17,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs36": {
+          "pages": 7,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs37": {
+          "pages": 6,
+          "flagged_pages": 2,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs38": {
+          "pages": 22,
+          "flagged_pages": 4,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs39": {
+          "pages": 5,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs40": {
+          "pages": 4,
+          "flagged_pages": 1,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs41": {
+          "pages": 3,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs42": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs43": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs44": {
+          "pages": 4,
+          "flagged_pages": 1,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs45": {
+          "pages": 12,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs46": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs47": {
+          "pages": 9,
+          "flagged_pages": 9,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs48": {
+          "pages": 6,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs49": {
+          "pages": 13,
+          "flagged_pages": 3,
+          "routed": true,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs50": {
+          "pages": 8,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs51": {
+          "pages": 8,
+          "flagged_pages": 3,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs52": {
+          "pages": 4,
+          "flagged_pages": 2,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs53": {
+          "pages": 4,
+          "flagged_pages": 1,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs54": {
+          "pages": 12,
+          "flagged_pages": 1,
+          "routed": false,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs55": {
+          "pages": 12,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs56": {
+          "pages": 4,
+          "flagged_pages": 1,
+          "routed": true,
+          "label": "ambiguous",
+          "junk_text_layer": false
+        },
+        "rs57": {
+          "pages": 28,
+          "flagged_pages": 7,
+          "routed": true,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs58": {
+          "pages": 4,
+          "flagged_pages": 0,
+          "routed": false,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        },
+        "rs59": {
+          "pages": 21,
+          "flagged_pages": 7,
+          "routed": true,
+          "label": "usable",
+          "junk_text_layer": false
+        },
+        "rs60": {
+          "pages": 4,
+          "flagged_pages": 2,
+          "routed": true,
+          "label": "needs_ocr",
+          "junk_text_layer": true
+        }
+      }
+    }
+  },
+  "pages_scored": 602,
+  "pages_empty": 10
+}
