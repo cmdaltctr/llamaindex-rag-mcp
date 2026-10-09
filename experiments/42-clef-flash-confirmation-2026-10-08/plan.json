@@ -1,10 +1,10 @@
 {
   "experiment_id": "42-clef-flash-confirmation-2026-10-08",
   "protocol_version": 1,
-  "status": "planned",
+  "status": "running",
   "change_ref": "openspec/changes/experiment-42-clef-flash-confirmation",
   "niftypm": null,
-  "question": "Does Clef-flash Q8_0 with wording W1, at a threshold frozen on Experiment 38, pass the rescue-quality gates on documents it has never seen?",
+  "question": "Does the text-quality check (Clef-flash Q8_0, wording W1, threshold frozen on Experiment 38) tell junk text layers from healthy ones well enough to pass the routing gates on documents it has never seen? Not an OCR test: the reference transcription is a measuring tool only.",
   "prior_evidence": {
     "experiment": "38-rescue-quality-signal-2026-09-30",
     "verdict": "FAIL",
@@ -173,14 +173,13 @@
     "storage": "corpus/ (gitignored)"
   },
   "labelling": {
-    "render": "poppler pdftoppm, 150 dpi, 1600 px long side, PNG",
-    "reference_engine": "dots-mocr via the shipped OCR worker host path (omrg.capabilities.build_ocr_routes, primary route only, no fallback), one page per request, HF_HUB_OFFLINE=1",
-    "reference_engine_status": "OD2 approved 2026-10-09",
+    "render": "pypdfium2, long side exactly 1600 px (the effect of pdftoppm -r 150 -scale-to 1600; amendment A3)",
+    "reference_engine": "google/gemini-3.8-flash via OpenRouter, Experiment 33 label_pages.py PROMPT, SPLIT_PROMPT and _transcribe imported unchanged (temperature 0, JSON output, reasoning effort low)",
+    "reference_engine_status": "OD2 revised by amendment A7, 2026-10-09",
     "body_text_rule": {
-      "written": "2026-10-09, before any split",
-      "rule": "Body text is the dots.mocr page Markdown produced by the shipped engine layout converter (omrg_ocr_dots_mocr.layout, CONVERTER_VERSION 1). The converter drops Picture cells (text inside figures, charts, drawings) and Page-header and Page-footer cells; it keeps Title, Section-header, Text, List-item, Table, Formula, Caption and Footnote. Before tokenising, HTML tags inside Table cells are replaced by a space (regex <[^>]+>), so tag names never count as reference tokens.",
-      "difference_from_experiment_33": "Experiment 33 counted page headers and footers as body text; here they are dropped by the engine. Recall measures how many reference tokens the rescue text holds, so a header present only in the rescue text does not change recall.",
-      "page_illegible": "dots.mocr returned an empty page (token cap, unparsable layout or worker error) while the LiteParse or pypdf text holds 10 or more tokens. An empty reference on a page whose rescue texts both hold fewer than 10 tokens is treated as a page with no text (reference below 10 tokens)."
+      "written": "2026-10-09, revised by A7 before any split",
+      "rule": "Experiment 33 procedure. Pass 1: full transcription (PROMPT) of every page; page label from Experiment 33 page_label on the full transcription, r_best = max recall of LiteParse and pypdf text (A4). Pass 2: pages labelled needs_ocr or ambiguous get the body/figure split (SPLIT_PROMPT); their label is recomputed on body_text. Reference for rescue-page classes: split body_text where a split exists, else the full transcription (Experiment 38 score_candidates.body_reference rule).",
+      "superseded": "the dots.mocr layout rule written earlier on 2026-10-09; never applied to any label"
     },
     "body_text_rule_status": "written 2026-10-09",
     "operator_check": {
@@ -301,7 +300,7 @@
       "record failed gate and pages; stop text-only rescue-signal work"
     ]
   ],
-  "cloud": "none; every arm and the reference transcription run on this machine",
+  "cloud": "reference transcription only (amendment A7): page images of open-licence and public-domain documents go to OpenRouter google/gemini-3.8-flash; every scored arm runs on this machine",
   "production_change": "none; a PASS opens a separate proposal and ADR",
   "decision_register": [
     {
@@ -316,9 +315,10 @@
       "id": "OD2",
       "item": "reference transcription engine: dots.mocr, another local engine, or a hosted model by amendment",
       "recommendation": "dots.mocr",
-      "status": "APPROVED: dots.mocr, local (ADR-072 engine, provisioned in this worktree from ocr-workers/engines/dots-mocr/uv.lock, model revision e539fbb52280393adc081b289ec597430a0f9031)",
+      "status": "APPROVED (revised 2026-10-09 by amendment A7): google/gemini-3.8-flash on OpenRouter, the Experiment 33 labelling procedure; page images leave the machine",
       "date": "2026-10-09",
-      "by": "operator"
+      "by": "operator",
+      "history": "first approved 2026-10-09 as dots.mocr local; replaced before any label existed (A7)"
     },
     {
       "id": "OD3",
@@ -365,6 +365,28 @@
       "date": "2026-10-09",
       "status": "RECORDED (procedure extension rule, applied early)",
       "item": "The first sourcing round gave 85 documents and 1,198 pages. At the Experiment 38 healthy share (about 50%), this projects below the 1,000 healthy-page target. Before any label exists, the extension rule in sourcing.procedure is applied early on this page-count projection only: born_digital +30 and mixed +15 documents, taken further down the same ordered lists. No label, recall or candidate score was read to make this decision. Task 3.7 still checks every D3 target on the final set."
+    },
+    {
+      "id": "A7",
+      "date": "2026-10-09",
+      "status": "APPROVED by operator",
+      "item": "Reference engine changed from local dots.mocr to google/gemini-3.8-flash on OpenRouter, before any label or score existed. Reason: dots.mocr ran at 40 to 60 s per page (about 21 hours for 1,711 pages, with an idle-sleep loss overnight). Gemini 3.8 Flash is the engine that labelled Experiments 33 and 38, so the labels behind the frozen threshold and the labels here come from one engine. All 1,711 pages are labelled by Gemini only. The 416 dots.mocr pages already transcribed are kept as a cross-check of class agreement; they never set a label. Cost: page images of open-licence and public-domain documents leave the machine; estimated USD 5 to 10. The scored arms stay local."
     }
-  ]
+  ],
+  "scope": {
+    "under_test": "text-quality check on rescued text layers (Clef-flash Q8_0 W1; comparator candidate A; control production today)",
+    "held_fixed": [
+      "LiteParse (OCR off) and pypdf readers",
+      "shipped normaliser",
+      "0.10 routing fraction",
+      "gates",
+      "frozen thresholds"
+    ],
+    "measuring_tool_only": "reference transcription (google/gemini-3.8-flash, amendment A7); its quality is not scored",
+    "not_decided_here": [
+      "OCR engine choice",
+      "reader quality",
+      "routing fraction"
+    ]
+  }
 }

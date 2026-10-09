@@ -3,7 +3,7 @@
 - **ID**: `42-clef-flash-confirmation-2026-10-08`
 - **Date planned**: 2026-10-08
 - **Operator**: Dr Muhammad Aizat Bin Md Hawari, with Claude Code (plan)
-- **Status**: PLANNED. Not ready to run: operator decisions OD1 to OD3 are open.
+- **Status**: RUNNING. Operator decisions OD1 to OD3 recorded 2026-10-09; amendments A1 to A7 in `plan.json`.
 - **Relation**: OpenSpec change `experiment-42-clef-flash-confirmation`; Experiment 38 (FAIL); ADR-071 decision 3; TDR-024; ADR-072; ADR-074 (Proposed)
 - **Plan**: [`plan.json`](plan.json)
 
@@ -12,6 +12,16 @@
 Experiment 38 ended FAIL. Clef-flash on llama.cpp Q8_0 with wording W1 (candidate J) caught 64 of 89 junk pages and sent no usable document to OCR. It passed G1 and G2. It flagged 13 of 565 healthy pages against an 11-page ceiling (2.3%), so it failed G3 by two pages. Every number came from the same 40 documents, and `rf06` held 41 of the 89 junk pages.
 
 The gates do not move after a run. This experiment tests the same signal, with a threshold frozen before the run, on documents it has never seen. It answers one question: does Clef-flash Q8_0 W1 pass the gates on new data?
+
+## What this experiment tests
+
+This experiment does not test OCR. It tests a text-quality check.
+
+- **Question.** A PDF reader has already extracted a text layer from a page. Can Clef-flash read the first 2,000 characters of that text and tell readable writing from garbage? Is it accurate enough that the rescue chain sends those documents to OCR, in place of keeping the bad text?
+- **Under test.** The check: Clef-flash Q8_0, wording W1, threshold frozen at 0.0577. The comparator is the word check (candidate A). The control is production today, which keeps every rescued text.
+- **Held fixed.** The readers (LiteParse with OCR off, pypdf), the shipped normaliser, the `0.10` routing fraction, the gates and both thresholds.
+- **Measuring tool only.** The reference transcription gives each page its true class (junk, healthy or grey). Its quality is never scored, and no OCR engine is compared. The reference engine is the one that labelled Experiments 33 and 38 (`google/gemini-3.8-flash`, amendment A7). The labels behind the frozen threshold and the labels in this test then come from the same engine.
+- **Not decided here.** Which OCR engine to use, reader quality and the routing fraction.
 
 ## Hypotheses
 
