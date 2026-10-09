@@ -15,19 +15,28 @@ The gates do not move after a run. This experiment tests the same signal, with a
 
 ## What this experiment tests
 
-This experiment does not test OCR. It tests a text-quality check.
+This experiment does not test OCR. It tests a text-quality check on rescued text.
 
-- **Question.** A PDF reader has already extracted a text layer from a page. Can Clef-flash read the first 2,000 characters of that text and tell readable writing from garbage? Is it accurate enough that the rescue chain sends those documents to OCR, in place of keeping the bad text?
-- **Under test.** The check: Clef-flash Q8_0, wording W1, threshold frozen at 0.0577. The comparator is the word check (candidate A). The control is production today, which keeps every rescued text.
-- **Held fixed.** The readers (LiteParse with OCR off, pypdf), the shipped normaliser, the `0.10` routing fraction, the gates and both thresholds.
-- **Measuring tool only.** The reference transcription gives each page its true class (junk, healthy or grey). Its quality is never scored, and no OCR engine is compared. The reference engine is the one that labelled Experiments 33 and 38 (`google/gemini-3.8-flash`, amendment A7). The labels behind the frozen threshold and the labels in this test then come from the same engine.
-- **Not decided here.** Which OCR engine to use, reader quality and the routing fraction.
+**Where the check sits.** pdf-inspector reads every PDF, and its text is kept for most documents. Sometimes pdf-inspector fails silently: it classifies a document as text-based and extracts nothing. This happens mostly on old scans with an invisible OCR layer (TDR-024). The chain then rescues the document with LiteParse, or with pypdf if LiteParse also fails (ADR-066). The rescue returns whatever the hidden OCR layer holds. Production trusts that text, marks no page as needing OCR, and indexes it. If the old OCR layer is garbage, garbage is indexed. Clef-flash is the proposed check right after the rescue (ADR-071 decision 3).
+
+- **Question.** When production rescues a document, can Clef-flash read the rescued page text and tell readable writing from garbage, well enough to send junk documents to OCR without sending good documents?
+- **Under test.** The check: Clef-flash Q8_0, wording W1, threshold frozen at 0.0577. Comparator: the word check (candidate A), threshold frozen at 0.8834. Control: production today, which keeps every rescued text.
+- **Population (amendment A8).** Documents that the shipped reader chain rescues: `extraction_fallback_backend` is `liteparse` or `pypdf` in the control run. Documents that production keeps on the pdf-inspector fast path, or already sends to OCR, never reach the check. They are outside this test and are reported as counts only.
+- **Held fixed.** The readers, the shipped normaliser, the `0.10` routing fraction, the gates and both thresholds.
+- **Measuring tool only.** The reference transcription gives each page its true class (junk, healthy or grey). Its quality is never scored, and no OCR engine is compared. The reference engine is `google/gemini-3.8-flash`, the engine that labelled Experiments 33 and 38 (amendment A7). The labels behind the frozen threshold and the labels in this test then come from one engine.
+- **Not decided here.** Which OCR engine to use, reader quality, the routing fraction, and a quality check on fast-path text.
 
 ## Hypotheses
 
-1. **H1 (primary).** Clef-flash Q8_0 W1, at the threshold frozen on Experiment 38, passes every primary gate on the new set (primary gates follow OD1).
-2. **H2 (margin).** Its junk recall beats candidate A by at least 0.10, with an exact one-sided McNemar test on junk pages at p < 0.05.
-3. **H3 (control).** Production today (TDR-024) leaves at least four documents with a junk text layer on the fast path. This confirms the set holds the failure the change targets.
+All hypotheses apply to the rescued population (amendment A8) at the frozen thresholds.
+
+1. **H1 (primary, gates G1 and G2).** Clef-flash sends every rescued document with a junk text layer to OCR (G1), and sends no rescued `usable` document to OCR (G2).
+   - **H1₀ (null).** At least one rescued junk-layer document stays on the fast path, or at least one rescued `usable` document is newly sent to OCR.
+2. **H2 (primary, adoption margin).** On rescued junk pages, Clef-flash junk recall is at least 0.10 higher than the word check, and an exact one-sided McNemar test gives p < 0.05.
+   - **H2₀ (null).** The recall gain is below 0.10, or p ≥ 0.05.
+3. **H3 (secondary, gate G3, OD1 option A).** On rescued healthy pages, Clef-flash flags at most 2%. The result and its 95% interval are reported and do not decide the verdict.
+
+**PASS** needs H1 and H2. Anything else is FAIL (design D10).
 
 ## Background
 
@@ -127,13 +136,26 @@ Expected size: 2,000 to 2,400 pages in 70 to 90 documents (Experiment 38: 50% of
 
 Exact binomial and Wilson intervals, computed for this plan. More pages narrow the estimate. They do not raise the chance of a pass. This is the reason for OD1.
 
+### Amendment A8: targets for the rescued population (supersede the table above)
+
+| Target | Value | Reason |
+| --- | --- | --- |
+| Rescued documents with a junk text layer | ≥ 6 | G1 must rest on more than Experiment 38's two (`rf06`, `rf07`) |
+| Rescued `usable` documents | ≥ 20 | G2 needs documents that the check could send to OCR by mistake |
+| Rescued junk LiteParse pages | ≥ 60 | McNemar and recall on more than one document's pages |
+| Rescued healthy LiteParse pages | ≥ 300 | G3 ceiling 6 pages; reported only (OD1 option A) |
+| Largest one-document share of junk pages | ≤ 25% | Experiment 38: `rf06` held 46% |
+| Overlap with Experiment 33 and 38 | 0 | SHA-256 and source identifier |
+
+These targets are set from page and document counts only, before any label exists. They are lower than the first targets because the rescued population is small: 8 of the first 130 documents. G3 precision is lower as a result; at 300 healthy pages and a true rate of 2%, the 95% interval is about 1.0% to 4.3%. G3 does not decide the verdict (OD1).
+
 ## Gates
 
 | Gate | Rule | Reason |
 | --- | --- | --- |
-| G1 | every document with a junk text layer routes | replaces "`rf06` and `rf07` both route" |
-| G2 | no `usable` document newly routes, compared with the control | a healthy document sent whole to OCR costs about 16 to 68 minutes at 25 pages |
-| G3 | healthy false-positive rate ≤ 0.02 at the frozen threshold | the page-level ceiling from Experiment 38 |
+| G1 | every rescued document with a junk text layer routes (A8) | replaces "`rf06` and `rf07` both route" |
+| G2 | no rescued `usable` document newly routes, compared with the control (A8) | a healthy document sent whole to OCR costs about 16 to 68 minutes at 25 pages |
+| G3 | rescued healthy false-positive rate ≤ 0.02 at the frozen threshold (secondary, OD1) | the page-level ceiling from Experiment 38 |
 | Margin | Clef-flash junk recall ≥ A + 0.10, exact one-sided McNemar p < 0.05 | unchanged from Experiment 38 |
 
 Routing is simulated with the unchanged `0.10` fraction. A document routes when flagged pages that the shipped chain rescued reach 10% of its pages, or when the control already routes it. The control routes come from the shipped gate on the new documents, at a pinned commit.
@@ -217,7 +239,9 @@ A PASS changes nothing in production by itself. Under OD1 option A, a G3 rate ab
 
 ## Privacy and cloud
 
-None. Every arm and the reference transcription run on this machine. PDFs, renders, references and page text stay in gitignored folders. Committed files hold hashes, counts, scores and labels only.
+Reference transcription only (amendment A7): page images of open-licence and public-domain documents go to OpenRouter, model `google/gemini-3.8-flash`. Every scored arm runs on this machine. PDFs, renders, references and page text stay in gitignored folders. Committed files hold hashes, counts, scores and labels only.
+
+**Budget (amendment A8).** OpenRouter credit on 2026-10-09: USD 11.04. The Gemini runner stops when its spend reaches USD 9.00. If the cap stops labelling before every rescued page has a reference, the run stops before scoring and the report records the shortfall.
 
 ## Cleanup
 

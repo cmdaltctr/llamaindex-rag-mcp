@@ -4,7 +4,7 @@
   "status": "running",
   "change_ref": "openspec/changes/experiment-42-clef-flash-confirmation",
   "niftypm": null,
-  "question": "Does the text-quality check (Clef-flash Q8_0, wording W1, threshold frozen on Experiment 38) tell junk text layers from healthy ones well enough to pass the routing gates on documents it has never seen? Not an OCR test: the reference transcription is a measuring tool only.",
+  "question": "When production rescues a document (pdf-inspector fails silently and LiteParse or pypdf returns text), does Clef-flash Q8_0 W1 at the threshold frozen on Experiment 38 send rescued junk documents to OCR without sending rescued usable documents, and catch clearly more junk pages than the word check? Not an OCR test.",
   "prior_evidence": {
     "experiment": "38-rescue-quality-signal-2026-09-30",
     "verdict": "FAIL",
@@ -170,7 +170,19 @@
     "procedure_status": "approved 2026-10-09",
     "exclusion": "any SHA-256 or source identifier in experiments/33-ocr-routing-natural-positive-2026-09-17/sources.json",
     "selection_inputs": "metadata and labels only; no candidate score before the freeze",
-    "storage": "corpus/ (gitignored)"
+    "storage": "corpus/ (gitignored)",
+    "rescue_screen": {
+      "set": "2026-10-09, amendment A8, before any download in this round",
+      "lists": {
+        "acl": "ACL Anthology paper ids from volumes P89-1, P90-1, P91-1, H89-1, H90-1, H91-1, E89-1, E91-1, C90-1, C90-2, C90-3 (front matter x000 excluded), random.Random(42).shuffle; https://aclanthology.org/<id>.pdf; CC BY-NC-SA 3.0; pages 3-30",
+        "ia_sevilla": "Archive.org advancedsearch collection:(archivo-historico-universidad-sevilla OR bibliotecauniversitariadesevilla) AND imagecount:[4 TO 30] AND licenseurl:*publicdomain*, first 300 identifiers ascending, random.Random(42).shuffle; the item's Text PDF; pages 4-30",
+        "ntrs_scans": "the not-yet-tried remainder of output/candidates.json scan_with_text_layer, in its saved order; pages 4-30"
+      },
+      "order": "round-robin acl, ia_sevilla, ntrs_scans",
+      "keep_rule": "download, apply the Experiment 33 exclusion and duplicate rules, read once with the shipped read_documents (packaged settings, ocr_client=None); keep the document only when extraction_fallback_backend is not None; otherwise delete the file and log 'not rescued'",
+      "stop": "60 new rescued documents, or 30 rescued from one list (that list then stops), or 90 minutes of screening, or every list exhausted",
+      "selection_inputs": "the shipped reader's routing output only; no label, reference or score"
+    }
   },
   "labelling": {
     "render": "pypdfium2, long side exactly 1600 px (the effect of pdftoppm -r 150 -scale-to 1600; amendment A3)",
@@ -192,7 +204,9 @@
       "on_fail": "stop; amendment before any score"
     },
     "freeze": "this experiment's freeze.py --check before every later step",
-    "network": "none"
+    "network": "none",
+    "population": "rescued documents only (A8): the first 8 from the original 130 plus the screened ones; the other 122 original documents are not labelled (budget) and are reported as counts",
+    "budget_usd_cap": 9.0
   },
   "sample_size": {
     "healthy_pages_min": 1000,
@@ -223,7 +237,17 @@
       },
       "note": "a threshold fitted at 2% gives a rate near 2% on similar pages, so G3 is close to a coin toss at any size; this motivates OD1"
     },
-    "on_miss": "stop before scoring; extend sourcing or record a dated amendment with a new power statement"
+    "on_miss": "stop before scoring; extend sourcing or record a dated amendment with a new power statement",
+    "rescued_population_targets": {
+      "set": "2026-10-09, amendment A8, from counts only before any label",
+      "rescued_junk_layer_documents_min": 6,
+      "rescued_usable_documents_min": 20,
+      "rescued_junk_pages_min": 60,
+      "rescued_healthy_pages_min": 300,
+      "largest_document_share_of_junk_pages_max": 0.25,
+      "overlap_with_experiment_33": 0,
+      "supersedes": "healthy_pages_min, junk_pages_min, junk_text_layer_documents_min, junk_text_layer_documents_not_routed_by_control_min, usable_documents_min"
+    }
   },
   "routing_simulation": {
     "fraction": 0.1,
@@ -232,13 +256,13 @@
   },
   "gates": {
     "G1": {
-      "rule": "every document with a junk text layer routes"
+      "rule": "every rescued document with a junk text layer routes (A8)"
     },
     "G2": {
-      "rule": "no usable document newly routes, compared with the control arm"
+      "rule": "no rescued usable document newly routes, compared with the control arm (A8)"
     },
     "G3": {
-      "rule": "healthy false-positive rate <= 0.02 at the frozen threshold"
+      "rule": "rescued healthy false-positive rate <= 0.02 at the frozen threshold; secondary under OD1 A"
     },
     "margin": {
       "rule": "Clef-flash junk recall >= candidate A junk recall + 0.10, and exact one-sided McNemar on junk pages p < 0.05"
@@ -300,7 +324,7 @@
       "record failed gate and pages; stop text-only rescue-signal work"
     ]
   ],
-  "cloud": "reference transcription only (amendment A7): page images of open-licence and public-domain documents go to OpenRouter google/gemini-3.8-flash; every scored arm runs on this machine",
+  "cloud": "reference transcription only (A7): page images of open-licence and public-domain documents go to OpenRouter google/gemini-3.8-flash, spend capped at USD 9.00 (A8); every scored arm runs on this machine",
   "production_change": "none; a PASS opens a separate proposal and ADR",
   "decision_register": [
     {
@@ -371,6 +395,18 @@
       "date": "2026-10-09",
       "status": "APPROVED by operator",
       "item": "Reference engine changed from local dots.mocr to google/gemini-3.8-flash on OpenRouter, before any label or score existed. Reason: dots.mocr ran at 40 to 60 s per page (about 21 hours for 1,711 pages, with an idle-sleep loss overnight). Gemini 3.8 Flash is the engine that labelled Experiments 33 and 38, so the labels behind the frozen threshold and the labels here come from one engine. All 1,711 pages are labelled by Gemini only. The 416 dots.mocr pages already transcribed are kept as a cross-check of class agreement; they never set a label. Cost: page images of open-licence and public-domain documents leave the machine; estimated USD 5 to 10. The scored arms stay local."
+    },
+    {
+      "id": "A8",
+      "date": "2026-10-09",
+      "status": "APPROVED by operator",
+      "item": "Population, gates and targets restated for rescued documents, before any label or score. Clef-flash only sees text that the chain rescues after pdf-inspector fails silently (ADR-066, ADR-071 decision 3); only 8 of the first 130 documents were rescued, so the original document-level gates could not be decided. G1, G2 and G3 now apply to rescued documents only. More rescued documents are screened from ACL Anthology 1989-1991, Archive.org Sevilla collections and the NTRS scan list, kept by the shipped reader's own routing output. Labels cover the rescued population only, because OpenRouter credit is USD 11.04; the Gemini runner stops at USD 9.00. Known cost: G3 precision falls (about 300 healthy pages, not 1,000); fast-path documents are outside the test. The 55 Gemini pages transcribed before this amendment used pypdfium2 renders (A3) and born-digital documents outside the rescued population; they are deleted unused."
+    },
+    {
+      "id": "A9",
+      "date": "2026-10-09",
+      "status": "RECORDED",
+      "item": "poppler 26.10.0 installed (brew). Amendment A3 and A4 are withdrawn: page renders use pdftoppm (150 dpi, 1,600 px) and page labels use r_best over pdftotext and pypdf, exactly as Experiment 33, through its label_pages._process imported unchanged."
     }
   ],
   "scope": {
@@ -387,6 +423,25 @@
       "OCR engine choice",
       "reader quality",
       "routing fraction"
-    ]
+    ],
+    "population": "rescued documents: control-run extraction_fallback_backend is liteparse or pypdf (amendment A8)"
+  },
+  "hypotheses": {
+    "H1": {
+      "role": "primary",
+      "claim": "G1 and G2 pass on the rescued population",
+      "null": "a rescued junk-layer document stays on the fast path, or a rescued usable document newly routes"
+    },
+    "H2": {
+      "role": "primary",
+      "claim": "Clef-flash rescued junk recall >= word check + 0.10, exact one-sided McNemar p < 0.05",
+      "null": "gain < 0.10 or p >= 0.05"
+    },
+    "H3": {
+      "role": "secondary (OD1 A)",
+      "claim": "rescued healthy false-positive rate <= 0.02",
+      "reported_with": "Wilson and document-cluster 95% intervals"
+    },
+    "verdict": "PASS needs H1 and H2"
   }
 }
