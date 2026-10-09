@@ -359,6 +359,12 @@
       "date": "2026-10-09",
       "status": "RECORDED (no operator choice needed)",
       "item": "llama-server runs with -b 8192 -ub 8192. With the default 512-token batch in embedding mode, the server rejected 2,000-character heads above 512 tokens (HTTP 500). With the larger batch the 40 reproduction pages match the committed Experiment 38 scores with maximum absolute difference 0.0 (output/runtime_check.json)."
+    },
+    {
+      "id": "A6",
+      "date": "2026-10-09",
+      "status": "RECORDED (procedure extension rule, applied early)",
+      "item": "The first sourcing round gave 85 documents and 1,198 pages. At the Experiment 38 healthy share (about 50%), this projects below the 1,000 healthy-page target. Before any label exists, the extension rule in sourcing.procedure is applied early on this page-count projection only: born_digital +30 and mixed +15 documents, taken further down the same ordered lists. No label, recall or candidate score was read to make this decision. Task 3.7 still checks every D3 target on the final set."
     }
   ]
 }

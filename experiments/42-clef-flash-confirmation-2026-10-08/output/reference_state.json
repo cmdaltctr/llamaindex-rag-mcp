@@ -377,17 +377,66 @@
       "seconds": 168.48,
       "includes_start": false,
       "utc": "2026-10-09T00:16:54Z"
+    },
+    "oo02:3": {
+      "status": "ok",
+      "chars": 3851,
+      "seconds": 142.92,
+      "includes_start": false,
+      "utc": "2026-10-09T00:19:17Z"
+    },
+    "oo02:4": {
+      "status": "ok",
+      "chars": 3757,
+      "seconds": 106.53,
+      "includes_start": false,
+      "utc": "2026-10-09T00:21:03Z"
+    },
+    "oo02:5": {
+      "status": "ok",
+      "chars": 4243,
+      "seconds": 115.12,
+      "includes_start": false,
+      "utc": "2026-10-09T00:22:59Z"
+    },
+    "oo02:6": {
+      "status": "ok",
+      "chars": 4032,
+      "seconds": 110.62,
+      "includes_start": false,
+      "utc": "2026-10-09T00:24:49Z"
+    },
+    "oo02:7": {
+      "status": "ok",
+      "chars": 3075,
+      "seconds": 93.25,
+      "includes_start": false,
+      "utc": "2026-10-09T00:26:22Z"
+    },
+    "oo03:1": {
+      "status": "ok",
+      "chars": 265,
+      "seconds": 33.52,
+      "includes_start": true,
+      "utc": "2026-10-09T00:27:27Z"
+    },
+    "oo03:2": {
+      "status": "ok",
+      "chars": 376,
+      "seconds": 33.35,
+      "includes_start": false,
+      "utc": "2026-10-09T00:28:01Z"
     }
   },
-  "pid": 9648,
-  "started_utc": "2026-10-09T00:01:18Z",
+  "pid": 38179,
+  "started_utc": "2026-10-09T00:26:54Z",
   "finished_utc": null,
   "offline_env": {
     "HF_HUB_OFFLINE": "1",
     "TRANSFORMERS_OFFLINE": "1"
   },
-  "sources_sha256": "29351b589508104ff992840c3244aa92750143508630a97e71ea9b0384d2db51",
-  "total_pages": 1198,
+  "sources_sha256": "e8a18908315f36cc09c836287a9c147cc0ad0923d11bd12466d99379f49c1702",
+  "total_pages": 1711,
   "engine": {
     "backend_id": "dots_mocr",
     "model": [
@@ -411,5 +460,5 @@
       "transformers": "4.57.6"
     }
   },
-  "heartbeat_utc": "2026-10-09T00:16:54Z"
+  "heartbeat_utc": "2026-10-09T00:28:01Z"
 }

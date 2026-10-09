@@ -1,6 +1,6 @@
 {
   "identity": {
-    "commit": "bcc8b289e7073434c7d1db300d46327066c70d4f",
+    "commit": "3a646f6d667ebc5391bdcd4ae60ca687bda0cc7b",
     "src_tree": "646dc540f6b00a916fbd9ced66ad0c4dda3114b8",
     "packages": {
       "pdf-inspector": "1.17.0",
@@ -9,7 +9,7 @@
       "llama-index-core": "0.14.23"
     },
     "pdf_reader": "pdf_inspector",
-    "sources_sha256": "29351b589508104ff992840c3244aa92750143508630a97e71ea9b0384d2db51"
+    "sources_sha256": "e8a18908315f36cc09c836287a9c147cc0ad0923d11bd12466d99379f49c1702"
   },
   "rows": [
     {
@@ -861,6 +861,456 @@
       "extraction_fallback_backend": null,
       "ocr_required": false,
       "read_seconds": 1.295
+    },
+    {
+      "doc_id": "bd41",
+      "page_count": 11,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.781
+    },
+    {
+      "doc_id": "bd42",
+      "page_count": 15,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.039
+    },
+    {
+      "doc_id": "bd43",
+      "page_count": 11,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.067
+    },
+    {
+      "doc_id": "bd44",
+      "page_count": 9,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.19
+    },
+    {
+      "doc_id": "bd45",
+      "page_count": 8,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.058
+    },
+    {
+      "doc_id": "bd46",
+      "page_count": 6,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.254
+    },
+    {
+      "doc_id": "bd47",
+      "page_count": 9,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.09
+    },
+    {
+      "doc_id": "bd48",
+      "page_count": 15,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.079
+    },
+    {
+      "doc_id": "bd49",
+      "page_count": 7,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.027
+    },
+    {
+      "doc_id": "bd50",
+      "page_count": 16,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.09
+    },
+    {
+      "doc_id": "bd51",
+      "page_count": 8,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.031
+    },
+    {
+      "doc_id": "bd52",
+      "page_count": 9,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": true,
+      "read_seconds": 0.061
+    },
+    {
+      "doc_id": "bd53",
+      "page_count": 10,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.078
+    },
+    {
+      "doc_id": "bd54",
+      "page_count": 9,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.04
+    },
+    {
+      "doc_id": "bd55",
+      "page_count": 11,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.066
+    },
+    {
+      "doc_id": "bd56",
+      "page_count": 15,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.122
+    },
+    {
+      "doc_id": "bd57",
+      "page_count": 7,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.033
+    },
+    {
+      "doc_id": "bd58",
+      "page_count": 21,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": true,
+      "read_seconds": 0.102
+    },
+    {
+      "doc_id": "bd59",
+      "page_count": 7,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.084
+    },
+    {
+      "doc_id": "bd60",
+      "page_count": 15,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.048
+    },
+    {
+      "doc_id": "bd61",
+      "page_count": 9,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.314
+    },
+    {
+      "doc_id": "bd62",
+      "page_count": 6,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.383
+    },
+    {
+      "doc_id": "bd63",
+      "page_count": 8,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": true,
+      "read_seconds": 0.024
+    },
+    {
+      "doc_id": "bd64",
+      "page_count": 9,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.061
+    },
+    {
+      "doc_id": "bd65",
+      "page_count": 11,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.074
+    },
+    {
+      "doc_id": "bd66",
+      "page_count": 6,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.03
+    },
+    {
+      "doc_id": "bd67",
+      "page_count": 18,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.109
+    },
+    {
+      "doc_id": "bd68",
+      "page_count": 14,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.054
+    },
+    {
+      "doc_id": "bd69",
+      "page_count": 11,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 1,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.169
+    },
+    {
+      "doc_id": "bd70",
+      "page_count": 13,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.402
+    },
+    {
+      "doc_id": "mx16",
+      "page_count": 4,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": true,
+      "read_seconds": 0.009
+    },
+    {
+      "doc_id": "mx17",
+      "page_count": 17,
+      "pdf_type": "scanned",
+      "pages_needing_ocr": 17,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": true,
+      "read_seconds": 0.012
+    },
+    {
+      "doc_id": "mx18",
+      "page_count": 21,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.505
+    },
+    {
+      "doc_id": "mx19",
+      "page_count": 4,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": true,
+      "read_seconds": 0.011
+    },
+    {
+      "doc_id": "mx20",
+      "page_count": 15,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 7,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": true,
+      "read_seconds": 0.147
+    },
+    {
+      "doc_id": "mx21",
+      "page_count": 14,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.154
+    },
+    {
+      "doc_id": "mx22",
+      "page_count": 26,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.395
+    },
+    {
+      "doc_id": "mx23",
+      "page_count": 6,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.014
+    },
+    {
+      "doc_id": "mx24",
+      "page_count": 4,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": true,
+      "read_seconds": 0.01
+    },
+    {
+      "doc_id": "mx25",
+      "page_count": 24,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 5,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": true,
+      "read_seconds": 0.048
+    },
+    {
+      "doc_id": "mx26",
+      "page_count": 28,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 1,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": true,
+      "read_seconds": 1.691
+    },
+    {
+      "doc_id": "mx27",
+      "page_count": 6,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.019
+    },
+    {
+      "doc_id": "mx28",
+      "page_count": 5,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.014
+    },
+    {
+      "doc_id": "mx29",
+      "page_count": 5,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.042
+    },
+    {
+      "doc_id": "mx30",
+      "page_count": 10,
+      "pdf_type": "text_based",
+      "pages_needing_ocr": 0,
+      "pages_needing_ocr_before_fallback": null,
+      "extraction_fallback_backend": null,
+      "ocr_required": false,
+      "read_seconds": 0.012
     }
   ]
 }

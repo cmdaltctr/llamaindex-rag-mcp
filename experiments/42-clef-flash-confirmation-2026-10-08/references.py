@@ -127,8 +127,7 @@ def main() -> int:
             out = TEXT_DIR / doc["doc_id"] / f"p{page:03d}.md"
             theirs = read_json(other)["pages"] if other.is_file() else {}
             if theirs.get(key, {}).get("status") == "ok" and out.is_file():
-                print(f"[ref] lanes met at {key}", flush=True)
-                break
+                continue
             prior = done.get(key)
             if prior and (
                 (prior["status"] == "ok" and out.is_file())
