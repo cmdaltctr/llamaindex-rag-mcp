@@ -1,0 +1,57 @@
+{
+  "passed": true,
+  "targets": {
+    "rescued_junk_layer_documents_min": {
+      "observed": 19,
+      "target": 6,
+      "pass": true
+    },
+    "rescued_usable_documents_min": {
+      "observed": 36,
+      "target": 20,
+      "pass": true
+    },
+    "rescued_junk_pages_min": {
+      "observed": 76,
+      "target": 60,
+      "pass": true
+    },
+    "rescued_healthy_pages_min": {
+      "observed": 358,
+      "target": 300,
+      "pass": true
+    },
+    "largest_document_share_of_junk_pages_max": {
+      "observed": 0.11842105263157894,
+      "target": 0.25,
+      "pass": true
+    },
+    "overlap_with_experiment_33": {
+      "observed": 0,
+      "target": 0,
+      "pass": true
+    },
+    "rescued_junk_layer_documents": [
+      "st02",
+      "st12",
+      "oo02",
+      "oo15",
+      "rs06",
+      "rs08",
+      "rs10",
+      "rs13",
+      "rs17",
+      "rs19",
+      "rs29",
+      "rs30",
+      "rs33",
+      "rs37",
+      "rs47",
+      "rs51",
+      "rs52",
+      "rs58",
+      "rs60"
+    ],
+    "rescued_junk_layer_documents_already_routed_by_control": []
+  }
+}

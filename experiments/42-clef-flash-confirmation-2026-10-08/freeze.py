@@ -17,8 +17,14 @@ from pathlib import Path
 EXP_DIR = Path(__file__).resolve().parent
 MANIFEST = Path("output") / "frozen.manifest.json"
 FILES = ("sources.json", "output/rescue_text.json", "output/labels.json")
-FOLDERS = ("corpus", "output/.references", "output/.rescue_text")
-PLAN_KEYS = ("thresholds", "decision_register", "gates", "classes", "document_labels")
+FOLDERS = (
+    "corpus",
+    "output/.transcripts",
+    "output/.transcripts_split",
+    "output/.pages",
+    "output/.rescue_text",
+)
+PLAN_KEYS = ("thresholds", "decision_register", "gates", "classes", "document_labels", "hypotheses")
 
 
 def _sha256(path: Path) -> str:
