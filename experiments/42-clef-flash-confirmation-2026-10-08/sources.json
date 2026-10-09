@@ -703,6 +703,680 @@
       "sha256": "db9536a1f566605f4bb35fc1cb13b5e5ef01f9ed533929767662e9d0bac98616",
       "bytes": 596150,
       "local_path": "corpus/mx04.pdf"
+    },
+    {
+      "doc_id": "mx05",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20160014328",
+      "title": "Total Ionizing Dose Test Report BFR92A NPN 5 GHz Wide Band Transistor from NXP",
+      "year": 2011,
+      "landing_url": "https://ntrs.nasa.gov/citations/20160014328",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20160014328/downloads/20160014328.pdf",
+      "page_count": 18,
+      "sha256": "312874263c3f311a1e7bace94cf73a3fb7f4595d6c352b5c15c45decd2d4b6b7",
+      "bytes": 1321709,
+      "local_path": "corpus/mx05.pdf"
+    },
+    {
+      "doc_id": "mx06",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20110013690",
+      "title": "Applied Meteorology Unit (AMU) Quarterly Report",
+      "year": 2011,
+      "landing_url": "https://ntrs.nasa.gov/citations/20110013690",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20110013690/downloads/20110013690.pdf",
+      "page_count": 16,
+      "sha256": "40ecf26c1e9f21828565c67687dcefd5b072fdca15ade6f3aa39583e926fdcbf",
+      "bytes": 10664503,
+      "local_path": "corpus/mx06.pdf"
+    },
+    {
+      "doc_id": "mx07",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20205006748",
+      "title": "NASA Access 2 Space Workshop: Summary Report: Increased Science Return through Rideshare",
+      "year": 2020,
+      "landing_url": "https://ntrs.nasa.gov/citations/20205006748",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20205006748/downloads/A2S_Workshop_Results_Final%20Draft_20200817.pdf",
+      "page_count": 27,
+      "sha256": "5ddb111d03283f65138b8eb78d7a30e47a7e6ae2102c2917b779a483578766a4",
+      "bytes": 390855,
+      "local_path": "corpus/mx07.pdf"
+    },
+    {
+      "doc_id": "mx08",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20150003918",
+      "title": "Pulkovo IVS Analysis Center (PUL) 2012 Annual Report",
+      "year": 2013,
+      "landing_url": "https://ntrs.nasa.gov/citations/20150003918",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20150003918/downloads/20150003918.pdf",
+      "page_count": 4,
+      "sha256": "f368da1489ca097e8215aa65883ad74f2c971d71b28620d00e443f8cdd56c4f3",
+      "bytes": 84590,
+      "local_path": "corpus/mx08.pdf"
+    },
+    {
+      "doc_id": "mx09",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20110002901",
+      "title": "NASA USRP Internship Final Report",
+      "year": 2010,
+      "landing_url": "https://ntrs.nasa.gov/citations/20110002901",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20110002901/downloads/20110002901.pdf",
+      "page_count": 10,
+      "sha256": "b6cf09b17b2232148310ee1f7001ff1be8867a3cf4baffdb435778d6ef88a5c8",
+      "bytes": 1409360,
+      "local_path": "corpus/mx09.pdf"
+    },
+    {
+      "doc_id": "mx10",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20170003373",
+      "title": "Ncera-101 Station Report from Kennedy Space Center, FL, USA (April 2017)",
+      "year": 2017,
+      "landing_url": "https://ntrs.nasa.gov/citations/20170003373",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20170003373/downloads/20170003373.pdf",
+      "page_count": 4,
+      "sha256": "a106b2be618468def8d32c62f02d355f2537095582faff7389d8e25b7ef6a953",
+      "bytes": 310814,
+      "local_path": "corpus/mx10.pdf"
+    },
+    {
+      "doc_id": "mx11",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20140017857",
+      "title": "EMC Test Report: StangSat - CubeSat Program",
+      "year": 2013,
+      "landing_url": "https://ntrs.nasa.gov/citations/20140017857",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20140017857/downloads/20140017857.pdf",
+      "page_count": 23,
+      "sha256": "f194842c699e935a542f2a222087a0371ab179a29ed52c46dd67ad4f0c7ecc40",
+      "bytes": 1075783,
+      "local_path": "corpus/mx11.pdf"
+    },
+    {
+      "doc_id": "mx12",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20150003852",
+      "title": "IVS Technology Coordinator Report",
+      "year": 2013,
+      "landing_url": "https://ntrs.nasa.gov/citations/20150003852",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20150003852/downloads/20150003852.pdf",
+      "page_count": 5,
+      "sha256": "02fa47d3a5dabe0aeee6b1ae563f4068dd035efc0b6f585429d9d4a55be26690",
+      "bytes": 1448044,
+      "local_path": "corpus/mx12.pdf"
+    },
+    {
+      "doc_id": "mx13",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20180003088",
+      "title": "MagicDraw Report Generation for the Resource Prospector Payload",
+      "year": 2018,
+      "landing_url": "https://ntrs.nasa.gov/citations/20180003088",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20180003088/downloads/20180003088.pdf",
+      "page_count": 6,
+      "sha256": "14931ecb35d46461e921dc36ad58efe302bda12dcef7bf8fb7cec93e96530722",
+      "bytes": 350218,
+      "local_path": "corpus/mx13.pdf"
+    },
+    {
+      "doc_id": "mx14",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20210023307",
+      "title": "PyHC Integration Strategy Workshop Report",
+      "year": 2021,
+      "landing_url": "https://ntrs.nasa.gov/citations/20210023307",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20210023307/downloads/TM%2020210023307%20Final%20PDF.pdf",
+      "page_count": 26,
+      "sha256": "05355184043ac3ab56a31d211e2b886a2808d503ce07df3595d3175c08693e28",
+      "bytes": 531877,
+      "local_path": "corpus/mx14.pdf"
+    },
+    {
+      "doc_id": "mx15",
+      "stratum": "mixed",
+      "source": "ntrs",
+      "source_identifier": "20190002196",
+      "title": "New York City Panel on Climate Change 2019 Report Chapter 1: Introduction",
+      "year": 2019,
+      "landing_url": "https://ntrs.nasa.gov/citations/20190002196",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20190002196/downloads/20190002196.pdf",
+      "page_count": 8,
+      "sha256": "7f1e9e895ca9d44c1ffed540147c267fa14268d84d92da414fe7bdb77c0503d4",
+      "bytes": 749524,
+      "local_path": "corpus/mx15.pdf"
+    },
+    {
+      "doc_id": "st01",
+      "stratum": "scan_with_text_layer",
+      "source": "ntrs",
+      "source_identifier": "19630012124",
+      "title": "SATELLITE SITUATION REPORT, VOLUME 2, NO. 5",
+      "year": 1962,
+      "landing_url": "https://ntrs.nasa.gov/citations/19630012124",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19630012124/downloads/19630012124.pdf",
+      "page_count": 8,
+      "sha256": "76b5febf3b521d54bc1c4f717fef06874e8ecebadb542d56e8a0cecb453009da",
+      "bytes": 425418,
+      "local_path": "corpus/st01.pdf"
+    },
+    {
+      "doc_id": "st02",
+      "stratum": "scan_with_text_layer",
+      "source": "ntrs",
+      "source_identifier": "19800019270",
+      "title": "Transfer of Interactive Report Extracted Data (TIRED) requirements specification",
+      "year": 1976,
+      "landing_url": "https://ntrs.nasa.gov/citations/19800019270",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19800019270/downloads/19800019270.pdf",
+      "page_count": 10,
+      "sha256": "7017b1c40c9094fe805f9e1d25ef964c7a8752087e1f05e6061227400db860a5",
+      "bytes": 3732667,
+      "local_path": "corpus/st02.pdf"
+    },
+    {
+      "doc_id": "st03",
+      "stratum": "scan_with_text_layer",
+      "source": "ntrs",
+      "source_identifier": "19740009451",
+      "title": "IMP J summary technical report",
+      "year": 1973,
+      "landing_url": "https://ntrs.nasa.gov/citations/19740009451",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19740009451/downloads/19740009451.pdf",
+      "page_count": 29,
+      "sha256": "fb1696777cee3cb24a61e577d97b939b8a2282b0f2ead0e86d87006eee000155",
+      "bytes": 597270,
+      "local_path": "corpus/st03.pdf"
+    },
+    {
+      "doc_id": "st04",
+      "stratum": "scan_with_text_layer",
+      "source": "ntrs",
+      "source_identifier": "19650019889",
+      "title": "Lunar charting program  quarterly progress report no. 3, 1 apr. - 30 jun. 1964",
+      "year": 1964,
+      "landing_url": "https://ntrs.nasa.gov/citations/19650019889",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19650019889/downloads/19650019889.pdf",
+      "page_count": 4,
+      "sha256": "b6925cd0e422b4ff0c3dcfea0876f9f499ac277ef179cec86c3a3b6ff606627f",
+      "bytes": 172031,
+      "local_path": "corpus/st04.pdf"
+    },
+    {
+      "doc_id": "st05",
+      "stratum": "scan_with_text_layer",
+      "source": "ntrs",
+      "source_identifier": "19760014709",
+      "title": "NASA Global Atmospheric Sampling Program (GASP).  Data report for tape VL0001",
+      "year": 1976,
+      "landing_url": "https://ntrs.nasa.gov/citations/19760014709",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19760014709/downloads/19760014709.pdf",
+      "page_count": 26,
+      "sha256": "7fe83726452fefc02e2000c2fafd558e3050764de932e5f812c325f3723d4897",
+      "bytes": 1782987,
+      "local_path": "corpus/st05.pdf"
+    },
+    {
+      "doc_id": "st06",
+      "stratum": "scan_with_text_layer",
+      "source": "ntrs",
+      "source_identifier": "19760018521",
+      "title": "Investigation of environmental change pattern in Japan.  Land use classification by spectral pattern analysis; preliminary report",
+      "year": 1976,
+      "landing_url": "https://ntrs.nasa.gov/citations/19760018521",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19760018521/downloads/19760018521.pdf",
+      "page_count": 5,
+      "sha256": "2751297bd157eb29f1a1f15b4dada654dfaf375321e1317f7bd17a4c9078dd44",
+      "bytes": 245995,
+      "local_path": "corpus/st06.pdf"
+    },
+    {
+      "doc_id": "st07",
+      "stratum": "scan_with_text_layer",
+      "source": "ntrs",
+      "source_identifier": "19690020110",
+      "title": "Mission report - Apollo 10",
+      "year": 1969,
+      "landing_url": "https://ntrs.nasa.gov/citations/19690020110",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19690020110/downloads/19690020110.pdf",
+      "page_count": 12,
+      "sha256": "4fc9e265d88a7d163ca19cc97edc25a02b551ec21763ea68916416dd26e32e98",
+      "bytes": 10411565,
+      "local_path": "corpus/st07.pdf"
+    },
+    {
+      "doc_id": "st08",
+      "stratum": "scan_with_text_layer",
+      "source": "ntrs",
+      "source_identifier": "19680013523",
+      "title": "Planning research in the area of launch vehicle and propulsion programs  Progress report, 1-31 Mar. 1968",
+      "year": 1968,
+      "landing_url": "https://ntrs.nasa.gov/citations/19680013523",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19680013523/downloads/19680013523.pdf",
+      "page_count": 10,
+      "sha256": "c3b14fee2db1c0fab16cff453e744d54b7f3814772e6d980ac82167c802dbcbe",
+      "bytes": 501769,
+      "local_path": "corpus/st08.pdf"
+    },
+    {
+      "doc_id": "st09",
+      "stratum": "scan_with_text_layer",
+      "source": "ntrs",
+      "source_identifier": "19630012130",
+      "title": "SATELLITE SITUATION REPORT, VOLUME 3, NO. 13",
+      "year": 1963,
+      "landing_url": "https://ntrs.nasa.gov/citations/19630012130",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19630012130/downloads/19630012130.pdf",
+      "page_count": 18,
+      "sha256": "8add4b46734e992a213088ef58ba9d58b6385df7b89bb504f79fe8715ec418f3",
+      "bytes": 274564,
+      "local_path": "corpus/st09.pdf"
+    },
+    {
+      "doc_id": "st10",
+      "stratum": "scan_with_text_layer",
+      "source": "ntrs",
+      "source_identifier": "19650011719",
+      "title": "Space operations control center satellite situation report, vol. 5, no. 3",
+      "year": 1965,
+      "landing_url": "https://ntrs.nasa.gov/citations/19650011719",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19650011719/downloads/19650011719.pdf",
+      "page_count": 20,
+      "sha256": "71a83f71a7d819de93457bc39affcd8ef6b0072978502c29406af62b42195aa7",
+      "bytes": 725274,
+      "local_path": "corpus/st10.pdf"
+    },
+    {
+      "doc_id": "st11",
+      "stratum": "scan_with_text_layer",
+      "source": "ntrs",
+      "source_identifier": "19730012137",
+      "title": "Apollo 16 mission anomaly report no. 10:  Rear steering inoperative",
+      "year": 1973,
+      "landing_url": "https://ntrs.nasa.gov/citations/19730012137",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19730012137/downloads/19730012137.pdf",
+      "page_count": 6,
+      "sha256": "0550ef13835f1f507bd4a4d486b6c3c8ff7e2ba95c56d3c6962fd14363468097",
+      "bytes": 166658,
+      "local_path": "corpus/st11.pdf"
+    },
+    {
+      "doc_id": "st12",
+      "stratum": "scan_with_text_layer",
+      "source": "ntrs",
+      "source_identifier": "19630012127",
+      "title": "SATELLITE SITUATION REPORT, VOLUME 3, NO. 8",
+      "year": 1963,
+      "landing_url": "https://ntrs.nasa.gov/citations/19630012127",
+      "licence": "NTRS public distribution; no author, contractor, publisher or third-party copyright",
+      "licence_evidence": "NTRS citation record distribution and copyright fields",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19630012127/downloads/19630012127.pdf",
+      "page_count": 7,
+      "sha256": "f71ddf0477213e3ee1f47f5094f1d9afe7a52044e94cf18840805bdb48ba5f42",
+      "bytes": 206176,
+      "local_path": "corpus/st12.pdf"
+    },
+    {
+      "doc_id": "oo01",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "persian",
+      "source_identifier": "istilahat-i-bayani-farsi",
+      "title": "لغات و اصطلاحات بيان فارسى",
+      "year": 2013,
+      "landing_url": "https://archive.org/details/istilahat-i-bayani-farsi",
+      "licence": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/istilahat-i-bayani-farsi/istilahat-i-bayani-farsi.pdf",
+      "page_count": 21,
+      "sha256": "f0b920f4332d0f208fab83ac9caf42159b1291fabc282188bddda2c0e7b48050",
+      "bytes": 4832538,
+      "local_path": "corpus/oo01.pdf"
+    },
+    {
+      "doc_id": "oo02",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "hindi",
+      "source_identifier": "muhabbat",
+      "title": "muhabbat मुहब्बत कहानी",
+      "year": 1988,
+      "landing_url": "https://archive.org/details/muhabbat",
+      "licence": "http://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/muhabbat/muhabbat.pdf",
+      "page_count": 7,
+      "sha256": "1c212654b633f2600cfe6bd19066b1f58e95d3ed77df9a08a79266553d6c7df0",
+      "bytes": 91258,
+      "local_path": "corpus/oo02.pdf"
+    },
+    {
+      "doc_id": "oo03",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "bengali",
+      "source_identifier": "137-228022224",
+      "title": "নামাজের গুরুত্ব ও ফজিলত: ইসলামে সালাতের ধর্মীয়, নৈতিক ও সামাজিক গুরুত্ব",
+      "year": 2025,
+      "landing_url": "https://archive.org/details/137-228022224",
+      "licence": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/137-228022224/137-228022224.pdf",
+      "page_count": 22,
+      "sha256": "d0fcaddae2cf20bc953dcf84f6f267b841e24456ef9d0c2d9f3858db2208d152",
+      "bytes": 434612,
+      "local_path": "corpus/oo03.pdf"
+    },
+    {
+      "doc_id": "oo04",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "handwriting",
+      "source_identifier": "ANA-DIG-KOL-INV-0693",
+      "title": "kol-0693: Register van de Gezaghebber als districts commissaris inzake strafzaken, 1863-1864",
+      "year": 1863,
+      "landing_url": "https://archive.org/details/ANA-DIG-KOL-INV-0693",
+      "licence": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/ANA-DIG-KOL-INV-0693/ANA-DIG-KOL-INV-0693.pdf",
+      "page_count": 15,
+      "sha256": "c62dedbbb523dd5a07ff839f74762a0b7f279f0dd368a9b1ce9aa06609e44d71",
+      "bytes": 26470431,
+      "local_path": "corpus/oo04.pdf"
+    },
+    {
+      "doc_id": "oo05",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "persian",
+      "source_identifier": "GeeksTribe25",
+      "title": "Geeks Tribe 25",
+      "year": null,
+      "landing_url": "https://archive.org/details/GeeksTribe25",
+      "licence": "http://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/GeeksTribe25/GeeksTribe25.pdf",
+      "page_count": 30,
+      "sha256": "67a96a7e3e0e52321369aec5b203c60238816079862f3273428d27083bed169b",
+      "bytes": 4495535,
+      "local_path": "corpus/oo05.pdf"
+    },
+    {
+      "doc_id": "oo06",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "hindi",
+      "source_identifier": "kundalini-jagran-se-aatmik-aur-bhautik-siddhiya-pandit-shriram-sharma-acharya",
+      "title": "Kundalini Jagran Se Aatmik Aur Bhautik Siddhiya by Pandit Shriram Sharma Acharya",
+      "year": null,
+      "landing_url": "https://archive.org/details/kundalini-jagran-se-aatmik-aur-bhautik-siddhiya-pandit-shriram-sharma-acharya",
+      "licence": "http://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/kundalini-jagran-se-aatmik-aur-bhautik-siddhiya-pandit-shriram-sharma-acharya/kundalini-jagran-se-aatmik-aur-bhautik-siddhiya-pandit-shriram-sharma-acharya.pdf",
+      "page_count": 4,
+      "sha256": "a1fcf66648c3dbef4827be67896772832ef623ab1de4a336e000e859ab11ce25",
+      "bytes": 357984,
+      "local_path": "corpus/oo06.pdf"
+    },
+    {
+      "doc_id": "oo07",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "bengali",
+      "source_identifier": "59-2228022218",
+      "title": "সমাজে নাস্তিক্যবাদের বিস্তৃতিতে আমাদের করণীয় – বিশ্লেষণমূলক ও প্রাতিষ্ঠানিক গবেষণা",
+      "year": 2025,
+      "landing_url": "https://archive.org/details/59-2228022218",
+      "licence": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/59-2228022218/59-2228022218.pdf",
+      "page_count": 12,
+      "sha256": "9fcf82b7b65d5ed85f0dd83e0f886a2c25cf078e55eb2b8d366761c457d78b7d",
+      "bytes": 284547,
+      "local_path": "corpus/oo07.pdf"
+    },
+    {
+      "doc_id": "oo08",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "persian",
+      "source_identifier": "consipation",
+      "title": "consipation",
+      "year": 2019,
+      "landing_url": "https://archive.org/details/consipation",
+      "licence": "http://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/consipation/consipation.pdf",
+      "page_count": 19,
+      "sha256": "74dfadc53ed8729273cc3b5af72909b522ba0484e42194a0177016b941a5a311",
+      "bytes": 3449149,
+      "local_path": "corpus/oo08.pdf"
+    },
+    {
+      "doc_id": "oo09",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "hindi",
+      "source_identifier": "Inflorescences",
+      "title": "Inflorescences",
+      "year": 2025,
+      "landing_url": "https://archive.org/details/Inflorescences",
+      "licence": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/Inflorescences/Inflorescences.pdf",
+      "page_count": 8,
+      "sha256": "71614f1a684ed4250c18464637ccb638d90973bc182ea592ef78d8b0bdac5eb9",
+      "bytes": 2075458,
+      "local_path": "corpus/oo09.pdf"
+    },
+    {
+      "doc_id": "oo10",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "bengali",
+      "source_identifier": "41-228020390",
+      "title": "বাংলাদেশে খ্রিষ্টান মিশনারিদের আগমনের আসল উদ্দেশ্য এবং আমাদের করণীয় – বিশ্লেষণমূলক গবেষণা",
+      "year": 2025,
+      "landing_url": "https://archive.org/details/41-228020390",
+      "licence": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/41-228020390/41-228020390.pdf",
+      "page_count": 24,
+      "sha256": "ed04a1e407e1cd00ba5d32389fb0de80bb0ff736a84ce7e576048203eb21fc4c",
+      "bytes": 404626,
+      "local_path": "corpus/oo10.pdf"
+    },
+    {
+      "doc_id": "oo11",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "hindi",
+      "source_identifier": "rajkaj_1790859995761",
+      "title": "rajkaj_1790859995761",
+      "year": 2026,
+      "landing_url": "https://archive.org/details/rajkaj_1790859995761",
+      "licence": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/rajkaj_1790859995761/rajkaj_1790859995761.pdf",
+      "page_count": 4,
+      "sha256": "fde3de3d5f1164151ba46e336837045bfb133a628105575fb68a75c18557e6f6",
+      "bytes": 122560,
+      "local_path": "corpus/oo11.pdf"
+    },
+    {
+      "doc_id": "oo12",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "bengali",
+      "source_identifier": "215-227020420228",
+      "title": "অর্থনীতি পুনরুদ্ধারে ইসলামের ভূমিকা: ইসলামী অর্থনৈতিক নীতি ও সামাজিক প্রয়োগ",
+      "year": 2025,
+      "landing_url": "https://archive.org/details/215-227020420228",
+      "licence": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/215-227020420228/215-227020420228.pdf",
+      "page_count": 26,
+      "sha256": "48ca0f871a153209d7db01a346109428134703d8c16fbf05c2372547ea8f99a2",
+      "bytes": 534386,
+      "local_path": "corpus/oo12.pdf"
+    },
+    {
+      "doc_id": "oo13",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "bengali",
+      "source_identifier": "219-227012106",
+      "title": "ইসলামের দৃষ্টিতে ব্যাবসা-বাণিজ্য: নৈতিকতা, আইন ও আধুনিক অর্থনীতি বিশ্লেষণ",
+      "year": 2024,
+      "landing_url": "https://archive.org/details/219-227012106",
+      "licence": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/219-227012106/219-227012106.pdf",
+      "page_count": 26,
+      "sha256": "8eb645a68be294a8ab3aca0f2a3dcc77de589fbbdf1d9c8ac4a14af406123b01",
+      "bytes": 513696,
+      "local_path": "corpus/oo13.pdf"
+    },
+    {
+      "doc_id": "oo14",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "bengali",
+      "source_identifier": "62-216021289",
+      "title": "আল্লাহর সিফাত: কুরআন ও সুন্নাহর আলোকে আল্লাহর গুণাবলীর তাত্ত্বিক ও আকীদাগত বিশ্লেষণ",
+      "year": 2024,
+      "landing_url": "https://archive.org/details/62-216021289",
+      "licence": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/62-216021289/62-216021289.pdf",
+      "page_count": 29,
+      "sha256": "9ad3c27c55ffd756edd4805c8668d07b020a6562c21eaef634cb042eadab2bf5",
+      "bytes": 739852,
+      "local_path": "corpus/oo14.pdf"
+    },
+    {
+      "doc_id": "oo15",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "arabic",
+      "source_identifier": "2001-feelAbrahah-bahjat",
+      "title": "فيل أبرهة",
+      "year": 2001,
+      "landing_url": "https://archive.org/details/2001-feelAbrahah-bahjat",
+      "licence": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/2001-feelAbrahah-bahjat/2001-feelAbrahah-bahjat.pdf",
+      "page_count": 12,
+      "sha256": "2fc2be16bff03554a4fc49efecbbe1646a42e03c7edfe1e2f1deecd7c41af7c7",
+      "bytes": 2666997,
+      "local_path": "corpus/oo15.pdf"
+    },
+    {
+      "doc_id": "oo16",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "persian",
+      "source_identifier": "6shariati",
+      "title": "Effect of Collar- Slot Combination on the Local Scouring Around the Bridge Piers",
+      "year": 2011,
+      "landing_url": "https://archive.org/details/6shariati",
+      "licence": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/6shariati/6shariati.pdf",
+      "page_count": 12,
+      "sha256": "c97e721d9d02ce880f53434c8eae022686b05d91eb24edc2302b833a4fa1af8e",
+      "bytes": 632837,
+      "local_path": "corpus/oo16.pdf"
+    },
+    {
+      "doc_id": "oo17",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "hindi",
+      "source_identifier": "gayatri-ki-dainik-sadhana-evam-yagya-paddhati-pandit-shriram-sharma-acharya",
+      "title": "Gayatri Ki Dainik Sadhana evam Yagya Paddhati by Pandit Shriram Sharma Acharya",
+      "year": null,
+      "landing_url": "https://archive.org/details/gayatri-ki-dainik-sadhana-evam-yagya-paddhati-pandit-shriram-sharma-acharya",
+      "licence": "http://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/gayatri-ki-dainik-sadhana-evam-yagya-paddhati-pandit-shriram-sharma-acharya/gayatri-ki-dainik-sadhana-evam-yagya-paddhati-pandit-shriram-sharma-acharya.pdf",
+      "page_count": 25,
+      "sha256": "770ca81d2cb69c3d1324b02aae18642df479b05bba6ed98b2240a7be3a9b051d",
+      "bytes": 905613,
+      "local_path": "corpus/oo17.pdf"
+    },
+    {
+      "doc_id": "oo18",
+      "stratum": "old_ocr_layer",
+      "source": "ia",
+      "group": "bengali",
+      "source_identifier": "162-228021829",
+      "title": "ইসলামের দৃষ্টিতে হারাম সম্পর্ক: নৈতিক, সামাজিক ও ধর্মীয় বিশ্লেষণ",
+      "year": 2025,
+      "landing_url": "https://archive.org/details/162-228021829",
+      "licence": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licence_evidence": "Archive.org item metadata licenseurl (uploader-declared)",
+      "pdf_url": "https://archive.org/download/162-228021829/162-228021829.pdf",
+      "page_count": 29,
+      "sha256": "1b1a770c69d0c39c5f50e491147a239f04b0e7b730fdd217fd82e00b845d08da",
+      "bytes": 4526892,
+      "local_path": "corpus/oo18.pdf"
     }
   ],
   "log": [
@@ -1269,6 +1943,816 @@
       "source_identifier": "20150003893",
       "doc_id": null,
       "result": "page count 3 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20160008713",
+      "doc_id": null,
+      "result": "page count 342 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20170010270",
+      "doc_id": null,
+      "result": "page count 101 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20120013211",
+      "doc_id": null,
+      "result": "page count 60 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20160014328",
+      "doc_id": "mx05",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20210011347",
+      "doc_id": null,
+      "result": "page count 39 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20220014741",
+      "doc_id": null,
+      "result": "page count 74 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20190004901",
+      "doc_id": null,
+      "result": "page count 44 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20190030393",
+      "doc_id": null,
+      "result": "page count 42 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20150002737",
+      "doc_id": null,
+      "result": "page count 40 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20160012793",
+      "doc_id": null,
+      "result": "page count 83 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20180008503",
+      "doc_id": null,
+      "result": "page count 71 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20230014448",
+      "doc_id": null,
+      "result": "page count 59 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20150003908",
+      "doc_id": null,
+      "result": "page count 2 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20210011345",
+      "doc_id": null,
+      "result": "page count 39 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20220007239",
+      "doc_id": null,
+      "result": "page count 32 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20160011973",
+      "doc_id": null,
+      "result": "page count 160 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20200001118",
+      "doc_id": null,
+      "result": "page count 310 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20150000320",
+      "doc_id": null,
+      "result": "page count 54 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20150003854",
+      "doc_id": null,
+      "result": "page count 3 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20240013497",
+      "doc_id": null,
+      "result": "page count 560 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20110013690",
+      "doc_id": "mx06",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20200001187",
+      "doc_id": null,
+      "result": "page count 162 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20150023275",
+      "doc_id": null,
+      "result": "page count 182 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20130009577",
+      "doc_id": null,
+      "result": "page count 380 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20205006748",
+      "doc_id": "mx07",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20160002974",
+      "doc_id": null,
+      "result": "page count 3794 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20170009472",
+      "doc_id": null,
+      "result": "page count 207 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20110012171",
+      "doc_id": null,
+      "result": "page count 35 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20230010686",
+      "doc_id": null,
+      "result": "page count 275 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20130010462",
+      "doc_id": null,
+      "result": "page count 53 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20140003942",
+      "doc_id": null,
+      "result": "page count 252 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20230006703",
+      "doc_id": null,
+      "result": "page count 987 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20160001066",
+      "doc_id": null,
+      "result": "page count 171 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20150003918",
+      "doc_id": "mx08",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20110002901",
+      "doc_id": "mx09",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20205011099",
+      "doc_id": null,
+      "result": "page count 92 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20160011974",
+      "doc_id": null,
+      "result": "page count 191 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20140011734",
+      "doc_id": null,
+      "result": "page count 106 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20110004279",
+      "doc_id": null,
+      "result": "page count 211 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20170003373",
+      "doc_id": "mx10",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20140017857",
+      "doc_id": "mx11",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20100039457",
+      "doc_id": null,
+      "result": "page count 92 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20110023763",
+      "doc_id": null,
+      "result": "page count 120 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20150003852",
+      "doc_id": "mx12",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20160012024",
+      "doc_id": null,
+      "result": "page count 34 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20220004719",
+      "doc_id": null,
+      "result": "page count 3483 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20180003088",
+      "doc_id": "mx13",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20210023307",
+      "doc_id": "mx14",
+      "result": "kept"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20150023055",
+      "doc_id": null,
+      "result": "page count 68 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20210022030",
+      "doc_id": null,
+      "result": "page count 1487 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20100031133",
+      "doc_id": null,
+      "result": "page count 95 outside 4-30"
+    },
+    {
+      "stratum": "mixed",
+      "source_identifier": "20190002196",
+      "doc_id": "mx15",
+      "result": "kept"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19660012411",
+      "doc_id": null,
+      "result": "page count 34 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19730017161",
+      "doc_id": null,
+      "result": "page count 47 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19630012124",
+      "doc_id": "st01",
+      "result": "kept"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19690080427",
+      "doc_id": null,
+      "result": "page count 251 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19730008571",
+      "doc_id": null,
+      "result": "page count 50 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19800019270",
+      "doc_id": "st02",
+      "result": "kept"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19830006223",
+      "doc_id": null,
+      "result": "page count 87 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19740009451",
+      "doc_id": "st03",
+      "result": "kept"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19790018715",
+      "doc_id": null,
+      "result": "page count 308 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19660012402",
+      "doc_id": null,
+      "result": "page count 166 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19730078844",
+      "doc_id": null,
+      "result": "page count 74 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19800007293",
+      "doc_id": null,
+      "result": "page count 120 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19650019889",
+      "doc_id": "st04",
+      "result": "kept"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19690006492",
+      "doc_id": null,
+      "result": "page count 33 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19730023037",
+      "doc_id": null,
+      "result": "page count 37 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19740072461",
+      "doc_id": null,
+      "result": "page count 65 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19640008312",
+      "doc_id": null,
+      "result": "page count 149 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19730073399",
+      "doc_id": null,
+      "result": "page count 49 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19790023548",
+      "doc_id": null,
+      "result": "page count 141 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19820020337",
+      "doc_id": null,
+      "result": "page count 140 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19760014709",
+      "doc_id": "st05",
+      "result": "kept"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19760018521",
+      "doc_id": "st06",
+      "result": "kept"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19680066023",
+      "doc_id": null,
+      "result": "page count 42 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19730025091",
+      "doc_id": null,
+      "result": "page count 254 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19750014811",
+      "doc_id": null,
+      "result": "page count 56 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19860001620",
+      "doc_id": null,
+      "result": "page count 107 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19690020110",
+      "doc_id": "st07",
+      "result": "kept"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19790020474",
+      "doc_id": null,
+      "result": "page count 149 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19800022354",
+      "doc_id": null,
+      "result": "page count 209 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19730025086",
+      "doc_id": null,
+      "result": "page count 330 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19760072997",
+      "doc_id": null,
+      "result": "page count 332 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19680013523",
+      "doc_id": "st08",
+      "result": "kept"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19690004666",
+      "doc_id": null,
+      "result": "page count 67 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19960003221",
+      "doc_id": null,
+      "result": "page count 284 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19630012130",
+      "doc_id": "st09",
+      "result": "kept"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19770006705",
+      "doc_id": null,
+      "result": "page count 168 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19720021174",
+      "doc_id": null,
+      "result": "page count 279 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19650011719",
+      "doc_id": "st10",
+      "result": "kept"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19790002494",
+      "doc_id": null,
+      "result": "page count 149 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19730012137",
+      "doc_id": "st11",
+      "result": "kept"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19740026226",
+      "doc_id": null,
+      "result": "page count 60 outside 4-30"
+    },
+    {
+      "stratum": "scan_with_text_layer",
+      "source_identifier": "19630012127",
+      "doc_id": "st12",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "AlansarPeriodical_080",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "zaad-ul-musafireen",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "istilahat-i-bayani-farsi",
+      "doc_id": "oo01",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "muhabbat",
+      "doc_id": "oo02",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "137-228022224",
+      "doc_id": "oo03",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "ANA-DIG-KOL-INV-0693",
+      "doc_id": "oo04",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "AlhocoucMagazine_15-26",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "alhussain-k-tabsary-ka-ilmi-jaiza",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "GeeksTribe25",
+      "doc_id": "oo05",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "kundalini-jagran-se-aatmik-aur-bhautik-siddhiya-pandit-shriram-sharma-acharya",
+      "doc_id": "oo06",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "59-2228022218",
+      "doc_id": "oo07",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "ljs196",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "AlansarPeriodical_116",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "jabr-o-ikhtyaar-qist-2",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "consipation",
+      "doc_id": "oo08",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "Inflorescences",
+      "doc_id": "oo09",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "41-228020390",
+      "doc_id": "oo10",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "b10310137",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "AlhocoucMagazine_15-32",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "hussaini-iqdaam-ka-pehla-qadam",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "ljs434",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "rajkaj_1790859995761",
+      "doc_id": "oo11",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "215-227020420228",
+      "doc_id": "oo12",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "ljs35",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "AlansarPeriodical_126",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "islaam-or-rawaadaari",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "ljs196",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "raghavyadaveeym",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "219-227012106",
+      "doc_id": "oo13",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "b88177373",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "AlansarPeriodical_137",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "risaala-e-elhaamia",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "9-akbari-n",
+      "doc_id": null,
+      "result": "download failed: HTTPError 500"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "gayatri-sadhana-se-aapattiyon-ka-nivaran-pandit-shriram-sharma-acharya",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "62-216021289",
+      "doc_id": "oo14",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "Bogurodzica",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "2001-feelAbrahah-bahjat",
+      "doc_id": "oo15",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "taareekh-e-islaam-me-waqya-e-karbala-ki-ahmeyat",
+      "doc_id": null,
+      "result": "no Text PDF file"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "6shariati",
+      "doc_id": "oo16",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "gayatri-ki-dainik-sadhana-evam-yagya-paddhati-pandit-shriram-sharma-acharya",
+      "doc_id": "oo17",
+      "result": "kept"
+    },
+    {
+      "stratum": "old_ocr_layer",
+      "source_identifier": "162-228021829",
+      "doc_id": "oo18",
+      "result": "kept"
     }
   ]
 }

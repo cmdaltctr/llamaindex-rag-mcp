@@ -48,17 +48,346 @@
       "seconds": 25.04,
       "includes_start": false,
       "utc": "2026-10-08T23:42:47Z"
+    },
+    "bd01:8": {
+      "status": "ok",
+      "chars": 5478,
+      "seconds": 60.31,
+      "includes_start": false,
+      "utc": "2026-10-08T23:43:47Z"
+    },
+    "bd01:9": {
+      "status": "ok",
+      "chars": 769,
+      "seconds": 23.24,
+      "includes_start": false,
+      "utc": "2026-10-08T23:44:11Z"
+    },
+    "bd01:10": {
+      "status": "ok",
+      "chars": 5843,
+      "seconds": 57.07,
+      "includes_start": false,
+      "utc": "2026-10-08T23:45:08Z"
+    },
+    "bd01:11": {
+      "status": "ok",
+      "chars": 38,
+      "seconds": 14.94,
+      "includes_start": false,
+      "utc": "2026-10-08T23:45:23Z"
+    },
+    "bd01:12": {
+      "status": "ok",
+      "chars": 1774,
+      "seconds": 30.83,
+      "includes_start": false,
+      "utc": "2026-10-08T23:45:53Z"
+    },
+    "bd01:13": {
+      "status": "ok",
+      "chars": 1034,
+      "seconds": 23.52,
+      "includes_start": false,
+      "utc": "2026-10-08T23:46:17Z"
+    },
+    "bd01:14": {
+      "status": "ok",
+      "chars": 5326,
+      "seconds": 52.34,
+      "includes_start": false,
+      "utc": "2026-10-08T23:47:09Z"
+    },
+    "bd01:15": {
+      "status": "ok",
+      "chars": 6673,
+      "seconds": 70.93,
+      "includes_start": false,
+      "utc": "2026-10-08T23:48:20Z"
+    },
+    "bd01:16": {
+      "status": "ok",
+      "chars": 7622,
+      "seconds": 83.37,
+      "includes_start": false,
+      "utc": "2026-10-08T23:49:44Z"
+    },
+    "bd01:17": {
+      "status": "ok",
+      "chars": 6066,
+      "seconds": 64.14,
+      "includes_start": false,
+      "utc": "2026-10-08T23:50:48Z"
+    },
+    "bd02:1": {
+      "status": "ok",
+      "chars": 3194,
+      "seconds": 35.64,
+      "includes_start": false,
+      "utc": "2026-10-08T23:51:23Z"
+    },
+    "bd02:2": {
+      "status": "ok",
+      "chars": 3106,
+      "seconds": 29.31,
+      "includes_start": false,
+      "utc": "2026-10-08T23:51:53Z"
+    },
+    "bd02:3": {
+      "status": "ok",
+      "chars": 5908,
+      "seconds": 41.73,
+      "includes_start": false,
+      "utc": "2026-10-08T23:52:34Z"
+    },
+    "bd02:4": {
+      "status": "ok",
+      "chars": 3118,
+      "seconds": 42.24,
+      "includes_start": false,
+      "utc": "2026-10-08T23:53:17Z"
+    },
+    "bd02:5": {
+      "status": "ok",
+      "chars": 4455,
+      "seconds": 51.84,
+      "includes_start": false,
+      "utc": "2026-10-08T23:54:08Z"
+    },
+    "bd02:6": {
+      "status": "ok",
+      "chars": 1730,
+      "seconds": 29.03,
+      "includes_start": false,
+      "utc": "2026-10-08T23:54:38Z"
+    },
+    "bd02:7": {
+      "status": "ok",
+      "chars": 3160,
+      "seconds": 34.53,
+      "includes_start": false,
+      "utc": "2026-10-08T23:55:12Z"
+    },
+    "bd02:8": {
+      "status": "ok",
+      "chars": 2205,
+      "seconds": 28.35,
+      "includes_start": false,
+      "utc": "2026-10-08T23:55:40Z"
+    },
+    "bd02:9": {
+      "status": "ok",
+      "chars": 662,
+      "seconds": 20.59,
+      "includes_start": false,
+      "utc": "2026-10-08T23:56:01Z"
+    },
+    "bd02:10": {
+      "status": "ok",
+      "chars": 5616,
+      "seconds": 46.83,
+      "includes_start": false,
+      "utc": "2026-10-08T23:56:48Z"
+    },
+    "bd02:11": {
+      "status": "ok",
+      "chars": 3906,
+      "seconds": 41.72,
+      "includes_start": false,
+      "utc": "2026-10-08T23:57:30Z"
+    },
+    "bd02:12": {
+      "status": "ok",
+      "chars": 3024,
+      "seconds": 33.5,
+      "includes_start": false,
+      "utc": "2026-10-08T23:58:03Z"
+    },
+    "bd02:13": {
+      "status": "ok",
+      "chars": 761,
+      "seconds": 20.1,
+      "includes_start": false,
+      "utc": "2026-10-08T23:58:23Z"
+    },
+    "bd02:14": {
+      "status": "ok",
+      "chars": 1423,
+      "seconds": 23.7,
+      "includes_start": false,
+      "utc": "2026-10-08T23:58:47Z"
+    },
+    "oo01:1": {
+      "status": "ok",
+      "chars": 1117,
+      "seconds": 28.85,
+      "includes_start": true,
+      "utc": "2026-10-09T00:00:03Z"
+    },
+    "oo01:2": {
+      "status": "ok",
+      "chars": 1364,
+      "seconds": 24.54,
+      "includes_start": false,
+      "utc": "2026-10-09T00:00:28Z"
+    },
+    "oo01:3": {
+      "status": "ok",
+      "chars": 1343,
+      "seconds": 24.24,
+      "includes_start": false,
+      "utc": "2026-10-09T00:00:52Z"
+    },
+    "oo01:4": {
+      "status": "ok",
+      "chars": 1230,
+      "seconds": 52.42,
+      "includes_start": true,
+      "utc": "2026-10-09T00:02:11Z"
+    },
+    "oo01:5": {
+      "status": "ok",
+      "chars": 1174,
+      "seconds": 29.71,
+      "includes_start": false,
+      "utc": "2026-10-09T00:02:41Z"
+    },
+    "oo01:6": {
+      "status": "ok",
+      "chars": 1531,
+      "seconds": 45.92,
+      "includes_start": false,
+      "utc": "2026-10-09T00:03:27Z"
+    },
+    "oo01:7": {
+      "status": "ok",
+      "chars": 1424,
+      "seconds": 33.22,
+      "includes_start": false,
+      "utc": "2026-10-09T00:04:00Z"
+    },
+    "oo01:8": {
+      "status": "ok",
+      "chars": 1315,
+      "seconds": 41.46,
+      "includes_start": false,
+      "utc": "2026-10-09T00:04:41Z"
+    },
+    "oo01:9": {
+      "status": "ok",
+      "chars": 1116,
+      "seconds": 29.68,
+      "includes_start": false,
+      "utc": "2026-10-09T00:05:11Z"
+    },
+    "oo01:10": {
+      "status": "ok",
+      "chars": 1226,
+      "seconds": 43.54,
+      "includes_start": false,
+      "utc": "2026-10-09T00:05:54Z"
+    },
+    "oo01:11": {
+      "status": "ok",
+      "chars": 1340,
+      "seconds": 42.77,
+      "includes_start": false,
+      "utc": "2026-10-09T00:06:37Z"
+    },
+    "oo01:12": {
+      "status": "ok",
+      "chars": 1120,
+      "seconds": 29.81,
+      "includes_start": false,
+      "utc": "2026-10-09T00:07:07Z"
+    },
+    "oo01:13": {
+      "status": "ok",
+      "chars": 1025,
+      "seconds": 38.28,
+      "includes_start": false,
+      "utc": "2026-10-09T00:07:45Z"
+    },
+    "oo01:14": {
+      "status": "ok",
+      "chars": 1397,
+      "seconds": 45.62,
+      "includes_start": false,
+      "utc": "2026-10-09T00:08:31Z"
+    },
+    "oo01:15": {
+      "status": "ok",
+      "chars": 1340,
+      "seconds": 33.14,
+      "includes_start": false,
+      "utc": "2026-10-09T00:09:04Z"
+    },
+    "oo01:16": {
+      "status": "ok",
+      "chars": 1420,
+      "seconds": 34.36,
+      "includes_start": false,
+      "utc": "2026-10-09T00:09:38Z"
+    },
+    "oo01:17": {
+      "status": "ok",
+      "chars": 1312,
+      "seconds": 42.46,
+      "includes_start": false,
+      "utc": "2026-10-09T00:10:21Z"
+    },
+    "oo01:18": {
+      "status": "ok",
+      "chars": 1256,
+      "seconds": 31.49,
+      "includes_start": false,
+      "utc": "2026-10-09T00:10:52Z"
+    },
+    "oo01:19": {
+      "status": "ok",
+      "chars": 1242,
+      "seconds": 37.13,
+      "includes_start": false,
+      "utc": "2026-10-09T00:11:30Z"
+    },
+    "oo01:20": {
+      "status": "ok",
+      "chars": 202,
+      "seconds": 20.52,
+      "includes_start": false,
+      "utc": "2026-10-09T00:11:50Z"
+    },
+    "oo01:21": {
+      "status": "ok",
+      "chars": 1039,
+      "seconds": 34.47,
+      "includes_start": false,
+      "utc": "2026-10-09T00:12:25Z"
+    },
+    "oo02:1": {
+      "status": "ok",
+      "chars": 2081,
+      "seconds": 100.93,
+      "includes_start": false,
+      "utc": "2026-10-09T00:14:05Z"
+    },
+    "oo02:2": {
+      "status": "ok",
+      "chars": 4005,
+      "seconds": 168.48,
+      "includes_start": false,
+      "utc": "2026-10-09T00:16:54Z"
     }
   },
-  "pid": 81282,
-  "started_utc": "2026-10-08T23:37:58Z",
+  "pid": 9648,
+  "started_utc": "2026-10-09T00:01:18Z",
   "finished_utc": null,
   "offline_env": {
     "HF_HUB_OFFLINE": "1",
     "TRANSFORMERS_OFFLINE": "1"
   },
-  "sources_sha256": "1fb28b56bf19fae9b4174a7c63b9072a5d5856b50be6e3ff1fb8165f9574c911",
-  "total_pages": 192,
+  "sources_sha256": "29351b589508104ff992840c3244aa92750143508630a97e71ea9b0384d2db51",
+  "total_pages": 1198,
   "engine": {
     "backend_id": "dots_mocr",
     "model": [
@@ -82,5 +411,5 @@
       "transformers": "4.57.6"
     }
   },
-  "heartbeat_utc": "2026-10-08T23:42:47Z"
+  "heartbeat_utc": "2026-10-09T00:16:54Z"
 }

@@ -112,6 +112,9 @@ def main() -> None:
     rule = load_module(EXP33 / "build_labels.py", "exp33_build_labels")
     scoring = load_module(EXP38 / "score_candidates.py", "exp38_score_candidates")
     state = read_json(OUTPUT / "reference_state.json")
+    lane_b = OUTPUT / "reference_state_b.json"
+    if lane_b.is_file():
+        state["pages"] = {**read_json(lane_b)["pages"], **state["pages"]}
     documents, rows = {}, []
     for doc in read_json(EXP_DIR / "sources.json")["documents"]:
         summary, doc_rows = label_document(doc, rule, scoring.classify_page, state)

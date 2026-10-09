@@ -25,8 +25,11 @@ from typing import Any
 from exp42_io import EXP_DIR, OUTPUT, atomic_json, plan, read_json, sha256
 
 STATE = OUTPUT / "reference_state.json"
+#: Lane b runs a second worker from the end of the list with its own state file.
+STATES = {"a": STATE, "b": OUTPUT / "reference_state_b.json"}
 TEXT_DIR = OUTPUT / ".references"
 WORKERS_DIR = EXP_DIR.parent.parent / "ocr-workers"
+STRATUM_ORDER = ("old_ocr_layer", "scan_with_text_layer", "mixed", "born_digital")
 
 
 def utc() -> str:
@@ -63,9 +66,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--retry-failed", action="store_true")
+    parser.add_argument("--lane", choices=sorted(STATES), default="a")
     args = parser.parse_args()
     plan()
-    if STATE.is_file() and not args.resume:
+    own, other = STATES[args.lane], STATES["b" if args.lane == "a" else "a"]
+    if own.is_file() and not args.resume:
         print("reference_state.json exists: pass --resume", file=sys.stderr)
         return 1
     os.environ.update({"HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1"})
@@ -74,8 +79,12 @@ def main() -> int:
     from omrg.integrations.ocr_worker.client import OcrWorkerError
     from omrg.integrations.ocr_worker.routes import request_timeout
 
-    documents = read_json(EXP_DIR / "sources.json")["documents"]
-    state: dict[str, Any] = read_json(STATE) if STATE.is_file() else {"pages": {}}
+    # Junk targets decide whether sourcing must extend, so their strata go first.
+    documents = sorted(
+        read_json(EXP_DIR / "sources.json")["documents"],
+        key=lambda d: STRATUM_ORDER.index(d["stratum"]),
+    )
+    state: dict[str, Any] = read_json(own) if own.is_file() else {"pages": {}}
     state.update(
         {
             "pid": os.getpid(),
@@ -89,7 +98,7 @@ def main() -> int:
 
     def save() -> None:
         state["heartbeat_utc"] = utc()
-        atomic_json(STATE, state)
+        atomic_json(own, state)
 
     def on_signal(signum: int, _frame: Any) -> None:
         raise SystemExit(f"stopped by signal {signum}")
@@ -112,43 +121,47 @@ def main() -> int:
     }
     done = state["pages"]
     try:
-        for doc in documents:
-            for page in range(1, doc["page_count"] + 1):
-                key = f"{doc['doc_id']}:{page}"
-                out = TEXT_DIR / doc["doc_id"] / f"p{page:03d}.md"
-                prior = done.get(key)
-                if prior and (
-                    (prior["status"] == "ok" and out.is_file())
-                    or (prior["status"] == "error" and not args.retry_failed)
-                ):
-                    continue
-                first = not client.is_started
-                start = time.perf_counter()
-                try:
-                    result = client.parse(
-                        str(EXP_DIR / doc["local_path"]),
-                        pages=[page],
-                        timeout=request_timeout(settings, 1),
-                    )
-                    text = (result.pages_markdown or (result.markdown,))[0]
-                    write_text(out, text)
-                    entry: dict[str, Any] = {"status": "ok", "chars": len(text)}
-                except OcrWorkerError as exc:
-                    entry = {"status": "error", "code": exc.code, "message": str(exc)[:300]}
-                entry.update(
-                    {
-                        "seconds": round(time.perf_counter() - start, 2),
-                        "includes_start": first,
-                        "utc": utc(),
-                    }
+        pages = [(d, n) for d in documents for n in range(1, d["page_count"] + 1)]
+        for doc, page in reversed(pages) if args.lane == "b" else pages:
+            key = f"{doc['doc_id']}:{page}"
+            out = TEXT_DIR / doc["doc_id"] / f"p{page:03d}.md"
+            theirs = read_json(other)["pages"] if other.is_file() else {}
+            if theirs.get(key, {}).get("status") == "ok" and out.is_file():
+                print(f"[ref] lanes met at {key}", flush=True)
+                break
+            prior = done.get(key)
+            if prior and (
+                (prior["status"] == "ok" and out.is_file())
+                or (prior["status"] == "error" and not args.retry_failed)
+            ):
+                continue
+            first = not client.is_started
+            start = time.perf_counter()
+            try:
+                result = client.parse(
+                    str(EXP_DIR / doc["local_path"]),
+                    pages=[page],
+                    timeout=request_timeout(settings, 1),
                 )
-                done[key] = entry
-                save()
-                print(
-                    f"[ref] {key} {entry['status']} {entry['seconds']} s "
-                    f"({len(done)}/{state['total_pages']})",
-                    flush=True,
-                )
+                text = (result.pages_markdown or (result.markdown,))[0]
+                write_text(out, text)
+                entry: dict[str, Any] = {"status": "ok", "chars": len(text)}
+            except OcrWorkerError as exc:
+                entry = {"status": "error", "code": exc.code, "message": str(exc)[:300]}
+            entry.update(
+                {
+                    "seconds": round(time.perf_counter() - start, 2),
+                    "includes_start": first,
+                    "utc": utc(),
+                }
+            )
+            done[key] = entry
+            save()
+            print(
+                f"[ref] {key} {entry['status']} {entry['seconds']} s "
+                f"({len(done)}/{state['total_pages']})",
+                flush=True,
+            )
         state["finished_utc"] = utc()
         return 0
     finally:
