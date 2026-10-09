@@ -126,7 +126,10 @@ def main() -> None:
         if sha256(OUTPUT / name) != digest:
             raise SystemExit(f"{name} changed after hashing")
     labels = read_json(OUTPUT / "labels.json")["documents"]
-    baseline = read_json(OUTPUT / "control_routing.json")["rows"]
+    # Amendment A8: routing and gates over the rescued (labelled) documents only.
+    baseline = [
+        r for r in read_json(OUTPUT / "control_routing.json")["rows"] if r["doc_id"] in labels
+    ]
     junk_docs = sorted(d for d, v in labels.items() if v["junk_text_layer"])
     rows = {
         "A": read_json(OUTPUT / "candidate_a.json")["rows"],

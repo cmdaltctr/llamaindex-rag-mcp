@@ -19,30 +19,31 @@ RENDERS = OUTPUT / ".renders"
 
 
 def targets(labels: dict, control: dict, overlap: int, minimums: dict) -> dict:
-    """Return each D3 target with its observed value and pass flag."""
+    """Return each amendment A8 target with its observed value and pass flag."""
     lite = [r for r in labels["rows"] if r["tier"] == "liteparse"]
     junk_by_doc = Counter(r["doc_id"] for r in lite if r["class"] == "junk")
     junk_total = sum(junk_by_doc.values())
-    layer_docs = [d for d, v in labels["documents"].items() if v["junk_text_layer"]]
-    missed = [d for d in layer_docs if not control[d]["ocr_required"]]
+    docs = labels["documents"]
+    layer_docs = [d for d, v in docs.items() if v["junk_text_layer"]]
     observed = {
-        "healthy_pages_min": sum(r["class"] == "healthy" for r in lite),
-        "junk_pages_min": junk_total,
-        "junk_text_layer_documents_min": len(layer_docs),
-        "junk_text_layer_documents_not_routed_by_control_min": len(missed),
+        "rescued_junk_layer_documents_min": len(layer_docs),
+        "rescued_usable_documents_min": sum(v["label"] == "usable" for v in docs.values()),
+        "rescued_junk_pages_min": junk_total,
+        "rescued_healthy_pages_min": sum(r["class"] == "healthy" for r in lite),
         "largest_document_share_of_junk_pages_max": (
             max(junk_by_doc.values()) / junk_total if junk_total else 1.0
         ),
-        "usable_documents_min": sum(v["label"] == "usable" for v in labels["documents"].values()),
         "overlap_with_experiment_33": overlap,
     }
     out = {}
     for key, value in observed.items():
-        limit = 0 if key == "overlap_with_experiment_33" else minimums[key]
+        limit = minimums[key]
         ok = value <= limit if key.endswith("_max") or key.startswith("overlap") else value >= limit
         out[key] = {"observed": value, "target": limit, "pass": ok}
-    out["junk_text_layer_documents"] = layer_docs
-    out["junk_text_layer_documents_not_routed_by_control"] = missed
+    out["rescued_junk_layer_documents"] = layer_docs
+    out["rescued_junk_layer_documents_already_routed_by_control"] = [
+        d for d in layer_docs if control[d]["ocr_required"]
+    ]
     return out
 
 
@@ -118,7 +119,7 @@ def main() -> int:
             "sample": sample,
         },
     )
-    result = targets(labels, control, overlap, current["sample_size"])
+    result = targets(labels, control, overlap, current["sample_size"]["rescued_population_targets"])
     passed = all(v["pass"] for v in result.values() if isinstance(v, dict))
     atomic_json(OUTPUT / "set_check.json", {"passed": passed, "targets": result})
     for key, value in result.items():

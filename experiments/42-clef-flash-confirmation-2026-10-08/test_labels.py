@@ -1,9 +1,9 @@
-"""Tasks 3.3 to 3.5: class boundaries, body-text rule and the junk-layer rule."""
+"""Tasks 3.3 to 3.5: class boundaries and the junk-layer rule."""
 
 from __future__ import annotations
 
 import pytest
-from build_labels import body_text, junk_text_layer, legibility
+from build_labels import junk_text_layer
 from exp42_io import EXP33, EXP38, load_module
 
 RULE = load_module(EXP33 / "build_labels.py", "exp33_build_labels")
@@ -25,15 +25,10 @@ def test_class_boundaries_at_050_and_080(found: int, label: str) -> None:
     assert classify(found) == label
 
 
-def test_table_tags_are_not_reference_tokens() -> None:
-    tokens = RULE.tokens(body_text("<table><tr><td>alpha</td></tr></table>"))
-    assert tokens == ["alpha"]
-
-
-def test_empty_reference_with_rescue_text_is_illegible() -> None:
-    assert legibility([], [12, 0]) == "illegible"
-    assert legibility([], [3, 9]) == "no_text"
-    assert legibility(["alpha"], [12, 12]) is None
+@pytest.mark.parametrize("frozen", ["ambiguous", "unrecoverable"])
+def test_ambiguous_or_unrecoverable_page_is_excluded(frozen: str) -> None:
+    text = " ".join(REFERENCE)
+    assert SCORING.classify_page(text, REFERENCE, frozen, RULE)["class"] == "excluded"
 
 
 def test_junk_text_layer_needs_ten_percent_of_pages() -> None:
