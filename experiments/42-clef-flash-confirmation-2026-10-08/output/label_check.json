@@ -1,0 +1,428 @@
+{
+  "status": "operator check WAIVED by amendment A1 (2026-10-09); sample kept for review",
+  "renders": "output/.pages/<doc_id>/pNNN.png (poppler pdftoppm renders made during labelling; gitignored)",
+  "max_class_disagreements": 3,
+  "disagreements": null,
+  "sample": [
+    {
+      "stratum": "junk",
+      "doc_id": "oo02",
+      "page": 7,
+      "class": "junk",
+      "body_recall": 0.008571428571428572
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "st12",
+      "page": 3,
+      "class": "junk",
+      "body_recall": 0.003389830508474576
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "rs19",
+      "page": 4,
+      "class": "junk",
+      "body_recall": 0.0
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "rs17",
+      "page": 8,
+      "class": "junk",
+      "body_recall": 0.33980582524271846
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "rs13",
+      "page": 16,
+      "class": "junk",
+      "body_recall": 0.29327902240325865
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "oo15",
+      "page": 7,
+      "class": "junk",
+      "body_recall": 0.2631578947368421
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "oo02",
+      "page": 6,
+      "class": "junk",
+      "body_recall": 0.0069767441860465115
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "oo02",
+      "page": 4,
+      "class": "junk",
+      "body_recall": 0.007653061224489796
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "rs33",
+      "page": 1,
+      "class": "junk",
+      "body_recall": 0.43
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "st12",
+      "page": 4,
+      "class": "junk",
+      "body_recall": 0.0
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "rs58",
+      "page": 3,
+      "class": "junk",
+      "body_recall": 0.3536
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "rs51",
+      "page": 4,
+      "class": "junk",
+      "body_recall": 0.4514285714285714
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "rs13",
+      "page": 9,
+      "class": "junk",
+      "body_recall": 0.4133611691022965
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "rs60",
+      "page": 1,
+      "class": "junk",
+      "body_recall": 0.4267515923566879
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "rs19",
+      "page": 1,
+      "class": "junk",
+      "body_recall": 0.0
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "rs19",
+      "page": 7,
+      "class": "junk",
+      "body_recall": 0.0
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "st12",
+      "page": 1,
+      "class": "junk",
+      "body_recall": 0.0
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "rs58",
+      "page": 2,
+      "class": "junk",
+      "body_recall": 0.44353518821603927
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "oo02",
+      "page": 5,
+      "class": "junk",
+      "body_recall": 0.0070921985815602835
+    },
+    {
+      "stratum": "junk",
+      "doc_id": "rs30",
+      "page": 19,
+      "class": "junk",
+      "body_recall": 0.29012345679012347
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs57",
+      "page": 12,
+      "class": "healthy",
+      "body_recall": 1.0
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs43",
+      "page": 2,
+      "class": "healthy",
+      "body_recall": 0.9884057971014493
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs32",
+      "page": 9,
+      "class": "healthy",
+      "body_recall": 0.9811320754716981
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs14",
+      "page": 6,
+      "class": "healthy",
+      "body_recall": 0.9747003994673769
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs35",
+      "page": 12,
+      "class": "healthy",
+      "body_recall": 0.9819121447028424
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs46",
+      "page": 6,
+      "class": "healthy",
+      "body_recall": 0.9771197846567967
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs20",
+      "page": 8,
+      "class": "healthy",
+      "body_recall": 0.9718045112781954
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "st02",
+      "page": 5,
+      "class": "healthy",
+      "body_recall": 0.9873417721518988
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs05",
+      "page": 6,
+      "class": "healthy",
+      "body_recall": 0.950110864745011
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs59",
+      "page": 20,
+      "class": "healthy",
+      "body_recall": 0.9312796208530806
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs34",
+      "page": 2,
+      "class": "healthy",
+      "body_recall": 0.9955947136563876
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs27",
+      "page": 3,
+      "class": "healthy",
+      "body_recall": 0.9813581890812251
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs05",
+      "page": 4,
+      "class": "healthy",
+      "body_recall": 0.9555555555555556
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs14",
+      "page": 4,
+      "class": "healthy",
+      "body_recall": 0.9517884914463453
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs27",
+      "page": 1,
+      "class": "healthy",
+      "body_recall": 0.9923664122137404
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "st08",
+      "page": 5,
+      "class": "healthy",
+      "body_recall": 0.8648648648648649
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "st07",
+      "page": 11,
+      "class": "healthy",
+      "body_recall": 0.9750623441396509
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs30",
+      "page": 11,
+      "class": "healthy",
+      "body_recall": 0.8718199608610567
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "st08",
+      "page": 1,
+      "class": "healthy",
+      "body_recall": 0.9137931034482759
+    },
+    {
+      "stratum": "healthy",
+      "doc_id": "rs28",
+      "page": 3,
+      "class": "healthy",
+      "body_recall": 0.9987515605493134
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs35",
+      "page": 7,
+      "class": "healthy",
+      "body_recall": 0.8495575221238938
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs26",
+      "page": 15,
+      "class": "junk",
+      "body_recall": 0.4789156626506024
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "oo15",
+      "page": 3,
+      "class": "grey",
+      "body_recall": 0.5882352941176471
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs38",
+      "page": 19,
+      "class": "healthy",
+      "body_recall": 0.833904109589041
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs04",
+      "page": 5,
+      "class": "healthy",
+      "body_recall": 0.827433628318584
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs38",
+      "page": 9,
+      "class": "healthy",
+      "body_recall": 0.8031189083820662
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs01",
+      "page": 8,
+      "class": "healthy",
+      "body_recall": 0.8238636363636364
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs26",
+      "page": 23,
+      "class": "grey",
+      "body_recall": 0.7530120481927711
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs14",
+      "page": 3,
+      "class": "healthy",
+      "body_recall": 0.8441558441558441
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs38",
+      "page": 14,
+      "class": "grey",
+      "body_recall": 0.7900172117039587
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs30",
+      "page": 6,
+      "class": "healthy",
+      "body_recall": 0.8334849863512284
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs30",
+      "page": 1,
+      "class": "healthy",
+      "body_recall": 0.8055555555555556
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs23",
+      "page": 3,
+      "class": "healthy",
+      "body_recall": 0.834841628959276
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs26",
+      "page": 28,
+      "class": "healthy",
+      "body_recall": 0.8231511254019293
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs04",
+      "page": 1,
+      "class": "healthy",
+      "body_recall": 0.8488576449912126
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs59",
+      "page": 11,
+      "class": "healthy",
+      "body_recall": 0.8221757322175732
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs57",
+      "page": 20,
+      "class": "healthy",
+      "body_recall": 0.8076923076923077
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "st08",
+      "page": 7,
+      "class": "healthy",
+      "body_recall": 0.8291457286432161
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs52",
+      "page": 4,
+      "class": "junk",
+      "body_recall": 0.45454545454545453
+    },
+    {
+      "stratum": "grey_or_boundary",
+      "doc_id": "rs54",
+      "page": 12,
+      "class": "junk",
+      "body_recall": 0.46335078534031415
+    }
+  ]
+}

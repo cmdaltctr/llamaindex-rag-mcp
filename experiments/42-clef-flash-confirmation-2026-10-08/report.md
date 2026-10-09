@@ -1,0 +1,111 @@
+# Experiment 42 report: Clef-flash confirmation
+
+**Verdict: FAIL.** Under OD1 option A, a PASS needs G1, G2 and the margin; Clef-flash Q8_0 W1 failed all three. G3, which is secondary, also failed: Clef-flash flagged 11 of 358 rescued healthy pages, a rate of 3.1% (Wilson 95% interval 1.7% to 5.4%) against a 2% ceiling. Following design D10, work on the readable-language judge stops. Standard text-quality methods remain untested on this problem (see Methods against standard practice).
+
+- **Date**: 2026-10-09
+- **Protocol**: [`protocol.md`](protocol.md), plan [`plan.json`](plan.json) (amendments A1 to A9)
+- **OpenSpec change**: `experiment-42-clef-flash-confirmation`
+- **Source of every number**: `output/summary.json` supplies the evaluation tables (printed by `analysis.py` into `output/report_tables.md`). The other figures come from `output/set_check.json` (targets), `output/gemini_spend.json` (reference cost), `output/speed.json` (timing), `output/label_check.json` (label sample) and `output/diagnostic_all_pages.json` (post-verdict diagnostic).
+
+## What was tested
+
+This was not an OCR test. pdf-inspector reads every PDF. When it fails silently (it says a page has text, then extracts nothing), the chain rescues the document with LiteParse (ADR-066). Production then trusts the rescued text and indexes it, even when the hidden OCR layer it came from is garbage (TDR-024).
+
+The question was this: when production rescues a document, can Clef-flash read the rescued text and send junk documents to OCR without also sending good documents? Both thresholds were frozen on Experiment 38 data before any download. The reference transcription (Gemini 3.8 Flash, the engine behind the Experiment 33 and 38 labels) was a measuring tool only.
+
+## Population
+
+- **Documents.** 68 rescued documents with no Experiment 33 overlap. 8 came from the first 130 documents, and 60 from screening ACL Anthology 1989 to 1991, Archive.org Sevilla collections and NASA NTRS scans (amendment A8). Production rescued all 68 with LiteParse and routed none of them to OCR.
+- **Document labels.** 36 `usable`, 19 `needs_ocr`, 13 `ambiguous`. 19 documents have a junk text layer.
+- **LiteParse page classes.** 76 junk, 358 healthy, 7 grey and 171 excluded. Most exclusions are `ambiguous` Sevilla handwriting pages.
+- **Targets.** Every A8 target passed (`output/set_check.json`). The largest one-document share of junk pages was 11.8%.
+- **Reference cost.** USD 3.38 on OpenRouter against the USD 9.00 cap. 1 page of 612 had a parse error and is excluded.
+
+## Results (LiteParse text, rescued documents)
+
+| Arm | Junk caught | Recall (Wilson) | Healthy flagged | Rate (Wilson) | G1 | G2 | G3 |
+| --- | ---: | --- | ---: | --- | --- | --- | --- |
+| Production today (no check) | 0/76 | 0.0% (0.0% to 4.8%) | 0/358 | 0.0% (0.0% to 1.1%) | FAIL | PASS | PASS |
+| Word check (A) | 49/76 | 64.5% (53.3% to 74.3%) | 1/358 | 0.3% (0.0% to 1.6%) | FAIL | PASS | PASS |
+| Clef-flash Q8_0 W1 | 56/76 | 73.7% (62.8% to 82.3%) | 11/358 | 3.1% (1.7% to 5.4%) | FAIL | FAIL | FAIL |
+
+| Arm | Document-cluster recall interval | Document-cluster rate interval | AUC | Rate at threshold ×0.9 / ×1.1 |
+| --- | --- | --- | ---: | --- |
+| Word check (A) | 48.6% to 85.7% | 0.0% to 0.9% | 0.854 | 0.0% / 40.2% |
+| Clef-flash Q8_0 W1 | 57.1% to 85.3% | 0.9% to 5.8% | 0.969 | 2.0% / 4.2% |
+
+| Arm | Rescued junk-layer documents missed (G1) | Rescued usable documents sent to OCR (G2) |
+| --- | --- | --- |
+| Word check (A) | `rs37` | none |
+| Clef-flash Q8_0 W1 | `rs06`, `rs08`, `rs10`, `rs17`, `rs51`, `rs58` | `st08`, `rs11`, `rs23`, `rs32`, `rs34`, `rs59` |
+
+**Margin.** Clef-flash recall exceeded the word check by 0.092, short of the required 0.10. McNemar counted 25 junk pages caught by Clef-flash only and 18 caught by the word check only, giving a one-sided p of 0.180 (the margin needs p < 0.05). H2 fails.
+
+**Speed.** Clef-flash took 0.69 s per page at the median (mean 0.73 s, 95th percentile 1.20 s, n = 873), one request at a time. The build was llama.cpp b11510 with `-b/-ub 8192` (A5). 0 of 875 requests failed.
+
+## Why Clef-flash failed
+
+1. **Healthy pages are flagged above the frozen rate.** At the threshold fitted at 2% on Experiment 38, Clef-flash flagged 3.1% of new healthy pages. Experiment 38 measured 2.3%. The rate is steep near the threshold: it is 2.0% at ×0.9 and 4.2% at ×1.1.
+2. **Short rescued documents turn one false flag into a whole-document route.** All six usable documents sent to OCR were sent on 1 to 4 flagged pages each. Five have 10 pages or fewer, so one flag already reaches the 10% routing share. The six would cost 58 pages of OCR, about 37 minutes at the dots.mocr rate of 38.2 s per page.
+3. **Junk spread thinly across documents is missed.** The six missed junk-layer documents are Sevilla handwritten archives with 1 to 3 junk pages each. Most of their other pages are `ambiguous` and are not scored. Clef-flash caught 1 of their 9 junk pages; the word check flagged enough of them to route all six.
+4. **Ranking is better than any single cut.** Clef-flash ranks junk below healthy far better than the word check (AUC 0.969 against 0.854). The frozen single threshold cannot turn that ranking into a routing decision that passes both G1 and G2 on short documents.
+
+## The word check (A)
+
+The word check came within one document of passing the primary gates. It missed `rs37`, an ACL paper with 1 junk page among 6, and sent no usable document to OCR. It flagged 1 of 358 healthy pages. Under design D10 it still counts as a FAIL (row 3), because G1 failed. This is an observation for the operator, not a change of verdict. Its threshold sits on a cliff: at ×1.1 its healthy flag rate jumps to 40.2%.
+
+## Limits
+
+- **Operator label check waived (A1).** No person reviewed the labels against page images. The 60-page stratified sample is listed in `output/label_check.json`, and the renders are in `output/.pages/`.
+- **Routing counts flags only on scored pages.** As in Experiment 38, grey and excluded pages carry no score, so they cannot help a document reach the 10% share. Production would score every rescued page. This lowers G1 for both signals, mostly on the Sevilla handwriting documents. It does not explain G2 or G3, which fail on clean pages.
+- **Sources differ from Experiment 38.** The rescued set is 30 ACL papers, 24 Sevilla archive items, 2 other Archive.org scans and 12 NASA scans, chosen by the shipped reader's own routing output. Experiment 38 used the Experiment 33 strata. The threshold may transfer differently to other rescued collections.
+- **Reference engine change (A7) and poppler (A9).** The labels come from the Experiment 33 procedure, imported unchanged and run on this machine's poppler 26.10.0. Experiment 33 used an earlier poppler build.
+- **Population change (A8).** The gates were restated for rescued documents before any label existed. The fast-path and OCR-routed documents (122 of the first 130) are outside this test.
+
+## Post-verdict diagnostic D1: every rescued page scored
+
+This diagnostic was run after the verdict. It does not change the verdict (`diagnostic_all_pages.py`, `output/diagnostic_all_pages.json`).
+
+The pre-registered routing simulation counts flags only on pages labelled junk or healthy. Production would score every rescued page. D1 scored all 602 non-empty LiteParse pages of the 68 rescued documents at the frozen thresholds, then applied the unchanged 10% routing share.
+
+| Arm | Junk-layer documents missed (G1) | Usable documents sent to OCR (G2) |
+| --- | --- | --- |
+| Word check (A) | `rs37` | `rs23`, `rs49` |
+| Clef-flash Q8_0 W1 | `rs06`, `rs10`, `rs17`, `rs58` | `rs11`, `rs23`, `rs32`, `rs34`, `rs49`, `rs57`, `rs59`, `st08` |
+
+**Reading.** Scoring every page does not change the result. Clef-flash routes `rs08` and `rs51`, but it flags 0 of the 20 pages of `rs06`, `rs10`, `rs17` and `rs58`. Those are Sevilla archive items with garbled old Latin and Spanish OCR, and Clef-flash scores them between 0.07 and 0.23, above the 0.0577 threshold. More usable documents route (8, not 6). The word check gets slightly worse (2 usable documents now route), but it stays well ahead of Clef-flash.
+
+**Cause.** The two Clef-flash failures share one cause. The W1 question asks whether text is readable writing in a natural language. The labels ask whether the text layer matches the printed page. Old OCR that keeps word-like Latin or Spanish passes the first question and fails the second. Faithful non-prose text (chart axes, grammar formulas, verse, a page-number index) fails the first question and passes the second. All 11 rescued healthy pages that Clef-flash flagged in the main run are text of this kind, with body recall 0.83 to 1.00.
+
+**Implication for a future proposal.** A rescue-quality check should measure faithfulness to the page, not how much the text looks like prose. A routing rule should also not send a short document to OCR on one flagged page. Either change is a new experiment on new documents.
+
+## Methods against standard practice
+
+This section was written after the verdict. It compares the design with published work on reference-free OCR quality estimation. The full note and the 19 references (15 DOIs verified through CrossRef) are in [`LITERATURE.md`](LITERATURE.md).
+
+| Point | Standard practice | Experiments 38 and 42 |
+| --- | --- | --- |
+| Target | Page error rate (CER or WER) against aligned, human-checked transcriptions [1, 13, 16] | Token recall against a vision-LLM transcription with no human check (A1) |
+| Evaluation | How well the score tracks the error rate (Spearman ρ, mean absolute error), then precision and recall at a threshold [8, 14, 16] | One pass or fail threshold only |
+| Threshold | Fitted on a development split by cost of each error; held-out collections are rare but recommended [8, 14, 16] | Fitted at a 2% false-positive rate on 40 documents, then frozen |
+| Non-text content | Removed before scoring, by layout region or minimum length [2, 7, 8] | Scored as if it were prose |
+| Historical text | Dictionary or model per language and period [2, 6, 7, 15] | One modern judge for 18th-century Latin and Spanish |
+| Document decision | Length-weighted error, or predicted gain from re-OCR [14] | 10% of pages flagged |
+| Baselines | Token ratio, character n-gram ratio, garbage rules [6, 11, 16] | Word check (A) only |
+
+**What this changes.**
+
+1. **Both Clef-flash failure modes are known weaknesses.** Faithful non-prose text that scores as junk, and garbled historical text that scores as readable, are documented problems for lexical and model-based quality measures [6, 7, 14]. The usual remedies are to remove non-text first and to use language- and period-specific models.
+2. **The tested judge is unusual.** No peer-reviewed study of a yes/no LLM readability judge was found. This result is a negative finding for that method, not for text-quality checks in general.
+3. **Simple baselines are strong in the literature.** On Latin lines, token ratio and character 7-gram ratio track CER with Spearman ρ ≥ 0.94, and language-model perplexity with 0.65 to 0.78 [16]. This agrees with the word check's near-pass here.
+4. **The problem is open.** No benchmark covers hidden PDF text layers that someone else made earlier, and no published rule turns page scores into a document decision.
+
+**References** (numbers as in `LITERATURE.md`): [1] Alex and Burns 2014, 10.1145/2595188.2595214. [2] Booth et al. 2022, 10.63317/3kd8n7srb9vx. [6] Cuper and den Boer 2025, 10.63744/wd9byr0wxuta. [7] Cuper, DH Benelux Journal 4 (unverified). [8] Gupta et al. 2015, 10.1609/aaai.v29i1.9487. [11] Kulp and Kontostathis 2007, 10.6028/nist.sp.500-274.legal-ursinus-college.kontostathis. [13] Rigaud et al. 2019, 10.1109/icdar.2019.00255. [14] Schneider and Maurer 2022, 10.46298/jdmdh.8561. [15] Springmann et al. 2016, arXiv:1606.05157. [16] Ströbel et al. 2022, 10.63317/5q7mf345k9h5.
+
+## Conclusion and next action
+
+H1 and H2 fail; H3 (secondary) fails. Clef-flash Q8_0 W1 at the frozen threshold is not adopted as the rescue-quality gate.
+
+Following the D10 outcome table, the run records the failed gates and documents above and stops work on the readable-language judge. Task 7.1 opens no follow-up change. The D10 wording "stop text-only rescue-signal work" is narrowed after the verdict: the standard methods in the section above were never tested, so this result does not rule them out.
+
+The operator may still decide whether the word check's near-pass (G1 missed on one document) or Clef-flash's ranking (AUC 0.969) justifies a new, separately pre-registered proposal. Examples would be a document-level rule that does not route on a single flagged page, or a check that scores every rescued page. A standard design would score page error rate, remove non-text first, compare simple baselines with any judge, fit thresholds on some collections and test on others, and decide per document by a length-weighted score (`LITERATURE.md`, section 5). Any such proposal is a new experiment on new documents, and its thresholds cannot be fitted on this set.

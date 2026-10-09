@@ -1,0 +1,9 @@
+{
+  "files": {
+    "candidate_a.json": "58f4f0f0f877aed72956dfc3e40bccbbe5a9269b592ad00960c62aca39c9cdea",
+    "clef_flash.json": "2a4c7792a2a67a44ef36b4c016ac2ce18af99b7aa02984f4d106b33bfd3c03d0",
+    "speed.json": "69919b31a8dd7dfaecdf8856a0558fc1fc1e23e6f8744d8b3c63b09f627069bc",
+    "control_routing.json": "a48879ff52aba31678888d66527358c608dd477b238c163fd556fd9dfa2f2e68",
+    "labels.json": "5f5da346e9a5da89219d305a93c8a0d949b5b529b43ef5d52bc271ce5ddec3f9"
+  }
+}

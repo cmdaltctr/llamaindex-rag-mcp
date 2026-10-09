@@ -1,0 +1,9 @@
+output/bin/
+output/.renders/
+output/.references/
+output/.rescue_text/
+output/.body/
+output/*.log
+output/.pages/
+output/.transcripts/
+output/.transcripts_split/

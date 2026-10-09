@@ -1,10 +1,10 @@
 {
   "experiment_id": "42-clef-flash-confirmation-2026-10-08",
   "protocol_version": 1,
-  "status": "planned",
+  "status": "FAIL",
   "change_ref": "openspec/changes/experiment-42-clef-flash-confirmation",
   "niftypm": null,
-  "question": "Does Clef-flash Q8_0 with wording W1, at a threshold frozen on Experiment 38, pass the rescue-quality gates on documents it has never seen?",
+  "question": "When production rescues a document (pdf-inspector fails silently and LiteParse or pypdf returns text), does Clef-flash Q8_0 W1 at the threshold frozen on Experiment 38 send rescued junk documents to OCR without sending rescued usable documents, and catch clearly more junk pages than the word check? Not an OCR test.",
   "prior_evidence": {
     "experiment": "38-rescue-quality-signal-2026-09-30",
     "verdict": "FAIL",
@@ -22,7 +22,9 @@
       "G2": "FAIL (rf05)",
       "G3": "FAIL"
     },
-    "largest_junk_cluster": {"rf06": "41 of 89 LiteParse junk pages"}
+    "largest_junk_cluster": {
+      "rf06": "41 of 89 LiteParse junk pages"
+    }
   },
   "arms": {
     "control": {
@@ -41,8 +43,8 @@
     "treatment": {
       "name": "Clef-flash, llama.cpp Q8_0",
       "model": "ggml-org/Clef-Flash-GGUF, Clef-Flash-Q8_0.gguf (9.7 GB, Apache 2.0, base Cloudflare/clef-flash)",
-      "model_sha256": null,
-      "model_sha256_source": "Hugging Face LFS metadata for Clef-Flash-Q8_0.gguf; recorded in task 4.2 before scoring",
+      "model_sha256": "d7c352faf1bdd9ea24d0b9347e8eb1eb4bbadeff6c02383bf750215a74f2f1f1",
+      "model_sha256_source": "huggingface_hub HfApi.model_info('ggml-org/Clef-Flash-GGUF', files_metadata=True) LFS sha256, read 2026-10-09",
       "runtime": "llama-server build b11510 or later (b11510 includes the Metal fix from PR #30100)",
       "endpoint": "http://127.0.0.1:<port>/v1/systemone",
       "bind": "127.0.0.1 only",
@@ -50,7 +52,10 @@
       "client": "Experiment 38 score_wordings.py JevClient path for clefgguf; a copy is allowed only with a matching hash",
       "request": {
         "type": "noul",
-        "options": ["no", "yes"],
+        "options": [
+          "no",
+          "yes"
+        ],
         "question": "Is this text readable writing in a natural language, rather than garbled or broken OCR output?",
         "state": "first 2000 characters of the normalised page text",
         "head_characters": 2000,
@@ -58,33 +63,38 @@
       },
       "score": "P(yes); lower is junkier",
       "flag_rule": "score < thresholds.clef_flash_q8_0_w1.value",
-      "runtime_record": "ADR-074 (Proposed); AGENTS.md Critical Gotcha 16"
+      "runtime_record": "ADR-074 (Proposed); AGENTS.md Critical Gotcha 16",
+      "model_file": "Experiment 38 copy: experiments/38-rescue-quality-signal-2026-09-30/output/.models/clef/gguf/Clef-Flash-Q8_0.gguf in the v3 worktree (gitignored), 9,657,260,192 bytes"
     }
   },
   "thresholds": {
     "fit_rule": "Experiment 38 equal-cost rule: the threshold where the healthy false-positive rate is 0.02 on the LiteParse healthy pages of all 40 Experiment 38 documents; ties kept; flag when the score is strictly below the threshold. One fit, not leave-one-document-out.",
     "refit_on_new_documents": false,
     "clef_flash_q8_0_w1": {
-      "value": null,
+      "value": 0.057655346865763686,
       "input": "experiments/38-rescue-quality-signal-2026-09-30/output/wording_clefgguf_w1.json (LiteParse tier, 565 healthy pages)",
-      "input_sha256": null,
-      "commit": null,
-      "status": "to fit in task 2.1, before sourcing ends; frozen after commit"
+      "input_sha256": "13a4553de255779a5be413a89db1b68fd9a28dc966c0ede0e3ee008f13d764bd",
+      "commit": "04a0a473d167aeed99dfe557eb130a6fa14b0c25",
+      "status": "fitted 2026-10-09 by fit_thresholds.py; frozen"
     },
     "word_check_a": {
-      "value": null,
+      "value": 0.8834080717488789,
       "expected": 0.8834080717,
       "input": "committed Experiment 38 candidate A scores (LiteParse tier, 565 healthy pages)",
-      "input_sha256": null,
-      "commit": null,
-      "status": "to fit in task 2.2; a value other than the expected one stops the run"
+      "input_sha256": "c771cd3e125c879787cbc4431a14706dfeeb62a6e194006f562a7ea843016c05",
+      "commit": "04a0a473d167aeed99dfe557eb130a6fa14b0c25",
+      "status": "fitted 2026-10-09 by fit_thresholds.py; frozen"
     }
   },
   "classes": {
     "junk": "body token recall < 0.50 and at least one token",
     "healthy": "body token recall >= 0.80",
     "grey": "0.50 <= recall < 0.80, reported only",
-    "excluded": ["reference < 10 body tokens", "page illegible", "empty rescue text"],
+    "excluded": [
+      "reference < 10 body tokens",
+      "page illegible",
+      "empty rescue text"
+    ],
     "token_rule": "experiments/33-ocr-routing-natural-positive-2026-09-17/build_labels.py tokens and recall, imported",
     "basis": "frozen Experiment 33 page rule thresholds"
   },
@@ -100,27 +110,103 @@
   },
   "sourcing": {
     "licence": "open licence or public domain only",
-    "strata": ["born_digital", "mixed", "scan_with_text_layer", "reader_failure", "old_ocr_layer (handwriting, poor print, non-Latin scripts)"],
+    "strata": [
+      "born_digital",
+      "mixed",
+      "scan_with_text_layer",
+      "reader_failure",
+      "old_ocr_layer (handwriting, poor print, non-Latin scripts)"
+    ],
     "seed": 42,
-    "procedure": null,
-    "procedure_status": "to write and get operator approval in task 1.4, before any download",
+    "procedure": {
+      "approved": "2026-10-09",
+      "approved_by": "operator (session answer 2026-10-09: run everything)",
+      "seed": 42,
+      "selection_inputs": "metadata only; each list is ordered before any download and taken in that order",
+      "common_rules": [
+        "PDF only; page count read with pypdf; skip a document whose page count is outside its stratum range",
+        "skip a download that fails, is blocked or is not a PDF; record the reason in SOURCING.md",
+        "skip a document whose SHA-256 or source identifier is in Experiment 33 sources.json",
+        "skip a duplicate SHA-256 within this set",
+        "stop each stratum at its document quota"
+      ],
+      "strata": {
+        "born_digital": {
+          "quota": 40,
+          "pages": [
+            3,
+            30
+          ],
+          "source": "OpenAlex works API, filter best_oa_location.license:cc-by, type:article, publication_year:2021-2025, has_content.pdf:true; sample=200, seed=42; order as returned; PDF from best_oa_location.pdf_url"
+        },
+        "mixed": {
+          "quota": 15,
+          "pages": [
+            4,
+            30
+          ],
+          "source": "NASA NTRS citations search API, query 'report', published.gte/published.lte = 2010-01-01 to 2024-12-31; first 300 records (three pages of 100), deduplicated, sorted by NTRS id ascending, random.Random(42).shuffle; keep records with distribution PUBLIC, a PDF download, a copyright record with no author, contractor, publisher or third-party flag, and stiType not PRESENTATION, POSTER or ABSTRACT; PDF from downloads[].links.pdf"
+        },
+        "scan_with_text_layer": {
+          "quota": 12,
+          "pages": [
+            4,
+            30
+          ],
+          "source": "NASA NTRS citations search API, query 'report', published.gte/published.lte = 1955-01-01 to 1985-12-31; first 300 records (three pages of 100), deduplicated, sorted by NTRS id ascending, random.Random(42).shuffle; keep records with distribution PUBLIC, a PDF download, a copyright record with no author, contractor, publisher or third-party flag, and stiType not PRESENTATION, POSTER or ABSTRACT; PDF from downloads[].links.pdf; scans with NTRS OCR layers"
+        },
+        "old_ocr_layer": {
+          "quota": 18,
+          "pages": [
+            4,
+            30
+          ],
+          "source": "Archive.org advancedsearch, mediatype:texts, licenseurl contains publicdomain, imagecount 4-30, item has a 'Text PDF' file; six groups of 3: Arabic, Urdu, Persian, Hindi, Bengali (language codes and names), and handwriting (subject:manuscript OR subject:handwriting OR subject:letters); per group, first 200 identifiers ascending, random.Random(42).shuffle, take in order"
+        }
+      },
+      "extension": "if task 3.7 misses a D3 target, continue down the same ordered lists (born_digital and mixed for healthy pages and usable documents; old_ocr_layer groups in round-robin for junk targets) and label the added documents; no candidate score exists at that point. Each extension round is listed in SOURCING.md and amendments.",
+      "revision_note": "2026-10-09, before any download: the NTRS stiType filter (TECHNICAL_REPORT, CONFERENCE_PAPER) matched almost no records because NTRS uses other type names; replaced by the copyright-field rule above. The OpenAlex and Archive.org lists are unchanged."
+    },
+    "procedure_status": "approved 2026-10-09",
     "exclusion": "any SHA-256 or source identifier in experiments/33-ocr-routing-natural-positive-2026-09-17/sources.json",
     "selection_inputs": "metadata and labels only; no candidate score before the freeze",
-    "storage": "corpus/ (gitignored)"
+    "storage": "corpus/ (gitignored)",
+    "rescue_screen": {
+      "set": "2026-10-09, amendment A8, before any download in this round",
+      "lists": {
+        "acl": "ACL Anthology paper ids from volumes P89-1, P90-1, P91-1, H89-1, H90-1, H91-1, E89-1, E91-1, C90-1, C90-2, C90-3 (front matter x000 excluded), random.Random(42).shuffle; https://aclanthology.org/<id>.pdf; CC BY-NC-SA 3.0; pages 3-30",
+        "ia_sevilla": "Archive.org advancedsearch collection:(archivo-historico-universidad-sevilla OR bibliotecauniversitariadesevilla) AND imagecount:[4 TO 30] AND licenseurl:*publicdomain*, first 300 identifiers ascending, random.Random(42).shuffle; the item's Text PDF; pages 4-30",
+        "ntrs_scans": "the not-yet-tried remainder of output/candidates.json scan_with_text_layer, in its saved order; pages 4-30"
+      },
+      "order": "round-robin acl, ia_sevilla, ntrs_scans",
+      "keep_rule": "download, apply the Experiment 33 exclusion and duplicate rules, read once with the shipped read_documents (packaged settings, ocr_client=None); keep the document only when extraction_fallback_backend is not None; otherwise delete the file and log 'not rescued'",
+      "stop": "60 new rescued documents, or 30 rescued from one list (that list then stops), or 90 minutes of screening, or every list exhausted",
+      "selection_inputs": "the shipped reader's routing output only; no label, reference or score"
+    }
   },
   "labelling": {
-    "render": "poppler pdftoppm, 150 dpi, 1600 px long side, PNG",
-    "reference_engine": null,
-    "reference_engine_status": "OD2, proposed dots.mocr (local, ADR-072)",
-    "body_text_rule": null,
-    "body_text_rule_status": "to write in task 3.3 before the split, following the Experiment 33 body-text amendment",
+    "render": "pdftoppm -r 150 -scale-to 1600 (amendment A9; A3 withdrawn)",
+    "reference_engine": "google/gemini-3.8-flash via OpenRouter, Experiment 33 label_pages.py PROMPT, SPLIT_PROMPT and _transcribe imported unchanged (temperature 0, JSON output, reasoning effort low)",
+    "reference_engine_status": "OD2 revised by amendment A7, 2026-10-09",
+    "body_text_rule": {
+      "written": "2026-10-09, revised by A7 before any split",
+      "rule": "Experiment 33 procedure. Pass 1: full transcription (PROMPT) of every page; page label from Experiment 33 page_label on the full transcription, r_best = max recall of LiteParse and pypdf text (A4). Pass 2: pages labelled needs_ocr or ambiguous get the body/figure split (SPLIT_PROMPT); their label is recomputed on body_text. Reference for rescue-page classes: split body_text where a split exists, else the full transcription (Experiment 38 score_candidates.body_reference rule).",
+      "superseded": "the dots.mocr layout rule written earlier on 2026-10-09; never applied to any label"
+    },
+    "body_text_rule_status": "written 2026-10-09",
     "operator_check": {
-      "sample": {"junk": 20, "healthy": 20, "grey_or_boundary": 20},
+      "sample": {
+        "junk": 20,
+        "healthy": 20,
+        "grey_or_boundary": 20
+      },
       "max_class_disagreements": 3,
       "on_fail": "stop; amendment before any score"
     },
     "freeze": "this experiment's freeze.py --check before every later step",
-    "network": "none"
+    "network": "OpenRouter google/gemini-3.8-flash for reference transcription only (A7); scored arms run locally",
+    "population": "rescued documents only (A8): the first 8 from the original 130 plus the screened ones; the other 122 original documents are not labelled (budget) and are reported as counts",
+    "budget_usd_cap": 9.0
   },
   "sample_size": {
     "healthy_pages_min": 1000,
@@ -134,12 +220,34 @@
     "reason": "2% of 1,000 healthy pages is 20 pages, so one page does not decide G3; junk spread over at least six documents so one document does not decide recall",
     "g3_pass_probability": {
       "method": "exact binomial, ceiling = floor(0.02 x healthy pages)",
-      "565": {"true_rate_0.015": 0.85, "true_rate_0.020": 0.54, "true_rate_0.023": 0.35},
-      "1000": {"true_rate_0.015": 0.92, "true_rate_0.020": 0.56, "true_rate_0.023": 0.31},
-      "1500": {"true_rate_0.015": 0.95, "true_rate_0.020": 0.55, "true_rate_0.023": 0.25},
+      "565": {
+        "true_rate_0.015": 0.85,
+        "true_rate_0.020": 0.54,
+        "true_rate_0.023": 0.35
+      },
+      "1000": {
+        "true_rate_0.015": 0.92,
+        "true_rate_0.020": 0.56,
+        "true_rate_0.023": 0.31
+      },
+      "1500": {
+        "true_rate_0.015": 0.95,
+        "true_rate_0.020": 0.55,
+        "true_rate_0.023": 0.25
+      },
       "note": "a threshold fitted at 2% gives a rate near 2% on similar pages, so G3 is close to a coin toss at any size; this motivates OD1"
     },
-    "on_miss": "stop before scoring; extend sourcing or record a dated amendment with a new power statement"
+    "on_miss": "stop before scoring; extend sourcing or record a dated amendment with a new power statement",
+    "rescued_population_targets": {
+      "set": "2026-10-09, amendment A8, from counts only before any label",
+      "rescued_junk_layer_documents_min": 6,
+      "rescued_usable_documents_min": 20,
+      "rescued_junk_pages_min": 60,
+      "rescued_healthy_pages_min": 300,
+      "largest_document_share_of_junk_pages_max": 0.25,
+      "overlap_with_experiment_33": 0,
+      "supersedes": "healthy_pages_min, junk_pages_min, junk_text_layer_documents_min, junk_text_layer_documents_not_routed_by_control_min, usable_documents_min"
+    }
   },
   "routing_simulation": {
     "fraction": 0.1,
@@ -147,12 +255,20 @@
     "projected_cost": "OCR seconds per newly routed document, dots.mocr 38.2 s per page and PaddleOCR-VL 23.2 to 164.1 s per page (Experiment 34)"
   },
   "gates": {
-    "G1": {"rule": "every document with a junk text layer routes"},
-    "G2": {"rule": "no usable document newly routes, compared with the control arm"},
-    "G3": {"rule": "healthy false-positive rate <= 0.02 at the frozen threshold"},
-    "margin": {"rule": "Clef-flash junk recall >= candidate A junk recall + 0.10, and exact one-sided McNemar on junk pages p < 0.05"},
-    "priority": null,
-    "priority_status": "OD1 open; G1 and the margin are primary under both options"
+    "G1": {
+      "rule": "every rescued document with a junk text layer routes (A8)"
+    },
+    "G2": {
+      "rule": "no rescued usable document newly routes, compared with the control arm (A8)"
+    },
+    "G3": {
+      "rule": "rescued healthy false-positive rate <= 0.02 at the frozen threshold; secondary under OD1 A"
+    },
+    "margin": {
+      "rule": "Clef-flash junk recall >= candidate A junk recall + 0.10, and exact one-sided McNemar on junk pages p < 0.05"
+    },
+    "priority": "A",
+    "priority_status": "OD1 recorded 2026-10-09: PASS needs G1, G2 and the margin; G3 reported with its interval, not deciding"
   },
   "runtime_checks": {
     "llama_cpp_build": "llama-server --version reports b11510 or later",
@@ -165,7 +281,10 @@
   },
   "analysis": {
     "population": "LiteParse tier primary; pypdf diagnostic",
-    "intervals": {"wilson": "95%", "bootstrap": "document-cluster, 2000 resamples, seed 42"},
+    "intervals": {
+      "wilson": "95%",
+      "bootstrap": "document-cluster, 2000 resamples, seed 42"
+    },
     "measures": [
       "junk recall",
       "healthy false-positive rate",
@@ -186,34 +305,165 @@
   ],
   "amendment_rule": "dated, committed and listed in amendments before the data it affects is scored; after any score exists no amendment changes the thresholds, wording, gates, margin or gate priority; no interim look before every arm is scored and its output hashed",
   "outcome_table": [
-    ["Clef-flash passes primary gates and margin", "A any", "PASS", "follow-up OpenSpec change to adopt the gate, plus ADR"],
-    ["Clef-flash fails", "A passes primary gates", "FAIL for Clef-flash", "record; operator decides whether A alone justifies a proposal"],
-    ["Clef-flash fails", "A fails", "FAIL", "record failed gate and pages; stop text-only rescue-signal work"]
+    [
+      "Clef-flash passes primary gates and margin",
+      "A any",
+      "PASS",
+      "follow-up OpenSpec change to adopt the gate, plus ADR"
+    ],
+    [
+      "Clef-flash fails",
+      "A passes primary gates",
+      "FAIL for Clef-flash",
+      "record; operator decides whether A alone justifies a proposal"
+    ],
+    [
+      "Clef-flash fails",
+      "A fails",
+      "FAIL",
+      "record failed gate and pages; stop text-only rescue-signal work"
+    ]
   ],
-  "cloud": "none; every arm and the reference transcription run on this machine",
+  "cloud": "reference transcription only (A7): page images of open-licence and public-domain documents go to OpenRouter google/gemini-3.8-flash, spend capped at USD 9.00 (A8); every scored arm runs on this machine",
   "production_change": "none; a PASS opens a separate proposal and ADR",
   "decision_register": [
     {
       "id": "OD1",
       "item": "gate priority: option A (G2 primary, G3 secondary) or option B (G1, G2, G3 all primary)",
       "recommendation": "A",
-      "status": "OPEN",
-      "date": null
+      "status": "APPROVED: option A (G2 primary, G3 secondary; G1 and the margin primary)",
+      "date": "2026-10-09",
+      "by": "operator"
     },
     {
       "id": "OD2",
       "item": "reference transcription engine: dots.mocr, another local engine, or a hosted model by amendment",
       "recommendation": "dots.mocr",
-      "status": "OPEN",
-      "date": null
+      "status": "APPROVED (revised 2026-10-09 by amendment A7): google/gemini-3.8-flash on OpenRouter, the Experiment 33 labelling procedure; page images leave the machine",
+      "date": "2026-10-09",
+      "by": "operator",
+      "history": "first approved 2026-10-09 as dots.mocr local; replaced before any label existed (A7)"
     },
     {
       "id": "OD3",
       "item": "reuse the Experiment 38 llama.cpp b11510 build and Q8_0 file if hashes match, or approve a fresh download",
       "recommendation": "reuse",
-      "status": "OPEN",
-      "date": null
+      "status": "APPROVED: reuse the Experiment 38 Q8_0 file if its hash matches; the operator approved a fresh install of llama.cpp b11510 or later if the Experiment 38 build is gone (see amendment A2)",
+      "date": "2026-10-09",
+      "by": "operator"
     }
   ],
-  "amendments": []
+  "amendments": [
+    {
+      "id": "A1",
+      "date": "2026-10-09",
+      "status": "APPROVED by operator",
+      "item": "Task 3.6 operator check of 60 stratified pages is waived by the operator for an unattended run. The 60-page stratified sample and its page renders are still written to output/label_check.json for later review. Known cost: reference-engine errors that look like junk are not caught before scoring; the report states this."
+    },
+    {
+      "id": "A2",
+      "date": "2026-10-09",
+      "status": "APPROVED by operator (OD3)",
+      "item": "The Experiment 38 llama.cpp b11510 build was removed with its worktree. The official release llama-b11510-bin-macos-arm64.tar.gz was downloaded from github.com/ggml-org/llama.cpp (release asset sha256 7367be3138fd39c857675cc37028e3164f1c2446f9a0ca4ce9ef7f565a2e0a4f) into output/bin/ (gitignored). The Experiment 38 Q8_0 file is reused; its hash matches the Hugging Face LFS hash."
+    },
+    {
+      "id": "A3",
+      "date": "2026-10-09",
+      "status": "RECORDED (no operator choice needed)",
+      "item": "Renders: poppler is not installed on this machine and no new install was approved. Review renders use pypdfium2 at 150 dpi, long side raised to 1,600 px. The reference model reads the shipped dots-mocr engine render (pypdfium2, RENDER_DPI 200, long side raised to the engine minimum), because references go through the shipped worker path."
+    },
+    {
+      "id": "A4",
+      "date": "2026-10-09",
+      "status": "RECORDED (no operator choice needed)",
+      "item": "Page labels (Experiment 33 page_label) take r_best = max(recall of the LiteParse text, recall of the pypdf text) against the reference. Experiment 33 used pdftotext (poppler) and pypdf; poppler is not installed and no install was approved. LiteParse with OCR off reads the same text layer. Document labels then follow the unchanged Experiment 33 document_label rule."
+    },
+    {
+      "id": "A5",
+      "date": "2026-10-09",
+      "status": "RECORDED (no operator choice needed)",
+      "item": "llama-server runs with -b 8192 -ub 8192. With the default 512-token batch in embedding mode, the server rejected 2,000-character heads above 512 tokens (HTTP 500). With the larger batch the 40 reproduction pages match the committed Experiment 38 scores with maximum absolute difference 0.0 (output/runtime_check.json)."
+    },
+    {
+      "id": "A6",
+      "date": "2026-10-09",
+      "status": "RECORDED (procedure extension rule, applied early)",
+      "item": "The first sourcing round gave 85 documents and 1,198 pages. At the Experiment 38 healthy share (about 50%), this projects below the 1,000 healthy-page target. Before any label exists, the extension rule in sourcing.procedure is applied early on this page-count projection only: born_digital +30 and mixed +15 documents, taken further down the same ordered lists. No label, recall or candidate score was read to make this decision. Task 3.7 still checks every D3 target on the final set."
+    },
+    {
+      "id": "A7",
+      "date": "2026-10-09",
+      "status": "APPROVED by operator",
+      "item": "Reference engine changed from local dots.mocr to google/gemini-3.8-flash on OpenRouter, before any label or score existed. Reason: dots.mocr ran at 40 to 60 s per page (about 21 hours for 1,711 pages, with an idle-sleep loss overnight). Gemini 3.8 Flash is the engine that labelled Experiments 33 and 38, so the labels behind the frozen threshold and the labels here come from one engine. All 1,711 pages are labelled by Gemini only. The 416 dots.mocr pages already transcribed are kept as a cross-check of class agreement; they never set a label. Cost: page images of open-licence and public-domain documents leave the machine; estimated USD 5 to 10. The scored arms stay local."
+    },
+    {
+      "id": "A8",
+      "date": "2026-10-09",
+      "status": "APPROVED by operator",
+      "item": "Population, gates and targets restated for rescued documents, before any label or score. Clef-flash only sees text that the chain rescues after pdf-inspector fails silently (ADR-066, ADR-071 decision 3); only 8 of the first 130 documents were rescued, so the original document-level gates could not be decided. G1, G2 and G3 now apply to rescued documents only. More rescued documents are screened from ACL Anthology 1989-1991, Archive.org Sevilla collections and the NTRS scan list, kept by the shipped reader's own routing output. Labels cover the rescued population only, because OpenRouter credit is USD 11.04; the Gemini runner stops at USD 9.00. Known cost: G3 precision falls (about 300 healthy pages, not 1,000); fast-path documents are outside the test. The 55 Gemini pages transcribed before this amendment used pypdfium2 renders (A3) and born-digital documents outside the rescued population; they are deleted unused."
+    },
+    {
+      "id": "A9",
+      "date": "2026-10-09",
+      "status": "RECORDED",
+      "item": "poppler 26.10.0 installed (brew). Amendment A3 and A4 are withdrawn: page renders use pdftoppm (150 dpi, 1,600 px) and page labels use r_best over pdftotext and pypdf, exactly as Experiment 33, through its label_pages._process imported unchanged."
+    }
+  ],
+  "scope": {
+    "under_test": "text-quality check on rescued text layers (Clef-flash Q8_0 W1; comparator candidate A; control production today)",
+    "held_fixed": [
+      "LiteParse (OCR off) and pypdf readers",
+      "shipped normaliser",
+      "0.10 routing fraction",
+      "gates",
+      "frozen thresholds"
+    ],
+    "measuring_tool_only": "reference transcription (google/gemini-3.8-flash, amendment A7); its quality is not scored",
+    "not_decided_here": [
+      "OCR engine choice",
+      "reader quality",
+      "routing fraction"
+    ],
+    "population": "rescued documents: control-run extraction_fallback_backend is liteparse or pypdf (amendment A8)"
+  },
+  "hypotheses": {
+    "H1": {
+      "role": "primary",
+      "claim": "G1 and G2 pass on the rescued population",
+      "null": "a rescued junk-layer document stays on the fast path, or a rescued usable document newly routes"
+    },
+    "H2": {
+      "role": "primary",
+      "claim": "Clef-flash rescued junk recall >= word check + 0.10, exact one-sided McNemar p < 0.05",
+      "null": "gain < 0.10 or p >= 0.05"
+    },
+    "H3": {
+      "role": "secondary (OD1 A)",
+      "claim": "rescued healthy false-positive rate <= 0.02",
+      "reported_with": "Wilson and document-cluster 95% intervals"
+    },
+    "verdict": "PASS needs H1 and H2"
+  },
+  "result": {
+    "date": "2026-10-09",
+    "verdict": "FAIL",
+    "gate_priority": "A",
+    "clef_flash": {
+      "G1": false,
+      "G2": false,
+      "G3": false,
+      "margin": false,
+      "junk_recall": "56/76",
+      "healthy_rate": "11/358 (3.1%, Wilson 1.7% to 5.4%)"
+    },
+    "word_check_a": {
+      "G1": false,
+      "G2": true,
+      "G3": true,
+      "junk_recall": "49/76",
+      "healthy_rate": "1/358"
+    },
+    "next_action": "D10 row 3: record and stop the readable-language judge; standard text-quality methods untested (report, Methods against standard practice; LITERATURE.md)",
+    "report": "report.md"
+  }
 }
