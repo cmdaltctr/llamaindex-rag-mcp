@@ -3,7 +3,7 @@
 - **ID**: `42-clef-flash-confirmation-2026-10-08`
 - **Date planned**: 2026-10-08
 - **Operator**: Dr Muhammad Aizat Bin Md Hawari, with Claude Code (plan)
-- **Status**: RUNNING. Operator decisions OD1 to OD3 recorded 2026-10-09; amendments A1 to A7 in `plan.json`.
+- **Status**: FAIL (2026-10-09). Clef-flash fails G1, G2 and the margin (H1, H2); G3 secondary also fails (3.1%). See [`report.md`](report.md). Amendments A1 to A9 in `plan.json`.
 - **Relation**: OpenSpec change `experiment-42-clef-flash-confirmation`; Experiment 38 (FAIL); ADR-071 decision 3; TDR-024; ADR-072; ADR-074 (Proposed)
 - **Plan**: [`plan.json`](plan.json)
 

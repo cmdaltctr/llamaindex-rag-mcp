@@ -1,7 +1,7 @@
 {
   "experiment_id": "42-clef-flash-confirmation-2026-10-08",
   "protocol_version": 1,
-  "status": "running",
+  "status": "FAIL",
   "change_ref": "openspec/changes/experiment-42-clef-flash-confirmation",
   "niftypm": null,
   "question": "When production rescues a document (pdf-inspector fails silently and LiteParse or pypdf returns text), does Clef-flash Q8_0 W1 at the threshold frozen on Experiment 38 send rescued junk documents to OCR without sending rescued usable documents, and catch clearly more junk pages than the word check? Not an OCR test.",
@@ -443,5 +443,27 @@
       "reported_with": "Wilson and document-cluster 95% intervals"
     },
     "verdict": "PASS needs H1 and H2"
+  },
+  "result": {
+    "date": "2026-10-09",
+    "verdict": "FAIL",
+    "gate_priority": "A",
+    "clef_flash": {
+      "G1": false,
+      "G2": false,
+      "G3": false,
+      "margin": false,
+      "junk_recall": "56/76",
+      "healthy_rate": "11/358 (3.1%, Wilson 1.7% to 5.4%)"
+    },
+    "word_check_a": {
+      "G1": false,
+      "G2": true,
+      "G3": true,
+      "junk_recall": "49/76",
+      "healthy_rate": "1/358"
+    },
+    "next_action": "D10 row 3: record and stop text-only rescue-signal work",
+    "report": "report.md"
   }
 }
