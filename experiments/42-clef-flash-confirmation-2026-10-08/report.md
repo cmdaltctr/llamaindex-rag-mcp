@@ -1,6 +1,6 @@
 # Experiment 42 report: Clef-flash confirmation
 
-**Verdict: FAIL.** Under OD1 option A, a PASS needs G1, G2 and the margin; Clef-flash Q8_0 W1 failed all three. G3, which is secondary, also failed: Clef-flash flagged 11 of 358 rescued healthy pages, a rate of 3.1% (Wilson 95% interval 1.7% to 5.4%) against a 2% ceiling. Following design D10, work on text-only rescue signals stops.
+**Verdict: FAIL.** Under OD1 option A, a PASS needs G1, G2 and the margin; Clef-flash Q8_0 W1 failed all three. G3, which is secondary, also failed: Clef-flash flagged 11 of 358 rescued healthy pages, a rate of 3.1% (Wilson 95% interval 1.7% to 5.4%) against a 2% ceiling. Following design D10, work on the readable-language judge stops. Standard text-quality methods remain untested on this problem (see Methods against standard practice).
 
 - **Date**: 2026-10-09
 - **Protocol**: [`protocol.md`](protocol.md), plan [`plan.json`](plan.json) (amendments A1 to A9)
@@ -79,10 +79,33 @@ The pre-registered routing simulation counts flags only on pages labelled junk o
 
 **Implication for a future proposal.** A rescue-quality check should measure faithfulness to the page, not how much the text looks like prose. A routing rule should also not send a short document to OCR on one flagged page. Either change is a new experiment on new documents.
 
+## Methods against standard practice
+
+This section was written after the verdict. It compares the design with published work on reference-free OCR quality estimation. The full note and the 19 references (15 DOIs verified through CrossRef) are in [`LITERATURE.md`](LITERATURE.md).
+
+| Point | Standard practice | Experiments 38 and 42 |
+| --- | --- | --- |
+| Target | Page error rate (CER or WER) against aligned, human-checked transcriptions [1, 13, 16] | Token recall against a vision-LLM transcription with no human check (A1) |
+| Evaluation | How well the score tracks the error rate (Spearman ρ, mean absolute error), then precision and recall at a threshold [8, 14, 16] | One pass or fail threshold only |
+| Threshold | Fitted on a development split by cost of each error; held-out collections are rare but recommended [8, 14, 16] | Fitted at a 2% false-positive rate on 40 documents, then frozen |
+| Non-text content | Removed before scoring, by layout region or minimum length [2, 7, 8] | Scored as if it were prose |
+| Historical text | Dictionary or model per language and period [2, 6, 7, 15] | One modern judge for 18th-century Latin and Spanish |
+| Document decision | Length-weighted error, or predicted gain from re-OCR [14] | 10% of pages flagged |
+| Baselines | Token ratio, character n-gram ratio, garbage rules [6, 11, 16] | Word check (A) only |
+
+**What this changes.**
+
+1. **Both Clef-flash failure modes are known weaknesses.** Faithful non-prose text that scores as junk, and garbled historical text that scores as readable, are documented problems for lexical and model-based quality measures [6, 7, 14]. The usual remedies are to remove non-text first and to use language- and period-specific models.
+2. **The tested judge is unusual.** No peer-reviewed study of a yes/no LLM readability judge was found. This result is a negative finding for that method, not for text-quality checks in general.
+3. **Simple baselines are strong in the literature.** On Latin lines, token ratio and character 7-gram ratio track CER with Spearman ρ ≥ 0.94, and language-model perplexity with 0.65 to 0.78 [16]. This agrees with the word check's near-pass here.
+4. **The problem is open.** No benchmark covers hidden PDF text layers that someone else made earlier, and no published rule turns page scores into a document decision.
+
+**References** (numbers as in `LITERATURE.md`): [1] Alex and Burns 2014, 10.1145/2595188.2595214. [2] Booth et al. 2022, 10.63317/3kd8n7srb9vx. [6] Cuper and den Boer 2025, 10.63744/wd9byr0wxuta. [7] Cuper, DH Benelux Journal 4 (unverified). [8] Gupta et al. 2015, 10.1609/aaai.v29i1.9487. [11] Kulp and Kontostathis 2007, 10.6028/nist.sp.500-274.legal-ursinus-college.kontostathis. [13] Rigaud et al. 2019, 10.1109/icdar.2019.00255. [14] Schneider and Maurer 2022, 10.46298/jdmdh.8561. [15] Springmann et al. 2016, arXiv:1606.05157. [16] Ströbel et al. 2022, 10.63317/5q7mf345k9h5.
+
 ## Conclusion and next action
 
 H1 and H2 fail; H3 (secondary) fails. Clef-flash Q8_0 W1 at the frozen threshold is not adopted as the rescue-quality gate.
 
-Following the D10 outcome table, the run records the failed gates and documents above and stops work on text-only rescue-quality signals. Task 7.1 opens no follow-up change.
+Following the D10 outcome table, the run records the failed gates and documents above and stops work on the readable-language judge. Task 7.1 opens no follow-up change. The D10 wording "stop text-only rescue-signal work" is narrowed after the verdict: the standard methods in the section above were never tested, so this result does not rule them out.
 
-The operator may still decide whether the word check's near-pass (G1 missed on one document) or Clef-flash's ranking (AUC 0.969) justifies a new, separately pre-registered proposal. Examples would be a document-level rule that does not route on a single flagged page, or a check that scores every rescued page. Any such proposal is a new experiment on new documents, and its thresholds cannot be fitted on this set.
+The operator may still decide whether the word check's near-pass (G1 missed on one document) or Clef-flash's ranking (AUC 0.969) justifies a new, separately pre-registered proposal. Examples would be a document-level rule that does not route on a single flagged page, or a check that scores every rescued page. A standard design would score page error rate, remove non-text first, compare simple baselines with any judge, fit thresholds on some collections and test on others, and decide per document by a length-weighted score (`LITERATURE.md`, section 5). Any such proposal is a new experiment on new documents, and its thresholds cannot be fitted on this set.
