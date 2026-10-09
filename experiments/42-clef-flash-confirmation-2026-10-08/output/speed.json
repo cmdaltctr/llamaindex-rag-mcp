@@ -1,0 +1,7 @@
+{
+  "method": "wall time per /v1/systemone request in the main scoring run, one request at a time (workers=1), first two requests excluded as warm-up, no OCR job running",
+  "n": 873,
+  "mean_s": 0.7262641153853592,
+  "median_s": 0.6907520840177312,
+  "p95_s": 1.1985958750592545
+}
