@@ -10,12 +10,13 @@ from __future__ import annotations
 import logging
 import uuid
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 from omrg.core.pipelines import PipelineEvent, PipelineResult
 from omrg.core.workspace.artefacts import ArtefactStore, bound_preview, preview, to_jsonable
 from omrg.core.workspace.events import STATUS_EVENT, RunEventLog
-from omrg.core.workspace.jobs import RunJob
+from omrg.core.workspace.jobs import ARTEFACT_ROOT_KEY, RunJob
 from omrg.core.workspace.records import TERMINAL_RUN_STATUSES, RunRecord
 from omrg.core.workspace.redaction import redact, redact_text
 from omrg.core.workspace.repository import WorkspaceRepository
@@ -39,6 +40,12 @@ def plain(value: Mapping[str, Any]) -> dict[str, Any]:
     return redact(to_jsonable(dict(value)))
 
 
+def run_artefacts(run: Mapping[str, Any], default: ArtefactStore) -> ArtefactStore:
+    """Return the artefact store of *run*: its recorded root, else *default*."""
+    root = (run.get("resources") or {}).get(ARTEFACT_ROOT_KEY)
+    return ArtefactStore(Path(root)) if root else default
+
+
 class RunRecorder:
     """Write runner events and terminal run states.
 
@@ -55,6 +62,14 @@ class RunRecorder:
         self._repository = repository
         self._log = log
         self._artefacts = artefacts
+        self._stores: dict[str, ArtefactStore] = {}
+
+    def _store(self, run_id: str) -> ArtefactStore:
+        """Return the artefact store of a run; read its record once."""
+        if run_id not in self._stores:
+            run = self._repository.get_run(run_id)
+            self._stores[run_id] = run_artefacts(run, self._artefacts)
+        return self._stores[run_id]
 
     def fail_safely(self, run_id: str) -> None:
         """Record a service failure; log instead of raising if that fails too."""
@@ -69,12 +84,13 @@ class RunRecorder:
         kind = getattr(event.kind, "value", str(event.kind))
         raw = {"message": event.message, "data": event.data, "at": event.timestamp.isoformat()}
         name = f"event-{uuid.uuid4().hex[:16]}"
-        summary = self._artefacts.safe_summary(run_id, name, raw)
+        summary = self._store(run_id).safe_summary(run_id, name, raw)
         try:
             self._log.record(
                 run_id, kind=kind, summary=summary, node_id=event.node_id, unit_id=event.unit_id
             )
         except ValueError:
+            self._stores.pop(run_id, None)
             logger.warning("run %s: event %s arrived after the run ended", run_id, kind)
 
     def fail(self, run_id: str, error: str, *, wall: float | None = None) -> None:
@@ -93,7 +109,10 @@ class RunRecorder:
             return
         status = _RESULT_STATUS.get(getattr(result.status, "value", ""), "failed")
         data = to_jsonable(result)
-        ref = self._artefacts.write_json(job.run_id, "result", {**data, "wall_time_s": wall})
+        for outcome in data.get("nodes") or []:
+            outcome["summary"] = preview(outcome.get("summary") or {})[0]
+        store = self._store(job.run_id)
+        ref = store.write_json(job.run_id, "result", {**data, "wall_time_s": wall})
         outputs, outputs_cut = preview(data["outputs"], max_bytes=_OUTPUT_PREVIEW_BYTES)
         durations, _ = bound_preview(
             {n.node_id: n.duration_s for n in result.nodes if n.duration_s is not None}
@@ -139,7 +158,7 @@ class RunRecorder:
             summary["wall_time_s"] = round(wall, 6)
         if result_ref is not None:
             summary["result_ref"] = result_ref
-        safe = self._artefacts.safe_summary(run_id, f"status-{status}", summary)
+        safe = self._store(run_id).safe_summary(run_id, f"status-{status}", summary)
         safe["status"] = status
         if result_ref is not None:
             safe["result_ref"] = result_ref
@@ -152,6 +171,7 @@ class RunRecorder:
             failure=failure,
             result_ref=result_ref,
         )
+        self._stores.pop(run_id, None)
         return True
 
     def stored_effects(self, run_id: str) -> list[Any]:

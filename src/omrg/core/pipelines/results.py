@@ -14,6 +14,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
+from .snapshot import EffectiveControl
+
 _FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 
@@ -107,6 +109,9 @@ class NodeOutcome(BaseModel):
         effects: Completed effects, for example committed source identities.
         duration_s: Node wall time. Overlapping node times are not summed.
         unit_id: Execution unit the outcome belongs to, if any.
+        summary: Small JSON summary of the node, the same data as its
+            completed or bypassed event (for example ``reranked: false``
+            and the reason). Empty when the node reported none.
     """
 
     model_config = _FROZEN
@@ -118,6 +123,7 @@ class NodeOutcome(BaseModel):
     effects: tuple[str, ...] = ()
     duration_s: float | None = Field(default=None, ge=0)
     unit_id: str | None = None
+    summary: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class UnitOutcome(BaseModel):
@@ -161,6 +167,8 @@ class PipelineResult(BaseModel):
         wall_time_s: End-to-end wall time (not a sum of node times).
         error: Run-level failure message, if any.
         units: Per-unit outcomes, when the run split its work into units.
+        controls: Node id to the effective controls admitted for that node.
+            ``source`` is ``node``, ``graph``, ``environment`` or ``profile``.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid", arbitrary_types_allowed=True)
@@ -175,6 +183,7 @@ class PipelineResult(BaseModel):
     wall_time_s: float | None = Field(default=None, ge=0)
     error: str | None = None
     units: tuple[UnitOutcome, ...] = ()
+    controls: dict[str, tuple[EffectiveControl, ...]] = Field(default_factory=dict)
 
     @property
     def skipped_nodes(self) -> tuple[str, ...]:

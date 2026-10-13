@@ -33,6 +33,7 @@ from omrg.core.pipelines import RunCancellation
 from omrg.core.workspace.artefacts import ArtefactStore, to_jsonable
 from omrg.core.workspace.events import STATUS_EVENT, RunEventLog
 from omrg.core.workspace.jobs import (
+    ARTEFACT_ROOT_KEY,
     DEFAULT_MAX_WAITING,
     Admitter,
     JobQueue,
@@ -42,7 +43,7 @@ from omrg.core.workspace.jobs import (
     ServiceClosedError,
     UnsafeInputError,
 )
-from omrg.core.workspace.outcomes import RunRecorder, plain
+from omrg.core.workspace.outcomes import RunRecorder, plain, run_artefacts
 from omrg.core.workspace.records import (
     NONTERMINAL_RUN_STATUSES,
     TERMINAL_RUN_STATUSES,
@@ -136,6 +137,15 @@ class RunService:
     def artefacts(self) -> ArtefactStore:
         """Return the private artefact store."""
         return self._artefacts
+
+    def artefacts_for(self, run: RunRecord) -> ArtefactStore:
+        """Return the store that holds the artefacts of *run*.
+
+        A run admitted with an artefact root (for example an experiment
+        run) keeps its artefacts below that root. Other runs use the
+        workspace store.
+        """
+        return run_artefacts(run, self._artefacts)
 
     @property
     def max_waiting(self) -> int:
@@ -289,6 +299,8 @@ class RunService:
         revision = self._repository.get_revision(revision_id)
         admission = self._admit(revision, to_jsonable(dict(inputs)))
         settings, resources = plain(admission.settings), plain(admission.resources)
+        if admission.artefact_root is not None:
+            resources[ARTEFACT_ROOT_KEY] = str(admission.artefact_root)
         run = self._repository.create_run(
             revision_id,
             settings=settings,

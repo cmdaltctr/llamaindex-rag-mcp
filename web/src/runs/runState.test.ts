@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyEvent, displayStatus, edgeRunStyle, EMPTY_RUN_VIEW, foldEvents, statusLabel, unitCounts } from "./runState";
+import { applyEvent, bypassReason, displayStatus, edgeRunStyle, EMPTY_RUN_VIEW, foldEvents, reconcileRun, statusLabel, unitCounts } from "./runState";
 import { event } from "./test/fakes";
 
 describe("run state from events", () => {
@@ -69,6 +69,49 @@ describe("run state from events", () => {
     expect(statusLabel("succeeded")).toBe("Completed");
     expect(statusLabel("fallback")).toBe("Fallback");
     expect(statusLabel(null)).toBe("Not started");
+  });
+});
+
+describe("bypass and pass-through", () => {
+  const off = { reranked: false, reason: "disabled by node parameter", rows: 3 };
+
+  it("shows a node that passed its input through as bypassed, with the reason", () => {
+    const view = foldEvents([event(1, "node_started", { node_id: "rerank" }), event(2, "node_completed", { node_id: "rerank", summary: { data: off } })]);
+    expect(displayStatus(view.nodes.rerank)).toBe("bypassed");
+    expect(bypassReason(view.nodes.rerank)).toBe("disabled by node parameter");
+  });
+
+  it("keeps a node that did its work as completed", () => {
+    const view = foldEvents([event(1, "node_completed", { node_id: "rerank", summary: { data: { reranked: true, rows: 3 } } })]);
+    expect(displayStatus(view.nodes.rerank)).toBe("succeeded");
+    expect(bypassReason(view.nodes.rerank)).toBeNull();
+  });
+
+  it("lets a fallback win over a pass-through", () => {
+    const view = foldEvents([
+      event(1, "node_started", { node_id: "rerank" }),
+      event(2, "node_fallback", { node_id: "rerank", summary: { message: "reranker model unavailable" } }),
+      event(3, "node_completed", { node_id: "rerank", summary: { data: { reranked: false, rows: 3 } } }),
+    ]);
+    expect(displayStatus(view.nodes.rerank)).toBe("fallback");
+  });
+
+  it("takes a core bypass reason from the event message", () => {
+    const view = foldEvents([event(1, "node_bypassed", { node_id: "rerank", summary: { message: "Disabled in the graph.", data: { reason: "disabled in the graph" } } })]);
+    expect(bypassReason(view.nodes.rerank)).toBe("Disabled in the graph.");
+  });
+});
+
+describe("reconcile with the run record", () => {
+  const running = foldEvents([event(4, "run.status", { summary: { status: "running" } })]);
+
+  it("takes the run status from a record that is as new as the events", () => {
+    expect(reconcileRun(running, { status: "cancelling", last_sequence: 4 }).runStatus).toBe("cancelling");
+    expect(reconcileRun(running, { status: "failed", last_sequence: 7 }).runStatus).toBe("failed");
+  });
+
+  it("ignores a record older than the events already applied", () => {
+    expect(reconcileRun(running, { status: "queued", last_sequence: 2 })).toBe(running);
   });
 });
 

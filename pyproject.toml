@@ -442,6 +442,66 @@ forbidden_modules = [
 ]
 unmatched_ignore_imports_alerting = "error"
 
+# Core sits below the public API and the composition root (spec
+# architecture-boundary-enforcement, "Ingestion no longer reaches upward").
+# The forbidden list names every top-level src/omrg/*.py module except
+# __init__; tests/test_core_import_contracts.py fails when a new top-level
+# module is not added here, and proves a violation breaks the contract.
+[[tool.importlinter.contracts]]
+name = "core-never-imports-top-level-modules"
+type = "forbidden"
+source_modules = ["omrg.core"]
+forbidden_modules = [
+    "omrg.capabilities",
+    "omrg.compose",
+    "omrg.compose_answer",
+    "omrg.compose_engine",
+    "omrg.compose_experiments",
+    "omrg.compose_pipeline_runs",
+    "omrg.compose_pipelines",
+    "omrg.compose_settings",
+    "omrg.engine",
+    "omrg.pipeline_templates",
+]
+ignore_imports = [
+    # SANCTIONED (pre-dates this change, on v3): when no OCR client is
+    # injected and the OCR fallback is enabled, ingest builds an
+    # operation-owned client through omrg.capabilities.build_ocr_routes.
+    # The import is lazy, inside the function. Only this one edge is
+    # excused; any other core -> top-level import breaks the contract.
+    "omrg.core.ingestion.pipeline -> omrg.capabilities",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# Ingestion and retrieval do not import one another (architecture
+# invariant 2). Direct imports only: both reach shared lower layers
+# (core.vectordb, config and its pure-data settings models), so indirect
+# chains through those layers are expected and not checked here.
+[[tool.importlinter.contracts]]
+name = "ingestion-and-retrieval-stay-independent"
+type = "forbidden"
+source_modules = ["omrg.core.ingestion"]
+forbidden_modules = ["omrg.core.retrieval"]
+allow_indirect_imports = true
+unmatched_ignore_imports_alerting = "error"
+
+[[tool.importlinter.contracts]]
+name = "retrieval-stays-independent-of-ingestion"
+type = "forbidden"
+source_modules = ["omrg.core.retrieval"]
+forbidden_modules = ["omrg.core.ingestion"]
+allow_indirect_imports = true
+unmatched_ignore_imports_alerting = "error"
+
+# Command-line and MCP frameworks belong to transports/ (transport
+# separation). Core never imports them.
+[[tool.importlinter.contracts]]
+name = "core-free-of-transport-frameworks"
+type = "forbidden"
+source_modules = ["omrg.core"]
+forbidden_modules = ["mcp", "typer", "click"]
+unmatched_ignore_imports_alerting = "error"
+
 # ─── Architecture-v2 conformance contracts ────────────────────────────
 # Added by the complete-architecture-v2-conformance change. Each is added
 # before its fix so the failing state is observed first (design.md D7).

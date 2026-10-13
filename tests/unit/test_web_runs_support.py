@@ -15,7 +15,11 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from fastapi.testclient import TestClient
+import pytest
+
+pytest.importorskip("fastapi")
+
+from fastapi.testclient import TestClient  # noqa: E402
 from tests.unit.test_engine_pipelines_support import (
     FakeEmbedder,
     FakeStore,

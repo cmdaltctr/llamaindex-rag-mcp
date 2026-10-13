@@ -57,8 +57,9 @@ The system SHALL validate operation names, parameters, required ports, compatibl
 - **THEN** the system SHALL reject it as unsupported data
 
 #### Scenario: Conflicting commits
-- **WHEN** an ingestion recipe has multiple commit destinations that can mutate the same source and collection
-- **THEN** preflight SHALL reject the conflict
+- **WHEN** an ingestion recipe has more than one enabled commit destination
+- **THEN** preflight SHALL reject the recipe with the `multiple_commit_destinations` issue
+- **AND** it SHALL reject it whether or not the destinations target the same source and collection
 
 ### Requirement: Branches and joins have deterministic semantics
 The runner SHALL execute ready nodes within its resource and concurrency limits. Required joins SHALL wait for all inputs and preserve declared port order. Fan-out SHALL isolate mutable branch values. Empty results SHALL remain valid inputs.
@@ -89,6 +90,7 @@ Each run SHALL capture collection settings, its inherited or explicit operationa
 - **WHEN** a graph selects documents or codebase
 - **THEN** the corresponding existing bundle SHALL supply its defaults
 - **AND** the collection's stored profile tag SHALL remain unchanged
+- **AND** the bundle's hybrid setting SHALL NOT add or remove a sparse branch: the graph wiring decides which retrieval stages run
 
 #### Scenario: Explicit node override
 - **WHEN** a reranker node explicitly disables reranking
@@ -108,8 +110,9 @@ Each run SHALL capture collection settings, its inherited or explicit operationa
 Graph operations SHALL preserve score kinds, threshold transforms, ranking provenance, source/chunk lineage, context assembly, citation checks, and explicit verification outcomes. These rules SHALL use shared production algorithms.
 
 #### Scenario: Threshold sees an incompatible score
-- **WHEN** a graph attempts to apply a dense similarity threshold directly to a fusion score
-- **THEN** validation or the shared score-kind guard SHALL reject the operation
+- **WHEN** a graph connects a fusion result to a threshold operation
+- **THEN** port validation or the shared score-kind guard SHALL reject the connection, or the operation SHALL apply the threshold only to the dense similarity score it was calibrated for (the dense gate before fusion, as `search()` does)
+- **AND** it SHALL NOT compare a fusion score with a dense similarity threshold
 - **AND** it SHALL NOT label that score as dense similarity
 
 #### Scenario: Reranker degrades
@@ -137,6 +140,11 @@ Graph ingestion SHALL preserve content detection, reader declarations, complete-
 - **WHEN** an index-shaping operation, parameter, version, or connection changes
 - **THEN** the affected source SHALL require reprocessing on its next explicit ingest
 - **AND** saving the graph alone SHALL NOT change vectors
+
+#### Scenario: Explicit parameter equals its default
+- **WHEN** an index-shaping node sets a parameter explicitly to the value it would inherit
+- **THEN** the index identity SHALL count the explicit value as a change
+- **AND** the affected source SHALL be processed again once on its next explicit ingest, then reused
 
 #### Scenario: Existing lineage is invalid
 - **WHEN** the existing source compatibility guard rejects legacy or inconsistent lineage

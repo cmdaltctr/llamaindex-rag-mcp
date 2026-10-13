@@ -57,6 +57,8 @@ export interface NodeOutcomeRecord {
   effects: string[];
   duration_s: number | null;
   unit_id: string | null;
+  /** Bounded, redacted node summary; older stored results have none. */
+  summary?: Record<string, unknown> | null;
 }
 
 /** The stored, redacted `PipelineResult`. `wall_time_s` is the measured end-to-end time. */

@@ -232,3 +232,32 @@ def test_artefact_files_and_directories_keep_private_modes(tmp_path: Path) -> No
     assert (ws.layout.artefacts / kept).stat().st_mode & 0o777 == 0o700
     assert (ws.layout.artefacts / kept / "part-0.json").stat().st_mode & 0o777 == 0o600
     assert ws.layout.records.stat().st_mode & 0o777 == 0o600
+
+
+def test_experiment_run_outputs_survive_cleanup_of_their_record(tmp_path: Path) -> None:
+    """A run whose artefacts sit below an experiment workspace keeps them."""
+    from omrg.core.workspace import ARTEFACT_ROOT_KEY, ArtefactStore
+
+    ws = Workspace(tmp_path / "workspace")
+    outputs = tmp_path / "experiments" / "exp-a" / "output" / "omrg-runs"
+    run = ws.repo.create_run(
+        ws.revision_id,
+        settings={},
+        resources={ARTEFACT_ROOT_KEY: str(outputs)},
+        inputs={},
+        origin="submit",
+        source_run_id=None,
+    )
+    run_id = run["run_id"]
+    ws.repo.record_update(run_id, kind="run.status", summary={}, status="running")
+    ref = ArtefactStore(outputs).write_json(run_id, "result", {"rows": [1]})
+    ws.repo.record_update(run_id, kind="run.status", summary={}, status="succeeded")
+    before = (outputs / ref).read_bytes()
+
+    preview, result = _apply_all(ws)
+
+    assert [item.run_id for item in preview.runs] == [run_id]
+    assert preview.runs[0].files == ()
+    assert result.runs_removed == 1 and result.files_removed == 0
+    assert ws.run_ids() == set()
+    assert (outputs / ref).read_bytes() == before

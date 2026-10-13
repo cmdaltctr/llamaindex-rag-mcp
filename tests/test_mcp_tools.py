@@ -1359,15 +1359,20 @@ def test_all_handlers_importable_from_package_root() -> None:
         "delete_documents",
         "get_codebase_map",
         "change_collection_profile",
+        "answer_documents",
     ]
+
+    # The list must name every registered tool, so a new tool cannot be
+    # left out of this check.
+    mgr = getattr(pkg.mcp, "_tool_manager", None) or getattr(pkg.mcp, "tool_manager", None)
+    registry = getattr(mgr, "_tools", None) or getattr(mgr, "tools", None) or {}
+    assert set(handler_names) == set(registry), "handler_names drifted from registered tools"
 
     # Each name must be importable from the package root.
     for name in handler_names:
         assert hasattr(pkg, name), f"{name} not re-exported from package root"
 
     # Each must be the same object the server registered.
-    mgr = getattr(pkg.mcp, "_tool_manager", None) or getattr(pkg.mcp, "tool_manager", None)
-    registry = getattr(mgr, "_tools", None) or getattr(mgr, "tools", None) or {}
     for name in handler_names:
         registered = registry[name]
         fn = getattr(registered, "fn", None) or registered

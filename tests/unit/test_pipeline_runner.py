@@ -319,6 +319,28 @@ async def test_disabled_node_forwards_its_bypass_value(effective_settings: Any) 
     assert next(n for n in result.nodes if n.node_id == "rerank").status is NodeStatus.BYPASSED
 
 
+async def test_bypass_event_carries_its_reason(effective_settings: Any) -> None:
+    """The bypass event says why the node did not run and what it forwarded."""
+    data = search_graph()
+    data["nodes"][3]["enabled"] = False
+    recorder = Recorder()
+    snapshot = admit(data, effective_settings, {"query": "q"})
+    await run_pipeline(
+        snapshot,
+        scripted_catalogue(Script()),
+        {**RESOURCES, "completion": object()},
+        on_event=recorder,
+    )
+    event = next(e for e in recorder.events if e.kind is EventKind.NODE_BYPASSED)
+    assert event.message == "Disabled in the graph; passes its 'evidence' input through unchanged."
+    assert event.data == {
+        "reason": "disabled in the graph",
+        "input_port": "evidence",
+        "output_port": "evidence",
+        "forwarded": True,
+    }
+
+
 async def test_wall_time_is_measured_not_summed(effective_settings: Any) -> None:
     """Two overlapping nodes keep their own durations; wall time is end to end."""
     now = [0.0]

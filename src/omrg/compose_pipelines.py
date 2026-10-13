@@ -12,8 +12,10 @@ The Engine delegates graph validation and execution to
 * It resolves profiles through the Engine's own resolver. An Engine without
   a resolver uses its own settings and cannot load a named profile.
 * It enforces the ``answer()`` request limits on answering graphs.
-* It plans each admitted run from its snapshot: the per-source unit split,
-  the ingestion shape and the OCR client of an ingestion graph.
+* It plans each admitted run (``compose_pipeline_runs``): the unit split,
+  the ingestion shape and the OCR client of an ingestion graph. The OCR
+  client belongs to the Engine. A run borrows it and never builds or
+  closes a client of its own.
 * It leases the Engine's resources to runs. Runs on one Engine are
   serialised with one ``asyncio.Lock``; other Engines are not affected.
 
@@ -24,7 +26,7 @@ functions, so building an Engine imports nothing new.
 from __future__ import annotations
 
 import asyncio
-import dataclasses
+import logging
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -39,9 +41,10 @@ if TYPE_CHECKING:
         PipelineResult,
         PreflightReport,
         ProfileSource,
-        UnitSplit,
     )
     from .core.settings import EffectiveSettings
+
+logger = logging.getLogger(__name__)
 
 _REASONS = {
     "store": "This Engine has no vector store.",
@@ -145,8 +148,9 @@ class GraphHost:
         host: Host facts for preflight.
         profiles: Profile resolution for admission.
         resources: Engine-owned resources by name, borrowed by runs.
-        ocr_factory: Builds a run-owned OCR client from node settings when
-            the Engine has none (the ``ingest_path_async`` rule).
+        ocr_factory: Returns the Engine-owned OCR client for node settings
+            when the Engine was composed without one. The Engine builds the
+            client once, on first use, and closes it in ``Engine.close()``.
     """
 
     host: HostContext
@@ -161,6 +165,7 @@ def build_graph_host(
     resources: Mapping[str, Any],
     resolver: Any,
     collection: str | None = None,
+    ocr_factory: Callable[[Any], Any] | None = None,
 ) -> GraphHost:
     """Describe the Engine's composition to preflight, admission and the runner.
 
@@ -170,8 +175,8 @@ def build_graph_host(
             and their capabilities report a reason.
         resolver: The Engine's profile resolver, or ``None``.
         collection: Default collection; ``None`` uses the settings value.
+        ocr_factory: The Engine's lazy OCR client accessor, if any.
     """
-    from .capabilities import build_ocr_routes
     from .core.pipelines import HostContext, ResolverProfileSource
 
     capabilities = {
@@ -187,7 +192,7 @@ def build_graph_host(
     )
     profiles = FixedProfileSource(settings) if resolver is None else ResolverProfileSource(resolver)
     present = {name: value for name, value in resources.items() if value is not None}
-    return GraphHost(host, profiles, present, ocr_factory=build_ocr_routes)
+    return GraphHost(host, profiles, present, ocr_factory=ocr_factory)
 
 
 def pipeline_templates(engine: Any, collection: str | None = None) -> tuple[Any, ...]:
@@ -297,61 +302,6 @@ def _profile_issues(graph: Any, profiles: ProfileSource) -> list[PipelineIssue]:
     return []
 
 
-@dataclass
-class RunPlan:
-    """Run-scoped additions an admitted snapshot needs.
-
-    Attributes:
-        resources: Resources derived from this run (ingestion shape, OCR).
-        units: Per-source unit split for an ingestion graph.
-        owned: Clients this run built and must close.
-    """
-
-    resources: dict[str, Any] = field(default_factory=dict)
-    units: UnitSplit | None = None
-    owned: list[Any] = field(default_factory=list)
-
-    def close(self) -> None:
-        """Close the clients this run built."""
-        for client in self.owned:
-            client.close()
-
-
-def plan_run(snapshot: AdmissionSnapshot, catalogue: Any, graph_host: GraphHost) -> RunPlan:
-    """Plan an admitted run from its snapshot.
-
-    An ingestion graph (one with registered ingestion operations) gets:
-
-    * its ingestion shape as resource ``ingestion_shape``, computed once;
-    * the per-source unit split on its ``source.discover`` node;
-    * resource ``ocr``: the Engine's client, else a run-owned client when
-      a node's settings enable the OCR fallback, as ``ingest_path_async``
-      does.
-    """
-    from .core.ingestion.graph_adapters import (
-        DISCOVER,
-        INGESTION_DESCRIPTORS,
-        ingestion_unit_split,
-    )
-    from .core.ingestion.graph_fingerprint import INGESTION_SHAPE_RESOURCE, ingestion_shape
-
-    ingestion_ops = {descriptor.operation_id for descriptor in INGESTION_DESCRIPTORS}
-    nodes = [node for node in snapshot.nodes if node.operation in ingestion_ops]
-    plan = RunPlan()
-    if not nodes:
-        return plan
-    plan.resources[INGESTION_SHAPE_RESOURCE] = ingestion_shape(snapshot, catalogue)
-    discover = [node.node_id for node in nodes if node.operation == DISCOVER.operation_id]
-    if len(discover) == 1:
-        plan.units = dataclasses.replace(ingestion_unit_split(), node=discover[0])
-    wants_ocr = next((n.settings for n in nodes if n.settings.ocr_fallback_enabled), None)
-    if "ocr" not in graph_host.resources and wants_ocr is not None and graph_host.ocr_factory:
-        client = graph_host.ocr_factory(wants_ocr)
-        plan.resources["ocr"] = client
-        plan.owned.append(client)
-    return plan
-
-
 class EnginePipelines:
     """Graph state that one Engine owns: catalogue, run lock and leases.
 
@@ -365,6 +315,7 @@ class EnginePipelines:
         self._catalogue: OperationCatalogue | None = None
         self._lock = asyncio.Lock()
         self._judges: dict[Any, Any] = {}
+        self._ocr: Any = None
         self.active_runs = 0
 
     def catalogue(self) -> OperationCatalogue:
@@ -410,10 +361,33 @@ class EnginePipelines:
             parsed, catalogue, host=graph_host.host, profiles=graph_host.profiles, inputs=inputs
         )
 
+    def ocr_client(self, settings: Any) -> Any:
+        """Return the Engine-owned OCR client; build it once, on first use.
+
+        The client is built the same way ``ingest_path_async`` builds one
+        (``build_ocr_routes``), from the settings of the first node that
+        enables the OCR fallback. Later runs borrow the same client.
+        """
+        if self._ocr is None:
+            from .capabilities import build_ocr_routes
+
+            self._ocr = build_ocr_routes(settings)
+        return self._ocr
+
     def release(self) -> None:
-        """Drop cached judges and the catalogue (Engine close)."""
+        """Drop cached judges and the catalogue; close the lazy OCR client.
+
+        A close failure is logged, not raised, as for the Engine store.
+        """
         self._judges.clear()
         self._catalogue = None
+        client, self._ocr = self._ocr, None
+        if client is None:
+            return
+        try:
+            client.close()
+        except Exception as exc:
+            logger.warning("OCR client close() failed during engine close: %s", exc)
 
     def judge(self, factory: Callable[[Any], Any] | None) -> Callable[[Any], Any] | None:
         """Return a ``verify_llm`` resource that builds each judge once."""
@@ -447,6 +421,7 @@ class EnginePipelines:
             PipelineValidationError: Before any side effect.
             ValueError: If an admitted snapshot comes with separate inputs.
         """
+        from .compose_pipeline_runs import SUMMARY_EVENTS, plan_run, with_provenance
         from .core.pipelines import AdmissionSnapshot, PipelineValidationError, run_pipeline
         from .core.pipelines.cancellation import run_cancellation
 
@@ -464,18 +439,24 @@ class EnginePipelines:
         try:
             async with self._lock:
                 plan = plan_run(snapshot, self.catalogue(), graph_host)
-                try:
-                    return await run_pipeline(
-                        snapshot,
-                        self.catalogue(),
-                        {**graph_host.resources, **plan.resources},
-                        on_event=on_event,
-                        cancellation=token,
-                        units=plan.units,
-                        run_id=run_id,
-                    )
-                finally:
-                    plan.close()
+                summaries: dict[tuple[str, str | None], dict[str, Any]] = {}
+
+                async def sink(event: Any) -> None:
+                    if event.kind in SUMMARY_EVENTS and event.node_id is not None:
+                        summaries[(event.node_id, event.unit_id)] = dict(event.data)
+                    if on_event is not None:
+                        await on_event(event)
+
+                result = await run_pipeline(
+                    snapshot,
+                    self.catalogue(),
+                    {**graph_host.resources, **plan.resources},
+                    on_event=sink,
+                    cancellation=token,
+                    units=plan.units,
+                    run_id=run_id,
+                )
+                return with_provenance(result, snapshot, summaries)
         finally:
             self.active_runs -= 1
 

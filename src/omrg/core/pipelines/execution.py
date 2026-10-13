@@ -179,10 +179,25 @@ class GraphPass:
         if bypass is None:  # pragma: no cover - preflight rejects this
             raise RuntimeError(f"Node {node_id!r} is disabled without a bypass.")
         keys = self.state.wiring.feeds.get((node_id, bypass.input_port), ())
-        if keys and all(k in self.values for k in keys):
+        forwarded = bool(keys) and all(k in self.values for k in keys)
+        if forwarded:
             self.values[(node_id, bypass.output_port)] = self.deliver(keys[0])
         self._record(node_id, NodeStatus.BYPASSED)
-        self.state.emitter.post(EventKind.NODE_BYPASSED, node_id=node_id, unit_id=self.unit_id)
+        port = bypass.input_port
+        effect = "passes its" if forwarded else "has no"
+        tail = "through unchanged" if forwarded else "to pass through"
+        self.state.emitter.post(
+            EventKind.NODE_BYPASSED,
+            node_id=node_id,
+            unit_id=self.unit_id,
+            message=f"Disabled in the graph; {effect} {port!r} input {tail}.",
+            data={
+                "reason": "disabled in the graph",
+                "input_port": port,
+                "output_port": bypass.output_port,
+                "forwarded": forwarded,
+            },
+        )
         scheduler.complete(node_id)
 
     def _skip_commits_after_failure(self, scheduler: ReadyScheduler) -> None:

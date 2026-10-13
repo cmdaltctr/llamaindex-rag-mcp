@@ -94,10 +94,82 @@ def _identity(settings: Settings, context_id: str | None, store_path: str) -> Ba
     )
 
 
+#: Directory below a context ``output/`` that holds run results and overflow
+#: artefacts, one directory per run.
+RUN_OUTPUT_DIR = "omrg-runs"
+
+
+def run_output_root(context: ExperimentContext) -> Path:
+    """Return ``<workspace>/output/omrg-runs`` for the run artefacts of *context*.
+
+    Raises:
+        ExperimentAdmissionError: ``commit_outside_context`` when the
+            directory is a symbolic link or resolves outside ``output/``.
+    """
+    root = context.output_dir / RUN_OUTPUT_DIR
+    inside = root.resolve().is_relative_to(context.output_dir.resolve())
+    if root.is_symlink() or not inside:
+        raise ExperimentAdmissionError(
+            "commit_outside_context",
+            f"The run output directory {RUN_OUTPUT_DIR!r} is a link or leaves the workspace.",
+            context.context_id,
+        )
+    return root
+
+
 def live_backend_identity(settings: Settings) -> BackendIdentity:
     """Return the backend identity of the live library for comparison."""
     location = getattr(settings, _LIVE_LOCATION_FIELD.get(settings.vector_store, ""), "")
     return _identity(settings, None, location or settings.vector_store)
+
+
+def collection_version(store: Any, name: str) -> dict[str, Any]:
+    """Return the data version of one collection, read now.
+
+    A store with a durable data version (``get_data_version``) gives a
+    token that other processes see too. A store without one gives an
+    explicit process-local marker with its generation counter. That
+    counter is valid in this process only.
+    """
+    if not store.collection_exists(name):
+        return {"exists": False, "data_version": None}
+    token = store.get_data_version(name)
+    if token is not None:
+        return {"exists": True, "data_version": token, "version_scope": "durable"}
+    return {
+        "exists": True,
+        "data_version": None,
+        "version_scope": "process-local",
+        "generation": store.get_generation(name),
+    }
+
+
+def index_provenance(
+    settings: Any,
+    store: Any,
+    collections: Iterable[str],
+    *,
+    identity: BackendIdentity | None = None,
+) -> dict[str, Any]:
+    """Return the backend and index identity a run selects at admission.
+
+    Args:
+        settings: Settings of the Engine that runs the graph.
+        store: That Engine's vector store.
+        collections: Collections the admitted graph references.
+        identity: Backend identity already known (an experiment context);
+            ``None`` derives the live-library identity from *settings*.
+
+    Returns:
+        ``backend`` (store kind, location, embedding identity, index
+        identity and store class) and ``collections`` (name to
+        :func:`collection_version`).
+    """
+    backend = (identity or live_backend_identity(settings)).provenance()
+    return {
+        "backend": {**backend, "store_class": type(store).__name__},
+        "collections": {name: collection_version(store, name) for name in sorted(collections)},
+    }
 
 
 @dataclass(frozen=True)
@@ -313,12 +385,16 @@ class ExperimentEngines:
 
 
 __all__ = [
+    "RUN_OUTPUT_DIR",
     "STORE_LOCATIONS",
     "ExperimentAdmission",
     "ExperimentAdmissionError",
     "ExperimentEngines",
     "ExperimentRunResult",
+    "collection_version",
+    "index_provenance",
     "experiment_registry",
     "experiment_settings",
     "live_backend_identity",
+    "run_output_root",
 ]

@@ -160,3 +160,42 @@ async def test_overlapping_node_durations_are_never_summed(tmp_path: Path) -> No
     assert 10.0 not in summary.values()
     assert "total_node_time_s" not in summary
     await service.shutdown()
+
+
+async def test_run_with_an_artefact_root_stores_outputs_below_it(tmp_path: Path) -> None:
+    """Experiment outputs go below the admitted root, never to workspace artefacts."""
+    executor, admitter = FakeExecutor(), FakeAdmitter()
+    executor.outputs = {"rows": [{"id": i, "text": "t" * 50} for i in range(500)]}
+    executor.events["a"] = [
+        runner_event(EventKind.NODE_PROGRESS, node_id="a", data={"text": "z" * 9000})
+    ]
+    outputs = tmp_path / "experiments" / "exp-a" / "output" / "omrg-runs"
+    admitter.artefact_root = outputs
+    service = make_service(tmp_path, executor, admitter)
+    await service.start()
+    run = service.submit(saved_revision(service.repository), inputs={"name": "a"})
+    await idle(service)
+
+    record = service.repository.get_run(run["run_id"])
+    assert record["resources"]["artefact_root"] == str(outputs)
+    store = service.artefacts_for(record)
+    assert store.root == outputs
+    assert store.path(record["result_ref"]).is_relative_to(outputs / run["run_id"])
+    assert len(store.read_json(record["result_ref"])["outputs"]["rows"]) == 500
+    overflow = service.repository.list_events(run["run_id"])[2]["summary"]["artefact_ref"]
+    assert store.path(overflow).exists()
+    assert not (service.artefacts.root / run["run_id"]).exists()
+    await service.shutdown()
+
+
+async def test_run_without_an_artefact_root_uses_the_workspace_store(tmp_path: Path) -> None:
+    executor, admitter = FakeExecutor(), FakeAdmitter()
+    service = make_service(tmp_path, executor, admitter)
+    await service.start()
+    run = service.submit(saved_revision(service.repository), inputs={"name": "a"})
+    await idle(service)
+    record = service.repository.get_run(run["run_id"])
+    assert "artefact_root" not in record["resources"]
+    assert service.artefacts_for(record).root == service.artefacts.root
+    assert service.artefacts.path(record["result_ref"]).exists()
+    await service.shutdown()

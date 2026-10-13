@@ -15,7 +15,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from fastapi.testclient import TestClient
+import pytest
+
+pytest.importorskip("fastapi")
+
+from fastapi.testclient import TestClient  # noqa: E402
 from tests.unit.test_engine_pipelines_support import FakeEmbedder, FakeStore, chunks
 from tests.unit.test_experiment_contexts_support import base_settings
 from tests.unit.test_web_runs_support import BASE, ORIGIN, GatedEngine, graph, login

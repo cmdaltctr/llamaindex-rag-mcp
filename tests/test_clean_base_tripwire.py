@@ -65,7 +65,11 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 4689
+_BASE_EXECUTED = 4776
+# Re-baselined after the add-local-web-pipeline-workspace verification gap
+# fixes (2026-10-13): provenance, job events, experiment outputs, OCR
+# ownership, import-contract, wheel-check and verification-gap tests add 87
+# executed tests (4689 -> 4776); skips and deselections are unchanged.
 # Re-baselined at add-local-web-pipeline-workspace (2026-10-13): graph
 # contracts, runner, domain graph adapters and parity fixtures, workspace
 # records and run service, web transport and OpenAPI conformance, plugin
@@ -258,6 +262,19 @@ _has_qwen_tokenizer = bool(
 if not _has_qwen_tokenizer:
     _BASE_EXECUTED -= _CACHED_TOKENIZER_CASES
     _BASE_SKIPPED += _CACHED_TOKENIZER_CASES
+# The reference counts assume the optional ``web`` extra (FastAPI) is
+# installed, as in the CI ``test`` job. Without it, each web test module
+# skips at import through ``pytest.importorskip("fastapi")``: its cases do
+# not run, and pytest reports one skip per module, not one per case. The
+# floors matrix and the extras jobs install no ``web`` extra.
+# Measured 2026-10-13 by hiding fastapi behind an import shim and running
+# the 28 fastapi-dependent files with and without it: 344 cases run with
+# the extra; without it each of the 28 modules reports one skip.
+_WEB_EXTRA_CASES = 344
+_WEB_SKIP_DELTA = 28
+if find_spec("fastapi") is None:
+    _BASE_EXECUTED -= _WEB_EXTRA_CASES
+    _BASE_SKIPPED += _WEB_SKIP_DELTA
 _BASE_DESELECTED = 20  # -m "not slow": existing 14 plus four quality gates
 # plus the golden-answer gate (add-grounded-answer-synthesis-3 task 7.1)
 # plus the marimo-manifest wheel check (add-local-web-pipeline-workspace).

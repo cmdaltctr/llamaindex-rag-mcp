@@ -49,7 +49,7 @@ FAMILIES: dict[str, frozenset[str]] = {
             "uploadFile",
         }
     ),
-    "jobs": frozenset({"ingestPath", "generateCodebaseMap", "getJobStatus"}),
+    "jobs": frozenset({"ingestPath", "generateCodebaseMap", "getJobStatus", "listJobEvents"}),
     "documents": frozenset(
         {
             "listCollections",

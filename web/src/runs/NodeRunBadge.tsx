@@ -1,5 +1,5 @@
 import { maskText } from "./redact";
-import { displayStatus, statusLabel, type NodeRunState } from "./runState";
+import { bypassReason, displayStatus, statusLabel, type NodeRunState } from "./runState";
 import "./runs.css";
 
 /**
@@ -8,7 +8,16 @@ import "./runs.css";
  */
 export function NodeRunBadge({ state }: { state: NodeRunState | undefined }) {
   const status = displayStatus(state);
-  const detail = status === "fallback" ? state?.fallback : status === "failed" ? state?.error : status === "skipped" ? state?.message : null;
+  const detail =
+    status === "fallback"
+      ? state?.fallback
+      : status === "failed"
+        ? state?.error
+        : status === "skipped"
+          ? state?.message
+          : status === "bypassed"
+            ? (bypassReason(state) ?? "input passed through unchanged")
+            : null;
   return (
     <p className="run-badge" data-run-status={status ?? "not-started"}>
       <span className="run-badge__status">{statusLabel(status)}</span>

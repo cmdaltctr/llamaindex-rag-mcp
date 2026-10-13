@@ -14,6 +14,7 @@ import json
 from collections import deque
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
 from omrg.core.workspace.records import RevisionRecord
@@ -22,6 +23,9 @@ if TYPE_CHECKING:
     from omrg.core.pipelines import CancellationToken, PipelineEvent, PipelineResult
 
 DEFAULT_MAX_WAITING = 16
+#: Resource key that records where a run stores its artefacts, when the
+#: admission chose a directory outside the workspace artefact store.
+ARTEFACT_ROOT_KEY = "artefact_root"
 
 
 class WorkspaceRunError(Exception):
@@ -63,11 +67,16 @@ class Admission:
             They are redacted before storage.
         payload: Opaque, immutable object for the executor, for example an
             ``AdmissionSnapshot``. It is never stored.
+        artefact_root: Directory for the run's result and overflow
+            artefacts, for example below an approved experiment workspace.
+            ``None`` uses the workspace artefact store. The service records
+            it as resource ``artefact_root``.
     """
 
     settings: Mapping[str, Any]
     resources: Mapping[str, Any]
     payload: Any = None
+    artefact_root: Path | None = None
 
 
 Admitter = Callable[[RevisionRecord, Mapping[str, Any]], Admission]

@@ -131,9 +131,36 @@ export function unitCounts(view: RunView): UnitCounts {
   };
 }
 
+/**
+ * True when a node ran but passed its input through unchanged. The reranker
+ * adapter reports this as `reranked: false` in its summary, for example when
+ * its `enabled` parameter is Off. A fallback is a different outcome.
+ */
+function passedThrough(node: NodeRunState): boolean {
+  return node.status === "succeeded" && !node.fallback && node.summary?.reranked === false;
+}
+
 export function displayStatus(node: NodeRunState | undefined): NodeDisplayStatus | null {
   if (!node) return null;
-  return node.status === "succeeded" && node.fallback ? "fallback" : node.status;
+  if (node.status === "succeeded" && node.fallback) return "fallback";
+  return passedThrough(node) ? "bypassed" : node.status;
+}
+
+/** Why a node was bypassed: the core bypass message, or the reason a pass-through node reported. */
+export function bypassReason(node: NodeRunState | undefined): string | null {
+  if (!node) return null;
+  if (node.status === "bypassed") return node.message;
+  return passedThrough(node) ? text(node.summary?.reason) : null;
+}
+
+/**
+ * Applies the authoritative run record read after a reconnect. A record older
+ * than the events already applied is ignored, so a slow read never moves the
+ * status back. Node states come from the events the reconnect replays.
+ */
+export function reconcileRun(view: RunView, record: { status: string; last_sequence?: number | null }): RunView {
+  if (typeof record.last_sequence === "number" && record.last_sequence < view.lastSequence) return view;
+  return record.status === view.runStatus ? view : { ...view, runStatus: record.status };
 }
 
 const LABELS: Record<NodeDisplayStatus, string> = {

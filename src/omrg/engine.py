@@ -437,7 +437,11 @@ class Engine:
         }
         settings, resolver = self._effective_settings, self._resolver()
         return build_graph_host(
-            settings, resources=resources, resolver=resolver, collection=collection
+            settings,
+            resources=resources,
+            resolver=resolver,
+            collection=collection,
+            ocr_factory=self._pipelines.ocr_client,
         )
 
     def _get_answer_llm(self) -> Any:

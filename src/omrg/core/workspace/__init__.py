@@ -38,6 +38,7 @@ from omrg.core.workspace.cleanup import (
 from omrg.core.workspace.cleanup_files import CleanupFile, CleanupSkip
 from omrg.core.workspace.events import STATUS_EVENT, RunEventLog
 from omrg.core.workspace.jobs import (
+    ARTEFACT_ROOT_KEY,
     DEFAULT_MAX_WAITING,
     Admission,
     Admitter,
@@ -77,6 +78,7 @@ from omrg.core.workspace.redaction import (
 from omrg.core.workspace.repository import WorkspaceRepository
 
 __all__ = [
+    "ARTEFACT_ROOT_KEY",
     "DEFAULT_CLEANUP_TTL_SECONDS",
     "DEFAULT_MAX_WAITING",
     "MAX_ARTEFACT_BYTES",

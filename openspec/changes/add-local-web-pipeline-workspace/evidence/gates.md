@@ -35,3 +35,22 @@ informational; the patch check blocks).
 - `-m slow` suites, except the marimo wheel check run by task 8.2.
 - A fully clean offline `pip install "omrg[web]"` from the lock (uv cache lacks some locked wheels; see `frontend-scaffold.md`).
 - Browsers other than Chrome.
+
+## Final run after verification gap fixes (2026-10-13)
+
+`./scripts/local_ci.sh` on the final tree (exit 0, local CI passed):
+
+| Gate | Result |
+|---|---|
+| ruff check / format, whole repo | PASS |
+| Import contracts | PASS, 21 kept, 0 broken |
+| `openspec validate --all --strict` | PASS, 62/62 |
+| OpenAPI contract | PASS |
+| Torch-free default install | PASS |
+| Fast suite (includes the tripwire) | PASS, 4774 passed, 140 skipped, 20 deselected (14 min 10 s) |
+| Frontend gates and web wheel assets (new `local_ci.sh` step) | PASS, 34 files / 288 tests, build, `check_web_wheel.py` |
+
+Tripwire baseline: `_BASE_EXECUTED` 4689 -> 4776 (+87 gap-fix tests). New fastapi-absent
+adjustment for jobs without the `web` extra: `_WEB_EXTRA_CASES = 344`, `_WEB_SKIP_DELTA = 28`,
+measured by hiding fastapi behind an import shim over the 28 fastapi-dependent files. The
+no-extra path is first exercised in CI (floors and extras jobs).

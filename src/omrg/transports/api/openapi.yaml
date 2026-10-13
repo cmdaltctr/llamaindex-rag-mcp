@@ -55,7 +55,7 @@ info:
     ## Jobs and graph runs
 
     Ingestion and codebase maps are document jobs: 202 with a `Job`, then
-    poll `GET /v1/jobs/{jobId}`. Graph runs are 202 with a `RunRecord`,
+    poll `GET /v1/jobs/{jobId}` and page `GET /v1/jobs/{jobId}/events`. Graph runs are 202 with a `RunRecord`,
     then poll `GET /v1/runs/{run_id}`, page `GET /v1/runs/{run_id}/events`,
     or follow `GET /v1/runs/{run_id}/events/stream` (server-sent events with
     replay after `Last-Event-ID`). Both kinds share one persisted run
@@ -484,6 +484,61 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Job"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /jobs/{jobId}/events:
+    get:
+      operationId: listJobEvents
+      summary: Page committed events of an ingestion or codebase-map job
+      description: >
+        Returns the committed events of the run behind the job, with a
+        sequence above `after_sequence`. Send the returned `last_sequence`
+        as the next `after_sequence`. `complete` is true when the job is
+        terminal and no later event exists. Same scope as
+        `GET /v1/jobs/{jobId}`. Graph runs and non-UUID ids get 404.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: after_sequence
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 500
+      responses:
+        "200":
+          description: One page of job events.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobEventPage"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -3710,6 +3765,16 @@ components:
           description: Redacted settings resolved at admission, per collection.
         resources:
           type: object
+          description: >
+            Identities resolved at admission. Graph runs record
+            `graph_identity`, `operations` (node id to `operation@version`),
+            `controls` (node id to the admitted `EffectiveControl` list) and
+            `index`: `backend` (store kind, location, embedding identity,
+            `index_identity`, `store_class`) and `collections` (name to
+            `{exists, data_version, version_scope}`; `version_scope` is
+            `durable`, or `process-local` with a `generation` counter that is
+            valid in the server process only). Experiment runs add
+            `experiment` and `artefact_root`.
         inputs:
           type: object
         failure:
@@ -3769,7 +3834,7 @@ components:
           description: >
             The redacted pipeline result: run id, status, graph identity,
             outputs, node outcomes, failed node, completed effects, wall
-            time and error.
+            time, error and the admitted node controls.
           required: [run_id, status, graph_identity, outputs]
           properties:
             run_id:
@@ -3780,6 +3845,47 @@ components:
               type: string
             outputs:
               type: object
+            nodes:
+              type: array
+              items:
+                $ref: "#/components/schemas/NodeOutcome"
+            controls:
+              type: object
+              description: Node id to the admitted controls of that node.
+              additionalProperties:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EffectiveControl"
+
+    NodeOutcome:
+      type: object
+      required: [node_id, status]
+      description: What happened to one node in one unit.
+      properties:
+        node_id:
+          type: string
+        status:
+          type: string
+        error:
+          type: [string, "null"]
+        fallback:
+          type: [string, "null"]
+          description: The domain fallback reason, when one applied.
+        effects:
+          type: array
+          items:
+            type: string
+        duration_s:
+          type: [number, "null"]
+        unit_id:
+          type: [string, "null"]
+        summary:
+          type: object
+          description: >
+            Bounded, redacted node summary, the data of its completed or
+            bypassed event. For example a reranker switched off records
+            `{reranked: false, reason}`; a node disabled in the graph
+            records the bypass reason.
 
     RunEventRecord:
       type: object
@@ -3816,6 +3922,30 @@ components:
           type: string
         run_status:
           $ref: "#/components/schemas/RunStatus"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/RunEventRecord"
+        last_sequence:
+          type: integer
+          minimum: 0
+          description: Send this value as the next `after_sequence`.
+        complete:
+          type: boolean
+
+    JobEventPage:
+      type: object
+      additionalProperties: false
+      required: [status, job_id, job_status, events, last_sequence, complete]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        job_id:
+          type: string
+        job_status:
+          type: string
+          enum: [queued, running, completed, failed]
         events:
           type: array
           items:

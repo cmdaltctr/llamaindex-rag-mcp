@@ -2,7 +2,8 @@
 
 This package contains the delivery mechanisms for the RAG framework:
 ``mcp/`` (MCP server, split by tool), ``cli/`` (CLI split by command group),
-and ``api/`` (OpenAPI 3.1 contract for the future REST transport).
+and ``api/`` (optional local HTTP transport for ``omrg web``, needs the
+``web`` extra, with its OpenAPI 3.1 contract).
 
 No transport file contains business logic. Each validates input,
 delegates to ``core/``, and formats output.

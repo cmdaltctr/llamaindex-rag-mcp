@@ -1,7 +1,7 @@
 # ADR-075: OMRG-Owned Pipeline Runner, Local Web Packaging, and External-Tool Plugins
 
 **Date:** 2026-10-13
-**Status:** Proposed
+**Status:** Accepted (2026-10-13; evidence: `openspec/changes/add-local-web-pipeline-workspace/evidence/verification.md`, section "Re-verification after gap fixes", and `evidence/gates.md`)
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Related:** [ADR-031](031-three-layer-config-compose-di.md) (config, compose, DI), [ADR-036](036-phase-5-refactor-transport-separation.md) (transport separation), [ADR-037](037-architecture-v2-conformance.md) (architecture v2 conformance), [ADR-042](042-dependency-floor-integrity.md) (dependency floors), [ADR-073](073-make-the-torch-extra-a-normal-choice.md) (optional extras)
 **Change:** `openspec/changes/add-local-web-pipeline-workspace/` (design D1, D4, D6, D7, D10, D11)

@@ -25,6 +25,9 @@ export function outcomeRows(nodes: NodeOutcomeRecord[] | undefined, view: RunVie
       effects: node.effects,
       state: {
         ...(view.nodes[node.node_id] ?? { message: null, summary: null, startedAt: null, endedAt: null }),
+        // The stored summary lets a finished run show why a node passed its
+        // input through, without replaying the events.
+        summary: node.summary ?? view.nodes[node.node_id]?.summary ?? null,
         status: (STATUSES.has(node.status) ? node.status : "failed") as NodeRunStatus,
         fallback: node.fallback,
         error: node.error,

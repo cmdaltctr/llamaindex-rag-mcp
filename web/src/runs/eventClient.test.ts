@@ -168,3 +168,81 @@ describe("run event client: polling fallback", () => {
     expect(FakeEventSource.latest().readyState).toBe(2);
   });
 });
+
+describe("run event client: authoritative refresh on reconnect", () => {
+  function server(status: { current: string; last: number }) {
+    return vi.fn(async (path: string) =>
+      path === "/v1/runs/r1"
+        ? json({ status: "ok", run: { run_id: "r1", status: status.current, last_sequence: status.last } })
+        : page([], false, status.current),
+    );
+  }
+  const recordReads = (fetchImpl: ReturnType<typeof server>) => fetchImpl.mock.calls.filter(([path]) => path === "/v1/runs/r1").length;
+
+  it("re-reads the run record each time the dropped stream reopens", async () => {
+    const factory = eventSourceFactory();
+    const status = { current: "running", last: 2 };
+    const fetchImpl = server(status);
+    const refreshed: string[] = [];
+    followRunEvents({ runId: "r1", eventSource: factory, fetchImpl, onRefresh: (run) => refreshed.push(run.status), ...recorder() });
+    const source = FakeEventSource.latest();
+    source.open();
+    source.send(event(1, "node_started", { node_id: "dense" }));
+    // The first open is not a reconnect: the caller read the record before it followed events.
+    expect(recordReads(fetchImpl)).toBe(0);
+    source.fail(false);
+    source.open();
+    await vi.waitFor(() => expect(refreshed).toEqual(["running"]));
+    status.current = "cancelling";
+    source.fail(false);
+    source.fail(false);
+    source.open();
+    await vi.waitFor(() => expect(refreshed).toEqual(["running", "cancelling"]));
+    expect(recordReads(fetchImpl)).toBe(2);
+  });
+
+  it("re-reads the run record when it switches to polling", async () => {
+    const factory = eventSourceFactory();
+    const fetchImpl = server({ current: "succeeded", last: 9 });
+    const refreshed: string[] = [];
+    followRunEvents({ runId: "r1", eventSource: factory, fetchImpl, schedule: manualScheduler().schedule, onRefresh: (run) => refreshed.push(run.status), ...recorder() });
+    const source = FakeEventSource.latest();
+    source.open();
+    source.fail(true);
+    await vi.waitFor(() => expect(refreshed).toEqual(["succeeded"]));
+    expect(recordReads(fetchImpl)).toBe(1);
+  });
+
+  it("re-reads the run record when polling recovers after a failure", async () => {
+    let offline = true;
+    const ok = server({ current: "running", last: 0 });
+    const fetchImpl = vi.fn(async (path: string) => {
+      if (offline) throw new TypeError("offline");
+      return ok(path);
+    });
+    const scheduler = manualScheduler();
+    const refreshed: string[] = [];
+    followRunEvents({ runId: "r1", eventSource: null, fetchImpl, schedule: scheduler.schedule, onRefresh: (run) => refreshed.push(run.status), ...recorder() });
+    await vi.waitFor(() => expect(scheduler.pendingDelays()).toHaveLength(1));
+    expect(refreshed).toEqual([]);
+    offline = false;
+    scheduler.flush();
+    await vi.waitFor(() => expect(refreshed).toEqual(["running"]));
+  });
+
+  it("reports a failed re-read and keeps following events", async () => {
+    const factory = eventSourceFactory();
+    const fetchImpl = vi.fn(async () => json({ status: "error", message: "Run store busy." }, 503));
+    const errors: string[] = [];
+    const rec = recorder();
+    followRunEvents({ runId: "r1", eventSource: factory, fetchImpl, onRefresh: () => undefined, onError: (m) => errors.push(m), ...rec });
+    const source = FakeEventSource.latest();
+    source.open();
+    source.fail(false);
+    source.open();
+    await vi.waitFor(() => expect(errors).toEqual(["Run store busy."]));
+    source.send(event(1, "node_started", { node_id: "dense" }));
+    expect(rec.events).toHaveLength(1);
+    expect(rec.modes.at(-1)).toBe("streaming");
+  });
+});

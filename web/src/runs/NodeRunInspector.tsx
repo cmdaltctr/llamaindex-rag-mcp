@@ -1,13 +1,14 @@
 import { scoreText } from "./evidence";
 import type { OutcomeRow } from "./NodeOutcomes";
 import { maskText } from "./redact";
-import { displayStatus, statusLabel } from "./runState";
+import { bypassReason, displayStatus, statusLabel } from "./runState";
 import { SafeValue } from "./SafeValue";
 
 /** Status, node time, summary, fallback reason and error of one node in a run. */
 export function NodeRunInspector({ row }: { row: OutcomeRow }) {
   const { state } = row;
   const summary = state?.summary ?? null;
+  const reason = bypassReason(state);
   const scoreKind = summary && typeof summary.score_kind === "string" ? summary.score_kind : null;
   return (
     <section className="run-section" aria-label={`Node ${row.nodeId}`}>
@@ -22,6 +23,7 @@ export function NodeRunInspector({ row }: { row: OutcomeRow }) {
       </h4>
       <p>{`Status: ${statusLabel(displayStatus(state))}`}</p>
       <p className="text-meta">{row.durationS !== null ? `Node time: ${row.durationS.toFixed(2)} s` : "Node time: recorded when the run ends"}</p>
+      {reason && <p>{`Bypass reason: ${maskText(reason)}`}</p>}
       {state?.fallback && <p>{`Fallback: ${maskText(state.fallback)}`}</p>}
       {state?.error && <p>{`Error: ${maskText(state.error)}`}</p>}
       {state?.message && !state.error && <p className="text-meta">{`Last message: ${maskText(state.message)}`}</p>}

@@ -1,8 +1,10 @@
 """Long-running document jobs: ingestion, codebase maps and job polling.
 
 These implement the reviewed ``/v1`` operations ``ingestPath``,
-``generateCodebaseMap`` and ``getJobStatus``. Submission returns 202 and
-a ``Job`` resource; ``GET /v1/jobs/{jobId}`` polls it.
+``generateCodebaseMap``, ``getJobStatus`` and ``listJobEvents``.
+Submission returns 202 and a ``Job`` resource; ``GET /v1/jobs/{jobId}``
+polls it, and ``GET /v1/jobs/{jobId}/events`` pages the events of the
+run behind the job.
 
 Jobs run on the workspace run service (design D7): the same single
 consumer and bounded queue as graph runs, persisted records, interruption
@@ -21,13 +23,13 @@ import asyncio
 import logging
 import uuid
 from collections.abc import Awaitable, Callable, Mapping
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from ...core.workspace import QueueFullError, ServiceClosedError
+from ...core.workspace import TERMINAL_RUN_STATUSES, QueueFullError, ServiceClosedError
 from .engine_access import FilesScope, ReadScope, RuntimeDep, engine_store
 from .errors import error_response
 from .grants import GrantDenied
@@ -171,15 +173,53 @@ async def generate_codebase_map(
     return _accept(runs, "codebase_map", {"path": path, "refresh": refresh}, work)
 
 
-@router.get("/jobs/{job_id}", operation_id="getJobStatus")
-async def get_job_status(_: ReadScope, job_id: str, runs: RunsDep) -> Response:
-    """Return the status of one ingestion or codebase-map job."""
+#: Largest event page; the same limit as run event polling.
+MAX_JOB_EVENT_PAGE = 500
+
+
+def _job_run(runs: WorkspaceRuns, job_id: str) -> Mapping[str, Any] | None:
+    """Return the run behind a job, or ``None`` for a graph run or unknown id."""
     repository = runs.service.repository
     try:
         run = repository.get_run(uuid.UUID(job_id).hex)
         is_job = runs.is_task_pipeline(repository.get_pipeline(run["pipeline_id"]))
     except (KeyError, ValueError):
-        is_job = False
-    if not is_job:
+        return None
+    return run if is_job else None
+
+
+@router.get("/jobs/{job_id}", operation_id="getJobStatus")
+async def get_job_status(_: ReadScope, job_id: str, runs: RunsDep) -> Response:
+    """Return the status of one ingestion or codebase-map job."""
+    run = _job_run(runs, job_id)
+    if run is None:
         return error_response(404, "Unknown job.")
     return JSONResponse(describe_job(runs, run))
+
+
+@router.get("/jobs/{job_id}/events", operation_id="listJobEvents")
+async def list_job_events(
+    _: ReadScope,
+    job_id: str,
+    runs: RunsDep,
+    after_sequence: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=MAX_JOB_EVENT_PAGE)] = MAX_JOB_EVENT_PAGE,
+) -> Response:
+    """Return committed job events after ``after_sequence`` (JSON polling)."""
+    run = _job_run(runs, job_id)
+    if run is None:
+        return error_response(404, "Unknown job.")
+    events = runs.service.repository.list_events(
+        run["run_id"], after_sequence=after_sequence, limit=limit
+    )
+    last = events[-1]["sequence"] if events else after_sequence
+    complete = run["status"] in TERMINAL_RUN_STATUSES and last >= run["last_sequence"]
+    body = {
+        "status": "ok",
+        "job_id": _job_id(run["run_id"]),
+        "job_status": describe_job(runs, run)["status"],
+        "events": events,
+        "last_sequence": last,
+        "complete": complete,
+    }
+    return JSONResponse(body)

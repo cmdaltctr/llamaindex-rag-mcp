@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { FetchLike } from "../api/client";
 import { ACTIVE_RUN_STATUSES, getRunRecord } from "../api/runs";
 import { followRunEvents, type EventSourceFactory, type MonitorMode } from "./eventClient";
-import { applyEvent, EMPTY_RUN_VIEW, type RunView } from "./runState";
+import { applyEvent, EMPTY_RUN_VIEW, reconcileRun, type RunView } from "./runState";
 
 export interface MonitorOptions {
   fetchImpl?: FetchLike;
@@ -54,6 +54,7 @@ export function useRunMonitor(runId: string | null, options: MonitorOptions = {}
           pollIntervalMs,
           onEvent: (event) => update((current) => ({ view: applyEvent(current.view, event), error: null })),
           onMode: (mode) => update(() => ({ mode })),
+          onRefresh: (latest) => update((current) => ({ view: reconcileRun(current.view, latest) })),
           onError: (text) => update(() => ({ error: text })),
           onEnd: () => {
             getRunRecord(runId, { fetchImpl }).then(

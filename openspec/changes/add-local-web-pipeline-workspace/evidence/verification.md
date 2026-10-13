@@ -1143,3 +1143,157 @@ From `tasks.md` (54 of 56 checked):
 
 Note: `tasks.md` line 3 still says "Every checkbox ... remains unchecked until approval, implementation, and verification". That planning sentence is stale now that 54 tasks are checked.
 
+
+---
+
+# Re-verification after gap fixes (2026-10-13)
+
+Scope: every scenario that was PARTIAL above, every scenario whose delta text changed, and the 11 functional gaps in section A. Inputs: `gap-fixes-backend.md`, `gap-fixes-canvas.md`, `gap-fixes-ci-specs.md`, `gates.md`, and the reworded delta specs (`git diff` on 5 spec files). Code and tests were read again. The same status rules apply.
+
+## Count correction for the first pass
+
+The first pass reported transport-separation as 17 COVERED and 8 PARTIAL. Its scenario table holds 18 COVERED and 7 PARTIAL rows. The correct first-pass total is 137 COVERED and 35 PARTIAL of 172.
+
+## New counts
+
+Two scenarios were added to the delta specs: pipeline-canvas "Node is disabled in the graph" and pipeline-graphs "Explicit parameter equals its default". The total is now 174.
+
+| Capability | Scenarios | COVERED | PARTIAL | NOT COVERED |
+|---|---|---|---|---|
+| architecture-boundary-enforcement | 9 | 9 | 0 | 0 |
+| engine-scoped-composition | 13 | 13 | 0 | 0 |
+| local-web-workspace | 22 | 21 | 1 | 0 |
+| modular-core-extraction | 16 | 15 | 1 | 0 |
+| notebook-plugins | 14 | 14 | 0 | 0 |
+| pipeline-canvas | 17 | 16 | 1 | 0 |
+| pipeline-graphs | 37 | 35 | 2 | 0 |
+| pipeline-run-records | 14 | 14 | 0 | 0 |
+| public-library-api | 7 | 7 | 0 | 0 |
+| transport-separation | 25 | 23 | 2 | 0 |
+| **Total** | **174** | **167** | **7** | **0** |
+
+No PARTIAL is a functional gap. Each one is listed below with its reason.
+
+## Tests run for this re-verification
+
+| Run | Command | Result |
+|---|---|---|
+| Focused pytest, 48 files | `PYTHONPATH=src PDF_READER=pypdf .venv/bin/python -m pytest -q -p no:cacheprovider -m "not slow"` on `tests/unit/test_verification_gaps_*.py` (8), `tests/test_core_import_contracts.py`, `tests/unit/test_check_web_wheel.py`, `tests/test_no_module_level_strategy_imports.py`, `tests/test_mcp_tools.py`, `tests/unit/test_plugin_boundaries.py`, `tests/unit/test_engine_pipelines_{provenance,ingestion,isolation}.py`, `tests/test_engine_isolation.py`, `tests/unit/test_web_{runs_provenance,jobs_events,experiments_outputs,experiments,launch,security,runs,runs_stream}.py`, `tests/unit/test_experiment_contexts_engines.py`, `tests/unit/test_workspace_{service_outputs,cleanup_safety,service_lifecycle,migrations}.py`, `tests/unit/test_web_openapi_conformance*.py`, `tests/unit/test_pipeline_runner*.py`, `tests/unit/test_pipeline_{preflight,catalogue,admission,templates}.py`, `tests/unit/test_ingestion_graph_fingerprint*.py`, `tests/unit/test_retrieval_graph_adapters.py`, `tests/test_file_size_ceiling.py` | PASS: 511 passed, 5 skipped (extras) |
+| Threshold parity | same prefix, `tests/unit/test_retrieval_graph_adapters_parity.py tests/test_precalibration_audit_regressions.py` | PASS: 40 passed |
+| Focused Vitest, 9 files | `cd web && npx vitest run src/canvas/CanvasView.{live,workspace,run}.test.tsx src/runs/{eventClient,runState,NodeOutcomes}.test.ts src/runs/{RunsView,EvidenceInspector}.test.tsx src/runs/evidence.test.ts` | PASS: 9 files, 71 tests |
+| Import contracts | `PYTHONPATH=src .venv/bin/lint-imports` | PASS: 21 kept, 0 broken |
+| OpenAPI | `.venv/bin/openapi-spec-validator src/omrg/transports/api/openapi.yaml` | PASS |
+| OpenSpec, change | `openspec validate add-local-web-pipeline-workspace --strict` | PASS: valid (INFO notes on long requirement text only) |
+| OpenSpec, all | `openspec validate --all --strict` | PASS: 62 passed, 0 failed |
+| Probe (not a committed test) | scratch script: `_shape(canonical_graph("documents", chunk={"chunk_size": 512}))` against the canonical graph, 512 being the inherited default | shape differs: True |
+
+Not run here (lead instruction): full suite, `tests/test_clean_base_tripwire.py`, `scripts/local_ci.sh`. The lead runs `local_ci.sh` on this tree now. `tests/test_file_size_ceiling.py` passes again: `compose_pipelines.py` is 474 lines, `engine.py` 496.
+
+Graphify: skipped by user decision.
+
+## Former functional gaps (section A)
+
+| # | Gap | New status | Code | Tests |
+|---|---|---|---|---|
+| A1 | Experiment run outputs in the workspace `artefacts/` | CLOSED | `src/omrg/compose_experiments.py:102` (`run_output_root`, refuses links and paths outside `output/`); `src/omrg/core/workspace/service.py:141` (`artefacts_for`), `:302-303` (records `ARTEFACT_ROOT_KEY`) | `tests/unit/test_web_experiments_outputs.py::test_ingestion_experiment_keeps_index_and_outputs_in_its_workspace`, `::test_linked_run_output_directory_is_refused_before_any_run`; `tests/unit/test_workspace_service_outputs.py`; `tests/unit/test_workspace_cleanup_safety.py::test_experiment_run_outputs_survive_cleanup_of_their_record` |
+| A2 | Live-library runs record no index identity | CLOSED (lead decision: version recorded at submission) | `src/omrg/compose_experiments.py:126` (`collection_version`: durable token or process-local marker), `:147` (`index_provenance`); `src/omrg/transports/api/runs_wiring.py:181,209` (`resources.index` for live and experiment runs) | `tests/unit/test_web_runs_provenance.py::test_run_detail_records_the_durable_index_identity`, `::test_store_without_durable_version_records_a_process_local_marker`, `::test_python_run_record_keeps_index_and_controls` |
+| A3 | Client does not refresh run state on reconnect | CLOSED | `web/src/runs/eventClient.ts:39,122` (`onRefresh` after stream reopen, switch to polling, polling recovery); `web/src/runs/useRunMonitor.ts:57`; `web/src/runs/runState.ts:161` (`reconcileRun` ignores a stale record) | `web/src/runs/eventClient.test.ts` "authoritative refresh on reconnect" (4 tests); `web/src/runs/runState.test.ts` reconcile and stale-record tests; `web/src/canvas/CanvasView.live.test.tsx` reconnect re-read |
+| A4 | No event inspection for ingestion and codebase-map jobs | CLOSED | `src/omrg/transports/api/routes_jobs.py:201` (`list_job_events`, `GET /v1/jobs/{job_id}/events`, read scope, 404 for graph runs); `openapi.yaml:502` (`listJobEvents`, `JobEventPage`) | `tests/unit/test_web_jobs_events.py` (3 tests); `tests/unit/test_web_openapi_conformance*.py` (jobs family) |
+| A5 | Reranker lever Off shows "Completed" on the canvas | CLOSED | `web/src/runs/runState.ts:143` (`displayStatus` gives `bypassed` for `reranked: false` without fallback), `:150` (`bypassReason`); `web/src/runs/NodeOutcomes.tsx:27-30` (stored `summary` used for finished runs); `src/omrg/core/pipelines/results.py:126` (`NodeOutcome.summary`) | `web/src/canvas/CanvasView.live.test.tsx` reranker lever Off; `web/src/runs/NodeOutcomes.test.ts` "shows a pass-through node as bypassed from its stored summary"; `tests/unit/test_engine_pipelines_provenance.py`; `tests/unit/test_web_runs_provenance.py::test_stored_node_summaries_are_bounded_and_redacted` |
+| A6 | Bypass event carries no reason | CLOSED | `src/omrg/core/pipelines/execution.py:195` (`node_bypassed` message plus `reason`, `input_port`, `output_port`, `forwarded`) | `tests/unit/test_pipeline_runner.py::test_bypass_event_carries_its_reason`; `CanvasView.live.test.tsx` bypass reason test |
+| A7 | Node control and source not in the result or run record | CLOSED | `src/omrg/core/pipelines/results.py:170,186` (`PipelineResult.controls`); `src/omrg/compose_pipeline_runs.py` (`with_provenance`); run record `resources.controls` | `tests/unit/test_engine_pipelines_provenance.py` (4 tests through `Engine.run_pipeline`); `tests/unit/test_web_runs_provenance.py::test_run_detail_records_node_controls_and_sources` |
+| A8 | Graph runs build and close their own OCR client | CLOSED (lead decision: one shared OCR client per Engine) | `src/omrg/compose_pipelines.py:364` (`ocr_client`, built once on first use), `:377` (`release`); `src/omrg/engine.py:372` (`close()` calls `release()`), `:444` (`ocr_factory=self._pipelines.ocr_client`) | `tests/unit/test_engine_pipelines_ingestion.py` (5 tests, including `test_injected_ocr_client_is_borrowed_and_never_rebuilt`) |
+| A9 | CI does not run web tests | CLOSED in configuration; first CI run still to observe (see process PARTIAL below) | `.github/workflows/ci.yml:47` (`uv sync --frozen --extra web` in `test`), `codecov` and `floors` jobs add `web`, new `frontend` job; tripwire environment adjustment `tests/test_clean_base_tripwire.py:273-277` (`_WEB_EXTRA_CASES = 344`, `_WEB_SKIP_DELTA = 28`, placeholders replaced) | Not observable outside CI |
+| A10 | Wheel check not wired | CLOSED (lead decision: release wheel is checked, not published) | `.github/workflows/release.yml:67` (build into `wheel-check/` before Semantic Release, then `check_web_wheel.py`); `scripts/local_ci.sh:63` | `tests/unit/test_check_web_wheel.py` (6 tests) |
+| A11 | Detection seam and top-level imports from `core/` | CLOSED (spec reworded to the built design) | `pyproject.toml:451` (`core-never-imports-top-level-modules`, one commented ignore for `core.ingestion.pipeline -> omrg.capabilities`), `:481`, `:489` (ingestion and retrieval independence) | `tests/test_core_import_contracts.py` (11 tests); `lint-imports` 21 kept |
+
+## Former PARTIAL scenarios, new status
+
+| Capability / Scenario | New status | Evidence |
+|---|---|---|
+| architecture-boundary-enforcement / Ingestion no longer reaches upward | COVERED | A11; reworded text names the `core.codebase` detector and the one sanctioned lazy import |
+| architecture-boundary-enforcement / Top-level business modules are gone | COVERED | `tests/unit/test_verification_gaps_boundaries.py::test_top_level_modules_match_the_allow_list`, `::test_no_top_level_business_package_appears`; text names `compose_*.py`, `capabilities.py`, `pipeline_templates.py` |
+| architecture-boundary-enforcement / Subsystems share only settings | COVERED | contracts `ingestion-and-retrieval-stay-independent`, `retrieval-stays-independent-of-ingestion` |
+| engine-scoped-composition / No process-global mutation | COVERED | `tests/unit/test_verification_gaps_engine.py::test_build_engine_leaves_process_defaults_unchanged` |
+| engine-scoped-composition / Another Engine is disposed | COVERED | `...engine.py::test_model_cache_survives_another_engine_close` |
+| engine-scoped-composition / One run is cancelled | COVERED | `...engine.py::test_engine_call_after_cancelled_run_and_flag_stays_unset` |
+| engine-scoped-composition / Shared inference state is unsafe for parallel use | COVERED | `...engine.py::test_one_run_cannot_report_another_runs_rerank_failure` |
+| local-web-workspace / Long work is admitted | COVERED | A4 |
+| local-web-workspace / Installed package launches outside the checkout | PARTIAL (test-only) | See remaining PARTIALs |
+| modular-core-extraction / Content-type dispatch preserved | COVERED | `tests/unit/test_verification_gaps_modular_core.py::test_code_and_config_sources_route_through_read_document` |
+| modular-core-extraction / Full test suite passes | PARTIAL (process) | See remaining PARTIALs |
+| notebook-plugins / An approved ingestion experiment runs | COVERED | A1 |
+| notebook-plugins / Trust warning is displayed | COVERED | `tests/unit/test_verification_gaps_notebook_plugins.py` (4 tests: notice words, plugin routes reuse it, frontend copy matches the server constant, views render the server notice) |
+| pipeline-canvas / Reranker is disabled with a click (reworded) | COVERED | A5; `tests/unit/test_retrieval_graph_adapters.py::test_disabled_reranker_bypasses_inference`; `tests/unit/test_pipeline_admission.py::test_node_disables_reranker_regardless_of_profile` |
+| pipeline-canvas / Core reports fallback or failure | COVERED | A6 |
+| pipeline-canvas / User opens evidence and returns | COVERED | `web/src/canvas/CanvasView.workspace.test.tsx` "keeps the selected node and the submitted run after Canvas, Runs, Canvas" |
+| pipeline-canvas / Theme or viewport changes | PARTIAL (test-only) | See remaining PARTIALs |
+| pipeline-graphs / Changing a connection changes execution | COVERED | `tests/unit/test_verification_gaps_pipeline_graphs.py::test_two_revisions_differing_only_in_wiring_run_differently` |
+| pipeline-graphs / Explicit node override | COVERED | A7 |
+| pipeline-graphs / Reader declares Markdown or structured output | COVERED | `...pipeline_graphs.py::test_structured_reader_declaration_through_a_graph_run[True\|False]` |
+| pipeline-graphs / Canonical ingestion and answer parity | COVERED | `...pipeline_graphs.py::test_ingestion_parity_keeps_metadata_degraded_true` |
+| pipeline-graphs / Repaired document strategy is reused | COVERED | `...pipeline_graphs.py::test_registered_replacement_splitter_runs_in_a_graph` |
+| pipeline-graphs / Metadata enrichment retains the owning store | COVERED | `...pipeline_graphs.py::test_two_engines_graph_ingestion_prompts_hold_only_own_labels[a\|b]` |
+| pipeline-run-records / Old revision is selected | COVERED | `tests/unit/test_verification_gaps_run_records.py::test_repeat_of_an_older_revision_runs_that_document` |
+| pipeline-run-records / Monitoring reconnects | COVERED | A3 |
+| pipeline-run-records / Process stops between stores (reworded) | COVERED | `...run_records.py::test_retry_of_interrupted_ingestion_uses_source_completeness`; `tests/unit/test_workspace_service_lifecycle.py::test_restart_marks_unfinished_runs_interrupted_without_rerun` |
+| pipeline-run-records / Workspace schema changes | COVERED | `...run_records.py::test_workspace_upgrade_leaves_vector_store_bytes_unchanged` (byte compare) |
+| pipeline-run-records / requirement "Runs capture sufficient provenance" | COVERED | A2, A7 |
+| public-library-api / Runtime node failure has a stable result | COVERED | `tests/unit/test_verification_gaps_public_api.py::test_failed_run_reports_skipped_nodes_and_completed_effects`, `::test_cancelled_run_keeps_the_effect_that_finished_first` |
+| transport-separation / MCP server entry unchanged | COVERED | `tests/unit/test_verification_gaps_transport.py::test_no_argument_start_never_calls_the_web_server`, `::test_no_argument_entry_point_loads_no_web_or_editor_modules` |
+| transport-separation / Tool set stays complete after a transport split | COVERED | `...transport.py::test_every_mcp_tool_keeps_its_v3_parameters_and_annotations` (eight tools, snapshot from `v3` `3ca82a0`) |
+| transport-separation / Handlers stay importable from the package root | COVERED | `tests/test_mcp_tools.py::test_all_handlers_importable_from_package_root` (adds `answer_documents`, compares with the registered tool set) |
+| transport-separation / Core stays transport-agnostic | COVERED | contract `core-free-of-transport-frameworks` (`pyproject.toml:499`) |
+| transport-separation / Authentication schemes declared | PARTIAL (contract text and test) | See remaining PARTIALs |
+| transport-separation / Contract validated in CI | PARTIAL (process) | See remaining PARTIALs |
+| transport-separation / Release assets are absent | COVERED | A10 |
+
+## Reworded and new scenarios
+
+| Capability / Scenario | Status | Evidence |
+|---|---|---|
+| architecture-boundary-enforcement / requirement package list (adds `core.plugins`, `core.experiments`) | COVERED | contracts `plugin-host-starts-no-processes` and the `omrg.core` contracts; `tests/test_contract_coverage.py` in the focused run |
+| notebook-plugins / Notebook targets the live library (reads included) | COVERED | `tests/unit/test_web_experiments.py::test_bound_bearer_cannot_touch_the_live_library` (403 on run submit and on `GET /v1/collections`, documents, search, answer; no run record); `tests/unit/test_experiment_contexts_engines.py::test_experiment_credential_cannot_target_the_live_library` |
+| pipeline-canvas / Node is disabled in the graph (new) | COVERED | `execution.py:195`; `tests/unit/test_pipeline_runner.py::test_bypass_event_carries_its_reason`; `CanvasView.live.test.tsx` bypass tests; `runState.test.ts` core-reason test |
+| pipeline-canvas / requirement "Execution display follows real events" (bypassed and cancelled node states, cancelling run status) | COVERED | `web/src/runs/runState.ts:143`; `runState.test.ts` |
+| pipeline-graphs / Conflicting commits | COVERED | `tests/unit/test_pipeline_preflight.py::test_multiple_commit_destinations_rejected_initially` (different collection), `::test_conflicting_commits_same_collection`; `tests/unit/test_ingestion_graph_fingerprint.py::test_two_commit_destinations_are_refused` |
+| pipeline-graphs / Threshold sees an incompatible score | COVERED | `tests/unit/test_pipeline_catalogue.py::test_fusion_score_cannot_feed_dense_threshold`; `graph_adapters.py` `threshold_adapter` gates dense before fusion and never filters RRF utility (`operations.py:283-310`); parity cases `hybrid_no_rerank_dense_eligibility`, `hybrid_rerank_success_div30`, `hybrid_rerank_failure_fallback` in `tests/unit/test_retrieval_graph_adapters_parity.py`; `tests/test_precalibration_audit_regressions.py::test_hybrid_dense_threshold_is_not_applied_to_rrf_score` |
+| pipeline-graphs / Explicit graph profile (adds hybrid clause) | PARTIAL (test-only) | See remaining PARTIALs |
+| pipeline-graphs / Explicit parameter equals its default (new) | PARTIAL (test-only) | See remaining PARTIALs |
+| pipeline-run-records / Process stops between stores | COVERED | listed above |
+
+## Remaining PARTIALs (none functional)
+
+1. **local-web-workspace / Installed package launches outside the checkout. Test-only.** Behaviour: assets load from the package directory (`lifespan.py:44`, `PACKAGED_STATIC_DIR` from `__file__`). The release path and `local_ci.sh` now check that the built wheel holds `index.html` and every referenced asset. Missing: no automated test installs the wheel and launches it from another directory without Node. Evidence for that clause is the manual smoke test in `frontend-scaffold.md`. Action: add a slow test that installs the built wheel into a temporary venv and requests `/` and one asset.
+2. **pipeline-canvas / Theme or viewport changes. Test-only.** Theme change is now tested (`CanvasView.workspace.test.tsx` "keeps canvas edits and the selection when the theme changes"). Viewport narrowing has manual evidence only (`browser.md`); jsdom cannot test layout. Action: add a browser check at phone width when a browser test runner is added.
+3. **pipeline-graphs / Explicit graph profile. Test-only, new clause.** The first three clauses stay covered by `tests/unit/test_pipeline_admission.py::test_explicit_profile_uses_bundle_and_keeps_collection_metadata`. New clause: the bundle's hybrid setting does not add or remove a sparse branch. Code reading: no admission step or graph adapter reads `hybrid_enabled` to change the graph; `PreparedQuery.hybrid` (`graph_adapters_retrieve.py:74`) is recorded only. No test admits a dense-only graph under the `codebase` bundle (`hybrid_enabled: true`). Action: add one admission test with `profile: "codebase"` and a dense-only graph; assert no sparse node in the snapshot order.
+4. **pipeline-graphs / Explicit parameter equals its default. Test-only, new scenario.** The probe above shows an explicit `chunk_size` equal to the inherited 512 changes the graph shape. `test_shape_change_without_parameter_effect_still_reprocesses` covers a connection change, not an equal value. Action: add a parametrised case `chunk={"chunk_size": <inherited value>}` to the "shape changes" test in `tests/unit/test_ingestion_graph_fingerprint.py`, plus one reuse test that reprocesses once, then skips.
+5. **modular-core-extraction / Full test suite passes. Process.** `gates.md` records a pass on the tree before the gap fixes. The lead runs `local_ci.sh` on the current tree now. Action: record that result in `gates.md`.
+6. **transport-separation / Contract validated in CI. Process.** CI now installs the `web` extra and has a `frontend` job, and the tripwire adjusts for the extra. Local runs of OpenAPI validation and conformance pass. Action: confirm on the first CI run of the pull request.
+7. **transport-separation / Authentication schemes declared. Contract text and test.** Behaviour: the static frontend is served outside `/v1` without credentials; the Host guard applies to every path (`middleware.py:46-48`); unknown `/v1` paths never return HTML (`test_unknown_api_path_never_serves_html`). The contract does not declare static serving as an operation, and `README.md:71` names only health and session as public. Missing: the contract does not name the static frontend, and no test sends a wrong Host to `/`. Action: add an `info` note in `openapi.yaml` that names the static frontend and its Host constraint, and add a wrong-Host test on `/` in `tests/unit/test_web_security.py`.
+
+## Lead decisions recorded as accepted
+
+1. Run index version is recorded at submission. A version after the run is a follow-up.
+2. One shared OCR client per Engine. Later runs on the same Engine reuse it, even with different OCR route settings.
+3. The release wheel is checked, not published (`wheel-check/`, not `dist/`).
+4. An experiment credential is refused on all live-library runs and reads (spec reworded).
+5. marimo `pyproject.toml` and notebook-header limits are documented, not blocked.
+6. Experiment contexts stay in memory per launch. A restart loses them.
+
+## Still open (not blocking)
+
+1. The seven PARTIALs above, with their actions.
+2. Job runs record only `run.status` events. Ingestion and codebase-map work emits no progress events (`gap-fixes-backend.md`).
+3. The canvas pass-through rule keys on `reranked: false`. A future pass-through operation needs the same field or a shared core flag (`gap-fixes-canvas.md`).
+4. `test_build_engine_leaves_process_defaults_unchanged` reads the process defaults. Lead to keep or delete it (`gap-fixes-ci-specs.md`).
+5. The experiment HTTP test replaces the private `ExperimentEngines._build` (`gap-fixes-backend.md`).
+6. Earlier open risks stay: 541 kB frontend bundle, form fields without `id` or `name`, marimo editor files kept until Stop.
+
+## ADR-075 decision (re-verification)
+
+**ADR-075 is Accepted, dated 2026-10-13.** No functional gap remains. All 11 section-A gaps are closed or closed under a recorded lead decision. The seven remaining PARTIALs are test-only, process or contract-text items, each listed above with a reason and an action. OpenSpec strict validation passes for the change and for all items.
+
+Condition: acceptance rests on the lead's current `local_ci.sh` run (task 9.2 repeat). If that run fails on a product defect, set ADR-075 back to Proposed and record the failure here.
+
+Changed for this decision: `docs/adr/075-omrg-owned-pipeline-runner-local-web-packaging-and-external-tool-plugins.md` (status line) and its row in `docs/adr/ADR_README.md`.

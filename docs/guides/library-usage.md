@@ -118,6 +118,16 @@ catalogue and the validation errors, see [Pipeline graphs](pipelines.md).
 Start from a canonical template. `pipeline_templates(engine)` returns the
 `ingestion`, `search` and `answer` graphs, shaped for this engine:
 
+> **Advanced imports.** The examples below import two names that are not
+> in `omrg.__all__`. They are internal and can change without a major
+> version:
+>
+> - `pipeline_templates` from `omrg.compose_pipelines` (template helper).
+> - `RunCancellation` from `omrg.core.pipelines` (cancellation token).
+>
+> Neither one is necessary. You can send your own `PipelineDefinition`
+> to `Engine.run_pipeline()`, and the `cancellation` argument is optional.
+
 <!-- pipeline-python: library-run -->
 ```python
 import asyncio

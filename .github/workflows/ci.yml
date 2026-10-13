@@ -37,10 +37,14 @@ jobs:
         # Pinned to SHA for security — astral-sh/setup-uv@v8.2.0
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
+      # The web extra (FastAPI) lets the web transport and OpenAPI
+      # runtime conformance tests run here. The clean-base tripwire counts
+      # assume it; jobs without it adjust through the tripwire's
+      # fastapi-absent branch.
       - name: Install dependencies
         env:
           UV_LINK_MODE: copy
-        run: uv sync --frozen
+        run: uv sync --frozen --extra web
 
       - name: Run tests (fast)
         env:
@@ -225,6 +229,7 @@ jobs:
           - llamacpp
           - openrouter
           - chroma
+          - web
     steps:
       # Pinned to SHA for security — actions/checkout@v7.0.0
       # fetch-depth 0: the exp-29 pinned-baseline tests read historical
@@ -359,6 +364,48 @@ jobs:
           METADATA_LLM_PROVIDER: local
         run: uv run --no-sync pytest -m "slow" -k "torch or backend_contract" --tb=short -v
 
+  # The web workspace frontend (web/) is a separate Node project. Its
+  # build output ships in the wheel, so lint, type, unit-test and build
+  # failures must block a PR like the Python gates do.
+  frontend:
+    if: github.event_name != 'schedule'
+    name: Frontend (web)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      # Pinned to SHA for security — actions/checkout@v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        # Pinned to SHA for security — actions/setup-node@v7.0.0
+        # Node 22 LTS satisfies the web/package.json engines field (>=22.12.0).
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
   lint:
     if: github.event_name != 'schedule'
     name: Lint (Ruff)
@@ -430,9 +477,10 @@ jobs:
         # the extra). chroma and hybrid join for the same reason: this is
         # the sole coverage upload, and the chroma adapter plus the
         # chroma-gated suites must count towards patch coverage of
-        # vector-store diffs. The base-only absence assertions live in
+        # vector-store diffs. web joins so the web transport tests count
+        # towards coverage too. The base-only absence assertions live in
         # the floors job instead.
-        run: uv sync --frozen --extra community-leiden --extra llamacpp --extra openrouter --extra chroma --extra hybrid
+        run: uv sync --frozen --extra community-leiden --extra llamacpp --extra openrouter --extra chroma --extra hybrid --extra web
 
       - name: Run tests with coverage
         env:

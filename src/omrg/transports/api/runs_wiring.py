@@ -129,8 +129,20 @@ def snapshot_provenance(snapshot: Any) -> tuple[dict[str, Any], dict[str, Any]]:
         "graph_identity": snapshot.graph_identity,
         "schema_version": snapshot.schema_version,
         "operations": {node.node_id: f"{node.operation}@{node.version}" for node in snapshot.nodes},
+        "controls": {
+            node.node_id: [control.model_dump(mode="json") for control in node.controls]
+            for node in snapshot.nodes
+        },
     }
     return settings, resources
+
+
+def _index(engine: Any, snapshot: Any, identity: Any = None) -> dict[str, Any]:
+    """Return the backend and collection data versions the run selects."""
+    from ...compose_experiments import index_provenance
+
+    names = [collection.name for collection in snapshot.collections]
+    return index_provenance(engine.resolve_settings(), engine.store, names, identity=identity)
 
 
 class RunAdmitter:
@@ -166,6 +178,7 @@ class RunAdmitter:
         )
         snapshot = self._engine.validate_pipeline(revision["document"], inputs=dict(inputs))
         settings, resources = snapshot_provenance(snapshot)
+        resources["index"] = _index(self._engine, snapshot)
         return Admission(settings=settings, resources=resources, payload=snapshot)
 
     def _admit_experiment(
@@ -188,11 +201,22 @@ class RunAdmitter:
             bound_context=target.bound_context,
             session=target.session,
         )
-        # The executor takes its own lease (see the module docstring).
-        admission.release()
-        settings, resources = snapshot_provenance(admission.snapshot)
+        from ...compose_experiments import run_output_root
+
+        try:
+            outputs = run_output_root(admission.context)
+            settings, resources = snapshot_provenance(admission.snapshot)
+            resources["index"] = _index(admission.engine, admission.snapshot, admission.identity)
+        finally:
+            # The executor takes its own lease (see the module docstring).
+            admission.release()
         resources["experiment"] = admission.provenance()
-        return Admission(settings=settings, resources=resources, payload=ExperimentJob(admission))
+        return Admission(
+            settings=settings,
+            resources=resources,
+            payload=ExperimentJob(admission),
+            artefact_root=outputs,
+        )
 
     @contextlib.contextmanager
     def targeting(self, target: RunTarget) -> Iterator[None]:
@@ -355,7 +379,7 @@ class WorkspaceRuns:
         if not ref:
             return None
         try:
-            return self.service.artefacts.read_json(ref)
+            return self.service.artefacts_for(run).read_json(ref)
         except (OSError, ValueError):
             return None
 

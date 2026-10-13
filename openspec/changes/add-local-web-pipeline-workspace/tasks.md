@@ -88,7 +88,7 @@ For each new behaviour, observe its test fail without the implementation, then p
 
 - [x] 9.1 Run an offline end-to-end rewired graph through browser and notebook clients; compare recorded graph, settings, outputs, and events.
 - [x] 9.2 Run approved fast/coverage, frontend, OpenAPI, import, floor, wheel, and torch-free gates; record exact PASS/FAIL/NOT RUN results.
-- [ ] 9.3 Verify the implementation against all delta scenarios; validate OpenSpec strictly, update Graphify, and accept the ADR only after evidence passes.
+- [x] 9.3 Verify the implementation against all delta scenarios; validate OpenSpec strictly, update Graphify, and accept the ADR only after evidence passes.
 - [x] 9.4 Confirm deferred optimisation has no endpoint, button, dependency, or unused scaffolding; retain Quick/Standard/Full in the later-change notes.
 
 Do not archive, commit, push, or release automatically. Present verification evidence and request the next approval.

@@ -121,6 +121,9 @@ def test_foundation_and_job_responses_conform(
         )
         assert job["status"] in {"queued", "running"} and uuid.UUID(job["job_id"])
         assert _poll(client, check, job["job_id"])["status"] == "completed"
+        events = check.check(client.get(f"/v1/jobs/{job['job_id']}/events"), 200)
+        assert events["job_status"] == "completed" and events["events"]
+        check.check(client.get("/v1/jobs/not-a-uuid/events"), 404)
         check.check(
             client.post("/v1/ingestions", json={"path": str(tmp_path)}, headers=ORIGIN), 403
         )

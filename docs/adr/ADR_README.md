@@ -81,7 +81,7 @@ development of OMRG — Opinionated Modular RAG.
 | [072](./072-modular-ocr-engines-dots-mocr-primary-and-maths-routing.md) | Modular OCR Engines, dots.mocr as Primary Engine, and Maths-Page Routing | 2026-10-06 | Proposed |
 | [073](./073-make-the-torch-extra-a-normal-choice.md) | Make the Optional `torch` Extra a Normal Choice | 2026-10-08 | Accepted |
 | [074](./074-run-local-decision-models-through-llama-cpp-q8-0-gguf.md) | Run Local Decision Models Through llama.cpp Q8_0 GGUF | 2026-10-08 | Proposed |
-| [075](./075-omrg-owned-pipeline-runner-local-web-packaging-and-external-tool-plugins.md) | OMRG-Owned Pipeline Runner, Local Web Packaging, and External-Tool Plugins | 2026-10-13 | Proposed |
+| [075](./075-omrg-owned-pipeline-runner-local-web-packaging-and-external-tool-plugins.md) | OMRG-Owned Pipeline Runner, Local Web Packaging, and External-Tool Plugins | 2026-10-13 | Accepted |
 
 ## Convention
 

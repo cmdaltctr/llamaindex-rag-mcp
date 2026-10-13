@@ -81,6 +81,39 @@ describe("canvas live run state", () => {
     expect(nodeCard("select")).toHaveTextContent("Failed: ValueError: no rows");
   });
 
+  it("shows a bypassed node with the reason the core gives", async () => {
+    const { source } = await openStream();
+    const message = "Disabled in the graph; passes its 'evidence' input through unchanged.";
+    act(() => source.send(event(1, "node_bypassed", { node_id: "rerank", summary: { message, data: { reason: "disabled in the graph" } } })));
+    await waitFor(() => expect(nodeCard("rerank")).toHaveTextContent(`Bypassed: ${message}`));
+  });
+
+  it("shows a reranker switched off by its node parameter as bypassed, not completed", async () => {
+    const { source } = await openStream();
+    act(() => {
+      source.send(event(1, "node_started", { node_id: "rerank" }));
+      source.send(event(2, "node_completed", { node_id: "rerank", summary: { data: { reranked: false, reason: "disabled by node parameter", rows: 3 } } }));
+    });
+    await waitFor(() => expect(nodeCard("rerank")).toHaveTextContent("Bypassed: disabled by node parameter"));
+    expect(nodeCard("rerank")).not.toHaveTextContent("Completed");
+  });
+
+  it("re-reads the run record after each reconnect and shows its status", async () => {
+    const { source, server } = await openStream();
+    act(() => source.send(event(1, "run.status", { summary: { status: "running" } })));
+    await waitFor(() => expect(liveRegion()).toHaveTextContent("Run run1: running"));
+    const reads = () => server.calls.filter((c) => c.method === "GET" && c.path === "/v1/runs/run1").length;
+    const before = reads();
+    // The run changes while the connection is down; no event for it arrives.
+    await server.fetchImpl("/v1/runs/run1/cancel", { method: "POST" });
+    act(() => {
+      source.fail(false);
+      source.open();
+    });
+    await waitFor(() => expect(liveRegion()).toHaveTextContent("Run run1: cancelling"));
+    expect(reads()).toBe(before + 1);
+  });
+
   it("deduplicates events replayed after a reconnect", async () => {
     const { source } = await openStream();
     act(() => {

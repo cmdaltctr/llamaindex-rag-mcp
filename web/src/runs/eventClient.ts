@@ -6,11 +6,14 @@
  * delivered once, in sequence order: a repeated or older sequence is dropped.
  * When the stream is refused, keeps failing, or `EventSource` is missing,
  * the client polls the JSON events route from the last delivered sequence.
+ * After every reconnect (the stream opens again after an error, the client
+ * switches to polling, or polling recovers after a failure) it re-reads the
+ * authoritative run record and passes it to `onRefresh`.
  * It stops on `run.end`, on a complete polling page, or on `close()`.
  * Closing only stops monitoring; it never cancels the run.
  */
 import { ApiError, type FetchLike } from "../api/client";
-import { eventStreamPath, listRunEvents, MAX_EVENT_PAGE, type RunEventRecord } from "../api/runs";
+import { eventStreamPath, getRunRecord, listRunEvents, MAX_EVENT_PAGE, type RunDetailRecord, type RunEventRecord } from "../api/runs";
 
 export type MonitorMode = "connecting" | "streaming" | "reconnecting" | "polling" | "ended" | "closed";
 
@@ -32,6 +35,8 @@ export interface FollowOptions {
   /** `status` is null when the server closed before the run ended. */
   onEnd?: (info: { status: string | null }) => void;
   onError?: (message: string) => void;
+  /** Receives the run record read again after each reconnect. The first connection reads nothing. */
+  onRefresh?: (run: RunDetailRecord) => void;
   /** `undefined` uses the browser `EventSource`; `null` means none is available. */
   eventSource?: EventSourceFactory | null;
   fetchImpl?: FetchLike;
@@ -113,6 +118,18 @@ export function followRunEvents(options: FollowOptions): { close: () => void } {
     options.onEvent(record);
   }
 
+  function refresh() {
+    if (stopped || !options.onRefresh) return;
+    getRunRecord(options.runId, { fetchImpl: options.fetchImpl }).then(
+      (run) => {
+        if (!stopped) options.onRefresh?.(run);
+      },
+      (error: unknown) => {
+        if (!stopped) options.onError?.(error instanceof Error ? error.message : String(error));
+      },
+    );
+  }
+
   function stop(mode: MonitorMode) {
     stopped = true;
     source?.close();
@@ -124,6 +141,7 @@ export function followRunEvents(options: FollowOptions): { close: () => void } {
     if (stopped) return;
     try {
       const page = await listRunEvents(options.runId, last, { fetchImpl: options.fetchImpl });
+      if (failures > 0) refresh();
       for (const record of page.events) deliver(record);
       if (stopped) return;
       if (page.complete) {
@@ -147,19 +165,28 @@ export function followRunEvents(options: FollowOptions): { close: () => void } {
     void poll(0);
   }
 
+  function switchToPolling() {
+    startPolling();
+    refresh();
+  }
+
   function startStream(open: EventSourceFactory) {
     setMode("connecting");
     const stream = open(eventStreamPath(options.runId, last));
     source = stream;
     let errors = 0;
+    let dropped = false;
     stream.onopen = () => {
       errors = 0;
       setMode("streaming");
+      if (dropped) refresh();
+      dropped = false;
     };
     stream.onerror = () => {
       if (stopped) return;
       errors += 1;
-      if (stream.readyState === CLOSED || errors >= maxErrors) startPolling();
+      dropped = true;
+      if (stream.readyState === CLOSED || errors >= maxErrors) switchToPolling();
       else setMode("reconnecting");
     };
     const onFrame = (message: MessageEvent) => {

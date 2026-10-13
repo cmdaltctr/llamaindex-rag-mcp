@@ -25,12 +25,19 @@ The canvas SHALL let users add registered nodes, create/remove compatible connec
 - **AND** the admitted graph SHALL be an immutable validated revision
 
 ### Requirement: Node controls show effective behaviour
-Node controls SHALL derive from operation schemas and show effective values, inherited defaults, and allowed overrides. Profile selection SHALL support documents/codebase or collection inheritance. Reranker and hybrid controls SHALL support inherit/on/off where applicable.
+Node controls SHALL derive from operation schemas and show effective values, inherited defaults, and allowed overrides. Profile selection SHALL support documents/codebase or collection inheritance. Reranker and hybrid controls SHALL support inherit/on/off where applicable. Disabling a node in the graph (bypass) SHALL remain a separate mechanism from an operation control such as the reranker `enabled` control.
 
 #### Scenario: Reranker is disabled with a click
-- **WHEN** a user disables the reranker and submits a new run
+- **WHEN** a user sets the reranker node's `enabled` control to off and submits a new run
 - **THEN** the admitted node control SHALL explicitly disable inference
-- **AND** the inspector SHALL show the bypass and its reason
+- **AND** the node SHALL run, pass its evidence through without inference, and record the reason in its summary
+- **AND** the inspector SHALL show that inference was skipped and that reason
+
+#### Scenario: Node is disabled in the graph
+- **WHEN** a user disables a node in the graph (the node bypass toggle) and submits a new run
+- **THEN** core SHALL emit a bypassed event for that node instead of running its operation
+- **AND** the node SHALL pass its declared input through unchanged when that input is available
+- **AND** the canvas SHALL show the node as bypassed
 
 #### Scenario: Profile default is restored
 - **WHEN** a user resets a control to inheritance
@@ -42,7 +49,7 @@ Node controls SHALL derive from operation schemas and show effective values, inh
 - **AND** the current run's snapshot SHALL remain unchanged
 
 ### Requirement: Execution display follows real events
-The canvas SHALL show queued, running, completed, skipped, failed, and cancelling states from core events. Active-edge animation SHALL follow those states and respect reduced motion. Trace replay SHALL be labelled as replay.
+The canvas SHALL show the queued, running, completed, skipped, bypassed, failed, and cancelled node states, and the cancelling run status, from core events. Active-edge animation SHALL follow those states and respect reduced motion. Trace replay SHALL be labelled as replay.
 
 #### Scenario: A node has not started
 - **WHEN** a downstream node waits for required inputs

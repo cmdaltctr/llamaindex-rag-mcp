@@ -261,3 +261,12 @@ def answer_graph(**prepare_params: Any) -> dict[str, Any]:
     graph["inputs"][0]["targets"].append({"node": "synth", "port": "query"})
     graph["outputs"] = [{"name": "answer", "source": {"node": "cite", "port": "answer"}}]
     return graph
+
+
+def rerank_graph(**rerank_params: Any) -> dict[str, Any]:
+    """Return the retrieval graph with ``select.rerank`` between dense and select."""
+    graph = retrieval_graph()
+    graph["nodes"].append({"id": "rerank", "operation": "select.rerank", "params": rerank_params})
+    graph["edges"][1]["target"] = {"node": "rerank", "port": "evidence"}
+    graph["edges"] += _edges([("rerank", "evidence", "select", "evidence")])
+    return graph

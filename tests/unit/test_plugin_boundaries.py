@@ -1,8 +1,9 @@
 """Import boundaries of the plugin packages (design D10).
 
-No import-linter contract names ``omrg.core.plugins`` yet, so this test
-checks the direct imports itself. The proposed contract is in
-``evidence/plugins.md``.
+The import-linter contract ``plugin-host-starts-no-processes`` in
+``pyproject.toml`` now governs ``omrg.core.plugins``. This test keeps its
+own direct-import check as a second guard. It also checks the process
+launcher in ``integrations/`` against its own forbidden list.
 """
 
 from __future__ import annotations

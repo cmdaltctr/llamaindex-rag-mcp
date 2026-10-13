@@ -44,6 +44,7 @@ class FakeAdmitter:
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.index = "idx-1"
         self.error: Exception | None = None
+        self.artefact_root: Path | None = None
 
     def __call__(self, revision: RevisionRecord, inputs: Mapping[str, Any]) -> Admission:
         self.calls.append((revision["revision_id"], dict(inputs)))
@@ -53,6 +54,7 @@ class FakeAdmitter:
             settings={"retrieval": {"top_k": 10}, "openrouter_api_key": SECRET},
             resources={"index": self.index, "embedder": "bge-small"},
             payload=("admitted", revision["content_hash"]),
+            artefact_root=self.artefact_root,
         )
 
 

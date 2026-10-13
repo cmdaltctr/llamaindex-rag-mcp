@@ -35,6 +35,39 @@ jobs:
       - name: Force branch to workflow SHA
         run: git reset --hard ${{ github.sha }}
 
+      # Release preparation gate (design: web assets ship in the wheel).
+      # The web assets are gitignored build output, and Hatch ships them
+      # only when they exist. Build the frontend and a wheel, then fail
+      # before tagging or publishing if the wheel cannot serve the
+      # workspace. The wheel goes to wheel-check/, not dist/, so the
+      # published release assets stay unchanged.
+      - name: Set up Node
+        # Pinned to SHA for security — actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build web frontend
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install uv
+        # Pinned to SHA for security — astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+
+      - name: Build wheel and check web assets
+        run: |
+          set -euo pipefail
+          uv build --wheel --out-dir wheel-check
+          # The check uses the standard library only.
+          python3 scripts/check_web_wheel.py wheel-check/*.whl
+          rm -rf wheel-check
+          echo "OK: wheel contains the web workspace assets"
+
       - name: Semantic Release
         id: release
         uses: python-semantic-release/python-semantic-release@v10.5.3
