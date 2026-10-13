@@ -101,8 +101,8 @@ Resumed work reports mixed execution periods and claims no common network epoch.
 ## Task 4.6 - Offline historical recompute
 
 Both complete historical cell sets were recomputed offline into
-`repair/evidence/task-4-recompute/exp26/` and
-`repair/evidence/task-4-recompute/exp27/`. Each contains an evaluation summary
+`openspec/changes/archive/2026-09-13-repair-input-quality-experiment-evidence/evidence/repair/task-4-recompute/exp26/` and
+`openspec/changes/archive/2026-09-13-repair-input-quality-experiment-evidence/evidence/repair/task-4-recompute/exp27/`. Each contains an evaluation summary
 and `results.md`.
 
 Exp26 is complete with 223 queries per arm. Its verdict is FAIL. Its gates
@@ -115,8 +115,8 @@ The other two cells were measured here. Its verdict is FAIL. Its gates match:
 R@5 0.223686 FAIL, identifier R@10 0.269936 PASS, p95 4790.4 ms FAIL, and
 interaction +0.011795.
 
-SHA-256 records in `repair/evidence/task-4-recompute/hashes-before.json` and
-`repair/evidence/task-4-recompute/hashes-after.json` cover 25 files. They
+SHA-256 records in `openspec/changes/archive/2026-09-13-repair-input-quality-experiment-evidence/evidence/repair/task-4-recompute/hashes-before.json` and
+`openspec/changes/archive/2026-09-13-repair-input-quality-experiment-evidence/evidence/repair/task-4-recompute/hashes-after.json` cover 25 files. They
 include 21 inventoried files plus four root `results.md` and `discussion.md`
 files. All 25 are byte-identical. No inventoried JSON or frozen plan changed.
 
@@ -142,7 +142,7 @@ not identify a cause by itself. Equal aggregate values do not show rank-level
 stability. Root `results.md` has the same dated corrections. Its hand-added
 "Recovery clarification (2026-09-09)" sections remain. Regenerated reports
 write only to the recovery directory. The same corrections appear in
-`repair/evidence/task-4-recompute/exp26/results.md`.
+`openspec/changes/archive/2026-09-13-repair-input-quality-experiment-evidence/evidence/repair/task-4-recompute/exp26/results.md`.
 
 ### Remaining Exp27 wording
 

@@ -12,7 +12,7 @@ Current changes made after the pre-push archive are outside that archive. The re
 
 ## Fresh fast-suite coverage
 
-Evidence: `repair/evidence/fresh-fast-coverage.md`.
+Evidence: `openspec/changes/archive/2026-09-13-repair-input-quality-experiment-evidence/evidence/repair/fresh-fast-coverage.md`.
 
 ```sh
 uv run --no-sync pytest -m 'not slow' -q --cov=omrg --cov-branch
