@@ -9,6 +9,8 @@ For each new behaviour, observe its test fail without the implementation, then p
 ## 1. Scope, dependency and boundary setup
 
 - [ ] 1.0 Verify the integrated repair commit and focused regressions on the intended base; stop web implementation if readiness fails.
+  - Run `tests/test_document_registry_dispatch.py`, `tests/test_metadata_store_ownership.py`, `tests/unit/test_codebase_context_repair.py`, and `tests/test_no_global_settings_reads.py`.
+  - Compare results with the evidence in `openspec/changes/archive/2026-10-13-repair-modular-core-boundaries/evidence/`.
 - [ ] 1.1 Prepare the approved feature worktree and copy planning artefacts; verify repository root, branch, and unchanged environment files.
 - [ ] 1.2 Add the optional web dependency group after approval; verify base imports, torch-free resolution, and qualified dependency floors.
 - [ ] 1.3 Extend executable import boundaries for graph/workspace packages and adapters; prove intentional violations fail the boundary tests.
@@ -31,6 +33,7 @@ For each new behaviour, observe its test fail without the implementation, then p
 - [ ] 3.5 Add ingestion graph fingerprints; test changed shaping operations reprocess sources while layout/query-only changes preserve reuse.
 - [ ] 3.6 Adapt answer preparation, synthesis, and verification; run no-evidence, citation, failure-attribution, and degraded-verification parity fixtures.
 - [ ] 3.7 Update ingestion/retrieval guides and architecture ownership; verify described paths, preserved defaults, and existing operation return shapes.
+- [ ] 3.8 Add each new graph-adapter module to the leaf list in `tests/test_no_global_settings_reads.py`. Add a behavioural test with poisoned process defaults; verify it fails when an adapter drops `store` or `settings`.
 
 ## 4. Execution and Engine ownership
 

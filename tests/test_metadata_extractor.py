@@ -252,7 +252,9 @@ class TestLlamaindexStub:
         monkeypatch.setattr("builtins.__import__", _fake_import)
 
         # Mock _extract_ollama_async so we don't need a live Ollama instance.
-        async def _fake_ollama(text: str, file_name: str = "", settings=None) -> dict:
+        async def _fake_ollama(
+            text: str, file_name: str = "", settings=None, *, store=None
+        ) -> dict:
             return {
                 "category": "biology",
                 "keywords": ["protein", "deep_learning"],
@@ -580,8 +582,9 @@ class TestHybridCategoryTaxonomy:
 
         Task 5.1: the chroma extra is optional, and the default test store
         is tmp-path LanceDB. Seeding writes to the (patched) ephemeral
-        Chroma client and installs a Chroma store as the process default
-        so ``_gather_existing_categories()`` reads the seeded rows. The
+        Chroma client and keeps a Chroma store on the test instance; the
+        prompt helper supplies it explicitly, so ``_gather_existing_categories``
+        reads the seeded rows without any process default. The
         importorskip guards every caller in the base install.
         """
         pytest.importorskip(
@@ -590,7 +593,6 @@ class TestHybridCategoryTaxonomy:
         )
         import chromadb
 
-        from omrg.core.vectordb import set_default_store
         from omrg.core.vectordb.chroma import ChromaVectorStore
 
         client = chromadb.PersistentClient(path="ignored")
@@ -607,11 +609,10 @@ class TestHybridCategoryTaxonomy:
             metadatas=[{"category": category}],
             embeddings=[[0.1] * 384],
         )
-        set_default_store(ChromaVectorStore())
+        self._store = ChromaVectorStore()
 
-    @staticmethod
-    def _get_prompt_sent(monkeypatch) -> str:
-        """Inspect the prompt argument that was passed to Ollama."""
+    def _get_prompt_sent(self, monkeypatch) -> str:
+        """Inspect the prompt sent to Ollama, supplying any seeded store."""
         from unittest.mock import AsyncMock, MagicMock
 
         prompt_container: list[str] = []
@@ -635,7 +636,8 @@ class TestHybridCategoryTaxonomy:
 
         from omrg.core.metadata import extract_metadata_async
 
-        asyncio.run(extract_metadata_async("test document"))
+        store = getattr(self, "_store", None)
+        asyncio.run(extract_metadata_async("test document", store=store))
         return prompt_container[0] if prompt_container else ""
 
     def test_chromadb_empty_uses_seed_categories(self, monkeypatch) -> None:
@@ -664,12 +666,10 @@ class TestHybridCategoryTaxonomy:
         """Vector store query fails → WARNING log, prompt uses seeds only."""
         from unittest.mock import MagicMock
 
-        from omrg.core.vectordb import set_default_store
-
-        # Make the default store raise on list_collections.
+        # Make the supplied store raise on list_collections.
         broken_store = MagicMock()
         broken_store.list_collections.side_effect = RuntimeError("db locked")
-        set_default_store(broken_store)
+        self._store = broken_store
 
         prompt = self._get_prompt_sent(monkeypatch)
 
@@ -785,8 +785,9 @@ class TestSeedCategories:
         _set_mode(monkeypatch, "keyword")
 
         from omrg.core.metadata.taxonomy import _get_seed_categories
+        from omrg.core.settings import get_default_effective_settings
 
-        seeds = _get_seed_categories()
+        seeds = _get_seed_categories(get_default_effective_settings())
         assert "ai" in seeds
         assert "philosophy" in seeds
         assert "biology" in seeds
@@ -805,8 +806,9 @@ class TestSeedCategories:
         _set_mode(monkeypatch, "keyword", keyword_rules=custom)
 
         from omrg.core.metadata.taxonomy import _get_seed_categories
+        from omrg.core.settings import get_default_effective_settings
 
-        seeds = _get_seed_categories()
+        seeds = _get_seed_categories(get_default_effective_settings())
         assert "motorsport" in seeds
         assert "sport" in seeds
         assert "uncategorised" in seeds
@@ -856,7 +858,9 @@ class TestLlamaindexExtraction:
         monkeypatch.setattr("builtins.__import__", _fake_import)
 
         # Mock _extract_ollama_async so we don't need a live Ollama instance.
-        async def _fake_ollama(text: str, file_name: str = "", settings=None) -> dict:
+        async def _fake_ollama(
+            text: str, file_name: str = "", settings=None, *, store=None
+        ) -> dict:
             return {
                 "category": "ai",
                 "keywords": ["deep_learning", "neural"],
@@ -908,7 +912,7 @@ class TestLlamaindexExtraction:
         from omrg.core.metadata.llamaindex import _aggregate_llamaindex_metadata
 
         async def fake_extract_llamaindex_async(
-            text: str, file_name: str = "", settings=None
+            text: str, file_name: str = "", settings=None, *, store=None
         ) -> dict:
             return _aggregate_llamaindex_metadata([mock_node])
 
@@ -1001,7 +1005,9 @@ class TestLlamaindexExtraction:
         monkeypatch.setitem(sys.modules, "llama_index.core.ingestion", mock_ingestion)
 
         # Mock _extract_ollama_async so we don't need a live Ollama instance.
-        async def _fake_ollama(text: str, file_name: str = "", settings=None) -> dict:
+        async def _fake_ollama(
+            text: str, file_name: str = "", settings=None, *, store=None
+        ) -> dict:
             return {"category": "ai", "keywords": ["transformer"], "summary": "An AI paper."}
 
         monkeypatch.setattr(
@@ -1050,7 +1056,9 @@ class TestLlamaindexExtraction:
         monkeypatch.setattr("builtins.__import__", _fake_import)
 
         # Make _extract_ollama_async also fail — simulates Ollama unreachable.
-        async def _failing_ollama(text: str, file_name: str = "", settings=None) -> dict:
+        async def _failing_ollama(
+            text: str, file_name: str = "", settings=None, *, store=None
+        ) -> dict:
             # _extract_ollama_async catches its own exceptions and returns this.
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
@@ -1089,7 +1097,7 @@ class TestLlamaindexExtraction:
         captured_text_len = []
 
         async def fake_extract_llamaindex_async(
-            text: str, file_name: str = "", settings=None
+            text: str, file_name: str = "", settings=None, *, store=None
         ) -> dict:
             captured_text_len.append(len(text))
             # The function internally caps text at max_chunks * CHUNK_SIZE
@@ -1217,8 +1225,6 @@ class TestCoverageGaps:
         """A collection that raises during iter_metadatas must be skipped gracefully."""
         from unittest.mock import MagicMock
 
-        from omrg.core.vectordb import set_default_store
-
         mock_store = MagicMock()
         mock_store.list_collections.return_value = ["bad_collection", "good_collection"]
 
@@ -1228,11 +1234,10 @@ class TestCoverageGaps:
             yield {"category": "biology"}
 
         mock_store.iter_metadatas.side_effect = _iter_metadatas
-        set_default_store(mock_store)
 
         from omrg.core.metadata.taxonomy import _gather_existing_categories
 
-        result = _gather_existing_categories()
+        result = _gather_existing_categories(store=mock_store)
         # bad_col skipped, good_col processed
         assert "biology" in result
 
@@ -1249,7 +1254,6 @@ class TestCoverageGaps:
 
         import omrg.config as _config
         from omrg.core.settings import EffectiveSettings, set_default_effective_settings
-        from omrg.core.vectordb import set_default_store
         from omrg.core.vectordb.chroma import ChromaVectorStore
 
         set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
@@ -1267,11 +1271,10 @@ class TestCoverageGaps:
             ],
         )
         store = ChromaVectorStore()
-        set_default_store(store)
 
         from omrg.core.metadata.taxonomy import _gather_existing_categories
 
-        result = _gather_existing_categories()
+        result = _gather_existing_categories(store=store)
         assert result == ["ai", "biology", "philosophy"]
 
     # ── _build_ollama_prompt: empty merged taxonomy (line 338) ────────────
@@ -1281,24 +1284,16 @@ class TestCoverageGaps:
         from unittest.mock import MagicMock
 
         # Empty custom rules → no seed categories
-        from omrg.core.settings import (
-            EffectiveSettings,
-            MetadataBlock,
-            set_default_effective_settings,
-        )
-        from omrg.core.vectordb import set_default_store
+        from omrg.core.settings import EffectiveSettings, MetadataBlock
 
-        set_default_effective_settings(
-            EffectiveSettings(metadata=MetadataBlock(keyword_rules="[]"))
-        )
+        settings = EffectiveSettings(metadata=MetadataBlock(keyword_rules="[]"))
         # Empty store → no existing categories
         mock_store = MagicMock()
         mock_store.list_collections.return_value = []
-        set_default_store(mock_store)
 
         from omrg.core.metadata.ollama import _build_ollama_prompt
 
-        prompt = _build_ollama_prompt("some document text")
+        prompt = _build_ollama_prompt("some document text", settings, store=mock_store)
         assert "uncategorised" in prompt
         assert "EXISTING CATEGORIES" in prompt
 

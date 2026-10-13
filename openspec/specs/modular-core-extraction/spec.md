@@ -1,91 +1,89 @@
 ## Purpose
 
 Define the modular subpackage structure for the core RAG pipeline: metadata extraction, ingestion, chunking, and retrieval. Phase 1 of the five-phase modular refactor — mechanical extraction with backward-compatible shims, no behaviour change.
+
 ## Requirements
+
 ### Requirement: Metadata subpackage extraction
 
-The system SHALL provide all metadata-extraction behaviour formerly in
-`metadata_extractor.py` from a `core/metadata/` subpackage containing one
-module per extraction backend (`keyword.py`, `ollama.py`, `llamaindex.py`,
-`llamacpp.py`), an orchestrator module (`extractor.py`) that dispatches to the
-configured backend, and a `taxonomy.py` module holding the hybrid category
-logic (ADR-013). `extractor.py` SHALL select a backend by resolving it through
-`core/metadata/registry.py` and SHALL NOT dispatch by an if/elif chain over
-backend names, nor import concrete backend modules at the top level.
+Metadata extraction SHALL remain in `core/metadata/`, with registered
+keyword, Ollama, LlamaIndex, llama.cpp, and OpenRouter implementations and
+shared prompt/taxonomy helpers. Dispatch SHALL use
+`core/metadata/registry.py` without name-specific branching or module-level
+imports of concrete backends. Existing positional text, filename, and
+settings arguments SHALL remain valid; built-in strategies SHALL also accept
+the documented optional keyword-only store context. Supplied context SHALL
+reach shared classification and fallback paths.
 
 #### Scenario: Backend split is faithful
-
-- **WHEN** the extraction is complete
-- **THEN** each of the four extraction backends MUST live in its own module
-  under `core/metadata/`
-- **AND** OpenRouter MUST NOT exist as a standalone backend module (it routes
-  through the llamaindex/local mode via the provider registry)
+- **WHEN** the metadata subpackage is inspected
+- **THEN** each supported implementation SHALL remain in its owning backend module
+- **AND** OpenRouter SHALL retain its existing registered implementation
 
 #### Scenario: Behaviour preservation
-
-- **WHEN** any supported metadata mode (`keyword`, `ollama`, `llamaindex`,
-  `llamacpp`, `disabled`) is exercised through the new subpackage
-- **THEN** the extracted metadata output MUST be identical to the pre-refactor
-  output for the same input and configuration
+- **WHEN** an existing metadata mode runs with the same intended settings/store
+- **THEN** output shape, retry policy, parsing, and degradation behaviour SHALL remain unchanged
+- **AND** accidental cross-store category lookup SHALL be corrected
 
 #### Scenario: Backend resolved through the registry
-
-- **WHEN** the extractor dispatches to a backend
-- **THEN** it MUST call `registry.get(<backend name>)`
-- **AND** `core/metadata/extractor.py` MUST contain no if/elif chain over
-  backend names and no module-level import of a concrete backend module
+- **WHEN** the extractor selects a backend
+- **THEN** it SHALL use the metadata registry
+- **AND** dispatch SHALL contain no name-specific branch or top-level concrete-backend import
 
 #### Scenario: Disabled sentinel honoured
-
-- **WHEN** metadata extraction is configured as disabled
-- **THEN** the extractor MUST short-circuit without resolving a backend
+- **WHEN** metadata extraction is disabled
+- **THEN** it SHALL return without category lookup or backend resolution
 
 #### Scenario: Extraction results unchanged
+- **WHEN** the selected backend succeeds with the same supplied category context
+- **THEN** returned category/keyword/summary fields SHALL retain their existing semantics
 
-- **WHEN** each backend runs against the same input as before the change
-- **THEN** the extracted metadata MUST be identical
-
----
+#### Scenario: Fallback preserves the owning store
+- **WHEN** LlamaIndex or local extraction falls back to another configured backend
+- **THEN** the supplied store and resolved settings SHALL reach that fallback
+- **AND** no default store SHALL replace them
 
 ### Requirement: Ingestion and chunking subpackage extraction
 
-The system SHALL provide ingestion orchestration from a `core/ingestion/`
-subpackage (`loader.py`, `chunker.py`, `writer.py`) exposing
-`ingest_path_async()` as its public entry point, and SHALL provide the four
-existing chunking strategies from a `core/chunking/` strategy folder
-(`code.py`, `markdown.py`, `sentence.py`, `config_file.py`). The chunker
-SHALL select a strategy by resolving it through `core/chunking/registry.py`,
-and SHALL NOT import concrete strategy modules at the top level.
+Ingestion SHALL remain under `core/ingestion/`, exposing async
+`ingest_path_async()` with injected settings. Existing chunking modules and
+registered strategies SHALL be reused. Both structured and unstructured
+document branches SHALL invoke the selected registered document strategy,
+rather than private implementation helpers. Reading, metadata attachment,
+reader declarations, and degradation reporting SHALL retain their existing
+owners and semantics.
 
 #### Scenario: Content-type dispatch preserved
-
-- **WHEN** a file with a known content type (e.g. `.py`, `.md`, `.yaml`) is
-  ingested
-- **THEN** the chunker MUST route it to the same strategy as before the
-  refactor (content-type precedence is unchanged)
+- **WHEN** a source has a recognised code, configuration, or document type
+- **THEN** existing content-type precedence and specialised routing SHALL remain unchanged
 
 #### Scenario: Strategy resolved through the registry
-
-- **WHEN** the chunker resolves the strategy for a file
-- **THEN** it MUST call `registry.get(<strategy name>)`
-- **AND** `core/ingestion/chunker.py` MUST have no module-level import of
-  `core.chunking.code`, `core.chunking.markdown`, `core.chunking.sentence`, or
-  `core.chunking.config_file`
+- **WHEN** either document branch selects sentence splitting
+- **THEN** it SHALL resolve and await the sentence registry callable
+- **AND** the chunker SHALL not call sentence splitting/post-processing helpers directly
 
 #### Scenario: Only existing strategies extracted
-
-- **WHEN** the `core/chunking/` folder is inspected
-- **THEN** it MUST contain exactly the four pre-existing strategies
-- **AND** MUST NOT contain `structural.py` or `evidence_md.py` (net-new
-  strategies deferred to a later change)
+- **WHEN** this repair is applied
+- **THEN** it SHALL add no new chunking algorithm
+- **AND** existing code, Markdown, sentence, and configuration behaviour SHALL remain available
 
 #### Scenario: Async ingestion entry point preserved
+- **WHEN** an existing caller invokes ingestion
+- **THEN** the async entry point and its effective-settings argument SHALL remain available
 
-- **WHEN** a caller invokes ingestion
-- **THEN** `ingest_path_async` MUST remain the sole ingestion entry point
-  (AGENTS.md invariant #4), accepting an `EffectiveSettings` parameter
+#### Scenario: Registered replacement reaches production dispatch
+- **WHEN** the sentence registry resolves a sentinel replacement
+- **THEN** structured and unstructured production document dispatch SHALL invoke it
+- **AND** the test SHALL fail if either branch returns to a private splitter
 
----
+#### Scenario: Reader-produced Markdown remains intact
+- **WHEN** a non-Markdown source is read as declared Markdown
+- **THEN** the selected strategy SHALL receive that declaration
+- **AND** headings, model-token settings, and post-processing SHALL be applied exactly once
+
+#### Scenario: Metadata degradation survives dispatch
+- **WHEN** unstructured metadata extraction reports degradation
+- **THEN** returned chunk results SHALL retain that marker through the registered strategy call
 
 ### Requirement: Retrieval subpackage grouping
 
@@ -153,4 +151,3 @@ guarantee.
 - **WHEN** the MCP server and CLI are exercised after the change
 - **THEN** every tool signature and subcommand MUST behave identically to the
   pre-change versions
-

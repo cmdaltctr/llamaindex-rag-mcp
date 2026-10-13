@@ -151,10 +151,13 @@ async def test_sentence_helper_honours_markdown_min_fraction(monkeypatch) -> Non
 
 
 @pytest.mark.asyncio
-async def test_markdown_helper_matches_main_ingestion_postprocessing(tmp_path, monkeypatch) -> None:
-    """Both entry points must apply the same Markdown post-processing knobs."""
-    from llama_index.core import Document
+async def test_main_ingestion_applies_markdown_postprocessing(tmp_path, monkeypatch) -> None:
+    """Main ingestion applies the Markdown knobs through the registered strategy.
 
+    The chunker awaits the registered ``sentence`` callable, which owns the
+    post-processing. The expected output is asserted directly, so the test
+    does not compare the callable with itself.
+    """
     from omrg.core.chunking import sentence
     from omrg.core.ingestion.chunker import read_and_chunk_file_async
 
@@ -177,12 +180,6 @@ async def test_markdown_helper_matches_main_ingestion_postprocessing(tmp_path, m
         metadata=MetadataBlock(extraction_mode="disabled"),
     )
 
-    helper = await sentence.chunk_sentence_file_async(
-        [Document(text="ignored")],
-        str(path),
-        True,
-        settings=settings,
-    )
     main = await read_and_chunk_file_async(path, settings=settings)
 
-    assert [node.text for node in helper] == [node.text for node in main]
+    assert [node.text for node in main] == ["[Section] " + "x" * 80]

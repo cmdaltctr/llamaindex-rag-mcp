@@ -17,6 +17,14 @@ Modes
   Falls back to local mode if the LLM package is not installed, then to
   keyword mode if the backend is also unreachable.
 
+Store ownership
+---------------
+Both entry points accept an optional keyword-only ``store``.  The ingestion
+chunker passes the owning Engine's store; it is forwarded unchanged to the
+selected strategy, every fallback, and the shared category prompt.  Without
+a store, LLM classification uses seed categories only.  No process-default
+store is consulted.
+
 Degradation ladder
 ------------------
 ``llamaindex`` (richest — per-chunk extractors) →
@@ -26,10 +34,15 @@ Degradation ladder
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from ..settings import resolve_effective_settings
 from ._common import _degradation_flag, logger
 from .registry import available as _metadata_available
 from .registry import get as _metadata_get
+
+if TYPE_CHECKING:
+    from ..vectordb.base import VectorStore
 
 # Extraction modes for which the system promises an LLM-produced
 # classification.  Only these can "degrade" — keyword/disabled never
@@ -60,16 +73,27 @@ def _local_strategy_name(settings) -> str:
 
 
 async def _dispatch_local_extraction(
-    text: str, settings: object | None = None, file_name: str = ""
+    text: str,
+    settings: object | None = None,
+    file_name: str = "",
+    *,
+    store: VectorStore | None = None,
 ) -> dict:
     """Resolve the configured local/cloud backend and run it.
 
     Kept as a named entry point because ``llamaindex.py`` degrades to it when
     the LlamaIndex extractor is unavailable. Dispatch itself goes through the
     registry — this only maps provider configuration to a strategy name.
+
+    Args:
+        text: The full document text.
+        settings: Optional resolved ``EffectiveSettings``.
+        file_name: Name of the source file.
+        store: The owning vector store, forwarded to the backend.
     """
     resolved = resolve_effective_settings(settings)
-    return await _metadata_get(_local_strategy_name(resolved))(text, file_name, resolved)
+    strategy = _metadata_get(_local_strategy_name(resolved))
+    return await strategy(text, file_name, resolved, store=store)
 
 
 # Provider config value → registered strategy name.
@@ -77,16 +101,26 @@ _LOCAL_BACKENDS = {"llamacpp": "llamacpp", "ollama": "ollama"}
 
 
 async def extract_metadata_async(
-    file_text: str, file_name: str = "", settings: object | None = None
+    file_text: str,
+    file_name: str = "",
+    settings: object | None = None,
+    *,
+    store: VectorStore | None = None,
 ) -> dict:
     """Async counterpart of ``extract_metadata()``.
 
     Dispatches to the appropriate async extraction function based on
-    ``METADATA__EXTRACTION_MODE``.
+    ``METADATA__EXTRACTION_MODE``.  This is the documented settings
+    boundary: omitted *settings* resolve to the composition-root default
+    here, once.  Everything below receives the resolved value.
 
     Args:
         file_text: The full text content of the document.
         file_name: Name of the file (used by llamaindex mode).
+        settings: Optional resolved ``EffectiveSettings``.
+        store: The owning vector store.  LLM-backed modes read existing
+            categories from all of its collections.  ``None`` means
+            seed-only classification; no default store is consulted.
 
     Returns:
         A dict of metadata key-value pairs (same shape as sync version).
@@ -109,11 +143,15 @@ async def extract_metadata_async(
         )
         name = "keyword"
 
-    return await _metadata_get(name)(file_text, file_name, resolved)
+    return await _metadata_get(name)(file_text, file_name, resolved, store=store)
 
 
 async def extract_metadata_with_status_async(
-    file_text: str, file_name: str = "", settings: object | None = None
+    file_text: str,
+    file_name: str = "",
+    settings: object | None = None,
+    *,
+    store: VectorStore | None = None,
 ) -> tuple[dict, bool]:
     """Extract metadata and report whether it degraded from the configured mode.
 
@@ -131,6 +169,9 @@ async def extract_metadata_with_status_async(
         file_text: The full text content of the document.
         file_name: Name of the file (used by llamaindex mode).
         settings: Optional resolved ``EffectiveSettings``.
+        store: The owning vector store, forwarded to
+            :func:`extract_metadata_async`.  Omitting it is not a
+            degradation.
 
     Returns:
         A ``(metadata, degraded)`` tuple. ``metadata`` has the same shape
@@ -144,7 +185,7 @@ async def extract_metadata_with_status_async(
 
     token = _degradation_flag.set(False)
     try:
-        result = await extract_metadata_async(file_text, file_name, resolved)
+        result = await extract_metadata_async(file_text, file_name, resolved, store=store)
         degraded = is_llm_backed and _degradation_flag.get()
         return result, degraded
     finally:

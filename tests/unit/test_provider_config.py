@@ -156,7 +156,7 @@ async def test_local_mode_dispatches_to_llamacpp_when_configured(
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
     with patch("omrg.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn):
         await _ext.extract_metadata_async("text", "file.txt", _settings)
-        mock_fn.assert_called_once_with("text", "file.txt", _settings)
+        mock_fn.assert_called_once_with("text", "file.txt", _settings, store=None)
 
 
 @pytest.mark.asyncio
@@ -175,7 +175,7 @@ async def test_local_mode_dispatches_to_ollama_when_configured(
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
     with patch("omrg.core.metadata.ollama._extract_ollama_async", mock_fn):
         await _ext.extract_metadata_async("text", "file.txt", _settings)
-        mock_fn.assert_called_once_with("text", "file.txt", _settings)
+        mock_fn.assert_called_once_with("text", "file.txt", _settings, store=None)
 
 
 @pytest.mark.asyncio
@@ -198,7 +198,7 @@ async def test_cloud_mode_dispatches_to_openrouter(
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
     with patch.object(_or, "_extract_openrouter_chat_async", mock_fn):
         await _ext.extract_metadata_async("text", "file.txt", _settings)
-        mock_fn.assert_called_once_with("text", "file.txt", _settings)
+        mock_fn.assert_called_once_with("text", "file.txt", _settings, store=None)
 
 
 @pytest.mark.asyncio
@@ -228,7 +228,7 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(
         patch("builtins.__import__", side_effect=_failing_import),
     ):
         await _lli._extract_llamaindex_async("text", "file.txt", _settings)
-        mock_fn.assert_called_once_with("text", "file.txt", _settings)
+        mock_fn.assert_called_once_with("text", "file.txt", _settings, store=None)
 
 
 # ── Provider registry tests ──────────────────────────────────────────────

@@ -684,8 +684,12 @@ the document-backend registry instead of a fixed config-time list.
 | `CODEBASE_MAP_MAX_DEPTH` | `10` | Directory depth limit |
 | `DOC_SIMILARITY_THRESHOLD` | `0.85` | Similarity edge cutoff. Not yet calibrated |
 
-The cache key is the git commit hash. Not a git repository means no caching —
-the map rebuilds every call.
+The cache key is the git commit hash plus an owner context. The owner context
+holds the map settings above (except the cache location), the community
+settings, and the store's durable data version for `documents`. A cache with a
+different or missing owner context is a miss, and the map rebuilds. If the
+path is not a git repository, or the store has no durable data version, the
+map rebuilds on every call.
 
 ### Community detection
 

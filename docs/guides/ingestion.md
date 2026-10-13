@@ -677,6 +677,54 @@ never silent.
 Both backends run their blocking parser work in worker threads, so a
 long parse never blocks the MCP event loop.
 
+## Document chunking strategy contract
+
+The chunker (`core/ingestion/chunker.py`) first routes code and
+configuration files by content type. All other files are documents. Both
+document branches use the same strategy:
+
+- **Structured reads** (cloud parsers that return paragraphs or tables).
+- **Unstructured reads** (the local reader chain, with file-level
+  metadata extraction).
+
+For each document read, the chunker resolves `sentence` through
+`core/chunking/registry.py` and awaits the registered callable. The
+chunker does not call private sentence helpers. A replacement that you
+register under `sentence` therefore runs during ordinary ingestion.
+
+The chunker calls the strategy with these arguments:
+
+```python
+nodes = await strategy(
+    documents,  # LlamaIndex Documents from the document backend
+    str(file_path),  # used for logging only
+    is_markdown,  # `.md` suffix OR reader-declared Markdown
+    chunk_size=...,  # markdown_chunk_size for Markdown, else chunk_size
+    chunk_overlap=...,  # resolved overlap, or the caller override
+    settings=resolved,  # the injected EffectiveSettings
+    markdown_chunking=...,  # resolved Markdown chunking value, else None
+)
+```
+
+The strategy owns splitting. For Markdown, it also owns the shared
+post-processing (heading metadata, heading prepend, small-chunk drop).
+The chunker applies post-processing exactly once, through the strategy.
+A replacement strategy must apply its own Markdown post-processing.
+
+The chunker keeps these responsibilities:
+
+- Reading the file once through the document backend.
+- PDF text normalisation before the strategy call.
+- The `content_type` metadata on every node.
+- File-level metadata attachment (unstructured reads only).
+- The metadata-degradation marker on the returned chunk list.
+
+The chunker accepts an optional keyword-only `store`. The ingestion
+pipeline passes the vector store that it writes to. The chunker forwards
+that store to metadata extraction, so category lookup reads the owning
+store. When `store` is omitted, metadata extraction uses only the seed
+categories.
+
 ## Supported file formats
 
 `.pdf` `.docx` `.pptx` `.txt` `.md` `.html` `.csv`

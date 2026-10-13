@@ -223,7 +223,7 @@ class TestPipelineTimeoutWiring:
 
         monkeypatch.setattr("omrg.core.providers.llm.registry.get", _fake_llm_get)
 
-        async def _fake_dispatch(text, settings, file_name):
+        async def _fake_dispatch(text, settings, file_name, *, store=None):
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
         monkeypatch.setattr(

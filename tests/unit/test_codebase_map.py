@@ -359,7 +359,7 @@ class TestMagikaParsing:
 class TestBuildCodebaseMap:
     """Tests for the full build_codebase_map orchestrator."""
 
-    def test_document_graph_receives_collection(self, tmp_path: Path) -> None:
+    def test_document_graph_receives_collection(self, tmp_path: Path, effective_settings) -> None:
         """build_codebase_map passes a store-backed view to build_document_graph.
 
         Regression 1: ``build_document_graph(None)`` was once hardcoded, so
@@ -368,6 +368,7 @@ class TestBuildCodebaseMap:
         constructing ``chromadb.PersistentClient`` directly. It now goes
         through the VectorStore ABC, so this asserts on the store — patching
         ``chromadb.PersistentClient`` here would no longer prove anything.
+        Design D3: the store is supplied explicitly, not read from a default.
         """
         (tmp_path / "app.py").write_text("x = 1\n")
         (tmp_path / "README.md").write_text("# Test\n")
@@ -378,12 +379,11 @@ class TestBuildCodebaseMap:
 
         with (
             patch("omrg.integrations.magika._is_magika_available", return_value=False),
-            patch("omrg.core.vectordb.get_default_store", return_value=mock_store),
             patch("omrg.core.documents.doc_graph.build_document_graph") as mock_build_doc,
         ):
             mock_build_doc.return_value = MagicMock()
 
-            build_codebase_map(str(tmp_path))
+            build_codebase_map(str(tmp_path), settings=effective_settings(), store=mock_store)
 
             mock_build_doc.assert_called()
             view = mock_build_doc.call_args.args[0]
@@ -392,13 +392,13 @@ class TestBuildCodebaseMap:
             view.get(include=["metadatas"])
             mock_store.fetch_all.assert_called_with("documents", ["metadatas"])
 
-    def test_no_collection_graceful_degradation(self, tmp_path: Path) -> None:
+    def test_no_collection_graceful_degradation(self, tmp_path: Path, effective_settings) -> None:
         """When the vector-store collection is unavailable, code graph still works.
 
-        Task 5.1 rewrite: patches the process-wide store accessor with a
-        failing stub instead of ``chromadb.PersistentClient`` so the
-        degradation contract is store-agnostic and runs in the base
-        install without the chroma extra.
+        Task 5.1 rewrite: supplies a failing store stub instead of
+        ``chromadb.PersistentClient`` so the degradation contract is
+        store-agnostic and runs in the base install without the chroma
+        extra. Design D3: the stub is passed explicitly.
         """
 
         class _NoCollectionStore:
@@ -407,14 +407,10 @@ class TestBuildCodebaseMap:
 
         (tmp_path / "app.py").write_text("x = 1\n")
 
-        with (
-            patch("omrg.integrations.magika._is_magika_available", return_value=False),
-            patch(
-                "omrg.core.vectordb.get_default_store",
-                return_value=_NoCollectionStore(),
-            ),
-        ):
-            result = build_codebase_map(str(tmp_path))
+        with patch("omrg.integrations.magika._is_magika_available", return_value=False):
+            result = build_codebase_map(
+                str(tmp_path), settings=effective_settings(), store=_NoCollectionStore()
+            )
 
             assert result.inventory is not None
             assert result.doc_communities == []

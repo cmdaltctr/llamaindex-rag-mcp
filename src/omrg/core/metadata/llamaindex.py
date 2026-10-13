@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from typing import TYPE_CHECKING
 
 from ..settings import resolve_effective_settings
 from ._common import (
@@ -22,6 +23,9 @@ from ._common import (
     _truncate_summary,
     logger,
 )
+
+if TYPE_CHECKING:
+    from ..vectordb.base import VectorStore
 
 
 def _get_max_chunks() -> int:
@@ -102,7 +106,11 @@ def _aggregate_llamaindex_metadata(nodes: list) -> dict:
 
 
 async def _extract_llamaindex_async(
-    text: str, file_name: str = "", settings: object | None = None
+    text: str,
+    file_name: str = "",
+    settings: object | None = None,
+    *,
+    store: VectorStore | None = None,
 ) -> dict:
     """Extract bounded file-level metadata via LlamaIndex extractors.
 
@@ -111,6 +119,18 @@ async def _extract_llamaindex_async(
     the expensive LLM-backed extractors.  This makes the setting a real chunk
     budget instead of the previous ``max_chunks * chunk_size`` character
     approximation.
+
+    Args:
+        text: The full document text.
+        file_name: Source file name, recorded on the temporary document.
+        settings: Optional resolved ``EffectiveSettings``.
+        store: The owning vector store.  The extractors do not read it; it
+            is forwarded unchanged to the local-mode fallback so its
+            existing-category lookup uses the same store.
+
+    Returns:
+        A dict with ``category``, ``keywords``, ``summary`` and, when
+        available, ``document_title``.
     """
     resolved = resolve_effective_settings(settings)
     try:
@@ -134,7 +154,7 @@ async def _extract_llamaindex_async(
         _signal_degraded()
         from .extractor import _dispatch_local_extraction
 
-        return await _dispatch_local_extraction(text, resolved, file_name)
+        return await _dispatch_local_extraction(text, resolved, file_name, store=store)
 
     try:
         from llama_index.core import Document
@@ -190,4 +210,4 @@ async def _extract_llamaindex_async(
         _signal_degraded()
         from .extractor import _dispatch_local_extraction
 
-        return await _dispatch_local_extraction(text, resolved, file_name)
+        return await _dispatch_local_extraction(text, resolved, file_name, store=store)

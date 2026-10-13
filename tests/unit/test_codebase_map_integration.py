@@ -21,37 +21,41 @@ from omrg.core.codebase.codebase_map import (
 class TestBuildCodebaseMap:
     """Tests for the full build_codebase_map pipeline."""
 
-    def test_build_with_code_files(self, tmp_path: Path) -> None:
+    def test_build_with_code_files(self, tmp_path: Path, effective_settings) -> None:
         """Building a map with code files produces code communities."""
         (tmp_path / "app.py").write_text("from utils import helper\n")
         (tmp_path / "utils.py").write_text("def helper():\n    pass\n")
         with patch("omrg.integrations.magika._is_magika_available", return_value=False):
-            m = build_codebase_map(str(tmp_path))
+            m = build_codebase_map(str(tmp_path), settings=effective_settings())
         assert len(m.inventory.entries) >= 2
         assert "code/python" in m.inventory.type_counts
 
-    def test_build_empty_directory(self, tmp_path: Path) -> None:
+    def test_build_empty_directory(self, tmp_path: Path, effective_settings) -> None:
         """Empty directory produces empty map."""
         with patch("omrg.integrations.magika._is_magika_available", return_value=False):
-            m = build_codebase_map(str(tmp_path))
+            m = build_codebase_map(str(tmp_path), settings=effective_settings())
         assert len(m.inventory.entries) == 0
 
-    def test_build_with_documents(self, tmp_path: Path) -> None:
+    def test_build_with_documents(self, tmp_path: Path, effective_settings) -> None:
         """Building with markdown files detects document types."""
         (tmp_path / "README.md").write_text("# Project\n\nHello world")
         with patch("omrg.integrations.magika._is_magika_available", return_value=False):
-            m = build_codebase_map(str(tmp_path))
+            m = build_codebase_map(str(tmp_path), settings=effective_settings())
         assert "document/markdown" in m.inventory.type_counts
 
-    def test_build_no_git(self, tmp_path: Path) -> None:
+    def test_build_no_git(self, tmp_path: Path, effective_settings) -> None:
         """Building outside a git repo sets commit_hash to None."""
         (tmp_path / "app.py").write_text("x = 1\n")
         with (
             patch("omrg.integrations.magika._is_magika_available", return_value=False),
             patch("omrg.core.codebase.cache._get_git_commit_hash", return_value=None),
         ):
-            m = build_codebase_map(str(tmp_path))
+            m = build_codebase_map(str(tmp_path), settings=effective_settings())
         assert m.commit_hash is None
+
+
+# A fixed, proven owner context: these tests cover commit keying only.
+_CTX = {"version": 1, "settings": {}, "store": None}
 
 
 class TestCaching:
@@ -66,10 +70,10 @@ class TestCaching:
             ],
             commit_hash="abc123",
         )
-        _save_cache(str(tmp_path), m)
+        _save_cache(str(tmp_path), m, cache_dir=".opencode", owner_context=_CTX)
 
         with patch("omrg.core.codebase.cache._get_git_commit_hash", return_value="abc123"):
-            loaded = _load_cache(str(tmp_path))
+            loaded = _load_cache(str(tmp_path), cache_dir=".opencode", owner_context=_CTX)
         assert loaded is not None
         assert loaded.commit_hash == "abc123"
         assert loaded.code_communities[0]["label"] == "Core"
@@ -80,21 +84,21 @@ class TestCaching:
             inventory=FileInventory(type_counts={"code/python": 1}),
             commit_hash="abc123",
         )
-        _save_cache(str(tmp_path), m)
+        _save_cache(str(tmp_path), m, cache_dir=".opencode", owner_context=_CTX)
 
         with patch("omrg.core.codebase.cache._get_git_commit_hash", return_value="def456"):
-            loaded = _load_cache(str(tmp_path))
+            loaded = _load_cache(str(tmp_path), cache_dir=".opencode", owner_context=_CTX)
         assert loaded is None
 
     def test_cache_miss_no_file(self, tmp_path: Path) -> None:
         """No cache file returns None."""
-        loaded = _load_cache(str(tmp_path))
+        loaded = _load_cache(str(tmp_path), cache_dir=".opencode", owner_context=_CTX)
         assert loaded is None
 
     def test_cache_no_git(self, tmp_path: Path) -> None:
         """No git returns None (caching disabled)."""
         m = CodebaseMap(commit_hash=None)
-        _save_cache(str(tmp_path), m)
+        _save_cache(str(tmp_path), m, cache_dir=".opencode", owner_context=_CTX)
         # Should not write a cache file when commit_hash is None.
         cache_file = tmp_path / ".opencode" / "codebase-graph.json"
         assert not cache_file.exists()
@@ -107,7 +111,7 @@ class TestCaching:
         cache_file.write_text("{invalid json")
 
         with patch("omrg.core.codebase.cache._get_git_commit_hash", return_value="abc123"):
-            loaded = _load_cache(str(tmp_path))
+            loaded = _load_cache(str(tmp_path), cache_dir=".opencode", owner_context=_CTX)
         assert loaded is None
 
 
