@@ -34,6 +34,31 @@ Source file (PDF, DOCX, TXT, ...)
 
 Re-ingesting a file is an **upsert** — old chunks are removed before new ones are written. There is no duplication.
 
+## Ingestion stages as graph operations
+
+`ingest_path_async` and the ingestion graph operations call the same per-source functions. The standard path did not change when the graph operations were added.
+
+| Stage | Shared function | Module | Graph operation |
+|---|---|---|---|
+| Find eligible files | `gather_supported_files`, `iter_source_units` | `src/omrg/core/ingestion/loader.py`, `src/omrg/core/ingestion/sources.py` | `source.discover` |
+| Source identity and reuse check | `prepare_source`, `check_source_state` | `src/omrg/core/ingestion/sources.py` | `source.identify` |
+| Read | `read_document` | `src/omrg/core/ingestion/backends/orchestrator.py` | `read.document` |
+| Normalise reader output | `normalise_backend_read` | `src/omrg/core/ingestion/chunker.py` | `prepare.normalise` |
+| Metadata enrichment | `enrich_documents` | `src/omrg/core/ingestion/chunker.py` | `prepare.enrich` |
+| Split | `split_documents` | `src/omrg/core/ingestion/chunker.py` | `prepare.chunk` |
+| Embed | `prepare_source_embeddings` | `src/omrg/core/ingestion/replacement.py` | `embed.chunks` |
+| Protected commit | `commit_prepared_source` | `src/omrg/core/ingestion/commit.py` | `commit.source` |
+
+The adapters live in `src/omrg/core/ingestion/graph_adapters.py`. The descriptors and the canonical ingestion graph live in `src/omrg/core/ingestion/graph_adapters_catalogue.py`. The canonical `ingestion` template is that graph. It processes one source at a time and writes the same rows as `Engine.ingest` on the fixtures in `tests/fixtures/pipeline_parity/ingestion/`.
+
+A graph cannot write to the vector store directly. `commit.source` keeps the lineage checks, the embedding write contract below, the source write lock and the stale-row clean-up. `src/omrg/core/ingestion/graph_fingerprint.py` adds the graph's index-shaping operations and parameters to the source identity. A changed chunker setting in a graph therefore makes the next explicit ingest rebuild the affected sources. A layout change or a query-only change does not.
+
+These values and behaviours are unchanged:
+
+- `chunking.chunk_size` defaults to `512` and `chunking.chunk_overlap` defaults to `100`.
+- Each file keeps its own failure handling. A failed file does not undo the files committed before it.
+- `ingest_path_async` and `Engine.ingest` return the same dictionary keys as before: `status`, `files_indexed`, `files_skipped_unchanged`, `files_skipped_binary`, `chunks_created`, `chunks_removed`, `collection`, `file_details`, `metadata_degraded`, `timings` and `peak_rss_bytes`, plus `error_type`, `message` and `warnings` when they apply.
+
 ## Embedding write contract
 
 Stage 4 is fail-closed

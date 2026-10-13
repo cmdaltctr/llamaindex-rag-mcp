@@ -1,0 +1,12 @@
+{
+  "description": "Shared retrieval parity corpus. dense_score is the replayed canonical dense similarity; rerank_score is the scripted reranker sigmoid score. Sparse ranks come from the real BM25 backend over text.",
+  "query": "hybrid fusion rank reranker",
+  "chunks": [
+    {"id": "a", "text": "retrieval augmented generation pipeline overview", "metadata": {"file_name": "a.md"}, "dense_score": 0.92, "rerank_score": 0.40},
+    {"id": "b", "text": "hybrid sparse dense fusion with reciprocal rank", "metadata": {"file_name": "b.md"}, "dense_score": 0.81, "rerank_score": 0.95},
+    {"id": "c", "text": "cross encoder reranker produces sigmoid scores", "metadata": {"file_name": "c.md"}, "dense_score": 0.55, "rerank_score": 0.70},
+    {"id": "d", "text": "threshold calibration divides by thirty", "metadata": {"file_name": "d.md"}, "dense_score": 0.28, "rerank_score": 0.02},
+    {"id": "e", "text": "keyword chunk about fusion rank and hybrid rank", "metadata": {"file_name": "e.md"}, "dense_score": 0.12, "rerank_score": 0.012},
+    {"id": "f", "text": "unrelated cooking recipe for bread", "metadata": {"file_name": "f.md"}, "dense_score": 0.05, "rerank_score": 0.001}
+  ]
+}

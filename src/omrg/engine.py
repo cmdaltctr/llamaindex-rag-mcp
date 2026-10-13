@@ -18,11 +18,21 @@ import collections
 import logging
 from typing import TYPE_CHECKING, Any
 
+from .compose_pipelines import EnginePipelines, build_graph_host, redact_engine_error
+
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
     from llama_index.core.embeddings import BaseEmbedding
 
+    from .core.pipelines import (
+        AdmissionSnapshot,
+        CancellationToken,
+        PipelineDefinition,
+        PipelineResult,
+        PreflightReport,
+    )
+    from .core.pipelines.events import EventSink
     from .core.profiles.resolver import ProfileResolver
     from .core.retrieval.reranker import CrossEncoderReranker
     from .core.settings import EffectiveSettings
@@ -46,7 +56,10 @@ class Engine:
         - ``answer(question, ...)`` — async, returns the answer result dict
         - ``list_collections()`` — sync, returns list[str]
         - ``delete_collection(name)`` — sync
-        - ``close()`` — sync
+        - ``resolve_settings(collection)`` — sync, returns frozen settings
+        - ``validate_pipeline(definition, ...)`` — sync, no side effects
+        - ``run_pipeline(definition, ...)`` — async, returns PipelineResult
+        - ``close()`` — sync; refused while a graph run is active
     """
 
     def __init__(
@@ -99,6 +112,8 @@ class Engine:
         # never between engines, dropped on close().
         self._query_cache: collections.OrderedDict = collections.OrderedDict()
         self._closed = False
+        # Graph state: catalogue (built on first use), run lock, leases.
+        self._pipelines = EnginePipelines()
 
     # ── Construction ───────────────────────────────────────────────
 
@@ -201,9 +216,7 @@ class Engine:
 
         # Lazily build the answer LLM on first use.
         complete = None
-        if self._answer_llm is None and self._answer_llm_factory is not None:
-            self._answer_llm = self._answer_llm_factory()
-        if self._answer_llm is not None:
+        if self._get_answer_llm() is not None:
             complete = self._server_seam(self._answer_llm)
 
         # Build the verify LLM if claim verification is enabled. A
@@ -219,7 +232,7 @@ class Engine:
                 except Exception as exc:
                     verify_unavailable_reason = (
                         "verification provider unavailable: "
-                        f"{type(exc).__name__}: {self._redact_error(exc, effective)}"
+                        f"{type(exc).__name__}: {redact_engine_error(exc, effective)}"
                     )
                 else:
                     if verify_llm is not None:
@@ -263,6 +276,80 @@ class Engine:
         self._check_open()
         self._store.delete_collection(name)
 
+    @property
+    def store(self) -> Any:
+        """The owned vector store (read-only; callers must not close it)."""
+        self._check_open()
+        return self._store
+
+    @property
+    def profile_resolver(self) -> Any:
+        """This Engine's profile resolver, or ``None`` when it has none."""
+        return self._resolver()
+
+    def resolve_settings(self, collection: str | None = None) -> EffectiveSettings:
+        """Return the frozen settings for ``collection`` (default: settings collection).
+
+        Uses the Engine's own profile resolver, else the Engine settings.
+        """
+        self._check_open()
+        return self._resolve_settings(collection or self._effective_settings.collection_name)
+
+    def validate_pipeline(
+        self,
+        definition: PipelineDefinition | Mapping[str, Any],
+        *,
+        inputs: Mapping[str, Any] | None = None,
+        collection: str | None = None,
+    ) -> AdmissionSnapshot | PreflightReport:
+        """Validate a graph against this Engine, with no side effects.
+
+        With ``inputs`` the graph is admitted and the frozen
+        ``AdmissionSnapshot`` is returned (:meth:`run_pipeline` accepts
+        it); without, a draft check returns the ``PreflightReport``.
+        ``collection`` is the default for nodes that name none.
+
+        Raises:
+            PipelineValidationError: With every node, port and input issue.
+        """
+        self._check_open()
+        return self._pipelines.validate(definition, self._graph_host(collection), inputs=inputs)
+
+    async def run_pipeline(
+        self,
+        definition: PipelineDefinition | Mapping[str, Any] | AdmissionSnapshot,
+        *,
+        inputs: Mapping[str, Any] | None = None,
+        on_event: EventSink | None = None,
+        cancellation: CancellationToken | None = None,
+        run_id: str | None = None,
+    ) -> PipelineResult:
+        """Validate, admit and run a graph on this Engine's borrowed resources.
+
+        Accepts an ``AdmissionSnapshot`` too (omit ``inputs``). Runs on one
+        Engine are serialised. Failures and cancellation give a result.
+        ``run_id`` names the run in its events and result (a caller's job id).
+
+        Raises:
+            PipelineValidationError: Before any side effect.
+            RuntimeError: When the Engine is closed.
+        """
+        self._check_open()
+        host = self._graph_host(None)
+        return await self._pipelines.run(
+            definition,
+            host,
+            inputs=inputs,
+            on_event=on_event,
+            cancellation=cancellation,
+            run_id=run_id,
+        )
+
+    def describe_operations(self, collection: str | None = None) -> list[dict[str, Any]]:
+        """Return the graph operation catalogue with availability reasons."""
+        self._check_open()
+        return self._pipelines.describe(self._graph_host(collection))
+
     def close(self) -> None:
         """Release this engine's resources; reject further use.
 
@@ -276,7 +363,13 @@ class Engine:
         """
         if self._closed:
             return
+        if self._pipelines.active_runs:
+            raise RuntimeError(
+                f"Engine has {self._pipelines.active_runs} active graph run(s); cancel them or "
+                "wait for them to finish, then close the Engine again."
+            )
         self._closed = True
+        self._pipelines.release()
         # Drop the engine-owned query embedding cache.
         self._query_cache.clear()
         # Evict BM25 cache entries for this store's identity only.
@@ -331,19 +424,37 @@ class Engine:
         if self._closed:
             raise RuntimeError("Engine is closed; construct a new Engine for further operations.")
 
-    @staticmethod
-    def _redact_error(exc: BaseException, effective: Any) -> str:
-        """Format *exc* without leaking credential material."""
-        from .core.vectordb.identity import redact_cloud_secrets, redact_secret
-
-        detail = str(exc)
-        detail = redact_cloud_secrets(
-            detail,
-            getattr(effective, "chroma_cloud_api_key", "") or "",
-            getattr(effective, "chroma_cloud_tenant", "") or "",
-            getattr(effective, "chroma_cloud_database", "") or "",
+    def _graph_host(self, collection: str | None) -> Any:
+        """Describe this Engine's resources to graph validation and runs."""
+        answer_llm = self._get_answer_llm if self._answer_llm_factory is not None else None
+        resources = {
+            "store": self._store,
+            "embedder": self._embed_model,
+            "reranker": self._reranker,
+            "ocr": self._ocr_client,
+            "answer_llm": answer_llm,
+            "verify_llm": self._pipelines.judge(self._verify_llm_factory),
+        }
+        settings, resolver = self._effective_settings, self._resolver()
+        return build_graph_host(
+            settings,
+            resources=resources,
+            resolver=resolver,
+            collection=collection,
+            ocr_factory=self._pipelines.ocr_client,
         )
-        return redact_secret(detail, getattr(effective, "openrouter_api_key", "") or "")
+
+    def _get_answer_llm(self) -> Any:
+        """Build the answer LLM on first use and keep it."""
+        if self._answer_llm is None and self._answer_llm_factory is not None:
+            self._answer_llm = self._answer_llm_factory()
+        return self._answer_llm
+
+    def _resolver(self) -> Any:
+        """Return the profile resolver, built from its factory on first use."""
+        if self._profile_resolver is None and self._profile_resolver_factory is not None:
+            self._profile_resolver = self._profile_resolver_factory()
+        return self._profile_resolver
 
     def _resolve_settings(self, collection_name: str) -> EffectiveSettings:
         """Resolve effective settings for a collection via the profile resolver.
@@ -353,10 +464,9 @@ class Engine:
         Resolution errors propagate: an invalid collection profile tag
         is a configuration error, not an absent optional capability.
         """
-        if self._profile_resolver is None and self._profile_resolver_factory is not None:
-            self._profile_resolver = self._profile_resolver_factory()
-        if self._profile_resolver is not None:
-            return self._profile_resolver.resolve(collection_name)
+        resolver = self._resolver()
+        if resolver is not None:
+            return resolver.resolve(collection_name)
         return self._effective_settings
 
     def _install_as_process_default(self) -> None:

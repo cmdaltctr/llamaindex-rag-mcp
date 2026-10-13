@@ -1,0 +1,136 @@
+/*
+ * Semantic design tokens for the OMRG workspace.
+ *
+ * Colour values adapt the warm neutral OpenChamber themes
+ * (openchamber-light.json and openchamber-dark.json at revision
+ * 02306f32e4d191e4840440cbafa643ae899471c2), as recorded in the omms-design
+ * foundations reference. OpenChamber is MIT-licensed:
+ *   Copyright (c) 2025 Bohdan Triapitsyn. See web/THIRD_PARTY_NOTICES.md.
+ *
+ * Components read these variables only. Literal colours stay in this file.
+ * Theme selection: the operating system preference applies unless the root
+ * element carries data-theme="light" or data-theme="dark".
+ */
+
+:root {
+  color-scheme: light;
+
+  --surface-canvas: #fdfcfa;
+  --surface-elevated: #f8f7f5;
+  --surface-muted: #f7f6f4;
+  --text-primary: #393a34;
+  --text-secondary: #5c5c54;
+  --border: #e5e1de;
+  --border-hover: #cbc7c2;
+
+  --accent: #b35017;
+  --accent-hover: #9a4310;
+  --accent-active: #85390c;
+  --accent-label: #9a4310;
+  --accent-tint: rgb(179 80 23 / 0.1);
+  --accent-tint-hover: rgb(179 80 23 / 0.16);
+  --accent-tint-active: rgb(179 80 23 / 0.22);
+  --accent-tint-border: rgb(179 80 23 / 0.3);
+
+  --selection: #a9998f2b;
+  --interactive-hover: #0000000d;
+  --interactive-active: #00000014;
+  --focus-ring: #b35017;
+
+  --status-error: #b7493f;
+  --status-warning: #8d6c15;
+  --status-success: #5f8d3d;
+  --status-info: #2d72c4;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --text-page-title: 1.5rem;
+  --text-section-title: 1.125rem;
+  --text-subsection-title: 0.9375rem;
+  --text-ui: 0.875rem;
+  --text-meta: 0.8125rem;
+  --text-code: 0.75rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  --control-height: 2.25rem;
+  --control-height-small: 2rem;
+  --touch-target: 2.75rem;
+  --radius-control: 10px;
+  --radius-small: 9px;
+  --radius-panel: 12px;
+
+  --nav-width: 13rem;
+  --inspector-width: 20rem;
+  --transition-fast: 150ms ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --surface-canvas: #120f0e;
+    --surface-elevated: #181715;
+    --surface-muted: #171615;
+    --text-primary: #c9c5ba;
+    --text-secondary: #8f8b81;
+    --border: #242323;
+    --border-hover: #504e4c;
+
+    --accent: #da7c47;
+    --accent-hover: #eb8c57;
+    --accent-active: #fd9b66;
+    --accent-label: #fd9b66;
+    --accent-tint: rgb(218 124 71 / 0.16);
+    --accent-tint-hover: rgb(218 124 71 / 0.22);
+    --accent-tint-active: rgb(218 124 71 / 0.3);
+    --accent-tint-border: rgb(218 124 71 / 0.35);
+
+    --selection: #c8c6c52b;
+    --interactive-hover: #ffffff12;
+    --interactive-active: #ffffff1f;
+    --focus-ring: #da7c47;
+
+    --status-error: #da5b4a;
+    --status-warning: #c67f13;
+    --status-success: #76ad4f;
+    --status-info: #479fe6;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --surface-canvas: #120f0e;
+  --surface-elevated: #181715;
+  --surface-muted: #171615;
+  --text-primary: #c9c5ba;
+  --text-secondary: #8f8b81;
+  --border: #242323;
+  --border-hover: #504e4c;
+
+  --accent: #da7c47;
+  --accent-hover: #eb8c57;
+  --accent-active: #fd9b66;
+  --accent-label: #fd9b66;
+  --accent-tint: rgb(218 124 71 / 0.16);
+  --accent-tint-hover: rgb(218 124 71 / 0.22);
+  --accent-tint-active: rgb(218 124 71 / 0.3);
+  --accent-tint-border: rgb(218 124 71 / 0.35);
+
+  --selection: #c8c6c52b;
+  --interactive-hover: #ffffff12;
+  --interactive-active: #ffffff1f;
+  --focus-ring: #da7c47;
+
+  --status-error: #da5b4a;
+  --status-warning: #c67f13;
+  --status-success: #76ad4f;
+  --status-info: #479fe6;
+}

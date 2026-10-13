@@ -1,0 +1,106 @@
+[
+  {
+    "metadata": {
+      "content_type": "document/markdown",
+      "file_type": "text/markdown",
+      "header_path": "/",
+      "source_chunk_count": 4,
+      "source_chunk_index": 0,
+      "source_content_hash": "d6ee11ac95ea37a6a1e455bdb52f950e25dc5a5d9310d98611f5e27bbd79d739"
+    },
+    "rel_path": "guide.md",
+    "text": "# Parity Guide\n\nThis synthetic guide exists only for ingestion parity tests. It describes a\nsmall lending library that tracks books, members, and loans.",
+    "text_sha256": "094dec962258d2536f653675103c0d3f1d3d6a62b179537322a3050a73dc34b0"
+  },
+  {
+    "metadata": {
+      "content_type": "document/markdown",
+      "file_type": "text/markdown",
+      "header_path": "/Parity Guide/",
+      "source_chunk_count": 4,
+      "source_chunk_index": 1,
+      "source_content_hash": "d6ee11ac95ea37a6a1e455bdb52f950e25dc5a5d9310d98611f5e27bbd79d739"
+    },
+    "rel_path": "guide.md",
+    "text": "## Members\n\nEach member has a card number and a home branch. A member can borrow up to\nfive books at one time. Overdue loans block new loans until the member\nreturns the overdue items.",
+    "text_sha256": "472ac1b0cdce5c2a56dab58fc6473bd59f1ed9be37b7815009fd814fcc8dfa38"
+  },
+  {
+    "metadata": {
+      "content_type": "document/markdown",
+      "file_type": "text/markdown",
+      "header_path": "/Parity Guide/",
+      "source_chunk_count": 4,
+      "source_chunk_index": 2,
+      "source_content_hash": "d6ee11ac95ea37a6a1e455bdb52f950e25dc5a5d9310d98611f5e27bbd79d739"
+    },
+    "rel_path": "guide.md",
+    "text": "## Loans\n\nA loan starts when the desk scans the book and the card. The default loan\nperiod is fourteen days. Members can renew a loan twice if no other member\nhas reserved the book.",
+    "text_sha256": "9563df4a046fcc6df20ab4634b7fd9215f2b55ada463df310100256487035733"
+  },
+  {
+    "metadata": {
+      "content_type": "document/markdown",
+      "file_type": "text/markdown",
+      "header_path": "/Parity Guide/Loans/",
+      "source_chunk_count": 4,
+      "source_chunk_index": 3,
+      "source_content_hash": "d6ee11ac95ea37a6a1e455bdb52f950e25dc5a5d9310d98611f5e27bbd79d739"
+    },
+    "rel_path": "guide.md",
+    "text": "### Reservations\n\nA reservation holds a returned book at the desk for three days. The system\nsends one notice when the book arrives and one reminder on the last day.",
+    "text_sha256": "df9335cc0cf910591a1c9191a8a096d45e4690a8f6904114e36a767aed392b09"
+  },
+  {
+    "metadata": {
+      "content_type": "document/markdown",
+      "file_type": "text/markdown",
+      "header_path": "/",
+      "source_chunk_count": 3,
+      "source_chunk_index": 0,
+      "source_content_hash": "df07c4ddc467db3704e3687849e17bce1d68e22d140abcfc22c21cc823ef4933"
+    },
+    "rel_path": "nested/appendix.md",
+    "text": "# Appendix",
+    "text_sha256": "da5468179b661343e2a9b776682b90b6bc01a2b8a76d4a93c2466b1876f41ae1"
+  },
+  {
+    "metadata": {
+      "content_type": "document/markdown",
+      "file_type": "text/markdown",
+      "header_path": "/Appendix/",
+      "source_chunk_count": 3,
+      "source_chunk_index": 1,
+      "source_content_hash": "df07c4ddc467db3704e3687849e17bce1d68e22d140abcfc22c21cc823ef4933"
+    },
+    "rel_path": "nested/appendix.md",
+    "text": "## Fines\n\nThe library charges no fines for children's books. Adult books carry a small\ndaily charge after the grace period of two days.",
+    "text_sha256": "d9f506b82bf9a0935aa3cf936b7501ab1097609ebd1a634fa1cfe837cead3bde"
+  },
+  {
+    "metadata": {
+      "content_type": "document/markdown",
+      "file_type": "text/markdown",
+      "header_path": "/Appendix/",
+      "source_chunk_count": 3,
+      "source_chunk_index": 2,
+      "source_content_hash": "df07c4ddc467db3704e3687849e17bce1d68e22d140abcfc22c21cc823ef4933"
+    },
+    "rel_path": "nested/appendix.md",
+    "text": "## Lost items\n\nA member who loses a book pays the replacement cost. The desk refunds the\ncharge if the member finds and returns the book within ninety days.",
+    "text_sha256": "d34a8e600a7c02af4cc86fcd8d09deb92272ffb55804a5cefdb97caac827d0fa"
+  },
+  {
+    "metadata": {
+      "content_type": "document/text",
+      "file_type": "text/plain",
+      "header_path": null,
+      "source_chunk_count": 1,
+      "source_chunk_index": 0,
+      "source_content_hash": "2480f51909c04d52a560abd03ad7d161e373f21f6af07f15395932c9dacef2c4"
+    },
+    "rel_path": "notes.txt",
+    "text": "Branch opening notes.\n\nThe north branch opens at nine in the morning on weekdays and at ten on\nSaturdays. It closes on Sundays and on public holidays.\n\nThe south branch shares the same hours but keeps a late opening until eight\nin the evening on Thursdays. Study rooms at the south branch need a booking\nmade at least one day in advance.\n\nBoth branches accept returns through an outside drop box at any hour. Staff\nclear the drop box at opening time and check each item before they close\nthe loan.",
+    "text_sha256": "c0d9e9f7fd46093b6ab3d3efdbff47e1eab6700264e0a77ec133a6089735c819"
+  }
+]

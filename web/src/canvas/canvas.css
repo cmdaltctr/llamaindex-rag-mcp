@@ -1,0 +1,452 @@
+/* Canvas view. Reads the semantic tokens in styles/tokens.css only. */
+
+.canvas-view {
+  max-inline-size: none;
+  gap: var(--space-4);
+}
+
+.pipeline-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.field__label {
+  color: var(--text-secondary);
+  font-size: var(--text-meta);
+}
+
+.canvas-view .control:not(.control--select) {
+  padding-inline: var(--space-2);
+  border: 1px solid var(--border-hover);
+  background: var(--surface-elevated);
+}
+
+.canvas-view .control:disabled {
+  opacity: 0.6;
+}
+
+.canvas-view .control[aria-invalid="true"] {
+  border-color: var(--status-error);
+}
+
+.canvas-layout {
+  display: grid;
+  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.canvas-main,
+.canvas-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.canvas-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface-elevated);
+  min-inline-size: 0;
+}
+
+.canvas-panel ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.canvas-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.canvas-notice:empty {
+  display: none;
+}
+
+.canvas-notice,
+.canvas-error,
+.canvas-warning {
+  overflow-wrap: anywhere;
+}
+
+.canvas-notice--error,
+.canvas-error {
+  color: var(--status-error);
+}
+
+.canvas-warning {
+  color: var(--status-warning);
+}
+
+/* Palette */
+.palette__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-block-size: 60vh;
+  overflow-y: auto;
+}
+
+.palette__button {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  inline-size: 100%;
+  padding: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.palette__button:hover:not(:disabled) {
+  border-color: var(--border-hover);
+  background: var(--interactive-hover);
+}
+
+.palette__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.palette__id,
+.op-node__operation,
+.op-node__id,
+.param__lever {
+  font-family: var(--font-mono);
+  font-size: var(--text-code);
+  color: var(--text-secondary);
+  direction: ltr;
+  unicode-bidi: isolate;
+  overflow-wrap: anywhere;
+}
+
+.palette__reason {
+  padding-inline: var(--space-2);
+}
+
+/* Flow surface */
+.canvas-surface,
+.canvas-empty {
+  block-size: min(60vh, 34rem);
+  min-block-size: 20rem;
+}
+
+.canvas-surface {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+}
+
+.canvas-empty {
+  justify-content: center;
+}
+
+.canvas-surface .react-flow {
+  --xy-background-color: var(--surface-canvas);
+  --xy-background-pattern-color: var(--border-hover);
+  --xy-edge-stroke: var(--text-secondary);
+  --xy-edge-stroke-selected: var(--accent);
+  --xy-connectionline-stroke: var(--accent);
+  --xy-handle-background-color: var(--surface-elevated);
+  --xy-handle-border-color: var(--text-secondary);
+  --xy-controls-button-background-color: var(--surface-elevated);
+  --xy-controls-button-background-color-hover: var(--surface-muted);
+  --xy-controls-button-color: var(--text-primary);
+  --xy-controls-button-border-color: var(--border);
+  --xy-attribution-background-color: transparent;
+  color: var(--text-primary);
+}
+
+/* `.selectable` matches React Flow's own `outline: none` rule, which is imported later. */
+.canvas-surface .react-flow__node.selectable:focus-visible,
+.canvas-surface .react-flow__node:focus-visible,
+.canvas-surface .react-flow__edge:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.canvas-surface .flow-edge--invalid .react-flow__edge-path {
+  stroke: var(--status-error);
+}
+
+/* Run state from real events (task 7.4). The edge into a running node is
+ * highlighted; React Flow animates it only when motion is not reduced. */
+.canvas-surface .flow-edge--active .react-flow__edge-path {
+  stroke: var(--status-info);
+  stroke-width: 2;
+}
+
+.op-node[data-run-status="running"] {
+  border-color: var(--status-info);
+  box-shadow: 0 0 0 1px var(--status-info);
+}
+
+.op-node[data-run-status="failed"] {
+  border-color: var(--status-error);
+}
+
+.op-node {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 13rem;
+  max-inline-size: 17rem;
+  padding: var(--space-2);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-control);
+  background: var(--surface-elevated);
+  font-size: var(--text-meta);
+}
+
+.op-node[data-selected] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.op-node[data-bypassed] {
+  border-style: dashed;
+  opacity: 0.8;
+}
+
+.op-node[data-invalid] {
+  border-color: var(--status-error);
+}
+
+.op-node__header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.op-node__title {
+  font-weight: 600;
+}
+
+.op-node__badge {
+  align-self: start;
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-small);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+}
+
+.op-node__badge--warn {
+  color: var(--status-warning);
+}
+
+.op-node__ports {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.op-node__ports ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.op-node__port {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-block: var(--space-1);
+}
+
+.op-node__port--in {
+  padding-inline-start: var(--space-2);
+}
+
+.op-node__port--out {
+  align-items: end;
+  padding-inline-end: var(--space-2);
+}
+
+.op-node__port[data-invalid] .op-node__port-name {
+  color: var(--status-error);
+  font-weight: 600;
+}
+
+.op-node__port-kind {
+  color: var(--text-secondary);
+  font-size: var(--text-code);
+}
+
+.op-node__handle {
+  inline-size: 10px;
+  block-size: 10px;
+}
+
+.op-node__issues {
+  margin: 0;
+  padding-inline-start: var(--space-4);
+  color: var(--status-error);
+}
+
+/* Outline and inspector */
+.outline__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.outline__edge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.outline__item {
+  flex: 1;
+  min-inline-size: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.outline__item:hover {
+  background: var(--interactive-hover);
+}
+
+.outline__item[aria-pressed="true"] {
+  border-color: var(--accent-tint-border);
+  background: var(--accent-tint);
+}
+
+.outline__item[data-invalid] {
+  border-color: var(--status-error);
+}
+
+.outline__issues {
+  margin-inline-start: var(--space-2);
+  color: var(--status-error);
+  font-size: var(--text-meta);
+}
+
+.param {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  min-inline-size: 0;
+}
+
+.param__legend {
+  padding-inline: var(--space-1);
+  font-weight: 500;
+}
+
+.param__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.param__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-block-size: var(--control-height-small);
+}
+
+.param__note {
+  overflow-wrap: anywhere;
+}
+
+.issue-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.submitted-run {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--border);
+}
+
+.submitted-run__document {
+  max-block-size: 16rem;
+  overflow: auto;
+  margin: 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-small);
+  background: var(--surface-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-code);
+  direction: ltr;
+}
+
+@media (max-width: 1279px) {
+  .canvas-layout {
+    grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+  }
+
+  .canvas-side {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767px) {
+  .canvas-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .canvas-surface,
+  .canvas-empty {
+    block-size: 50vh;
+    min-block-size: 16rem;
+  }
+
+  .palette__list {
+    max-block-size: 40vh;
+  }
+}
+
+/* Start from template: a compact row above the canvas. */
+.template-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.template-picker__row,
+.template-picker__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}

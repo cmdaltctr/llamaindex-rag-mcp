@@ -69,7 +69,8 @@ On workspace restart, nonterminal runs from the stopped process SHALL become int
 #### Scenario: Process stops between stores
 - **WHEN** the server stops after a vector mutation but before a terminal app record
 - **THEN** the next start SHALL report the run as interrupted with its available evidence
-- **AND** recovery SHALL use existing source completeness rules before an explicit retry
+- **AND** the next start SHALL NOT perform a separate recovery step on the vector store
+- **AND** an explicit retry SHALL apply the existing source completeness rules during its own ingestion, so complete sources are reused and incomplete sources are processed again
 
 #### Scenario: User requests retry
 - **WHEN** a user explicitly retries an interrupted or failed run

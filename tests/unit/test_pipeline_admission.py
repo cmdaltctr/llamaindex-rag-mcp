@@ -1,0 +1,269 @@
+"""Task 2.4: inherited/named profile resolution, overrides and snapshots."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import pytest
+from pydantic import ValidationError
+from tests.unit.test_pipeline_support import (
+    fixture_catalogue,
+    fixture_host,
+    ingest_graph,
+    search_graph,
+)
+
+from omrg.core.pipelines import (
+    ControlSource,
+    IssueCode,
+    PipelineValidationError,
+    ResolverProfileSource,
+    admit_pipeline,
+    parse_definition,
+)
+from omrg.core.profiles.resolver import ProfileResolver
+
+
+class FakeStore:
+    """Collection metadata store that records every mutation."""
+
+    def __init__(self, tags: dict[str, str | None]) -> None:
+        self.metadata: dict[str, dict[str, Any]] = {
+            name: ({"profile": tag} if tag else {}) for name, tag in tags.items()
+        }
+        self.mutations: list[tuple[str, dict[str, Any]]] = []
+
+    def get_collection_metadata(self, name: str) -> dict[str, Any] | None:
+        meta = self.metadata.get(name)
+        return dict(meta) if meta is not None else None
+
+    def update_collection_metadata(self, name: str, metadata: dict[str, Any]) -> None:
+        self.mutations.append((name, metadata))
+        self.metadata.setdefault(name, {}).update(metadata)
+
+
+def _profiles(
+    store: FakeStore, effective_settings: Any, env: dict[str, str] | None = None
+) -> ResolverProfileSource:
+    resolver = ProfileResolver(
+        store=store,  # type: ignore[arg-type]
+        server_profile="documents",
+        base=effective_settings(),
+        env_overrides=env or {},
+    )
+    return ResolverProfileSource(resolver)
+
+
+def _admit(data: dict[str, Any], profiles: Any, **kwargs: Any):
+    return admit_pipeline(
+        parse_definition(data),
+        fixture_catalogue(),
+        host=fixture_host(),
+        profiles=profiles,
+        **kwargs,
+    )
+
+
+def _control(snapshot: Any, node_id: str, lever: str):
+    return next(c for c in snapshot.node(node_id).controls if c.lever == lever)
+
+
+def test_omitted_profile_inherits_collection_profile(effective_settings: Any) -> None:
+    """Collection-bound nodes inherit their collection's resolved profile."""
+    data = search_graph()
+    data["collection"] = "code"
+    store = FakeStore({"code": "codebase"})
+    snapshot = _admit(data, _profiles(store, effective_settings), inputs={"query": "q"})
+    dense = snapshot.node("dense")
+    assert dense.collection == "code"
+    assert dense.settings.profile_name == "codebase"
+    assert dense.settings.retrieval.top_k == 20
+    collection = snapshot.collection("code")
+    assert collection.profile_name == "codebase"
+    assert collection.profile_origin == "collection"
+    assert snapshot.profile_mode == "inherited"
+
+
+def test_explicit_profile_uses_bundle_and_keeps_collection_metadata(
+    effective_settings: Any,
+) -> None:
+    """An explicit graph profile supplies defaults without retagging."""
+    data = search_graph()
+    data["profile"] = "codebase"
+    store = FakeStore({"documents": "documents"})
+    before = store.get_collection_metadata("documents")
+    snapshot = _admit(data, _profiles(store, effective_settings), inputs={"query": "q"})
+    assert snapshot.node("dense").settings.retrieval.top_k == 20
+    assert snapshot.node("rerank").settings.retrieval.rerank_enabled is False
+    assert snapshot.collection("documents").profile_origin == "graph"
+    assert snapshot.profile_mode == "explicit"
+    assert store.mutations == []
+    assert store.get_collection_metadata("documents") == before
+
+
+def test_hybrid_graph_profile_rejected_before_resolution(effective_settings: Any) -> None:
+    """``hybrid`` is rejected during validation with no resolver call."""
+
+    class Exploding:
+        def resolve(self, collection: str) -> Any:
+            raise AssertionError("resolver must not run for an invalid graph")
+
+        resolve_profile_name = load_profile = resolve
+
+        def environment_keys(self) -> frozenset[str]:
+            return frozenset()
+
+    data = search_graph()
+    data["profile"] = "hybrid"
+    with pytest.raises(PipelineValidationError) as excinfo:
+        _admit(data, Exploding(), inputs={"query": "q"})
+    assert excinfo.value.codes == (IssueCode.UNSUPPORTED_PROFILE,)
+
+
+def test_node_override_beats_graph_override_beats_profile(effective_settings: Any) -> None:
+    """Precedence is node, then graph-wide, then resolved profile."""
+    data = search_graph()
+    data["overrides"] = {"retrieval.top_k": 15}
+    data["nodes"][0]["params"] = {"top_k": 3}
+    store = FakeStore({"documents": "documents"})
+    snapshot = _admit(data, _profiles(store, effective_settings), inputs={"query": "q"})
+
+    dense_top_k = _control(snapshot, "dense", "retrieval.top_k")
+    assert (dense_top_k.value, dense_top_k.source) == (3, ControlSource.NODE)
+    assert snapshot.node("dense").settings.retrieval.top_k == 3
+
+    sparse_top_k = _control(snapshot, "sparse", "retrieval.top_k")
+    assert (sparse_top_k.value, sparse_top_k.source) == (15, ControlSource.GRAPH)
+    assert snapshot.node("sparse").settings.retrieval.top_k == 15
+
+
+def test_node_disables_reranker_regardless_of_profile(effective_settings: Any) -> None:
+    """A node override records the effective control and its source."""
+    data = search_graph()
+    data["nodes"][3]["params"] = {"enabled": False}
+    store = FakeStore({"documents": "documents"})
+    snapshot = _admit(data, _profiles(store, effective_settings), inputs={"query": "q"})
+    control = _control(snapshot, "rerank", "retrieval.rerank_enabled")
+    assert control.value is False
+    assert control.source == ControlSource.NODE
+    assert snapshot.node("rerank").settings.retrieval.rerank_enabled is False
+
+
+def test_inherited_control_reports_profile_source(effective_settings: Any) -> None:
+    """A node that inherits names the profile that supplied the value."""
+    store = FakeStore({"documents": "documents"})
+    snapshot = _admit(search_graph(), _profiles(store, effective_settings), inputs={"query": "q"})
+    control = _control(snapshot, "rerank", "retrieval.rerank_enabled")
+    assert control.value is True
+    assert control.source == ControlSource.PROFILE
+    assert "documents" in control.detail
+
+
+def test_captured_environment_keeps_priority_over_profile(effective_settings: Any) -> None:
+    """Environment values still beat profile bundles, and are labelled."""
+    store = FakeStore({"documents": "documents"})
+    env = {"RETRIEVAL__TOP_K": "7"}
+    snapshot = _admit(
+        search_graph(), _profiles(store, effective_settings, env), inputs={"query": "q"}
+    )
+    control = _control(snapshot, "dense", "retrieval.top_k")
+    assert (control.value, control.source) == (7, ControlSource.ENVIRONMENT)
+
+    data = search_graph()
+    data["overrides"] = {"retrieval.top_k": 15}
+    overridden = _admit(data, _profiles(store, effective_settings, env), inputs={"query": "q"})
+    assert _control(overridden, "dense", "retrieval.top_k").value == 15
+
+
+def test_ingestion_node_override_changes_chunk_settings(effective_settings: Any) -> None:
+    """Index-shaping node levers reach the node's settings."""
+    data = ingest_graph()
+    data["nodes"][2]["params"] = {"chunk_size": 256}
+    store = FakeStore({"documents": None})
+    snapshot = _admit(data, _profiles(store, effective_settings), inputs={"path": "notes/"})
+    assert snapshot.node("chunk").settings.chunking.chunk_size == 256
+    assert snapshot.node("commit").settings.chunking.chunk_size == 512
+    assert snapshot.node("commit").collection == "documents"
+
+
+def test_snapshot_is_immutable_and_detached(effective_settings: Any) -> None:
+    """Later edits to the draft, inputs or profile do not reach the snapshot."""
+    data = search_graph()
+    data["nodes"][0]["params"] = {"top_k": 4}
+    inputs: dict[str, Any] = {"query": "first"}
+    store = FakeStore({"documents": "documents"})
+    snapshot = _admit(data, _profiles(store, effective_settings), inputs=inputs)
+
+    with pytest.raises(ValidationError):
+        snapshot.profile_mode = "explicit"  # type: ignore[misc]
+    with pytest.raises(ValidationError):
+        snapshot.node("dense").collection = "x"  # type: ignore[misc]
+
+    params = snapshot.node("dense").params
+    params["top_k"] = 99
+    inputs["query"] = "changed"
+    data["nodes"][0]["params"]["top_k"] = 50
+    store.metadata["documents"]["profile"] = "codebase"
+
+    assert snapshot.node("dense").params == {"top_k": 4}
+    assert snapshot.inputs == {"query": "first"}
+    assert snapshot.node("rerank").settings.profile_name == "documents"
+
+    later = _admit(search_graph(), _profiles(store, effective_settings), inputs={"query": "q"})
+    assert later.node("rerank").settings.profile_name == "codebase"
+
+
+def test_snapshot_records_graph_identity_and_versions(effective_settings: Any) -> None:
+    """The snapshot holds the admitted graph and resolved versions."""
+    definition = parse_definition(search_graph())
+    store = FakeStore({"documents": "documents"})
+    snapshot = admit_pipeline(
+        definition,
+        fixture_catalogue(),
+        host=fixture_host(),
+        profiles=_profiles(store, effective_settings),
+        inputs={"query": "q"},
+    )
+    assert snapshot.graph == definition.graph
+    assert snapshot.graph_identity == definition.graph.execution_identity()
+    assert snapshot.node("dense").version == 1
+    assert snapshot.order.index("fuse") > snapshot.order.index("dense")
+
+
+def test_invalid_collection_tag_fails_admission(effective_settings: Any) -> None:
+    """A collection tagged with a non-operational profile fails before execution."""
+    store = FakeStore({"documents": "hybrid"})
+    with pytest.raises(PipelineValidationError) as excinfo:
+        _admit(search_graph(), _profiles(store, effective_settings), inputs={"query": "q"})
+    issue = excinfo.value.issues[0]
+    assert issue.code == IssueCode.PROFILE_RESOLUTION_FAILED
+    assert "documents" in issue.message
+
+
+def test_missing_run_input_fails_admission(effective_settings: Any) -> None:
+    """Admission requires every declared graph input."""
+    store = FakeStore({"documents": "documents"})
+    with pytest.raises(PipelineValidationError) as excinfo:
+        _admit(search_graph(), _profiles(store, effective_settings), inputs={})
+    assert IssueCode.MISSING_GRAPH_INPUT in excinfo.value.codes
+
+
+def test_profile_resolved_once_per_collection(effective_settings: Any) -> None:
+    """Each referenced collection is resolved once at admission."""
+
+    class Counting(ResolverProfileSource):
+        calls: list[str] = []
+
+        def resolve(self, collection: str) -> Any:
+            self.calls.append(collection)
+            return super().resolve(collection)
+
+    store = FakeStore({"documents": "documents"})
+    resolver = ProfileResolver(
+        store=store,  # type: ignore[arg-type]
+        server_profile="documents",
+        base=effective_settings(),
+        env_overrides={},
+    )
+    _admit(search_graph(), Counting(resolver), inputs={"query": "q"})
+    assert Counting.calls == ["documents"]

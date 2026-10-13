@@ -22,14 +22,22 @@ from omrg.core.settings import EffectiveSettings, MetadataBlock
 
 
 def test_public_api_exports_engine_effective_settings_version() -> None:
-    """``omrg`` exports exactly Engine, EffectiveSettings and __version__."""
+    """``omrg`` exports exactly the engine, settings, graph types and version."""
     import omrg
 
     assert hasattr(omrg, "Engine")
     assert hasattr(omrg, "EffectiveSettings")
     assert hasattr(omrg, "__version__")
     assert omrg.__version__ != "1.8.0"  # not the stale literal
-    assert omrg.__all__ == ["Engine", "EffectiveSettings", "__version__"]
+    assert omrg.__all__ == [
+        "Engine",
+        "EffectiveSettings",
+        "PipelineDefinition",
+        "PipelineResult",
+        "PipelineEvent",
+        "PipelineValidationError",
+        "__version__",
+    ]
 
 
 def test_importing_omrg_constructs_nothing() -> None:
@@ -514,7 +522,20 @@ def test_engine_public_method_surface_is_exactly_documented() -> None:
     """The Engine public method set is exactly the documented surface."""
     from omrg.engine import Engine
 
-    expected = {"ingest", "search", "answer", "list_collections", "delete_collection", "close"}
+    # Task 4.3 adds graph validation and execution, and a read-only
+    # settings accessor for transports (add-local-web-pipeline-workspace).
+    expected = {
+        "ingest",
+        "search",
+        "answer",
+        "list_collections",
+        "delete_collection",
+        "close",
+        "resolve_settings",
+        "validate_pipeline",
+        "run_pipeline",
+        "describe_operations",
+    }
     actual = {
         name
         for name, member in vars(Engine).items()

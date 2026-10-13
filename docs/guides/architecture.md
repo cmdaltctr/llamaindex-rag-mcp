@@ -145,6 +145,13 @@ Why one place: before the v2 work, objects were built in a dozen scattered
 spots, all reading one shared global. That is how you end up unable to run two
 configurations at once.
 
+The composition root is split by concern. `compose.py` is the entry point.
+`compose_settings.py`, `compose_engine.py` and `compose_answer.py` build the
+settings, the Engine and the answer models. `compose_pipelines.py` builds the
+operation catalogue and plans graph runs for one Engine.
+`pipeline_templates.py` publishes the canonical graphs. These modules sit at
+the top level because they import more than one domain.
+
 ### `core/` — does the work
 
 | Folder             | Job                                                                                        |
@@ -159,6 +166,9 @@ configurations at once.
 | `core/codebase/`   | Codebase map and code graph                                                                |
 | `core/documents/`  | Document similarity graph                                                                  |
 | `core/community/`  | Community-detection strategies for both graphs (Louvain default, Leiden optional)          |
+| `core/answer/`     | Answer from retrieved evidence: synthesis, citations and optional claim checks             |
+| `core/pipelines/`  | Graph contracts, operation catalogue, validation, admission and the graph runner           |
+| `core/workspace/`  | Workspace records, the repository contract and the local run service                       |
 | `core/settings.py` | `EffectiveSettings` — the frozen settings object passed around                             |
 
 `core/ingestion/` and `core/retrieval/` do not import each other. They share
@@ -172,6 +182,31 @@ reads a default store. `get_codebase_map_text` is the documented boundary that
 resolves default settings when a caller omits them. The MCP tool supplies both
 values. `FileInventory` and `CodebaseMap` live in `core/codebase/models.py`, so
 `cache.py` and `codebase_map.py` import in any order.
+
+### Pipeline graphs: who owns what
+
+A pipeline graph connects registered operations. The graph code is split so
+that the runner knows no domain, and each domain owns its own operations.
+
+| Module | Owns |
+| --- | --- |
+| `core/pipelines/` | Graph documents, port types, the operation catalogue, preflight, admission, the scheduler, cancellation, events and results. It imports no domain package. |
+| `core/ingestion/graph_adapters*.py` | Sources, Read, Prepare text and Embed / commit operations. `graph_adapters_catalogue.py` holds the canonical ingestion graph. |
+| `core/ingestion/graph_fingerprint.py` | Index-shaping identity of an ingestion graph. |
+| `core/ingestion/sources.py`, `core/ingestion/commit.py` | Per-source seams and the protected commit that `ingest_path_async` and the adapters share. |
+| `core/retrieval/graph_adapters*.py` | Retrieve, Combine, Select and Context operations. |
+| `core/retrieval/operations.py` | Sizing, rerank policy, filtering and fallback rules that `search()` and the adapters share. |
+| `core/answer/graph_adapters.py` | Answer and Verify operations. |
+| `core/answer/stages.py`, `core/answer/results.py` | Evidence, synthesis, citation and verification stages, and the result shapes, that `answer()` and the adapters share. |
+| `core/workspace/` | Workspace records, the repository contract and the local run service. It imports no web framework and no SQLite. |
+| `compose_pipelines.py` | Builds the catalogue from the three domain registrars, describes the Engine to preflight, plans runs and leases Engine resources. |
+| `pipeline_templates.py` | The canonical `ingestion`, `search` and `answer` graphs. |
+
+Each adapter calls the same function as the standard operation. There is no
+second copy of ranking, the ÷30 threshold transform, chunking or source
+replacement. The standard `ingest`, `search` and `answer` paths keep their
+signatures, defaults and return shapes. The canonical templates reproduce
+them on recorded fixtures. See [Pipeline graphs](pipelines.md).
 
 ### Stable source and chunk lineage
 
@@ -320,8 +355,10 @@ specification: `openspec/changes/add-per-collection-persist-dirs/`.
 
 - `transports/mcp/` — the MCP server, eight tools, over stdio (split by tool)
 - `transports/cli/` — the `omrg` command, one file per command group
-- `transports/api/` — an OpenAPI contract for a future REST API. No code yet,
-  deliberately: the contract is published before anything implements it.
+- `transports/api/`: the optional local web runtime (`omrg web`). It is a
+  FastAPI application with the `web` extra. Its routes call the Engine and
+  the workspace run service. It holds no ranking, chunking or graph logic.
+  The base install does not import it.
 
 Transports hold no business logic. They resolve a profile, call core, format
 the answer.
@@ -490,7 +527,7 @@ peers stays an integration.
 Every Python module under `src/omrg/integrations/`, classified. A contract
 test fails when a module is missing from this table.
 
-<!-- integration-inventory:start count=24 -->
+<!-- integration-inventory:start count=30 -->
 
 | Module                                   | Availability                                                   | Selector                                                            | Shared contract                               | Fallback owner                                                                    | Disposition                                                         |
 | ---------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -518,6 +555,12 @@ test fails when a module is missing from this table.
 | `omrg.integrations.pdf.pypdfium`      | Optional `pdf-pypdfium2` extra                                 | `PDF_READER=pypdfium2`                                              | `load_data`                                   | None                                                                              | Registered reader strategy                                          |
 | `omrg.integrations.pdf.registry`      | Native                                                         | `PDF_READER` concrete values                                        | Reader class with `load_data`                 | None; unknown names raise                                                         | Lazy registry for concrete PDF readers                              |
 | `omrg.integrations.tokenizer`         | Base `tokenizers` and `huggingface-hub` dependencies           | `EMBEDDING__TOKENIZER_MODEL` and `EMBEDDING__TOKENIZER_REVISION`    | `load_tokenizer(model, revision)`             | `core/chunking/model_token.py` legacy splitter                                    | Offline cache adapter; never downloads                              |
+| `omrg.integrations.process_launcher`  | Native (standard library; no shell)                            | A registered and enabled external-tool plugin                       | Owned process group, private directory, loopback port | None; a used port or failed launch is refused                             | Only plugin module that starts processes; imports no `omrg.core` module |
+| `omrg.integrations.workspace_sqlite`  | Native (standard-library `sqlite3`)                            | None; the web runtime composes it                                   | `core/workspace/repository.py` contract       | None                                                                              | Facade; exports `SqliteWorkspaceRepository` and schema errors       |
+| `omrg.integrations.workspace_sqlite.deletion` | Native (standard-library `sqlite3`)                    | Previewed workspace cleanup                                         | Finished runs and their events                | None; runs inside the caller's transaction                                        | Deletes run rows only; pipelines and revisions stay                 |
+| `omrg.integrations.workspace_sqlite.repository` | Native (standard-library `sqlite3`)                  | None                                                                | Workspace records as plain dictionaries       | None; a failed transaction rolls back                                             | Repository adapter; imports no `omrg.core` module                   |
+| `omrg.integrations.workspace_sqlite.rows` | Native                                                     | None                                                                | JSON encoding and row-to-record conversion    | None                                                                              | Helper for the repository adapter                                   |
+| `omrg.integrations.workspace_sqlite.schema` | Native (standard-library `sqlite3`)                      | None                                                                | Versioned migrations, backups, owner-only files | Migration rollback to the last version                                          | Application records only; never opens a vector store                |
 
 <!-- integration-inventory:end -->
 
@@ -634,6 +677,10 @@ These are not documentation. They fail the build.
 | `integrations/` never imports core or transports                   | `integrations-are-leaves`                        |
 | `core/` never imports transports or providers                      | `core-business-avoids-providers-transports`      |
 | `core/community/` never imports either graph consumer              | `community-strategies-independent-of-consumers`  |
+| `core/pipelines/` never imports a domain package                   | `pipeline-runner-independent-of-domains`         |
+| Graph adapters stay in their domain package                        | `retrieval-graph-adapters-stay-in-domain`, `ingestion-graph-adapters-stay-in-domain`, `answer-graph-adapters-stay-in-domain` |
+| `core/workspace/` never imports a domain or the web runtime        | `workspace-services-independent-of-domains-and-web` |
+| `core/` never imports FastAPI, Starlette, Uvicorn, marimo or SQLite | `core-free-of-web-notebook-and-sqlite-runtimes`  |
 | Settings models stay pure data                                     | `settings-models-are-pure-data`                  |
 | Every package covered by some contract                             | `tests/test_contract_coverage.py`                |
 | No global settings reads in core                                   | `tests/test_no_global_settings_reads.py`         |

@@ -138,11 +138,14 @@ def build_index_identity(
     ocr_fallback_fingerprint: Any = None,
     tokenizer: dict[str, str] | None = None,
     resolved_splitter: str = "legacy_fallback",
+    graph_shape: dict[str, Any] | None = None,
 ) -> str:
     """Hash the complete index-shaping configuration for one source.
 
     Parser selectors and resolved capabilities are included conservatively,
     because reprocessing is safer than reusing stale chunks or vectors.
+    ``graph_shape`` is the versioned block of a non-standard ingestion graph
+    (``graph_fingerprint``); ``None`` keeps the standard digest unchanged.
     """
     configured_provider, configured_model = _configured_embedding(settings)
     routing = ocr_routing_payload(settings) if ocr_routing is None else ocr_routing
@@ -229,6 +232,8 @@ def build_index_identity(
             "openrouter_llm_model": settings.openrouter_llm_model,
         },
     }
+    if graph_shape is not None:
+        payload["graph_shape"] = dict(graph_shape)
     canonical = json.dumps(
         payload,
         sort_keys=True,

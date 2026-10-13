@@ -7,7 +7,6 @@ a replacement attempt has been written and verified.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
 from collections.abc import Callable
@@ -21,19 +20,22 @@ from ..vectordb.base import VectorStore
 from ._state import shutdown_requested
 from .backends.orchestrator import resolve_declared_text_format
 from .chunker import read_and_chunk_file_async
-from .hashing import sha256_file
 from .loader import gather_supported_files, make_file_detail
 from .metrics import sample_peak_rss_bytes
-from .ocr_identity import resolved_routing_payload, route_fingerprints
 from .replacement import IngestionStageError, replace_source_nodes_async
 from .source_state import (
     IncompatibleSourceLineageError,
     assert_source_lineage_compatible,
-    build_index_identity,
-    build_source_id,
-    build_source_version,
-    canonical_source_path,
     is_complete_current_version,
+)
+from .sources import (
+    build_ingestion_context,
+    check_source_state,
+    chunk_source,
+    commit_source,
+    detect_content_types,
+    iter_source_units,
+    prepare_source,
 )
 from .writer import remove_source_rows_or_error
 
@@ -187,24 +189,9 @@ async def ingest_path_async(
     # Resolve tokenizer capability once before the per-file unchanged checks.
     markdown_chunking = resolve_markdown_chunking(resolved_settings)
 
-    # Type-aware ingestion: detect file types via Magika. Failure degrades to
-    # extension-based routing exactly as before. The operation's injected
-    # settings travel into the detector (settings-dependency-injection:
-    # content-type detection scenario) so direct-Engine processes — which
-    # install no process-global default — never lose detection to a
-    # settings lookup.
-    from ..codebase.codebase_map import detect_file_types
-
-    content_type_map: dict[str, str] = {}
-    try:
-        inventory = detect_file_types(str(path_obj), settings=resolved_settings)
-        for entry in inventory.entries:
-            content_type_map[entry.path] = f"{entry.group}/{entry.label}"
-    except Exception as exc:
-        logger.warning(
-            "Magika detection failed, using extension-based routing: %s",
-            exc,
-        )
+    # Type-aware ingestion: Magika content types with the operation's
+    # injected settings; detection failure degrades to extension routing.
+    content_type_map = detect_content_types(path_obj, settings=resolved_settings)
 
     resolved_store = store if store is not None else get_default_store()
     # Owner-scoped OCR client (task 2.6a): an injected client keeps its
@@ -222,8 +209,14 @@ async def ingest_path_async(
     # client means the fallback is off, which resolves to the ONE stable
     # unavailable fingerprint (the same value build_ocr_routes
     # yields for a disabled fallback or empty command).
-    resolved_ocr_fingerprint, resolved_fallback_fingerprint = route_fingerprints(ocr_client)
-    resolved_ocr_routing = resolved_routing_payload(resolved_settings)
+    context = build_ingestion_context(
+        resolved_settings,
+        chunk_size=effective_chunk_size,
+        chunk_overlap=effective_chunk_overlap,
+        markdown_chunking=markdown_chunking,
+        embed_model=embed_model,
+        ocr_client=ocr_client,
+    )
     files_indexed = 0
     files_skipped_unchanged = 0
     files_skipped_binary = 0
@@ -236,15 +229,12 @@ async def ingest_path_async(
     aggregate_timings = _new_timings()
 
     try:
-        for index, file_path in enumerate(files_to_index):
+        # One bounded source unit at a time: read, chunk, and commit finish
+        # before the next unit is read.
+        for unit in iter_source_units(path_obj, files_to_index, content_type_map):
             if shutdown_requested.is_set():
                 break
-
-            try:
-                rel_path = str(file_path.relative_to(path_obj))
-            except ValueError:
-                rel_path = str(file_path)
-            content_type = content_type_map.get(rel_path)
+            index, file_path, content_type = unit.index, unit.file_path, unit.content_type
 
             if content_type and content_type.startswith("binary"):
                 # A re-ingested source now classified binary must not keep old rows searchable.
@@ -284,47 +274,20 @@ async def ingest_path_async(
 
             try:
                 detection_started = time.perf_counter()
-                canonical_file_path = canonical_source_path(file_path)
-                source_id = build_source_id(canonical_file_path)
-                content_hash = await asyncio.to_thread(sha256_file, file_path)
-                # Resolve the declared parser text format BEFORE the unchanged
-                # check (design D3): the declaration decides Markdown routing,
-                # so it belongs in the identity. The later BackendRead carries
-                # the same resolution and verifies agreement inside the read.
-                parser_text_format = resolve_declared_text_format(
-                    file_path, settings=resolved_settings
-                )
-                index_identity = build_index_identity(
-                    resolved_settings,
+                # Module bindings are passed so patches of this module apply.
+                identity = await prepare_source(
+                    file_path,
                     content_type=content_type,
-                    chunk_size=effective_chunk_size,
-                    chunk_overlap=effective_chunk_overlap,
-                    text_format=parser_text_format,
-                    embed_model=embed_model,
-                    ocr_routing=resolved_ocr_routing,
-                    ocr_worker_fingerprint=resolved_ocr_fingerprint,
-                    ocr_fallback_fingerprint=resolved_fallback_fingerprint,
-                    tokenizer=markdown_chunking.tokenizer_identity,
-                    resolved_splitter=markdown_chunking.resolved_splitter,
+                    context=context,
+                    text_format_resolver=resolve_declared_text_format,
                 )
-                source_version = build_source_version(content_hash, index_identity)
-                # Reject pre-lineage rows for this path before any parse,
-                # embedding, or store mutation so schemas never mix silently.
-                await asyncio.to_thread(
-                    assert_source_lineage_compatible,
-                    resolved_store,
-                    collection_name,
-                    file_path=canonical_file_path,
-                    source_id=source_id,
-                )
-                unchanged, existing_chunks = await asyncio.to_thread(
-                    is_complete_current_version,
-                    resolved_store,
-                    collection_name,
-                    source_id=source_id,
-                    content_hash=content_hash,
-                    index_identity=index_identity,
-                    source_version=source_version,
+                source_version = identity.source_version
+                unchanged, existing_chunks = await check_source_state(
+                    identity,
+                    store=resolved_store,
+                    collection_name=collection_name,
+                    lineage_guard=assert_source_lineage_compatible,
+                    completeness_check=is_complete_current_version,
                 )
                 unit_timings["change_detection_seconds"] = time.perf_counter() - detection_started
 
@@ -345,17 +308,12 @@ async def ingest_path_async(
                     continue
 
                 parse_started = time.perf_counter()
-                nodes = await read_and_chunk_file_async(
-                    file_path,
-                    chunk_size=effective_chunk_size,
-                    chunk_overlap=effective_chunk_overlap,
-                    content_type=content_type,
-                    fallback_strategy=resolved_settings.chunking.strategy_fallback,
-                    taxonomy_mode=resolved_settings.metadata.taxonomy_mode,
-                    settings=resolved_settings,
-                    ocr_client=ocr_client,
-                    markdown_chunking=markdown_chunking,
+                nodes = await chunk_source(
+                    identity,
+                    context=context,
                     store=resolved_store,
+                    ocr_client=ocr_client,
+                    chunker=read_and_chunk_file_async,
                 )
                 unit_timings["parse_chunk_seconds"] = time.perf_counter() - parse_started
                 if not nodes:
@@ -370,20 +328,14 @@ async def ingest_path_async(
                 # hide that degradation from the caller.
                 if file_metadata_degraded:
                     metadata_degraded_count += 1
-                outcome = await replace_source_nodes_async(
+                outcome = await commit_source(
                     nodes,
-                    file_path=canonical_file_path,
-                    source_id=source_id,
-                    content_hash=content_hash,
-                    index_identity=index_identity,
-                    source_version=source_version,
-                    progress_callback=progress_callback,
-                    collection_name=collection_name,
+                    identity,
+                    context=context,
                     store=resolved_store,
-                    embed_model=embed_model,
-                    embed_concurrency=resolved_settings.ingestion.embed_concurrency,
-                    norm_guard_enabled=resolved_settings.embedding.norm_guard_enabled,
-                    norm_tolerance=resolved_settings.embedding.norm_tolerance,
+                    collection_name=collection_name,
+                    progress_callback=progress_callback,
+                    replacer=replace_source_nodes_async,
                 )
                 unit_timings.update(outcome.timings.as_dict())
                 chunks_created_total += outcome.chunks_written

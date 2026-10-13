@@ -17,18 +17,19 @@ from typing import Any
 from ..settings import resolve_effective_settings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
-from ..vectordb.score import DENSE_SCORE_KIND
+from . import operations as ops
 from .assembly import ASSEMBLY_INTERNAL_FIELDS, assemble, promote_assembly_diagnostics
+from .operations import RERANK_SCORE_KIND  # noqa: F401 (re-exported for callers/tests)
 from .registry import get as _retrieval_get
 from .sparse_dispatch import (  # noqa: F401  (re-exported for callers/tests)
     _native_sparse_query,
     _sparse_bm25_query,
     _warned_collections,
     _warned_native_fallback_collections,
+    sparse_policy_runner,
 )
 
 logger = logging.getLogger(__name__)
-RERANK_SCORE_KIND = "reranker_sigmoid_v1"
 
 
 def _resolve_store(store: VectorStore | None) -> VectorStore:
@@ -67,7 +68,9 @@ def _hybrid_query_rows(
     # Registry-routed sparse dispatch (task 3.3): both runners execute
     # through the sparse-backend registry; only the native policy adds
     # the coverage warning and the BM25 fallback net, inside its runner.
-    sparse_runner = _native_sparse_query if backend == "native" else _sparse_bm25_query
+    sparse_runner = sparse_policy_runner(
+        backend, native=_native_sparse_query, bm25=_sparse_bm25_query
+    )
     with ThreadPoolExecutor(max_workers=2) as executor:
         dense_future = executor.submit(
             _dense_query_rows,
@@ -97,14 +100,9 @@ def _hybrid_query_rows(
         dense_rows = dense_future.result()
         sparse_rows = sparse_future.result()
 
-    if dense_threshold > 0.0:
-        # A dense similarity threshold is evaluated on canonical dense
-        # evidence, never on RRF's rank-fusion utility. Sparse candidates
-        # without qualifying dense evidence are ineligible in non-reranked
-        # hybrid mode.
-        dense_rows = [row for row in dense_rows if row["score"] >= dense_threshold]
-        eligible_ids = {str(row["id"]) for row in dense_rows}
-        sparse_rows = [row for row in sparse_rows if str(row["id"]) in eligible_ids]
+    # Dense eligibility (shared seam): the threshold gates canonical dense
+    # evidence before fusion, never RRF utility.
+    dense_rows, sparse_rows = ops.apply_dense_eligibility(dense_rows, sparse_rows, dense_threshold)
 
     t0 = time.perf_counter()
     fused = _retrieval_get("fusion")(dense_rows, sparse_rows, k=rrf_k)
@@ -231,37 +229,32 @@ def search(
             store-side failures propagate as their original exception
             types so the MCP layer can classify them.
     """
-    # Phase 4: profile-resolved levers take precedence over global defaults.
-    from .policy import (
-        _effective_threshold,
-        _resolve_fetch_k,
-        _resolve_rerank_policy,
-    )
-
     # Resolve the settings ONCE at the entry-point boundary. An explicitly
     # passed instance always wins; otherwise the composition root's default
     # is used. Nothing below this line consults any other source.
     resolved_settings = resolve_effective_settings(effective_settings)
 
-    # A profile-resolved instance carries the profile's reranker decision;
-    # the server default does not express a profile opinion.
-    profile_reranker = (
-        effective_settings.reranker_enabled if effective_settings is not None else None
+    # Sizing, policy, filtering and fallback rules live in the shared
+    # ``operations`` seams (task 3.1) so graph adapters reuse them.
+    # Phase 4: profile-resolved levers take precedence over global defaults.
+    levers = ops.resolve_search_levers(
+        resolved_settings,
+        top_k=top_k,
+        hybrid=hybrid,
+        similarity_threshold=similarity_threshold,
     )
-    if top_k is None:
-        top_k = resolved_settings.retrieval.top_k
-    if hybrid is None:
-        hybrid = resolved_settings.retrieval.hybrid_enabled
-    if similarity_threshold is None:
-        similarity_threshold = resolved_settings.retrieval.similarity_threshold
+    top_k = levers.top_k
+    hybrid = levers.hybrid
+    similarity_threshold = levers.similarity_threshold
 
-    # Resolve effective rerank behaviour from policy.
-    effective_rerank, rerank_reason = _resolve_rerank_policy(
+    # A caller-passed instance carries the profile's reranker decision;
+    # the server default does not express a profile opinion.
+    effective_rerank, rerank_reason = ops.resolve_rerank_decision(
         rerank,
         query,
         resolved_settings,
+        caller_settings=effective_settings,
         technical_fraction=technical_fraction,
-        profile_reranker_enabled=profile_reranker,
     )
 
     resolved_store = _resolve_store(store)
@@ -274,7 +267,7 @@ def search(
     # has a meaningful pool to re-score.  See ADR-016 Decision 2.
     # When fetch_k is explicitly provided (experiment runners), it
     # bypasses the formula to allow genuinely distinct pool sizes.
-    resolved_fetch_k = _resolve_fetch_k(
+    resolved_fetch_k = ops.size_candidate_pool(
         top_k,
         effective_rerank,
         chunk_count,
@@ -293,7 +286,9 @@ def search(
     _dense_query_rows = _retrieval_get("dense")
     sparse_report: dict = {}
     if hybrid:
-        dense_threshold = similarity_threshold if not effective_rerank else 0.0
+        dense_threshold = ops.first_stage_dense_threshold(
+            similarity_threshold, rerank=effective_rerank
+        )
         results = _hybrid_query_rows(
             resolved_store,
             collection_name,
@@ -328,28 +323,23 @@ def search(
     # Optional: re-score with cross-encoder reranker.
     active_backend: str | None = None
     if effective_rerank and results:
-        if reranker is None:
-            from .backend import build_reranker_from_settings
-
-            reranker = build_reranker_from_settings(resolved_settings)
-        t0 = time.perf_counter()
-        results = reranker.rerank(query, results, top_k=top_k)
-        t1 = time.perf_counter()
-        timing_report["rerank_seconds"] = timing_report.get("rerank_seconds", 0.0) + (t1 - t0)
+        outcome = ops.run_reranker(
+            query,
+            results,
+            top_k=top_k,
+            settings=resolved_settings,
+            reranker=reranker,
+            timing_report=timing_report,
+        )
+        results = outcome.rows
         # Record which backend actually ran (may differ from the settings
         # value when the torch extra is missing and the helper fell back
         # to ONNX).
-        active_backend = getattr(reranker, "backend_name", None)
-        # Propagate the reranked flag from the internal _reranked key.
-        for r in results:
-            r["reranked"] = r.pop("_reranked", False)
-            if r["reranked"]:
-                r["score_kind"] = RERANK_SCORE_KIND
+        active_backend = outcome.backend
         # The reranker's own failure reason (if any) is more specific than
-        # the policy string computed before reranking ran — surface it.
-        failure_reason = getattr(reranker, "last_failure_reason", None)
-        if failure_reason:
-            rerank_reason = failure_reason
+        # the policy string computed before reranking ran, so surface it.
+        if outcome.failure_reason:
+            rerank_reason = outcome.failure_reason
 
     # Filter by similarity threshold (applies after reranking).
     #
@@ -360,14 +350,17 @@ def search(
     # Uses whether reranking actually succeeded (the "reranked" flag), not
     # merely whether it was requested — a failed reranker leaves dense
     # scores in place, which the ÷30-scaled threshold would over-admit.
-    rerank_succeeded = (
-        effective_rerank and bool(results) and all(r.get("reranked", False) for r in results)
-    )
+    rerank_succeeded = ops.rerank_succeeded(effective_rerank, results)
     # A failed hybrid reranker must return to the pre-rerank dense-threshold
     # rule. Re-run the cheap first-stage query with the threshold applied
     # before fusion; reranker failure is rare, and correctness is preferable
     # to retaining full-pool RRF ranks with incompatible semantics.
-    if effective_rerank and hybrid and not rerank_succeeded and similarity_threshold > 0.0:
+    if ops.needs_dense_fallback(
+        rerank=effective_rerank,
+        hybrid=hybrid,
+        succeeded=rerank_succeeded,
+        similarity_threshold=similarity_threshold,
+    ):
         results = _hybrid_query_rows(
             resolved_store,
             collection_name,
@@ -383,13 +376,13 @@ def search(
             cache=query_cache,
         )
 
-    threshold_score_kind = RERANK_SCORE_KIND if rerank_succeeded else DENSE_SCORE_KIND
-    effective_threshold = _effective_threshold(similarity_threshold, rerank_succeeded)
-    if effective_threshold > 0.0 and (rerank_succeeded or not hybrid):
-        results = [r for r in results if r["score"] >= effective_threshold]
-
-    results.sort(key=lambda r: r["score"], reverse=True)
-    results = results[:top_k]
+    results, threshold_score_kind = ops.apply_score_threshold(
+        results,
+        similarity_threshold,
+        succeeded=rerank_succeeded,
+        hybrid=hybrid,
+    )
+    results = ops.rank_and_truncate(results, top_k)
 
     # Context assembly (task 5.6): the single stage that reshapes returned
     # evidence — overlap merging plus opt-in neighbour expansion — runs

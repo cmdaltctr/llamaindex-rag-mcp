@@ -1,14 +1,19 @@
 """Assert dispatch modules have no module-level strategy imports.
 
-Verifies that ``core/ingestion/chunker.py``, ``core/metadata/extractor.py``,
-and ``core/retrieval/pipeline.py`` contain no module-level import of a
-concrete strategy module — strategies must be resolved through the registry
-at dispatch time (task 3.8, config-composition-root spec).
+Verifies that the dispatch modules (``core/ingestion/chunker.py``,
+``core/metadata/extractor.py``, ``core/retrieval/pipeline.py`` and others)
+and the graph adapter and operations modules contain no module-level import
+of a concrete strategy module — strategies must be resolved through the
+registry at dispatch time (task 3.8, config-composition-root spec). A second
+test imports each module in a fresh interpreter, so a transitive load
+through a helper module is caught too.
 """
 
 from __future__ import annotations
 
 import ast
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -87,7 +92,10 @@ _FORBIDDEN_STRATEGY_MODULES = {
     "omrg.core.metadata.llamacpp",
     "omrg.core.retrieval.dense",
     "omrg.core.retrieval.fusion",
-    "omrg.core.retrieval.policy",
+    # omrg.core.retrieval.policy is deliberately absent. It is a pure helper
+    # (threshold scaling, fetch_k and rerank-policy resolution), not a
+    # registered strategy, and core/retrieval/operations.py imports it at
+    # module level by design (add-local-web-pipeline-workspace).
     "omrg.core.retrieval.reranker",
     "omrg.core.retrieval.sparse",
     "omrg.core.community.louvain",
@@ -103,16 +111,27 @@ _FORBIDDEN_STRATEGY_MODULES = {
 }
 
 
-@pytest.mark.parametrize(
-    "rel_path",
-    [
-        "core/ingestion/chunker.py",
-        "core/metadata/extractor.py",
-        "core/retrieval/pipeline.py",
-        "core/community/__init__.py",
-        "integrations/pdf/factory.py",
-    ],
-)
+_CHECKED_MODULES = [
+    "core/ingestion/chunker.py",
+    "core/metadata/extractor.py",
+    "core/retrieval/pipeline.py",
+    "core/community/__init__.py",
+    "integrations/pdf/factory.py",
+    # Graph adapters and the shared retrieval operations dispatch the same
+    # strategies for graph runs (add-local-web-pipeline-workspace).
+    "core/retrieval/operations.py",
+    "core/retrieval/graph_adapters.py",
+    "core/retrieval/graph_adapters_retrieve.py",
+    "core/retrieval/graph_adapters_catalogue.py",
+    "core/retrieval/graph_adapters_values.py",
+    "core/ingestion/graph_adapters.py",
+    "core/ingestion/graph_adapters_catalogue.py",
+    "core/ingestion/graph_adapters_values.py",
+    "core/answer/graph_adapters.py",
+]
+
+
+@pytest.mark.parametrize("rel_path", _CHECKED_MODULES)
 def test_no_module_level_strategy_import(rel_path: str) -> None:
     """The dispatch module must not import concrete strategies at top level."""
     assert _SRC_ROOT.is_dir(), f"configured source root is missing: {_SRC_ROOT}"
@@ -145,4 +164,26 @@ def test_orchestrator_has_no_module_level_backend_imports() -> None:
     assert not offenders, (
         f"{_ORCHESTRATOR_RELPATH} has module-level imports of concrete "
         f"backend adapters: {sorted(offenders)}."
+    )
+
+
+@pytest.mark.parametrize("rel_path", [*_CHECKED_MODULES, _ORCHESTRATOR_RELPATH])
+def test_importing_module_loads_no_strategy(rel_path: str) -> None:
+    """A fresh import of the module loads no concrete strategy, even indirectly."""
+    module = _absolute_module_name(_SRC_ROOT / rel_path).removesuffix(".__init__")
+    script = (
+        "import importlib, sys\n"
+        f"importlib.import_module({module!r})\n"
+        f"print(sorted(set(sys.modules) & set({sorted(_FORBIDDEN_STRATEGY_MODULES)!r})))\n"
+    )
+    done = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=120,
+        env={"PYTHONPATH": str(_SRC_ROOT.parent), "PDF_READER": "pypdf"},
+    )
+    assert done.stdout.strip() == "[]", (
+        f"importing {module} loads concrete strategy modules: {done.stdout.strip()}"
     )

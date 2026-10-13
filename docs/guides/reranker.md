@@ -140,3 +140,31 @@ The BM25 path never emits these warnings; it indexes every chunk it sees.
 ### Migration
 
 Existing collections need no re-ingestion: the first native query creates the FTS index additively and indexes existing rows synchronously. FTS indexes add per-collection disk footprint. To roll back, set `RETRIEVAL__HYBRID_SPARSE_BACKEND=bm25`; stored data and any FTS indexes are left untouched. An unused index is inert.
+
+## Retrieval stages as graph operations
+
+`search()` and the graph operations share one set of retrieval functions. The search path did not change when the graph operations were added.
+
+| Stage | Shared function | Module | Graph operation |
+|---|---|---|---|
+| Levers (`top_k`, threshold, hybrid) | `resolve_search_levers` | `src/omrg/core/retrieval/operations.py` | `retrieve.prepare_query` |
+| Rerank decision | `resolve_rerank_decision` | `src/omrg/core/retrieval/operations.py` | `retrieve.prepare_query` |
+| Candidate pool | `size_candidate_pool` | `src/omrg/core/retrieval/operations.py` | `retrieve.prepare_query` |
+| Dense retrieval | `_dense_query_rows` (registry name `dense`) | `src/omrg/core/retrieval/dense.py` | `retrieve.dense` |
+| Sparse retrieval | `sparse_policy_runner` | `src/omrg/core/retrieval/sparse_dispatch.py` | `retrieve.sparse` |
+| Dense eligibility before fusion | `first_stage_dense_threshold`, `apply_dense_eligibility` | `src/omrg/core/retrieval/operations.py` | `combine.rrf` |
+| Fusion | `rrf_with_metadata` (registry name `fusion`) | `src/omrg/core/retrieval/fusion.py` | `combine.rrf` |
+| Reranking and its failure fallback | `run_reranker`, `rerank_succeeded` | `src/omrg/core/retrieval/operations.py` | `select.rerank` |
+| Threshold (÷30 after a successful rerank) and `top_k` | `apply_score_threshold`, `rank_and_truncate`, `needs_dense_fallback` | `src/omrg/core/retrieval/operations.py` | `select.threshold` |
+| Lineage expansion and overlap merge | `assemble` | `src/omrg/core/retrieval/assembly.py` | `context.assemble` |
+
+The adapters live in `src/omrg/core/retrieval/graph_adapters.py` and `src/omrg/core/retrieval/graph_adapters_retrieve.py`. Their descriptors live in `src/omrg/core/retrieval/graph_adapters_catalogue.py`. The canonical `search` template chains these operations in the order above. It returns the same rows, scores, score kinds, rank provenance and fallback reasons as `Engine.search` on the recorded fixtures in `tests/fixtures/pipeline_parity/retrieval/`.
+
+These values and behaviours are unchanged:
+
+- `retrieval.top_k` defaults to `10`.
+- `retrieval.rerank_enabled` defaults to `false`. The `documents` profile sets it to `true`. The `codebase` profile keeps it `false`.
+- The threshold is divided by 30 only after a successful rerank. A failed rerank keeps the dense threshold.
+- `search()` returns a list of row dictionaries with the same keys as before. `include_diagnostics=True` adds the same rank provenance fields.
+
+In a graph, a failed rerank or a native-to-BM25 sparse fallback is a node fallback. The run result reports the reason in the node outcome. It does not fail the run.

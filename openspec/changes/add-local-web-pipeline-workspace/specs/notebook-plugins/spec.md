@@ -75,9 +75,10 @@ A starter notebook SHALL submit explicit graph revisions through the same protec
 ### Requirement: Experiment writes stay in approved experiment workspaces
 Notebook credentials SHALL identify an approved experiment workspace and permitted actions. Ingestion experiments SHALL use separate experiment-local stores and record their identities. The initial default SHALL be LanceDB unless store choice is a declared experiment factor. The editor's ordinary filesystem permissions SHALL be disclosed.
 
-#### Scenario: Notebook targets the live library for mutation
-- **WHEN** an experiment credential requests ingestion into the ordinary library context
-- **THEN** admission SHALL reject the request before mutation
+#### Scenario: Notebook targets the live library
+- **WHEN** an experiment credential requests any run or read against the ordinary library context, ingestion included
+- **THEN** the server SHALL refuse the request before any graph work or mutation
+- **AND** read-only live-library requests SHALL be refused the same way as mutating ones
 
 #### Scenario: An approved ingestion experiment runs
 - **WHEN** the operator registers an experiment workspace and explicitly starts its graph

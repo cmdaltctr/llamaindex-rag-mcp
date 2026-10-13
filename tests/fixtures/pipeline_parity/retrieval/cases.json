@@ -1,0 +1,1735 @@
+{
+  "description": "Retrieval parity cases recorded from search() before the task 3.1 seam extraction (git archive of commit 489a618 src/, which has the pre-extraction retrieval package). Inputs drive harness.run_search; expected.rows is harness.project(result); expected.keys is each row's sorted key set.",
+  "cases": [
+    {
+      "name": "dense_no_rerank_threshold",
+      "description": "Dense only, no rerank: the dense threshold 0.3 drops d (0.28) and below.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25"
+      },
+      "reranker": "none",
+      "search": {
+        "top_k": 4,
+        "similarity_threshold": 0.3,
+        "rerank": false,
+        "hybrid": false,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "a",
+            "source": "a.md",
+            "score": 0.92,
+            "score_kind": "dense_similarity_v1",
+            "reranked": false,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "explicit rerank=False override"
+          },
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.81,
+            "score_kind": "dense_similarity_v1",
+            "reranked": false,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "explicit rerank=False override"
+          },
+          {
+            "id": "c",
+            "source": "c.md",
+            "score": 0.55,
+            "score_kind": "dense_similarity_v1",
+            "reranked": false,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "explicit rerank=False override"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "dense_rerank_success_div30",
+      "description": "Dense with successful rerank: threshold 0.3 becomes 0.01 (div 30), so d (0.02) and e (0.012) stay and f (0.001) goes.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25"
+      },
+      "reranker": "success",
+      "search": {
+        "top_k": 5,
+        "similarity_threshold": 0.3,
+        "rerank": true,
+        "hybrid": false,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.95,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "explicit rerank=True override",
+            "rerank_backend": "parity"
+          },
+          {
+            "id": "c",
+            "source": "c.md",
+            "score": 0.7,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "explicit rerank=True override",
+            "rerank_backend": "parity"
+          },
+          {
+            "id": "a",
+            "source": "a.md",
+            "score": 0.4,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "explicit rerank=True override",
+            "rerank_backend": "parity"
+          },
+          {
+            "id": "d",
+            "source": "d.md",
+            "score": 0.02,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "explicit rerank=True override",
+            "rerank_backend": "parity"
+          },
+          {
+            "id": "e",
+            "source": "e.md",
+            "score": 0.012,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "explicit rerank=True override",
+            "rerank_backend": "parity"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "dense_rerank_failure_dense_threshold",
+      "description": "Dense with failed rerank: dense scores stay and the undivided 0.3 threshold applies.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25"
+      },
+      "reranker": "fail",
+      "search": {
+        "top_k": 5,
+        "similarity_threshold": 0.3,
+        "rerank": true,
+        "hybrid": false,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "a",
+            "source": "a.md",
+            "score": 0.92,
+            "score_kind": "dense_similarity_v1",
+            "reranked": false,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "inference failed: parity fixture",
+            "rerank_backend": "parity"
+          },
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.81,
+            "score_kind": "dense_similarity_v1",
+            "reranked": false,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "inference failed: parity fixture",
+            "rerank_backend": "parity"
+          },
+          {
+            "id": "c",
+            "source": "c.md",
+            "score": 0.55,
+            "score_kind": "dense_similarity_v1",
+            "reranked": false,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "inference failed: parity fixture",
+            "rerank_backend": "parity"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "hybrid_no_rerank_dense_eligibility",
+      "description": "Hybrid without rerank: only rows with dense score >= 0.3 are eligible before RRF; sparse-only rows are dropped; no post-fusion threshold.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25"
+      },
+      "reranker": "none",
+      "search": {
+        "top_k": 4,
+        "similarity_threshold": 0.3,
+        "rerank": false,
+        "hybrid": true,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.03252247488101534,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.81,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 2,
+            "sparse_rank": 1,
+            "fused_rank": 1,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "explicit rerank=False override",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "c",
+            "source": "c.md",
+            "score": 0.03200204813108039,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.55,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 3,
+            "sparse_rank": 2,
+            "fused_rank": 2,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "explicit rerank=False override",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "a",
+            "source": "a.md",
+            "score": 0.01639344262295082,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.92,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 1,
+            "sparse_rank": null,
+            "fused_rank": 3,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "explicit rerank=False override",
+            "sparse_backend": "bm25"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "hybrid_no_rerank_no_threshold",
+      "description": "Hybrid without threshold: full RRF over dense and BM25 rankings, truncated to top_k.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25"
+      },
+      "reranker": "none",
+      "search": {
+        "top_k": 4,
+        "similarity_threshold": 0.0,
+        "rerank": false,
+        "hybrid": true,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.03225806451612903,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.81,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 2,
+            "sparse_rank": 2,
+            "fused_rank": 1,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "explicit rerank=False override",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "c",
+            "source": "c.md",
+            "score": 0.031746031746031744,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.55,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 3,
+            "sparse_rank": 3,
+            "fused_rank": 2,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "explicit rerank=False override",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "a",
+            "source": "a.md",
+            "score": 0.01639344262295082,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.92,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 1,
+            "sparse_rank": null,
+            "fused_rank": 3,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "explicit rerank=False override",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "e",
+            "source": "e.md",
+            "score": 0.01639344262295082,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_rank": null,
+            "sparse_rank": 1,
+            "fused_rank": 4,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "explicit rerank=False override",
+            "sparse_backend": "bm25"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "chunk_id",
+            "dense_rank",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "source_chunk_count",
+            "source_chunk_index",
+            "source_id",
+            "source_version",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "hybrid_rerank_success_div30",
+      "description": "Hybrid with successful rerank: first stage uses dense threshold 0, reranker scores filtered at 0.3/30.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25"
+      },
+      "reranker": "success",
+      "search": {
+        "top_k": 5,
+        "similarity_threshold": 0.3,
+        "rerank": true,
+        "hybrid": true,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.95,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "dense_score": 0.81,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 2,
+            "sparse_rank": 2,
+            "fused_rank": 1,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "explicit rerank=True override",
+            "rerank_backend": "parity",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "c",
+            "source": "c.md",
+            "score": 0.7,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "dense_score": 0.55,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 3,
+            "sparse_rank": 3,
+            "fused_rank": 3,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "explicit rerank=True override",
+            "rerank_backend": "parity",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "a",
+            "source": "a.md",
+            "score": 0.4,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "dense_score": 0.92,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 1,
+            "sparse_rank": null,
+            "fused_rank": 4,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "explicit rerank=True override",
+            "rerank_backend": "parity",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "d",
+            "source": "d.md",
+            "score": 0.02,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "dense_score": 0.28,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 4,
+            "sparse_rank": null,
+            "fused_rank": 5,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "explicit rerank=True override",
+            "rerank_backend": "parity",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "e",
+            "source": "e.md",
+            "score": 0.012,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "dense_score": 0.12,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 5,
+            "sparse_rank": 1,
+            "fused_rank": 2,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "explicit rerank=True override",
+            "rerank_backend": "parity",
+            "sparse_backend": "bm25"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "hybrid_rerank_failure_fallback",
+      "description": "Hybrid with failed rerank and a positive threshold: the first stage re-runs with the dense threshold, so RRF utility rows from eligible dense rows return.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25"
+      },
+      "reranker": "fail",
+      "search": {
+        "top_k": 5,
+        "similarity_threshold": 0.3,
+        "rerank": true,
+        "hybrid": true,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.03252247488101534,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.81,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 2,
+            "sparse_rank": 1,
+            "fused_rank": 1,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "inference failed: parity fixture",
+            "rerank_backend": "parity",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "c",
+            "source": "c.md",
+            "score": 0.03200204813108039,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.55,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 3,
+            "sparse_rank": 2,
+            "fused_rank": 2,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "inference failed: parity fixture",
+            "rerank_backend": "parity",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "a",
+            "source": "a.md",
+            "score": 0.01639344262295082,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.92,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 1,
+            "sparse_rank": null,
+            "fused_rank": 3,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "inference failed: parity fixture",
+            "rerank_backend": "parity",
+            "sparse_backend": "bm25"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "hybrid_rerank_failure_no_threshold",
+      "description": "Hybrid with failed rerank and no threshold: no re-query; the full-pool RRF rows return truncated.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25"
+      },
+      "reranker": "fail",
+      "search": {
+        "top_k": 3,
+        "similarity_threshold": 0.0,
+        "rerank": true,
+        "hybrid": true,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.03225806451612903,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.81,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 2,
+            "sparse_rank": 2,
+            "fused_rank": 1,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "inference failed: parity fixture",
+            "rerank_backend": "parity",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "e",
+            "source": "e.md",
+            "score": 0.03177805800756621,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.12,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 5,
+            "sparse_rank": 1,
+            "fused_rank": 2,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "inference failed: parity fixture",
+            "rerank_backend": "parity",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "c",
+            "source": "c.md",
+            "score": 0.031746031746031744,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.55,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 3,
+            "sparse_rank": 3,
+            "fused_rank": 3,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "inference failed: parity fixture",
+            "rerank_backend": "parity",
+            "sparse_backend": "bm25"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "fetch_k_override_pool",
+      "description": "Explicit fetch_k=2 bypasses the wide-net formula: only the top two dense rows reach the reranker.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25"
+      },
+      "reranker": "success",
+      "search": {
+        "top_k": 5,
+        "similarity_threshold": 0.0,
+        "rerank": true,
+        "hybrid": false,
+        "fetch_k": 2,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.95,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "explicit rerank=True override",
+            "rerank_backend": "parity"
+          },
+          {
+            "id": "a",
+            "source": "a.md",
+            "score": 0.4,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "explicit rerank=True override",
+            "rerank_backend": "parity"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "policy_profile_settings_enable",
+      "description": "rerank omitted with caller settings: the settings' reranker decision (enabled) wins.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25",
+        "retrieval.rerank_enabled": true
+      },
+      "reranker": "success",
+      "search": {
+        "top_k": 3,
+        "similarity_threshold": 0.0,
+        "hybrid": false,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.95,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "profile-resolved reranker enabled",
+            "rerank_backend": "parity"
+          },
+          {
+            "id": "c",
+            "source": "c.md",
+            "score": 0.7,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "profile-resolved reranker enabled",
+            "rerank_backend": "parity"
+          },
+          {
+            "id": "a",
+            "source": "a.md",
+            "score": 0.4,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "profile-resolved reranker enabled",
+            "rerank_backend": "parity"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "policy_default_technical_disables",
+      "description": "rerank omitted, no caller settings, semantic policy on: a technical query disables reranking.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25",
+        "retrieval.rerank_enabled": false,
+        "retrieval.rerank_enabled_for_semantic": true
+      },
+      "settings_via": "default",
+      "reranker": "success",
+      "search": {
+        "query": "`snake_case_fn` module.attr fusion",
+        "top_k": 3,
+        "similarity_threshold": 0.0,
+        "hybrid": false,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "a",
+            "source": "a.md",
+            "score": 0.92,
+            "score_kind": "dense_similarity_v1",
+            "reranked": false,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "disabled by technical policy (fraction=0.67 >= threshold=0.3)"
+          },
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.81,
+            "score_kind": "dense_similarity_v1",
+            "reranked": false,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "disabled by technical policy (fraction=0.67 >= threshold=0.3)"
+          },
+          {
+            "id": "c",
+            "source": "c.md",
+            "score": 0.55,
+            "score_kind": "dense_similarity_v1",
+            "reranked": false,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "disabled by technical policy (fraction=0.67 >= threshold=0.3)"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "policy_default_semantic_enables",
+      "description": "rerank omitted, no caller settings, semantic policy on: a semantic query enables reranking.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25",
+        "retrieval.rerank_enabled": false,
+        "retrieval.rerank_enabled_for_semantic": true
+      },
+      "settings_via": "default",
+      "reranker": "success",
+      "search": {
+        "top_k": 3,
+        "similarity_threshold": 0.0,
+        "hybrid": false,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.95,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "enabled by semantic policy (fraction=0.00 < threshold=0.3)",
+            "rerank_backend": "parity"
+          },
+          {
+            "id": "c",
+            "source": "c.md",
+            "score": 0.7,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "enabled by semantic policy (fraction=0.00 < threshold=0.3)",
+            "rerank_backend": "parity"
+          },
+          {
+            "id": "a",
+            "source": "a.md",
+            "score": 0.4,
+            "score_kind": "reranker_sigmoid_v1",
+            "reranked": true,
+            "threshold_score_kind": "reranker_sigmoid_v1",
+            "rerank_reason": "enabled by semantic policy (fraction=0.00 < threshold=0.3)",
+            "rerank_backend": "parity"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_backend",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "settings_defaults_fill_levers",
+      "description": "top_k, hybrid and threshold omitted: values come from the injected settings (top_k 2, hybrid on, threshold 0.5).",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25",
+        "retrieval.top_k": 2,
+        "retrieval.hybrid_enabled": true,
+        "retrieval.similarity_threshold": 0.5
+      },
+      "reranker": "none",
+      "search": {
+        "rerank": false,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [
+          {
+            "id": "b",
+            "source": "b.md",
+            "score": 0.03252247488101534,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.81,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 2,
+            "sparse_rank": 1,
+            "fused_rank": 1,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "explicit rerank=False override",
+            "sparse_backend": "bm25"
+          },
+          {
+            "id": "a",
+            "source": "a.md",
+            "score": 0.01639344262295082,
+            "score_kind": "rrf_v1",
+            "reranked": false,
+            "dense_score": 0.92,
+            "dense_score_kind": "dense_similarity_v1",
+            "dense_rank": 1,
+            "sparse_rank": null,
+            "fused_rank": 2,
+            "threshold_score_kind": "dense_similarity_v1",
+            "rerank_reason": "explicit rerank=False override",
+            "sparse_backend": "bm25"
+          }
+        ],
+        "keys": [
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ],
+          [
+            "assembly_chunk_count",
+            "assembly_expanded",
+            "assembly_merged",
+            "dense_rank",
+            "dense_score",
+            "dense_score_kind",
+            "fused_rank",
+            "fused_score",
+            "id",
+            "metadata",
+            "page_label",
+            "rerank_reason",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "sparse_backend",
+            "sparse_rank",
+            "text",
+            "threshold_score_kind",
+            "timings"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "public_shape_hybrid",
+      "description": "Diagnostics off: rank provenance and internal fields are stripped from the public result.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25"
+      },
+      "reranker": "none",
+      "search": {
+        "top_k": 3,
+        "similarity_threshold": 0.0,
+        "rerank": false,
+        "hybrid": true,
+        "include_diagnostics": false
+      },
+      "expected": {
+        "rows": [
+          {
+            "source": "b.md",
+            "score": 0.03225806451612903,
+            "score_kind": "rrf_v1",
+            "reranked": false
+          },
+          {
+            "source": "c.md",
+            "score": 0.031746031746031744,
+            "score_kind": "rrf_v1",
+            "reranked": false
+          },
+          {
+            "source": "a.md",
+            "score": 0.01639344262295082,
+            "score_kind": "rrf_v1",
+            "reranked": false
+          }
+        ],
+        "keys": [
+          [
+            "metadata",
+            "page_label",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text"
+          ],
+          [
+            "metadata",
+            "page_label",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text"
+          ],
+          [
+            "metadata",
+            "page_label",
+            "reranked",
+            "score",
+            "score_kind",
+            "source",
+            "text"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "empty_collection",
+      "description": "An empty collection returns an empty list before any stage runs.",
+      "settings": {
+        "retrieval.hybrid_sparse_backend": "bm25"
+      },
+      "reranker": "success",
+      "empty_collection": true,
+      "search": {
+        "top_k": 3,
+        "similarity_threshold": 0.3,
+        "rerank": true,
+        "hybrid": true,
+        "include_diagnostics": true
+      },
+      "expected": {
+        "rows": [],
+        "keys": []
+      }
+    }
+  ]
+}

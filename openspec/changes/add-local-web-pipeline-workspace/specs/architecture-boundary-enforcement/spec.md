@@ -9,7 +9,7 @@ The import-linter contract set SHALL cover every package under
 `core.ingestion`, `core.retrieval`, `core.metadata`, `core.chunking`,
 `core.vectordb`, `core.profiles`, `core.codebase`, `core.documents`,
 `core.community`, `core.answer`, `core.pipelines`, `core.workspace`,
-and `daemon`, forbidding concrete provider and transport dependencies under
+`core.plugins`, `core.experiments`, and `daemon`, forbidding concrete provider and transport dependencies under
 the existing sanctioned exceptions. New packages SHALL not be omitted from
 coverage.
 
@@ -39,16 +39,23 @@ settings without direct ingestion/retrieval cross-imports.
 
 #### Scenario: Ingestion no longer reaches upward
 
-- **WHEN** `core/ingestion/pipeline.py` needs file-type detection
-- **THEN** it MUST use its injected detection seam or the sanctioned
-  integration
-- **AND** it MUST NOT import a top-level business implementation
+- **WHEN** ingestion needs file-type detection
+- **THEN** it MUST call the core codebase detector through `core.codebase`
+  (a core-to-core import) or the sanctioned `integrations.magika` leaf
+- **AND** no `core/` module MUST import a top-level `omrg` module, except
+  the one sanctioned lazy import of `omrg.capabilities` in
+  `core/ingestion/pipeline.py` that builds an operation-owned OCR client
+  when none is injected
+- **AND** `uv run lint-imports` MUST fail when any other `core/` module
+  imports a top-level `omrg` module
 
 #### Scenario: Top-level business modules are gone
 
 - **WHEN** `src/omrg/` is listed after the change
 - **THEN** public API and composition modules such as `__init__.py`,
-  `engine.py`, `compose.py`, and composition helpers MAY exist
+  `engine.py`, `compose.py`, the `compose_*.py` composition helpers,
+  `capabilities.py` (runtime capability probes), and
+  `pipeline_templates.py` (built-in graph templates) MAY exist
 - **AND** ingestion, retrieval, graph scheduling, and workspace business
   algorithms MUST remain in their owning `core/` packages
 

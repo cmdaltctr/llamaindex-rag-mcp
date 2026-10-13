@@ -25,33 +25,32 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..settings import resolve_effective_settings
-from .citations import build_citations, parse_citation_ordinals
-from .evidence import _evidence_rows, _labelled_nodes  # noqa: F401 (re-exported below)
+from .evidence import _evidence_rows, _labelled_nodes
+from .results import (
+    answered_result,
+    base_result,
+    disabled_result,
+    generation_diagnostics,
+    no_evidence_result,
+    no_provider_result,
+    stage_failure_result,
+    zero_generation_diagnostics,
+)
 from .retriever import SearchRetriever
 from .settings import AnswerSettings
+from .stages import (
+    FAILURE_STAGE_RETRIEVAL,
+    error_detail_for,
+    prepare_evidence,
+    resolve_citations,
+    safe_error_detail,
+    synthesise_answer,
+    verify_answer,
+)
 from .synthesis import CompletionSeam, run_synthesis
-from .verify import VerificationFields, run_verification_stage
 
-#: Shared no-op outcome for the disabled verification path.
-_NO_VERIFICATION = VerificationFields()
-
-#: Actionable message for the no-provider case (spec scenario).  Names
-#: the settings AND the MCP-client alternative so both options surface.
-_NO_PROVIDER_MESSAGE = (
-    "No answer model is configured for grounded answering. Set "
-    "ANSWER__PROVIDER (and ANSWER__MODEL) to configure a server-side "
-    "model, or use an MCP client that supports sampling so the client's "
-    "model can complete the answer."
-)
-
-#: Actionable message when the master switch is off.  Every transport
-#: (MCP, CLI, HTTP) inherits this through ``answer()``; the MCP
-#: transport also returns it before issuing any client sample.
-_DISABLED_MESSAGE = (
-    "Grounded answering is disabled. Set ANSWER__ENABLED=true to enable "
-    "it, or use search_documents for ranked chunks without a "
-    "language-model call."
-)
+# ``disabled_result`` is re-exported for the MCP transport's early gate.
+__all__ = ["ResolvedRetrieval", "answer", "disabled_result", "evidence_rows", "labelled_nodes"]
 
 #: Hard input limits enforced at the core entry so every transport
 #: (MCP, CLI, HTTP) inherits them (review F7).  Frozen for the OpenAPI
@@ -127,81 +126,9 @@ def _validate_request(
             )
 
 
-# Lineage fields and the evidence/node assembly helpers live in
-# ``evidence.py`` (the ADR-059 head-room split); imported above.
-
-
-def _safe_error_detail(exc: BaseException, settings: Any) -> str:
-    """Format an exception for the result without leaking credentials.
-
-    Provider and connection errors can echo key material (an OpenRouter
-    key inside a URL, Chroma Cloud connection values); the same redaction
-    helpers the MCP transport applies to tool errors are applied here so
-    the error strings embedded in core results cannot bypass them.
-    """
-    from ..vectordb.identity import redact_cloud_secrets, redact_secret
-
-    detail = str(exc)
-    detail = redact_cloud_secrets(
-        detail,
-        getattr(settings, "chroma_cloud_api_key", ""),
-        getattr(settings, "chroma_cloud_tenant", ""),
-        getattr(settings, "chroma_cloud_database", ""),
-    )
-    return redact_secret(detail, getattr(settings, "openrouter_api_key", ""))
-
-
-def _base_result(
-    query: str,
-    completion_source: str,
-    status: str = "error",
-    answer: str | None = None,
-    failure_stage: str | None = None,
-    error: str | None = None,
-) -> dict[str, Any]:
-    """Build the result skeleton shared by every status."""
-    return {
-        "status": status,
-        "query": query,
-        "answer": answer,
-        "citations": [],
-        "evidence": [],
-        "failure_stage": failure_stage,
-        "error": error,
-        "completion_source": completion_source,
-    }
-
-
-def disabled_result(query: str, completion_source: str) -> dict[str, Any]:
-    """Build the actionable master-switch-off response (review F4).
-
-    Shared by every transport so the disabled shape is identical
-    whether it is produced here or by the MCP transport's early gate.
-
-    Args:
-        query: The question that was asked.
-        completion_source: Label for the result (``"none"`` when the
-            transport gates before selecting a source).
-
-    Returns:
-        The standard error result naming ``ANSWER__ENABLED``.
-    """
-    return _base_result(
-        query,
-        completion_source,
-        status="error",
-        failure_stage=None,
-        error=_DISABLED_MESSAGE,
-    )
-
-
-def _zero_generation_diagnostics(retrieval_ms: float) -> dict[str, Any]:
-    """Diagnostics for paths where no generation round ran."""
-    return {
-        "retrieval_ms": retrieval_ms,
-        "generation_ms": 0.0,
-        "completion_calls": 0,
-    }
+# Evidence assembly lives in ``evidence.py``; the stage seams live in
+# ``stages.py`` and the result shapes in ``results.py`` (task 3.6), so
+# graph adapters reuse the exact steps this operation runs.
 
 
 async def answer(
@@ -271,7 +198,7 @@ async def answer(
     try:
         _validate_request(query, top_k, expand_window, similarity_threshold)
     except _RequestLimitError as exc:
-        return _base_result(
+        return base_result(
             query, completion_source, status="error", failure_stage=None, error=str(exc)
         )
 
@@ -317,170 +244,99 @@ async def answer(
             # so concurrent answers are not serialised by retrieval.
             await asyncio.to_thread(retriever.retrieve, query)
         except Exception as exc:  # Retrieval failed before generation.
-            result_dict = _base_result(
+            return stage_failure_result(
                 query,
                 completion_source,
-                status="error",
-                failure_stage="retrieval",
-                error=(
-                    f"Retrieval failed: {type(exc).__name__}: {_safe_error_detail(exc, settings)}"
+                failure_stage=FAILURE_STAGE_RETRIEVAL,
+                error=f"Retrieval failed: {type(exc).__name__}: {safe_error_detail(exc, settings)}",
+                diagnostics=(
+                    zero_generation_diagnostics((time.perf_counter() - retrieval_start) * 1000.0)
+                    if include_diagnostics
+                    else None
                 ),
             )
-            if include_diagnostics:
-                result_dict["diagnostics"] = _zero_generation_diagnostics(
-                    (time.perf_counter() - retrieval_start) * 1000.0
-                )
-            return result_dict
         retrieval_ms = (time.perf_counter() - retrieval_start) * 1000.0
         result_rows = retriever.rows
 
-    # ── No-evidence short-circuit: never call the model on an empty
-    # context (design D7) — and never error on the missing provider.
-    if not result_rows:
-        result = _base_result(query, completion_source, status="no_evidence")
-        if include_diagnostics:
-            result["diagnostics"] = _zero_generation_diagnostics(retrieval_ms)
-        return result
-
-    evidence = _evidence_rows(result_rows)
+    # ── Evidence preparation.  An empty result set is valid data: never
+    # call the model on an empty context (design D7) and never error on
+    # the missing provider.
+    evidence = prepare_evidence(result_rows)
+    no_generation = zero_generation_diagnostics(retrieval_ms) if include_diagnostics else None
+    if not evidence:
+        return no_evidence_result(query, completion_source, diagnostics=no_generation)
 
     # ── Provider-absent: keep the evidence, name the configuration.
     if complete is None:
-        result = _base_result(
-            query,
-            completion_source,
-            status="error",
-            failure_stage=None,
-            error=_NO_PROVIDER_MESSAGE,
-        )
-        result["evidence"] = evidence
-        if include_diagnostics:
-            result["diagnostics"] = _zero_generation_diagnostics(retrieval_ms)
-        return result
+        return no_provider_result(query, completion_source, evidence, diagnostics=no_generation)
 
-    # ── Generation through the injected seam.  The wrapper counts every
-    # seam invocation so a failure can report the attempts made before
-    # it (review F11) — the counting survives exceptions run_synthesis
-    # raises, unlike the adapter's internal counter.
-    nodes = _labelled_nodes(evidence)
-    attempts = 0
-
-    async def _counting_complete(prompt: str) -> str:
-        nonlocal attempts
-        attempts += 1
-        return await complete(prompt)
-
-    def _real_completion_calls(count: int) -> int:
-        """Client rounds are the real calls on the MRTR path (F11)."""
-        if preflight is not None and preflight.sampling_calls > 0:
-            return preflight.sampling_calls
-        return count
-
-    generation_start = time.perf_counter()
-    try:
-        text, completion_calls = await run_synthesis(
-            query,
-            nodes,
-            seam=_counting_complete,
-            context_window=answer_block.context_window,
-            max_output_tokens=answer_block.max_output_tokens,
-            max_rounds=answer_block.max_rounds,
-        )
-    except Exception as exc:  # Generation failed after successful retrieval.
-        # ``except Exception`` also catches asyncio ``ExceptionGroup``
-        # wrapping (a plain-``Exception`` subgroup), so a client seam
-        # that dies mid-flight still maps to a generation failure.
-        sampling_ms = preflight.sampling_ms if preflight else 0.0
-        result = _base_result(
-            query,
-            completion_source,
-            status="error",
-            failure_stage="generation",
-            error=f"Generation failed: {type(exc).__name__}: {_safe_error_detail(exc, settings)}",
-        )
-        result["evidence"] = evidence
-        if include_diagnostics:
-            result["diagnostics"] = {
-                "retrieval_ms": retrieval_ms,
-                "generation_ms": (time.perf_counter() - generation_start) * 1000.0 + sampling_ms,
-                "completion_calls": _real_completion_calls(attempts),
-            }
-        return result
-    generation_ms = (time.perf_counter() - generation_start) * 1000.0 + (
-        preflight.sampling_ms if preflight else 0.0
+    # ── Generation through the injected seam.  ``runner`` is this
+    # module's ``run_synthesis`` reference, read at call time, so the
+    # existing patch target keeps working.
+    detail = error_detail_for(settings)
+    synthesis = await synthesise_answer(
+        query,
+        evidence,
+        complete=complete,
+        answer_block=answer_block,
+        error_detail=detail,
+        runner=run_synthesis,
     )
-    completion_calls = _real_completion_calls(completion_calls)
-
-    # ── Deterministic citations from the supplied evidence.  Validation
-    # stays inside the guarded generation stage (review F12): an absurd
-    # model output — e.g. a 5,000-digit ordinal tripping CPython's
-    # integer-conversion limit inside ``parse_citation_ordinals`` — is a
-    # generation failure with evidence retained, never an exception
-    # escaping the operation.
-    try:
-        ordinals = parse_citation_ordinals(text, len(evidence))
-        citations = build_citations(evidence, ordinals)
-    except Exception as exc:
-        result = _base_result(
-            query,
-            completion_source,
-            status="error",
-            failure_stage="generation",
-            error=(
-                "Generation failed: citation assembly rejected the model "
-                f"output: {type(exc).__name__}: {_safe_error_detail(exc, settings)}"
-            ),
-        )
-        result["evidence"] = evidence
-        if include_diagnostics:
-            result["diagnostics"] = {
-                "retrieval_ms": retrieval_ms,
-                "generation_ms": generation_ms,
-                "completion_calls": completion_calls,
-            }
-        return result
-    grounded = bool(text.strip()) and bool(citations)
-
-    # ── Claim verification (ADR-059): after citation assembly, before
-    # the final status decision.  Opt-in; the stage never raises — a
-    # non-grounded answer (no citations) skips the judge entirely.
-    verification = _NO_VERIFICATION
-    if grounded and getattr(answer_block, "verify_claims", False):
-        verification = await run_verification_stage(
-            text,
-            evidence,
-            verify_complete=verify_complete,
-            unavailable_reason=verify_unavailable_reason,
-            error_detail=lambda exc: _safe_error_detail(exc, settings),
-        )
-
-    status = (
-        "unverified_claims"
-        if verification.failing
-        else ("ok" if grounded else "generation_unverified")
+    # Client rounds are the real calls on the MRTR path (review F11).
+    completion_calls = synthesis.completion_calls
+    if preflight is not None and preflight.sampling_calls > 0:
+        completion_calls = preflight.sampling_calls
+    generation_ms = synthesis.ms + (preflight.sampling_ms if preflight else 0.0)
+    diagnostics = (
+        generation_diagnostics(retrieval_ms, generation_ms, completion_calls)
+        if include_diagnostics
+        else None
     )
 
-    result = _base_result(query, completion_source, status=status, answer=text)
-    result["citations"] = citations
-    result["evidence"] = evidence
-    if verification.verified:
-        result["verified"] = True
-    if verification.skipped_reason is not None:
-        result["verification_skipped"] = verification.skipped_reason
-    if verification.failing:
-        result["unverified_claims"] = list(verification.failing)
-    if include_diagnostics:
-        result["diagnostics"] = {
-            "retrieval_ms": retrieval_ms,
-            "generation_ms": generation_ms,
-            "completion_calls": completion_calls,
-        }
-        if verification.ran:
-            # The judge's cost is reported separately from retrieval and
-            # generation (spec: cost disclosure) — only when it ran.
-            result["diagnostics"]["verification_ms"] = verification.ms
-            result["diagnostics"]["verification_calls"] = verification.calls
-    return result
+    if synthesis.text is None:
+        return stage_failure_result(
+            query,
+            completion_source,
+            failure_stage=synthesis.failure_stage,
+            error=synthesis.error or "Generation failed: no answer text",
+            evidence=evidence,
+            diagnostics=diagnostics,
+        )
+
+    # ── Deterministic citations from the supplied evidence.  Citation
+    # assembly failure stays a generation failure (review F12).
+    citations = resolve_citations(synthesis.text, evidence, error_detail=detail)
+    if citations.error is not None:
+        return stage_failure_result(
+            query,
+            completion_source,
+            failure_stage=citations.failure_stage,
+            error=citations.error,
+            evidence=evidence,
+            diagnostics=diagnostics,
+        )
+
+    # ── Claim verification (ADR-059): opt-in, never raises; a
+    # non-grounded answer skips the judge entirely.
+    verification = await verify_answer(
+        synthesis.text,
+        evidence,
+        grounded=citations.grounded,
+        answer_block=answer_block,
+        verify_complete=verify_complete,
+        unavailable_reason=verify_unavailable_reason,
+        error_detail=detail,
+    )
+    return answered_result(
+        query,
+        completion_source,
+        text=synthesis.text,
+        citations=citations.citations,
+        grounded=citations.grounded,
+        evidence=evidence,
+        verification=verification,
+        diagnostics=diagnostics,
+    )
 
 
 # ── Transport-planning helpers ────────────────────────────────────────────
