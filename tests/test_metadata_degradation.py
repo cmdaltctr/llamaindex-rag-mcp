@@ -213,7 +213,7 @@ class TestLlamaIndexSignalsDegraded:
 
         monkeypatch.setattr("builtins.__import__", _fake_import)
 
-        async def _fake_ollama(text, file_name="", settings=None) -> dict:
+        async def _fake_ollama(text, file_name="", settings=None, *, store=None) -> dict:
             return {"category": "ai", "keywords": [], "summary": ""}
 
         monkeypatch.setattr("omrg.core.metadata.ollama._extract_ollama_async", _fake_ollama)
@@ -253,7 +253,7 @@ class TestLlamaIndexSignalsDegraded:
         mock_ingestion.IngestionPipeline = MagicMock(return_value=mock_pipeline)
         monkeypatch.setitem(sys.modules, "llama_index.core.ingestion", mock_ingestion)
 
-        async def _fake_ollama(text, file_name="", settings=None) -> dict:
+        async def _fake_ollama(text, file_name="", settings=None, *, store=None) -> dict:
             return {"category": "ai", "keywords": [], "summary": ""}
 
         monkeypatch.setattr("omrg.core.metadata.ollama._extract_ollama_async", _fake_ollama)
@@ -336,7 +336,7 @@ class TestExtractMetadataWithStatusAsync:
     def test_llamaindex_success_raises_no_signal(self, monkeypatch) -> None:
         """Scenario: successful extraction raises no degradation signal."""
 
-        async def _fake_llamaindex(text, file_name="", settings=None) -> dict:
+        async def _fake_llamaindex(text, file_name="", settings=None, *, store=None) -> dict:
             return {"category": "ai", "keywords": ["x"], "summary": "s"}
 
         monkeypatch.setattr(
@@ -356,7 +356,7 @@ class TestExtractMetadataWithStatusAsync:
     def test_llamaindex_fallback_signals_degraded(self, monkeypatch) -> None:
         """Scenario: timeout fallback is signalled."""
 
-        async def _degrading_llamaindex(text, file_name="", settings=None) -> dict:
+        async def _degrading_llamaindex(text, file_name="", settings=None, *, store=None) -> dict:
             from omrg.core.metadata._common import _signal_degraded
 
             _signal_degraded()
@@ -379,7 +379,7 @@ class TestExtractMetadataWithStatusAsync:
     def test_local_mode_fallback_signals_degraded(self, monkeypatch) -> None:
         """Configured mode 'local' also counts as LLM-backed."""
 
-        async def _degrading_ollama(text, file_name="", settings=None) -> dict:
+        async def _degrading_ollama(text, file_name="", settings=None, *, store=None) -> dict:
             from omrg.core.metadata._common import _signal_degraded
 
             _signal_degraded()

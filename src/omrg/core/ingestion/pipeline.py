@@ -355,6 +355,7 @@ async def ingest_path_async(
                     settings=resolved_settings,
                     ocr_client=ocr_client,
                     markdown_chunking=markdown_chunking,
+                    store=resolved_store,
                 )
                 unit_timings["parse_chunk_seconds"] = time.perf_counter() - parse_started
                 if not nodes:

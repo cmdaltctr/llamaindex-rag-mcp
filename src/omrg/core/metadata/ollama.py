@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+from typing import TYPE_CHECKING
 
 from ..settings import resolve_effective_settings
 from ._common import (
@@ -26,23 +27,33 @@ from ._common import (
 )
 from .taxonomy import _gather_existing_categories, _get_seed_categories
 
+if TYPE_CHECKING:
+    from ..settings import EffectiveSettings
+    from ..vectordb.base import VectorStore
 
-def _build_ollama_prompt(text: str, settings: object | None = None) -> str:
-    """Build the Ollama classification prompt with hybrid category taxonomy.
 
-    Merges existing ChromaDB categories with seed categories from keyword
-    rules, deduplicates, and formats them into the prompt's "EXISTING
-    CATEGORIES" list.  The prompt instructs the model to prefer existing
-    labels but allows proposing a new concise label if nothing fits.
+def _build_ollama_prompt(
+    text: str, settings: EffectiveSettings, *, store: VectorStore | None = None
+) -> str:
+    """Build the shared classification prompt with hybrid category taxonomy.
+
+    Used by the Ollama, llama.cpp and OpenRouter backends.  Merges the
+    categories found in every collection of the supplied *store* with seed
+    categories from keyword rules, deduplicates, and formats them into the
+    prompt's "EXISTING CATEGORIES" list.  The prompt instructs the model to
+    prefer existing labels but allows proposing a new concise label if
+    nothing fits.
 
     Args:
         text: The document text (first ~3000 chars are sent).
+        settings: Resolved settings that carry the keyword rules.
+        store: The owning vector store.  ``None`` gives a seed-only prompt.
 
     Returns:
-        Full prompt string ready for Ollama's ``/api/generate`` endpoint.
+        Full prompt string ready for the backend's completion endpoint.
     """
-    # Gather categories: ChromaDB existing + seed from keyword rules.
-    existing = _gather_existing_categories()
+    # Gather categories: supplied-store existing + seed from keyword rules.
+    existing = _gather_existing_categories(store=store)
     seed = _get_seed_categories(settings)
     merged = set(existing) | set(seed)
     merged.discard("uncategorised")  # added explicitly below
@@ -55,7 +66,7 @@ def _build_ollama_prompt(text: str, settings: object | None = None) -> str:
             "- uncategorised\n"
         )
     else:
-        # ChromaDB empty and no seeds?  Only happens with empty custom rules.
+        # Store empty and no seeds?  Only happens with empty custom rules.
         category_section = "EXISTING CATEGORIES:\n- uncategorised\n"
 
     return (
@@ -180,7 +191,11 @@ def _parse_ollama_json_response(raw_response: str) -> dict:
 
 
 async def _extract_ollama_async(
-    text: str, file_name: str = "", settings: object | None = None
+    text: str,
+    file_name: str = "",
+    settings: object | None = None,
+    *,
+    store: VectorStore | None = None,
 ) -> dict:
     """Classify text using Ollama via async HTTP (httpx).
 
@@ -197,6 +212,10 @@ async def _extract_ollama_async(
 
     Args:
         text: The full document text (only the first 3000 chars are sent).
+        file_name: Unused; kept for the shared strategy signature.
+        settings: Optional resolved ``EffectiveSettings``.
+        store: The owning vector store for existing-category lookup.
+            ``None`` gives seed-only classification.
 
     Returns:
         A dict with ``category``, ``keywords``, ``summary``.
@@ -207,7 +226,7 @@ async def _extract_ollama_async(
     fallback = {"category": "uncategorised", "keywords": [], "summary": ""}
 
     try:
-        prompt = _build_ollama_prompt(text, resolved)
+        prompt = _build_ollama_prompt(text, resolved, store=store)
     except Exception as exc:
         logger.warning(
             "Ollama classification failed — could not build prompt: %s",

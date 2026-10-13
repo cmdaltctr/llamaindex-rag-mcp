@@ -290,7 +290,20 @@ Generate a compact codebase map showing file types, code communities, document c
 | `path`    | string | `"."`   | Project directory path to map                      |
 | `refresh` | bool   | `false` | If true, rebuild the map regardless of cache state |
 
-Results are cached per-project keyed by git commit hash in `.opencode/codebase-graph.json`. Use `refresh=true` to force a rebuild after code changes.
+Results are cached per project in `<CODEBASE_MAP_CACHE_DIR>/codebase-graph.json` (default `.opencode/`). The tool reuses a cached map only when both of these match:
+
+1. The git commit hash.
+2. The owner context: the map settings and the store's durable data version for the `documents` collection.
+
+Any other record is a miss. The tool rebuilds the map and then replaces the record. It does not delete old records in advance. Use `refresh=true` to force a rebuild.
+
+The tool reads the composed settings and store at its own boundary and passes them to the core. The parameters and the JSON error shape stay the same. If no store is composed, the tool builds the map without document communities.
+
+Reuse is reduced in these cases:
+
+- The store gives no durable data version. This applies to Chroma, to an absent `documents` collection, and to a LanceDB table that has no dataset epoch yet. The tool then rebuilds on every call.
+- The path is not a git repository. The tool then rebuilds on every call.
+- Records written before owner context existed. The first call rebuilds and replaces them.
 
 **Read-only:** This tool does not modify any files or databases.
 

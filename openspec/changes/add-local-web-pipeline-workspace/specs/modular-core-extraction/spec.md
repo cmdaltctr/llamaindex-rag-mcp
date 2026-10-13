@@ -11,8 +11,12 @@ Asynchronous graph ingestion SHALL use reusable internal source preparation,
 reading, normalisation, enrichment, splitting, embedding, and protected
 replacement stages from those same packages. Chunking dispatch SHALL resolve
 strategies through `core/chunking/registry.py` without module-level imports of
-concrete strategies. Graph execution SHALL NOT introduce a separate ingestion
-algorithm or a synchronous mutation entry point.
+concrete strategies. Both structured and unstructured document branches SHALL
+invoke the selected registered document strategy, rather than private
+implementation helpers. Reading, metadata attachment, reader declarations, and
+degradation reporting SHALL retain their existing owners and semantics. Graph
+execution SHALL NOT introduce a separate ingestion algorithm or a synchronous
+mutation entry point.
 
 #### Scenario: Content-type dispatch preserved
 
@@ -27,6 +31,8 @@ algorithm or a synchronous mutation entry point.
 - **AND** `core/ingestion/chunker.py` MUST have no module-level import of
   `core.chunking.code`, `core.chunking.markdown`, `core.chunking.sentence`, or
   `core.chunking.config_file`
+- **AND** the chunker MUST NOT call sentence splitting or post-processing
+  helpers directly
 
 #### Scenario: Only existing strategies extracted
 

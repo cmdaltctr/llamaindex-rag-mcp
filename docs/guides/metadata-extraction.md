@@ -58,6 +58,41 @@ Rich metadata output example:
 { "category": "ai", "keywords": ["transformer", "attention"], "summary": "..." }
 ```
 
+### Existing categories and the owning store
+
+The Ollama, llama.cpp and OpenRouter backends share one classification prompt. The prompt lists "existing categories" so the model reuses labels that the store already holds. The list has two parts:
+
+1. The `category` values in **all collections** of the store that the caller supplies. Category lookup reads every metadata page through the `VectorStore` interface, so it works with LanceDB, Chroma and other compatible stores.
+2. The seed categories from the keyword rules, plus `uncategorised`.
+
+The store comes from the caller. Metadata extraction never reads a process-default store and never constructs a store client.
+
+- **Engine ingestion.** The chunker passes the Engine's own store. Two Engines with different stores each see only their own labels.
+- **Standalone calls.** A call without a store is seed-only. This is normal behaviour. It logs no warning and does not mark the metadata as degraded.
+- **Store failure.** If the supplied store cannot list its collections, a WARNING is logged and the prompt uses seed categories only. A collection that cannot be read is skipped; its sibling collections still contribute.
+
+Both entry points accept the store as an optional keyword-only argument. The existing positional arguments do not change:
+
+```python
+from omrg.core.metadata.extractor import (
+    extract_metadata_async,
+    extract_metadata_with_status_async,
+)
+
+# Engine-owned context: labels from every collection of `store`.
+metadata = await extract_metadata_async(text, "notes.md", settings, store=store)
+metadata, degraded = await extract_metadata_with_status_async(
+    text, "notes.md", settings, store=store
+)
+
+# Standalone: seed categories only.
+metadata = await extract_metadata_async(text, "notes.md", settings)
+```
+
+Omitted `settings` resolve once, at these entry points. The resolved settings and the store are then passed down explicitly to the backend, the shared prompt builder and the category lookup.
+
+**Custom strategies.** A strategy registered in `core/metadata/registry.py` receives `(text, file_name, settings, *, store=None)`. It must accept the `store` keyword, even if it does not use it (the keyword strategy ignores it). The `llamaindex` strategy forwards the same store to its local-mode fallback.
+
 ## Built-in keyword rules
 
 | Category    | Keywords matched (case-insensitive)                                                       |

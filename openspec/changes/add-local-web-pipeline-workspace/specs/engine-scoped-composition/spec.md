@@ -46,6 +46,14 @@ constructing or closing their own providers.
   adapter
 - **AND** it SHALL NOT read global defaults or build a provider independently
 
+#### Scenario: Graph adapters are covered by the default-accessor guard
+
+- **WHEN** a graph-adapter module is added
+- **THEN** the default-accessor guard SHALL list that module and reject any
+  default settings or default store accessor in it
+- **AND** a behavioural test with poisoned process defaults SHALL fail when
+  an adapter drops `store` or `settings` from its core call
+
 #### Scenario: Answering remains lazy for graphs
 
 - **WHEN** a graph performs retrieval without generation

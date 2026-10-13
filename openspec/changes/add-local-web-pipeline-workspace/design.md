@@ -10,6 +10,8 @@ Apply this change only after `repair-modular-core-boundaries` has been implement
 
 The prerequisite owns registered sentence dispatch, metadata/codebase dependency forwarding, shared cache/map model imports, and safe cache context. This plan reuses those repaired seams. Per-source orchestration extraction remains in this change.
 
+The codebase map has no Engine method. Its core API is `get_codebase_map_text(path, refresh, *, settings=None, store=None)` and `build_codebase_map(path, *, settings, store=None)`. The MCP tool is the only production caller; it resolves the process-default settings and store at its transport boundary. The web job service must not copy that pattern. It passes the owning Engine's settings and store explicitly. Map document communities always read the fixed `documents` collection. Cache reuse needs a matching Git commit and an owner context built from the map settings plus the store's durable `get_data_version("documents")`. On Chroma, or before a `documents` collection exists, no durable version exists, so the map skips the cache and rebuilds on each call. Choosing another collection for the map is out of scope.
+
 ### Observed foundations
 
 | Evidence | Consequence for this design |
@@ -108,7 +110,7 @@ Process directory ingestion one source at a time using existing discovery and so
 
 ### D4. Share algorithms without rewriting unrelated orchestration
 
-Use the prerequisite's registered document dispatcher and explicit store/settings chain. Keep its replacement-sentinel, captured-prompt, cache-context, and fresh-import tests as regressions. Extract policy, filtering, fallback, source preparation, and document-to-chunk operations only where adapters need them. Standard `search`, `ingest`, and `answer` paths continue using these same functions. Canonical graph templates reproduce the standard paths and have parity fixtures.
+Use the prerequisite's registered document dispatcher and explicit store/settings chain. Graph adapters pass `store` and `settings` explicitly, because omission silently falls back to seed metadata categories or process defaults. Add each new adapter module to the accessor guard's leaf list (`_GUARDED_LEAVES` in `tests/test_no_global_settings_reads.py`) with a behavioural test that poisons the default accessors. Keep its replacement-sentinel, captured-prompt, cache-context, and fresh-import tests as regressions. Extract policy, filtering, fallback, source preparation, and document-to-chunk operations only where adapters need them. Standard `search`, `ingest`, and `answer` paths continue using these same functions. Canonical graph templates reproduce the standard paths and have parity fixtures.
 
 Existing wrappers may remain orchestration facades. Do not create a second implementation of ranking, threshold transforms, chunking, or replacement inside the graph runner. Do not force synchronous `search()` through a nested event loop. The new graph API is async and offloads blocking adapters deliberately.
 
@@ -250,7 +252,7 @@ Rollback stops the web server and plugin, then returns to existing MCP/CLI/libra
 
 ## Qualification Gates
 
-- Confirm the prerequisite repair is integrated and its named dispatch, taxonomy, cache-context, import-order, and accessor regressions pass on the intended base. Reconcile overlapping deltas against that repaired baseline before archiving this web change.
+- Confirm the prerequisite repair is integrated and its named dispatch, taxonomy, cache-context, import-order, and accessor regressions pass on the intended base: `tests/test_document_registry_dispatch.py`, `tests/test_metadata_store_ownership.py`, `tests/unit/test_codebase_context_repair.py`, and `tests/test_no_global_settings_reads.py`. Compare the results with the archived evidence in `openspec/changes/archive/2026-10-13-repair-modular-core-boundaries/evidence/`. Reconcile overlapping deltas against that repaired baseline before archiving this web change.
 - Confirm marimo/uv compatibility and startup-execution controls on the selected versions before enabling the plugin.
 - Verify model/backend concurrency; serial access remains the safe default until that test passes.
 - Prove optional install floors, packaged assets, and the torch-free base/web dependency sets.

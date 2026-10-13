@@ -65,7 +65,11 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 3313
+_BASE_EXECUTED = 3415
+# Re-baselined at repair-modular-core-boundaries (2026-10-13): registry
+# dispatch, owning-store metadata, codebase cache-context and accessor-guard
+# regressions add 102 executed tests (3313 -> 3415); skips and deselections
+# are unchanged.
 # Re-baselined at raise-local-ocr-min-confidence-to-0-9 (2026-10-07):
 # below-cut, default-agreement and page/document identity cases add 4
 # executed tests (3309 -> 3313); skips and deselections are unchanged.

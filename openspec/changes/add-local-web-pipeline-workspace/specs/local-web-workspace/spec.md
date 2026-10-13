@@ -75,6 +75,8 @@ The workspace SHALL support collection/source listing, supported-file ingestion,
 - **WHEN** the workspace requests a codebase map
 - **THEN** supplied settings, document thresholds, and store context SHALL reach map/cache operations
 - **AND** a cached map from another owner SHALL not replace its result
+- **AND** the job SHALL pass the owning Engine's settings and store explicitly to the core map API and SHALL NOT resolve process defaults
+- **AND** where the store has no durable version of the `documents` collection, the map SHALL be rebuilt rather than reused from cache
 
 ### Requirement: Destructive actions require valid confirmation
 Deletion, workspace cleanup, and stored profile changes SHALL present their effect before mutation and require explicit confirmation. Confirmation SHALL be bound to the selected action and observed state. Stale or altered confirmations SHALL require a new preview.

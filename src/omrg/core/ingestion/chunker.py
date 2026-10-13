@@ -9,7 +9,6 @@ Extracted from the original ``ingestion.py`` monolith as part of Phase 1.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from pathlib import Path
 from typing import Any
@@ -31,6 +30,33 @@ class _ChunkResult(list):
         self.metadata_degraded = metadata_degraded
 
 
+async def _chunk_documents(
+    documents: list,
+    file_path: Path,
+    is_markdown: bool,
+    chunk_size: int,
+    chunk_overlap: int,
+    settings: Any,
+    markdown_chunking: Any,
+) -> list:
+    """Resolve the ``sentence`` strategy through the registry and await it.
+
+    The registered callable performs splitting and, for Markdown, the
+    shared post-processing exactly once. The chunker does not call the
+    private sentence helpers.
+    """
+    chunk_sentence = _chunking_get("sentence")
+    return await chunk_sentence(
+        documents,
+        str(file_path),
+        is_markdown,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        settings=settings,
+        markdown_chunking=markdown_chunking if is_markdown else None,
+    )
+
+
 async def read_and_chunk_file_async(
     file_path: Path,
     chunk_size: int | None = None,
@@ -41,12 +67,25 @@ async def read_and_chunk_file_async(
     settings: Any = None,
     ocr_client: Any = None,
     markdown_chunking: Any = None,
+    *,
+    store: Any = None,
 ) -> list:
     """Read and chunk a file, dispatching strategy based on content_type.
 
     ``chunk_size`` and ``chunk_overlap`` are SentenceSplitter token units.
     AST-aware code splitting uses the independent line/character settings in
     ``resolved.chunking``; these token settings are used only by its fallback.
+
+    Both document branches (structured and unstructured reads) resolve the
+    ``sentence`` strategy through the chunking registry and await it. The
+    registered callable owns splitting and the Markdown post-processing, so
+    a registered replacement takes effect in production ingestion.
+
+    Args:
+        store: Optional owning vector store, forwarded by keyword to
+            metadata extraction so category lookup reads the collections
+            of the store that ingestion writes to. ``None`` means no stored
+            categories (seed categories only).
     """
     resolved = resolve_effective_settings(settings)
     if chunk_size is None:
@@ -126,27 +165,15 @@ async def read_and_chunk_file_async(
             for doc in documents:
                 doc.metadata.setdefault("content_type", content_type)
         effective_chunk_size = markdown_chunk_size if is_markdown else chunk_size
-        from ..chunking.sentence import (
-            _postprocess_markdown_nodes,
-            _split_documents_sync,
-        )
-
-        nodes = await asyncio.to_thread(
-            _split_documents_sync,
+        nodes = await _chunk_documents(
             documents,
+            file_path,
             is_markdown,
             effective_chunk_size,
             chunk_overlap,
+            resolved,
             markdown_chunking,
-            resolved.chunking.markdown_heading_prepend,
         )
-        if is_markdown:
-            nodes = _postprocess_markdown_nodes(
-                nodes,
-                resolved,
-                markdown_chunking,
-                effective_chunk_size,
-            )
         if content_type:
             for node in nodes:
                 node.metadata.setdefault("content_type", content_type)
@@ -159,7 +186,7 @@ async def read_and_chunk_file_async(
     if documents:
         file_text = "\n".join(d.get_content() for d in documents if hasattr(d, "get_content"))
         doc_metadata, metadata_degraded = await extract_metadata_with_status_async(
-            file_text, file_path.name, resolved
+            file_text, file_path.name, resolved, store=store
         )
     else:
         doc_metadata = {}
@@ -174,26 +201,15 @@ async def read_and_chunk_file_async(
         doc_metadata["category"] = _label
 
     effective_chunk_size = markdown_chunk_size if is_markdown else chunk_size
-
-    from ..chunking.sentence import _postprocess_markdown_nodes, _split_documents_sync
-
-    nodes = await asyncio.to_thread(
-        _split_documents_sync,
+    nodes = await _chunk_documents(
         documents,
+        file_path,
         is_markdown,
         effective_chunk_size,
         chunk_overlap,
+        resolved,
         markdown_chunking,
-        resolved.chunking.markdown_heading_prepend,
     )
-
-    if is_markdown:
-        nodes = _postprocess_markdown_nodes(
-            nodes,
-            resolved,
-            markdown_chunking,
-            effective_chunk_size,
-        )
 
     if content_type:
         for node in nodes:

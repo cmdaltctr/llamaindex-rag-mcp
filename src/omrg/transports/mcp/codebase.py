@@ -19,14 +19,30 @@ from . import _error_message, _log_tool_error, mcp
 def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
     """Generate a compact codebase map for the given project path.
 
+    This transport is the context boundary (design D3): it resolves the
+    composed settings and store here and passes them to core explicitly.
+    When no store is composed, the map is built store-less (empty document
+    communities), which keeps the earlier graceful degradation.
+
     Returns a JSON error string on failure (gotcha #1).
     """
     import json
 
     try:
-        from ...core.codebase.codebase_map import get_codebase_map_text
+        from ...core import vectordb
+        from ...core.codebase import codebase_map
+        from ...core.settings import get_default_effective_settings
 
-        return get_codebase_map_text(path=path, refresh=refresh)
+        settings = get_default_effective_settings()
+        try:
+            store = vectordb.get_default_store()
+        except RuntimeError as exc:
+            _log_tool_error("get_codebase_map store (building without documents)", exc)
+            store = None
+
+        return codebase_map.get_codebase_map_text(
+            path=path, refresh=refresh, settings=settings, store=store
+        )
     except Exception as exc:
         _log_tool_error("get_codebase_map", exc)
         return json.dumps(

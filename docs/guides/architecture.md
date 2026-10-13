@@ -164,6 +164,15 @@ configurations at once.
 `core/ingestion/` and `core/retrieval/` do not import each other. They share
 only settings.
 
+`core/codebase/` receives its context explicitly. `build_codebase_map` and
+`get_codebase_map_text` take `settings=` and `store=` keywords. The map passes
+the settings to detection, community detection, both document-graph builds,
+and the cache. `store=None` gives a map with no document communities; it never
+reads a default store. `get_codebase_map_text` is the documented boundary that
+resolves default settings when a caller omits them. The MCP tool supplies both
+values. `FileInventory` and `CodebaseMap` live in `core/codebase/models.py`, so
+`cache.py` and `codebase_map.py` import in any order.
+
 ### Stable source and chunk lineage
 
 `core/ingestion/source_state.py` is the single identity seam

@@ -125,7 +125,11 @@ def _extract_keyword(text: str, settings: object | None = None) -> dict:
 
 
 async def _extract_keyword_async(
-    text: str, file_name: str = "", settings: object | None = None
+    text: str,
+    file_name: str = "",
+    settings: object | None = None,
+    *,
+    store: object | None = None,
 ) -> dict:
     """Async wrapper around keyword extraction.
 
@@ -135,6 +139,10 @@ async def _extract_keyword_async(
 
     Args:
         text: The full document text to classify.
+        file_name: Unused; kept for the shared strategy signature.
+        settings: Optional resolved ``EffectiveSettings``.
+        store: Accepted for dispatch compatibility and ignored: keyword
+            mode does no existing-category lookup.
 
     Returns:
         Same dict as ``_extract_keyword()``.
