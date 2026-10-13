@@ -129,6 +129,13 @@ torch = [
     # require huggingface-hub <1.0).
     "transformers>=5.0.0",
 ]
+# Local web workspace (add-local-web-pipeline-workspace, ADR-075).
+# Install: uv sync --extra web / pip install "omrg[web]". Only `omrg web`
+# needs it; imports and other commands work without it.
+web = [
+    "fastapi>=0.143.0",
+    "uvicorn>=0.52.0",
+]
 
 [project.scripts]
 omrg = "omrg.transports.cli:run_cli"
@@ -139,6 +146,11 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/omrg"]
+# Built web assets are gitignored (`npm run build` in web/ writes them).
+# `artifacts` ships them when present without failing a source checkout
+# that has not built them; scripts/check_web_wheel.py fails release
+# preparation when a wheel lacks them.
+artifacts = ["src/omrg/transports/api/static/**"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/omrg/config/defaults.yaml" = "omrg/config/defaults.yaml"
@@ -225,6 +237,12 @@ source_modules = [
     # logic with an injected LLM seam (design D1) — it must never import a
     # provider or transport module directly, with NO ignore entry.
     "omrg.core.answer",
+    # add-local-web-pipeline-workspace task 1.3: the graph runner and the
+    # workspace services receive providers by injection, with NO ignore entry.
+    "omrg.core.pipelines",
+    "omrg.core.workspace",
+    "omrg.core.plugins",
+    "omrg.core.experiments",
     "omrg.daemon",
 ]
 forbidden_modules = [
@@ -255,6 +273,172 @@ source_modules = ["omrg.core.community"]
 forbidden_modules = [
     "omrg.core.codebase",
     "omrg.core.documents",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# ─── Local web pipeline workspace contracts ───────────────────────────
+# Added by add-local-web-pipeline-workspace task 1.3 (design D4, D7, D10).
+# tests/test_pipeline_import_boundaries.py proves that each forbidden
+# module, imported on purpose, breaks its contract. Indirect chains are
+# checked too, so a route through another package is also rejected.
+
+# The graph runner schedules injected adapters. It must not reach a domain
+# implementation, a provider, a transport, a process launcher, the SQLite
+# records adapter, a web framework, or a notebook runtime.
+[[tool.importlinter.contracts]]
+name = "pipeline-runner-independent-of-domains"
+type = "forbidden"
+source_modules = ["omrg.core.pipelines"]
+forbidden_modules = [
+    "omrg.core.ingestion",
+    "omrg.core.retrieval",
+    "omrg.core.answer",
+    "omrg.core.providers",
+    "omrg.transports",
+    "subprocess",
+    "sqlite3",
+    "fastapi",
+    "starlette",
+    "uvicorn",
+    "marimo",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# Graph adapters belong to their owning domain and do not import a sibling
+# domain's implementation (design D4, task 3.8). Composition joins them
+# through the catalogue. Direct imports only: shared lower layers (for
+# example core.vectordb) may still be reached through the domain itself.
+[[tool.importlinter.contracts]]
+name = "retrieval-graph-adapters-stay-in-domain"
+type = "forbidden"
+source_modules = [
+    "omrg.core.retrieval.graph_adapters",
+    "omrg.core.retrieval.graph_adapters_catalogue",
+    "omrg.core.retrieval.graph_adapters_retrieve",
+    "omrg.core.retrieval.graph_adapters_values",
+]
+forbidden_modules = ["omrg.core.ingestion", "omrg.core.answer"]
+allow_indirect_imports = true
+unmatched_ignore_imports_alerting = "error"
+
+[[tool.importlinter.contracts]]
+name = "ingestion-graph-adapters-stay-in-domain"
+type = "forbidden"
+source_modules = [
+    "omrg.core.ingestion.graph_adapters",
+    "omrg.core.ingestion.graph_adapters_catalogue",
+    "omrg.core.ingestion.graph_adapters_values",
+    "omrg.core.ingestion.graph_fingerprint",
+]
+forbidden_modules = ["omrg.core.retrieval", "omrg.core.answer"]
+allow_indirect_imports = true
+unmatched_ignore_imports_alerting = "error"
+
+[[tool.importlinter.contracts]]
+name = "answer-graph-adapters-stay-in-domain"
+type = "forbidden"
+source_modules = ["omrg.core.answer.graph_adapters"]
+forbidden_modules = ["omrg.core.ingestion", "omrg.core.retrieval"]
+allow_indirect_imports = true
+unmatched_ignore_imports_alerting = "error"
+
+# Experiment contexts hold pure registration and admission rules. Engines,
+# stores and processes come from compose_experiments (design D10, task 8.5).
+[[tool.importlinter.contracts]]
+name = "experiment-contexts-stay-pure"
+type = "forbidden"
+source_modules = ["omrg.core.experiments"]
+forbidden_modules = [
+    "omrg.compose",
+    "omrg.engine",
+    "omrg.core.ingestion",
+    "omrg.core.retrieval",
+    "omrg.core.answer",
+    "omrg.core.providers",
+    "omrg.core.vectordb",
+    "omrg.core.workspace",
+    "omrg.core.plugins",
+    "omrg.transports",
+    "omrg.integrations",
+    "subprocess",
+    "socket",
+    "signal",
+    "sqlite3",
+    "fastapi",
+    "starlette",
+    "uvicorn",
+    "marimo",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# The plugin host validates manifests and decides launches; it never starts
+# a process or opens a socket itself (design D10, task 8.1). The owned-process
+# adapter is omrg.integrations.process_launcher, injected by composition.
+[[tool.importlinter.contracts]]
+name = "plugin-host-starts-no-processes"
+type = "forbidden"
+source_modules = ["omrg.core.plugins"]
+forbidden_modules = [
+    "omrg.core.ingestion",
+    "omrg.core.retrieval",
+    "omrg.core.answer",
+    "omrg.core.providers",
+    "omrg.transports",
+    "omrg.integrations",
+    "subprocess",
+    "socket",
+    "signal",
+    "sqlite3",
+    "fastapi",
+    "starlette",
+    "uvicorn",
+    "marimo",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# Workspace services receive persistence and process control from the
+# composition root. The standard-library SQLite adapter and the process
+# adapter stay integration leaves (see integrations-are-leaves).
+[[tool.importlinter.contracts]]
+name = "workspace-services-independent-of-domains-and-web"
+type = "forbidden"
+source_modules = ["omrg.core.workspace"]
+forbidden_modules = [
+    "omrg.core.ingestion",
+    "omrg.core.retrieval",
+    "omrg.core.answer",
+    "omrg.transports",
+    "subprocess",
+    "sqlite3",
+    "fastapi",
+    "starlette",
+    "uvicorn",
+    "marimo",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# Every core package, including core.providers and the domain graph
+# adapters, stays below the transports.
+[[tool.importlinter.contracts]]
+name = "core-never-imports-transports"
+type = "forbidden"
+source_modules = ["omrg.core"]
+forbidden_modules = ["omrg.transports"]
+unmatched_ignore_imports_alerting = "error"
+
+# Domain graph adapters live in their owning core packages (design D4).
+# No core module may depend on the optional web extra, a notebook runtime,
+# or SQLite; those belong to transports/api and integrations.
+[[tool.importlinter.contracts]]
+name = "core-free-of-web-notebook-and-sqlite-runtimes"
+type = "forbidden"
+source_modules = ["omrg.core"]
+forbidden_modules = [
+    "fastapi",
+    "starlette",
+    "uvicorn",
+    "marimo",
+    "sqlite3",
 ]
 unmatched_ignore_imports_alerting = "error"
 

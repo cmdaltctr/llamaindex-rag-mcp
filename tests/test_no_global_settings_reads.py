@@ -187,7 +187,8 @@ _FORBIDDEN_ACCESSORS = frozenset(
     }
 )
 
-# Leaves repaired by ``repair-modular-core-boundaries``, relative to
+# Leaves repaired by ``repair-modular-core-boundaries`` and the graph
+# adapters added after it, relative to
 # ``src/omrg``. ``models.py`` is the shared-model module from design D4.
 _GUARDED_LEAVES = (
     "core/ingestion/chunker.py",
@@ -204,6 +205,23 @@ _GUARDED_LEAVES = (
     "core/codebase/codebase_map.py",
     "core/codebase/communities.py",
     "core/codebase/models.py",
+    # Shared seams and graph adapters from add-local-web-pipeline-workspace
+    # (design D4, task 3.8). Each adapter receives store and settings from
+    # its NodeContext; a default-accessor read here would mix engines.
+    "core/retrieval/operations.py",
+    "core/retrieval/graph_adapters.py",
+    "core/retrieval/graph_adapters_catalogue.py",
+    "core/retrieval/graph_adapters_retrieve.py",
+    "core/retrieval/graph_adapters_values.py",
+    "core/answer/stages.py",
+    "core/answer/results.py",
+    "core/answer/graph_adapters.py",
+    "core/ingestion/sources.py",
+    "core/ingestion/commit.py",
+    "core/ingestion/graph_adapters.py",
+    "core/ingestion/graph_adapters_catalogue.py",
+    "core/ingestion/graph_adapters_values.py",
+    "core/ingestion/graph_fingerprint.py",
 )
 
 

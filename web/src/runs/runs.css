@@ -1,0 +1,241 @@
+/*
+ * Runs view, run inspectors and run-state badges. Semantic tokens only
+ * (styles/tokens.css). Logical properties keep a right-to-left layout valid.
+ * State is always written as text; colour only repeats it. No animation.
+ */
+
+.runs-layout {
+  display: grid;
+  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.runs-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.run-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.run-list__item {
+  inline-size: 100%;
+  flex-direction: column;
+  align-items: start;
+  padding-block: var(--space-2);
+  text-align: start;
+}
+
+.run-list__item[aria-pressed="true"] {
+  border-color: var(--accent-tint-border);
+  background: var(--selection);
+}
+
+.run-detail,
+.run-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.run-section {
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--border);
+}
+
+.run-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.run-outcomes,
+.replay-nodes,
+.citation-list,
+.effect-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.run-outcomes li,
+.replay-nodes li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.run-badge {
+  margin: 0;
+  font-size: var(--text-meta);
+  overflow-wrap: anywhere;
+}
+
+.run-badge__status {
+  font-weight: 600;
+}
+
+.run-badge[data-run-status="running"] .run-badge__status {
+  color: var(--status-info);
+}
+
+.run-badge[data-run-status="succeeded"] .run-badge__status {
+  color: var(--status-success);
+}
+
+.run-badge[data-run-status="failed"] .run-badge__status {
+  color: var(--status-error);
+}
+
+.run-badge[data-run-status="fallback"] .run-badge__status,
+.run-badge[data-run-status="skipped"] .run-badge__status,
+.run-badge[data-run-status="cancelled"] .run-badge__status {
+  color: var(--status-warning);
+}
+
+.live-run {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.live-run__error {
+  color: var(--status-error);
+}
+
+.replay__label {
+  align-self: start;
+  padding-inline: var(--space-2);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-small);
+  background: var(--surface-muted);
+  font-weight: 600;
+}
+
+.safe-value {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.safe-value__entry {
+  display: grid;
+  /* The key column may shrink below 6rem, so nested values stay inside narrow screens. */
+  grid-template-columns: minmax(min(6rem, 30%), max-content) minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.safe-value__entry > dt {
+  overflow-wrap: anywhere;
+}
+
+.safe-value dd {
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.safe-value__text,
+.evidence-table__text,
+.evidence-table__source,
+.evidence-answer {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  unicode-bidi: plaintext;
+}
+
+.evidence-rows {
+  overflow-x: auto;
+}
+
+.evidence-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-meta);
+}
+
+.evidence-table th,
+.evidence-table td {
+  padding: var(--space-1) var(--space-2);
+  border-block-end: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.evidence-table__text {
+  min-inline-size: 16rem;
+  max-inline-size: 40rem;
+}
+
+/* Long paths and chunk ids must wrap; otherwise the chunk button takes the row and the source wraps one character per line. */
+.evidence-table__source {
+  min-inline-size: 8rem;
+}
+
+.evidence-table .button {
+  inline-size: 10rem;
+  justify-content: flex-start;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+
+.chunk-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface-elevated);
+}
+
+.chunk-viewer__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.chunk-viewer__text {
+  max-block-size: 24rem;
+  overflow: auto;
+  margin: 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-small);
+  background: var(--surface-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
+}
+
+/* Below 1024px the navigation still takes a column, so the run list stacks above the detail. */
+@media (max-width: 1023px) {
+  .runs-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Below 1024px, nested settings stack each key above its value; side-by-side columns overflow at depth. */
+@media (max-width: 1023px) {
+  .safe-value .safe-value .safe-value__entry {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}

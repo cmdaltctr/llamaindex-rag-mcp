@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "plugin_id": "marimo",
+  "plugin_version": "0.2.0",
+  "display_name": "marimo notebook editor",
+  "description": "Opens a marimo notebook in a separate local browser tab. Install and update marimo outside OMRG. Qualified against marimo 0.25.1 (task 8.4).",
+  "tool": {
+    "name": "marimo",
+    "executable": "marimo",
+    "tested_versions": {
+      "minimum": "0.25.1",
+      "below": "0.26.0"
+    }
+  },
+  "capabilities": {
+    "loopback_bind": {"argument": "--host"},
+    "token_auth": {"argument": "--token-password-file"},
+    "headless": {"argument": "--headless"},
+    "update_check_disabled": {"argument": "--skip-update-check"},
+    "auto_install_disabled": {"argument": "--no-sandbox"},
+    "startup_execution_disabled": {"config": "runtime.auto_instantiate", "value": false},
+    "lazy_reactivity": {"config": "runtime.on_cell_change", "value": "lazy"}
+  },
+  "recipes": {
+    "probe": {
+      "version_args": ["--version"],
+      "help_args": ["edit", "--help"]
+    },
+    "launch_notebook": {
+      "args": [
+        "edit",
+        "{notebook_path}",
+        "--headless",
+        "--host",
+        "{host}",
+        "--port",
+        "{port}",
+        "--token-password-file",
+        "{token_file}",
+        "--skip-update-check",
+        "--no-sandbox"
+      ],
+      "config_file": {
+        "name": ".marimo.toml",
+        "values": {
+          "runtime": {
+            "auto_instantiate": false,
+            "on_cell_change": "lazy"
+          }
+        }
+      }
+    }
+  }
+}

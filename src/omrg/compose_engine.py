@@ -170,6 +170,18 @@ def configured_vector_store() -> str:
     return get_settings().vector_store
 
 
+def experiment_base_settings() -> Settings:
+    """Return the operator's live-library ``Settings`` for experiment contexts.
+
+    Composition-root surface for the web runtime: ``ExperimentEngines``
+    derives each context's settings from this value and moves only the
+    store location. Transports must not call ``get_settings()`` directly.
+    """
+    from .config import get_settings
+
+    return get_settings()
+
+
 def _build_answer_llm(settings: Any) -> Any:
     """Build the answer LLM; the availability policy lives in compose_answer.
 

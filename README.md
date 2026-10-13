@@ -168,6 +168,7 @@ The same `omrg` command is both the MCP server and a terminal tool.
 | `omrg delete`           | Delete documents or drop a collection |
 | `omrg set-profile`      | Bind a collection to a profile        |
 | `omrg benchmark`        | Benchmark embedding throughput        |
+| `omrg web`              | Start the local web workspace (`web` extra) |
 
 Every flag and example: [CLI reference](docs/guides/cli-reference.md).
 
@@ -252,6 +253,8 @@ Full setup for each: [Providers](docs/guides/providers.md).
 | [Metadata extraction](docs/guides/metadata-extraction.md) | Auto-categorisation and filtering                |
 | [Reranker](docs/guides/reranker.md)                       | When reranking helps, and when it does not       |
 | [Testing](docs/guides/testing.md)                         | Running the suite, writing tests                 |
+| [Web workspace](docs/guides/web-workspace.md)             | `omrg web`: launch, sign-in, file grants, jobs   |
+| [Notebooks](docs/guides/notebooks.md)                     | Optional marimo plugin, trust, starter notebook  |
 | [Decision records](docs/adr/)                             | Why things are the way they are                  |
 | [Contributing](CONTRIBUTING.md)                           | Workflow and conventions                         |
 

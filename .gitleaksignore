@@ -96,3 +96,11 @@ experiments/38-rescue-quality-signal-2026-09-30/output/summary.json:generic-api-
 experiments/38-rescue-quality-signal-2026-09-30/output/candidate_b.json:generic-api-key:6
 experiments/38-rescue-quality-signal-2026-09-30/output/candidate_b.json:generic-api-key:36
 experiments/38-rescue-quality-signal-2026-09-30/output/candidate_a.json:generic-api-key:6
+# add-local-web-pipeline-workspace: fake credentials that prove redaction
+# (artefacts, run service, bootstrap, Runs evidence view). Not real secrets.
+tests/unit/test_workspace_artefacts.py:generic-api-key:24
+tests/unit/test_workspace_artefacts.py:aws-access-token:70
+web/src/api/bootstrap.test.ts:generic-api-key:4
+tests/unit/test_workspace_service_support.py:generic-api-key:37
+web/src/runs/evidence.test.ts:generic-api-key:55
+web/src/runs/test/runServer.ts:generic-api-key:5

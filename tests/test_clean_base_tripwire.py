@@ -65,7 +65,13 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 3415
+_BASE_EXECUTED = 4689
+# Re-baselined at add-local-web-pipeline-workspace (2026-10-13): graph
+# contracts, runner, domain graph adapters and parity fixtures, workspace
+# records and run service, web transport and OpenAPI conformance, plugin
+# host, experiment contexts, starter notebook and guide tests add 1274
+# executed tests (3415 -> 4689); skips are unchanged and one slow wheel
+# test adds a deselection (19 -> 20).
 # Re-baselined at repair-modular-core-boundaries (2026-10-13): registry
 # dispatch, owning-store metadata, codebase cache-context and accessor-guard
 # regressions add 102 executed tests (3313 -> 3415); skips and deselections
@@ -252,8 +258,9 @@ _has_qwen_tokenizer = bool(
 if not _has_qwen_tokenizer:
     _BASE_EXECUTED -= _CACHED_TOKENIZER_CASES
     _BASE_SKIPPED += _CACHED_TOKENIZER_CASES
-_BASE_DESELECTED = 19  # -m "not slow": existing 14 plus four quality gates
-# plus the golden-answer gate (add-grounded-answer-synthesis-3 task 7.1).
+_BASE_DESELECTED = 20  # -m "not slow": existing 14 plus four quality gates
+# plus the golden-answer gate (add-grounded-answer-synthesis-3 task 7.1)
+# plus the marimo-manifest wheel check (add-local-web-pipeline-workspace).
 _CHROMA_GATED_FILES = frozenset(
     {
         "test_chroma_cloud.py",

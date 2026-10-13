@@ -16,6 +16,7 @@ The `omrg` command doubles as an MCP server and a CLI tool. With no arguments it
 | `omrg install-login-watcher` | Install a macOS LaunchAgent that runs the document watcher at login              |
 | `omrg delete`                | Delete documents by file path, metadata filter, or drop a collection             |
 | `omrg benchmark`             | Benchmark embedding throughput without vector-store writes                       |
+| `omrg web`                   | Start the local web workspace (needs the `web` extra)                            |
 | `omrg --version`             | Show version                                                                     |
 | `omrg --help`                | Show help                                                                        |
 | `omrg --install-completion`  | Install shell tab completion                                                     |
@@ -288,6 +289,26 @@ rm ~/Library/LaunchAgents/com.omrg.watch.<slug>-<hash>.plist
 ```
 
 Re-run the command with `--force` to update an existing watcher instead.
+
+### web
+
+Start the local browser workspace on a loopback address. It needs the optional `web` extra (`uv sync --extra web` or `pip install "omrg[web]"`).
+
+```bash
+# Start with a free port and the default workspace
+omrg web
+
+# Approve two directories for file access
+omrg web --root ~/papers --root ~/notes
+
+# Use another workspace and a fixed port
+omrg web --workspace ~/omrg-demo --port 8765
+
+# Approve a root for experiment workspaces
+omrg web --experiment-root ~/omrg-experiments
+```
+
+The command writes the one-time sign-in link to stderr. It does not run the legacy process-default installer. It refuses a non-loopback `--host`. Every option, sign-in, file grants, jobs and shutdown: [Web workspace](web-workspace.md).
 
 ### Shell tab completion
 

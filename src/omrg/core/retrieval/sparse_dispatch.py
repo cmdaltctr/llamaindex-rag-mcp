@@ -235,6 +235,34 @@ def _native_sparse_query(
     return rows
 
 
+def sparse_policy_runner(
+    backend: str,
+    *,
+    native: Callable[..., list[dict]] | None = None,
+    bm25: Callable[..., list[dict]] | None = None,
+) -> Callable[..., list[dict]]:
+    """Return the sparse runner for a resolved backend name.
+
+    This is the one place that maps a backend name to a policy runner.
+    ``native`` selects the native policy (coverage warning, native
+    attempt, BM25 safety net); every other name runs plain BM25.
+    ``search()`` and the graph adapters both call it.
+
+    Args:
+        backend: Concrete backend name baked into the settings.
+        native: Native runner to use. ``None`` uses this module's runner.
+            ``pipeline`` passes its own reference so its monkeypatch
+            targets keep working.
+        bm25: BM25 runner to use, with the same default rule.
+
+    Returns:
+        The runner callable with the ``_sparse_bm25_query`` signature.
+    """
+    native_runner = native or _native_sparse_query
+    bm25_runner = bm25 or _sparse_bm25_query
+    return native_runner if backend == "native" else bm25_runner
+
+
 def reset_warning_state() -> dict[str, set[str]]:
     """Clear the one-shot warning state (test isolation helper)."""
     _warned_collections.clear()

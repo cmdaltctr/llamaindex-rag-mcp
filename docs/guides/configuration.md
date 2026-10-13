@@ -721,6 +721,12 @@ explicit algorithm selection is an operator contract. See
 
 ---
 
+## Web workspace settings
+
+`omrg web` adds no `.env` setting. Its options are command-line flags: `--workspace`, `--port`, `--host`, `--root` and `--experiment-root`. The server builds its Engine from the same settings sources as the other commands. See [Web workspace](web-workspace.md).
+
+---
+
 ## Index identity and re-ingestion
 
 OMRG skips a source it has already indexed when the file bytes and the
