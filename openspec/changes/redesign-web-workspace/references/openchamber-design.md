@@ -44,7 +44,7 @@ System sans stack for UI; monospace stack for code, ids, paths. Headings differ 
 
 ## Interaction states
 
-- Primary action: tinted fill at rest 10% light / 16% dark accent, hover 16% / 22%, pressed 22% / 30%; saturated tint border (12% / 20%); accent-coloured label (`--accent-label`).
+- Primary action: tinted fill at rest 10% light / 16% dark accent, hover 16% / 22%, pressed 22% / 30%; saturated tint border (30% light / 35% dark, as `--accent-tint-border` in `tokens.css`; the OpenChamber source uses a lighter border); accent-coloured label (`--accent-label`).
 - Selection (navigation, chips): neutral selected fill `--selection` with normal text; never the accent. A chip represents selection independently of the primary action.
 - Focus: 2px solid `--focus-ring` outline, offset 2px (OpenChamber uses a 3px ring; omrg keeps its outline token).
 - Transitions: 150ms ease on background, border, colour, opacity. Respect `prefers-reduced-motion`.

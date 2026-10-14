@@ -36,7 +36,7 @@ Every view SHALL convert transport failures into a single short message naming w
 
 ### Requirement: Icons accompany navigation and primary actions
 
-Navigation rows, primary actions and empty states SHALL carry inline SVG icons at 16px (empty states larger), rendered in `currentColor` and hidden from assistive technology. The icon set SHALL carry its Lucide MIT attribution in `web/THIRD_PARTY_NOTICES.md`.
+Navigation rows, primary actions and empty states SHALL carry `lucide-react` icons at 16px (empty states larger), rendered in `currentColor` and hidden from assistive technology when text accompanies them. Icon-only controls SHALL carry an accessible name. The Lucide ISC licence notice SHALL appear in `web/THIRD_PARTY_NOTICES.md`.
 
 #### Scenario: Navigation icons
 
@@ -45,12 +45,17 @@ Navigation rows, primary actions and empty states SHALL carry inline SVG icons a
 
 ### Requirement: Category labels render as tinted badges
 
-Run statuses, answer statuses, collection profiles and node kinds SHALL render as badges with a tinted fill, coloured border and coloured text, keeping one colour per label everywhere. Colour SHALL always be paired with text stating the value.
+Run statuses, answer statuses, collection profiles and node kinds SHALL render as badges with a tinted fill, coloured border and coloured text, keeping one colour per label everywhere. Colour SHALL always be paired with text stating the value. Badge text SHALL reach a 4.5:1 contrast ratio against its own tinted fill in both themes, using a label colour mixed from the status colour and the primary text colour where the raw status colour falls short.
 
 #### Scenario: Status badge
 
 - **WHEN** a run with status `succeeded` is listed
 - **THEN** the status MUST appear as a badge with consistent tinting and the word `succeeded` visible
+
+#### Scenario: Badge text contrast
+
+- **WHEN** a status badge renders in light or dark theme for each status token
+- **THEN** its text MUST reach 4.5:1 against the badge fill
 
 ### Requirement: Elevation marks floating surfaces only
 

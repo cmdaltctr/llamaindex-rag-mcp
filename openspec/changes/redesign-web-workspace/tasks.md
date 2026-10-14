@@ -6,9 +6,9 @@ Prerequisite: apply `add-web-ui-stack` first; the primitives in `web/src/compone
 
 - [ ] 1.1 Add the `/v1` proxy to `web/vite.config.ts` (target overridable by env) with a test proving dev requests reach the transport path.
 - [ ] 1.2 Use `lucide-react` icons (home, message-circle, database, workflow, flask, plug, settings, upload, folder, search, x, play, trash, refresh, chevron-down) at 16px with `currentColor`; decorative when beside text, accessible names when alone.
-- [ ] 1.3 Extend the `Badge` primitive from `web/src/components/ui/`: status and hue-hash variants; unit-test colour-text pairing.
+- [ ] 1.3 Extend the `Badge` primitive from `web/src/components/ui/`: status and hue-hash variants. Add `--status-*-label` tokens to `tokens.css` in both themes (60% status colour mixed with 40% `--text-primary`) and use them for badge text; unit-test colour-text pairing and assert the 4.5:1 contrast on the tint for every status in both themes.
 - [ ] 1.4 Add the shared error mapper (`friendly failure line + one action`) and replace direct parser-text rendering in every fetch path; unit-test that parser messages never reach the DOM.
-- [ ] 1.5 Restructure `views.ts` and `AppNav` to the six areas with icons, Home landing, and one-time redirects for legacy hashes; update `App.test.tsx`.
+- [ ] 1.5 Restructure `views.ts` and `AppNav` to the seven areas with icons, Home landing, and one-time redirects for legacy hashes; update `App.test.tsx`.
 - [ ] 1.6 Add elevation tokens and apply them to the top bar and floating panels; add the top-bar engine status pill (collections count or offline); remove the global Inspector toggle and empty inspector; update affected tests.
 - [ ] 1.7 Refresh empty states across views: icon, one sentence, one action; update tests.
 
