@@ -64,7 +64,7 @@ The Server log section SHALL show the server's recent log records in a monospace
 
 ### Requirement: The MCP section shows how to connect a client
 
-The MCP section SHALL show a copyable stdio client configuration that starts `omrg` with `uv run --directory <project>`, where `<project>` is `config_dir` from `GET /v1/connections`, so the client's process reads the same `.env`. It SHALL also show an on/off switch for MCP over HTTP on the web server, which reads and writes its state only through the endpoints of the `add-mcp-http-transport` change.
+The MCP section SHALL show a copyable stdio client configuration that starts `omrg` with `uv run --directory <project>`, where `<project>` is `config_dir` from `GET /v1/connections`, so the client's process reads the same `.env`. It SHALL also show, through the endpoints of the `add-mcp-http-transport` change only: an on/off switch for MCP over HTTP, the HTTP client configuration with the server's `/mcp` URL, token create, rotate and revoke with a new token shown once, and the saved web port that applies on the next launch.
 
 #### Scenario: Copy stdio configuration
 
@@ -75,3 +75,8 @@ The MCP section SHALL show a copyable stdio client configuration that starts `om
 
 - **WHEN** the server reports MCP over HTTP as off and the user turns the switch on
 - **THEN** the section MUST show the state the server returns after the change, not an assumed state
+
+#### Scenario: Token shown once
+
+- **WHEN** the user creates the MCP token and then leaves and reopens the MCP section
+- **THEN** the token MUST show with a copy action after creation and MUST NOT show after reopening

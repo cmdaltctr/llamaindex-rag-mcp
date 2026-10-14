@@ -47,7 +47,7 @@ The redesign replaces this coexistence: when it finishes, only `tokens.css` and 
 
 ## Run the correct app
 
-`npm run dev` starts Vite. The `/v1` proxy forwards to the local web transport (default `http://127.0.0.1:8000`, overridable by environment variable). Read `web/vite.config.ts` for the variable name. Confirm the page loads styles from the checkout you are editing.
+`npm run dev` starts Vite. The `/v1` proxy forwards to the local web transport (default `http://127.0.0.1:8765`, overridable by environment variable). Read `web/vite.config.ts` for the variable name. Confirm the page loads styles from the checkout you are editing.
 
 The transport needs a one-time browser session. Read `docs/guides/web-workspace.md` ("Sign in") before you start. If the Vite origin cannot hold a session, build with `npm run build` and serve the built app through `omrg web`. The build writes to `src/omrg/transports/api/static/`, which is gitignored.
 

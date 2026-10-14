@@ -420,12 +420,27 @@ Six sections. Chips switch them, one at a time, like the Knowledge Base.
 |  +------------------------------------------------------------------------------+  |
 |                                                                       [ Copy ]     |
 |                                                                                    |
-|  Over HTTP from this server            [  off |o ]                                 |
-|  Shares this server's engine. Needs add-mcp-http-transport.                        |
+|  Over HTTP from this server            [  on |o ]                                  |
+|  Shares this server's engine. Works while omrg web is running.                     |
+|  +------------------------------------------------------------------------------+  |
+|  | { "mcpServers": { "omrg": { "type": "http",                                  |  |
+|  |     "url": "http://127.0.0.1:8765/mcp",                                      |  |
+|  |     "headers": { "Authorization": "Bearer <token>" } } } }                   |  |
+|  +------------------------------------------------------------------------------+  |
+|                                                                       [ Copy ]     |
+|                                                                                    |
+|  Token   Created 14 Oct 2026          [ Rotate ]  [ Revoke ]                       |
+|          Rotating breaks clients that use the old token.                           |
+|                                                                                    |
+|  Port    8765 (in use now)    Save a different port  [ 9100   ] [ Save ]           |
+|          Applies the next time omrg web starts.                                    |
 ```
 
-- The switch shows only what the server reports. Turning it on is done by the server, not assumed by the page.
-- The HTTP address, the fixed port and the one-time credential come from `add-mcp-http-transport`.
+- The switch shows only what the server reports. It is off on a new workspace.
+- A new token appears once, with Copy. After you leave the section, only its creation date shows.
+- Only paths inside the folders approved with `--root` work over HTTP. Stdio has no such limit.
+- If port 8765 is taken, `omrg web` stops and says: start with `--port <n>`, then save it here.
+- All of this comes from `add-mcp-http-transport`.
 
 **Server log**
 

@@ -57,7 +57,7 @@ Every view is rebuilt with the primitives from `web/src/components/ui/` (button,
 - Knowledge Base sections (owner decision, 14 October 2026): Sources, Search, Add and Profile are switched with `chip` buttons, one section at a time, so long tables and result lists do not stack. The selected section is part of the view state, not the route.
 - React Flow: its stylesheet stays in the `vendor` layer. Overrides that must target React Flow's own class names live in `app.css` under `@layer components`; everything else is utilities on our elements.
 - Reset: with no hand-written CSS left, Tailwind's preflight loads into the `base` layer, which the shadcn primitives assume. Only `tokens.css` and `app.css` exist as stylesheets.
-- Dev proxy: `vite.config.ts` gains `server.proxy` forwarding `/v1` to the local web transport (default `http://127.0.0.1:8000`, overridable by env).
+- Dev proxy: `vite.config.ts` gains `server.proxy` forwarding `/v1` to the local web transport (default `http://127.0.0.1:8765`, the `omrg web` default port set by `add-mcp-http-transport`; overridable by env).
 
 ### D7. The Integrations page shows, it does not install
 
@@ -133,7 +133,7 @@ Settings has six sections, switched with `chip` buttons like the Knowledge Base:
 **MCP.** Today MCP runs only on stdio: the MCP client starts its own `omrg` process (`mcp.run(transport="stdio")` in `transports/mcp/__init__.py`). The MCP section shows two things:
 
 - A copyable stdio client configuration that runs `uv run --directory <project> omrg`, so `omrg` starts in the folder that holds `.env` (settings read `.env` from the working directory). The page fills `<project>` with `config_dir` from `GET /v1/connections`. This works today.
-- An on/off switch for MCP over streamable HTTP at `/mcp` on the `omrg web` server, sharing its one Engine. This needs a stable port (today `omrg web` picks a free port per launch), a durable hashed credential with an `mcp` scope that is shown once (today bearer credentials live in memory per launch), and a persisted on/off flag. A separate change, `add-mcp-http-transport`, owns that backend and its API. It must merge before task 7.6; the switch calls only the endpoints that change defines.
+- MCP over streamable HTTP at `/mcp` on the `omrg web` server, sharing its one Engine, from `add-mcp-http-transport` (design D7 there): an on/off switch (`GET` and `PUT /v1/mcp`), the HTTP client configuration with the URL from `GET /v1/mcp`, the token controls (`POST /v1/mcp/token` shows the token once with a copy action; `DELETE` revokes it; the page states rotation breaks existing clients), and the saved web port (`GET` and `PUT /v1/settings/web-port`, applied on the next launch). That change must merge before task 7.6.
 
 ## Risks and Trade-offs
 

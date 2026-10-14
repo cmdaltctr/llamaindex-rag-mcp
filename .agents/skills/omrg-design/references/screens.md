@@ -84,6 +84,6 @@ Six sections switched with `chip` buttons, one at a time (redesign design D13): 
 
 - Appearance: the same theme `Select` as the top bar.
 - Connections: one card per provider (Ollama, llama.cpp, OpenRouter) with URLs and model names in `code`, role badges (embeddings, answers, metadata, verification), "Key set" or "No key" as text, and a Test button that shows reachable or the reason as a status badge. Read-only: state that values come from `.env` and need a restart. Never render a key.
-- MCP: the stdio client configuration (`uv run --directory <config_dir> omrg`) in a `code` block with a copy button, and the HTTP on/off switch, which shows only the state the server returns.
+- MCP: the stdio client configuration (`uv run --directory <config_dir> omrg`) in a `code` block with a copy button, and, from `add-mcp-http-transport`: the HTTP on/off switch (show only the state the server returns), the HTTP configuration with the `/mcp` URL, token rotate and revoke with a new token shown once, and the saved web port with a next-launch notice.
 - Server log: a monospace, terminal-style panel on the muted surface (`bg-muted`), one record per line (time, level badge, logger, message), level filter chips, Pause, Copy, and auto-scroll only while scrolled to the bottom. Mark it `role="log"` so screen readers announce new lines politely.
 - Runtime and Workspace: capabilities and the workspace path. Keep paths in `code` elements with `overflow-wrap: anywhere`.
