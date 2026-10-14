@@ -9,13 +9,13 @@ interface RunListProps {
 
 /** Runs, newest first, as the server lists them. */
 export function RunList({ runs, error, selected, onSelect }: RunListProps) {
-  if (error) return <p className="text-meta">{`Could not load runs: ${error}`}</p>;
-  if (runs === null) return <p className="text-meta">Loading runs.</p>;
+  if (error) return <p className="type-meta">{`Could not load runs: ${error}`}</p>;
+  if (runs === null) return <p className="type-meta">Loading runs.</p>;
   if (runs.length === 0) {
     return (
       <div className="empty-state empty-state--compact">
         <p className="empty-state__title">No runs match this filter</p>
-        <p className="text-meta">Each pipeline run is recorded here with its saved revision and events.</p>
+        <p className="type-meta">Each pipeline run is recorded here with its saved revision and events.</p>
       </div>
     );
   }
@@ -31,7 +31,7 @@ export function RunList({ runs, error, selected, onSelect }: RunListProps) {
             onClick={() => onSelect(run.run_id)}
           >
             <code>{run.run_id}</code>
-            <span className="text-meta">{`${run.status}, ${run.created_at}`}</span>
+            <span className="type-meta">{`${run.status}, ${run.created_at}`}</span>
           </button>
         </li>
       ))}

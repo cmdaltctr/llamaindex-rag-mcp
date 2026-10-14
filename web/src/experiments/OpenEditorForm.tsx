@@ -58,7 +58,7 @@ export function OpenEditorForm({ plugins, active, fetchImpl, onOpened }: OpenEdi
     }
   }
 
-  if (context === undefined) return <p className="text-meta">Register an experiment workspace before you open a notebook.</p>;
+  if (context === undefined) return <p className="type-meta">Register an experiment workspace before you open a notebook.</p>;
   return (
     <>
       <form className="form-row" onSubmit={(event) => void submit(event)}>
@@ -106,12 +106,12 @@ export function OpenEditorForm({ plugins, active, fetchImpl, onOpened }: OpenEdi
           Open notebook editor
         </button>
       </form>
-      <p className="text-meta">The editor opens in a separate browser tab. This page does not embed it. Notebook cells do not run at startup.</p>
+      <p className="type-meta">The editor opens in a separate browser tab. This page does not embed it. Notebook cells do not run at startup.</p>
       <ErrorNotice message={error} />
       {opened !== null ? (
         <OneTimeSecret title="Editor access token" secret={opened.token} onHide={() => setOpened(null)}>
-          <p className="text-meta">Paste it into the editor sign-in page. It is not part of the editor address.</p>
-          <p className="text-meta">If your browser blocked the new tab, use this link:</p>
+          <p className="type-meta">Paste it into the editor sign-in page. It is not part of the editor address.</p>
+          <p className="type-meta">If your browser blocked the new tab, use this link:</p>
           <a href={opened.url} target="_blank" rel="noopener noreferrer">
             Open the editor tab again
           </a>

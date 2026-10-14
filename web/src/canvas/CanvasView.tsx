@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { FetchLike } from "../api/client";
 import type { OperationDescriptor, PortRef } from "../api/pipelines";
-import "./canvas.css";
 import { checkConnection } from "./connections";
 import { ConnectionMenu } from "./ConnectionMenu";
 import { FlowSurface } from "./FlowSurface";
@@ -71,10 +70,10 @@ export function CanvasView({ fetchImpl, focusHeading = false }: CanvasViewProps)
   return (
     <section className="view canvas-view" aria-labelledby="view-canvas-title">
       <header className="view__header">
-        <h1 id="view-canvas-title" className="text-page-title" ref={headingRef} tabIndex={-1}>
+        <h1 id="view-canvas-title" className="type-page-title" ref={headingRef} tabIndex={-1}>
           Canvas
         </h1>
-        <p className="text-meta">Connect pipeline stages, check the graph and run it.</p>
+        <p className="type-meta">Connect pipeline stages, check the graph and run it.</p>
       </header>
       <PipelineBar
         pipelines={session.pipelines}
@@ -107,7 +106,7 @@ export function CanvasView({ fetchImpl, focusHeading = false }: CanvasViewProps)
           {draft.graph.nodes.length === 0 ? (
             <div className="empty-state canvas-empty" data-testid="empty-state">
               <p className="empty-state__title">The graph is empty</p>
-              <p className="text-meta">Start from an empty graph: add an operation from the catalogue.</p>
+              <p className="type-meta">Start from an empty graph: add an operation from the catalogue.</p>
             </div>
           ) : (
             <FlowSurface

@@ -14,7 +14,7 @@ export function ContextTable({ entries, fetchImpl, onChanged }: ContextTableProp
     return (
       <div className="empty-state empty-state--compact" data-testid="empty-state">
         <p className="empty-state__title">No experiment workspace is registered</p>
-        <p className="text-meta">Register a folder below an approved experiment root to start.</p>
+        <p className="type-meta">Register a folder below an approved experiment root to start.</p>
       </div>
     );
   }
@@ -41,21 +41,21 @@ export function ContextTable({ entries, fetchImpl, onChanged }: ContextTableProp
                 <td>
                   <span>{name}</span>
                   <br />
-                  <span className="text-code">{experiment.context_id}</span>
+                  <span className="type-code">{experiment.context_id}</span>
                 </td>
                 <td>{experiment.status === "active" ? "Active" : "Revoked"}</td>
-                <td className="text-code" dir="ltr">
+                <td className="type-code" dir="ltr">
                   {experiment.workspace}
                 </td>
                 <td>
                   <span>{identity.store_kind}</span>
                   <br />
-                  <span className="text-code" dir="ltr">
+                  <span className="type-code" dir="ltr">
                     {identity.store_path}
                   </span>
                 </td>
-                <td className="text-code">{identity.index_identity}</td>
-                <td className="text-code" dir="ltr">
+                <td className="type-code">{identity.index_identity}</td>
+                <td className="type-code" dir="ltr">
                   {identity.embedding_provider} / {identity.embedding_model}
                 </td>
                 <td>{experiment.actions.join(", ")}</td>

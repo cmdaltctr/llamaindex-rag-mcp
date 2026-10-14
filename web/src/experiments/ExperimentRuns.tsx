@@ -32,7 +32,7 @@ export function ExperimentRuns({ fetchImpl, names }: ExperimentRunsProps) {
   return (
     <section className="panel" aria-labelledby="experiments-runs">
       <div className="panel__header">
-        <h2 id="experiments-runs" className="text-section-title">
+        <h2 id="experiments-runs" className="type-section-title">
           Experiment runs
         </h2>
         <div className="button-row">
@@ -46,7 +46,7 @@ export function ExperimentRuns({ fetchImpl, names }: ExperimentRunsProps) {
       </div>
       <ErrorNotice message={runs.error === null ? null : `Could not load runs: ${runs.error}`} />
       {runs.data !== undefined && rows.length === 0 ? (
-        <p className="text-meta">No experiment runs yet. A notebook run with a bound credential appears here.</p>
+        <p className="type-meta">No experiment runs yet. A notebook run with a bound credential appears here.</p>
       ) : null}
       {rows.length > 0 ? (
         <div className="table-scroll">
@@ -66,10 +66,10 @@ export function ExperimentRuns({ fetchImpl, names }: ExperimentRunsProps) {
                 const contextId = text(experiment.context_id);
                 return (
                   <tr key={run.run_id}>
-                    <td className="text-code">{run.run_id}</td>
+                    <td className="type-code">{run.run_id}</td>
                     <td>{run.status}</td>
                     <td>{names[contextId] ?? contextId}</td>
-                    <td className="text-code">{text(experiment.backend?.index_identity)}</td>
+                    <td className="type-code">{text(experiment.backend?.index_identity)}</td>
                     <td>{run.created_at}</td>
                   </tr>
                 );

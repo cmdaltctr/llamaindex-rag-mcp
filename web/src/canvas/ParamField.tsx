@@ -18,14 +18,14 @@ function display(value: JsonValue): string {
 function InheritNote({ field, effective }: { field: Field; effective: EffectiveControl | undefined }) {
   if (effective) {
     return (
-      <p className="text-meta param__note">
+      <p className="type-meta param__note">
         Effective value: {display(effective.value)} ({effective.source}: {effective.detail}), from the last validation.
       </p>
     );
   }
   if (!field.nullable) return null;
   return (
-    <p className="text-meta param__note">
+    <p className="type-meta param__note">
       {field.lever
         ? "Inherit uses the graph override or the profile. Validate with run inputs to see the effective value."
         : "Inherit uses the operation default."}
@@ -101,7 +101,7 @@ function NumberInput({ field, value, onChange, name }: ParamFieldProps & { name:
         />
       </label>
       {error && (
-        <p id={errorId} className="canvas-error text-meta">
+        <p id={errorId} className="canvas-error type-meta">
           {error}
         </p>
       )}
@@ -137,7 +137,7 @@ export function ParamField(props: ParamFieldProps) {
       ) : (
         <input className="control" aria-label={`${field.title} value`} value={value == null ? "" : String(value)} placeholder={field.nullable ? "Inherit" : undefined} onChange={(event) => onChange(event.target.value || null)} />
       );
-  } else control = <p className="text-meta">This parameter type cannot be edited on the canvas yet.</p>;
+  } else control = <p className="type-meta">This parameter type cannot be edited on the canvas yet.</p>;
 
   return (
     <fieldset className="param">

@@ -59,10 +59,10 @@ export function UploadPanel({ collection, managedRoot, fetchImpl, onJob }: Uploa
 
   return (
     <form className="panel" onSubmit={(e) => void submit(e)} aria-labelledby={`${inputId}-title`}>
-      <h2 id={`${inputId}-title`} className="text-section-title">
+      <h2 id={`${inputId}-title`} className="type-section-title">
         Upload files
       </h2>
-      <p className="text-meta">
+      <p className="type-meta">
         Limit: 50 MiB per file. The server checks each file's name, size and type before the file is sent. Archives and web
         addresses are not accepted.
       </p>

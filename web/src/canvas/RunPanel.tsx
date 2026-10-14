@@ -19,11 +19,11 @@ interface RunPanelProps {
 }
 
 function RevisionState({ revision, dirty }: { revision: RevisionRecord | null; dirty: boolean }) {
-  if (!revision) return <p className="text-meta">No saved revision. Save a revision before you run.</p>;
+  if (!revision) return <p className="type-meta">No saved revision. Save a revision before you run.</p>;
   const number = revision.revision_number;
-  if (!dirty) return <p className="text-meta">The draft matches revision {number}.</p>;
+  if (!dirty) return <p className="type-meta">The draft matches revision {number}.</p>;
   return (
-    <p className="canvas-warning text-meta">
+    <p className="canvas-warning type-meta">
       The draft differs from revision {number}. Run uses revision {number} until you save a new revision.
     </p>
   );
@@ -33,10 +33,10 @@ function RevisionState({ revision, dirty }: { revision: RevisionRecord | null; d
 function SubmittedRunView({ run, active, busy, onCancel, onRefresh, live }: { run: SubmittedRun; active: boolean; busy: boolean; onCancel: () => void; onRefresh: () => void; live?: ReactNode }) {
   return (
     <section className="submitted-run" aria-label="Submitted run">
-      <h3 className="text-subsection-title">
+      <h3>
         Run <code>{run.runId}</code>: {run.status}
       </h3>
-      <p className="text-meta">
+      <p className="type-meta">
         Revision {run.revisionNumber} (<code>{run.revisionId}</code>)
       </p>
       {live}
@@ -61,7 +61,7 @@ export function RunPanel(props: RunPanelProps) {
   const { revision, dirty, busy, inputNames, inputValues, issues, run, actions } = props;
   return (
     <section className="canvas-panel run-panel" aria-label="Revision and run">
-      <h2 className="text-section-title">Revision and run</h2>
+      <h2 className="type-section-title">Revision and run</h2>
       <div className="canvas-actions">
         <button type="button" className="button" disabled={busy} onClick={actions.saveLayout}>
           Save layout
@@ -85,10 +85,10 @@ export function RunPanel(props: RunPanelProps) {
       ))}
       {issues.length > 0 && (
         <>
-          <h3 className="text-subsection-title">Validation issues</h3>
+          <h3>Validation issues</h3>
           <ul className="issue-list">
             {issues.map((issue, index) => (
-              <li key={index} className="text-meta">
+              <li key={index} className="type-meta">
                 <code>{issue.code}</code> {issue.message}
                 {issue.node_id && (
                   <button type="button" className="button button--ghost button--small" onClick={() => props.onSelectNode(issue.node_id!)}>

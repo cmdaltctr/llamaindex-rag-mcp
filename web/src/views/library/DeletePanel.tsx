@@ -61,9 +61,9 @@ export function DeletePanel({ collection, target, fetchImpl, onClose, onDeleted 
   const count = preview?.would_delete ?? 0;
   return (
     <section className="panel panel--danger" aria-label="Deletion preview">
-      <h2 className="text-section-title">Delete {target.kind === "collection" ? "collection" : "source"}</h2>
+      <h2 className="type-section-title">Delete {target.kind === "collection" ? "collection" : "source"}</h2>
       {preview && (phase === "ready" || phase === "confirming") ? <p>{describe(collection, target, preview)}</p> : null}
-      {preview && count === 0 && phase === "ready" ? <p className="text-meta">Nothing matches, so there is nothing to delete.</p> : null}
+      {preview && count === 0 && phase === "ready" ? <p className="type-meta">Nothing matches, so there is nothing to delete.</p> : null}
       {phase === "ready" ? <ConfirmationNote confirmation={preview?.confirmation} /> : null}
       {phase === "done" && result ? <p className="notice notice--success">{outcome(collection, result)}</p> : null}
       <FlowButtons

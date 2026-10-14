@@ -24,7 +24,7 @@ export function Palette({ operations, error, onAdd }: PaletteProps) {
 
   return (
     <section className="canvas-panel palette" aria-label="Operation catalogue">
-      <h2 className="text-section-title">
+      <h2 className="type-section-title">
         Operations
       </h2>
       <label className="field">
@@ -32,11 +32,11 @@ export function Palette({ operations, error, onAdd }: PaletteProps) {
         <input className="control" type="search" value={query} onChange={(event) => setQuery(event.target.value)} />
       </label>
       {error && (
-        <p className="text-meta canvas-error" role="alert">
+        <p className="type-meta canvas-error" role="alert">
           {error}
         </p>
       )}
-      {operations === null && !error && <p className="text-meta">Loading the catalogue.</p>}
+      {operations === null && !error && <p className="type-meta">Loading the catalogue.</p>}
       <ul className="palette__list">
         {visible.map((operation) => {
           const reasonId = `${headingId}-${operation.operation_id}-${operation.version}`;
@@ -54,7 +54,7 @@ export function Palette({ operations, error, onAdd }: PaletteProps) {
                 <code className="palette__id">{operation.operation_id}</code>
               </button>
               {!operation.available && (
-                <p id={reasonId} className="text-meta palette__reason">
+                <p id={reasonId} className="type-meta palette__reason">
                   {operation.unavailable_reasons.join(" ")}
                 </p>
               )}
@@ -62,7 +62,7 @@ export function Palette({ operations, error, onAdd }: PaletteProps) {
           );
         })}
       </ul>
-      {operations !== null && visible.length === 0 && <p className="text-meta">No operation matches this search.</p>}
+      {operations !== null && visible.length === 0 && <p className="type-meta">No operation matches this search.</p>}
     </section>
   );
 }

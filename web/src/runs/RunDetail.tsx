@@ -81,7 +81,7 @@ export function RunDetail({ runId, fetchImpl, onChanged, onOpenRun }: RunDetailP
   }
 
   if (!run) {
-    return <p className="text-meta">{error ? `Could not open run ${runId}: ${error}` : `Loading run ${runId}.`}</p>;
+    return <p className="type-meta">{error ? `Could not open run ${runId}: ${error}` : `Loading run ${runId}.`}</p>;
   }
 
   const failure = run.failure;
@@ -93,10 +93,10 @@ export function RunDetail({ runId, fetchImpl, onChanged, onOpenRun }: RunDetailP
 
   return (
     <section className="run-detail" aria-label={`Run ${run.run_id}`}>
-      <h2 className="text-section-title">
+      <h2 className="type-section-title">
         Run <code>{run.run_id}</code>: {status}
       </h2>
-      <p className="text-meta">{originText(run)}</p>
+      <p className="type-meta">{originText(run)}</p>
       <div className="run-actions">
         {active && (
           <button type="button" className="button" disabled={busy} onClick={() => act(async () => setRun(await cancelRunRecord(runId, { fetchImpl })))}>
@@ -120,13 +120,13 @@ export function RunDetail({ runId, fetchImpl, onChanged, onOpenRun }: RunDetailP
           </button>
         )}
       </div>
-      {error && <p className="text-meta live-run__error">{error}</p>}
+      {error && <p className="type-meta live-run__error">{error}</p>}
       {failure && (
         <div className="run-section">
-          <h3 className="text-subsection-title">Failure</h3>
+          <h3>Failure</h3>
           {typeof failure.failed_node === "string" && <p>{`Failed node: ${failure.failed_node}`}</p>}
           {typeof failure.error === "string" && <p>{`Error: ${maskText(failure.error)}`}</p>}
-          {typeof failure.reason === "string" && <p className="text-meta">{`Reason: ${failure.reason}`}</p>}
+          {typeof failure.reason === "string" && <p className="type-meta">{`Reason: ${failure.reason}`}</p>}
         </div>
       )}
       <RunSnapshot run={run} />
@@ -138,8 +138,8 @@ export function RunDetail({ runId, fetchImpl, onChanged, onOpenRun }: RunDetailP
       <NodeOutcomes rows={rows} wallTimeS={wallTimeS} selected={selectedNode} onSelect={setSelectedNode} />
       {effects.length > 0 && (
         <section className="run-section" aria-label="Completed effects">
-          <h3 className="text-subsection-title">Completed effects</h3>
-          <p className="text-meta">
+          <h3>Completed effects</h3>
+          <p className="type-meta">
             {run.status === "succeeded" ? "Sources this run committed." : "Sources committed before the run stopped. They stay committed; a retry starts a new run."}
           </p>
           <ul className="effect-list">

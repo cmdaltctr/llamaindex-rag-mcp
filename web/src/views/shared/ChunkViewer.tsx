@@ -33,19 +33,19 @@ export function ChunkViewer({ collection, chunkId, fetchImpl, onClose }: ChunkVi
   return (
     <section className="panel chunk-viewer" aria-label="Stored chunk">
       <header className="panel__header">
-        <h2 className="text-section-title">Stored chunk</h2>
+        <h2 className="type-section-title">Stored chunk</h2>
         <button type="button" className="button button--ghost button--small" onClick={onClose}>
           Close
         </button>
       </header>
       <ErrorNotice message={error} />
-      {loading && chunk === undefined ? <p className="text-meta">Loading the stored chunk.</p> : null}
+      {loading && chunk === undefined ? <p className="type-meta">Loading the stored chunk.</p> : null}
       {chunk ? <ChunkBody chunk={chunk} /> : null}
       <div className="button-row">
         <NeighbourButton label="Previous chunk" target={previous} onOpen={setCurrent} />
         <NeighbourButton label="Next chunk" target={next} onOpen={setCurrent} />
       </div>
-      <p className="text-meta">Read from the stored index. The original file is not opened.</p>
+      <p className="type-meta">Read from the stored index. The original file is not opened.</p>
     </section>
   );
 }
@@ -55,7 +55,7 @@ function ChunkBody({ chunk }: { chunk: ChunkView }) {
     <>
       <dl className="facts">
         <dt>Source</dt>
-        <dd className="text-code" dir="ltr">
+        <dd className="type-code" dir="ltr">
           {chunk.source ?? "Unknown source"}
         </dd>
         <dt>Position</dt>
@@ -64,7 +64,7 @@ function ChunkBody({ chunk }: { chunk: ChunkView }) {
           {chunk.page_label !== null ? `, Page ${chunk.page_label}` : ""}
         </dd>
         <dt>Chunk ID</dt>
-        <dd className="text-code" dir="ltr">
+        <dd className="type-code" dir="ltr">
           {chunk.chunk_id ?? "None"}
         </dd>
       </dl>

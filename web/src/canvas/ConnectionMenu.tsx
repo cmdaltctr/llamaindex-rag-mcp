@@ -49,7 +49,7 @@ export function ConnectionMenu({ draft, catalogue, onConnect }: ConnectionMenuPr
 
   return (
     <section className="canvas-panel connect-menu" aria-label="Connect ports">
-      <h2 className="text-section-title">Connect ports</h2>
+      <h2 className="type-section-title">Connect ports</h2>
       <label className="field">
         <span className="field__label">From output</span>
         <select className="control control--select" value={from} onChange={(event) => setFrom(event.target.value)}>
@@ -76,7 +76,7 @@ export function ConnectionMenu({ draft, catalogue, onConnect }: ConnectionMenuPr
         Connect
       </button>
       {refusal && (
-        <p className="canvas-error text-meta" role="alert">
+        <p className="canvas-error type-meta" role="alert">
           {refusal}
         </p>
       )}

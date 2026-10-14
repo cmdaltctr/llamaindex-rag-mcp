@@ -41,9 +41,9 @@ export function TemplatePicker({ fetchImpl, replacesWork, disabled, onStart }: T
 
   return (
     <section className="template-picker" aria-label="Start from template">
-      {loaded === null ? <p className="text-meta">Loading templates.</p> : null}
+      {loaded === null ? <p className="type-meta">Loading templates.</p> : null}
       {loaded !== null && "error" in loaded ? (
-        <p className="text-meta">Templates are not available: {loaded.error} Start from an empty graph.</p>
+        <p className="type-meta">Templates are not available: {loaded.error} Start from an empty graph.</p>
       ) : null}
       {template !== undefined ? (
         <>
@@ -62,14 +62,14 @@ export function TemplatePicker({ fetchImpl, replacesWork, disabled, onStart }: T
               Start from template
             </button>
           </div>
-          <p className="text-meta">
+          <p className="type-meta">
             {template.description} The template is an editable starting point. Save it as a revision before a run.
           </p>
         </>
       ) : null}
       {confirming ? (
         <div className="template-picker__confirm" role="group" aria-label="Replace the draft">
-          <p className="text-meta">Loading a template replaces the unsaved draft. Saved revisions are not changed.</p>
+          <p className="type-meta">Loading a template replaces the unsaved draft. Saved revisions are not changed.</p>
           <button type="button" className="button button--tinted" onClick={start}>
             Replace draft
           </button>

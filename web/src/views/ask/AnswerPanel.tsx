@@ -36,7 +36,7 @@ export function AnswerPanel({ result, onShowChunk }: AnswerPanelProps) {
 
       {result.unverified_claims && result.unverified_claims.length > 0 ? (
         <>
-          <h2 className="text-section-title">Claims that failed verification</h2>
+          <h2 className="type-section-title">Claims that failed verification</h2>
           <ul className="plain-list" aria-label="Claims that failed verification">
             {result.unverified_claims.map((claim, index) => (
               <li key={index} className="server-text">
@@ -47,9 +47,9 @@ export function AnswerPanel({ result, onShowChunk }: AnswerPanelProps) {
         </>
       ) : null}
 
-      <h2 className="text-section-title">Citations</h2>
+      <h2 className="type-section-title">Citations</h2>
       {result.citations.length === 0 ? (
-        <p className="text-meta">The server returned no citations.</p>
+        <p className="type-meta">The server returned no citations.</p>
       ) : (
         <ul className="plain-list" aria-label="Citations">
           {result.citations.map((citation) => (
@@ -60,7 +60,7 @@ export function AnswerPanel({ result, onShowChunk }: AnswerPanelProps) {
 
       {result.evidence.length > 0 ? (
         <>
-          <h2 className="text-section-title">Evidence supplied to the model</h2>
+          <h2 className="type-section-title">Evidence supplied to the model</h2>
           <ol className="result-list" aria-label="Evidence supplied to the model">
             {result.evidence.map((item) => (
               <EvidenceItem key={item.ordinal} item={item} />
@@ -78,7 +78,7 @@ function CitationItem({ citation, onShowChunk }: { citation: Citation; onShowChu
     <li className="result-card">
       <div className="result-card__meta">
         <span>[{citation.ordinal}]</span>
-        <span className="text-code" dir="ltr">
+        <span className="type-code" dir="ltr">
           {citation.source ?? "Unknown source"}
         </span>
         <span>{chunkPosition(citation.source_chunk_index, null)}</span>
@@ -94,7 +94,7 @@ function CitationItem({ citation, onShowChunk }: { citation: Citation; onShowChu
           Show chunk
         </button>
       ) : (
-        <span className="text-meta">No stored chunk ID, so this citation cannot be opened.</span>
+        <span className="type-meta">No stored chunk ID, so this citation cannot be opened.</span>
       )}
     </li>
   );
@@ -105,7 +105,7 @@ function EvidenceItem({ item }: { item: Evidence }) {
     <li className="result-card">
       <div className="result-card__meta">
         <span>[{item.ordinal}]</span>
-        <span className="text-code" dir="ltr">
+        <span className="type-code" dir="ltr">
           {item.source ?? "Unknown source"}
         </span>
         {scoreText(item) ? <span>{scoreText(item)}</span> : null}

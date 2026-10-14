@@ -40,10 +40,10 @@ export function GraphOutline({ draft, issues, onChange, onAnnounce }: GraphOutli
   }
 
   return (
-    <section className="canvas-panel outline" aria-label="Graph outline">
-      <h2 className="text-section-title">Nodes</h2>
+    <section className="canvas-panel" aria-label="Graph outline">
+      <h2 className="type-section-title">Nodes</h2>
       {draft.graph.nodes.length === 0 ? (
-        <p className="text-meta">No nodes yet.</p>
+        <p className="type-meta">No nodes yet.</p>
       ) : (
         <ul className="outline__list">
           {draft.graph.nodes.map((node) => {
@@ -60,7 +60,7 @@ export function GraphOutline({ draft, issues, onChange, onAnnounce }: GraphOutli
                   onClick={() => select(node.id)}
                   onKeyDown={(event) => removeOnKey(event, () => dropNode(node.id))}
                 >
-                  <code>{node.id}</code> <span className="text-meta">{node.operation}</span>
+                  <code>{node.id}</code> <span className="type-meta">{node.operation}</span>
                   {count > 0 && <span className="outline__issues">{plural(count, "issue")}</span>}
                 </button>
               </li>
@@ -68,9 +68,9 @@ export function GraphOutline({ draft, issues, onChange, onAnnounce }: GraphOutli
           })}
         </ul>
       )}
-      <h2 className="text-section-title">Connections</h2>
+      <h2 className="type-section-title">Connections</h2>
       {draft.graph.edges.length === 0 ? (
-        <p className="text-meta">No connections yet.</p>
+        <p className="type-meta">No connections yet.</p>
       ) : (
         <ul className="outline__list">
           {draft.graph.edges.map((edge) => {

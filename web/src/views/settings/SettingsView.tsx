@@ -6,7 +6,6 @@ import { ThemeSelect } from "../../components/ThemeSelect";
 import type { ThemePreference } from "../../lib/preferences";
 import { ErrorNotice, ViewHeader } from "../shared/controls";
 import { useLoad } from "../shared/useLoad";
-import "../views.css";
 import { PluginSection } from "./PluginSection";
 import { RuntimeSection } from "./RuntimeSection";
 
@@ -36,23 +35,23 @@ export function SettingsView({ fetchImpl, focusHeading = false, theme, onThemeCh
       </p>
 
       <section className="panel" aria-labelledby="settings-workspace">
-        <h2 id="settings-workspace" className="text-section-title">
+        <h2 id="settings-workspace" className="type-section-title">
           Workspace
         </h2>
         {workspace !== null ? (
           <code dir="ltr">{workspace}</code>
         ) : (
-          <p className="text-meta">{session.loading ? "Loading." : "The server did not report the workspace folder."}</p>
+          <p className="type-meta">{session.loading ? "Loading." : "The server did not report the workspace folder."}</p>
         )}
       </section>
 
       <RuntimeSection health={health} session={session} operations={operations} />
 
       <section className="panel" aria-labelledby="settings-files">
-        <h2 id="settings-files" className="text-section-title">
+        <h2 id="settings-files" className="type-section-title">
           File access
         </h2>
-        <p className="text-meta">Only these folders are readable. Paths stored in the index never grant access.</p>
+        <p className="type-meta">Only these folders are readable. Paths stored in the index never grant access.</p>
         <ErrorNotice message={roots.error === null ? null : `Could not load file access: ${roots.error}`} />
         {roots.data ? (
           <div className="table-scroll">
@@ -67,11 +66,11 @@ export function SettingsView({ fetchImpl, focusHeading = false, theme, onThemeCh
               <tbody>
                 {roots.data.map((root) => (
                   <tr key={root.id}>
-                    <td className="text-code" dir="ltr">
+                    <td className="type-code" dir="ltr">
                       {root.path}
                     </td>
                     <td>{ROOT_KINDS[root.kind] ?? root.kind}</td>
-                    <td className="text-code">{root.id}</td>
+                    <td className="type-code">{root.id}</td>
                   </tr>
                 ))}
               </tbody>
@@ -81,7 +80,7 @@ export function SettingsView({ fetchImpl, focusHeading = false, theme, onThemeCh
       </section>
 
       <section className="panel" aria-labelledby="settings-appearance">
-        <h2 id="settings-appearance" className="text-section-title">
+        <h2 id="settings-appearance" className="type-section-title">
           Appearance
         </h2>
         <ThemeSelect value={theme} onChange={onThemeChange} />

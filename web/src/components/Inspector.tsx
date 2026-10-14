@@ -17,14 +17,14 @@ export function Inspector({ id, open, onClose }: InspectorProps) {
   return (
     <aside id={id} className="inspector" aria-label="Inspector" hidden={!open} onKeyDown={handleKeyDown}>
       <div className="inspector__header">
-        <h2 className="text-section-title">Inspector</h2>
+        <h2 className="type-section-title">Inspector</h2>
         <button type="button" className="button button--ghost button--small" onClick={onClose}>
           Close inspector
         </button>
       </div>
       <div className="empty-state empty-state--compact">
         <p className="empty-state__title">Nothing selected</p>
-        <p className="text-meta">Select a node, run or result to see its details here.</p>
+        <p className="type-meta">Select a node, run or result to see its details here.</p>
       </div>
     </aside>
   );

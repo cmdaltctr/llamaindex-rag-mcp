@@ -1,6 +1,5 @@
 import { maskText } from "./redact";
 import { bypassReason, displayStatus, statusLabel, type NodeRunState } from "./runState";
-import "./runs.css";
 
 /**
  * The run state of one node, as text. Status words carry the meaning, so

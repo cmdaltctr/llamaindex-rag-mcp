@@ -8,7 +8,6 @@ import {
   type FinalConnectionState,
   type NodeChange,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
 import { useCallback, useMemo, useState, type KeyboardEvent } from "react";
 import type { OperationDescriptor, PortRef, ValidationIssue } from "../api/pipelines";
 import { checkConnection, connectionGuard, findOperation } from "./connections";

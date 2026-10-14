@@ -11,10 +11,10 @@ export function ViewHeader({ id, focusHeading }: { id: ViewId; focusHeading: boo
   }, [focusHeading]);
   return (
     <header className="view__header">
-      <h1 id={`view-${id}-title`} className="text-page-title" ref={headingRef} tabIndex={-1}>
+      <h1 id={`view-${id}-title`} className="type-page-title" ref={headingRef} tabIndex={-1}>
         {view.label}
       </h1>
-      <p className="text-meta">{view.summary}</p>
+      <p className="type-meta">{view.summary}</p>
     </header>
   );
 }
