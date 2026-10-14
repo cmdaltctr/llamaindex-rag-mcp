@@ -29,18 +29,18 @@ export function ChunkViewer({ collection, chunkId, fetchImpl, onClose }: ChunkVi
   return (
     <section className="chunk-viewer" aria-label={`Chunk ${chunkId}`}>
       <div className="chunk-viewer__header">
-        <h4 className="text-subsection-title">
+        <h4>
           Chunk <code>{chunkId}</code>
         </h4>
         <button type="button" className="button button--ghost button--small" onClick={onClose}>
           Close chunk
         </button>
       </div>
-      {state.error && <p className="text-meta">{`Could not open the chunk: ${maskText(state.error)}`}</p>}
-      {!state.chunk && !state.error && <p className="text-meta">Loading the stored chunk.</p>}
+      {state.error && <p className="type-meta">{`Could not open the chunk: ${maskText(state.error)}`}</p>}
+      {!state.chunk && !state.error && <p className="type-meta">Loading the stored chunk.</p>}
       {record && (
         <>
-          <p className="text-meta">
+          <p className="type-meta">
             {record.source ?? "Unknown source"}
             {typeof record.source_chunk_index === "number" ? `, chunk ${record.source_chunk_index}` : ""}
             {` in collection ${state.chunk!.collection}`}

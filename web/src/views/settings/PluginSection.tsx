@@ -3,7 +3,6 @@ import type { FetchLike } from "../../api/client";
 import { listPlugins, recheckPlugin, unregisterPlugin, type PluginState } from "../../api/plugins";
 import { ConfirmAction } from "../../experiments/ConfirmAction";
 import { pluginStatusLabel, WITHOUT_PLUGIN } from "../../experiments/labels";
-import "../../experiments/experiments.css";
 import { ErrorNotice } from "../shared/controls";
 import { messageOf } from "../shared/labels";
 import { useLoad } from "../shared/useLoad";
@@ -42,7 +41,7 @@ export function PluginSection({ fetchImpl }: PluginSectionProps) {
 
   return (
     <section className="panel" aria-labelledby="settings-plugins">
-      <h2 id="settings-plugins" className="text-section-title">
+      <h2 id="settings-plugins" className="type-section-title">
         Plugins
       </h2>
       <ErrorNotice message={plugins.error === null ? null : `Could not load plugins: ${plugins.error}`} />
@@ -51,7 +50,7 @@ export function PluginSection({ fetchImpl }: PluginSectionProps) {
       {rows.length === 0 ? (
         <div className="empty-state empty-state--compact" data-testid="empty-state">
           <p className="empty-state__title">{plugins.loading ? "Loading plugins" : "No plugin is registered"}</p>
-          <p className="text-meta">{WITHOUT_PLUGIN}</p>
+          <p className="type-meta">{WITHOUT_PLUGIN}</p>
         </div>
       ) : null}
       <ErrorNotice message={error} />
@@ -75,7 +74,7 @@ export function PluginSection({ fetchImpl }: PluginSectionProps) {
                   <td>{pluginStatusLabel(plugin.status)}</td>
                   <td className="server-text">{plugin.message}</td>
                   <td>{plugin.version ?? "Unknown"}</td>
-                  <td className="text-code" dir="ltr">
+                  <td className="type-code" dir="ltr">
                     {plugin.executable}
                   </td>
                   <td>

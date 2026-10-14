@@ -46,14 +46,14 @@ export function CredentialPanel({ active, fetchImpl }: CredentialPanelProps) {
 
   return (
     <section className="panel" aria-labelledby="experiments-credential">
-      <h2 id="experiments-credential" className="text-section-title">
+      <h2 id="experiments-credential" className="type-section-title">
         Notebook credential
       </h2>
-      <p className="text-meta">
+      <p className="type-meta">
         A bound credential runs graphs only in its context. It cannot read or change the live library. Credentials last until the server stops.
       </p>
       {chosen === undefined ? (
-        <p className="text-meta">Register an experiment workspace first.</p>
+        <p className="type-meta">Register an experiment workspace first.</p>
       ) : (
         <form className="form-row" onSubmit={(event) => void submit(event)}>
           <label className="field">
@@ -87,10 +87,10 @@ export function CredentialPanel({ active, fetchImpl }: CredentialPanelProps) {
       <ErrorNotice message={error} />
       {issued !== null ? (
         <OneTimeSecret title="Credential token" secret={issued.token} onHide={() => setIssued(null)}>
-          <p className="text-meta">
+          <p className="type-meta">
             An editor opened from this page connects by itself. For an editor you start yourself, give the token to the
-            notebook in a file with mode 600 named by <code className="text-code">OMRG_TOKEN_FILE</code>, and set{" "}
-            <code className="text-code">OMRG_EXPERIMENT_CONTEXT={issued.experiment_context}</code>.
+            notebook in a file with mode 600 named by <code className="type-code">OMRG_TOKEN_FILE</code>, and set{" "}
+            <code className="type-code">OMRG_EXPERIMENT_CONTEXT={issued.experiment_context}</code>.
           </p>
         </OneTimeSecret>
       ) : null}

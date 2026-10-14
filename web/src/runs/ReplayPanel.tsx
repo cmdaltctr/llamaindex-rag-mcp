@@ -57,14 +57,14 @@ export function ReplayPanel({ runId, nodeIds, fetchImpl }: ReplayPanelProps) {
 
   return (
     <section className="run-section" aria-label="Replay">
-      <h3 className="text-subsection-title replay__label">Replay</h3>
-      <p className="text-meta">Replay of recorded events. Nothing runs again.</p>
-      {error && <p className="text-meta">{`Could not load the recorded events: ${error}`}</p>}
-      {!loaded && !error && <p className="text-meta">Loading recorded events.</p>}
-      {loaded && events.length === 0 && <p className="text-meta">This run recorded no events.</p>}
+      <h3 className="replay__label">Replay</h3>
+      <p className="type-meta">Replay of recorded events. Nothing runs again.</p>
+      {error && <p className="type-meta">{`Could not load the recorded events: ${error}`}</p>}
+      {!loaded && !error && <p className="type-meta">Loading recorded events.</p>}
+      {loaded && events.length === 0 && <p className="type-meta">This run recorded no events.</p>}
       {loaded && events.length > 0 && (
         <>
-          {loaded.capped && <p className="text-meta">{`Only the first ${MAX_REPLAY_EVENTS} events are loaded.`}</p>}
+          {loaded.capped && <p className="type-meta">{`Only the first ${MAX_REPLAY_EVENTS} events are loaded.`}</p>}
           <div className="run-actions">
             <button type="button" className="button button--small" disabled={step <= 1} onClick={() => setStep(1)}>
               Go to first event
@@ -79,7 +79,7 @@ export function ReplayPanel({ runId, nodeIds, fetchImpl }: ReplayPanelProps) {
               Go to last event
             </button>
           </div>
-          <p className="text-meta" aria-live="polite">
+          <p className="type-meta" aria-live="polite">
             {`Event ${step} of ${events.length}`}
             {current ? `: ${current.kind}${current.node_id ? ` (${current.node_id})` : ""}, recorded ${current.created_at}` : ""}
           </p>

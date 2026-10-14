@@ -16,10 +16,10 @@ export function EditorList({ editors, names, fetchImpl, onChanged }: EditorListP
     <ul className="plain-list editor-list" aria-label="Running editors">
       {editors.map((editor) => (
         <li key={editor.launch_id} className="editor-list__item">
-          <span className="text-code" dir="ltr">
+          <span className="type-code" dir="ltr">
             {editor.notebook}
           </span>
-          <span className="text-meta">
+          <span className="type-meta">
             {editor.plugin}, context {editor.experiment_context ? (names[editor.experiment_context] ?? editor.experiment_context) : "none"},{" "}
             <span dir="ltr">{editor.url_without_token}</span>
           </span>

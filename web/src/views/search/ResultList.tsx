@@ -29,7 +29,7 @@ export function ResultList({ hits, sources, onShowChunk }: ResultListProps) {
             {hit.page_label ? <span>Page {hit.page_label}</span> : null}
           </div>
           <div className="result-card__meta">
-            <span className="text-code" dir="ltr">
+            <span className="type-code" dir="ltr">
               {hit.source}
             </span>
             <span className="availability" data-orphaned={String(availability(hit, sources))}>
@@ -43,7 +43,7 @@ export function ResultList({ hits, sources, onShowChunk }: ResultListProps) {
                 Show chunk
               </button>
             ) : (
-              <span className="text-meta">No stored chunk ID, so this row cannot be opened.</span>
+              <span className="type-meta">No stored chunk ID, so this row cannot be opened.</span>
             )}
           </div>
         </li>

@@ -4,7 +4,6 @@ import { listCollections, listDocuments, listRoots, type CollectionInfo, type Jo
 import { ErrorNotice, ViewHeader } from "../shared/controls";
 import { plural } from "../shared/labels";
 import { useLoad } from "../shared/useLoad";
-import "../views.css";
 import { DeletePanel, type DeleteTarget } from "./DeletePanel";
 import { IngestPanel } from "./IngestPanel";
 import { JobList, type TrackedJob } from "./JobList";
@@ -57,7 +56,7 @@ export function LibraryView({ fetchImpl, focusHeading = false, pollMs = 1000 }: 
       {active !== null ? (
         <section className="panel" aria-labelledby={`${targetId}-sources`}>
           <header className="panel__header">
-            <h2 id={`${targetId}-sources`} className="text-section-title">
+            <h2 id={`${targetId}-sources`} className="type-section-title">
               Sources in {active}
             </h2>
             <button
@@ -77,7 +76,7 @@ export function LibraryView({ fetchImpl, focusHeading = false, pollMs = 1000 }: 
               onDelete={(source) => setDeletion({ collection: active, target: { kind: "source", source } })}
             />
           ) : (
-            <p className="text-meta">Loading sources.</p>
+            <p className="type-meta">Loading sources.</p>
           )}
         </section>
       ) : null}
@@ -104,7 +103,7 @@ export function LibraryView({ fetchImpl, focusHeading = false, pollMs = 1000 }: 
       ) : null}
 
       <section className="panel" aria-labelledby={`${targetId}-add`}>
-        <h2 id={`${targetId}-add`} className="text-section-title">
+        <h2 id={`${targetId}-add`} className="type-section-title">
           Add sources
         </h2>
         <div className="field">
@@ -135,7 +134,7 @@ function CollectionList({ collections, active, loading, onSelect }: CollectionLi
     return (
       <div className="empty-state" data-testid="empty-state">
         <p className="empty-state__title">{title}</p>
-        <p className="text-meta">Upload a file or ingest from an approved folder to create a collection.</p>
+        <p className="type-meta">Upload a file or ingest from an approved folder to create a collection.</p>
       </div>
     );
   }
@@ -145,7 +144,7 @@ function CollectionList({ collections, active, loading, onSelect }: CollectionLi
         <li key={c.name}>
           <button type="button" className="collection-list__item" aria-pressed={c.name === active} onClick={() => onSelect(c.name)}>
             <span className="collection-list__name">{c.name}</span>
-            <span className="text-meta">
+            <span className="type-meta">
               {plural(c.document_count, "source")}, {plural(c.chunk_count, "chunk")}
             </span>
           </button>

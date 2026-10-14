@@ -38,7 +38,7 @@ export function ConfirmAction({ label, text, warning, confirmLabel, cancelLabel,
   }
   return (
     <div className="confirm-action" role="group" aria-label={label}>
-      <p className="text-meta">{warning}</p>
+      <p className="type-meta">{warning}</p>
       {error !== null ? (
         <p className="notice notice--error" role="alert">
           {error}

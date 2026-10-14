@@ -26,7 +26,7 @@ export function NotebookPanel({ plugins, active, names, fetchImpl }: NotebookPan
 
   return (
     <section className="panel" aria-labelledby="experiments-notebook">
-      <h2 id="experiments-notebook" className="text-section-title">
+      <h2 id="experiments-notebook" className="type-section-title">
         Notebook editor
       </h2>
       <ErrorNotice message={plugins.error === null ? null : `Could not load notebook plugins: ${plugins.error}`} />
@@ -45,7 +45,7 @@ export function NotebookPanel({ plugins, active, names, fetchImpl }: NotebookPan
       {launchable.length === 0 && plugins.loading === false ? (
         <>
           {list?.install_hint ? <p className="server-text">{list.install_hint}</p> : null}
-          <p className="text-meta">{WITHOUT_PLUGIN}</p>
+          <p className="type-meta">{WITHOUT_PLUGIN}</p>
         </>
       ) : null}
       {launchable.length > 0 ? (

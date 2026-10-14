@@ -40,8 +40,8 @@ export function PluginRegisterForm({ fetchImpl, onRegistered }: PluginRegisterFo
 
   return (
     <form className="panel panel--nested" aria-label="Register a plugin" onSubmit={(event) => void submit(event)}>
-      <h3 className="text-section-title">Register a plugin</h3>
-      <p className="text-meta">
+      <h3 className="type-section-title">Register a plugin</h3>
+      <p className="type-meta">
         Use the shipped manifest or one below the workspace plugins folder. The executable must be on the server&apos;s PATH or below that folder.
       </p>
       <div className="form-row">

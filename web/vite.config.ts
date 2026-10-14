@@ -1,3 +1,4 @@
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
@@ -7,7 +8,7 @@ import { defineConfig } from "vitest/config";
 // wherever FastAPI mounts the application.
 export default defineConfig({
   base: "./",
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   build: {
     outDir: "../src/omrg/transports/api/static",
     emptyOutDir: true,
@@ -17,6 +18,9 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    // Vitest replaces every CSS import with an empty string. The stylesheet
+    // guard tests read CSS source with ?raw, so let those reads through.
+    css: { include: [/\.css\?raw$/] },
     restoreMocks: true,
   },
 });

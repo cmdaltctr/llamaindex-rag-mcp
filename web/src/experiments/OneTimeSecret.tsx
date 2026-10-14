@@ -25,11 +25,11 @@ export function OneTimeSecret({ title, secret, children, onHide }: OneTimeSecret
 
   return (
     <section className="one-time-secret notice notice--warning" aria-label={title}>
-      <h3 className="text-section-title">{title}</h3>
-      <code className="one-time-secret__value text-code" dir="ltr">
+      <h3 className="type-section-title">{title}</h3>
+      <code className="one-time-secret__value type-code" dir="ltr">
         {secret}
       </code>
-      <p className="text-meta">Shown once. OMRG cannot show it again. Copy it now, then hide it.</p>
+      <p className="type-meta">Shown once. OMRG cannot show it again. Copy it now, then hide it.</p>
       {children}
       <div className="button-row">
         <button type="button" className="button button--small button--tinted" onClick={() => void copySecret()}>
@@ -39,7 +39,7 @@ export function OneTimeSecret({ title, secret, children, onHide }: OneTimeSecret
           Hide token
         </button>
       </div>
-      <p className="text-meta" role="status">
+      <p className="type-meta" role="status">
         {copy}
       </p>
     </section>

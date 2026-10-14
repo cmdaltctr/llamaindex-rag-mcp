@@ -5,7 +5,6 @@ import { ChunkViewer } from "../shared/ChunkViewer";
 import { ErrorNotice, ViewHeader } from "../shared/controls";
 import { messageOf } from "../shared/labels";
 import { useLoad } from "../shared/useLoad";
-import "../views.css";
 import { ResultList } from "./ResultList";
 import { SearchForm } from "./SearchForm";
 
@@ -59,7 +58,7 @@ export function SearchView({ fetchImpl, focusHeading = false }: SearchViewProps)
       {outcome === null || outcome.hits.length === 0 ? (
         <div className="empty-state" data-testid="empty-state">
           <p className="empty-state__title">{outcome === null ? "No search yet" : "No results"}</p>
-          <p className="text-meta">
+          <p className="type-meta">
             {outcome === null ? "Results appear here with their score kind and source." : "Try another query or fewer filters."}
           </p>
         </div>

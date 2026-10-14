@@ -88,7 +88,7 @@ export function SearchForm({ collections, collection, busy, onCollection, onSubm
         </label>
         <textarea
           id={`${id}-f`}
-          className="control text-code"
+          className="control type-code"
           dir="ltr"
           rows={2}
           placeholder='{"file_type": "md"}'

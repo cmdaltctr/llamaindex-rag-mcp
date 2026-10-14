@@ -40,7 +40,7 @@ export function ProfilePanel({ collection, storedProfile, fetchImpl, onChanged }
 
   return (
     <section className="panel" aria-labelledby={`${selectId}-title`}>
-      <h2 id={`${selectId}-title`} className="text-section-title">
+      <h2 id={`${selectId}-title`} className="type-section-title">
         Collection profile
       </h2>
       <p>{storedProfile !== null ? `Stored profile: ${storedProfile}` : "No profile is stored for this collection."}</p>
@@ -93,14 +93,14 @@ function ProfileFlow({ flow, onClose }: { flow: Flow; onClose: () => void }) {
             <tbody>
               {contract.lever_impacts.map((impact) => (
                 <tr key={impact.lever}>
-                  <td className="text-code">{impact.lever}</td>
-                  <td className="text-code">{impact.change}</td>
+                  <td className="type-code">{impact.lever}</td>
+                  <td className="type-code">{impact.change}</td>
                   <td>{TIMING[impact.timing] ?? impact.timing}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="text-meta">{contract.reingest_pointer}</p>
+          <p className="type-meta">{contract.reingest_pointer}</p>
           <ConfirmationNote confirmation={preview?.confirmation} />
         </>
       ) : null}

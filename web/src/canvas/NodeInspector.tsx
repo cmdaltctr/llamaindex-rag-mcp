@@ -19,8 +19,8 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
   if (!node) {
     return (
       <section className="canvas-panel" aria-label="Node settings">
-        <h2 className="text-section-title">Node settings</h2>
-        <p className="text-meta">Select a node to edit its settings.</p>
+        <h2 className="type-section-title">Node settings</h2>
+        <p className="type-meta">Select a node to edit its settings.</p>
       </section>
     );
   }
@@ -32,20 +32,20 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
 
   return (
     <section className="canvas-panel inspector-panel" aria-label="Node settings">
-      <h2 className="text-section-title">
+      <h2 className="type-section-title">
         Node <code>{id}</code>
       </h2>
-      <p className="text-meta">
+      <p className="type-meta">
         {operation?.title ?? "Unknown operation"} <code>{node.operation}</code>
       </p>
-      {operation?.description && <p className="text-meta">{operation.description}</p>}
+      {operation?.description && <p className="type-meta">{operation.description}</p>}
       {operation && !operation.available && (
-        <p className="canvas-warning text-meta">Unavailable on this host: {operation.unavailable_reasons.join(" ")}</p>
+        <p className="canvas-warning type-meta">Unavailable on this host: {operation.unavailable_reasons.join(" ")}</p>
       )}
       {nodeIssues.length > 0 && (
         <ul className="issue-list">
           {nodeIssues.map((issue, index) => (
-            <li key={index} className="canvas-error text-meta">
+            <li key={index} className="canvas-error type-meta">
               <code>{issue.code}</code> {issue.port ? `${issue.port}: ` : ""}
               {issue.message}
             </li>
@@ -63,7 +63,7 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
         </label>
       )}
       {operation?.bypass && (
-        <p className="text-meta">
+        <p className="type-meta">
           A bypassed node passes its <code>{operation.bypass.input_port}</code> input through unchanged.
         </p>
       )}

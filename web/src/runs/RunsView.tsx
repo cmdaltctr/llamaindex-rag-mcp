@@ -4,7 +4,6 @@ import { listRuns, RUN_STATUSES, type RunDetailRecord } from "../api/runs";
 import { maskText } from "./redact";
 import { RunDetail } from "./RunDetail";
 import { RunList } from "./RunList";
-import "./runs.css";
 
 interface RunsViewProps {
   fetchImpl?: FetchLike;
@@ -47,10 +46,10 @@ export function RunsView({ fetchImpl, focusHeading = false }: RunsViewProps) {
   return (
     <section className="view" aria-labelledby="view-runs-title">
       <header className="view__header">
-        <h1 id="view-runs-title" className="text-page-title" ref={headingRef} tabIndex={-1}>
+        <h1 id="view-runs-title" className="type-page-title" ref={headingRef} tabIndex={-1}>
           Runs
         </h1>
-        <p className="text-meta">Pipeline runs, their stages and their results.</p>
+        <p className="type-meta">Pipeline runs, their stages and their results.</p>
       </header>
       <div className="runs-toolbar">
         <label className="field-inline">
@@ -75,7 +74,7 @@ export function RunsView({ fetchImpl, focusHeading = false }: RunsViewProps) {
         ) : (
           <div className="empty-state empty-state--compact" data-testid="empty-state">
             <p className="empty-state__title">No run selected</p>
-            <p className="text-meta">Select a run to see its admitted snapshot, node outcomes and evidence.</p>
+            <p className="type-meta">Select a run to see its admitted snapshot, node outcomes and evidence.</p>
           </div>
         )}
       </div>

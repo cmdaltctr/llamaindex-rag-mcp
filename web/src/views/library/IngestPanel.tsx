@@ -45,11 +45,11 @@ export function IngestPanel({ collection, roots, fetchImpl, onJob }: IngestPanel
 
   return (
     <form className="panel" onSubmit={(e) => void submit(e)} aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className="text-section-title">
+      <h2 id={`${id}-title`} className="type-section-title">
         Ingest from an approved folder
       </h2>
       {approved.length === 0 ? (
-        <p className="text-meta">No folders are approved. Start the server with omrg web --root FOLDER to approve one.</p>
+        <p className="type-meta">No folders are approved. Start the server with omrg web --root FOLDER to approve one.</p>
       ) : (
         <>
           <div className="form-row">

@@ -45,13 +45,13 @@ export function RegisterForm({ roots, fetchImpl, onRegistered }: RegisterFormPro
 
   return (
     <section className="panel" aria-labelledby="experiments-register">
-      <h2 id="experiments-register" className="text-section-title">
+      <h2 id="experiments-register" className="type-section-title">
         Register an experiment workspace
       </h2>
-      {roots === undefined ? <p className="text-meta">Loading approved roots.</p> : null}
+      {roots === undefined ? <p className="type-meta">Loading approved roots.</p> : null}
       {roots !== undefined && roots.length === 0 ? (
-        <p className="text-meta">
-          This server has no approved experiment root. Restart it with <code className="text-code">omrg web --experiment-root &lt;directory&gt;</code>, then
+        <p className="type-meta">
+          This server has no approved experiment root. Restart it with <code className="type-code">omrg web --experiment-root &lt;directory&gt;</code>, then
           register a folder below that root.
         </p>
       ) : null}
@@ -91,7 +91,7 @@ export function RegisterForm({ roots, fetchImpl, onRegistered }: RegisterFormPro
           </button>
         </form>
       ) : null}
-      <p className="text-meta">
+      <p className="type-meta">
         The folder must already exist. Its store is LanceDB, below the folder&apos;s output directory. Contexts last until the server stops.
       </p>
       <ErrorNotice message={error} />

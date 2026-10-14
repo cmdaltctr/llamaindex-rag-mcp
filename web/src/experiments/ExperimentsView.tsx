@@ -4,11 +4,9 @@ import { listExperiments } from "../api/experiments";
 import { listPlugins } from "../api/plugins";
 import { ErrorNotice, ViewHeader } from "../views/shared/controls";
 import { useLoad } from "../views/shared/useLoad";
-import "../views/views.css";
 import { ContextTable } from "./ContextTable";
 import { CredentialPanel } from "./CredentialPanel";
 import { ExperimentRuns } from "./ExperimentRuns";
-import "./experiments.css";
 import { contextLabel } from "./labels";
 import { NotebookPanel } from "./NotebookPanel";
 import { RegisterForm } from "./RegisterForm";
@@ -34,14 +32,14 @@ export function ExperimentsView({ fetchImpl, focusHeading = false }: Experiments
     <section className="view view--documents" aria-labelledby="view-experiments-title">
       <ViewHeader id="experiments" focusHeading={focusHeading} />
       <section className="notice notice--warning trust-notice" aria-label="Trust notice">
-        <h2 className="text-section-title">Trust notice</h2>
-        {trustNotice !== null ? <p className="server-text">{trustNotice}</p> : <p className="text-meta">Loading the trust notice.</p>}
+        <h2 className="type-section-title">Trust notice</h2>
+        {trustNotice !== null ? <p className="server-text">{trustNotice}</p> : <p className="type-meta">Loading the trust notice.</p>}
       </section>
 
       <RegisterForm roots={experiments.data?.roots} fetchImpl={fetchImpl} onRegistered={experiments.reload} />
 
       <section className="panel" aria-labelledby="experiments-contexts">
-        <h2 id="experiments-contexts" className="text-section-title">
+        <h2 id="experiments-contexts" className="type-section-title">
           Experiment contexts
         </h2>
         <ErrorNotice message={experiments.error === null ? null : `Could not load experiment contexts: ${experiments.error}`} />

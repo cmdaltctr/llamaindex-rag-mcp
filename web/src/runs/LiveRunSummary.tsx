@@ -1,7 +1,6 @@
 import type { MonitorMode } from "./eventClient";
 import { maskText } from "./redact";
 import { unitCounts, type RunView } from "./runState";
-import "./runs.css";
 
 const MODE_TEXT: Record<MonitorMode, string> = {
   connecting: "Connecting to the event stream",
@@ -31,15 +30,15 @@ export function LiveRunSummary({ runId, status, view, mode, live, error }: LiveR
       <p className="live-run__status">
         Run <code>{runId}</code>: {status}
       </p>
-      <p className="text-meta" aria-live="polite">
+      <p className="type-meta" aria-live="polite">
         {mode === null ? "Waiting for the run record" : `${prefix}: ${MODE_TEXT[mode]}`}
       </p>
       {units.started > 0 && (
-        <p className="text-meta">{`Units: ${units.started} started, ${units.completed} completed, ${units.failed} failed, ${units.cancelled} cancelled`}</p>
+        <p className="type-meta">{`Units: ${units.started} started, ${units.completed} completed, ${units.failed} failed, ${units.cancelled} cancelled`}</p>
       )}
-      {view.effects.length > 0 && <p className="text-meta">{`Committed effects so far: ${view.effects.length}`}</p>}
-      {view.wallTimeS !== null && <p className="text-meta">{`Run wall time: ${view.wallTimeS.toFixed(2)} s`}</p>}
-      {error && <p className="text-meta live-run__error">{`Event monitoring: ${maskText(error)}`}</p>}
+      {view.effects.length > 0 && <p className="type-meta">{`Committed effects so far: ${view.effects.length}`}</p>}
+      {view.wallTimeS !== null && <p className="type-meta">{`Run wall time: ${view.wallTimeS.toFixed(2)} s`}</p>}
+      {error && <p className="type-meta live-run__error">{`Event monitoring: ${maskText(error)}`}</p>}
     </section>
   );
 }

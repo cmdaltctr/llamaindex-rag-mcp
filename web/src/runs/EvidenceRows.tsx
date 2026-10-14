@@ -16,7 +16,7 @@ export function rowCollection(row: Row): string | null {
 
 export function ChunkButton({ row, onOpen }: { row: Row; onOpen: OpenChunk }) {
   const chunkId = str(row.chunk_id);
-  if (!chunkId) return <span className="text-meta">No chunk id</span>;
+  if (!chunkId) return <span className="type-meta">No chunk id</span>;
   return (
     <button type="button" className="button button--ghost button--small" onClick={() => onOpen(chunkId, rowCollection(row))}>
       {`Show full chunk ${chunkId}`}
@@ -45,7 +45,7 @@ interface EvidenceRowsProps {
 export function EvidenceRows({ name, rows, total, onOpen }: EvidenceRowsProps) {
   return (
     <div className="evidence-rows">
-      {total > rows.length && <p className="text-meta">{`Showing the first ${rows.length} of ${total} rows.`}</p>}
+      {total > rows.length && <p className="type-meta">{`Showing the first ${rows.length} of ${total} rows.`}</p>}
       <table className="evidence-table" aria-label={`Ranked rows: ${name}`}>
         <thead>
           <tr>
@@ -64,7 +64,7 @@ export function EvidenceRows({ name, rows, total, onOpen }: EvidenceRowsProps) {
               <tr key={`${index}-${str(row.chunk_id) ?? ""}`}>
                 <td>
                   {index + 1}
-                  {earlier.length > 0 && <span className="text-meta">{` (${earlier.join(", ")})`}</span>}
+                  {earlier.length > 0 && <span className="type-meta">{` (${earlier.join(", ")})`}</span>}
                 </td>
                 <td>
                   <Score row={row} />
@@ -72,7 +72,7 @@ export function EvidenceRows({ name, rows, total, onOpen }: EvidenceRowsProps) {
                 <td className="evidence-table__source">{maskText(str(row.source) ?? "Unknown")}</td>
                 <td className="evidence-table__text">
                   {preview.text}
-                  {preview.truncated && <span className="text-meta"> Preview cut at 4 KiB.</span>}
+                  {preview.truncated && <span className="type-meta"> Preview cut at 4 KiB.</span>}
                 </td>
                 <td>
                   <ChunkButton row={row} onOpen={onOpen} />

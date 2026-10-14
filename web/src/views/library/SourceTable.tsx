@@ -10,7 +10,7 @@ interface SourceTableProps {
 /** Sources of one collection with chunk counts, stable ids and machine-local availability. */
 export function SourceTable({ collection, sources, onDelete }: SourceTableProps) {
   if (sources.length === 0) {
-    return <p className="text-meta">This collection has no sources.</p>;
+    return <p className="type-meta">This collection has no sources.</p>;
   }
   return (
     <div className="table-scroll">
@@ -29,10 +29,10 @@ export function SourceTable({ collection, sources, onDelete }: SourceTableProps)
         <tbody>
           {sources.map((source) => (
             <tr key={source.source_id ?? `legacy:${source.source}`}>
-              <td className="text-code" dir="ltr">
+              <td className="type-code" dir="ltr">
                 {source.source}
               </td>
-              <td className="text-code" dir="ltr">
+              <td className="type-code" dir="ltr">
                 {source.source_id ?? "No stable ID (legacy row)"}
               </td>
               <td>{source.chunks}</td>

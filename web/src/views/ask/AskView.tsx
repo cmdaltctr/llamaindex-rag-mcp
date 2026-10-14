@@ -5,7 +5,6 @@ import { ChunkViewer } from "../shared/ChunkViewer";
 import { CollectionSelect, ErrorNotice, ViewHeader } from "../shared/controls";
 import { messageOf } from "../shared/labels";
 import { useLoad } from "../shared/useLoad";
-import "../views.css";
 import { AnswerPanel } from "./AnswerPanel";
 
 interface AskViewProps {
@@ -77,7 +76,7 @@ export function AskView({ fetchImpl, focusHeading = false }: AskViewProps) {
       {answer === null ? (
         <div className="empty-state" data-testid="empty-state">
           <p className="empty-state__title">{busy ? "Waiting for the answer" : "No question yet"}</p>
-          <p className="text-meta">The answer appears here with its status, citations and evidence.</p>
+          <p className="type-meta">The answer appears here with its status, citations and evidence.</p>
         </div>
       ) : (
         <AnswerPanel result={answer.result} onShowChunk={setChunkId} />

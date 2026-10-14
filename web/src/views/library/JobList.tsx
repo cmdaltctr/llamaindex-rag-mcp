@@ -65,11 +65,11 @@ function JobItem({ tracked, pollMs, fetchImpl, onFinished }: { tracked: TrackedJ
 
   return (
     <li className="job-list__item" data-status={job.status}>
-      <span className="text-code" dir="ltr">
+      <span className="type-code" dir="ltr">
         {tracked.label}
       </span>
       <span role="status">{statusText(job)}</span>
-      {pollError !== null ? <span className="text-meta">Could not check the job: {pollError}</span> : null}
+      {pollError !== null ? <span className="type-meta">Could not check the job: {pollError}</span> : null}
     </li>
   );
 }

@@ -42,6 +42,18 @@
   --status-success: #5f8d3d;
   --status-info: #2d72c4;
 
+  /*
+   * Text colours for status badges. Raw status colours fail WCAG AA (4.5:1) as
+   * normal text on their own 10% tint, so the label mixes 60% status colour
+   * with 40% text colour. Declared once here: the values follow the active
+   * theme because --status-* and --text-primary change on this same element.
+   * Contrast is asserted in tokens.test.ts.
+   */
+  --status-error-label: color-mix(in srgb, var(--status-error) 60%, var(--text-primary));
+  --status-warning-label: color-mix(in srgb, var(--status-warning) 60%, var(--text-primary));
+  --status-success-label: color-mix(in srgb, var(--status-success) 60%, var(--text-primary));
+  --status-info-label: color-mix(in srgb, var(--status-info) 60%, var(--text-primary));
+
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
 
@@ -69,6 +81,8 @@
   --nav-width: 13rem;
   --inspector-width: 20rem;
   --transition-fast: 150ms ease;
+
+  --shadow-floating: 0 1px 3px rgb(0 0 0 / 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -101,6 +115,8 @@
     --status-warning: #c67f13;
     --status-success: #76ad4f;
     --status-info: #479fe6;
+
+    --shadow-floating: 0 1px 3px rgb(0 0 0 / 0.4);
   }
 }
 
@@ -133,4 +149,6 @@
   --status-warning: #c67f13;
   --status-success: #76ad4f;
   --status-info: #479fe6;
+
+  --shadow-floating: 0 1px 3px rgb(0 0 0 / 0.4);
 }

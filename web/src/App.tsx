@@ -70,7 +70,7 @@ export default function App() {
       <header className="topbar">
         <p className="topbar__brand">
           <span className="topbar__name">OMRG</span>
-          <span className="topbar__subtitle text-meta">Local workspace</span>
+          <span className="topbar__subtitle type-meta">Local workspace</span>
         </p>
         <div className="topbar__actions">
           <ThemeSelect value={state.theme} onChange={setTheme} />

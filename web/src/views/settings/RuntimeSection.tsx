@@ -18,7 +18,7 @@ export function RuntimeSection({ health, session, operations }: RuntimeSectionPr
   const unavailable = operations.data?.filter((op) => !op.available) ?? [];
   return (
     <section className="panel" aria-labelledby="settings-runtime">
-      <h2 id="settings-runtime" className="text-section-title">
+      <h2 id="settings-runtime" className="type-section-title">
         Runtime
       </h2>
       <dl className="facts">
@@ -35,7 +35,7 @@ export function RuntimeSection({ health, session, operations }: RuntimeSectionPr
         <ul className="plain-list" aria-label="Unavailable operations">
           {unavailable.map((op) => (
             <li key={op.operation_id}>
-              {op.title} <span className="text-code">({op.operation_id})</span>: not available in this runtime
+              {op.title} <span className="type-code">({op.operation_id})</span>: not available in this runtime
             </li>
           ))}
         </ul>

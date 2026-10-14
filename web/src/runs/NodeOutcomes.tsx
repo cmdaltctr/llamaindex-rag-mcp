@@ -50,12 +50,12 @@ export function NodeOutcomes({ rows, wallTimeS, selected, onSelect }: NodeOutcom
   const chosen = rows.find((row) => row.key === selected) ?? null;
   return (
     <section className="run-section" aria-label="Node outcomes">
-      <h3 className="text-subsection-title">Node outcomes</h3>
-      <p className="text-meta">
+      <h3>Node outcomes</h3>
+      <p className="type-meta">
         {wallTimeS !== null ? `Run wall time: ${wallTimeS.toFixed(2)} s. ` : "Run wall time: recorded when the run ends. "}
         Node times can overlap, so they are not added up.
       </p>
-      {rows.length === 0 && <p className="text-meta">No node has reported an event yet.</p>}
+      {rows.length === 0 && <p className="type-meta">No node has reported an event yet.</p>}
       <ul className="run-outcomes">
         {rows.map((row) => (
           <li key={row.key}>
@@ -67,7 +67,7 @@ export function NodeOutcomes({ rows, wallTimeS, selected, onSelect }: NodeOutcom
               onClick={() => onSelect(row.key)}
             >
               <code>{row.nodeId}</code>
-              {row.unitId && <span className="text-meta">{row.unitId}</span>}
+              {row.unitId && <span className="type-meta">{row.unitId}</span>}
             </button>
             <NodeRunBadge state={row.state} />
           </li>

@@ -20,8 +20,8 @@ export function RunSnapshot({ run }: { run: RunDetailRecord }) {
   const { graph_identity: identity, operations, ...resources } = run.resources;
   return (
     <section className="run-section" aria-label="Admitted snapshot">
-      <h3 className="text-subsection-title">Admitted snapshot</h3>
-      <p className="text-meta">Recorded at admission. Later draft or profile changes do not alter it.</p>
+      <h3>Admitted snapshot</h3>
+      <p className="type-meta">Recorded at admission. Later draft or profile changes do not alter it.</p>
       <dl className="safe-value">
         <Field label="Revision">
           <code>{run.revision_id}</code>
@@ -29,7 +29,7 @@ export function RunSnapshot({ run }: { run: RunDetailRecord }) {
         <Field label="Graph hash">
           <code>{run.graph_hash}</code>
         </Field>
-        <Field label="Graph identity">{typeof identity === "string" ? <code>{identity}</code> : <span className="text-meta">not recorded</span>}</Field>
+        <Field label="Graph identity">{typeof identity === "string" ? <code>{identity}</code> : <span className="type-meta">not recorded</span>}</Field>
         <Field label="Created">{run.created_at}</Field>
         <Field label="Started">{run.started_at ?? "not started"}</Field>
         <Field label="Finished">{run.finished_at ?? "not finished"}</Field>

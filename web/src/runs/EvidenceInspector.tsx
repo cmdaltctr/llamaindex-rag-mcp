@@ -4,7 +4,6 @@ import { ChunkViewer } from "./ChunkViewer";
 import { boundText, findEvidence, type Row } from "./evidence";
 import { ChunkButton, EvidenceRows } from "./EvidenceRows";
 import { maskText } from "./redact";
-import "./runs.css";
 
 interface EvidenceInspectorProps {
   outputs: Record<string, unknown>;
@@ -34,14 +33,14 @@ export function EvidenceInspector({ outputs, fallbackCollection, fetchImpl }: Ev
 
   return (
     <section className="run-section" aria-label="Evidence">
-      <h3 className="text-subsection-title">Evidence</h3>
-      <p className="text-meta">
+      <h3>Evidence</h3>
+      <p className="type-meta">
         Each score keeps its own kind. Scores of different kinds are not comparable and are not probabilities of correctness.
       </p>
-      {items.length === 0 && <p className="text-meta">No ranked rows, citations or answers were found in the run outputs.</p>}
+      {items.length === 0 && <p className="type-meta">No ranked rows, citations or answers were found in the run outputs.</p>}
       {items.map((item) => (
         <div key={`${item.kind}-${item.name}`} className="evidence-item">
-          <h4 className="text-subsection-title">
+          <h4>
             <code>{item.name}</code>
           </h4>
           {item.kind === "rows" && <EvidenceRows name={item.name} rows={item.rows} total={item.total} onOpen={onOpen} />}
@@ -53,7 +52,7 @@ export function EvidenceInspector({ outputs, fallbackCollection, fetchImpl }: Ev
         (open.collection ? (
           <ChunkViewer key={open.chunkId} collection={open.collection} chunkId={open.chunkId} fetchImpl={fetchImpl} onClose={() => setOpen(null)} />
         ) : (
-          <p className="text-meta">{`The collection of chunk ${open.chunkId} is not recorded, so the chunk cannot be opened.`}</p>
+          <p className="type-meta">{`The collection of chunk ${open.chunkId} is not recorded, so the chunk cannot be opened.`}</p>
         ))}
     </section>
   );

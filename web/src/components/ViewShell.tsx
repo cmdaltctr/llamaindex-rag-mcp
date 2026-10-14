@@ -18,14 +18,14 @@ export function ViewShell({ view, focusHeading }: ViewShellProps) {
   return (
     <section className="view" aria-labelledby={`view-${view.id}-title`}>
       <header className="view__header">
-        <h1 id={`view-${view.id}-title`} className="text-page-title" ref={headingRef} tabIndex={-1}>
+        <h1 id={`view-${view.id}-title`} className="type-page-title" ref={headingRef} tabIndex={-1}>
           {view.label}
         </h1>
-        <p className="text-meta">{view.summary}</p>
+        <p className="type-meta">{view.summary}</p>
       </header>
       <div className="empty-state" data-testid="empty-state">
         <p className="empty-state__title">{view.emptyTitle}</p>
-        <p className="text-meta">{view.emptyBody}</p>
+        <p className="type-meta">{view.emptyBody}</p>
       </div>
     </section>
   );
