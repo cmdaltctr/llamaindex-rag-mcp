@@ -16,7 +16,7 @@ Both live in `openspec/changes/`. The spec deltas are the contract. This skill t
 
 The web app is a React 19 + Vite single-page app, tested with Vitest, linted with ESLint, and built with `npm`. It has no router library: views switch on `location.hash`. It has no i18n library: copy is plain British English in the source.
 
-Today (14 October 2026) `web/` has hand-written CSS only. `web/src/styles/tokens.css` holds the palette. `web/src/styles/app.css` holds layout and shared controls. After `add-web-ui-stack` lands, `web/` also has:
+Before `add-web-ui-stack` lands, `web/` has hand-written CSS only. `web/src/styles/tokens.css` holds the palette. `web/src/styles/app.css` is the stylesheet entry: it declares the cascade layers and imports `legacy.css` (layout, shared controls, typography roles) and the per-view CSS files into the `legacy` layer. Never import a `.css` file from a component; add new stylesheets to `app.css` inside a layer. After `add-web-ui-stack` lands, `web/` also has:
 
 - Tailwind v4 through `@tailwindcss/vite`, CSS-first, no `tailwind.config` file.
 - An `@theme inline` bridge that aliases utility names to the `tokens.css` variables. `tokens.css` stays the single source of truth.
@@ -67,7 +67,7 @@ The owner settled four conflicts found when this skill was written. The OpenSpec
 1. Seven navigation areas: Home, Chat, Knowledge Base, Studio, Experiments, Integrations, Settings.
 2. Icons come from `lucide-react`, not inline SVG. The licence is ISC.
 3. The tinted button border is 30% light / 35% dark, as in `tokens.css`. `tokens.css` is authoritative over the design reference.
-4. Badge text uses `--status-*-label` tokens (60% status colour, 40% text colour) because raw status colours fail AA. Redesign task 1.3 adds them to `tokens.css`. Until it lands, do not use raw status colours as badge text.
+4. Badge text uses `--status-*-label` tokens (60% status colour, 40% text colour) because raw status colours fail AA. `add-web-ui-stack` defines them in `tokens.css` and tests the 4.5:1 ratios; use the `text-status-*-label` utilities. Do not use raw status colours as badge text.
 
 ## Discovery and attribution
 

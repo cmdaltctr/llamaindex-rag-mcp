@@ -9,7 +9,7 @@ The palette comes from the `openchamber-light` and `openchamber-dark` themes at 
 
 After the change is archived, these files move under `openspec/changes/archive/`.
 
-`web/src/styles/tokens.css` already implements the palette. It is the single source of truth. Components never contain literal colours. `web/src/styles/app.css` holds layout, typography roles, and the legacy shared controls.
+`web/src/styles/tokens.css` already implements the palette. It is the single source of truth. Components never contain literal colours. `web/src/styles/app.css` is the stylesheet entry and token bridge. It loads Tailwind, React Flow and the legacy CSS (`legacy.css` holds layout, typography roles and shared controls) into cascade layers, so a utility class always beats a legacy rule. `cascade.test.ts` and `bridge.test.ts` guard this. Do not import CSS from components, and do not give a legacy class the name of a Tailwind utility.
 
 ## Palette and tokens
 
@@ -57,13 +57,13 @@ Computed on 14 October 2026 from the token values. WCAG AA needs 4.5:1 for norma
 
 Bold values fail AA for normal text. A badge label at 13px is normal text. Do not use the raw status colour as badge text.
 
-Derive a label colour by mixing the status colour with the text colour:
+The label colour mixes the status colour with the text colour. `tokens.css` already declares it once on `:root`, so both themes follow `--text-primary`:
 
 ```css
 --status-error-label: color-mix(in srgb, var(--status-error) 60%, var(--text-primary));
 ```
 
-Computed in sRGB, a 60% status / 40% text mix reaches 6.01 (error), 5.69 (warning), 4.96 (success), and 5.71 (info) in light, and passes in dark. Use the status colour for the border and the 10% fill. Use the label colour for text. The owner approved this fix. Redesign task 1.3 adds the `--status-*-label` tokens to `tokens.css` and a test for the ratios. Re-check in the browser, because `color-mix` results depend on the colour space.
+Computed in sRGB, a 60% status / 40% text mix reaches 6.01 (error), 5.69 (warning), 4.96 (success), and 5.71 (info) in light, and passes in dark. Use the status colour for the border and the 10% fill. Use the label colour for text. The owner approved this fix. `add-web-ui-stack` added the `--status-*-label` tokens to `tokens.css`, the `text-status-*-label` utilities, and `tokens.test.ts`, which computes the ratio on the 10% tint over canvas, elevated and muted surfaces in both themes. Re-check in the browser if you change the mix, because `color-mix` results depend on the colour space.
 
 The status colour as a UI boundary (icon, dot, border) needs 3:1. Success on canvas in light is 3.82, which passes for that use only.
 
@@ -80,7 +80,7 @@ System sans for UI, monospace for code, identifiers, paths, and model names. Hea
 | Meta, helper | `--text-meta` | 0.8125rem | 400 | 1.5 |
 | Code | `--text-code` | 0.75rem | 400 | readable |
 
-`app.css` defines `.text-page-title`, `.text-section-title`, `.text-meta`, and `.text-code`. Keep heading levels in order: one `h1` per view, which receives focus after navigation. Preserve browser zoom and wrapping. Do not use fixed heights on text containers.
+`legacy.css` defines the legacy role classes `.type-page-title`, `.type-section-title`, `.type-meta`, and `.type-code`. They are not named `.text-*`, because those names are Tailwind utilities from the bridge. Migrated views use the `text-page-title`, `text-section-title`, `text-meta` and `text-code` utilities instead. Keep heading levels in order: one `h1` per view, which receives focus after navigation. Preserve browser zoom and wrapping. Do not use fixed heights on text containers.
 
 ## Spacing and geometry
 
@@ -102,7 +102,7 @@ System sans for UI, monospace for code, identifiers, paths, and model names. Hea
 
 Space a group by the distance between its parts: tighter inside a card, wider between sections. Do not use one gap everywhere, and do not add one-off margins. Use `items-start` on a card grid so a short card does not stretch.
 
-Cards are flat with a 1px border. Elevation is a subtle shadow on the top bar and floating panels only: `0 1px 3px rgb(0 0 0 / 0.08)` in light and `0 1px 3px rgb(0 0 0 / 0.4)` in dark. Add these as elevation tokens, not literals in components. Dark chrome stays distinguishable from the canvas by border and shadow, not by a new colour.
+Cards are flat with a 1px border. Elevation is a subtle shadow on the top bar and floating panels only: `0 1px 3px rgb(0 0 0 / 0.08)` in light and `0 1px 3px rgb(0 0 0 / 0.4)` in dark. These are the `--shadow-floating` token in `tokens.css` (utility `shadow-floating`); use it, not literals in components. Dark chrome stays distinguishable from the canvas by border and shadow, not by a new colour.
 
 Layout uses logical properties only (`margin-inline`, `padding-block`, `inset-inline-start`, `border-inline-end`). In Tailwind use `ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`, `border-s`, `border-e`, `text-start`. Do not add physical `left` or `right` rules.
 

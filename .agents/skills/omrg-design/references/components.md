@@ -6,11 +6,12 @@ Read [visual foundations](foundations.md) first. Paths marked "planned" come fro
 
 | UI element | File |
 | --- | --- |
-| Primitives (button, badge, card, dialog, input, select, label, tooltip, separator, table) | `web/src/components/ui/<name>.tsx` (planned) |
-| `cn()` helper (clsx + tailwind-merge) | `web/src/lib/` (planned, task 1.4) |
-| shadcn CLI settings | `web/components.json` (planned; css path `src/styles/app.css`) |
+| Primitives (button, badge, card, dialog, input, select, label, tooltip, separator, table) | `web/src/components/ui/<name>.tsx` |
+| `cn()` helper (clsx + tailwind-merge, knows the token font sizes and radii) | `web/src/lib/utils.ts` |
+| shadcn CLI settings | `web/components.json` (css path `src/styles/app.css`) |
 | Tokens | `web/src/styles/tokens.css` |
-| Layout, legacy controls, typography roles | `web/src/styles/app.css` |
+| Stylesheet entry, cascade layers, token bridge | `web/src/styles/app.css` |
+| Layout, legacy controls, typography roles (`.type-*`) | `web/src/styles/legacy.css`, plus per-view CSS imported by `app.css` |
 | Views list and hash routing | `web/src/lib/views.ts`, `web/src/App.tsx` |
 | Navigation | `web/src/components/AppNav.tsx` |
 | Theme select | `web/src/components/ThemeSelect.tsx` |
@@ -76,7 +77,7 @@ Every category, type, or status label gets a colour. This is a standing rule. Do
 | Run status, answer status, integration availability | Status tokens: 10% fill, 1px border in the status colour, label colour from the contrast section. The value appears as text. |
 | Collection profile (`documents`, `codebase`), node kind | Stable hue hash: transparent fill, `border-current`, text `oklch(0.42 0.13 <hue>)` in light and `oklch(0.8 0.13 <hue>)` in dark. |
 
-One label has one hue everywhere. Use one shared hue function, owned beside the `Badge` primitive (task 1.3). If it does not exist yet, add it there once. Do not copy it into views. Unit-test the colour and text pairing. Colour never carries meaning alone.
+One label has one hue everywhere. Use one shared hue function, owned beside the `Badge` primitive (redesign task 1.3). If it does not exist yet, add it there once. Do not copy it into views. Unit-test the colour and text pairing. Colour never carries meaning alone.
 
 ## Inputs, selects, labels
 

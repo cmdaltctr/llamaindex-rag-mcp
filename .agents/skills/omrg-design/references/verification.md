@@ -34,7 +34,7 @@ Test rules:
 
 1. Write the test before the change. Confirm it fails against the old code, then make it pass.
 2. After you write a test, break the code under test and confirm the test fails.
-3. Prove the token bridge with computed styles: render a fixture that uses a bridged utility, and assert the computed colour equals the `tokens.css` value in light and dark. jsdom does not apply Tailwind, so use a real browser for this check, or test the CSS output.
+3. Prove the token bridge with computed styles: render a fixture that uses a bridged utility, and assert the computed colour equals the `tokens.css` value in light and dark. jsdom does not apply Tailwind, so use a real browser for this check, or test the CSS output (`web/src/styles/bridge.test.ts` does this with Tailwind's `compile`). Vitest blanks CSS imports, so tests read CSS source with `?raw`; `vite.config.ts` sets `test.css.include` to allow it. When you touch stylesheets or class names, run `cascade.test.ts` and `tokens.test.ts`, and compare computed styles and element boxes against a baseline build in light and dark at 1280px and a real 390px viewport (emulate it; the Chrome window cannot go below 500px).
 4. Keep Radix keyboard flows tested: open, Escape, focus return.
 
 ## Coexistence checks for `add-web-ui-stack`
