@@ -23,7 +23,7 @@ Rules for every task: build views only from primitives and Tailwind utilities; a
 - [ ] 1.3 Extend the `Badge` primitive with a hue-hash variant for profile labels and node kinds, and the `Button` primitive with a `chip` variant for selection; the status variants and `--status-*-label` tokens already exist. Unit-test the colour and text pairing for the hue-hash variant and the chip's selected state.
 - [ ] 1.4 Render every failure through `describeError`: one line plus one action; unit-test that no parser or status text reaches the DOM in any view.
 - [ ] 1.5 Rewrite `lib/views.ts` to the seven areas (id, label, icon, summary) and `AppNav` with icons and the active state from the route, switching to a single icon row with short labels and 44px targets below the `md` breakpoint (design D6); remove the placeholder copy; update tests.
-- [ ] 1.6 Build the top bar with the `shadow-floating` utility, the engine status pill (collection count from `["collections"]`, or offline), and the theme select; test both pill states.
+- [ ] 1.6 Build the top bar with the `shadow-floating` utility, the engine status pill (collection count from `["collections"]`, or offline), and the theme control (a `Select` with System, Light and Dark, plus an icon-only button showing sun or moon that switches between Light and Dark, design D6); test both pill states, the one-click switch writing `omrg-preferences.theme`, and the button's accessible name naming the target theme.
 - [ ] 1.7 Add the shared empty and not-found states (icon, one sentence, one action) used by every view; test that a route naming an unknown collection or pipeline shows not-found with a link back to its picker.
 
 ## 2. Home and Knowledge Base
@@ -63,16 +63,24 @@ Rules for every task: build views only from primitives and Tailwind utilities; a
 - [ ] 6.2 Update the OpenAPI contract artifacts for the new operation.
 - [ ] 6.3 Create `web/src/integrations/IntegrationsView.tsx` from `["integrations"]`: catalogue cards with status badges, purpose, copyable install command, the running-launch notice, and the friendly Retry on failure; test the full catalogue, the installed-versus-absent states and the copy action.
 
-## 7. Settings and removal of legacy
+## 7. Settings
 
-- [ ] 7.1 Rebuild Settings on primitives: appearance (theme), runtime capabilities and workspace information; remove controls that moved to other views; update tests.
-- [ ] 7.2 Delete `styles/legacy.css`, `canvas/canvas.css`, `runs/runs.css`, `views/views.css` and `experiments/experiments.css`, the `legacy` layer and every `.type-*` class; load Tailwind's preflight into the `base` layer; change `cascade.test.ts` so any stylesheet other than `tokens.css` and `app.css` fails, and drop the legacy collision test; confirm with `grep` that no `button`, `control`, `panel` or `type-*` legacy class name remains in `web/src`.
-- [ ] 7.3 Sweep `web/src` for dead components, hooks, fixtures and copy left by the moves; confirm every file is under 500 lines.
-- [ ] 7.4 Add `web/src/styles/design-md.test.ts`: parse the front matter of `web/DESIGN.md` and assert every colour, size, radius and spacing value equals the light-theme value in `tokens.css` (status labels computed from the 60/40 mix); confirm it fails when either file changes alone. Update `web/DESIGN.md` for the `chip` and hue-hash variants once they exist.
+- [ ] 7.1 Add `compose.connection_summary()` and `GET /v1/connections` (read scope) per design D13: one entry each for ollama, llamacpp and openrouter with URLs, model names, `key_set` and roles resolved by the startup rules, plus `config_dir` (the server's working directory, whose `.env` settings read); add backend tests for each role combination and a test that no key value appears in the response.
+- [ ] 7.2 Add `POST /v1/connections/{provider}/test` (`manage` scope): one `httpx` model-list request with a 5-second timeout, returning `{ reachable, reason }` from the fixed reason set; test refused, timeout, unauthorised, HTTP error and not-configured against local fake servers, and that no response body or exception text is returned.
+- [ ] 7.3 Add the ring-buffer log handler (last 1,000 records, `RedactingFilter` on the handler) installed by `omrg web`, `GET /v1/logs?after=<seq>` and `GET /v1/logs/stream` (`manage` scope, SSE with replay, ends when admission closes); test redaction of the OpenRouter key, the 1,000-record cap, replay after a sequence, bearer refusal and the stream ending on shutdown.
+- [ ] 7.4 Update the OpenAPI contract artifacts for the connections and logs operations; add `["connections"]` to `api/queries.ts`.
+- [ ] 7.5 Rebuild Settings on primitives with chip-switched sections Appearance, Connections, Server log, Runtime and Workspace (design D13): theme `Select`; provider cards with role badges, key-set text, the restart notice and Test; the terminal-style log panel with level filter, pause, copy and bottom-anchored auto-scroll; runtime capabilities and workspace information; remove controls that moved to other views; test each section, a failed connection test, a live log line arriving, and that no edit control exists for connections.
+- [ ] 7.6 Add the MCP section: the copyable stdio client configuration (`uv run --directory <config_dir> omrg`, with `config_dir` from `["connections"]`) and the HTTP on/off switch wired to the `add-mcp-http-transport` endpoints, showing the state the server returns. Prerequisite: `add-mcp-http-transport` is merged. Test the copy action and the switch against that change's fixture.
 
-## 8. Verification
+## 8. Removal of legacy
 
-- [ ] 8.1 Run `uv run pytest -m "not slow"` for backend changes and `npm run test`, `npm run lint`, `npm run typecheck`, `npm run build` in `web/`; record exact results.
-- [ ] 8.2 Capture the visual matrix per the `omrg-design` verification reference: Home, Chat, Knowledge Base, Studio gallery, Studio canvas, Experiments, run detail, Integrations and Settings at 1280px and 390px in light and dark themes; check status badges, elevation, focus rings and keyboard reachability.
-- [ ] 8.3 Run `openspec validate redesign-web-workspace --strict` and resolve every finding.
-- [ ] 8.4 Check the finished views against the unchanged main specs `local-web-workspace`, `notebook-plugins`, `pipeline-graphs` and `pipeline-run-records`, and against the modified `pipeline-canvas` and `web-ui-stack`; fix any gap in code or raise a spec change; update `docs/guides/` web references to the new navigation and routes.
+- [ ] 8.1 Delete `styles/legacy.css`, `canvas/canvas.css`, `runs/runs.css`, `views/views.css` and `experiments/experiments.css`, the `legacy` layer and every `.type-*` class; load Tailwind's preflight into the `base` layer; change `cascade.test.ts` so any stylesheet other than `tokens.css` and `app.css` fails, and drop the legacy collision test; confirm with `grep` that no `button`, `control`, `panel` or `type-*` legacy class name remains in `web/src`.
+- [ ] 8.2 Sweep `web/src` for dead components, hooks, fixtures and copy left by the moves; confirm every file is under 500 lines.
+- [ ] 8.3 Add `web/src/styles/design-md.test.ts`: parse the front matter of `web/DESIGN.md` and assert every colour, size, radius and spacing value equals the light-theme value in `tokens.css` (status labels computed from the 60/40 mix); confirm it fails when either file changes alone. Update `web/DESIGN.md` for the `chip` and hue-hash variants once they exist.
+
+## 9. Verification
+
+- [ ] 9.1 Run `uv run pytest -m "not slow"` for backend changes and `npm run test`, `npm run lint`, `npm run typecheck`, `npm run build` in `web/`; record exact results.
+- [ ] 9.2 Capture the visual matrix per the `omrg-design` verification reference: Home, Chat, Knowledge Base, Studio gallery, Studio canvas, Experiments, run detail, Integrations and every Settings section at 1280px and 390px in light and dark themes; check status badges, elevation, focus rings and keyboard reachability.
+- [ ] 9.3 Run `openspec validate redesign-web-workspace --strict` and resolve every finding.
+- [ ] 9.4 Check the finished views against the unchanged main specs `local-web-workspace`, `notebook-plugins`, `pipeline-graphs` and `pipeline-run-records`, and against the modified `pipeline-canvas` and `web-ui-stack`; fix any gap in code or raise a spec change; update `docs/guides/` web references to the new navigation and routes.

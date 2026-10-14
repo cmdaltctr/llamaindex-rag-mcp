@@ -51,6 +51,7 @@ Every view is rebuilt with the primitives from `web/src/components/ui/` (button,
 - Buttons: the `Button` primitive only. It gains a `chip` variant (selection, distinct from primary) beside the existing tinted default, destructive, outline, secondary and ghost variants. The `.button`, `.control` and `.panel` classes are deleted.
 - Badges: the `Badge` primitive for run status and answer status. Its status variants use tinted fill, coloured border and `--status-*-label` text, because raw status colours fail 4.5:1 on their own tint; the ratio is defined and tested in the `web-ui-stack` spec. This change adds keyword-style hue hashing for profile labels (`documents`, `codebase`) and node kinds. Colour never carries meaning alone; text always states it.
 - Elevation: the `shadow-floating` utility on the top bar and floating panels only; cards stay flat with 1px borders.
+- Theme control (owner decision, 14 October 2026): the top bar holds a `Select` with System, Light and Dark, and beside it an icon-only `Button` that shows the theme in effect (sun in light, moon in dark) and switches between Light and Dark in one click. Its accessible name states the target, for example "Switch to dark theme". Both controls write `omrg-preferences.theme`; Settings shows the same `Select`.
 - Empty states: an icon, one sentence and one action. No placeholder copy.
 - Narrow screens (owner decision, 14 October 2026): below the `md` breakpoint the side navigation becomes one row of the seven area icons with short labels, each target at least 44px, under the top bar. No menu button; every area stays one tap away.
 - Knowledge Base sections (owner decision, 14 October 2026): Sources, Search, Add and Profile are switched with `chip` buttons, one section at a time, so long tables and result lists do not stack. The selected section is part of the view state, not the route.
@@ -96,7 +97,7 @@ Segments are `encodeURIComponent`-encoded. A hash that does not parse resolves t
 
 `@tanstack/react-query` v5 is the single owner of server data in the browser. The owner approved this one dependency on 14 October 2026; it is pinned exactly and its MIT notice is added to `web/THIRD_PARTY_NOTICES.md`. Rationale: Home, Chat and Knowledge Base all read collections, and uploads, deletions, profile changes and finished ingest jobs must refresh them everywhere; a hand-written keyed cache would re-implement deduplication, invalidation, retry and stale handling with weaker guarantees.
 
-- `api/queries.ts` declares every read once with `queryOptions` and a hierarchical key: `["collections"]`, `["collections", name, "documents"]`, `["pipelines"]`, `["pipelines", id]`, `["pipeline-templates"]`, `["runs", filters]`, `["runs", id]`, `["experiments"]`, `["plugins"]`, `["roots"]`, `["session"]`, `["integrations"]`.
+- `api/queries.ts` declares every read once with `queryOptions` and a hierarchical key: `["collections"]`, `["collections", name, "documents"]`, `["pipelines"]`, `["pipelines", id]`, `["pipeline-templates"]`, `["runs", filters]`, `["runs", id]`, `["experiments"]`, `["plugins"]`, `["roots"]`, `["session"]`, `["integrations"]`, `["connections"]`.
 - Writes use `useMutation`; each declares the keys it invalidates (ingest job completion, upload, delete and profile change invalidate `["collections"]` and the collection's documents; revision save invalidates `["pipelines"]`). Answers and searches are mutations because each submission is a fresh request.
 - `Register.defaultError` is set to `ApiError`, so every `error` is typed and goes through `describeError`.
 - Defaults: one retry for `network` errors only, no retry for `http` errors, refetch on window focus off. Tests create a fresh `QueryClient` per test with `retry: false`.
@@ -112,6 +113,28 @@ One helper, `lib/storage.ts`, exposes `readStored(key, validate)`, `writeStored(
 
 `omrg-workspace-ui` and `omrg-canvas-session` are deleted. The open pipeline comes from the route, and the latest run from `GET /v1/runs?pipeline_id=<id>&limit=1`.
 
+### D13. Settings shows connections, the server log and MCP access
+
+Settings has six sections, switched with `chip` buttons like the Knowledge Base: Appearance, Connections, MCP, Server log, Runtime and Workspace.
+
+**Connections (read-only, owner decision 14 October 2026).** Provider settings come from `.env` and `config/defaults.yaml`, are resolved once at startup and are frozen. This change shows them and tests them; it does not edit them.
+
+- `GET /v1/connections` (read scope) returns `config_dir`, the server's working directory whose `.env` the settings read, and one entry for each LLM registry provider: `ollama`, `llamacpp` and `openrouter`. Each entry has the endpoint URLs (`OLLAMA_BASE_URL`; `LLAMACPP_EMBED_URL` and `LLAMACPP_CHAT_URL`; the fixed OpenRouter base `https://openrouter.ai/api/v1`), the configured model names, `key_set` (a boolean; the key itself never leaves the server) and the roles that use the provider: embeddings, answers, metadata extraction and claim verification.
+- Roles are resolved by the same rules as startup: `EMBED_PROVIDER` with `LOCAL_BACKEND` and `CLOUD_BACKEND`, `ANSWER__PROVIDER`, `METADATA_LLM_PROVIDER` and `ANSWER__VERIFY_PROVIDER`. A new `compose.connection_summary()` builds the payload, because `compose` is the only production caller of `get_settings()`.
+- `POST /v1/connections/{provider}/test` (`manage` scope) sends one model-list request with `httpx` and a 5-second timeout: Ollama `GET /api/tags`, llama.cpp `GET /models` on each configured URL, OpenRouter `GET /models` with the key. The response is `{ reachable, reason }`, where `reason` is one of `refused`, `timeout`, `unauthorised`, `http-<status>` or `not-configured`. Response bodies and exception text are never returned. The OpenRouter test is the only cloud request and runs only when the user presses Test.
+- The section states that values come from `<config_dir>/.env` and need a server restart. Editing is a separate change, `add-runtime-settings`, which must design settings-file precedence, keep secrets in `.env`, rebuild the Engine safely and lock the embedding model for each collection, because a different embedding model makes existing indexes unusable.
+
+**Server log.** `omrg web` attaches an in-memory ring-buffer handler (the last 1,000 records) to the root logger at startup, with the existing `RedactingFilter` attached to the handler itself so provider keys and bearer tokens never enter the buffer.
+
+- `GET /v1/logs?after=<seq>` (`manage` scope, browser session only) returns records `{ seq, time, level, logger, message }`.
+- `GET /v1/logs/stream?after=<seq>` streams new records as `text/event-stream` with replay after a sequence, like the run event stream, and ends when `runtime.admission.is_open` becomes false so shutdown does not wait on it.
+- The panel is a monospace, terminal-style region with a level filter (info, warning, error), pause, copy and auto-scroll while the view is at the bottom. Records stay in memory; this change writes no log file.
+
+**MCP.** Today MCP runs only on stdio: the MCP client starts its own `omrg` process (`mcp.run(transport="stdio")` in `transports/mcp/__init__.py`). The MCP section shows two things:
+
+- A copyable stdio client configuration that runs `uv run --directory <project> omrg`, so `omrg` starts in the folder that holds `.env` (settings read `.env` from the working directory). The page fills `<project>` with `config_dir` from `GET /v1/connections`. This works today.
+- An on/off switch for MCP over streamable HTTP at `/mcp` on the `omrg web` server, sharing its one Engine. This needs a stable port (today `omrg web` picks a free port per launch), a durable hashed credential with an `mcp` scope that is shown once (today bearer credentials live in memory per launch), and a persisted on/off flag. A separate change, `add-mcp-http-transport`, owns that backend and its API. It must merge before task 7.6; the switch calls only the endpoints that change defines.
+
 ## Risks and Trade-offs
 
 - Rebuilding every view on primitives is more work than restyling; accepted because it removes 1,413 lines of hand-written CSS and the `legacy` layer for good, and the foundation tasks land first so views are built once.
@@ -123,6 +146,9 @@ One helper, `lib/storage.ts`, exposes `readStored(key, validate)`, `writeStored(
 - The main specs from `add-local-web-pipeline-workspace` still govern the moved views. Only the `pipeline-canvas` navigation requirement changes; task 8.4 checks the others against the finished views.
 - Removing the Search view could have dropped metadata-filtered search, which `local-web-workspace` requires; the Knowledge Base keeps it (task 2.5).
 - Integration availability reflects this launch only; the page states that the install command must run outside the app and the server restarted.
+- Connections are read-only until `add-runtime-settings` lands; the section says where each value comes from, so the user can change it in `.env`.
+- The MCP switch (task 7.6) is blocked until `add-mcp-http-transport` merges. The stdio configuration ships with this change.
+- The server log can show local file paths. It is limited to the browser session (`manage` scope) on the loopback server, and keys are redacted before a record enters the buffer.
 
 ## Migration Plan
 
@@ -130,4 +156,4 @@ None. The workspace is pre-release: routes, stored UI state and stylesheets are 
 
 ## Open Questions
 
-None blocking. Profile-preset seeding (D3) depends only on existing template, pipeline and profile APIs.
+None blocking. Profile-preset seeding (D3) depends only on existing template, pipeline and profile APIs. Task 7.6 depends on `add-mcp-http-transport`, which is planned next as its own change.

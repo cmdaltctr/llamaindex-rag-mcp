@@ -11,7 +11,7 @@ Read [visual foundations](foundations.md) first. Paths marked "planned" come fro
 | shadcn CLI settings | `web/components.json` (css path `src/styles/app.css`) |
 | Tokens | `web/src/styles/tokens.css` |
 | Stylesheet entry, cascade layers, token bridge | `web/src/styles/app.css` |
-| Old hand-written CSS (deleted by `redesign-web-workspace` task 7.2) | `web/src/styles/legacy.css`, plus four per-view files imported by `app.css` |
+| Old hand-written CSS (deleted by `redesign-web-workspace` task 8.1) | `web/src/styles/legacy.css`, plus four per-view files imported by `app.css` |
 | Views list and hash routing | `web/src/lib/views.ts`, `web/src/App.tsx` |
 | Navigation | `web/src/components/AppNav.tsx` |
 | Theme select | `web/src/components/ThemeSelect.tsx` |

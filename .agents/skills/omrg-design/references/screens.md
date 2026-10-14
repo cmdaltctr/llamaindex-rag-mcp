@@ -8,7 +8,7 @@ Navigation has seven items in this order: Home, Chat, Knowledge Base, Studio, Ex
 
 | Element | Rule |
 | --- | --- |
-| Top bar | Muted surface, 1px bottom border, elevation shadow. Shows the brand, an engine status pill (collection count, or "offline"), and the theme select. |
+| Top bar | Muted surface, 1px bottom border, elevation shadow. Shows the brand, an engine status pill (collection count, or "offline"), the theme `Select` (System, Light, Dark), and an icon-only button beside it that shows sun or moon for the theme in effect and switches Light and Dark in one click. Its accessible name names the target theme. |
 | Inspector | The global toggle and empty panel are gone. Detail regions open inside Chat, Studio, and Experiments on selection. |
 | Skip link, main focus | Keep the existing skip link. Focus moves to the view `h1` after navigation. |
 | Routes | Typed hash routes from `lib/routes.ts` (design D9): `#/home`, `#/knowledge-base[/<collection>]`, `#/chat[/<collection>]`, `#/studio[/<pipeline-id>]`, `#/experiments`, `#/experiments/runs/<run-id>`, `#/integrations`, `#/settings`. Segments are URI-encoded. An unknown hash opens Home and is rewritten to `#/home`; earlier routes are not redirected. |
@@ -80,4 +80,10 @@ State that availability reflects the running launch, and that installing needs t
 
 ## Settings
 
-Trimmed to appearance (theme), runtime capabilities, and workspace information. Controls that moved to other views are removed with their tests. Keep the workspace path in a `code` element with `overflow-wrap: anywhere`.
+Six sections switched with `chip` buttons, one at a time (redesign design D13): Appearance, Connections, MCP, Server log, Runtime, Workspace. Controls that moved to other views are removed with their tests.
+
+- Appearance: the same theme `Select` as the top bar.
+- Connections: one card per provider (Ollama, llama.cpp, OpenRouter) with URLs and model names in `code`, role badges (embeddings, answers, metadata, verification), "Key set" or "No key" as text, and a Test button that shows reachable or the reason as a status badge. Read-only: state that values come from `.env` and need a restart. Never render a key.
+- MCP: the stdio client configuration (`uv run --directory <config_dir> omrg`) in a `code` block with a copy button, and the HTTP on/off switch, which shows only the state the server returns.
+- Server log: a monospace, terminal-style panel on the muted surface (`bg-muted`), one record per line (time, level badge, logger, message), level filter chips, Pause, Copy, and auto-scroll only while scrolled to the bottom. Mark it `role="log"` so screen readers announce new lines politely.
+- Runtime and Workspace: capabilities and the workspace path. Keep paths in `code` elements with `overflow-wrap: anywhere`.

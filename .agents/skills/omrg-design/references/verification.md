@@ -63,7 +63,7 @@ Chat needs a working answer pipeline. If no model is configured, use the fixture
 
 ## Screens
 
-From `redesign-web-workspace` task 8.2: Home, Chat, Knowledge Base, Studio gallery, Studio canvas, Experiments, Integrations, and Settings.
+From `redesign-web-workspace` task 9.2: Home, Chat, Knowledge Base, Studio gallery, Studio canvas, Experiments, Integrations, and each Settings section (Appearance, Connections, MCP, Server log, Runtime, Workspace).
 
 | Theme | Widths |
 | --- | --- |

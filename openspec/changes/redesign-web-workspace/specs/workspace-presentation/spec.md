@@ -117,3 +117,17 @@ The top bar SHALL have no Inspector toggle and the app SHALL have no global insp
 
 - **WHEN** the app opens
 - **THEN** no Inspector toggle SHALL be present in the top bar and no empty inspector panel SHALL render
+
+### Requirement: The top bar switches the theme in one click
+
+The top bar SHALL hold a theme select with System, Light and Dark, and an icon-only button beside it that shows the theme in effect and switches between Light and Dark in one click. The button's accessible name SHALL state the theme it switches to. Both controls SHALL write the stored theme preference, and the Settings select SHALL show the same value.
+
+#### Scenario: One-click switch
+
+- **WHEN** the theme in effect is light and the user presses the icon button
+- **THEN** the app MUST render the dark theme, the select MUST read Dark, and the stored preference MUST be `dark`
+
+#### Scenario: Accessible name follows the target
+
+- **WHEN** the theme in effect is dark
+- **THEN** the icon button's accessible name MUST state that it switches to the light theme
