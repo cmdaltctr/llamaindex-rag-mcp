@@ -1,10 +1,12 @@
 # Tasks
 
+Prerequisite: apply `add-web-ui-stack` first; the primitives in `web/src/components/ui/` and `lucide-react` are assumed below.
+
 ## 1. Foundations and presentation
 
 - [ ] 1.1 Add the `/v1` proxy to `web/vite.config.ts` (target overridable by env) with a test proving dev requests reach the transport path.
-- [ ] 1.2 Add `web/src/components/Icon.tsx` with the inline SVG subset (home, message-circle, database, workflow, flask, plug, settings, upload, folder, search, x, play, trash, refresh, chevron-down), 16px default, `currentColor`, decorative by default; update `web/THIRD_PARTY_NOTICES.md` with the Lucide MIT attribution.
-- [ ] 1.3 Add the `Badge` component and its CSS: tinted fill, coloured border and text, status and hue-hash variants; unit-test colour-text pairing.
+- [ ] 1.2 Use `lucide-react` icons (home, message-circle, database, workflow, flask, plug, settings, upload, folder, search, x, play, trash, refresh, chevron-down) at 16px with `currentColor`; decorative when beside text, accessible names when alone.
+- [ ] 1.3 Extend the `Badge` primitive from `web/src/components/ui/`: status and hue-hash variants; unit-test colour-text pairing.
 - [ ] 1.4 Add the shared error mapper (`friendly failure line + one action`) and replace direct parser-text rendering in every fetch path; unit-test that parser messages never reach the DOM.
 - [ ] 1.5 Restructure `views.ts` and `AppNav` to the six areas with icons, Home landing, and one-time redirects for legacy hashes; update `App.test.tsx`.
 - [ ] 1.6 Add elevation tokens and apply them to the top bar and floating panels; add the top-bar engine status pill (collections count or offline); remove the global Inspector toggle and empty inspector; update affected tests.

@@ -8,7 +8,7 @@ OpenChamber's component layer (studied in `packages/ui/src`): flat tinted button
 
 ## Goals and Non-Goals
 
-Goals: job-shaped navigation; chat over the answer API with citations; project-scoped library; studio gallery with wide canvas; experiment folders; OpenChamber-grade presentation; zero new dependencies.
+Goals: job-shaped navigation; chat over the answer API with citations; project-scoped library; studio gallery with wide canvas; experiment folders; OpenChamber-grade presentation; no dependencies beyond `add-web-ui-stack` (applied first).
 
 Non-goals: multi-turn conversational memory in the Engine (each chat turn answers independently; follow-up context needs an Engine change and is deferred); streaming chat tokens; mobile app; new pipeline semantics; the deferred Quick/Standard/Full optimiser.
 
@@ -30,11 +30,13 @@ Graph semantics, revisions, validation and runs stay as specced in `add-local-we
 
 `core/experiments/contexts.py` raises `ExperimentPathError("not_found")` when the workspace directory does not exist, so the UI cannot create folders today. Add `POST /v1/experiment-folders` (session `manage` scope; validated relative path, no `..`, below an approved root, depth limit) and include the directory tree in the experiments listing. The web groups contexts under their parent directory; a main folder with no contexts still shows. Registration, credentials, trust notices and marimo plugin approval flow through the existing endpoints unchanged.
 
-### D5. Icons inline, no icon package
+### D5. Icons come from lucide-react via the UI stack
 
-A single `web/src/components/Icon.tsx` exporting a named subset (~14 icons: home, message-circle, database, workflow, flask, settings, upload, folder, search, x, play, trash, refresh, chevron) as inline SVG paths copied from Lucide (MIT). Attribution goes into `web/THIRD_PARTY_NOTICES.md`. Every icon renders at 16px (20px for empty states), `aria-hidden="true"`, currentColor. This satisfies the "no new dependencies" boundary; `lucide-react` is the fallback if the set grows past roughly 30 icons.
+`add-web-ui-stack` installs `lucide-react`. Every icon renders at 16px (larger for empty states), inherits `currentColor`, and is marked decorative (`aria-hidden="true"`) when it accompanies text. Icon-only controls carry an accessible name. This replaces the earlier inline-SVG plan.
 
 ### D6. Presentation rules adapted from OpenChamber
+
+New view markup uses the primitives from `web/src/components/ui/` (button, badge, card, dialog, input, select, label, tooltip, separator, table) with Tailwind utility classes over the token bridge; legacy CSS stays for untouched components and retires as views migrate.
 
 - Buttons: keep the existing `.button` classes; primary becomes the tinted treatment already tokenised (`--accent-tint` 10/16/22% light, 16/22/30% dark) with `--accent-tint-border` and `--accent-label`; add a `chip` variant (selection) and keep `ghost`.
 - Badges: new `Badge` component; tinted fill plus coloured border and text from the status tokens for run status and answer status; keyword-style hue hashing for profile labels (`documents`, `codebase`) and node kinds. Colour never carries meaning alone; text always states it.

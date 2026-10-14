@@ -16,7 +16,7 @@ The owner wants a job-shaped workspace: open a project, chat with its knowledge 
 - **Experiments** groups experiment contexts under named main folders (directories below the approved experiment root), lists sub-experiments, loads marimo through the existing plugin approval, and carries the pipeline runs list.
 - **Small backend additions**: create and list experiment folders below approved roots (because `core/experiments` requires the workspace directory to exist before registration), and a `GET /v1/integrations` catalogue with availability from the existing runtime probes.
 - **Integrations** lists the installable integration extras (chroma, hybrid, pdf-pypdfium2, pdf-inspector, community-leiden, azure, llamacpp, openrouter, torch, web) with availability status, purpose and the exact install command. The page never installs packages; it shows the command to copy.
-- **Presentation pass**: inline SVG icon set (Lucide-derived, licence noted), tinted badge component for status/profile/kind labels, friendly error and empty states with one action, a `/v1` dev proxy in Vite, elevation for floating chrome, and removal of the global Inspector toggle (contextual panels instead).
+- **Presentation pass**: OpenChamber-grade controls through the Tailwind v4 + shadcn-style primitives added by `add-web-ui-stack` (applied first), lucide-react icons, tinted badges for status/profile/kind labels, friendly error and empty states with one action, a `/v1` dev proxy in Vite, elevation for floating chrome, and removal of the global Inspector toggle (contextual panels instead).
 - **Small backend addition**: create and list experiment folders below approved roots, because `core/experiments` requires the workspace directory to exist before registration.
 
 ## Capabilities
@@ -38,6 +38,6 @@ None at the main-spec level. `local-web-workspace`, `pipeline-canvas` and `noteb
 
 - **Frontend**: `web/src/` restructured around the six views; new `home/`, `chat/`, `knowledge-base/`, `studio/` directories; `views.ts`, `App.tsx`, `app.css` rewritten; existing canvas, runs, experiments, library components reused where possible.
 - **Backend**: `src/omrg/transports/api/routes_experiments.py` gains folder create/list endpoints; `core/experiments` gains directory creation with path validation. A new integrations route exposes the extras catalogue with availability from the existing probes. OpenAPI contract updated.
-- **Dependencies**: none added. Icons are an inline SVG module with attribution in `web/THIRD_PARTY_NOTICES.md`. `lucide-react` remains an alternative requiring approval.
+- **Dependencies**: none added by this change. The UI stack (Tailwind v4, shadcn-style primitives, Radix, lucide-react) comes from `add-web-ui-stack`, which applies first.
 - **Docs**: `docs/guides/` web references updated; omms-design visual matrix used for verification.
 - **Tests**: new view tests following the existing vitest patterns; backend tests for folder endpoints.
