@@ -26,6 +26,20 @@
 - **WHEN** `answer` runs with neither argument
 - **THEN** the result MUST equal the result before this change for the same input and models
 
+### Requirement: The engine redacts its configured credentials
+
+Every engine SHALL carry the credential values it was composed with (the Chroma Cloud API key, tenant and database, and the OpenRouter key) and SHALL expose `redact(text)`, which removes each value and every prefix of six or more characters of the keys. Transports SHALL redact error text that leaves the process through the engine they use. Credentials SHALL NOT be added to `EffectiveSettings`.
+
+#### Scenario: Cloud tenant in an MCP error
+
+- **WHEN** an MCP tool fails with an exception whose text holds the Chroma Cloud tenant and database
+- **THEN** the returned error dict and the log line MUST NOT contain either value
+
+#### Scenario: Key prefix in a REST job failure
+
+- **WHEN** a web ingest job fails with an exception whose text holds the first eight characters of the OpenRouter key
+- **THEN** the job's error body MUST NOT contain them
+
 ## MODIFIED Requirements
 
 ### Requirement: The server startup path is one caller of the engine

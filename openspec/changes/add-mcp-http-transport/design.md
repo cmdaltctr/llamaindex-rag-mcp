@@ -50,7 +50,7 @@ Each handler takes `ctx: Context` and reads `ctx.request_context.lifespan_contex
 
 Deletion and profile change keep their MCP confirmation model (`dry_run`, `confirm`, `destructiveHint`) over both transports. The web API's confirmation tokens do not apply to `/mcp`. Deleting by path removes index rows and reads no file, so the root grants do not apply to it.
 
-Handler error text is redacted with `redact_engine_error(exc, engine.resolve_settings(collection))`, the helper `Engine.answer` already uses. `compose.redaction_values()` stays only in stdio `main()`, for startup failures before an Engine exists.
+Handler error text is redacted with `engine.redact(text)`, see D9. `compose.redaction_values()` stays only in stdio `main()`, for startup failures before an Engine exists.
 
 - **Stdio**: `main()` builds the Engine with `compose.build_engine()` before `server.run(transport="stdio")`, so a startup error still prints the existing redacted message and exits with code 1 before the transport starts. The stdio lifespan yields `McpContext(engine, PathPolicy.allow_all(), no-op admission)` and closes the Engine when it exits. `main()` no longer calls `ensure_runtime_setup()`, and the CLI callback no longer runs `_initialise_runtime()` before bare `omrg`, so stdio builds exactly one Engine.
 - **HTTP**: the lifespan yields `McpContext(runtime.engine, PathPolicy.from_grants(runtime.grants), runtime.admission.enter)`. It does not close the Engine; the web lifespan owns it.
@@ -123,6 +123,17 @@ async def answer(self, question, *, ..., client_completion: ClientCompletion | N
 - `engine.py` is at 496 lines, so the answer composition (server-model seam, verifier build, client-completion selection, round cap) moves to a new `omrg/engine_answer.py`; `Engine.answer` delegates to it. `ClientCompletion` lives there and is re-exported from `omrg.engine`.
 - The answer block for the handler comes from `engine.resolve_settings(collection).answer`, which already carries the resolver's `verify_*` overlay, so the handler's `verify_*` merge is deleted. No `Engine.settings` property is added.
 - `transports/mcp/answer.py` deletes its `build_answer_llm`, `build_verify_llm` and server-seam paths with no alias. `answer_mrtr.py` retrieves through `engine.search()` and reads settings through `engine.resolve_settings()`.
+
+### D9. The Engine owns credential redaction
+
+`redact_engine_error(exc, effective)` reads the Chroma Cloud key, tenant and database from `EffectiveSettings`, which has none of them, so it never removed Chroma Cloud values. The MCP handlers stayed safe only because they read `compose.redaction_values()` from the environment, which D2 removes. The REST API's `redact()` removes OMRG tokens but receives no provider values, so job and graph error bodies (`routes_jobs.py`, `routes_graphs.py`) can carry them.
+
+- New frozen `RedactionSecrets(chroma_cloud_api_key, chroma_cloud_tenant, chroma_cloud_database, openrouter_api_key)` in `core/vectordb/identity.py`, beside `redact_cloud_secrets` and `redact_secret`, with `redact(text) -> str` applying both (full value and prefixes of six or more characters, as today).
+- `Engine.__init__` gains `redaction: RedactionSecrets = RedactionSecrets()`. `compose.build_engine()` fills it from the resolved `Settings`. The empty default is correct: an Engine built without configured secrets has nothing to remove.
+- Public `Engine.redact(text) -> str`. `engine_answer.py` uses it; `redact_engine_error` is deleted with no alias.
+- MCP handlers (`_error_detail`, `_error_message`, `_log_tool_error`) take the Engine's redactor from `McpContext`.
+- REST error bodies: `errors.error_response`, `routes_jobs` and `routes_graphs` apply `runtime.engine.redact` before the existing `redact()`.
+- Credentials stay out of `EffectiveSettings`, so `settings-models-are-pure-data` holds.
 
 ## Risks and Trade-offs
 
