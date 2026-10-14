@@ -12,8 +12,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
-from .compose_pipelines import redact_engine_error
-
 if TYPE_CHECKING:
     from .core.answer.synthesis import CompletionSeam
     from .core.settings import EffectiveSettings
@@ -78,12 +76,18 @@ def select_completion(
 def build_verifier(
     effective: EffectiveSettings,
     verify_llm_factory: Callable[[Any], Any] | None,
+    redact: Callable[[str], str],
 ) -> tuple[CompletionSeam | None, str | None]:
     """Build the claim verifier when verification is enabled.
 
     A construction failure degrades to ``verification_skipped`` with the
     redacted provider diagnostic retained (ADR-059). A ``None`` judge keeps
     the plain no-judge reason.
+
+    Args:
+        effective: Settings resolved for the collection.
+        verify_llm_factory: Builds the judge from the answer block, or ``None``.
+        redact: Removes credential values from error text.
 
     Returns:
         ``(verify_complete, verify_unavailable_reason)``.
@@ -94,8 +98,7 @@ def build_verifier(
         verify_llm = verify_llm_factory(effective.answer)
     except Exception as exc:
         return None, (
-            "verification provider unavailable: "
-            f"{type(exc).__name__}: {redact_engine_error(exc, effective)}"
+            f"verification provider unavailable: {type(exc).__name__}: {redact(str(exc))}"
         )
     if verify_llm is None:
         return None, "verification provider unavailable (no judge configured)"

@@ -110,6 +110,36 @@ def redact_cloud_secrets(
     return message
 
 
+@dataclass(frozen=True)
+class RedactionSecrets:
+    """Credential values to remove from error text.
+
+    Held by the Engine (not by ``EffectiveSettings``, which stays pure data)
+    so every transport redacts the same values.
+
+    Attributes:
+        chroma_cloud_api_key: Chroma Cloud API key.
+        chroma_cloud_tenant: Chroma Cloud tenant identifier.
+        chroma_cloud_database: Chroma Cloud database name.
+        openrouter_api_key: OpenRouter API key.
+    """
+
+    chroma_cloud_api_key: str = ""
+    chroma_cloud_tenant: str = ""
+    chroma_cloud_database: str = ""
+    openrouter_api_key: str = ""
+
+    def redact(self, text: str) -> str:
+        """Remove each value and each prefix of six or more characters."""
+        text = redact_cloud_secrets(
+            text,
+            self.chroma_cloud_api_key,
+            self.chroma_cloud_tenant,
+            self.chroma_cloud_database,
+        )
+        return redact_secret(text, self.openrouter_api_key)
+
+
 def read_stored_identity(collection: Any) -> tuple[str | None, str | None, str | None]:
     """Return the ``(provider, model, index_identity)`` stored on a collection.
 

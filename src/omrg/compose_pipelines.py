@@ -459,16 +459,3 @@ class EnginePipelines:
                 return with_provenance(result, snapshot, summaries)
         finally:
             self.active_runs -= 1
-
-
-def redact_engine_error(exc: BaseException, effective: Any) -> str:
-    """Format *exc* for an Engine result without leaking credential material."""
-    from .core.vectordb.identity import redact_cloud_secrets, redact_secret
-
-    detail = redact_cloud_secrets(
-        str(exc),
-        getattr(effective, "chroma_cloud_api_key", "") or "",
-        getattr(effective, "chroma_cloud_tenant", "") or "",
-        getattr(effective, "chroma_cloud_database", "") or "",
-    )
-    return redact_secret(detail, getattr(effective, "openrouter_api_key", "") or "")

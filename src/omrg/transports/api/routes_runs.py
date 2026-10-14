@@ -30,7 +30,7 @@ import asyncio
 import contextlib
 import dataclasses
 import json
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Header, Query
@@ -115,12 +115,15 @@ def experiment_refusal(exc: ExperimentAdmissionError | ExperimentPathError) -> R
     return JSONResponse(exc.to_dict(), status_code=403, headers=API_HEADERS)
 
 
-def _refusal(exc: Exception) -> Response:
-    """Map a run-service or admission refusal to its HTTP response."""
+def _refusal(exc: Exception, redactor: Callable[[str], str] | None = None) -> Response:
+    """Map a run-service or admission refusal to its HTTP response.
+
+    *redactor* is ``Engine.redact``; it removes provider credential values.
+    """
     if isinstance(exc, ExperimentAdmissionError | ExperimentPathError):
         return experiment_refusal(exc)
     if isinstance(exc, PipelineValidationError):
-        return validation_failure(exc)
+        return validation_failure(exc, redactor)
     if isinstance(exc, QueueFullError):
         return error_response(429, f"The run queue is full: {exc.limit} runs are waiting.")
     if isinstance(exc, ServiceClosedError):
@@ -171,7 +174,7 @@ async def _admit(runtime: WebRuntime, runs: WorkspaceRuns, target: RunTarget, ad
         with runs.targeting(target):
             run = admit()
     except _REFUSALS as exc:
-        return _refusal(exc)
+        return _refusal(exc, runtime.engine.redact)
     return ok({"run": run}, 202)
 
 

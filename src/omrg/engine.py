@@ -19,6 +19,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from .compose_pipelines import EnginePipelines, build_graph_host
+from .core.vectordb.identity import RedactionSecrets
 from .engine_answer import ClientCompletion, build_verifier, select_completion
 
 if TYPE_CHECKING:
@@ -76,6 +77,7 @@ class Engine:
         answer_llm_factory: Callable[[], Any] | None = None,
         verify_llm_factory: Callable[[Any], Any] | None = None,
         ocr_client: Any = None,
+        redaction: RedactionSecrets | None = None,
     ) -> None:
         """Own already-composed dependencies; construct nothing.
 
@@ -98,6 +100,8 @@ class Engine:
                 The engine owns its lifecycle: OCR-required PDFs dispatched
                 by this engine's ingests reuse its lazily-started
                 subprocess, and :meth:`close` closes it.
+            redaction: Credential values :meth:`redact` removes from error
+                text. ``None`` means the Engine has nothing to remove.
         """
         self._effective_settings = effective_settings
         self._store = store
@@ -108,6 +112,7 @@ class Engine:
         self._answer_llm_factory = answer_llm_factory
         self._verify_llm_factory = verify_llm_factory
         self._ocr_client = ocr_client
+        self._redaction = redaction or RedactionSecrets()
         self._answer_llm: Any = None
         # Engine-owned query embedding cache: keyed by (query, model_name),
         # shared between filtered/unfiltered search within this engine,
@@ -238,7 +243,7 @@ class Engine:
             effective, client_completion, self._get_answer_llm
         )
         verify_complete, verify_unavailable_reason = build_verifier(
-            effective, self._verify_llm_factory
+            effective, self._verify_llm_factory, self.redact
         )
 
         return await core_answer(
@@ -349,6 +354,13 @@ class Engine:
         """Return the graph operation catalogue with availability reasons."""
         self._check_open()
         return self._pipelines.describe(self._graph_host(collection))
+
+    def redact(self, text: str) -> str:
+        """Remove configured credential values from *text*.
+
+        Transports call this on every error text they return or log.
+        """
+        return self._redaction.redact(text)
 
     def close(self) -> None:
         """Release this engine's resources; reject further use.

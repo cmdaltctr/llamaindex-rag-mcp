@@ -142,6 +142,7 @@ def build_engine(settings: Settings | None = None) -> Any:
     # OCR, and owned by the engine — its close() releases the
     # subprocesses. No process starts until a route's first dispatch.
     from .capabilities import build_ocr_routes
+    from .core.vectordb.identity import RedactionSecrets
     from .engine import Engine
 
     return Engine(
@@ -155,6 +156,12 @@ def build_engine(settings: Settings | None = None) -> Any:
         answer_llm_factory=lambda: _build_answer_llm(settings),
         verify_llm_factory=lambda block: _build_verify_llm(settings, block),
         ocr_client=build_ocr_routes(settings),
+        redaction=RedactionSecrets(
+            chroma_cloud_api_key=settings.chroma_cloud_api_key,
+            chroma_cloud_tenant=settings.chroma_cloud_tenant,
+            chroma_cloud_database=settings.chroma_cloud_database,
+            openrouter_api_key=settings.openrouter_api_key,
+        ),
     )
 
 
