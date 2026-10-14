@@ -65,7 +65,14 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 4776
+_BASE_EXECUTED = 4893
+# Re-baselined at add-mcp-http-transport (2026-10-14): Engine client
+# completion and redaction, the MCP factory and context, workspace settings
+# and token storage, port selection, and the MCP-over-HTTP gate, end-to-end
+# and contract tests add 117 executed tests (4776 -> 4893). Five of them are
+# the Chroma Cloud redaction cases of test_mcp_tools.py, which now build an
+# Engine with cloud credentials and no longer need the chroma extra: they ran
+# as skips before (133 -> 128 skipped).
 # Re-baselined after the add-local-web-pipeline-workspace verification gap
 # fixes (2026-10-13): provenance, job events, experiment outputs, OCR
 # ownership, import-contract, wheel-check and verification-gap tests add 87
@@ -226,7 +233,7 @@ _BASE_EXECUTED = 4776
 # seven-tool discovery rename, plus five CLI transport cases for
 # `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
-_BASE_SKIPPED = 133  # Reference count before the environment adjustments below.
+_BASE_SKIPPED = 128  # Reference count before the environment adjustments below.
 # +2 at modular-ocr-workers-dots-mocr: the real-eq01 detector case and the
 # real dots.mocr patch case run only when OMRG_EQ01_PDF or
 # OMRG_DOTS_MOCR_MODEL_DIR names a local copy (131 -> 133).
@@ -270,8 +277,10 @@ if not _has_qwen_tokenizer:
 # Measured 2026-10-13 by hiding fastapi behind an import shim and running
 # the 28 fastapi-dependent files with and without it: 344 cases run with
 # the extra; without it each of the 28 modules reports one skip.
-_WEB_EXTRA_CASES = 344
-_WEB_SKIP_DELTA = 28
+# Re-measured at add-mcp-http-transport: six new fastapi-dependent modules add 58
+# cases (402 with the extra; 34 module skips without it).
+_WEB_EXTRA_CASES = 402
+_WEB_SKIP_DELTA = 34
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
     _BASE_SKIPPED += _WEB_SKIP_DELTA

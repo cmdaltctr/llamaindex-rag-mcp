@@ -31,8 +31,8 @@ Rejected: keeping the module-level server and setting a module global to point a
 @dataclass(frozen=True)
 class McpContext:
     engine: Engine
-    paths: PathPolicy      # allow-all on stdio; root grants on HTTP
-    admit: Admit           # no-op on stdio; runtime.admission.enter on HTTP
+    paths: PathPolicy  # allow-all on stdio; root grants on HTTP
+    admit: Admit  # no-op on stdio; runtime.admission.enter on HTTP
 ```
 
 Each handler takes `ctx: Context` and reads `ctx.request_context.lifespan_context`. Each HTTP tool call runs inside `admit()`. `_get_reranker`, `_get_profile_resolver` and every read of `get_default_effective_settings()` or `vectordb.get_default_store()` in `transports/mcp/` are deleted. Each tool maps to the Engine like this; every core function named here already accepts `store=`:
