@@ -32,15 +32,28 @@ Rejected: keeping the module-level server and setting a module global to point a
 class McpContext:
     engine: Engine
     paths: PathPolicy      # allow-all on stdio; root grants on HTTP
-    admit: Admit           # no-op on stdio; runtime admission on HTTP
+    admit: Admit           # no-op on stdio; runtime.admission.enter on HTTP
 ```
 
-Each handler takes `ctx: Context` and reads `ctx.request_context.lifespan_context`. Handlers call Engine methods (`search`, `answer`, `ingest`, `list_collections`, `resolve_settings`, `profile_resolver`, `store`) instead of core functions with process defaults. Operations the Engine does not expose today (document listing, deletion by path or metadata, profile change) take `engine.store` and `engine.profile_resolver` as explicit arguments, as `transports/api/engine_access.py` already does. The reranker comes from the Engine's composition, not a module global, so `_get_reranker` and `_get_profile_resolver` are deleted.
+Each handler takes `ctx: Context` and reads `ctx.request_context.lifespan_context`. Each HTTP tool call runs inside `admit()`. `_get_reranker`, `_get_profile_resolver` and every read of `get_default_effective_settings()` or `vectordb.get_default_store()` in `transports/mcp/` are deleted. Each tool maps to the Engine like this; every core function named here already accepts `store=`:
 
-- **Stdio lifespan**: `compose.build_engine()` inside the lifespan, `PathPolicy.allow_all()`, and a no-op admission. The Engine closes when the lifespan exits. `main()` no longer calls `ensure_runtime_setup()`. Startup stays fail-fast: a build error inside the lifespan prints the existing redacted message and exits with code 1.
-- **HTTP lifespan**: yields `runtime.engine`, `PathPolicy.from_grants(runtime.grants)` and `runtime.admission`. It does not close the Engine; the web lifespan owns it.
+| Tool | Engine use |
+|---|---|
+| `search_documents` | `engine.resolve_settings(collection)` for profile defaults, then `engine.search(...)` |
+| `answer_documents` | `engine.answer(...)`, see D8 |
+| `ingest_documents` | `paths.check(path)`, then `engine.ingest(path, collection_name=...)` |
+| `get_codebase_map` | `paths.check(path)`, then `codebase_map.get_codebase_map_text(path=..., refresh=..., settings=engine.resolve_settings(None), store=engine.store)` |
+| `list_indexed_documents` | `list_documents(collection, store=engine.store)` |
+| `list_collections` | `engine.list_collections()` is names only, so call `core.retrieval.list_collections(store=engine.store)` to keep the counts |
+| `delete_documents` | `preview_delete`, `remove_document`, `remove_by_metadata`, `remove_collection` with `store=engine.store` |
+| `change_collection_profile` | `generate_safety_contract(..., resolver=engine.profile_resolver, store=engine.store)` and `apply_profile_change(..., store=engine.store)` |
 
-The answer tool keeps MRTR and sampling. Its server-side LLM still comes from `compose.build_answer_llm()`, which already takes no process default.
+Deletion and profile change keep their MCP confirmation model (`dry_run`, `confirm`, `destructiveHint`) over both transports. The web API's confirmation tokens do not apply to `/mcp`. Deleting by path removes index rows and reads no file, so the root grants do not apply to it.
+
+Handler error text is redacted with `redact_engine_error(exc, engine.resolve_settings(collection))`, the helper `Engine.answer` already uses. `compose.redaction_values()` stays only in stdio `main()`, for startup failures before an Engine exists.
+
+- **Stdio**: `main()` builds the Engine with `compose.build_engine()` before `server.run(transport="stdio")`, so a startup error still prints the existing redacted message and exits with code 1 before the transport starts. The stdio lifespan yields `McpContext(engine, PathPolicy.allow_all(), no-op admission)` and closes the Engine when it exits. `main()` no longer calls `ensure_runtime_setup()`, and the CLI callback no longer runs `_initialise_runtime()` before bare `omrg`, so stdio builds exactly one Engine.
+- **HTTP**: the lifespan yields `McpContext(runtime.engine, PathPolicy.from_grants(runtime.grants), runtime.admission.enter)`. It does not close the Engine; the web lifespan owns it.
 
 ### D3. Mounting and the gate
 
@@ -87,6 +100,29 @@ Migration `workspace_settings(key TEXT PRIMARY KEY, value TEXT NOT NULL)`. A sma
 | `/mcp` | MCP token | streamable HTTP MCP |
 
 `manage` and `credentials` are session-only scopes, so bearer credentials cannot change MCP or the port.
+
+### D8. `Engine.answer` accepts a client completion and resolved rows
+
+The MCP answer tool builds its own server model and verifier today (`compose.build_answer_llm()` and `compose.build_verify_llm()` in `transports/mcp/answer.py`), duplicating `Engine.answer`, because `Engine.answer` cannot take a client-supplied model or rows already retrieved. The Engine gains two keyword-only arguments:
+
+```python
+@dataclass(frozen=True)
+class ClientCompletion:
+    complete: CompletionSeam
+    source: Literal["client_mrtr", "client_legacy"]
+    max_rounds: int
+
+async def answer(self, question, *, ..., client_completion: ClientCompletion | None = None,
+                 rows: list[dict] | ResolvedRetrieval | None = None) -> dict
+```
+
+- With `client_completion`, the Engine uses `complete` instead of the server model, reports `source` as the completion source, and caps the answer block with `effective.answer.model_copy(update={"max_rounds": max_rounds})`. Without it, behaviour is unchanged.
+- The round cap stays in the MCP transport: the handler sets `max_rounds = min(block.max_rounds, _MAX_MRTR_ROUNDS)`, because only the transport knows its MRTR chain depth. Client round counts therefore stay as they are today.
+- Claim verification stays Engine-owned and server-side in every case; a client completion never replaces the verifier.
+- With `rows`, the Engine skips retrieval and answers from them. `ResolvedRetrieval` already exists in `core/answer/pipeline.py`, and core already accepts `rows=`.
+- `engine.py` is at 496 lines, so the answer composition (server-model seam, verifier build, client-completion selection, round cap) moves to a new `omrg/engine_answer.py`; `Engine.answer` delegates to it. `ClientCompletion` lives there and is re-exported from `omrg.engine`.
+- The answer block for the handler comes from `engine.resolve_settings(collection).answer`, which already carries the resolver's `verify_*` overlay, so the handler's `verify_*` merge is deleted. No `Engine.settings` property is added.
+- `transports/mcp/answer.py` deletes its `build_answer_llm`, `build_verify_llm` and server-seam paths with no alias. `answer_mrtr.py` retrieves through `engine.search()` and reads settings through `engine.resolve_settings()`.
 
 ## Risks and Trade-offs
 

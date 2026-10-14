@@ -1,5 +1,31 @@
 # engine-scoped-composition delta
 
+## ADDED Requirements
+
+### Requirement: The engine answers with a client completion or resolved rows
+
+`Engine.answer` SHALL accept an optional client completion (a completion function, a source label of `client_mrtr` or `client_legacy`, and a round cap) and optional pre-resolved retrieval rows. A client completion SHALL replace only the answer model: claim verification SHALL stay with the engine's own verifier. The result SHALL report the client completion's source label, and synthesis SHALL run no more rounds than its cap. When rows are given, the engine SHALL NOT retrieve again. Without either argument, the result SHALL equal the result before this change.
+
+#### Scenario: Client model, server verifier
+
+- **WHEN** `answer` runs with a client completion and claim verification enabled
+- **THEN** the answer MUST come from the client completion, verification MUST use the engine's verifier, and the completion source MUST be the client's label
+
+#### Scenario: Round cap
+
+- **WHEN** the answer block allows 8 rounds and the client completion's cap is 4
+- **THEN** synthesis MUST run at most 4 rounds
+
+#### Scenario: Resolved rows
+
+- **WHEN** `answer` runs with rows
+- **THEN** the engine MUST NOT run a retrieval
+
+#### Scenario: Default unchanged
+
+- **WHEN** `answer` runs with neither argument
+- **THEN** the result MUST equal the result before this change for the same input and models
+
 ## MODIFIED Requirements
 
 ### Requirement: The server startup path is one caller of the engine
