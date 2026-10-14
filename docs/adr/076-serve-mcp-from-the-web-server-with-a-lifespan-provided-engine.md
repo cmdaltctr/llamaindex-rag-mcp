@@ -1,7 +1,7 @@
 # ADR-076: Serve MCP from the Web Server with a Lifespan-Provided Engine
 
 - **Date:** 2026-10-14
-- **Status:** Proposed (becomes Accepted after the real-client check, task 6.3)
+- **Status:** Accepted (2026-10-14; evidence: Claude Code over HTTP on port 8765 — gate 404/401/403, MCP token refused on `/v1`, ingest inside `--root` and `/etc/hosts` refused, search found the document, old token 401 and new token accepted after rotation, no token in the log, clean shutdown; local CI passed)
 - **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 - **Related:** [ADR-031](031-three-layer-config-compose-di.md) (config, compose, DI), [ADR-036](036-phase-5-refactor-transport-separation.md) (transport separation), [ADR-037](037-architecture-v2-conformance.md) (settings injected, never global), [ADR-075](075-omrg-owned-pipeline-runner-local-web-packaging-and-external-tool-plugins.md) (local web runtime)
 - **Change:** `openspec/changes/add-mcp-http-transport/` (design D1 to D9)

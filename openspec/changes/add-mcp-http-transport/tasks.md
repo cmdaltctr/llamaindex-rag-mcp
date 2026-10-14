@@ -45,4 +45,4 @@ Rules for every task: write the test first and confirm it fails against the old 
 
 - [x] 6.1 Run `uv run pytest -m "not slow"`, the import-contract checks and `./scripts/local_ci.sh`; record exact results.
 - [x] 6.2 Run `openspec validate add-mcp-http-transport --strict` and resolve every finding.
-- [ ] 6.3 Connect one real MCP client (Claude Code) over HTTP to a local `omrg web`, run a search, rotate the token, and confirm the old token is refused.
+- [x] 6.3 Connect one real MCP client (Claude Code) over HTTP to a local `omrg web`, run a search, rotate the token, and confirm the old token is refused.
