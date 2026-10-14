@@ -32,11 +32,13 @@ The owner wants a job-shaped workspace: open a project, chat with its knowledge 
 
 ### Modified Capabilities
 
-None at the main-spec level. `local-web-workspace`, `pipeline-canvas` and `notebook-plugins` exist only in the unarchived `add-local-web-pipeline-workspace` change, so strict validation has no baseline for them; this change writes ADDED deltas and merges them into those capabilities at archive time if the prior change lands first.
+- `web-ui-stack`: removes the requirement "No view changes in this change", which described the stack change only.
+
+Otherwise none at the main-spec level. `local-web-workspace`, `pipeline-canvas` and `notebook-plugins` exist only in the unarchived `add-local-web-pipeline-workspace` change, so strict validation has no baseline for them; this change writes ADDED deltas and merges them into those capabilities at archive time if the prior change lands first.
 
 ## Impact
 
-- **Frontend**: `web/src/` restructured around the seven views; new `home/`, `chat/`, `knowledge-base/`, `studio/` directories; `views.ts`, `App.tsx`, `app.css` rewritten; existing canvas, runs, experiments, library components reused where possible.
+- **Frontend**: `web/src/` restructured around the seven views; new `home/`, `chat/`, `knowledge-base/`, `studio/` directories; `views.ts` and `App.tsx` rewritten; legacy rules retire from `legacy.css` as views migrate; existing canvas, runs, experiments, library components reused where possible.
 - **Backend**: `src/omrg/transports/api/routes_experiments.py` gains folder create/list endpoints; `core/experiments` gains directory creation with path validation. A new integrations route exposes the extras catalogue with availability from the existing probes. OpenAPI contract updated.
 - **Dependencies**: none added by this change. The UI stack (Tailwind v4, shadcn-style primitives, Radix, lucide-react) comes from `add-web-ui-stack`, which applies first.
 - **Docs**: `docs/guides/` web references updated; omms-design visual matrix used for verification.
