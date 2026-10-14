@@ -383,6 +383,9 @@ async def _owned_runtime(
 ) -> AsyncIterator[None]:
     """Build, publish and finally shut down the runtime of one launch."""
     layout = WorkspaceLayout(config.workspace)
+    mcp_http = getattr(app.state, "mcp_http", None)
+    if mcp_http is not None:
+        mcp_http.prepare()
     uploads = UploadStore(layout.uploads, max_bytes=config.max_upload_bytes)
     uploads.prepare()
     grants = RootGrants.from_paths(config.roots).with_root(uploads.directory, "managed")
@@ -395,7 +398,10 @@ async def _owned_runtime(
             runtime.run_service = run_service_factory(runtime)
             await runtime.run_service.start()
         app.state.runtime = runtime
-        yield
+        # The MCP session manager runs after the Engine exists and stops
+        # before ``shutdown_runtime`` closes it (design D3).
+        async with mcp_http.session_manager.run() if mcp_http else contextlib.nullcontext():
+            yield
     finally:
         app.state.runtime = None
         await shutdown_runtime(runtime)

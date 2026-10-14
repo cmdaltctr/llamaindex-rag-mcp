@@ -22,24 +22,24 @@ Rules for every task: write the test first and confirm it fails against the old 
 
 ## 3. Port selection
 
-- [ ] 3.1 Change `omrg web` port resolution to `--port`, then the saved `web_port`, then 8765, with `--port 0` still choosing a free port (design D5); test each source and their order.
-- [ ] 3.2 On a taken port, exit with code 1 and a stderr message naming the port, `--port <n>` and the Settings option; test it with a socket already bound to the port.
-- [ ] 3.3 Add `GET /v1/settings/web-port` (read) and `PUT /v1/settings/web-port` (`manage`, 1024 to 65535 or `null`); test validation, bearer refusal, and that the bound port does not change.
+- [x] 3.1 Change `omrg web` port resolution to `--port`, then the saved `web_port`, then 8765, with `--port 0` still choosing a free port (design D5); test each source and their order.
+- [x] 3.2 On a taken port, exit with code 1 and a stderr message naming the port, `--port <n>` and the Settings option; test it with a socket already bound to the port.
+- [x] 3.3 Add `GET /v1/settings/web-port` (read) and `PUT /v1/settings/web-port` (`manage`, 1024 to 65535 or `null`); test validation, bearer refusal, and that the bound port does not change.
 
 ## 4. HTTP transport
 
-- [ ] 4.1 In `create_app`, build the HTTP MCP server with a lifespan yielding `McpContext(runtime.engine, PathPolicy.from_grants(runtime.grants), runtime.admission)`, mount `streamable_http_app` at `/mcp` with stateful sessions and `TransportSecuritySettings` limited to the bound host and port; enter `session_manager.run()` in the web lifespan after the Engine is built and leave it before the Engine closes.
-- [ ] 4.2 Add the pure ASGI `McpGate` (off returns 404, foreign `Origin` returns 403, bad or missing bearer returns 401, in that order) per design D3; keep `GuardMiddleware`'s Host check for `/mcp`; test each refusal, that an absent `Origin` passes, and that no tool runs on a refused request.
-- [ ] 4.3 Add `GET /v1/mcp`, `PUT /v1/mcp`, `POST /v1/mcp/token` and `DELETE /v1/mcp/token` per design D7; `PUT` writes the database, then updates the gate's in-memory flag; test off by default, enable surviving a restart, turning off ending an open session, the token shown only once, bearer refusal of `PUT` and the token routes, and the MCP token being refused on every `/v1` route.
-- [ ] 4.4 Add the `omrg_mcp_` pattern to `RedactingFilter`; test that a logged token is removed.
-- [ ] 4.5 End-to-end test with the SDK's streamable HTTP client against a test app: initialise, list tools, ingest a file inside an approved root, search it over `/mcp`, refuse a path outside the roots, and confirm a document ingested through `/v1` is found over `/mcp` without a restart.
-- [ ] 4.6 Test shutdown order: a tool call running during shutdown finishes or is cancelled before the Engine closes.
+- [x] 4.1 In `create_app`, build the HTTP MCP server with a lifespan yielding `McpContext(runtime.engine, PathPolicy.from_grants(runtime.grants), runtime.admission)`, mount `streamable_http_app` at `/mcp` with stateful sessions and `TransportSecuritySettings` limited to the bound host and port; enter `session_manager.run()` in the web lifespan after the Engine is built and leave it before the Engine closes.
+- [x] 4.2 Add the pure ASGI `McpGate` (off returns 404, foreign `Origin` returns 403, bad or missing bearer returns 401, in that order) per design D3; keep `GuardMiddleware`'s Host check for `/mcp`; test each refusal, that an absent `Origin` passes, and that no tool runs on a refused request.
+- [x] 4.3 Add `GET /v1/mcp`, `PUT /v1/mcp`, `POST /v1/mcp/token` and `DELETE /v1/mcp/token` per design D7; `PUT` writes the database, then updates the gate's in-memory flag; test off by default, enable surviving a restart, turning off ending an open session, the token shown only once, bearer refusal of `PUT` and the token routes, and the MCP token being refused on every `/v1` route.
+- [x] 4.4 Add the `omrg_mcp_` pattern to `RedactingFilter`; test that a logged token is removed.
+- [x] 4.5 End-to-end test with the SDK's streamable HTTP client against a test app: initialise, list tools, ingest a file inside an approved root, search it over `/mcp`, refuse a path outside the roots, and confirm a document ingested through `/v1` is found over `/mcp` without a restart.
+- [x] 4.6 Test shutdown order: a tool call running during shutdown finishes or is cancelled before the Engine closes.
 
 ## 5. Contract and documentation
 
-- [ ] 5.1 Update the OpenAPI contract artifacts for the six new operations.
-- [ ] 5.2 Update `docs/guides/mcp-tools.md` with the HTTP client configuration (URL, bearer header) beside the stdio one, and `docs/guides/cli-reference.md` with the port order and the taken-port message.
-- [ ] 5.3 Record the decision to serve MCP from the web server with a lifespan-provided Engine as an ADR (`s-adr`).
+- [x] 5.1 Update the OpenAPI contract artifacts for the six new operations.
+- [x] 5.2 Update `docs/guides/mcp-tools.md` with the HTTP client configuration (URL, bearer header) beside the stdio one, and `docs/guides/cli-reference.md` with the port order and the taken-port message.
+- [x] 5.3 Record the decision to serve MCP from the web server with a lifespan-provided Engine as an ADR (`s-adr`).
 
 ## 6. Verification
 

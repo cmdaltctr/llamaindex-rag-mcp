@@ -82,6 +82,7 @@ development of OMRG — Opinionated Modular RAG.
 | [073](./073-make-the-torch-extra-a-normal-choice.md) | Make the Optional `torch` Extra a Normal Choice | 2026-10-08 | Accepted |
 | [074](./074-run-local-decision-models-through-llama-cpp-q8-0-gguf.md) | Run Local Decision Models Through llama.cpp Q8_0 GGUF | 2026-10-08 | Proposed |
 | [075](./075-omrg-owned-pipeline-runner-local-web-packaging-and-external-tool-plugins.md) | OMRG-Owned Pipeline Runner, Local Web Packaging, and External-Tool Plugins | 2026-10-13 | Accepted |
+| [076](./076-serve-mcp-from-the-web-server-with-a-lifespan-provided-engine.md) | Serve MCP from the Web Server with a Lifespan-Provided Engine | 2026-10-14 | Proposed |
 
 ## Convention
 

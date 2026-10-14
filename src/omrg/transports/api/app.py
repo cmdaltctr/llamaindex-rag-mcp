@@ -16,6 +16,7 @@ from fastapi import APIRouter, FastAPI
 from ... import __version__
 from .errors import install_error_handlers
 from .lifespan import RunServiceFactory, WebConfig, build_lifespan, default_engine_factory
+from .mcp_http import build_mcp_http
 from .middleware import GuardMiddleware
 from .routes import router as foundation_router
 from .routes_admin import router as admin_router
@@ -24,6 +25,7 @@ from .routes_experiments import router as experiments_router
 from .routes_graphs import router as graphs_router
 from .routes_inspect import router as inspect_router
 from .routes_jobs import router as jobs_router
+from .routes_mcp import router as mcp_router
 from .routes_plugins import router as plugins_router
 from .routes_runs import router as runs_router
 from .routes_templates import router as templates_router
@@ -42,6 +44,7 @@ API_ROUTERS: tuple[APIRouter, ...] = (
     experiments_router,
     templates_router,
     plugins_router,
+    mcp_router,
 )
 
 
@@ -89,6 +92,7 @@ def create_app(
     install_error_handlers(app)
     for router in API_ROUTERS:
         app.include_router(router)
+    app.state.mcp_http = build_mcp_http(app, config, policy)
     app.router.default = FrontendFallback(config.static_dir)
     app.add_middleware(GuardMiddleware, policy=policy)
     return app

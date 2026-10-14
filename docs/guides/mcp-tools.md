@@ -2,6 +2,49 @@
 
 Eight tools are exposed over the MCP protocol. All parameters are optional except where marked _(required)_.
 
+## Connect a client
+
+### Stdio
+
+Each client starts its own `omrg` process:
+
+```json
+{ "mcpServers": { "omrg": { "command": "uv", "args": ["run", "omrg"] } } }
+```
+
+### HTTP
+
+`omrg web` can serve the same eight tools at `/mcp`, so a client shares the running server and its Engine. The endpoint is off until you turn it on.
+
+1. Start the server: `omrg web --root ~/papers`.
+2. In the browser, open Settings > MCP. Turn on MCP over HTTP. Create a token. The token is shown once.
+3. Add the server to the client. The URL is the one that Settings shows, for example `http://127.0.0.1:8765/mcp`:
+
+```json
+{
+  "mcpServers": {
+    "omrg": {
+      "type": "http",
+      "url": "http://127.0.0.1:8765/mcp",
+      "headers": { "Authorization": "Bearer omrg_mcp_<token>" }
+    }
+  }
+}
+```
+
+With Claude Code: `claude mcp add --transport http omrg http://127.0.0.1:8765/mcp --header "Authorization: Bearer omrg_mcp_<token>"`.
+
+Rules for HTTP:
+
+- A switched-off endpoint answers 404. A foreign `Origin` gets 403. A missing, wrong or revoked token gets 401. The checks run in that order.
+- Rotating the token ends access for the old token at the next request. Update each client.
+- `ingest_documents` and `get_codebase_map` accept only paths inside a directory that you approved with `--root`. A path outside, or a symlink that leads outside, returns `{"status": "error", ...}`. Stdio keeps its earlier behaviour.
+- The token works on `/mcp` only. It never opens a `/v1` route.
+- The server must run. Stop it and the client loses the connection. Use stdio if the client should start OMRG itself.
+- Without the saved port or `--port`, the server listens on 8765. Save a port in Settings > MCP, or start with `--port <n>`.
+
+---
+
 ## `search_documents`
 
 Semantic similarity search over indexed documents.

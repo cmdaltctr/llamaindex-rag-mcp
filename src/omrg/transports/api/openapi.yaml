@@ -73,8 +73,9 @@ servers:
       port:
         default: "8765"
         description: >
-          Loopback port chosen at launch (`omrg web --port`; a free port
-          when omitted). The launch URL on stderr names it.
+          Loopback port chosen at launch: `omrg web --port`, else the port
+          saved with `PUT /v1/settings/web-port`, else 8765. `--port 0`
+          picks a free port. The launch URL on stderr names it.
 
 x-omrg-scope-catalogue:
   read:
@@ -1955,6 +1956,187 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
+  # ── MCP over HTTP and the saved port ────────────────────────────────
+  /mcp:
+    get:
+      operationId: getMcpState
+      summary: Read whether MCP over HTTP is on
+      description: >
+        Returns the switch, the full `/mcp` address on the bound host and
+        port, and whether a token exists. The token value is never returned.
+        The MCP endpoint itself (`/mcp`, outside `/v1`) speaks streamable HTTP
+        MCP. It is off until `PUT /v1/mcp` turns it on. Each request needs
+        `Authorization: Bearer omrg_mcp_<secret>` and no foreign `Origin`.
+        A request to a switched-off endpoint gets 404, a foreign `Origin` 403
+        and a missing or wrong token 401, checked in that order.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The current state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/McpState"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    put:
+      operationId: setMcpEnabled
+      summary: Turn MCP over HTTP on or off
+      description: >
+        The value is stored in the workspace database, then applied without a
+        restart. Turning it off ends open sessions at their next request.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/McpEnabledRequest"
+      responses:
+        "200":
+          description: The stored state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/McpState"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /mcp/token:
+    post:
+      operationId: rotateMcpToken
+      summary: Create or rotate the MCP token
+      description: >
+        Replaces any existing token in one transaction. The token is shown
+        once, in this response. Only its SHA-256 digest is stored. The token
+        works on `/mcp` only: every `/v1` route refuses it.
+      security:
+        - sessionCookie: [credentials]
+      x-omrg-scopes: [credentials]
+      responses:
+        "201":
+          description: Token created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/McpTokenCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    delete:
+      operationId: revokeMcpToken
+      summary: Revoke the MCP token
+      description: Clients that hold the token get 401 at their next request.
+      security:
+        - sessionCookie: [credentials]
+      x-omrg-scopes: [credentials]
+      responses:
+        "200":
+          description: Token revoked, or none existed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/McpTokenRevoked"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /settings/web-port:
+    get:
+      operationId: getWebPort
+      summary: Read the saved and the bound web port
+      description: >
+        `saved` is used at the next launch when `--port` is not given.
+        `bound` is the port this server listens on now.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The ports.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebPortState"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    put:
+      operationId: setWebPort
+      summary: Save or clear the port for later launches
+      description: >
+        Accepts 1024 to 65535, or `null` to clear. The running server does
+        not rebind.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebPortRequest"
+      responses:
+        "200":
+          description: The ports after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebPortState"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -2338,6 +2520,89 @@ components:
         revoked:
           type: boolean
           enum: [true]
+
+    McpState:
+      type: object
+      additionalProperties: false
+      required: [status, enabled, url, token]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        enabled:
+          type: boolean
+        url:
+          type: string
+          description: The full `/mcp` address on the bound host and port.
+        token:
+          type: object
+          additionalProperties: false
+          required: [exists, created_at]
+          properties:
+            exists:
+              type: boolean
+            created_at:
+              type: [string, "null"]
+              description: ISO 8601 creation time, or null when no token exists.
+
+    McpEnabledRequest:
+      type: object
+      additionalProperties: false
+      required: [enabled]
+      properties:
+        enabled:
+          type: boolean
+
+    McpTokenCreated:
+      type: object
+      additionalProperties: false
+      required: [status, token, created_at]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        token:
+          type: string
+          description: The MCP token (`omrg_mcp_` prefix). It is shown only in this response.
+        created_at:
+          type: string
+
+    McpTokenRevoked:
+      type: object
+      additionalProperties: false
+      required: [status, revoked]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        revoked:
+          type: boolean
+          description: False when no token existed.
+
+    WebPortState:
+      type: object
+      additionalProperties: false
+      required: [status, saved, bound]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        saved:
+          type: [integer, "null"]
+          description: The port saved for the next launch, or null.
+        bound:
+          type: integer
+          description: The port this server listens on now.
+
+    WebPortRequest:
+      type: object
+      additionalProperties: false
+      required: [port]
+      properties:
+        port:
+          type: [integer, "null"]
+          minimum: 1024
+          maximum: 65535
 
     Root:
       type: object

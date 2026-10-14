@@ -59,7 +59,7 @@ Press Ctrl+C to stop.
 | Option | Default | Use |
 |---|---|---|
 | `--workspace PATH` | `~/.omrg/workspace` | Directory for application records, run artefacts and uploads. |
-| `--port N` | `0` (a free port) | TCP port to listen on. |
+| `--port N` | the saved port, else `8765` | TCP port to listen on. `0` picks a free port. |
 | `--host ADDR` | `127.0.0.1` | Loopback address only: `127.0.0.1`, `::1` or `localhost`. |
 | `--root DIR` | none | Approve a directory for file access. Repeat the option for more directories. |
 | `--experiment-root DIR` | none | Approve a directory below which you can register experiment workspaces. Repeat the option for more directories. |
@@ -69,7 +69,7 @@ Rules for the options:
 
 - A non-loopback address, for example `0.0.0.0` or a LAN address, stops the command with exit code 2.
 - A `--root` or `--experiment-root` that is missing, or that is not a directory, stops the command with exit code 2.
-- A busy `--port` stops the command with exit code 1.
+- A busy port (from `--port`, the saved port or the default) stops the command with exit code 1. The message names the port, `--port <n>` and Settings > MCP.
 - The server runs as one process. Automatic reload is off.
 
 ### One server for each workspace
@@ -224,11 +224,15 @@ Every `/v1` error uses the JSON envelope `{"status": "error", "message": "..."}`
 
 Paths outside `/v1` belong to the application. A missing asset file gets a plain 404. When the application files are not built, `/` returns a message that names `npm ci && npm run build`. The API still works.
 
+## MCP over HTTP
+
+The server can serve MCP at `/mcp`. It is off by default. Turn it on with `PUT /v1/mcp` (Settings > MCP). `POST /v1/mcp/token` creates or rotates the one token. `DELETE /v1/mcp/token` revokes it. `PUT /v1/settings/web-port` saves the port for the next launch. These changes need the browser session. Client set-up and the request checks: [MCP tools](mcp-tools.md#connect-a-client).
+
 ## Stop the server
 
 Press Ctrl+C in the terminal that runs `omrg web`. The server then:
 
-1. stops new admission and ends open event streams with `server.closing`,
+1. stops new admission and ends open event streams with `server.closing`. An open MCP stream is closed after 5 seconds,
 2. cancels queued work,
 3. asks active runs to stop at a safe point and waits for active writes to finish,
 4. stops notebook editors that it started,

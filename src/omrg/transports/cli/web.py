@@ -11,6 +11,7 @@ messages go to stderr (gotcha #5).
 
 from __future__ import annotations
 
+import errno
 import importlib
 import socket
 from pathlib import Path
@@ -26,6 +27,20 @@ INSTALL_HINT = (
     'The web workspace needs the optional "web" extra. Install it with: '
     'pip install "omrg[web]"  (or, in a checkout: uv sync --extra web)'
 )
+
+
+#: Port used when neither ``--port`` nor a saved port names one.
+DEFAULT_PORT = 8765
+
+
+def resolve_port(given: int | None, saved: int | None) -> int:
+    """Return the port to bind: ``--port``, else the saved port, else 8765.
+
+    ``0`` from ``--port`` is kept: it asks for a free port.
+    """
+    if given is not None:
+        return given
+    return saved if saved is not None else DEFAULT_PORT
 
 
 def default_workspace() -> Path:
@@ -75,6 +90,9 @@ def _serve(application: Any, sock: socket.socket) -> bool:
         reload=False,
         workers=1,
         lifespan="on",
+        # An MCP client keeps a server-sent-events stream open. Without a
+        # limit, Ctrl+C would wait for it to close.
+        timeout_graceful_shutdown=5,
         proxy_headers=False,
         server_header=False,
         access_log=True,
@@ -121,8 +139,17 @@ def web(
         ),
     ] = None,
     port: Annotated[
-        int, typer.Option("--port", min=0, max=65535, help="TCP port. 0 picks a free port.")
-    ] = 0,
+        int | None,
+        typer.Option(
+            "--port",
+            min=0,
+            max=65535,
+            help=(
+                "TCP port. 0 picks a free port. Without it the saved port "
+                f"(Settings > MCP) is used, else {DEFAULT_PORT}."
+            ),
+        ),
+    ] = None,
     root: Annotated[
         list[Path] | None,
         typer.Option(
@@ -161,13 +188,25 @@ def web(
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {escape(str(exc))}", soft_wrap=True)
         raise typer.Exit(code=2) from None
-    try:
-        sock = _bind_socket(bind_host, port)
-    except OSError as exc:
-        console.print(f"[red]Error:[/red] Cannot listen on {bind_host}:{port}: {exc.strerror}")
-        raise typer.Exit(code=1) from None
-
     workspace_dir = (workspace or default_workspace()).expanduser()
+    from ...core.workspace import WorkspaceLayout
+    from ...integrations.workspace_sqlite.settings import read_saved_web_port
+
+    wanted_port = resolve_port(port, read_saved_web_port(WorkspaceLayout(workspace_dir).records))
+    try:
+        sock = _bind_socket(bind_host, wanted_port)
+    except OSError as exc:
+        if exc.errno == errno.EADDRINUSE:
+            console.print(
+                f"[red]Error:[/red] Port {wanted_port} is in use. Start with --port <n> to "
+                "choose another port, then save it in Settings > MCP.",
+                soft_wrap=True,
+            )
+        else:
+            console.print(
+                f"[red]Error:[/red] Cannot listen on {bind_host}:{wanted_port}: {exc.strerror}"
+            )
+        raise typer.Exit(code=1) from None
     try:
         # Probe only: the lifespan holds the lock for the server's lifetime.
         WorkspaceLock.acquire(workspace_dir).release()
