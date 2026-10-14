@@ -11,7 +11,7 @@ Navigation has seven items in this order: Home, Chat, Knowledge Base, Studio, Ex
 | Top bar | Muted surface, 1px bottom border, elevation shadow. Shows the brand, an engine status pill (collection count, or "offline"), and the theme select. |
 | Inspector | The global toggle and empty panel are gone. Detail regions open inside Chat, Studio, and Experiments on selection. |
 | Skip link, main focus | Keep the existing skip link. Focus moves to the view `h1` after navigation. |
-| Routes | Hash routes. The design names `#/home/<collection>`, `#/studio/<pipeline-id>`, `#/chat`, and `#/experiments`. The other view ids (`knowledge-base`, `integrations`, `settings`) are not named in the artefacts. Take them from `views.ts` when it is rewritten. Legacy `#/canvas`, `#/library`, `#/search`, `#/ask`, `#/runs` redirect once to Studio, Home, Chat, Chat, Experiments, and the hash is replaced. |
+| Routes | Typed hash routes from `lib/routes.ts` (design D9): `#/home`, `#/knowledge-base[/<collection>]`, `#/chat[/<collection>]`, `#/studio[/<pipeline-id>]`, `#/experiments`, `#/experiments/runs/<run-id>`, `#/integrations`, `#/settings`. Segments are URI-encoded. An unknown hash opens Home and is rewritten to `#/home`; earlier routes are not redirected. |
 | Narrow screens | Navigation targets are at least 44px tall. No horizontal page scroll. |
 
 Read the presentation spec and `web/src/App.tsx` before you change route names.
@@ -22,7 +22,7 @@ A grid of project cards (`gap-3`, `items-start`). Each card is flat with a 1px b
 
 Empty state: icon, one sentence naming the cause, one action that starts an ingest into a named collection.
 
-Opening a project shows its library: source table with orphan status, upload panel, folder ingest panel, profile information, and deletion. Orphan status is a badge with text. The active project persists through the URL and a versioned `localStorage` key. Stale keys are dropped.
+A card opens `#/knowledge-base/<collection>`: source table with orphan status, upload panel, folder ingest panel, profile information, deletion, and search. Orphan status is a badge with text. The route is the active project; `lastCollection` in `omrg-preferences` is only the default for `#/knowledge-base` and `#/chat`.
 
 ## Chat
 

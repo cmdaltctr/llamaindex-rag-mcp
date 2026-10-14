@@ -11,7 +11,7 @@ Read [visual foundations](foundations.md) first. Paths marked "planned" come fro
 | shadcn CLI settings | `web/components.json` (css path `src/styles/app.css`) |
 | Tokens | `web/src/styles/tokens.css` |
 | Stylesheet entry, cascade layers, token bridge | `web/src/styles/app.css` |
-| Layout, legacy controls, typography roles (`.type-*`) | `web/src/styles/legacy.css`, plus per-view CSS imported by `app.css` |
+| Old hand-written CSS (deleted by `redesign-web-workspace` task 7.2) | `web/src/styles/legacy.css`, plus four per-view files imported by `app.css` |
 | Views list and hash routing | `web/src/lib/views.ts`, `web/src/App.tsx` |
 | Navigation | `web/src/components/AppNav.tsx` |
 | Theme select | `web/src/components/ThemeSelect.tsx` |
@@ -27,7 +27,7 @@ Variants (task 2.1): `default` (tinted primary), `destructive`, `outline`, `seco
 - `chip` shows selection with `--selection`. It must not look like the primary action.
 - A destructive button needs the same contrast check as the primary. Use the error label derived in the foundations contrast section.
 - Set `type="button"` on every non-submit button inside a form.
-- Do not keep the legacy `.button` classes on a migrated view.
+- Never use the old `.button` classes. The `Button` primitive is the only button.
 
 ```tsx
 import { Plus } from "lucide-react";
@@ -83,7 +83,7 @@ One label has one hue everywhere. Use one shared hue function, owned beside the 
 
 Keep Radix behaviour. Fields have an elevated fill, a 1px `--border`, `--border-hover` on hover, 36px height, a 10px radius, and the shared focus outline. Every field has a visible `Label` bound by `htmlFor`. Validation messages sit next to the field and are tied to it with `aria-describedby`.
 
-The Select primitive is Radix-based. The legacy `<select className="control control--select">` in `ThemeSelect.tsx` and `CollectionSelect` stays until its view migrates. Keep test queries working (`getByRole("combobox", { name })`). Radix Select renders differently from a native select in jsdom, so migrate the tests with the component.
+The Select primitive is Radix-based. Replace the old native `<select className="control control--select">` in `ThemeSelect.tsx` and `CollectionSelect` with it when the redesign rebuilds those components. Keep test queries working (`getByRole("combobox", { name })`). Radix Select renders differently from a native select in jsdom, so migrate the tests with the component.
 
 ## Dialogs
 

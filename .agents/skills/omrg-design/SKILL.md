@@ -16,14 +16,14 @@ Both live in `openspec/changes/`. The spec deltas are the contract. This skill t
 
 The web app is a React 19 + Vite single-page app, tested with Vitest, linted with ESLint, and built with `npm`. It has no router library: views switch on `location.hash`. It has no i18n library: copy is plain British English in the source.
 
-Before `add-web-ui-stack` lands, `web/` has hand-written CSS only. `web/src/styles/tokens.css` holds the palette. `web/src/styles/app.css` is the stylesheet entry: it declares the cascade layers and imports `legacy.css` (layout, shared controls, typography roles) and the per-view CSS files into the `legacy` layer. Never import a `.css` file from a component; add new stylesheets to `app.css` inside a layer. After `add-web-ui-stack` lands, `web/` also has:
+`web/src/styles/tokens.css` holds the palette. `web/src/styles/app.css` is the stylesheet entry and token bridge. Until `redesign-web-workspace` finishes, it also loads the old hand-written CSS (`legacy.css` and four per-view files) into a `legacy` layer; the redesign deletes all of it. Never write new hand-written CSS and never import a `.css` file from a component. `web/` has:
 
 - Tailwind v4 through `@tailwindcss/vite`, CSS-first, no `tailwind.config` file.
 - An `@theme inline` bridge that aliases utility names to the `tokens.css` variables. `tokens.css` stays the single source of truth.
 - shadcn-style primitives in `web/src/components/ui/` (button, badge, card, dialog, input, select, label, tooltip, separator, table), built on Radix.
 - `class-variance-authority`, `clsx`, `tailwind-merge` (the `cn()` helper), `lucide-react`, and `tw-animate-css`.
 
-Check `web/package.json` and `web/src/components/ui/` before you rely on any of these. If they are absent, the stack change is not applied yet. Say so and stop. Do not hand-roll a replacement primitive, and do not add dependencies beyond the list in `add-web-ui-stack`.
+Check `web/package.json` and `web/src/components/ui/` before you rely on any of these. If they are absent, the stack change is not applied yet. Say so and stop. Do not hand-roll a replacement primitive. Add no dependency beyond the list in `add-web-ui-stack` plus `@tanstack/react-query`, which `redesign-web-workspace` adds (owner approval, 14 October 2026).
 
 ## Read by task
 
@@ -42,8 +42,8 @@ Paths in the references are relative to the repository root. The references hold
 1. Trace every change to a task in an OpenSpec `tasks.md`. If no task covers it, propose one first. Follow the Change Workflow in the repository `CLAUDE.md`.
 2. Components read semantic tokens. Literal colours stay in `tokens.css`.
 3. Reuse the primitives in `web/src/components/ui/`. Do not wrap them to override heights, radii, or colours. Change the primitive when the design changes.
-4. The old `.button`, `.control`, and `.panel` CSS stays for views not yet migrated. A migrated view stops using it. Do not mix both styles in one component.
-5. Behaviour stays unchanged unless a spec says otherwise. Keep routes, save behaviour, API calls, destructive confirmations, and the theme preference keys.
+4. Build only with primitives and Tailwind utilities. The old `.button`, `.control`, `.panel` and `.type-*` classes and their stylesheets are deleted by the redesign: never use them in new or rebuilt code, and delete the rules a rebuilt view no longer needs.
+5. Behaviour stays unchanged unless a spec says otherwise. Keep save behaviour, API calls and destructive confirmations. Routes and stored UI state follow the redesign's design D9 and D12: the URL is the only source of location, and there are no redirects or migrations for earlier routes or keys.
 6. Keep every file under 500 lines. Split by responsibility.
 7. If the spec, design, and tasks disagree, report the conflict with numbered options. Do not pick one silently.
 

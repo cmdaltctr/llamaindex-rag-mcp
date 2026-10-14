@@ -41,7 +41,9 @@ Test rules:
 
 1. No existing view imports a new primitive (task 3.4). Search imports of `components/ui`.
 2. One pre-existing view renders pixel-identical before and after (task 3.1). Capture both at the same theme, width, and data.
-3. The legacy tests stay green with no edits.
+3. The existing tests stay green with no edits.
+
+The redesign replaces this coexistence: when it finishes, only `tokens.css` and `app.css` exist and `cascade.test.ts` fails on any other stylesheet.
 
 ## Run the correct app
 
@@ -85,7 +87,7 @@ With the Chrome DevTools tools, use `resize_page` or `emulate` for the viewport,
 4. Look for horizontal page overflow, clipped text, cramped icons, and hidden actions.
 5. Open each dialog and select. Check Escape, Tab order, focus trap, and focus return.
 6. Switch theme with a safe draft open. Confirm the route and draft stay.
-7. Reload. Confirm the theme and the active project persist. Confirm stale storage keys are dropped.
+7. Reload. Confirm the route (project, pipeline or run) and the theme are restored. Put a malformed value in `omrg-preferences` and confirm the app uses defaults and removes it. Open an unknown hash and confirm Home with `#/home`.
 8. Force a failure (stop the server or block `/v1`). Confirm one friendly line, one action, and no parser text in the DOM.
 9. Check reduced motion in the browser setting.
 10. Confirm status badges show text, not colour alone.
