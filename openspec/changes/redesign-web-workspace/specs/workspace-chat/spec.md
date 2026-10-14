@@ -8,7 +8,7 @@ A chat view that answers each question from a selected knowledge base, with cita
 
 ### Requirement: The user chats with a selected knowledge base
 
-The Chat view SHALL present a transcript column and a composer, and a right-hand knowledge base panel listing collections with their counts. Sending a message SHALL append the user message and call `answerCollection` on the selected collection with the message text, then append the assistant turn. The view SHALL state that each question answers on its own.
+The Chat view SHALL present a transcript column and a composer, and a right-hand knowledge base panel listing collections with their counts. The selected collection SHALL be the collection segment of the `#/chat/<collection>` route; selecting another collection SHALL rewrite the route. Opening `#/chat` without a collection SHALL select the last-used collection when the server still lists it, and otherwise SHALL ask the user to choose one. Sending a message SHALL append the user message and call `answerCollection` on the selected collection with the message text, then append the assistant turn. The view SHALL state that each question answers on its own.
 
 #### Scenario: Ask a question
 
@@ -18,7 +18,7 @@ The Chat view SHALL present a transcript column and a composer, and a right-hand
 #### Scenario: Switch knowledge base mid-conversation
 
 - **WHEN** the user selects a different collection after two turns
-- **THEN** the next turn MUST query the newly selected collection and the transcript MUST keep earlier turns
+- **THEN** the next turn MUST query the newly selected collection, the route MUST name it, and the transcript MUST keep earlier turns
 
 ### Requirement: Assistant turns cite their evidence
 

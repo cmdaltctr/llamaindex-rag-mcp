@@ -20,19 +20,24 @@ The workspace SHALL show a Home view listing every collection as a project card 
 - **WHEN** the engine reports no collections
 - **THEN** Home MUST show an empty state naming the cause and offering one ingest action
 
-### Requirement: Opening a project shows its library
+### Requirement: Opening a project shows its Knowledge Base
 
-Selecting a project card SHALL open the project library scoped to that collection, showing its source table with orphan status, the upload panel, the folder ingest panel, and profile information. The active project SHALL persist across reloads through the URL and local storage.
+Selecting a project card SHALL open `#/knowledge-base/<collection>`, the Knowledge Base scoped to that collection, showing its source table with orphan status, the upload panel, the folder ingest panel, profile information and search. Opening `#/knowledge-base` without a collection SHALL open the last-used collection when the server still lists it, and otherwise SHALL show a project picker.
 
 #### Scenario: Open a project with sources
 
 - **WHEN** the user opens a project that has three sources
-- **THEN** the library MUST list the three sources with their machine-local orphan status and the collection's profile label
+- **THEN** the Knowledge Base MUST list the three sources with their machine-local orphan status and the collection's profile label
 
 #### Scenario: Reload keeps the active project
 
-- **WHEN** the user reloads the page while a project is open
-- **THEN** the same project library MUST be restored from persisted state
+- **WHEN** the user reloads the page at `#/knowledge-base/papers`
+- **THEN** the Knowledge Base for `papers` MUST be shown
+
+#### Scenario: Last-used collection was deleted
+
+- **WHEN** the user opens `#/knowledge-base` and the last-used collection no longer exists
+- **THEN** the project picker MUST be shown and the stale default MUST be dropped
 
 ### Requirement: Files upload into the active project
 

@@ -2,27 +2,70 @@
 
 ## Purpose
 
-The workspace shell: navigation structure, friendly failures, icons, colour badges, elevation and contextual detail panels, following the OpenChamber visual system already tokenised in `web/src/styles/tokens.css`.
+The workspace shell: navigation and routes, shared workspace data, friendly failures, icons, colour badges, elevation and contextual detail regions, following the OpenChamber visual system tokenised in `web/src/styles/tokens.css`.
 
 ## ADDED Requirements
 
 ### Requirement: Navigation follows the seven-area structure
 
-The app navigation SHALL offer exactly Home, Chat, Knowledge Base, Studio, Experiments, Integrations and Settings, in that order, with Home as the landing view. The active item SHALL be marked. Legacy hash routes (`#/canvas`, `#/library`, `#/search`, `#/ask`, `#/runs`) SHALL redirect once to their new homes.
+The app navigation SHALL offer exactly Home, Chat, Knowledge Base, Studio, Experiments, Integrations and Settings, in that order, each with its icon, with Home as the landing view. The item for the current route SHALL be marked active.
 
 #### Scenario: Fresh visit
 
 - **WHEN** the app opens with no hash
-- **THEN** Home MUST be the active view
+- **THEN** Home MUST be the active view and the address bar MUST read `#/home`
 
-#### Scenario: Legacy hash redirects
+#### Scenario: Active item follows the route
+
+- **WHEN** the app shows `#/studio/<pipeline-id>`
+- **THEN** Studio MUST be the marked navigation item
+
+### Requirement: The URL is the only source of location
+
+The current area, project, pipeline and run SHALL be read from the URL hash only, using these routes: `#/home`, `#/knowledge-base`, `#/knowledge-base/<collection>`, `#/chat`, `#/chat/<collection>`, `#/studio`, `#/studio/<pipeline-id>`, `#/experiments`, `#/experiments/runs/<run-id>`, `#/integrations` and `#/settings`, with each segment URI-encoded. A hash that matches no route SHALL show Home and rewrite the address bar to `#/home`. Back and forward SHALL restore the previous location. A route naming a collection, pipeline or run that the server does not return SHALL show a not-found state with a link back to its picker. Browser storage SHALL hold only the theme preference, the last-used collection as a default for `#/chat` and `#/knowledge-base`, and unsaved canvas drafts; stored values that fail validation SHALL be ignored and removed.
+
+#### Scenario: Reload keeps the location
+
+- **WHEN** the user reloads the page at `#/knowledge-base/research%20notes`
+- **THEN** the Knowledge Base for the collection `research notes` MUST be shown
+
+#### Scenario: Unknown route
 
 - **WHEN** the app opens at `#/search`
-- **THEN** the app MUST route to Chat and replace the hash with `#/chat`
+- **THEN** Home MUST be shown and the address bar MUST read `#/home`
+
+#### Scenario: Back restores the previous location
+
+- **WHEN** the user goes from `#/home` to `#/chat/papers` and presses Back
+- **THEN** Home MUST be shown
+
+#### Scenario: Unknown collection in the route
+
+- **WHEN** the app opens at `#/chat/missing` and the server lists no collection named `missing`
+- **THEN** the view MUST show a not-found state with a link to `#/chat`
+
+#### Scenario: Stored value with an old shape
+
+- **WHEN** browser storage holds a preferences value that fails validation
+- **THEN** the app MUST use the default theme, MUST remove the stored value, and MUST NOT show an error
+
+### Requirement: Workspace data stays consistent across views
+
+Data read from the server SHALL be shared between views through one cache, so a collection list is fetched once for Home, Chat and Knowledge Base. An upload, ingest job completion, source deletion, collection deletion or profile change SHALL refresh the collection list and counts in every view without a page reload. A finished run SHALL refresh the run list and that run's detail.
+
+#### Scenario: Counts update after an ingest
+
+- **WHEN** an ingest job into `papers` completes while the user is in the Knowledge Base
+- **THEN** the `papers` card on Home and the `papers` entry in the Chat knowledge base panel MUST show the new document and chunk counts without a reload
+
+#### Scenario: One request for shared data
+
+- **WHEN** the user moves from Home to Chat within the cache freshness window
+- **THEN** the collection list MUST NOT be requested again
 
 ### Requirement: API failures render as friendly messages with one action
 
-Every view SHALL convert transport failures into a single short message naming what failed plus one action (Retry, or guidance to start the server). Parser output, status dumps and stack text MUST NOT appear in the UI. Under the Vite dev server, `/v1` requests SHALL proxy to the local web transport.
+Every view SHALL convert transport and HTTP failures into a single short message naming what failed plus one action, chosen from the failure kind and status: an unreachable server offers Retry; a refused session explains how to open the workspace again; a missing resource links back to its picker; an oversized upload names the limit. Parser output, status dumps and stack text MUST NOT appear in the UI; the raw message SHALL go to the browser console only. Under the Vite dev server, `/v1` requests SHALL proxy to the local web transport.
 
 #### Scenario: Friendly failure
 
@@ -66,11 +109,11 @@ The top bar and floating detail panels SHALL carry a subtle shadow in both theme
 - **WHEN** the app renders in dark theme
 - **THEN** the top bar MUST be distinguishable from the canvas by border and elevation, not by a new colour
 
-### Requirement: Detail panels open on selection
+### Requirement: Detail regions open on selection
 
-The global Inspector toggle SHALL be removed from the top bar. Views that need detail regions (Chat, Studio, Experiments) SHALL open them on selection within their own layout.
+The top bar SHALL have no Inspector toggle and the app SHALL have no global inspector panel. Views that need detail regions (Chat, Studio, Experiments) SHALL open them on selection within their own layout.
 
-#### Scenario: No empty global inspector
+#### Scenario: No global inspector
 
 - **WHEN** the app opens
 - **THEN** no Inspector toggle SHALL be present in the top bar and no empty inspector panel SHALL render

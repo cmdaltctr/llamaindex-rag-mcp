@@ -50,9 +50,14 @@ The Experiments view SHALL keep the notebook tool registration, trust notice, on
 
 ### Requirement: Pipeline runs live in Experiments
 
-The Experiments view SHALL include the pipeline runs list with its status filter and refresh. Selecting a run SHALL show its snapshot, node outcomes and evidence, following the `pipeline-canvas` and `pipeline-run-records` requirements.
+The Experiments view SHALL include the pipeline runs list with its status filter and refresh. Selecting a run SHALL open `#/experiments/runs/<run-id>`, showing its snapshot, node outcomes and evidence, following the `pipeline-canvas` and `pipeline-run-records` requirements.
 
 #### Scenario: Runs are available
 
 - **WHEN** the user opens the runs section of Experiments
 - **THEN** the run list, status filter and run detail with snapshot, node outcomes and evidence MUST be available
+
+#### Scenario: Run detail has its own address
+
+- **WHEN** the user reloads the page at `#/experiments/runs/<run-id>`
+- **THEN** the detail for that run MUST be shown

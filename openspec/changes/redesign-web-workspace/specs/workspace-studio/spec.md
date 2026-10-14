@@ -8,7 +8,7 @@ Studio as the home of pipelines: a gallery of templates, profile presets and sav
 
 ### Requirement: Studio opens on a pipeline gallery
 
-The Studio view SHALL list the engine pipeline templates from `listPipelineTemplates`, profile preset cards for the `documents` and `codebase` profiles, and the saved pipelines from `listPipelines`, each as a card with a title and description. Creating a pipeline from any card SHALL open the canvas sub-page with that starting graph.
+The Studio view SHALL list the engine pipeline templates from `listPipelineTemplates`, profile preset cards for the `documents` and `codebase` profiles, and the saved pipelines from `listPipelines`, each as a card with a title and description. Creating a pipeline from any card SHALL create the pipeline on the server and open its canvas sub-page at `#/studio/<pipeline-id>` with that starting graph as the draft.
 
 #### Scenario: Gallery contents
 
@@ -18,11 +18,11 @@ The Studio view SHALL list the engine pipeline templates from `listPipelineTempl
 #### Scenario: Start from a profile preset
 
 - **WHEN** the user creates a pipeline from the documents preset card
-- **THEN** the canvas sub-page MUST open seeded from the search template with the documents profile's retrieval defaults
+- **THEN** a new pipeline MUST exist on the server and its canvas sub-page MUST open seeded from the search template with the documents profile's retrieval defaults
 
 ### Requirement: The canvas sub-page gives the graph the full width
 
-Editing or creating a pipeline SHALL open a sub-page route under Studio where the flow surface takes the full main area, the operation catalogue palette is the right-hand column, and selecting a node opens that node's settings. Adding a box from the palette SHALL add the operation node; removing a node SHALL remove it with its connections.
+Editing or creating a pipeline SHALL open the `#/studio/<pipeline-id>` sub-page, where the flow surface takes the full main area, the operation catalogue palette is the right-hand column, and selecting a node opens that node's settings. Adding a box from the palette SHALL add the operation node; removing a node SHALL remove it with its connections.
 
 #### Scenario: Palette on the right
 
