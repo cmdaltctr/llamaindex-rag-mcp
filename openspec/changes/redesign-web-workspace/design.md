@@ -52,6 +52,8 @@ Every view is rebuilt with the primitives from `web/src/components/ui/` (button,
 - Badges: the `Badge` primitive for run status and answer status. Its status variants use tinted fill, coloured border and `--status-*-label` text, because raw status colours fail 4.5:1 on their own tint; the ratio is defined and tested in the `web-ui-stack` spec. This change adds keyword-style hue hashing for profile labels (`documents`, `codebase`) and node kinds. Colour never carries meaning alone; text always states it.
 - Elevation: the `shadow-floating` utility on the top bar and floating panels only; cards stay flat with 1px borders.
 - Empty states: an icon, one sentence and one action. No placeholder copy.
+- Narrow screens (owner decision, 14 October 2026): below the `md` breakpoint the side navigation becomes one row of the seven area icons with short labels, each target at least 44px, under the top bar. No menu button; every area stays one tap away.
+- Knowledge Base sections (owner decision, 14 October 2026): Sources, Search, Add and Profile are switched with `chip` buttons, one section at a time, so long tables and result lists do not stack. The selected section is part of the view state, not the route.
 - React Flow: its stylesheet stays in the `vendor` layer. Overrides that must target React Flow's own class names live in `app.css` under `@layer components`; everything else is utilities on our elements.
 - Reset: with no hand-written CSS left, Tailwind's preflight loads into the `base` layer, which the shadcn primitives assume. Only `tokens.css` and `app.css` exist as stylesheets.
 - Dev proxy: `vite.config.ts` gains `server.proxy` forwarding `/v1` to the local web transport (default `http://127.0.0.1:8000`, overridable by env).

@@ -37,6 +37,8 @@ Check `web/package.json` and `web/src/components/ui/` before you rely on any of 
 
 Paths in the references are relative to the repository root. The references hold a design snapshot. Read the current owning files before you edit.
 
+`web/DESIGN.md` is the portable summary of this system in the Google DESIGN.md format, for tools that read that file. It mirrors `tokens.css` and this skill; it adds no rules. When you change a token, a primitive variant or a rule here, update `web/DESIGN.md` in the same change. `tokens.css` wins on any disagreement.
+
 ## Rules
 
 1. Trace every change to a task in an OpenSpec `tasks.md`. If no task covers it, propose one first. Follow the Change Workflow in the repository `CLAUDE.md`.

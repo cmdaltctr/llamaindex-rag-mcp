@@ -12,7 +12,7 @@ Navigation has seven items in this order: Home, Chat, Knowledge Base, Studio, Ex
 | Inspector | The global toggle and empty panel are gone. Detail regions open inside Chat, Studio, and Experiments on selection. |
 | Skip link, main focus | Keep the existing skip link. Focus moves to the view `h1` after navigation. |
 | Routes | Typed hash routes from `lib/routes.ts` (design D9): `#/home`, `#/knowledge-base[/<collection>]`, `#/chat[/<collection>]`, `#/studio[/<pipeline-id>]`, `#/experiments`, `#/experiments/runs/<run-id>`, `#/integrations`, `#/settings`. Segments are URI-encoded. An unknown hash opens Home and is rewritten to `#/home`; earlier routes are not redirected. |
-| Narrow screens | Navigation targets are at least 44px tall. No horizontal page scroll. |
+| Narrow screens | Below `md`, the navigation becomes one row of the seven area icons with short labels under the top bar (owner decision; no menu button). Targets are at least 44px. No horizontal page scroll. |
 
 Read the presentation spec and `web/src/App.tsx` before you change route names.
 
@@ -39,6 +39,8 @@ Layout: a centred transcript column at `min(100%, 48rem)`, the composer docked a
 Reuse `views/shared/ChunkViewer.tsx` (or its moved location). Delete `views/search/` and `views/ask/` only after chat tests cover their behaviour (task 3.5).
 
 ## Knowledge Base
+
+Four sections, switched with `chip` buttons and shown one at a time: Sources, Search, Add, Profile (owner decision).
 
 Manages the active project's sources: file upload (managed upload plus an ingest job), folder ingest from approved roots, and the source table.
 

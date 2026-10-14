@@ -107,3 +107,6 @@ experiments/25-token-chunking-ablation-2026-09-08/corpus
 # Vite build output, which the wheel force-includes at build time
 web/node_modules/
 src/omrg/transports/api/static/
+
+# Local design drafts, not for the repository
+docs/proposal/

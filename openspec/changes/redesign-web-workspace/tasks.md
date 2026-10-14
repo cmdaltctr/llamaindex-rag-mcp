@@ -22,7 +22,7 @@ Rules for every task: build views only from primitives and Tailwind utilities; a
 - [ ] 1.2 Use `lucide-react` icons (home, message-circle, database, workflow, flask, plug, settings, upload, folder, search, x, play, trash, refresh, chevron-down) at 16px with `currentColor`; decorative when beside text, accessible names when alone.
 - [ ] 1.3 Extend the `Badge` primitive with a hue-hash variant for profile labels and node kinds, and the `Button` primitive with a `chip` variant for selection; the status variants and `--status-*-label` tokens already exist. Unit-test the colour and text pairing for the hue-hash variant and the chip's selected state.
 - [ ] 1.4 Render every failure through `describeError`: one line plus one action; unit-test that no parser or status text reaches the DOM in any view.
-- [ ] 1.5 Rewrite `lib/views.ts` to the seven areas (id, label, icon, summary) and `AppNav` with icons and the active state from the route; remove the placeholder copy; update tests.
+- [ ] 1.5 Rewrite `lib/views.ts` to the seven areas (id, label, icon, summary) and `AppNav` with icons and the active state from the route, switching to a single icon row with short labels and 44px targets below the `md` breakpoint (design D6); remove the placeholder copy; update tests.
 - [ ] 1.6 Build the top bar with the `shadow-floating` utility, the engine status pill (collection count from `["collections"]`, or offline), and the theme select; test both pill states.
 - [ ] 1.7 Add the shared empty and not-found states (icon, one sentence, one action) used by every view; test that a route naming an unknown collection or pipeline shows not-found with a link back to its picker.
 
@@ -30,7 +30,7 @@ Rules for every task: build views only from primitives and Tailwind utilities; a
 
 - [ ] 2.1 Create `web/src/home/HomeView.tsx`: project cards from `["collections"]` (name, profile badge, counts) linking to `#/knowledge-base/<collection>`, and the no-collection empty state with an ingest action; test both states.
 - [ ] 2.2 Create `web/src/knowledge-base/KnowledgeBaseView.tsx` for `#/knowledge-base` (project picker that opens `lastCollection` when the server still lists it) and `#/knowledge-base/<collection>`; write `lastCollection` on open; test reload restoring the project from the URL and a deleted `lastCollection` being dropped.
-- [ ] 2.3 Rebuild the source table, orphan status, upload panel, folder ingest panel, job list, profile and deletion panels in `web/src/knowledge-base/` on primitives, scoped to the route's collection, with mutations that invalidate `["collections"]` and the collection's documents; port the `LibraryView`, `LibraryConfirm` and `LibraryProfile` tests; delete `views/library/`.
+- [ ] 2.3 Add the Knowledge Base section chips (Sources, Search, Add, Profile; one section shown at a time, design D6) and rebuild the source table, orphan status, upload panel, folder ingest panel, job list, profile and deletion panels in `web/src/knowledge-base/` on primitives, scoped to the route's collection, with mutations that invalidate `["collections"]` and the collection's documents; port the `LibraryView`, `LibraryConfirm` and `LibraryProfile` tests; delete `views/library/`.
 - [ ] 2.4 Enforce the client-side per-file size check with a friendly refusal; test the oversized-file path.
 - [ ] 2.5 Rebuild search in `web/src/knowledge-base/` on primitives: metadata filters, rank order, score-kind labels, and results opening in the chunk viewer; port the `SearchView` tests.
 
@@ -68,6 +68,7 @@ Rules for every task: build views only from primitives and Tailwind utilities; a
 - [ ] 7.1 Rebuild Settings on primitives: appearance (theme), runtime capabilities and workspace information; remove controls that moved to other views; update tests.
 - [ ] 7.2 Delete `styles/legacy.css`, `canvas/canvas.css`, `runs/runs.css`, `views/views.css` and `experiments/experiments.css`, the `legacy` layer and every `.type-*` class; load Tailwind's preflight into the `base` layer; change `cascade.test.ts` so any stylesheet other than `tokens.css` and `app.css` fails, and drop the legacy collision test; confirm with `grep` that no `button`, `control`, `panel` or `type-*` legacy class name remains in `web/src`.
 - [ ] 7.3 Sweep `web/src` for dead components, hooks, fixtures and copy left by the moves; confirm every file is under 500 lines.
+- [ ] 7.4 Add `web/src/styles/design-md.test.ts`: parse the front matter of `web/DESIGN.md` and assert every colour, size, radius and spacing value equals the light-theme value in `tokens.css` (status labels computed from the 60/40 mix); confirm it fails when either file changes alone. Update `web/DESIGN.md` for the `chip` and hue-hash variants once they exist.
 
 ## 8. Verification
 
