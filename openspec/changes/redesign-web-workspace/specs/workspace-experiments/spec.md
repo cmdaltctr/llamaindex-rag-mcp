@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Experiments as the research area: named experiment folders holding sub-experiments, marimo notebook loading through plugin approval, and the pipeline runs list, replacing the separate Runs and Experiments views.
+Experiments as the research area: named experiment folders holding sub-experiments, marimo notebook loading through plugin approval, and the pipeline runs list.
 
 ## ADDED Requirements
 
@@ -50,9 +50,9 @@ The Experiments view SHALL keep the notebook tool registration, trust notice, on
 
 ### Requirement: Pipeline runs live in Experiments
 
-The Experiments view SHALL include the pipeline runs list with its status filter and refresh, and selecting a run SHALL show its snapshot, node outcomes and evidence as before.
+The Experiments view SHALL include the pipeline runs list with its status filter and refresh. Selecting a run SHALL show its snapshot, node outcomes and evidence, following the `pipeline-canvas` and `pipeline-run-records` requirements.
 
-#### Scenario: Runs remain available
+#### Scenario: Runs are available
 
 - **WHEN** the user opens the runs section of Experiments
-- **THEN** the run list, filters and run detail with evidence MUST behave as the previous Runs view did
+- **THEN** the run list, status filter and run detail with snapshot, node outcomes and evidence MUST be available

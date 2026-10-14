@@ -56,7 +56,8 @@ The top-bar Inspector toggle and the empty global inspector are removed. Chat, S
 
 - Chat without turn memory will feel limited; accepted for v1 and stated in the UI ("each question answers from the knowledge base on its own").
 - Folding Runs into Experiments lengthens that view; mitigated with two sections and the existing filters.
-- ADDED deltas will merge into `local-web-workspace`/`pipeline-canvas` at archive time if the prior change is archived first; the merge task covers reconciliation.
+- The main specs from `add-local-web-pipeline-workspace` still govern the moved views. Only the `pipeline-canvas` navigation requirement changes; task 8.4 checks the others against the finished views.
+- Removing the Search view could have dropped metadata-filtered search, which `local-web-workspace` requires; the Knowledge Base keeps it (task 2.5).
 - Integration availability reflects this launch only; the page states that the install command must run outside the app and the server restarted.
 
 ## Migration Plan

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-A chat view that answers each question from a selected knowledge base, with citations, verification status and evidence, replacing the separate Search and Ask views.
+A chat view that answers each question from a selected knowledge base, with citations, verification status and evidence.
 
 ## ADDED Requirements
 

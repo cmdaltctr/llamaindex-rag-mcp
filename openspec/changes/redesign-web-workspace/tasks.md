@@ -18,6 +18,7 @@ Prerequisite: `add-web-ui-stack` is merged and archived (main spec `web-ui-stack
 - [ ] 2.2 Add active-project state (URL segment plus localStorage with versioned keys) and the route `#/home/<collection>` opening the project library; test persistence across reload and stale-key dropping.
 - [ ] 2.3 Move the library components (source table, orphan status, upload panel, folder ingest panel, profile and deletion) into `web/src/knowledge-base/` scoped to the active project; port the existing `LibraryView` tests.
 - [ ] 2.4 Enforce the client-side per-file size check with a friendly refusal; test the oversized-file path.
+- [ ] 2.5 Move `SearchForm` and `ResultList` from `views/search/` into `web/src/knowledge-base/` as the active project's search; keep metadata filters, rank order and score-kind labels; open results in the chunk viewer; port the `SearchView` tests.
 
 ## 3. Chat
 
@@ -25,7 +26,7 @@ Prerequisite: `add-web-ui-stack` is merged and archived (main spec `web-ui-stack
 - [ ] 3.2 Add the right-hand knowledge base panel listing collections with counts, selection state, and mid-conversation switching; test selection persistence and switching.
 - [ ] 3.3 Implement the turn flow: user message, `answerCollection` call, assistant turn with status text, citation chips, collapsible evidence; failure turns show the friendly line with Retry; test ok, error-status and transport-failure turns.
 - [ ] 3.4 Reuse the chunk viewer for citations and evidence rows; test opening a citation renders the chunk.
-- [ ] 3.5 Delete `views/search/` and `views/ask/` after their behaviour is covered by chat tests; remove their routes.
+- [ ] 3.5 Delete `views/search/` and `views/ask/` after their behaviour is covered by the chat tests and task 2.5; remove their routes.
 
 ## 4. Studio
 
@@ -58,4 +59,4 @@ Prerequisite: `add-web-ui-stack` is merged and archived (main spec `web-ui-stack
 - [ ] 8.1 Run `uv run pytest -m "not slow"` for backend changes and `npm run test`, `npm run lint`, `npm run typecheck`, `npm run build` in `web/`; record exact results.
 - [ ] 8.2 Capture the visual matrix per the omms-design reference: Home, Chat, Knowledge Base, Studio gallery, Studio canvas, Experiments, Integrations and Settings at 1280px and 390px in light and dark themes; check status badges, elevation and focus rings.
 - [ ] 8.3 Run `openspec validate redesign-web-workspace --strict` and resolve every finding; run `graphify update .`.
-- [ ] 8.4 Reconcile ADDED deltas with `local-web-workspace`, `pipeline-canvas` and `notebook-plugins` if `add-local-web-pipeline-workspace` has been archived first; update `docs/guides/` web references to the new navigation.
+- [ ] 8.4 Check the finished views against the unchanged main specs `local-web-workspace`, `notebook-plugins`, `pipeline-graphs` and `pipeline-run-records`, and against the modified `pipeline-canvas`; fix any gap in code or raise a spec change; update `docs/guides/` web references to the new navigation.

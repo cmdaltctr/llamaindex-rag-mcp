@@ -36,9 +36,9 @@ Editing or creating a pipeline SHALL open a sub-page route under Studio where th
 
 ### Requirement: Saved pipelines reopen from the gallery
 
-Each saved pipeline card SHALL reopen the canvas sub-page at its latest revision, and the existing revision, validation and run behaviour SHALL continue to apply unchanged.
+Each saved pipeline card SHALL reopen the canvas sub-page at its latest revision. Revision, validation and run behaviour SHALL follow the `pipeline-canvas`, `pipeline-graphs` and `pipeline-run-records` requirements.
 
 #### Scenario: Reopen a saved pipeline
 
 - **WHEN** the user opens a saved pipeline card
-- **THEN** the canvas sub-page MUST load that pipeline's latest revision and offer the existing validate and run actions
+- **THEN** the canvas sub-page MUST load that pipeline's latest revision and offer the validate and run actions

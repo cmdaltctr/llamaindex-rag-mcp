@@ -8,10 +8,10 @@ The owner wants a job-shaped workspace: open a project, chat with its knowledge 
 
 ## What Changes
 
-- **Navigation becomes seven items**: Home, Chat, Knowledge Base, Studio, Experiments, Integrations, Settings. Search and Ask merge into Chat. Runs merges into Experiments. Canvas becomes Studio. The landing view becomes Home.
+- **Navigation becomes seven items**: Home, Chat, Knowledge Base, Studio, Experiments, Integrations, Settings. Ask merges into Chat; search moves into Knowledge Base. Runs merges into Experiments. Canvas becomes Studio. The landing view becomes Home.
 - **Home** lists projects. A project is a collection. Each project card shows name, profile, document and chunk counts. Opening a project shows its library: sources, uploads, folder ingest, profile and deletion.
-- **Chat** replaces Search and Ask. A centred transcript with a composer; the right panel selects the knowledge base (collection). Each assistant turn calls `answerCollection` and renders the answer, citations, verification status and evidence. No chat framework dependency; built from scratch.
-- **Knowledge Base** manages the active project's sources: file upload (managed upload plus ingest job), folder ingest from approved roots, source table with orphan status.
+- **Chat** replaces Ask. A centred transcript with a composer; the right panel selects the knowledge base (collection). Each assistant turn calls `answerCollection` and renders the answer, citations, verification status and evidence. No chat framework dependency; built from scratch.
+- **Knowledge Base** manages the active project's sources: file upload (managed upload plus ingest job), folder ingest from approved roots, source table with orphan status, and metadata-filtered search with ranked, score-kind-labelled results.
 - **Studio** replaces Pipeline. A gallery of engine templates and profile presets (documents, codebase); "New pipeline" and saved pipelines open a full-width canvas sub-page with the operation palette on the right and node settings on selection.
 - **Experiments** groups experiment contexts under named main folders (directories below the approved experiment root), lists sub-experiments, loads marimo through the existing plugin approval, and carries the pipeline runs list.
 - **Small backend additions**: create and list experiment folders below approved roots (because `core/experiments` requires the workspace directory to exist before registration), and a `GET /v1/integrations` catalogue with availability from the existing runtime probes.
@@ -34,7 +34,9 @@ The owner wants a job-shaped workspace: open a project, chat with its knowledge 
 
 - `web-ui-stack`: removes the requirement "No view changes in this change", which described the stack change only.
 
-Otherwise none at the main-spec level. `local-web-workspace`, `pipeline-canvas` and `notebook-plugins` exist only in the unarchived `add-local-web-pipeline-workspace` change, so strict validation has no baseline for them; this change writes ADDED deltas and merges them into those capabilities at archive time if the prior change lands first.
+- `pipeline-canvas`: "Application navigation preserves working state" no longer lists the views; `workspace-presentation` owns the navigation structure.
+
+`local-web-workspace`, `notebook-plugins`, `pipeline-graphs` and `pipeline-run-records` are main specs and stay unchanged; the new views meet them as written, and the Knowledge Base keeps metadata-filtered search.
 
 ## Impact
 

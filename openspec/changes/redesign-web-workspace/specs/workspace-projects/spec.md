@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Home as the project list and the per-project library where sources are managed: uploads, folder ingest, profile and deletion. A project is a collection.
+Home as the project list and the per-project library where sources are managed and searched: uploads, folder ingest, profile, deletion and metadata-filtered search. A project is a collection.
 
 ## ADDED Requirements
 
@@ -61,3 +61,17 @@ Folder ingest SHALL offer only roots approved at server start, SHALL submit `ing
 
 - **WHEN** no root is approved
 - **THEN** the panel MUST state that no folder is approved and name the `--root` server flag
+
+### Requirement: The Knowledge Base searches the active project
+
+The Knowledge Base view SHALL offer metadata-filtered search over the active project's collection, through the same search operation and profile resolution as other clients. Results SHALL list ranked chunks with their source and score, and each score SHALL keep its score-kind label. Opening a result SHALL show the chunk in the chunk viewer.
+
+#### Scenario: Filtered search
+
+- **WHEN** the user searches the active project with a metadata filter
+- **THEN** the view MUST list only matching chunks in rank order, each with its source, score and score kind
+
+#### Scenario: Open a result
+
+- **WHEN** the user opens a search result
+- **THEN** the chunk viewer MUST show that chunk's text and source
