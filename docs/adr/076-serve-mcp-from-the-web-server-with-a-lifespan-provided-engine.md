@@ -4,7 +4,7 @@
 - **Status:** Accepted (2026-10-14; evidence: Claude Code over HTTP on port 8765 — gate 404/401/403, MCP token refused on `/v1`, ingest inside `--root` and `/etc/hosts` refused, search found the document, old token 401 and new token accepted after rotation, no token in the log, clean shutdown; local CI passed)
 - **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 - **Related:** [ADR-031](031-three-layer-config-compose-di.md) (config, compose, DI), [ADR-036](036-phase-5-refactor-transport-separation.md) (transport separation), [ADR-037](037-architecture-v2-conformance.md) (settings injected, never global), [ADR-075](075-omrg-owned-pipeline-runner-local-web-packaging-and-external-tool-plugins.md) (local web runtime)
-- **Change:** `openspec/changes/add-mcp-http-transport/` (design D1 to D9)
+- **Change:** `openspec/changes/archive/2026-10-14-add-mcp-http-transport/` (design D1 to D9)
 
 ## Context
 
@@ -67,7 +67,7 @@ A review of the first plan found a fourth problem. `redact_engine_error` read th
 
 ## References
 
-- Design and specs: `openspec/changes/add-mcp-http-transport/`
+- Design and specs: `openspec/changes/archive/2026-10-14-add-mcp-http-transport/`
 - `src/omrg/transports/mcp/` (server, context, handlers), `src/omrg/transports/api/mcp_http.py` (gate), `src/omrg/transports/api/routes_mcp.py` (state, token, port)
 - `src/omrg/engine.py`, `src/omrg/engine_answer.py`, `src/omrg/core/vectordb/identity.py` (`RedactionSecrets`)
 - [MCP tools reference](../guides/mcp-tools.md), [Web workspace](../guides/web-workspace.md)
