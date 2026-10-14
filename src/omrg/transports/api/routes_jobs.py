@@ -80,15 +80,23 @@ def _granted(runtime: WebRuntime, path: str) -> str:
         raise HTTPException(403, str(exc)) from None
 
 
-def _guarded(job: str, work: Callable[[], Awaitable[Any]]) -> Callable[[], Awaitable[Any]]:
-    """Redact a failure before the run service records it."""
+def _guarded(
+    job: str, work: Callable[[], Awaitable[Any]], engine_redact: Callable[[str], str]
+) -> Callable[[], Awaitable[Any]]:
+    """Redact a failure before the run service records it.
+
+    *engine_redact* (``Engine.redact``) removes provider credential values;
+    :func:`redact` then removes OMRG tokens.
+    """
 
     async def run() -> Any:
         try:
             return await work()
         except Exception as exc:
-            logger.warning("Web %s job failed: %s", job, redact(repr(exc)))
-            raise JobFailed(f"{type(exc).__name__}: {redact(str(exc))[:300]}") from None
+            logger.warning("Web %s job failed: %s", job, redact(engine_redact(repr(exc))))
+            raise JobFailed(
+                f"{type(exc).__name__}: {redact(engine_redact(str(exc)))[:300]}"
+            ) from None
 
     return run
 
@@ -120,10 +128,14 @@ def describe_job(runs: WorkspaceRuns, run: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _accept(
-    runs: WorkspaceRuns, kind: str, inputs: dict[str, Any], work: Callable[[], Awaitable[Any]]
+    runs: WorkspaceRuns,
+    kind: str,
+    inputs: dict[str, Any],
+    work: Callable[[], Awaitable[Any]],
+    engine_redact: Callable[[str], str],
 ) -> Response:
     try:
-        run = runs.submit_task(kind, inputs, _guarded(kind, work))
+        run = runs.submit_task(kind, inputs, _guarded(kind, work, engine_redact))
     except QueueFullError as exc:
         return error_response(429, f"The job queue is full: {exc.limit} jobs are waiting.")
     except ServiceClosedError:
@@ -142,7 +154,7 @@ async def ingest_path(
     async def work() -> dict[str, Any]:
         return await engine.ingest(path, collection_name=collection)
 
-    return _accept(runs, "ingest", {"path": path, "collection": collection}, work)
+    return _accept(runs, "ingest", {"path": path, "collection": collection}, work, engine.redact)
 
 
 @router.post("/codebase-maps", status_code=202, operation_id="generateCodebaseMap")
@@ -170,7 +182,7 @@ async def generate_codebase_map(
         )
         return {"map": text}
 
-    return _accept(runs, "codebase_map", {"path": path, "refresh": refresh}, work)
+    return _accept(runs, "codebase_map", {"path": path, "refresh": refresh}, work, engine.redact)
 
 
 #: Largest event page; the same limit as run event polling.

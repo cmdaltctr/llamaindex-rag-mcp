@@ -16,9 +16,8 @@ requests use multi-round trips where available):
 * Negotiated legacy session (older protocol) with sampling capability
   and ``answer.allow_legacy_sampling``: the labelled compatibility seam
   ``_legacy_complete`` uses the deprecated back-channel.
-* Otherwise: the lazy server-side model from ``compose.build_answer_llm``
-  — or, when none is configured, core's actionable error naming both
-  options.
+* Otherwise: the Engine's lazy server-side model — or, when none is
+  configured, core's actionable error naming both options.
 
 The resolver chain re-runs deterministically each MRTR round: core's
 ``plan_next_prompt`` replay produces exactly the prompt the pipeline
@@ -38,18 +37,9 @@ from mcp.types import (
     ToolAnnotations,
 )
 
-from ... import compose
-from ...core.answer import answer
 from ...core.answer.pipeline import disabled_result
-from . import (
-    _error_message,
-    _get_profile_resolver,
-    _get_reranker,
-    _log_tool_error,
-    mcp,
-)
+from ...engine import ClientCompletion
 from .answer_mrtr import (
-    _answer_settings,
     _client_round_cap,
     _client_seam,
     _evict_payload,
@@ -60,10 +50,11 @@ from .answer_mrtr import (
     _peek_payload,
     _resolved_replies,
     _result_text,
-    _server_seam,
     _session_facts,
     consume_preflight,
 )
+from .context import McpContext, mcp_context
+from .errors import error_message, log_tool_error
 
 #: First protocol revision whose ``tools/call`` carries elicitation and
 #: sampling inside ``InputRequiredResult`` (MRTR).  Sessions negotiated
@@ -107,7 +98,7 @@ def select_completion_source(
     return "server"
 
 
-async def _legacy_complete(ctx: Any, prompt: str) -> str:
+async def _legacy_complete(ctx: Any, prompt: str, max_output_tokens: int) -> str:
     """Complete one round through the deprecated sampling back-channel.
 
     Compatibility path ONLY for a negotiated pre-2026-07-28 session
@@ -117,12 +108,12 @@ async def _legacy_complete(ctx: Any, prompt: str) -> str:
     """
     result: CreateMessageResult = await ctx.session.create_message(
         [SamplingMessage(role="user", content=TextContent(type="text", text=prompt))],
-        max_tokens=_answer_settings().max_output_tokens,
+        max_tokens=max_output_tokens,
     )
     return _result_text(result)
 
 
-def _payload_failure_result(query: str, payload: Any) -> dict:
+def _payload_failure_result(mcp: McpContext, query: str, payload: Any) -> dict:
     """Convert a resolver-era failure sentinel into the standard error.
 
     Resolvers run before the tool body's try block, so their failures
@@ -140,24 +131,24 @@ def _payload_failure_result(query: str, payload: Any) -> dict:
         "citations": [],
         "evidence": (payload.evidence or []) if stage != "retrieval" else [],
         "failure_stage": stage,
-        "error": f"{verb}: {type(exc).__name__}: {_error_message(exc)}",
+        "error": f"{verb}: {error_message(mcp, exc)}",
         "completion_source": "none",
     }
 
 
-@mcp.tool(
-    description=(
-        "Answer a question from the indexed documents using retrieved "
-        "evidence, returning the answer together with deterministic, "
-        "verifiable citations (every cited chunk_id re-fetches exactly "
-        "one stored chunk). Performs ONE OR MORE language-model "
-        "completion calls — use search_documents instead when you only "
-        "need ranked chunks without that cost. When ANSWER__VERIFY_CLAIMS "
-        "is enabled, each cited claim additionally costs one cloud-judge "
-        "call (~3.3 s P95 each, ADR-059)."
-    ),
-    annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False),
+DESCRIPTION = (
+    "Answer a question from the indexed documents using retrieved "
+    "evidence, returning the answer together with deterministic, "
+    "verifiable citations (every cited chunk_id re-fetches exactly "
+    "one stored chunk). Performs ONE OR MORE language-model "
+    "completion calls — use search_documents instead when you only "
+    "need ranked chunks without that cost. When ANSWER__VERIFY_CLAIMS "
+    "is enabled, each cited claim additionally costs one cloud-judge "
+    "call (~3.3 s P95 each, ADR-059)."
 )
+ANNOTATIONS = ToolAnnotations(read_only_hint=True, destructive_hint=False)
+
+
 async def answer_documents(
     query: str,
     top_k: int | None = None,
@@ -168,7 +159,8 @@ async def answer_documents(
     diagnostics: bool = False,
     collection: str = "documents",
     metadata_filter: dict | None = None,
-    ctx: Context | None = None,
+    *,
+    ctx: Context,
     client_round_1: Annotated[CreateMessageResult | None, Resolve(_mrtr_round_1)] = None,
     client_round_2: Annotated[CreateMessageResult | None, Resolve(_mrtr_round_2)] = None,
     client_round_3: Annotated[CreateMessageResult | None, Resolve(_mrtr_round_3)] = None,
@@ -191,119 +183,78 @@ async def answer_documents(
         diagnostics: Include per-stage timings and completion counts.
         collection: Collection to answer over.
         metadata_filter: Store filter restricting evidence.
-        ctx: MCP request context (injected; absent on direct calls).
+        ctx: MCP request context (framework-injected; never part of the tool schema).
         client_round_1..4: Client completions resolved by the MRTR chain
             (framework-injected; never part of the tool schema).
 
     Returns:
         The answer result dict; errors are returned, never raised.
     """
+    mcp = mcp_context(ctx)
     try:
-        effective = _get_profile_resolver().resolve(collection)
-        # Answering is server-level configuration: take the answer block
-        # from the composition-root default, not the profile base — with
-        # the ADR-059 carve-out: the three verify_* fields survive the
-        # profile resolution (profile/env precedence already applied by
-        # the resolver), so a profile-enabled judge reaches the build.
-        answer_block = _answer_settings()
-        if answer_block is not None:
-            merged_block = answer_block.model_copy(
-                update={
-                    "verify_claims": effective.answer.verify_claims,
-                    "verify_model": effective.answer.verify_model,
-                    "verify_provider": effective.answer.verify_provider,
-                }
-            )
-            effective = effective.model_copy(update={"answer": merged_block})
+        effective = mcp.engine.resolve_settings(collection)
+        # The resolved answer block already carries the profile/env
+        # overlay of the three ADR-059 ``verify_*`` fields.
+        answer_block = effective.answer
 
         # Master switch (review F4): the actionable disabled response is
         # returned BEFORE consuming client replies or selecting a source
         # — the resolvers already refused to issue any Sample.
-        if answer_block is not None and not answer_block.enabled:
+        if not answer_block.enabled:
             return disabled_result(query, "none")
 
         # Resolver-era failures (review F3) surface as structured errors.
         payload = _peek_payload(ctx, query, collection)
         if payload is not None and payload.failure is not None:
-            return _payload_failure_result(query, payload)
+            return _payload_failure_result(mcp, query, payload)
 
         replies = _resolved_replies(client_round_1, client_round_2, client_round_3, client_round_4)
         version, capability = _session_facts(ctx)
-        prefer = bool(getattr(answer_block, "prefer_client_sampling", False))
-        allow_legacy = bool(getattr(answer_block, "allow_legacy_sampling", False))
         source = select_completion_source(
             protocol_version=version,
             sampling_capability=capability,
-            prefer_client=prefer,
-            allow_legacy=allow_legacy,
+            prefer_client=answer_block.prefer_client_sampling,
+            allow_legacy=answer_block.allow_legacy_sampling,
         )
 
-        complete: Any = None
-        preflight: Any = None
-        label = "none"
+        client_completion: ClientCompletion | None = None
+        preflight = None
         if replies:
             # Resolvers fired: the client's model already answered the
             # planned rounds.  Effective rounds are capped at the chain
             # depth (review F5) so planning and synthesis agree.
-            if answer_block is not None:
-                capped = answer_block.model_copy(
-                    update={"max_rounds": _client_round_cap(answer_block)}
-                )
-                effective = effective.model_copy(update={"answer": capped})
-            complete = _client_seam(replies)
+            client_completion = ClientCompletion(
+                complete=_client_seam(replies),
+                source="client_mrtr",
+                max_rounds=_client_round_cap(answer_block),
+            )
             preflight = consume_preflight(ctx, query, collection, sampling_calls=len(replies))
-            label = "client_mrtr"
-        elif source == "client_legacy" and ctx is not None:
-            complete = lambda prompt: _legacy_complete(ctx, prompt)  # noqa: E731
-            label = "client_legacy"
-        else:
-            llm = compose.build_answer_llm()
-            if llm is not None:
-                complete = _server_seam(llm)
-                label = "server"
+        elif source == "client_legacy":
+            max_output_tokens = answer_block.max_output_tokens
+            client_completion = ClientCompletion(
+                complete=lambda prompt: _legacy_complete(ctx, prompt, max_output_tokens),
+                source="client_legacy",
+                max_rounds=answer_block.max_rounds,
+            )
 
-        # Claim verification (ADR-059): the judge is ALWAYS the
-        # server-side model — never the client's model, whose replies
-        # it may be judging.  A build failure degrades to
-        # verification_skipped, never a tool error.
-        verify_complete: Any = None
-        verify_unavailable_reason: str | None = None
-        if getattr(effective.answer, "verify_claims", False):
-            try:
-                verify_llm = compose.build_verify_llm(answer_block=effective.answer)
-            except Exception as exc:
-                verify_unavailable_reason = (
-                    "verification provider unavailable: "
-                    f"{type(exc).__name__}: {_error_message(exc)}"
-                )
-            else:
-                if verify_llm is not None:
-                    verify_complete = _server_seam(verify_llm)
-                else:
-                    verify_unavailable_reason = (
-                        "verification provider unavailable (no judge configured)"
-                    )
-
-        return await answer(
-            query,
-            top_k=top_k,
-            similarity_threshold=similarity_threshold,
-            rerank=rerank,
-            hybrid=hybrid,
-            expand_window=expand_window,
-            collection_name=collection,
-            metadata_filter=metadata_filter,
-            include_diagnostics=diagnostics,
-            complete=complete,
-            verify_complete=verify_complete,
-            verify_unavailable_reason=verify_unavailable_reason,
-            completion_source=label,
-            rows=preflight,
-            reranker=_get_reranker(),
-            effective_settings=effective,
-        )
+        # Claim verification (ADR-059) stays Engine-owned and server-side:
+        # a client completion never replaces the judge.
+        async with mcp.admit():
+            return await mcp.engine.answer(
+                query,
+                top_k=top_k,
+                similarity_threshold=similarity_threshold,
+                rerank=rerank,
+                hybrid=hybrid,
+                expand_window=expand_window,
+                collection_name=collection,
+                metadata_filter=metadata_filter,
+                include_diagnostics=diagnostics,
+                client_completion=client_completion,
+                rows=preflight,
+            )
     except Exception as exc:  # Never raise from a tool handler (gotcha #1).
-        _log_tool_error("answer_documents", exc)
+        log_tool_error(mcp, "answer_documents", exc)
         return {
             "status": "error",
             "query": query,
@@ -311,7 +262,7 @@ async def answer_documents(
             "citations": [],
             "evidence": [],
             "failure_stage": None,
-            "error": _error_message(exc),
+            "error": error_message(mcp, exc),
             "completion_source": "none",
         }
     finally:

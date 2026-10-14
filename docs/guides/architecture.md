@@ -527,7 +527,7 @@ peers stays an integration.
 Every Python module under `src/omrg/integrations/`, classified. A contract
 test fails when a module is missing from this table.
 
-<!-- integration-inventory:start count=30 -->
+<!-- integration-inventory:start count=32 -->
 
 | Module                                   | Availability                                                   | Selector                                                            | Shared contract                               | Fallback owner                                                                    | Disposition                                                         |
 | ---------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -561,6 +561,8 @@ test fails when a module is missing from this table.
 | `omrg.integrations.workspace_sqlite.repository` | Native (standard-library `sqlite3`)                  | None                                                                | Workspace records as plain dictionaries       | None; a failed transaction rolls back                                             | Repository adapter; imports no `omrg.core` module                   |
 | `omrg.integrations.workspace_sqlite.rows` | Native                                                     | None                                                                | JSON encoding and row-to-record conversion    | None                                                                              | Helper for the repository adapter                                   |
 | `omrg.integrations.workspace_sqlite.schema` | Native (standard-library `sqlite3`)                      | None                                                                | Versioned migrations, backups, owner-only files | Migration rollback to the last version                                          | Application records only; never opens a vector store                |
+| `omrg.integrations.workspace_sqlite.settings` | Native (standard-library `sqlite3`)                        | None                                                                | Typed web-server settings (`mcp_http_enabled`, `web_port`) | None; an invalid stored value reads as unset                  | Refuses unknown keys; imports no `omrg.core` module                 |
+| `omrg.integrations.workspace_sqlite.tokens` | Native (standard-library `sqlite3`)                        | None                                                                | The one durable MCP token, stored as a SHA-256 hash | None; a failed rotation keeps the old token                    | Shows the token value once; constant-time verify                    |
 
 <!-- integration-inventory:end -->
 

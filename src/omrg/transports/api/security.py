@@ -161,6 +161,16 @@ class AccessPolicy:
         return cls(host, port, bootstrap_secret=BOOTSTRAP_PREFIX + secrets.token_urlsafe(32))
 
     @property
+    def allowed_hosts(self) -> frozenset[str]:
+        """``Host`` header values (name and port) this server answers to."""
+        return frozenset(f"{name}:{self.port}" for name in self._host_names)
+
+    @property
+    def allowed_origins(self) -> frozenset[str]:
+        """``Origin`` values of this server's own pages."""
+        return self._origins
+
+    @property
     def cookie_name(self) -> str:
         """Session cookie name. Cookies ignore ports, so the name carries it."""
         return f"{SESSION_COOKIE}_{self.port}"
@@ -358,7 +368,7 @@ def require_scope(scope: str) -> Callable[[Request], Any]:
 
 # ── Redaction ──────────────────────────────────────────────────────────
 
-_PREFIXED = re.compile(r"\b(omrg_(?:bs|ss|bt)_)[A-Za-z0-9_.\-]+")
+_PREFIXED = re.compile(r"\b(omrg_(?:bs|ss|bt|mcp)_)[A-Za-z0-9_.\-]+")
 _BEARER = re.compile(r"(?i)\b(bearer\s+)(?!omrg_)[^\s,;\"']+")
 _COOKIE = re.compile(r"(omrg_session(?:_\d+)?=)[^;\s\"']+")
 _QUERY = re.compile(

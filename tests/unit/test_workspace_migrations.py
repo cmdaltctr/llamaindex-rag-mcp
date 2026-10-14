@@ -18,6 +18,10 @@ from omrg.integrations.workspace_sqlite import (
 
 _POSIX = pytest.mark.skipif(sys.platform == "win32", reason="POSIX permissions only")
 
+# The shipped schema version; tests add one more migration on top of it.
+_LATEST = SCHEMA_MIGRATIONS[-1][0]
+_NEXT = _LATEST + 1
+
 
 def _user_version(path: Path) -> int:
     conn = sqlite3.connect(path)
@@ -58,15 +62,15 @@ def test_reopening_current_schema_is_a_no_op(tmp_path: Path) -> None:
 def test_upgrade_backs_up_previous_records_before_mutation(tmp_path: Path) -> None:
     path = tmp_path / "app.sqlite3"
     pipeline_id = _seed(path)
-    upgrade = (2, ("ALTER TABLE pipelines ADD COLUMN description TEXT",))
+    upgrade = (_NEXT, ("ALTER TABLE pipelines ADD COLUMN description TEXT",))
     repo = SqliteWorkspaceRepository(path, migrations=(*SCHEMA_MIGRATIONS, upgrade))
-    assert _user_version(path) == 2
+    assert _user_version(path) == _NEXT
     assert "description" in _columns(path, "pipelines")
     assert repo.get_pipeline(pipeline_id)["title"] == "Seeded"
     backups = list(tmp_path.glob("*.bak"))
     assert len(backups) == 1
-    assert "v1-to-v2" in backups[0].name
-    assert _user_version(backups[0]) == 1
+    assert f"v{_LATEST}-to-v{_NEXT}" in backups[0].name
+    assert _user_version(backups[0]) == _LATEST
     assert "description" not in _columns(backups[0], "pipelines")
 
 
@@ -74,7 +78,7 @@ def test_failed_migration_rolls_back_and_keeps_original_intact(tmp_path: Path) -
     path = tmp_path / "app.sqlite3"
     pipeline_id = _seed(path)
     broken = (
-        2,
+        _NEXT,
         (
             "ALTER TABLE pipelines ADD COLUMN description TEXT",
             "UPDATE pipelines SET title = 'mutated'",
@@ -84,7 +88,7 @@ def test_failed_migration_rolls_back_and_keeps_original_intact(tmp_path: Path) -
     with pytest.raises(WorkspaceSchemaError, match="rolled back") as excinfo:
         SqliteWorkspaceRepository(path, migrations=(*SCHEMA_MIGRATIONS, broken))
     assert "backup" in str(excinfo.value)
-    assert _user_version(path) == 1
+    assert _user_version(path) == _LATEST
     assert "description" not in _columns(path, "pipelines")
     repo = SqliteWorkspaceRepository(path)
     assert repo.get_pipeline(pipeline_id)["title"] == "Seeded"
@@ -123,7 +127,7 @@ def test_migrations_must_be_ordered_from_one() -> None:
 def test_new_workspace_directory_and_files_are_owner_only(tmp_path: Path) -> None:
     path = tmp_path / "ws" / "nested" / "app.sqlite3"
     _seed(path)
-    upgrade = (2, ("ALTER TABLE pipelines ADD COLUMN description TEXT",))
+    upgrade = (_NEXT, ("ALTER TABLE pipelines ADD COLUMN description TEXT",))
     SqliteWorkspaceRepository(path, migrations=(*SCHEMA_MIGRATIONS, upgrade))
     assert stat.S_IMODE(os.stat(path.parent).st_mode) == 0o700
     assert stat.S_IMODE(os.stat(path).st_mode) == 0o600

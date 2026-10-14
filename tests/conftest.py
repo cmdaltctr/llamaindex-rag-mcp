@@ -7,7 +7,7 @@ Provides:
 - EphemeralClient monkeypatch (no disk I/O for ChromaDB) — active only when
   the optional ``chroma`` extra is installed
 - Mock embedding model (no Ollama server required)
-- FastMCP server instance fixture
+- MCP server fixture built by the factory over a test Engine
 - Helper context manager for in-memory MCP client sessions
 """
 
@@ -414,23 +414,85 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 # ── FastMCP server fixture ─────────────────────────────────────────────────
 
 
+def build_mcp_engine(effective=None, **engine_kwargs):
+    """Return an Engine over this test's default store and settings.
+
+    The store, settings and mock embedder come from the autouse fixtures
+    above. ``effective`` replaces the default settings (pass
+    ``profile_resolver_factory=None`` with it so they are used as given);
+    ``engine_kwargs`` (for example ``answer_llm_factory``) override or
+    extend the constructor arguments.
+    """
+    from omrg import compose
+    from omrg.core.settings import get_default_effective_settings
+    from omrg.core.vectordb import get_default_store
+    from omrg.engine import Engine
+
+    store = get_default_store()
+    kwargs = {
+        "store": store,
+        "embed_model": _patch_embed_model._mock,
+        "profile_resolver_factory": lambda: compose.build_profile_resolver(store=store),
+    }
+    kwargs.update(engine_kwargs)
+    return Engine(effective or get_default_effective_settings(), **kwargs)
+
+
+def direct_ctx(server_or_context, session=None):
+    """Return a request-context stand-in for calling a handler directly.
+
+    Args:
+        server_or_context: A server from :func:`build_mcp_server` or an
+            ``McpContext``.
+        session: Value for ``ctx.session`` (the legacy sampling seam).
+    """
+    from types import SimpleNamespace
+
+    context = getattr(server_or_context, "test_context", server_or_context)
+    return SimpleNamespace(
+        request_context=SimpleNamespace(lifespan_context=context, session=session),
+        session=session,
+    )
+
+
+def build_mcp_server(engine=None, *, paths=None, admit=None, effective=None, **engine_kwargs):
+    """Build the real MCP server over a test lifespan (no process defaults).
+
+    Args:
+        engine: A ready Engine; built from ``engine_kwargs`` when omitted.
+        paths: ``PathPolicy`` (defaults to allow-all, as on stdio).
+        admit: Admission hook (defaults to the no-op stdio hook).
+        effective: Settings for the Engine (see :func:`build_mcp_engine`).
+        **engine_kwargs: Passed to :func:`build_mcp_engine`.
+    """
+    from omrg.transports.mcp import create_mcp_server
+    from omrg.transports.mcp.context import McpContext, PathPolicy, no_admission
+
+    context = McpContext(
+        engine if engine is not None else build_mcp_engine(effective, **engine_kwargs),
+        paths or PathPolicy.allow_all(),
+        admit or no_admission,
+    )
+
+    @asynccontextmanager
+    async def lifespan(_server):
+        yield context
+
+    server = create_mcp_server(lifespan)
+    server.test_context = context  # type: ignore[attr-defined]
+    return server
+
+
 @pytest.fixture
 def mcp_server():
-    """Return the real FastMCP server instance from omrg.transports.mcp.
+    """Return a real MCP server built by the factory over a test Engine.
 
     The LanceDB store and embedding patches are applied via autouse
     fixtures above, so the server uses a tmp-path store and mock
-    embeddings.
-
-    The test fixture supplies a mock embedding model for tool handlers.
+    embeddings. Tools read the Engine from the lifespan context, never a
+    process default.
     """
-    from omrg.transports.mcp import mcp
-
-    # Importing server.py triggers config.py which sets
-    # Settings.embed_model = OllamaEmbedding(...).  Re-apply mock.
-    Settings.embed_model = _patch_embed_model._mock
-
-    return mcp
+    return build_mcp_server()
 
 
 @asynccontextmanager

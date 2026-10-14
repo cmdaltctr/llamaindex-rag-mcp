@@ -87,6 +87,16 @@ FAMILIES: dict[str, frozenset[str]] = {
         }
     ),
     "cleanup": frozenset({"previewWorkspaceCleanup", "applyWorkspaceCleanup"}),
+    "mcp": frozenset(
+        {
+            "getMcpState",
+            "setMcpEnabled",
+            "rotateMcpToken",
+            "revokeMcpToken",
+            "getWebPort",
+            "setWebPort",
+        }
+    ),
     "templates": frozenset({"listPipelineTemplates"}),
     "experiments": frozenset(
         {"createExperiment", "listExperiments", "getExperiment", "revokeExperiment"}

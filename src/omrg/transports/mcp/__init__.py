@@ -1,4 +1,4 @@
-"""MCP server exposing RAG document tools over stdio.
+"""MCP server exposing RAG document tools over stdio (and HTTP via the web server).
 
 Start with:
     uv run omrg
@@ -14,8 +14,9 @@ Tools
 - get_codebase_map       – generate a compact codebase map
 - change_collection_profile – change the profile bound to a collection
 
-This module is the MCP transport. It validates input, delegates to
-``core/``, and formats output. No business logic lives here.
+This module is the MCP transport. It validates input, delegates to the
+Engine in the lifespan context, and formats output. No business logic
+lives here.
 """
 
 from __future__ import annotations
@@ -33,6 +34,28 @@ from mcp.server.mcpserver import MCPServer
 # test collection.
 from ... import compose
 from ...core.vectordb.identity import redact_cloud_secrets, redact_secret
+from .answer import answer_documents
+from .codebase import get_codebase_map
+from .context import McpContext, PathPolicy, no_admission
+from .delete import delete_documents
+from .ingest import ingest_documents
+from .list import list_collections, list_indexed_documents
+from .profile import change_collection_profile
+from .search import search_documents
+from .server import create_mcp_server
+
+__all__ = [
+    "answer_documents",
+    "change_collection_profile",
+    "create_mcp_server",
+    "delete_documents",
+    "get_codebase_map",
+    "ingest_documents",
+    "list_collections",
+    "list_indexed_documents",
+    "main",
+    "search_documents",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -44,34 +67,16 @@ _SETTINGS_UNRESOLVED = "(details unavailable: settings could not be resolved)"
 # Load .env from the working directory (project root when run via `uv run`)
 load_dotenv()
 
-_reranker: Any | None = None
-_profile_resolver: Any | None = None
-
-
-def _get_reranker() -> Any:
-    """Return the process-wide reranker after server startup."""
-    global _reranker
-    if _reranker is None:
-        _reranker = compose.build_reranker()
-    return _reranker
-
-
-def _get_profile_resolver() -> Any:
-    """Return the process-wide profile resolver after server startup."""
-    global _profile_resolver
-    if _profile_resolver is None:
-        _profile_resolver = compose.build_profile_resolver()
-    return _profile_resolver
-
 
 def _error_detail(exc: Exception) -> str:
-    """Return exception text with active credentials redacted.
+    """Return startup-failure text with active credentials redacted.
 
-    Chroma Cloud connection values and the OpenRouter API key are removed
-    (full value and any prefix of six or more characters).  When settings
-    themselves cannot be resolved the raw text cannot be redacted, so only
-    a placeholder is returned — the helper must never raise or leak
-    unredacted detail from a tool error path (gotcha #1).
+    Used only by :func:`main`, before an Engine exists. Handlers redact
+    through the Engine (``errors.error_detail``). Chroma Cloud connection
+    values and the OpenRouter API key are removed (full value and any
+    prefix of six or more characters). When settings themselves cannot be
+    resolved the raw text cannot be redacted, so only a placeholder is
+    returned.
     """
     try:
         values = compose.redaction_values()
@@ -88,35 +93,17 @@ def _error_detail(exc: Exception) -> str:
     )
 
 
-def _error_message(exc: Exception) -> str:
-    """Format a safe error message for MCP clients."""
-    return f"{type(exc).__name__}: {_error_detail(exc)}"
+def _stdio_lifespan(engine: Any) -> Any:
+    """Return a lifespan that yields the stdio context and closes *engine*."""
 
+    @asynccontextmanager
+    async def lifespan(_server: MCPServer[McpContext]) -> AsyncIterator[McpContext]:
+        try:
+            yield McpContext(engine, PathPolicy.allow_all(), no_admission)
+        finally:
+            engine.close()
 
-def _log_tool_error(tool: str, exc: Exception) -> None:
-    """Log a tool failure without leaking cloud connection data."""
-    logger.warning("%s error: %s: %s", tool, type(exc).__name__, _error_detail(exc))
-
-
-# ── FastMCP lifespan (forward-compatibility slot) ──────────────────────────
-# The lifespan is passed as ``None`` today. The structural slot is preserved
-# so that pre-loading expensive resources (reranker ONNX model, embedding
-# client, vector store connection) can be added without restructuring the
-# module. See PROPOSAL §5.2 (transports/mcp.py compatibility note).
-
-
-@asynccontextmanager
-async def _noop_lifespan(server: MCPServer) -> AsyncIterator[dict[str, Any]]:
-    """Yield an empty context — no pre-loaded resources today.
-
-    Replacing this with a real lifespan (e.g. one that constructs the
-    pipeline via ``compose.build_pipeline()``) requires no structural
-    change to this module.
-    """
-    yield {}
-
-
-mcp = MCPServer("omrg", log_level="WARNING", lifespan=_noop_lifespan)
+    return lifespan
 
 
 def main() -> None:
@@ -130,14 +117,18 @@ def main() -> None:
         stream=sys.stderr,
         force=True,
     )
+    engine = None
     try:
-        compose.ensure_runtime_setup()
-        _get_reranker()
-        _get_profile_resolver()
+        engine = compose.build_engine()
+        # The profile resolver builds lazily; touch it so an invalid
+        # profile configuration still stops startup.
+        engine.profile_resolver  # noqa: B018
     except (ImportError, ValueError, RuntimeError) as exc:
         # RuntimeError carries the redacted Chroma Cloud connection
         # failure — an explicit cloud selection never falls back to a
         # local index, so startup must stop here.
+        if engine is not None:
+            engine.close()
         detail = _error_detail(exc)
         if detail == _SETTINGS_UNRESOLVED:
             # The caught error IS the settings failure; its message names
@@ -145,23 +136,8 @@ def main() -> None:
             detail = f"{type(exc).__name__}: {exc}"
         print(f"Error: {detail}", file=sys.stderr)
         raise SystemExit(1) from None
-    mcp.run(transport="stdio")
+    create_mcp_server(_stdio_lifespan(engine)).run(transport="stdio")
 
 
 if __name__ == "__main__":
     main()
-
-
-# Importing the handler modules below registers their ``@mcp.tool`` decorators
-# (side effect of import) and re-exports each handler at the package root so
-# ``from omrg.transports.mcp import <handler>`` keeps working. The block sits
-# at the bottom because ``mcp`` must exist before the decorators run; the
-# ``noqa`` suppresses E402 (module-level import not at top) and F401 (imported
-# but unused — the names are re-exports).
-from .answer import answer_documents  # noqa: E402,F401
-from .codebase import get_codebase_map  # noqa: E402,F401
-from .delete import delete_documents  # noqa: E402,F401
-from .ingest import ingest_documents  # noqa: E402,F401
-from .list import list_collections, list_indexed_documents  # noqa: E402,F401
-from .profile import change_collection_profile  # noqa: E402,F401
-from .search import search_documents  # noqa: E402,F401

@@ -109,24 +109,22 @@ never raised — not the outer container.
 
 ### Requirement: FastMCP lifespan and context forward-compatibility
 
-`transports/mcp/` SHALL preserve the ability to pass a `lifespan=`
-parameter to the `FastMCP` constructor, and tool handler signatures SHALL
-NOT prevent adding a `ctx: Context` parameter in future. Lifespan/context
-usage itself is out of scope for this phase.
+`transports/mcp/` SHALL build the MCP server through a factory that takes a lifespan and registers every tool on the new server. The lifespan SHALL yield a context holding the Engine and the path policy for that transport, and every tool handler SHALL read them from its request context (`ctx: Context`). Tool handlers SHALL NOT read the process-default store, settings, reranker or profile resolver. The stdio entry point SHALL build its Engine through `compose.build_engine()` before the transport starts, so startup stays fail-fast, and its lifespan SHALL close that Engine when it exits.
 
 #### Scenario: Lifespan slot preserved
 
-- **WHEN** the `FastMCP` constructor call is inspected
-- **THEN** it MUST accept a `lifespan=` argument (passed as `None` or a
-  context manager) without structural changes to the module
+- **WHEN** the MCP server factory is inspected
+- **THEN** it MUST accept a lifespan, and the stdio and HTTP transports MUST each pass their own
 
 #### Scenario: Context parameter not precluded
 
 - **WHEN** tool handler signatures are inspected
-- **THEN** adding `ctx: Context` as a parameter MUST NOT require
-  restructuring the handler module
+- **THEN** each handler MUST take `ctx: Context` and MUST obtain the Engine from it
 
----
+#### Scenario: No process defaults
+
+- **WHEN** the stdio server runs a search with the process-default store left unset
+- **THEN** the search MUST succeed using the lifespan's Engine
 
 ### Requirement: Integrations consolidation
 

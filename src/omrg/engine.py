@@ -18,13 +18,16 @@ import collections
 import logging
 from typing import TYPE_CHECKING, Any
 
-from .compose_pipelines import EnginePipelines, build_graph_host, redact_engine_error
+from .compose_pipelines import EnginePipelines, build_graph_host
+from .core.vectordb.identity import RedactionSecrets
+from .engine_answer import ClientCompletion, build_verifier, select_completion
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
     from llama_index.core.embeddings import BaseEmbedding
 
+    from .core.answer.pipeline import ResolvedRetrieval
     from .core.pipelines import (
         AdmissionSnapshot,
         CancellationToken,
@@ -74,6 +77,7 @@ class Engine:
         answer_llm_factory: Callable[[], Any] | None = None,
         verify_llm_factory: Callable[[Any], Any] | None = None,
         ocr_client: Any = None,
+        redaction: RedactionSecrets | None = None,
     ) -> None:
         """Own already-composed dependencies; construct nothing.
 
@@ -96,6 +100,8 @@ class Engine:
                 The engine owns its lifecycle: OCR-required PDFs dispatched
                 by this engine's ingests reuse its lazily-started
                 subprocess, and :meth:`close` closes it.
+            redaction: Credential values :meth:`redact` removes from error
+                text. ``None`` means the Engine has nothing to remove.
         """
         self._effective_settings = effective_settings
         self._store = store
@@ -106,6 +112,7 @@ class Engine:
         self._answer_llm_factory = answer_llm_factory
         self._verify_llm_factory = verify_llm_factory
         self._ocr_client = ocr_client
+        self._redaction = redaction or RedactionSecrets()
         self._answer_llm: Any = None
         # Engine-owned query embedding cache: keyed by (query, model_name),
         # shared between filtered/unfiltered search within this engine,
@@ -207,40 +214,37 @@ class Engine:
         collection_name: str = "documents",
         metadata_filter: dict | None = None,
         include_diagnostics: bool = False,
+        client_completion: ClientCompletion | None = None,
+        rows: list[dict] | ResolvedRetrieval | None = None,
     ) -> dict:
-        """Answer a question from retrieved evidence with verifiable citations."""
+        """Answer a question from retrieved evidence with verifiable citations.
+
+        Args:
+            question: Free-text question.
+            top_k: Maximum chunks used as evidence.
+            similarity_threshold: Minimum evidence score.
+            rerank: Tri-state rerank control.
+            hybrid: Tri-state hybrid retrieval control.
+            expand_window: Neighbours merged into each chunk.
+            collection_name: Collection to answer from.
+            metadata_filter: Store-compatible metadata filter.
+            include_diagnostics: Include retrieval and completion diagnostics.
+            client_completion: A caller's completion that replaces the server
+                answer model and caps the answer rounds. Verification stays
+                server-side. ``None`` keeps the server model.
+            rows: Pre-retrieved rows (or a :class:`ResolvedRetrieval`); the
+                Engine skips retrieval and answers from them.
+        """
         self._check_open()
         from .core.answer.pipeline import answer as core_answer
 
         effective = self._resolve_settings(collection_name)
-
-        # Lazily build the answer LLM on first use.
-        complete = None
-        if self._get_answer_llm() is not None:
-            complete = self._server_seam(self._answer_llm)
-
-        # Build the verify LLM if claim verification is enabled. A
-        # construction failure degrades to verification_skipped with the
-        # redacted provider diagnostic retained (ADR-059); a None result
-        # keeps the plain no-judge reason.
-        verify_complete = None
-        verify_unavailable_reason = None
-        if getattr(effective.answer, "verify_claims", False):
-            if self._verify_llm_factory is not None:
-                try:
-                    verify_llm = self._verify_llm_factory(effective.answer)
-                except Exception as exc:
-                    verify_unavailable_reason = (
-                        "verification provider unavailable: "
-                        f"{type(exc).__name__}: {redact_engine_error(exc, effective)}"
-                    )
-                else:
-                    if verify_llm is not None:
-                        verify_complete = self._server_seam(verify_llm)
-                    else:
-                        verify_unavailable_reason = (
-                            "verification provider unavailable (no judge configured)"
-                        )
+        complete, effective, source = select_completion(
+            effective, client_completion, self._get_answer_llm
+        )
+        verify_complete, verify_unavailable_reason = build_verifier(
+            effective, self._verify_llm_factory, self.redact
+        )
 
         return await core_answer(
             question,
@@ -255,7 +259,8 @@ class Engine:
             complete=complete,
             verify_complete=verify_complete,
             verify_unavailable_reason=verify_unavailable_reason,
-            completion_source="server",
+            completion_source=source,
+            rows=rows,
             reranker=self._reranker,
             store=self._store,
             effective_settings=effective,
@@ -349,6 +354,13 @@ class Engine:
         """Return the graph operation catalogue with availability reasons."""
         self._check_open()
         return self._pipelines.describe(self._graph_host(collection))
+
+    def redact(self, text: str) -> str:
+        """Remove configured credential values from *text*.
+
+        Transports call this on every error text they return or log.
+        """
+        return self._redaction.redact(text)
 
     def close(self) -> None:
         """Release this engine's resources; reject further use.
@@ -484,13 +496,3 @@ class Engine:
         LlamaIndexSettings.embed_model = self._embed_model
         set_default_store(self._store)
         set_default_effective_settings(self._effective_settings)
-
-    @staticmethod
-    def _server_seam(llm: Any) -> Any:
-        """Adapt the composition-root LLM to the core async completion seam."""
-
-        async def seam(prompt: str) -> str:
-            completion = await llm.acomplete(prompt)
-            return completion.text
-
-        return seam

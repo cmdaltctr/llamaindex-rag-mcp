@@ -410,44 +410,60 @@ class TestNonDestructiveProfileChanges:
 class TestMCPProfileChangeFlow:
     """Tests for the MCP preview/confirm flow (spec M6)."""
 
-    def test_mcp_preview_returns_confirm_required(self) -> None:
+    async def test_mcp_preview_returns_confirm_required(self) -> None:
         """The MCP tool returns a preview with confirm_required=True."""
+        from conftest import build_mcp_server, direct_ctx
         from omrg.transports.mcp import change_collection_profile
 
-        with patch("omrg.core.profiles.generate_safety_contract") as mock_gen:
+        ctx = direct_ctx(build_mcp_server())
+        with patch("omrg.transports.mcp.profile.generate_safety_contract") as mock_gen:
             mock_gen.return_value = {"collection": "coll", "chunk_count": 0}
-            result = change_collection_profile(collection="coll", profile="codebase", confirm=False)
+            result = await change_collection_profile(
+                collection="coll", profile="codebase", confirm=False, ctx=ctx
+            )
         assert result["status"] == "preview"
         assert result["confirm_required"] is True
         assert "contract" in result
 
-    def test_mcp_confirm_applies_change(self) -> None:
+    async def test_mcp_confirm_applies_change(self) -> None:
         """The MCP tool applies the change when confirm=True."""
+        from conftest import build_mcp_server, direct_ctx
         from omrg.transports.mcp import change_collection_profile
 
-        with patch("omrg.core.profiles.apply_profile_change") as mock_apply:
+        server = build_mcp_server()
+        with patch("omrg.transports.mcp.profile.apply_profile_change") as mock_apply:
             mock_apply.return_value = {
                 "status": "ok",
                 "collection": "coll",
                 "profile": "codebase",
                 "chunk_count_unchanged": 0,
             }
-            result = change_collection_profile(collection="coll", profile="codebase", confirm=True)
+            result = await change_collection_profile(
+                collection="coll", profile="codebase", confirm=True, ctx=direct_ctx(server)
+            )
         assert result["status"] == "ok"
-        mock_apply.assert_called_once_with("coll", "codebase")
+        mock_apply.assert_called_once_with(
+            "coll", "codebase", store=server.test_context.engine.store
+        )
 
-    def test_mcp_rejects_invalid_profile(self) -> None:
+    async def test_mcp_rejects_invalid_profile(self) -> None:
         """The MCP tool rejects an invalid profile name."""
+        from conftest import build_mcp_server, direct_ctx
         from omrg.transports.mcp import change_collection_profile
 
-        result = change_collection_profile(collection="coll", profile="invalid", confirm=False)
+        result = await change_collection_profile(
+            collection="coll", profile="invalid", confirm=False, ctx=direct_ctx(build_mcp_server())
+        )
         assert result["status"] == "error"
 
-    def test_mcp_rejects_hybrid_profile(self) -> None:
+    async def test_mcp_rejects_hybrid_profile(self) -> None:
         """The MCP tool rejects 'hybrid' as a target profile."""
+        from conftest import build_mcp_server, direct_ctx
         from omrg.transports.mcp import change_collection_profile
 
-        result = change_collection_profile(collection="coll", profile="hybrid", confirm=False)
+        result = await change_collection_profile(
+            collection="coll", profile="hybrid", confirm=False, ctx=direct_ctx(build_mcp_server())
+        )
         assert result["status"] == "error"
 
 

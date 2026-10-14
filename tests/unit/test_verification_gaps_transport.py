@@ -103,15 +103,15 @@ _V3_TOOLS: dict[str, tuple[dict[str, Any], list[str], dict[str, bool]]] = {
 def test_no_argument_start_never_calls_the_web_server() -> None:
     """``omrg`` with no arguments runs MCP and never binds or serves HTTP."""
     with (
-        patch("omrg.transports.cli.compose.ensure_runtime_setup"),
-        patch("omrg.transports.mcp.mcp.run") as mcp_run,
+        patch("omrg.transports.mcp.compose.build_engine"),
+        patch("omrg.transports.mcp.create_mcp_server") as factory,
         patch("omrg.transports.cli.web._serve") as serve,
         patch("omrg.transports.cli.web._bind_socket") as bind,
         patch("logging.basicConfig"),
     ):
         result = CliRunner().invoke(cli_app, [])
     assert result.exit_code == 0, result.output
-    mcp_run.assert_called_once()
+    factory.return_value.run.assert_called_once()
     serve.assert_not_called()
     bind.assert_not_called()
 
@@ -123,8 +123,8 @@ def test_no_argument_entry_point_loads_no_web_or_editor_modules(tmp_path: Path) 
         import json, sys
         from unittest.mock import patch
         with (
-            patch("omrg.transports.cli.compose.ensure_runtime_setup"),
-            patch("omrg.transports.mcp.mcp.run") as run,
+            patch("omrg.transports.mcp.compose.build_engine"),
+            patch("omrg.transports.mcp.create_mcp_server") as factory,
         ):
             from omrg.transports.cli import run_cli
             sys.argv = ["omrg"]
@@ -135,7 +135,8 @@ def test_no_argument_entry_point_loads_no_web_or_editor_modules(tmp_path: Path) 
             else:
                 code = 0
         loaded = [m for m in {list(_WEB_ONLY_MODULES)!r} if m in sys.modules]
-        print(json.dumps({{"code": code, "mcp_runs": run.call_count, "loaded": loaded}}))
+        runs = factory.return_value.run.call_count
+        print(json.dumps({{"code": code, "mcp_runs": runs, "loaded": loaded}}))
         """
     )
     completed = subprocess.run(

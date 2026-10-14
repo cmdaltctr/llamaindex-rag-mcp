@@ -90,6 +90,20 @@ SCHEMA_MIGRATIONS: tuple[Migration, ...] = (
             )""",
         ),
     ),
+    (
+        2,
+        (
+            """CREATE TABLE workspace_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )""",
+            """CREATE TABLE mcp_tokens (
+                token_id TEXT PRIMARY KEY,
+                token_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )""",
+        ),
+    ),
 )
 
 

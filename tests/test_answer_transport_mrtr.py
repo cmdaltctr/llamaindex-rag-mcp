@@ -25,6 +25,7 @@ import pytest
 from mcp.client import Client
 from mcp.types import CreateMessageResult, SamplingCapability, TextContent
 
+from conftest import build_mcp_server, direct_ctx
 from omrg.core.ingestion import ingest_path_async
 from omrg.transports.mcp import answer_documents
 from omrg.transports.mcp.answer_mrtr import (
@@ -56,11 +57,10 @@ def _extract_result(result: Any) -> dict[str, Any]:
     return json.loads(result.content[0].text)
 
 
-def _counting_search(monkeypatch: pytest.MonkeyPatch, *, delay: float = 0.0) -> list[int]:
-    """Patch the resolver-side search with a call-counting wrapper."""
-    from omrg.core.retrieval import search as real_search
-    from omrg.transports.mcp import answer_mrtr
-
+def _counting_search(server: Any, *, delay: float = 0.0) -> list[int]:
+    """Wrap the Engine's search (the resolver-side retrieval) with a counter."""
+    engine = server.test_context.engine
+    real_search = engine.search
     calls: list[int] = []
 
     def _counting(*args: Any, **kwargs: Any) -> list[dict]:
@@ -69,8 +69,15 @@ def _counting_search(monkeypatch: pytest.MonkeyPatch, *, delay: float = 0.0) -> 
             time.sleep(delay)
         return real_search(*args, **kwargs)
 
-    monkeypatch.setattr(answer_mrtr, "_core_search", _counting)
+    engine.search = _counting  # the engine is private to this test's server
     return calls
+
+
+def _settings_with(**answer: Any) -> Any:
+    """Return the default settings with an overridden answer block."""
+    from omrg.core.settings import AnswerBlock, get_default_effective_settings
+
+    return get_default_effective_settings().model_copy(update={"answer": AnswerBlock(**answer)})
 
 
 def _scripted_planner(
@@ -123,7 +130,7 @@ async def test_mrtr_answer_performs_exactly_one_retrieval(
 ) -> None:
     """An N-round MRTR answer searches exactly once; no cache entry survives."""
     await _ingest_collection(tmp_path)
-    calls = _counting_search(monkeypatch)
+    calls = _counting_search(mcp_server)
     _scripted_planner(monkeypatch)  # single client round (N = 1)
     seen_prompts: list[str] = []
 
@@ -149,7 +156,7 @@ async def test_mrtr_multi_round_answer_performs_exactly_one_retrieval(
 ) -> None:
     """A two-round MRTR answer still searches exactly once."""
     await _ingest_collection(tmp_path)
-    calls = _counting_search(monkeypatch)
+    calls = _counting_search(mcp_server)
     _scripted_planner(
         monkeypatch,
         {0: "round-1 prompt", 1: "round-2 prompt"},  # asks exactly two rounds
@@ -181,12 +188,11 @@ async def test_resolver_retrieval_failure_returns_structured_error(
 ) -> None:
     """A retrieval failure inside the resolver chain never escapes raw."""
     await _ingest_collection(tmp_path)
-    from omrg.transports.mcp import answer_mrtr
 
     def _boom(*args: Any, **kwargs: Any) -> list[dict]:
         raise RuntimeError("collection missing")
 
-    monkeypatch.setattr(answer_mrtr, "_core_search", _boom)
+    monkeypatch.setattr(mcp_server.test_context.engine, "search", _boom)
     seen_prompts: list[str] = []
 
     async with Client(
@@ -244,33 +250,23 @@ async def test_resolver_planning_failure_returns_structured_generation_error(
 
 
 async def test_disabled_modern_session_never_samples_the_client(
-    mcp_server, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
     """``ANSWER__ENABLED=false``: no Sample issued, actionable error."""
-    from omrg.core.settings import (
-        AnswerBlock,
-        get_default_effective_settings,
-        set_default_effective_settings,
-    )
-
     await _ingest_collection(tmp_path)
-    current = get_default_effective_settings()
-    set_default_effective_settings(
-        current.model_copy(update={"answer": AnswerBlock(enabled=False)})
+    server = build_mcp_server(
+        effective=_settings_with(enabled=False), profile_resolver_factory=None
     )
     seen_prompts: list[str] = []
-    try:
-        async with Client(
-            mcp_server,
-            sampling_callback=_sampling_callback(seen_prompts),
-            sampling_capabilities=SamplingCapability(),
-        ) as client:
-            result = await client.call_tool(
-                "answer_documents",
-                {"query": _QUERY, "collection": _COLLECTION, "similarity_threshold": 0.0},
-            )
-    finally:
-        set_default_effective_settings(current)
+    async with Client(
+        server,
+        sampling_callback=_sampling_callback(seen_prompts),
+        sampling_capabilities=SamplingCapability(),
+    ) as client:
+        result = await client.call_tool(
+            "answer_documents",
+            {"query": _QUERY, "collection": _COLLECTION, "similarity_threshold": 0.0},
+        )
 
     data = _extract_result(result)
     assert data["status"] == "error", data
@@ -280,15 +276,9 @@ async def test_disabled_modern_session_never_samples_the_client(
 
 
 async def test_disabled_server_path_returns_disabled_error_before_the_model(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
     """Disabled direct call: error before the server model is resolved."""
-    from omrg.core.settings import (
-        AnswerBlock,
-        get_default_effective_settings,
-        set_default_effective_settings,
-    )
-
     await _ingest_collection(tmp_path)
 
     class _NeverLLM:
@@ -298,20 +288,20 @@ async def test_disabled_server_path_returns_disabled_error_before_the_model(
             _NeverLLM.calls += 1
             raise AssertionError("the server model must not run when disabled")
 
-    monkeypatch.setattr("omrg.compose.build_answer_llm", lambda settings=None: _NeverLLM())
-    current = get_default_effective_settings()
-    set_default_effective_settings(
-        current.model_copy(update={"answer": AnswerBlock(enabled=False)})
+    def _never_built() -> Any:
+        raise AssertionError("the server model must not even be built when disabled")
+
+    server = build_mcp_server(
+        effective=_settings_with(enabled=False),
+        profile_resolver_factory=None,
+        answer_llm_factory=_never_built,
     )
-    try:
-        result = await answer_documents(
-            query=_QUERY,
-            collection=_COLLECTION,
-            similarity_threshold=0.0,
-            ctx=None,
-        )
-    finally:
-        set_default_effective_settings(current)
+    result = await answer_documents(
+        query=_QUERY,
+        collection=_COLLECTION,
+        similarity_threshold=0.0,
+        ctx=direct_ctx(server),
+    )
 
     assert result["status"] == "error"
     assert "ANSWER__ENABLED" in (result["error"] or "")
@@ -331,38 +321,30 @@ async def test_client_seam_exhaustion_raises_instead_of_replaying() -> None:
 
 
 async def test_client_rounds_are_capped_by_the_chain_depth(
-    mcp_server, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """``max_rounds`` above the chain depth still serves at most 4 rounds."""
-    from omrg.core.settings import (
-        AnswerBlock,
-        get_default_effective_settings,
-        set_default_effective_settings,
-    )
-
     await _ingest_collection(tmp_path)
-    current = get_default_effective_settings()
-    set_default_effective_settings(current.model_copy(update={"answer": AnswerBlock(max_rounds=8)}))
+    mcp_server = build_mcp_server(
+        effective=_settings_with(max_rounds=8), profile_resolver_factory=None
+    )
     seen_prompts: list[str] = []
     # The planner asks forever: every reply triggers another round plan.
     _scripted_planner(monkeypatch, {i: f"round-{i + 1} prompt" for i in range(16)})
-    try:
-        async with Client(
-            mcp_server,
-            sampling_callback=_sampling_callback(seen_prompts),
-            sampling_capabilities=SamplingCapability(),
-        ) as client:
-            result = await client.call_tool(
-                "answer_documents",
-                {
-                    "query": _QUERY,
-                    "collection": _COLLECTION,
-                    "similarity_threshold": 0.0,
-                    "diagnostics": True,
-                },
-            )
-    finally:
-        set_default_effective_settings(current)
+    async with Client(
+        mcp_server,
+        sampling_callback=_sampling_callback(seen_prompts),
+        sampling_capabilities=SamplingCapability(),
+    ) as client:
+        result = await client.call_tool(
+            "answer_documents",
+            {
+                "query": _QUERY,
+                "collection": _COLLECTION,
+                "similarity_threshold": 0.0,
+                "diagnostics": True,
+            },
+        )
 
     data = _extract_result(result)
     assert data["status"] == "ok", data
@@ -428,7 +410,7 @@ async def test_client_path_diagnostics_report_real_timings(
 ) -> None:
     """retrieval_ms and generation_ms include the real work's wall-time."""
     await _ingest_collection(tmp_path)
-    _counting_search(monkeypatch, delay=0.08)
+    _counting_search(mcp_server, delay=0.08)
     _scripted_planner(monkeypatch)
     seen_prompts: list[str] = []
 

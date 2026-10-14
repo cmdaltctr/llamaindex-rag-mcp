@@ -15,7 +15,7 @@ import sys
 import textwrap
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -138,18 +138,22 @@ def test_web_without_extra_prints_install_instruction(monkeypatch: pytest.Monkey
 
 
 def test_no_argument_start_still_runs_mcp_server() -> None:
-    """``omrg`` with no arguments still installs the runtime and starts MCP."""
+    """``omrg`` with no arguments builds one Engine and starts MCP on stdio."""
     # MCP main() calls logging.basicConfig(force=True) on the captured
     # stream; keep the root logger untouched for later tests.
+    server = MagicMock()
     with (
         patch("omrg.transports.cli.compose.ensure_runtime_setup") as setup,
-        patch("omrg.transports.mcp.mcp.run") as mcp_run,
+        patch("omrg.transports.mcp.compose.build_engine") as build_engine,
+        patch("omrg.transports.mcp.create_mcp_server", return_value=server) as factory,
         patch("logging.basicConfig"),
     ):
         result = runner.invoke(cli_app, [])
     assert result.exit_code == 0, result.output
-    assert setup.called
-    mcp_run.assert_called_once()
+    setup.assert_not_called()
+    build_engine.assert_called_once_with()
+    factory.assert_called_once()
+    server.run.assert_called_once_with(transport="stdio")
 
 
 def test_web_bypasses_legacy_installer_and_prints_bootstrap_url_to_stderr(

@@ -12,6 +12,7 @@ identical content returns the existing revision (content-hash dedupe).
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
@@ -73,12 +74,23 @@ def ok(payload: dict[str, Any], status_code: int = 200) -> JSONResponse:
     return JSONResponse(body, status_code=status_code, headers=API_HEADERS)
 
 
-def validation_failure(exc: PipelineValidationError) -> JSONResponse:
-    """Return 422 with the error envelope and every structured issue."""
-    issues = [{**issue.model_dump(), "message": redact(issue.message)} for issue in exc.issues]
+def validation_failure(
+    exc: PipelineValidationError, redactor: Callable[[str], str] | None = None
+) -> JSONResponse:
+    """Return 422 with the error envelope and every structured issue.
+
+    Args:
+        exc: The validation failure.
+        redactor: ``Engine.redact``; removes provider credential values.
+    """
+
+    def clean(text: str) -> str:
+        return redact(redactor(text) if redactor else text)
+
+    issues = [{**issue.model_dump(), "message": clean(issue.message)} for issue in exc.issues]
     body = {
         "status": "error",
-        "message": redact(str(exc)),
+        "message": clean(str(exc)),
         "error_type": "validation",
         "issues": issues,
     }
@@ -167,7 +179,7 @@ async def save_pipeline_layout(
 
 @router.post("/pipelines/{pipeline_id}/revisions", operation_id="savePipelineRevision")
 async def save_pipeline_revision(
-    _: GraphScope, pipeline_id: str, body: RevisionBody, runs: RunsDep
+    _: GraphScope, pipeline_id: str, body: RevisionBody, runs: RunsDep, runtime: RuntimeDep
 ) -> Response:
     """Store an immutable execution revision and make it current.
 
@@ -184,7 +196,7 @@ async def save_pipeline_revision(
     try:
         graph = parse_definition(body.document).graph
     except PipelineValidationError as exc:
-        return validation_failure(exc)
+        return validation_failure(exc, runtime.engine.redact)
     document = graph.model_dump(mode="json")
     repository = runs.service.repository
     known = {rev["content_hash"] for rev in repository.list_revisions(pipeline_id)}
@@ -267,6 +279,6 @@ async def validate_pipeline(_: GraphScope, body: ValidateBody, runtime: RuntimeD
                 collection=body.collection,
             )
     except PipelineValidationError as exc:
-        return validation_failure(exc)
+        return validation_failure(exc, runtime.engine.redact)
     view = _draft_view(checked) if body.inputs is None else _admitted_view(checked)
     return ok({"valid": True, **view})

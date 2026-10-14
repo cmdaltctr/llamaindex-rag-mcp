@@ -8,6 +8,7 @@ never contain stack traces or credential values.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -33,6 +34,7 @@ def error_response(
     *,
     error_type: str | None = None,
     headers: dict[str, str] | None = None,
+    redactor: Callable[[str], str] | None = None,
 ) -> JSONResponse:
     """Build an error envelope response.
 
@@ -41,14 +43,26 @@ def error_response(
         message: Human-readable message. It is redacted before it is sent.
         error_type: Optional ``Error.error_type`` category from the contract.
         headers: Extra response headers.
+        redactor: ``Engine.redact``. It removes provider credential values
+            before the OMRG token redaction runs.
 
     Returns:
         A JSON response with the status/message envelope.
     """
-    body: dict[str, Any] = {"status": "error", "message": redact(message)}
+    body: dict[str, Any] = {
+        "status": "error",
+        "message": redact(redactor(message) if redactor else message),
+    }
     if error_type is not None:
         body["error_type"] = error_type
     return JSONResponse(body, status_code=status_code, headers={**API_HEADERS, **(headers or {})})
+
+
+def engine_redactor(request: Request) -> Callable[[str], str] | None:
+    """Return the running Engine's redactor, or ``None`` before startup."""
+    runtime = getattr(request.app.state, "runtime", None)
+    engine = getattr(runtime, "engine", None)
+    return getattr(engine, "redact", None)
 
 
 def _validation_message(exc: RequestValidationError) -> str:
@@ -69,11 +83,21 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def _http_error(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-        return error_response(exc.status_code, str(exc.detail), headers=exc.headers)
+        return error_response(
+            exc.status_code,
+            str(exc.detail),
+            headers=exc.headers,
+            redactor=engine_redactor(request),
+        )
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
-        return error_response(400, _validation_message(exc), error_type="validation")
+        return error_response(
+            400,
+            _validation_message(exc),
+            error_type="validation",
+            redactor=engine_redactor(request),
+        )
 
     @app.exception_handler(Exception)
     async def _internal_error(request: Request, exc: Exception) -> JSONResponse:

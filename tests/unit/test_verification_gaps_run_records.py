@@ -103,7 +103,7 @@ async def test_workspace_upgrade_leaves_vector_store_bytes_unchanged(
     before = {"lance": _tree(lance_dir), "chroma": _tree(chroma_dir)}
     assert before["lance"], "the LanceDB store wrote no files"
 
-    upgrade = (2, ("ALTER TABLE pipelines ADD COLUMN description TEXT",))
+    upgrade = (SCHEMA_MIGRATIONS[-1][0] + 1, ("ALTER TABLE pipelines ADD COLUMN description TEXT",))
     SqliteWorkspaceRepository(db_path, migrations=(*SCHEMA_MIGRATIONS, upgrade))
 
     assert len(list(workspace.glob("*.bak"))) == 1, "the upgrade did not run"

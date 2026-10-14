@@ -351,6 +351,7 @@ source_modules = ["omrg.core.experiments"]
 forbidden_modules = [
     "omrg.compose",
     "omrg.engine",
+    "omrg.engine_answer",
     "omrg.core.ingestion",
     "omrg.core.retrieval",
     "omrg.core.answer",
@@ -461,6 +462,7 @@ forbidden_modules = [
     "omrg.compose_pipelines",
     "omrg.compose_settings",
     "omrg.engine",
+    "omrg.engine_answer",
     "omrg.pipeline_templates",
 ]
 ignore_imports = [

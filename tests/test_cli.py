@@ -94,13 +94,18 @@ class TestEntryPoint:
 
     def test_bad_provider_fails_at_server_startup_without_traceback(self) -> None:
         """Invalid provider configuration fails before the server starts."""
-        with patch("omrg.transports.mcp.mcp.run") as mock_run:
+        # MCP main() calls logging.basicConfig(force=True) before it builds
+        # the Engine; keep the root logger untouched for later tests.
+        with (
+            patch("omrg.transports.mcp.create_mcp_server") as mock_factory,
+            patch("logging.basicConfig"),
+        ):
             result = runner.invoke(app, [], env={"EMBED_PROVIDER": "not-a-provider"})
 
         assert result.exit_code == 1
         assert "EMBED_PROVIDER" in result.output
         assert "Traceback" not in result.output
-        mock_run.assert_not_called()
+        mock_factory.assert_not_called()
 
     def test_unknown_subcommand(self) -> None:
         """Unknown subcommand produces a non-zero exit code."""

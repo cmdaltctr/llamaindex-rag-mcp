@@ -141,17 +141,13 @@ model. The engine SHALL NOT depend on that global for its own operations.
 
 ### Requirement: The server startup path is one caller of the engine
 
-`ensure_runtime_setup()` SHALL remain available as the server startup path and
-SHALL be implemented in terms of the engine: it constructs the default engine
-from the environment and installs it as the process default for the existing
-transports.
+`ensure_runtime_setup()` SHALL remain available as the startup path for the CLI and the watcher and SHALL be implemented in terms of the engine: it constructs the default engine from the environment and installs it as the process default for those transports. The MCP server SHALL NOT call it; the MCP lifespan constructs or receives its Engine directly.
 
 #### Scenario: Existing transports are unchanged
 
 - **WHEN** the MCP server, CLI or watcher starts
 - **THEN** it SHALL obtain a working engine
-- **AND** its externally observable behaviour SHALL be unchanged by this
-  change
+- **AND** its tools and commands SHALL return the same results as before this change
 
 #### Scenario: Optional answering is lazy
 
@@ -202,3 +198,41 @@ Graph cancellation SHALL not set or clear a process-global shutdown flag for unr
 - **WHEN** ready nodes share mutable model diagnostics or an unsafe cache
 - **THEN** access SHALL be serialised or isolated
 - **AND** one run SHALL not report another run's diagnostic state
+
+### Requirement: The engine answers with a client completion or resolved rows
+
+`Engine.answer` SHALL accept an optional client completion (a completion function, a source label of `client_mrtr` or `client_legacy`, and a round cap) and optional pre-resolved retrieval rows. A client completion SHALL replace only the answer model: claim verification SHALL stay with the engine's own verifier. The result SHALL report the client completion's source label, and synthesis SHALL run no more rounds than its cap. When rows are given, the engine SHALL NOT retrieve again. Without either argument, the result SHALL equal the result before this change.
+
+#### Scenario: Client model, server verifier
+
+- **WHEN** `answer` runs with a client completion and claim verification enabled
+- **THEN** the answer MUST come from the client completion, verification MUST use the engine's verifier, and the completion source MUST be the client's label
+
+#### Scenario: Round cap
+
+- **WHEN** the answer block allows 8 rounds and the client completion's cap is 4
+- **THEN** synthesis MUST run at most 4 rounds
+
+#### Scenario: Resolved rows
+
+- **WHEN** `answer` runs with rows
+- **THEN** the engine MUST NOT run a retrieval
+
+#### Scenario: Default unchanged
+
+- **WHEN** `answer` runs with neither argument
+- **THEN** the result MUST equal the result before this change for the same input and models
+
+### Requirement: The engine redacts its configured credentials
+
+Every engine SHALL carry the credential values it was composed with (the Chroma Cloud API key, tenant and database, and the OpenRouter key) and SHALL expose `redact(text)`, which removes each value and every prefix of six or more characters of the keys. Transports SHALL redact error text that leaves the process through the engine they use. Credentials SHALL NOT be added to `EffectiveSettings`.
+
+#### Scenario: Cloud tenant in an MCP error
+
+- **WHEN** an MCP tool fails with an exception whose text holds the Chroma Cloud tenant and database
+- **THEN** the returned error dict and the log line MUST NOT contain either value
+
+#### Scenario: Key prefix in a REST job failure
+
+- **WHEN** a web ingest job fails with an exception whose text holds the first eight characters of the OpenRouter key
+- **THEN** the job's error body MUST NOT contain them

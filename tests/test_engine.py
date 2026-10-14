@@ -535,6 +535,8 @@ def test_engine_public_method_surface_is_exactly_documented() -> None:
         "validate_pipeline",
         "run_pipeline",
         "describe_operations",
+        # Credential redaction for transports (add-mcp-http-transport D9).
+        "redact",
     }
     actual = {
         name
@@ -992,14 +994,11 @@ def test_engine_answer_verify_failure_degrades_with_redacted_reason() -> None:
     """A verify-provider failure degrades to a redacted skipped reason."""
     import asyncio
 
+    from omrg.core.vectordb.identity import RedactionSecrets
     from omrg.engine import Engine
 
     effective = MagicMock()
     effective.answer.verify_claims = True
-    effective.openrouter_api_key = "sk-SECRET123"
-    effective.chroma_cloud_api_key = ""
-    effective.chroma_cloud_tenant = ""
-    effective.chroma_cloud_database = ""
     captured: dict[str, Any] = {}
 
     async def fake_core_answer(_question: str, **kwargs: Any) -> dict:
@@ -1014,6 +1013,7 @@ def test_engine_answer_verify_failure_degrades_with_redacted_reason() -> None:
         store=MagicMock(cache_identity="verify-fail"),
         embed_model=MagicMock(),
         verify_llm_factory=failing_verify_factory,
+        redaction=RedactionSecrets(openrouter_api_key="sk-SECRET123"),
     )
     with patch("omrg.core.answer.pipeline.answer", side_effect=fake_core_answer):
         result = asyncio.run(engine.answer("question"))

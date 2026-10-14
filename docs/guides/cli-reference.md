@@ -295,8 +295,11 @@ Re-run the command with `--force` to update an existing watcher instead.
 Start the local browser workspace on a loopback address. It needs the optional `web` extra (`uv sync --extra web` or `pip install "omrg[web]"`).
 
 ```bash
-# Start with a free port and the default workspace
+# Start on the saved port, else 8765, with the default workspace
 omrg web
+
+# Pick a free port instead
+omrg web --port 0
 
 # Approve two directories for file access
 omrg web --root ~/papers --root ~/notes
@@ -308,7 +311,7 @@ omrg web --workspace ~/omrg-demo --port 8765
 omrg web --experiment-root ~/omrg-experiments
 ```
 
-The command writes the one-time sign-in link to stderr. It does not run the legacy process-default installer. It refuses a non-loopback `--host`. Every option, sign-in, file grants, jobs and shutdown: [Web workspace](web-workspace.md).
+The port is `--port` if you give it, else the port saved in Settings > MCP, else 8765. `--port 0` picks a free port. If the port is taken, the command exits with code 1 and prints `Port <n> is in use. Start with --port <n> to choose another port, then save it in Settings > MCP.` The command writes the one-time sign-in link to stderr. It does not run the legacy process-default installer. It refuses a non-loopback `--host`. Every option, sign-in, file grants, jobs and shutdown: [Web workspace](web-workspace.md).
 
 ### Shell tab completion
 

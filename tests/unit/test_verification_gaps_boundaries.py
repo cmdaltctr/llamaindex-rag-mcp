@@ -16,6 +16,7 @@ import omrg
 _ALLOWED_TOP_LEVEL = {
     "__init__.py": "package marker and PEP 562 lazy public exports",
     "engine.py": "the public Engine",
+    "engine_answer.py": "the public Engine: answer composition",
     "compose.py": "composition root",
     "compose_answer.py": "composition root: answer models",
     "compose_engine.py": "composition root: build_engine",

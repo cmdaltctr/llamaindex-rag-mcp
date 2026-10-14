@@ -154,15 +154,16 @@ def test_mcp_search_documents_signature_exposes_hybrid_opt_in() -> None:
 
 
 async def test_mcp_search_documents_passes_hybrid_through(monkeypatch) -> None:
-    """MCP calls must forward ``hybrid`` unchanged to retrieval.search."""
-    import omrg.transports.mcp.search as search_mod
+    """MCP calls must forward ``hybrid`` unchanged to the Engine's search."""
+    from conftest import build_mcp_server, direct_ctx
 
+    server = build_mcp_server()
     mock_search = MagicMock(return_value=[])
-    monkeypatch.setattr(search_mod, "search", mock_search)
+    monkeypatch.setattr(server.test_context.engine, "search", mock_search)
 
     from omrg.transports.mcp import search_documents
 
-    await search_documents("needle", hybrid=True, rerank=False)
+    await search_documents("needle", hybrid=True, rerank=False, ctx=direct_ctx(server))
 
     mock_search.assert_called_once()
     assert mock_search.call_args.kwargs["hybrid"] is True
