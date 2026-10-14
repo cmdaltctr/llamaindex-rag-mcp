@@ -224,10 +224,11 @@ def test_two_contexts_use_their_own_cache_directories(
     assert poisoned_defaults == []
 
 
-def test_mcp_handler_forwards_composed_context(
+async def test_mcp_handler_forwards_composed_context(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The MCP boundary supplies composed settings/store to core."""
+    """The MCP boundary supplies the Engine's settings and store to core."""
+    from conftest import build_mcp_server, direct_ctx
     from omrg.core.settings import get_default_effective_settings
     from omrg.core.vectordb import get_default_store
     from omrg.transports.mcp import codebase as mcp_codebase
@@ -241,27 +242,57 @@ def test_mcp_handler_forwards_composed_context(
         return "MAP"
 
     monkeypatch.setattr(cm, "get_codebase_map_text", _record)
-    assert mcp_codebase.get_codebase_map(str(tmp_path), True) == "MAP"
+    # No profile resolver: the Engine returns its own settings object.
+    server = build_mcp_server(profile_resolver_factory=None)
+    ctx = direct_ctx(server)
+    assert await mcp_codebase.get_codebase_map(str(tmp_path), True, ctx=ctx) == "MAP"
     assert seen["path"] == str(tmp_path)
     assert seen["refresh"] is True
     assert seen["settings"] is expected_settings
     assert seen["store"] is expected_store
 
 
-def test_mcp_handler_settings_failure_returns_error_json(
+async def test_mcp_handler_settings_failure_returns_error_json(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A settings failure at the boundary keeps the JSON error shape."""
-    import omrg.core.settings as core_settings
+    from conftest import build_mcp_server, direct_ctx
     from omrg.transports.mcp import codebase as mcp_codebase
 
-    def _boom():
+    def _boom(_collection=None):
         raise RuntimeError("no settings")
 
-    monkeypatch.setattr(core_settings, "get_default_effective_settings", _boom)
-    data = json.loads(mcp_codebase.get_codebase_map(".", False))
+    server = build_mcp_server()
+    monkeypatch.setattr(server.test_context.engine, "resolve_settings", _boom)
+    data = json.loads(await mcp_codebase.get_codebase_map(".", False, ctx=direct_ctx(server)))
     assert data["status"] == "error"
     assert "no settings" in data["message"]
+
+
+async def test_mcp_handler_reads_no_process_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The handler never touches the process-default settings or store."""
+    import omrg.core.settings as core_settings
+    import omrg.core.vectordb as vectordb
+    from conftest import build_mcp_server, direct_ctx
+    from omrg.transports.mcp import codebase as mcp_codebase
+
+    server = build_mcp_server(profile_resolver_factory=None)  # built before the poison
+    hits: list[str] = []
+
+    def _poison(name: str):
+        def _raise(*_a, **_k):
+            hits.append(name)
+            raise AssertionError(f"default {name} must not be read")
+
+        return _raise
+
+    monkeypatch.setattr(core_settings, "get_default_effective_settings", _poison("settings"))
+    monkeypatch.setattr(vectordb, "get_default_store", _poison("store"))
+    monkeypatch.setattr(cm, "get_codebase_map_text", lambda *a, **k: "MAP")
+    assert await mcp_codebase.get_codebase_map(str(tmp_path), ctx=direct_ctx(server)) == "MAP"
+    assert hits == []
 
 
 # ── 4.3 Owner-context cache validation ──────────────────────────────────

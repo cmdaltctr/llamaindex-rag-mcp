@@ -1,0 +1,358 @@
+[
+  {
+    "annotations": {
+      "destructive_hint": false,
+      "read_only_hint": true
+    },
+    "description": "Answer a question from the indexed documents using retrieved evidence, returning the answer together with deterministic, verifiable citations (every cited chunk_id re-fetches exactly one stored chunk). Performs ONE OR MORE language-model completion calls \u2014 use search_documents instead when you only need ranked chunks without that cost. When ANSWER__VERIFY_CLAIMS is enabled, each cited claim additionally costs one cloud-judge call (~3.3 s P95 each, ADR-059).",
+    "inputSchema": {
+      "properties": {
+        "collection": {
+          "default": "documents",
+          "title": "Collection",
+          "type": "string"
+        },
+        "diagnostics": {
+          "default": false,
+          "title": "Diagnostics",
+          "type": "boolean"
+        },
+        "expand_window": {
+          "default": 0,
+          "title": "Expand Window",
+          "type": "integer"
+        },
+        "hybrid": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hybrid"
+        },
+        "metadata_filter": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata Filter"
+        },
+        "query": {
+          "title": "Query",
+          "type": "string"
+        },
+        "rerank": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank"
+        },
+        "similarity_threshold": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Similarity Threshold"
+        },
+        "top_k": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top K"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "title": "answer_documentsArguments",
+      "type": "object"
+    },
+    "name": "answer_documents"
+  },
+  {
+    "annotations": {
+      "destructive_hint": true,
+      "read_only_hint": false
+    },
+    "description": "Change the profile bound to a ChromaDB collection. Profiles control retrieval behaviour: 'documents' (quality-first, reranker on, dense-only) or 'codebase' (speed-first, reranker off, hybrid). The change is non-destructive \u2014 existing chunks are NOT re-chunked or re-embedded. Query-time levers apply immediately; ingest-time levers apply to future ingests only. Returns a preview on first call; pass confirm=true to apply.",
+    "inputSchema": {
+      "properties": {
+        "collection": {
+          "title": "Collection",
+          "type": "string"
+        },
+        "confirm": {
+          "default": false,
+          "title": "Confirm",
+          "type": "boolean"
+        },
+        "profile": {
+          "title": "Profile",
+          "type": "string"
+        }
+      },
+      "required": [
+        "collection",
+        "profile"
+      ],
+      "title": "change_collection_profileArguments",
+      "type": "object"
+    },
+    "name": "change_collection_profile"
+  },
+  {
+    "annotations": {
+      "destructive_hint": true,
+      "read_only_hint": false
+    },
+    "description": "Remove documents from the RAG store. Accepts an optional path (delete chunks for a specific file), metadata_filter (delete chunks matching a metadata filter as a JSON object), or collection (delete an entire collection \u2014 when provided without path or metadata_filter, the collection itself is dropped). Use dry_run=true to preview without modifying data.",
+    "inputSchema": {
+      "properties": {
+        "collection": {
+          "default": "documents",
+          "title": "Collection",
+          "type": "string"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "metadata_filter": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata Filter"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        }
+      },
+      "title": "delete_documentsArguments",
+      "type": "object"
+    },
+    "name": "delete_documents"
+  },
+  {
+    "annotations": {
+      "destructive_hint": false,
+      "read_only_hint": true
+    },
+    "description": "Generate a compact codebase map showing file types, code communities, document communities, cross-links, and architectural hubs. Useful for agents starting a session on an unfamiliar codebase. Results are cached per-project keyed by git commit hash. Use refresh=true to force rebuild.",
+    "inputSchema": {
+      "properties": {
+        "path": {
+          "default": ".",
+          "title": "Path",
+          "type": "string"
+        },
+        "refresh": {
+          "default": false,
+          "title": "Refresh",
+          "type": "boolean"
+        }
+      },
+      "title": "get_codebase_mapArguments",
+      "type": "object"
+    },
+    "name": "get_codebase_map"
+  },
+  {
+    "annotations": {
+      "destructive_hint": true,
+      "read_only_hint": false
+    },
+    "description": "Index one or more documents or a directory into the RAG store. Accepts a file path or directory path. Optionally specify a target ChromaDB collection. Supported formats: PDF, DOCX, PPTX, TXT, Markdown, HTML, CSV.",
+    "inputSchema": {
+      "properties": {
+        "collection": {
+          "default": "documents",
+          "title": "Collection",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "ingest_documentsArguments",
+      "type": "object"
+    },
+    "name": "ingest_documents"
+  },
+  {
+    "annotations": {
+      "destructive_hint": false,
+      "read_only_hint": true
+    },
+    "description": "List all available ChromaDB collections with their document and chunk counts.",
+    "inputSchema": {
+      "properties": {},
+      "title": "list_collectionsArguments",
+      "type": "object"
+    },
+    "name": "list_collections"
+  },
+  {
+    "annotations": {
+      "destructive_hint": false,
+      "read_only_hint": true
+    },
+    "description": "List all documents currently indexed in the RAG store, with source paths, chunk counts, and tri-state orphaned status. Orphaned means missing on this machine. Optionally scope to a specific collection.",
+    "inputSchema": {
+      "properties": {
+        "collection": {
+          "default": "documents",
+          "title": "Collection",
+          "type": "string"
+        }
+      },
+      "title": "list_indexed_documentsArguments",
+      "type": "object"
+    },
+    "name": "list_indexed_documents"
+  },
+  {
+    "annotations": {
+      "destructive_hint": false,
+      "read_only_hint": true
+    },
+    "description": "Search the indexed documents using semantic similarity. Returns the most relevant text chunks with their source file and relevance score. Optionally re-score results with a cross-encoder reranker for better precision, or filter by a minimum similarity threshold. Accepts an optional collection name to scope the search and an optional metadata_filter to restrict results by metadata fields. Adjacent chunks of one document are merged so splitter overlap is not returned twice; expand_window adds each chunk's neighbours to the merged context when requested.",
+    "inputSchema": {
+      "properties": {
+        "collection": {
+          "default": "documents",
+          "title": "Collection",
+          "type": "string"
+        },
+        "diagnostics": {
+          "default": false,
+          "title": "Diagnostics",
+          "type": "boolean"
+        },
+        "expand_window": {
+          "default": 0,
+          "title": "Expand Window",
+          "type": "integer"
+        },
+        "hybrid": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hybrid"
+        },
+        "metadata_filter": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata Filter"
+        },
+        "query": {
+          "title": "Query",
+          "type": "string"
+        },
+        "rerank": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank"
+        },
+        "similarity_threshold": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Similarity Threshold"
+        },
+        "top_k": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top K"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "title": "search_documentsArguments",
+      "type": "object"
+    },
+    "name": "search_documents"
+  }
+]

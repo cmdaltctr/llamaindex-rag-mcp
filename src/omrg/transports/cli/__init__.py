@@ -199,9 +199,9 @@ def callback(
     ),
 ) -> None:
     """Run with no arguments to start the MCP stdio server."""
-    if ctx.invoked_subcommand != "web":
-        # ``omrg web`` owns one Engine through its application lifespan
-        # and must not install the legacy process default (design D8).
+    if ctx.invoked_subcommand not in ("web", None):
+        # ``omrg web`` and bare ``omrg`` (MCP over stdio) each own one
+        # Engine and must not install the legacy process default.
         _initialise_runtime()
     if ctx.invoked_subcommand is None:
         from ..mcp import main as mcp_main

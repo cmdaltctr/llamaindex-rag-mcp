@@ -94,3 +94,8 @@ class McpContext:
     engine: Any
     paths: PathPolicy
     admit: Admit
+
+
+def mcp_context(ctx: Any) -> McpContext:
+    """Return the :class:`McpContext` the lifespan yielded for this request."""
+    return ctx.request_context.lifespan_context
