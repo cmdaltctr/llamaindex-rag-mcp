@@ -53,8 +53,9 @@ export function HomeView() {
                       {plural(collection.document_count, "document")}, {plural(collection.chunk_count, "chunk")}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     {collection.profile !== null ? <Badge variant="hue">{collection.profile}</Badge> : <Badge variant="neutral">No profile</Badge>}
+                    <span className="text-meta text-muted-foreground">{collection.store.label}</span>
                   </CardContent>
                 </Card>
               </a>

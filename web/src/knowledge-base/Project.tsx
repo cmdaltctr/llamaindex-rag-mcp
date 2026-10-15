@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { CollectionInfo, Job } from "../api/documents";
 import { CollectionPicker } from "../components/CollectionPicker";
+import { StoreBadge } from "../components/StoreBadge";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { plural } from "../lib/labels";
@@ -35,6 +36,7 @@ export function Project({ project, collections, onJob, onSelect, onCollectionDel
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <h2 className="text-section-title font-semibold break-words">{project.name}</h2>
         {project.profile !== null ? <Badge variant="hue">{project.profile}</Badge> : <Badge variant="neutral">No profile</Badge>}
+        <StoreBadge store={project.store} />
         <span className="text-meta text-muted-foreground">
           {plural(project.document_count, "document")}, {plural(project.chunk_count, "chunk")}
         </span>
@@ -47,7 +49,7 @@ export function Project({ project, collections, onJob, onSelect, onCollectionDel
         ))}
       </div>
       {section === "sources" ? (
-        <SourcesSection key={project.name} collection={project.name} onAdd={() => setSection("add")} onCollectionDeleted={onCollectionDeleted} />
+        <SourcesSection key={project.name} collection={project.name} storeLabel={project.store.label} onAdd={() => setSection("add")} onCollectionDeleted={onCollectionDeleted} />
       ) : null}
       {section === "search" ? <SearchSection key={project.name} collection={project.name} /> : null}
       {section === "add" ? <AddSources active={project.name} onJob={onJob} /> : null}

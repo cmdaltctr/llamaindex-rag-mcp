@@ -77,11 +77,25 @@ def _stored_profile(store: Any, collection: str) -> str | None:
     return profile if isinstance(profile, str) else None
 
 
+def _store_info() -> dict[str, str]:
+    """Return the configured backend name and its registry label.
+
+    Only these two registry values are returned, so paths, URIs and cloud
+    credentials never reach the response.
+    """
+    from ... import compose
+    from ...core.vectordb import registry
+
+    name = compose.configured_vector_store()
+    return {"name": name, "label": registry.describe(name)["label"]}
+
+
 def _collections_with_profiles(store: Any) -> list[dict[str, Any]]:
     from ...core.retrieval import list_collections as core_list_collections
 
     rows = core_list_collections(store)
-    return [{**row, "profile": _stored_profile(store, row["name"])} for row in rows]
+    info = _store_info()
+    return [{**row, "profile": _stored_profile(store, row["name"]), "store": info} for row in rows]
 
 
 @router.get("/collections", operation_id="listCollections")

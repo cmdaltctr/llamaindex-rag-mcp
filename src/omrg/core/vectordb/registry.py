@@ -40,10 +40,16 @@ def register(
     native_sparse_probe: Any = None,
     summary: str | None = None,
     cross_process_writes_safe: bool = False,
+    label: str | None = None,
 ) -> None:
-    """Register a vector-store backend."""
+    """Register a vector-store backend.
+
+    ``label`` is the human-readable name shown by transports (for example
+    ``LanceDB``); it defaults to *name*.
+    """
     _registry[name] = import_path
     _metadata[name] = {
+        "label": label or name,
         "requires": dict(requires or {}),
         "extra": extra,
         "install_hint": install_hint,
@@ -62,6 +68,7 @@ def describe(name: str) -> dict[str, Any]:
         raise KeyError(f"Unknown vector store {name!r}. Available: {sorted(_registry)}")
     meta = _metadata.get(name, {})
     return {
+        "label": meta.get("label", name),
         "requires": dict(meta.get("requires", {})),
         "extra": meta.get("extra"),
         "install_hint": meta.get("install_hint"),
@@ -187,6 +194,7 @@ register(
     # register a real probe here without pipeline changes.
     native_sparse_probe=None,
     summary="omrg.core.vectordb.summary:chroma_storage_summary",
+    label="ChromaDB",
 )
 register(
     "lancedb",
@@ -200,6 +208,7 @@ register(
     # Chroma-specific detect_native_sparse_capability route.
     native_sparse_probe="omrg.core.vectordb.lance_fts:probe_native_fts",
     summary="omrg.core.vectordb.summary:lancedb_storage_summary",
+    label="LanceDB",
     # Cross-process concurrent writes are UNVERIFIED for both backends.
     # No backend may claim safety without a two-process, two-collection
     # concurrent-write experiment (add-per-collection-persist-dirs).

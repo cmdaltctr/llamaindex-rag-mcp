@@ -14,6 +14,10 @@ import { usePreviewConfirm } from "./usePreviewConfirm";
 const TIMING: Record<string, string> = { "query-time": "Next query", "ingest-time": "Next ingestion only" };
 const PROFILES: readonly Profile[] = ["documents", "codebase"];
 
+function selectable(stored: string | null): Profile | null {
+  return PROFILES.find((name) => name === stored) ?? null;
+}
+
 interface ProfilePanelProps {
   collection: string;
   /** Profile stored in the collection metadata, from the collection list. */
@@ -26,12 +30,14 @@ interface ProfilePanelProps {
  */
 export function ProfilePanel({ collection, storedProfile }: ProfilePanelProps) {
   const selectId = useId();
-  const [profile, setProfile] = useState<Profile>("documents");
+  // Start on the stored profile when it is selectable, else on no selection,
+  // so the list never suggests a profile that is not stored.
+  const [profile, setProfile] = useState<Profile | null>(selectable(storedProfile));
   const [open, setOpen] = useState(false);
   const change = useChangeProfile(collection);
   const flow = usePreviewConfirm(
-    async () => (await change.mutateAsync({ profile, step: { preview: true } })) as ProfilePreview,
-    async (token) => (await change.mutateAsync({ profile, step: { token } })) as ProfileChangeResult,
+    async () => (await change.mutateAsync({ profile: profile as Profile, step: { preview: true } })) as ProfilePreview,
+    async (token) => (await change.mutateAsync({ profile: profile as Profile, step: { token } })) as ProfileChangeResult,
   );
 
   function start() {
@@ -43,20 +49,15 @@ export function ProfilePanel({ collection, storedProfile }: ProfilePanelProps) {
     <section aria-label="Collection profile" className="flex flex-col gap-3">
       <h2 className="text-section-title font-semibold">Collection profile</h2>
       <p className="flex flex-wrap items-center gap-2">
-        {storedProfile !== null ? (
-          <>
-            Stored profile <Badge variant="hue">{storedProfile}</Badge>
-          </>
-        ) : (
-          "No profile is stored for this collection."
-        )}
+        Stored profile
+        {storedProfile !== null ? <Badge variant="hue">{storedProfile}</Badge> : <Badge variant="neutral">No profile</Badge>}
       </p>
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex w-48 max-w-full flex-col gap-1.5">
           <Label htmlFor={selectId}>New profile</Label>
-          <Select value={profile} disabled={open} onValueChange={(value) => setProfile(value as Profile)}>
+          <Select value={profile ?? ""} disabled={open} onValueChange={(value) => setProfile(value as Profile)}>
             <SelectTrigger id={selectId}>
-              <SelectValue />
+              <SelectValue placeholder="Choose a profile" />
             </SelectTrigger>
             <SelectContent>
               {PROFILES.map((name) => (
@@ -67,7 +68,7 @@ export function ProfilePanel({ collection, storedProfile }: ProfilePanelProps) {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={start} disabled={open}>
+        <Button onClick={start} disabled={open || profile === null}>
           Preview profile change
         </Button>
       </div>

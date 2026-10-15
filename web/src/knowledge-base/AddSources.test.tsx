@@ -174,7 +174,7 @@ describe("ingest progress across the workspace", () => {
   it("updates the Home counts when a job ends after the user has left the Knowledge Base", async () => {
     let finished = false;
     const { user } = await openAdd({
-      "GET /v1/collections": () => [{ name: "documents", document_count: finished ? 4 : 3, chunk_count: finished ? 20 : 12, profile: "documents" }],
+      "GET /v1/collections": () => [{ name: "documents", document_count: finished ? 4 : 3, chunk_count: finished ? 20 : 12, profile: "documents", store: { name: "lancedb", label: "LanceDB" } }],
       "POST /v1/ingestions": () => queued("j8"),
       "GET /v1/jobs/j8": () => ({ ...JOB, job_id: "j8", status: finished ? "completed" : "running" }),
     });

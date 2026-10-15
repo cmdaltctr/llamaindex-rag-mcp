@@ -560,8 +560,9 @@ paths:
       operationId: listCollections
       summary: List all collections
       description: >
-        Returns all collections with document and chunk counts and the
-        stored profile name (or `null`).
+        Returns all collections with document and chunk counts, the
+        stored profile name (or `null`) and the vector database that
+        holds them.
       security:
         - sessionCookie: [read]
         - bearerToken: [read]
@@ -3713,7 +3714,7 @@ components:
     CollectionInfo:
       type: object
       additionalProperties: false
-      required: [name, document_count, chunk_count, profile]
+      required: [name, document_count, chunk_count, profile, store]
       properties:
         name:
           type: string
@@ -3727,6 +3728,23 @@ components:
             Profile name stored in the collection metadata (for example
             `documents` or `codebase`), or `null` when no profile tag is
             stored or the metadata cannot be read.
+        store:
+          $ref: "#/components/schemas/VectorStoreInfo"
+
+    VectorStoreInfo:
+      type: object
+      additionalProperties: false
+      required: [name, label]
+      description: >
+        The vector database that holds the collection. It carries no path,
+        URI, tenant or credential.
+      properties:
+        name:
+          type: string
+          description: Registered backend name, for example `lancedb` or `chroma`.
+        label:
+          type: string
+          description: Human-readable name from the vector-store registry, for example `LanceDB`.
 
     # ── Chunk inspection ───────────────────────────────────────────────
     ChunkView:

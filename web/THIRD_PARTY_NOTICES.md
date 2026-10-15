@@ -354,3 +354,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## Screenshots
 
 The images in `docs/guides/images/web-workspace/` are captures of this application with synthetic sources. They contain no third-party material other than the bundled packages above.
+
+## Vector database logos
+
+Used by: `web/public/integrations/vector-stores/lancedb.png` and `web/public/integrations/vector-stores/chroma.png`, shown by `web/src/components/StoreBadge.tsx`.
+
+The logos belong to the LanceDB and Chroma projects. The workspace shows them only to name the database that holds a collection. The files are used unchanged. Their trademarks stay with their owners, and their use here does not imply endorsement.

@@ -122,7 +122,7 @@ describe("engine status pill", () => {
   });
 
   it("uses the singular for one collection", async () => {
-    start("", documentsServer({ "GET /v1/collections": () => [{ name: "a", document_count: 1, chunk_count: 1, profile: null }] }));
+    start("", documentsServer({ "GET /v1/collections": () => [{ name: "a", document_count: 1, chunk_count: 1, profile: null, store: { name: "lancedb", label: "LanceDB" } }] }));
     expect(await screen.findByText("1 collection")).toBeInTheDocument();
   });
 

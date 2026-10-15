@@ -84,7 +84,7 @@ describe("project routes", () => {
     let fail = true;
     startApp(
       "#/knowledge-base/documents",
-      documentsServer({ "GET /v1/collections": () => (fail ? json({ status: "error", message: "Unexpected token <" }, 500) : [{ name: "documents", document_count: 3, chunk_count: 12, profile: null }]) }),
+      documentsServer({ "GET /v1/collections": () => (fail ? json({ status: "error", message: "Unexpected token <" }, 500) : [{ name: "documents", document_count: 3, chunk_count: 12, profile: null, store: { name: "lancedb", label: "LanceDB" } }]) }),
     );
     const alert = await screen.findByRole("alert");
     expect(alert).not.toHaveTextContent("Unexpected token");
@@ -114,6 +114,25 @@ describe("sources", () => {
     startApp("#/knowledge-base/documents");
     await sourcesTable();
     expect(screen.getByText("documents", { selector: "[data-slot=badge]" })).toBeInTheDocument();
+  });
+
+  it("shows the vector database in the header with its logo and in each project chip", async () => {
+    startApp("#/knowledge-base/documents");
+    await sourcesTable();
+    const header = screen.getByRole("heading", { level: 2, name: "documents" }).parentElement!;
+    expect(within(header).getByText("LanceDB")).toBeInTheDocument();
+    expect(header.querySelector("img[src$='integrations/vector-stores/lancedb.png']")).not.toBeNull();
+    const chips = within(screen.getByRole("list", { name: "Projects" })).getAllByRole("button");
+    for (const chip of chips) expect(chip).toHaveTextContent("LanceDB");
+    expect(screen.getByRole("list", { name: "Projects" }).querySelector("img")).toBeNull();
+  });
+
+  it("names the vector database in a Database column of the sources table", async () => {
+    startApp("#/knowledge-base/documents");
+    const table = await sourcesTable();
+    expect(within(table).getByRole("columnheader", { name: "Database" })).toBeInTheDocument();
+    for (const row of within(table).getAllByRole("row").slice(1)) expect(row).toHaveTextContent("LanceDB");
+    expect(table.querySelector("img")).toBeNull();
   });
 
   it("shows one section at a time, switched by chips", async () => {

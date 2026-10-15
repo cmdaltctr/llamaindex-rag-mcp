@@ -14,7 +14,7 @@ export interface FakeServerOptions {
   revisions?: RevisionRecord[];
   /** Runs that exist before the test starts, newest first. */
   runs?: Partial<RunDetailRecord>[];
-  collections?: { name: string; document_count: number; chunk_count: number; profile: string | null }[];
+  collections?: { name: string; document_count: number; chunk_count: number; profile: string | null; store: { name: string; label: string } }[];
   validate?: (body: { document: GraphDocument; inputs?: Record<string, unknown> }) => Response;
   /** Answers `GET /v1/pipeline-templates`; omitted means the route is missing (404). */
   templates?: unknown[];

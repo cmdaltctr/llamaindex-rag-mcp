@@ -12,12 +12,14 @@ import { SourceTable } from "./SourceTable";
 
 interface SourcesSectionProps {
   collection: string;
+  /** Display label of the vector database, shown in the table's Database column. */
+  storeLabel: string;
   onAdd: () => void;
   onCollectionDeleted: () => void;
 }
 
 /** The source table of one collection, with deletion of a source or the whole collection. */
-export function SourcesSection({ collection, onAdd, onCollectionDeleted }: SourcesSectionProps) {
+export function SourcesSection({ collection, storeLabel, onAdd, onCollectionDeleted }: SourcesSectionProps) {
   const query = useQuery(documentsQuery(useApi(), collection));
   const [deletion, setDeletion] = useState<DeleteTarget | null>(null);
   const sources: DocumentInfo[] | undefined = query.data;
@@ -53,7 +55,7 @@ export function SourcesSection({ collection, onAdd, onCollectionDeleted }: Sourc
           }
         />
       ) : (
-        <SourceTable collection={collection} sources={sources} onDelete={(source) => setDeletion({ kind: "source", source })} />
+        <SourceTable collection={collection} storeLabel={storeLabel} sources={sources} onDelete={(source) => setDeletion({ kind: "source", source })} />
       )}
       {deletion !== null ? (
         <DeleteDialog

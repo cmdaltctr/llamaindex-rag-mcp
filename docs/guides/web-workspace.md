@@ -312,9 +312,9 @@ Every area has its own address. Back and forward move between them. An address t
 
 | Area | Address | What you can do |
 |---|---|---|
-| Home | `#/home` | See every project as a card with its name, profile and counts. Open a project. |
+| Home | `#/home` | See every project as a card with its name, profile, counts and database. Open a project. |
 | Chat | `#/chat/<collection>` | Ask a knowledge base a question. Read the answer, its citations and the evidence. Each question answers on its own. |
-| Knowledge Base | `#/knowledge-base/<collection>` | List sources, upload and ingest files, ingest from an approved folder, search, preview and confirm a deletion or a profile change. The upload panel shows the server's per-file limit and refuses a larger file before it is sent. Change the limit in Settings › Workspace. |
+| Knowledge Base | `#/knowledge-base/<collection>` | See the database that holds the project (logo and name in the header, name in the project list and in the Sources table). List sources, upload and ingest files, ingest from an approved folder, search, preview and confirm a deletion or a profile change. The upload panel shows the server's per-file limit and refuses a larger file before it is sent. Change the limit in Settings › Workspace. |
 | Studio | `#/studio`, `#/studio/<pipeline-id>` | Start a pipeline from a template, a profile preset or an empty graph. Add operations, connect ports, save a revision, validate, run and cancel. |
 | Experiments | `#/experiments`, `#/experiments/runs/<run-id>` | Create experiment folders and sub-experiments, issue a bound credential, register and open the notebook editor, and read pipeline runs. A preview that is cut offers Open full output, which shows the redacted value as text and downloads it. |
 | Integrations | `#/integrations` | See which optional parts are installed and copy the command that installs the rest. The page never installs anything. |
@@ -336,6 +336,19 @@ The screenshots show a local server with small Markdown sources. The run output 
 ![Studio canvas with the Search template](images/web-workspace/studio-canvas-light-1280.png)
 
 On a phone, the areas use one column. Two examples at 390 px: [Home](images/web-workspace/home-light-390.png) and the [Studio canvas](images/web-workspace/studio-canvas-light-390.png).
+
+### Database and profile in the Knowledge Base
+
+Each collection lives in one vector database. The workspace shows it in four places:
+
+1. The project header shows the logo and the name, for example LanceDB.
+2. The project list and the Home card show the name only.
+3. The Sources table has a Database column with the name only.
+4. `GET /v1/collections` returns `store` for each collection, with `name` (for example `lancedb`) and `label` (for example `LanceDB`). It never returns a path, a tenant or a key.
+
+The label comes from the vector-store registry (`register(..., label=...)`). A backend without a label shows its registered name. The logo is a PNG in `web/public/integrations/vector-stores/`, named after the registered backend, for example `web/public/integrations/vector-stores/lancedb.png`. When the file is missing, the workspace shows the name only. To add a database, add its module, one `register()` call and one PNG.
+
+The Profile tab shows the stored profile as a badge. When a collection has no stored profile, the badge reads "No profile". The "New profile" list starts on the stored profile. When none is stored, it starts empty and "Preview profile change" stays disabled until you choose a profile.
 
 Keyboard use on the Studio canvas:
 

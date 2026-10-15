@@ -19,6 +19,13 @@ describe("Home", () => {
     expect(cards[1]).toHaveTextContent("No profile");
   });
 
+  it("names the vector database of each project as text", async () => {
+    startApp("#/home");
+    const list = await screen.findByRole("list", { name: "Projects" });
+    for (const card of within(list).getAllByRole("listitem")) expect(card).toHaveTextContent("LanceDB");
+    expect(list.querySelector("img")).toBeNull();
+  });
+
   it("opens the project in the Knowledge Base from the whole card", async () => {
     const user = userEvent.setup();
     startApp("#/home");
@@ -30,7 +37,7 @@ describe("Home", () => {
   });
 
   it("encodes a collection name in the link", async () => {
-    startApp("#/home", documentsServer({ "GET /v1/collections": () => [{ name: "research notes", document_count: 0, chunk_count: 0, profile: null }] }));
+    startApp("#/home", documentsServer({ "GET /v1/collections": () => [{ name: "research notes", document_count: 0, chunk_count: 0, profile: null, store: { name: "lancedb", label: "LanceDB" } }] }));
     expect(await screen.findByRole("link", { name: /research notes/ })).toHaveAttribute("href", "#/knowledge-base/research%20notes");
   });
 

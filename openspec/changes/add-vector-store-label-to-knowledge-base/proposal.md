@@ -11,7 +11,7 @@ The Knowledge Base does not say which vector database holds a project. LanceDB i
   - project header: logo and name, in a fixed-size box;
   - Home card and project chips: name only;
   - `SourceTable`: a new **Database** column, name only.
-- Logos live in `web/public/integrations/vector-stores/<name>.png`. The two supplied files are renamed from `.webp` to `.png` because they hold PNG data. A backend with no logo file shows its name only.
+- Logos live in `web/public/integrations/vector-stores/<name>.png`. Each file is named after the registered backend (`lancedb.png`, `chroma.png`). The supplied files change from `.webp` to `.png` because they hold PNG data. A backend with no logo file shows its name only.
 - The Profile tab pre-selects the stored profile when one exists, and starts with no selection when none exists. "Preview profile change" stays disabled until a profile is selected. The status line shows a badge in both cases, including the neutral "No profile" badge.
 - Docs (`docs/guides/web-workspace.md`, `docs/guides/mcp-tools.md` only if it lists the field, `openapi.yaml`) and a TDR record the behaviour.
 

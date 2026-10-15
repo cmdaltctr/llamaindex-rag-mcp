@@ -27,7 +27,7 @@ export function CollectionPicker({ label, collections, selected, onSelect, stack
           >
             <span className="truncate">{collection.name}</span>
             <span className="truncate text-meta font-normal text-muted-foreground">
-              {plural(collection.document_count, "document")}, {plural(collection.chunk_count, "chunk")}
+              {plural(collection.document_count, "document")}, {plural(collection.chunk_count, "chunk")} · {collection.store.label}
             </span>
           </Button>
         </li>

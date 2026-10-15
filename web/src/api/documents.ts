@@ -13,12 +13,19 @@ import { ApiError, ClientRefusal, type ApiClient, type CallOptions } from "./cli
 
 export type JsonObject = { [key: string]: unknown };
 
+/** The vector database behind a collection: registered backend name and its display label. */
+export interface VectorStoreInfo {
+  name: string;
+  label: string;
+}
+
 export interface CollectionInfo {
   name: string;
   document_count: number;
   chunk_count: number;
   /** Profile stored in the collection metadata; `null` when none is stored or it cannot be read. */
   profile: string | null;
+  store: VectorStoreInfo;
 }
 
 export interface SessionInfo {

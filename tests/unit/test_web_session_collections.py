@@ -82,3 +82,44 @@ def test_unreadable_collection_metadata_gives_null_profile(
         response = client.get("/v1/collections")
     assert response.status_code == 200, response.text
     assert response.json()[0]["profile"] is None
+
+
+@pytest.mark.parametrize(("adapter", "label"), [("lancedb", "LanceDB"), ("chroma", "ChromaDB")])
+def test_collections_name_the_configured_vector_store(
+    tmp_path: Path,
+    effective_settings: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    adapter: str,
+    label: str,
+) -> None:
+    """Spec: local-web-workspace, 'The collection list names the vector database'."""
+    monkeypatch.setattr("omrg.compose.configured_vector_store", lambda: adapter)
+    store = lance_store(tmp_path)
+    seed(store, "notes", str(tmp_path / "b.md"), 1)
+    app, policy = build_app(tmp_path, make_engine(store, effective_settings()))
+    with TestClient(app, base_url=BASE) as client:
+        login(client, policy)
+        response = client.get("/v1/collections")
+    assert response.status_code == 200, response.text
+    assert response.json()[0]["store"] == {"name": adapter, "label": label}
+    assert_conforms("/collections", "get", 200, response.json())
+
+
+def test_store_field_carries_no_cloud_details(
+    tmp_path: Path, effective_settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Spec scenario 'Cloud settings are configured': no tenant, database or key."""
+    monkeypatch.setenv("CHROMA_MODE", "cloud")
+    monkeypatch.setenv("CHROMA_CLOUD_TENANT", "tenant-secret-xyz")
+    monkeypatch.setenv("CHROMA_CLOUD_DATABASE", "database-secret-xyz")
+    monkeypatch.setenv("CHROMA_CLOUD_API_KEY", "ck-secret-key-xyz")
+    monkeypatch.setattr("omrg.compose.configured_vector_store", lambda: "chroma")
+    store = lance_store(tmp_path)
+    seed(store, "notes", str(tmp_path / "b.md"), 1)
+    app, policy = build_app(tmp_path, make_engine(store, effective_settings()))
+    with TestClient(app, base_url=BASE) as client:
+        login(client, policy)
+        response = client.get("/v1/collections")
+    assert response.status_code == 200, response.text
+    assert set(response.json()[0]["store"]) == {"name", "label"}
+    assert "secret" not in response.text

@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import { documentsServer } from "../test/fakeDocumentsServer";
 import { startApp } from "../test/startApp";
 
+const LANCE = { name: "lancedb", label: "LanceDB" };
+
 function profilePanel() {
   return screen.getByRole("region", { name: "Collection profile" });
 }
@@ -17,8 +19,8 @@ describe("stored collection profile", () => {
   it("shows the stored profile of the open project from the collection list", async () => {
     const server = documentsServer({
       "GET /v1/collections": () => [
-        { name: "documents", document_count: 3, chunk_count: 12, profile: "codebase" },
-        { name: "notes", document_count: 1, chunk_count: 2, profile: null },
+        { name: "documents", document_count: 3, chunk_count: 12, profile: "codebase", store: { name: "lancedb", label: "LanceDB" } },
+        { name: "notes", document_count: 1, chunk_count: 2, profile: null, store: { name: "lancedb", label: "LanceDB" } },
       ],
     });
     const user = userEvent.setup();
@@ -27,13 +29,53 @@ describe("stored collection profile", () => {
     const panel = await openProfile(user);
     expect(within(panel).getByText("codebase", { selector: "[data-slot=badge]" })).toBeInTheDocument();
     await user.click(within(screen.getByRole("list", { name: "Projects" })).getByRole("button", { name: /notes/ }));
-    expect(await within(profilePanel()).findByText("No profile is stored for this collection.")).toBeInTheDocument();
+    expect(await within(profilePanel()).findByText("No profile", { selector: "[data-slot=badge]" })).toBeInTheDocument();
+  });
+
+  it("pre-selects the stored profile in the New profile list", async () => {
+    const server = documentsServer({
+      "GET /v1/collections": () => [{ name: "documents", document_count: 3, chunk_count: 12, profile: "codebase", store: LANCE }],
+    });
+    const user = userEvent.setup();
+    startApp("#/knowledge-base/documents", server);
+    const panel = await openProfile(user);
+    expect(within(panel).getByRole("combobox", { name: "New profile" })).toHaveTextContent("codebase");
+    expect(within(panel).getByRole("button", { name: "Preview profile change" })).toBeEnabled();
+  });
+
+  it("starts with no selection and a disabled preview when no profile is stored", async () => {
+    const server = documentsServer({
+      "GET /v1/collections": () => [{ name: "documents", document_count: 3, chunk_count: 12, profile: null, store: LANCE }],
+    });
+    const user = userEvent.setup();
+    startApp("#/knowledge-base/documents", server);
+    const panel = await openProfile(user);
+    expect(within(panel).getByText("No profile", { selector: "[data-slot=badge]" })).toBeInTheDocument();
+    const list = within(panel).getByRole("combobox", { name: "New profile" });
+    expect(list).toHaveTextContent("Choose a profile");
+    const preview = within(panel).getByRole("button", { name: "Preview profile change" });
+    expect(preview).toBeDisabled();
+    await user.click(list);
+    await user.click(await screen.findByRole("option", { name: "documents" }));
+    expect(preview).toBeEnabled();
+  });
+
+  it("shows a stored tag outside the list as a badge and leaves the list empty", async () => {
+    const server = documentsServer({
+      "GET /v1/collections": () => [{ name: "documents", document_count: 3, chunk_count: 12, profile: "legacy", store: LANCE }],
+    });
+    const user = userEvent.setup();
+    startApp("#/knowledge-base/documents", server);
+    const panel = await openProfile(user);
+    expect(within(panel).getByText("legacy", { selector: "[data-slot=badge]" })).toBeInTheDocument();
+    expect(within(panel).getByRole("combobox", { name: "New profile" })).toHaveTextContent("Choose a profile");
+    expect(within(panel).getByRole("button", { name: "Preview profile change" })).toBeDisabled();
   });
 
   it("reloads the stored profile after a confirmed change", async () => {
     let stored = "documents";
     const server = documentsServer({
-      "GET /v1/collections": () => [{ name: "documents", document_count: 3, chunk_count: 12, profile: stored }],
+      "GET /v1/collections": () => [{ name: "documents", document_count: 3, chunk_count: 12, profile: stored, store: { name: "lancedb", label: "LanceDB" } }],
       "PATCH /v1/collections/documents/profile": (body) => {
         if (!body.confirm) {
           return {
