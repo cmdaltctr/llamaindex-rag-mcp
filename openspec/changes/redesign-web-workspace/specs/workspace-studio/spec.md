@@ -13,12 +13,26 @@ The Studio view SHALL list the engine pipeline templates from `listPipelineTempl
 #### Scenario: Gallery contents
 
 - **WHEN** the engine offers the ingestion, search and answer templates and one saved pipeline exists
-- **THEN** the gallery MUST show the three template cards, the documents and codebase preset cards, and the saved pipeline card
+- **THEN** the gallery MUST show the three template cards, the empty pipeline card, the documents and codebase preset cards, and the saved pipeline card
 
 #### Scenario: Start from a profile preset
 
 - **WHEN** the user creates a pipeline from the documents preset card
 - **THEN** a new pipeline MUST exist on the server and its canvas sub-page MUST open seeded from the search template with the documents profile's retrieval defaults
+
+### Requirement: The gallery offers an empty pipeline
+
+The gallery SHALL offer an "Empty pipeline" card that needs no template. Creating from it SHALL create the pipeline on the server and open its canvas sub-page with an empty graph. The card SHALL stay available when the templates cannot be loaded.
+
+#### Scenario: Start from nothing
+
+- **WHEN** the user creates a pipeline from the empty pipeline card
+- **THEN** a new pipeline MUST exist on the server and its canvas sub-page MUST open with an empty graph and the operation catalogue available
+
+#### Scenario: Templates unavailable
+
+- **WHEN** the template listing fails
+- **THEN** the gallery MUST show one friendly failure with a Retry action and the empty pipeline card MUST remain enabled
 
 ### Requirement: The canvas sub-page gives the graph the full width
 

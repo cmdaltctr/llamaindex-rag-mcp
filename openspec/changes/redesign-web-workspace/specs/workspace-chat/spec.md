@@ -8,12 +8,17 @@ A chat view that answers each question from a selected knowledge base, with cita
 
 ### Requirement: The user chats with a selected knowledge base
 
-The Chat view SHALL present a transcript column and a composer, and a right-hand knowledge base panel listing collections with their counts. The selected collection SHALL be the collection segment of the `#/chat/<collection>` route; selecting another collection SHALL rewrite the route. Opening `#/chat` without a collection SHALL select the last-used collection when the server still lists it, and otherwise SHALL ask the user to choose one. Sending a message SHALL append the user message and call `answerCollection` on the selected collection with the message text, then append the assistant turn. The view SHALL state that each question answers on its own.
+The Chat view SHALL present a transcript column with the composer docked at its bottom edge, and a knowledge base panel listing collections with their counts. The panel SHALL sit to the right of the transcript on wide screens and above it on narrow screens. The selected collection SHALL be the collection segment of the `#/chat/<collection>` route; selecting another collection SHALL rewrite the route. Opening `#/chat` without a collection SHALL select the last-used collection when the server still lists it, and otherwise SHALL ask the user to choose one. Sending a message SHALL append the user message and call `answerCollection` on the selected collection with the message text, then append the assistant turn. The view SHALL state that each question answers on its own.
 
 #### Scenario: Ask a question
 
 - **WHEN** a knowledge base is selected and the user sends a question
 - **THEN** the transcript MUST show the user message followed by the assistant answer for that question
+
+#### Scenario: Composer stays docked
+
+- **WHEN** the transcript is shorter than the screen, or long enough to scroll
+- **THEN** the composer MUST stay at the bottom edge of the view, and on a narrow screen the knowledge base panel MUST appear above the transcript
 
 #### Scenario: Switch knowledge base mid-conversation
 

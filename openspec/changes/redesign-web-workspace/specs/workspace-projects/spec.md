@@ -48,6 +48,16 @@ The Knowledge Base view SHALL upload selected files through the managed upload e
 - **WHEN** the user uploads an accepted file into the active project
 - **THEN** the upload MUST complete, an ingest job MUST be submitted for the managed path, and its status MUST be shown in the view
 
+#### Scenario: A finished job shows what it indexed
+
+- **WHEN** an ingest job the server marks completed carries a result in which every file failed to index
+- **THEN** the view MUST NOT show it as completed, MUST show that nothing was indexed with the number of files that failed and a fixed hint for the failing stage, and MUST NOT show file paths or exception text
+
+#### Scenario: A job with some failed files
+
+- **WHEN** an ingest job completes and at least one file, but not every file, failed to index
+- **THEN** the view MUST show it as completed with errors and the number of files that failed
+
 #### Scenario: Oversized file is refused before upload
 
 - **WHEN** the user selects a file larger than the configured per-file limit

@@ -63,6 +63,7 @@ Press Ctrl+C to stop.
 | `--host ADDR` | `127.0.0.1` | Loopback address only: `127.0.0.1`, `::1` or `localhost`. |
 | `--root DIR` | none | Approve a directory for file access. Repeat the option for more directories. |
 | `--experiment-root DIR` | none | Approve a directory below which you can register experiment workspaces. Repeat the option for more directories. |
+| `--max-upload-mib MIB` | saved limit, else `50` | Per-file upload limit in whole MiB, 1 to 2048. Also read from `WEB_MAX_UPLOAD_MIB`. It locks the limit in Settings for this run. |
 <!-- /web-options -->
 
 Rules for the options:
@@ -80,7 +81,7 @@ At startup the server takes a lock on the workspace. A second `omrg web` with th
 Another OMRG web server is using the workspace <path>. Stop it, or start this one with a different --workspace.
 ```
 
-`GET /v1/session` returns the workspace path that the server uses, in the `workspace` field. The Settings view shows it.
+`GET /v1/session` returns the workspace path that the server uses, in the `workspace` field. The Workspace section of Settings shows it.
 
 ## Sign in
 
@@ -125,7 +126,7 @@ These scopes are session only. A bearer credential cannot hold them:
 |---|---|
 | `files` | Roots, uploads, ingestion jobs and codebase-map jobs. |
 | `credentials` | Issue, list and revoke bearer credentials. |
-| `manage` | Deletion, profile change, workspace cleanup and experiment registration. |
+| `manage` | Deletion, profile change, workspace cleanup, experiment folders and registration, connection tests and the server log. |
 | `plugins` | Notebook plugin registration, recheck and editor launch. |
 
 A credential that you issue with `experiment_context` is bound to that experiment. It runs graphs only in that experiment and cannot read or change the live library. See [Notebooks](notebooks.md).
@@ -160,13 +161,36 @@ Uploads go into the managed `uploads/` directory of the workspace.
 
 Upload rules:
 
-- The limit is 50 MiB for each file. The server also counts bytes while it receives them.
+- The limit is 50 MiB for each file by default. The server also counts bytes while it receives them. To change the limit, see [Set the upload limit](#set-the-upload-limit).
 - The file name must be a plain name. Separators, control characters, hidden names and URL schemes get 400.
 - The extension must be one that OMRG can ingest. Archives and other types get 415. A file over the limit gets 413.
 - The server writes to a private partial file first. A failed or cancelled upload leaves no partial file.
 - The response gives the upload `id`, `name`, `size` and `sha256`. It never gives the server path.
 
 The initial release does not ingest from URLs.
+
+### Set the upload limit
+
+The per-file limit is a workspace setting, from 1 to 2048 MiB. The server uses the first value in this order:
+
+1. `omrg web --max-upload-mib <n>`.
+2. `WEB_MAX_UPLOAD_MIB` in the environment or `.env`.
+3. The value saved in Settings > Workspace.
+4. 50 MiB.
+
+`GET /v1/settings/upload-limit` (`read`) returns the limit in force:
+
+```json
+{"status": "ok", "max_bytes": 52428800, "source": "default", "saved_mib": null,
+ "default_mib": 50, "min_mib": 1, "max_mib": 2048}
+```
+
+`source` is `launch`, `saved` or `default`. To change the limit, send `PUT /v1/settings/upload-limit` with `{"max_mib": 200}`. To return to the default, send `{"max_mib": null}`. This request needs the browser session.
+
+- The server saves the value first. Then it applies the value to new uploads at once, with no restart.
+- An upload in progress keeps the limit it started with.
+- A value that is not a whole number from 1 to 2048, or an extra field, gets 422. Nothing changes.
+- When a launch option set the limit, the request gets 409 and nothing changes. Remove the option and restart to change the limit in Settings.
 
 ## Jobs and graph runs
 
@@ -192,6 +216,16 @@ The server stores each event before a client sees it. Each event has a sequence 
 The browser removes duplicate events by sequence number. If the stream fails, the browser polls.
 
 Closing a stream does not cancel the run. Only the cancel route cancels a run.
+
+### Read full run output
+
+An event, status or node summary larger than 16 KiB is cut. The server keeps the full value, with credentials and raw vectors removed, in a private artefact. The cut summary has `truncated: true` and `artefact_ref: "<run_id>/<name>.json"`.
+
+1. Take `<name>` from `artefact_ref`. Remove the run id and `.json`.
+2. Send `GET /v1/runs/{run_id}/artefacts/{name}`.
+3. Read the full value in `value`.
+
+The route has the same access rule as `GET /v1/runs/{run_id}`. A run that you cannot read gets 404 `Unknown run.`. An unknown name gets 404 `This run has no such output.`. A name that is not one plain path segment gets 400, and the server reads no file.
 
 ## Confirm destructive actions
 
@@ -228,6 +262,22 @@ Paths outside `/v1` belong to the application. A missing asset file gets a plain
 
 The server can serve MCP at `/mcp`. It is off by default. Turn it on with `PUT /v1/mcp` (Settings > MCP). `POST /v1/mcp/token` creates or rotates the one token. `DELETE /v1/mcp/token` revokes it. `PUT /v1/settings/web-port` saves the port for the next launch. These changes need the browser session. Client set-up and the request checks: [MCP tools](mcp-tools.md#connect-a-client).
 
+## Integrations, connections and the server log
+
+These routes show the state of the running server. They change no setting and install no package.
+
+| Route | Scope | Returns |
+|---|---|---|
+| `GET /v1/integrations` | `read` | One entry for each installable extra and for Magika. `availability` is `available`, `not-installed` or `unknown` (a probe failed). Each entry has copy-ready `install_command` and `pip_command` values. |
+| `GET /v1/connections` | `read` | `config_dir` (the server working directory, where the settings read `.env`) and one entry each for `ollama`, `llamacpp` and `openrouter`: endpoint URLs, model names, `key_set` and the roles that use the provider. The key value is never returned. A change to `.env` needs a server restart. |
+| `POST /v1/connections/{provider}/test` | `manage` | `{reachable, reason}` after one model-list request with a 5-second timeout. `reason` is `refused`, `timeout`, `unauthorised`, `http-<status>` or `not-configured`. No response body or error text is returned. |
+| `GET /v1/logs?after=<seq>` | `manage` | The buffered log records after a sequence. |
+| `GET /v1/logs/stream` | `manage` | The same records as server-sent events, with replay after `Last-Event-ID` or `?after=`. The stream ends with `server.closing`. |
+
+The server keeps the last 1,000 log records in memory and writes no log file. The filter that removes provider keys and credentials runs before a record is stored.
+
+`POST /v1/experiment-folders` (scope `manage`) creates a directory below an approved experiment root. `GET /v1/experiments` returns the folder tree of each root in `folders`.
+
 ## Stop the server
 
 Press Ctrl+C in the terminal that runs `omrg web`. The server then:
@@ -244,39 +294,44 @@ If the process stops without this sequence, for example after a crash, unfinishe
 
 ## Screens
 
-The application has seven views. Use the navigation on the left to open a view. The theme control at the top selects System, Light or Dark.
+The workspace has seven areas. Use the navigation on the left to open an area. Under 768 px the navigation becomes one row of icons under the top bar. The top bar shows the collection count, a theme control that selects System, Light or Dark, and one button that switches between Light and Dark.
 
-The screenshots below show an offline server with synthetic Markdown sources, one of them Arabic prose with English identifiers. The Canvas shows the Search template after a rewiring: the rerank node is removed and a sparse branch joins the dense branch at a rank-fusion node. Each node shows the state from the finished run.
+Every area has its own address. Back and forward move between them. An address that the app does not know opens Home.
 
-![Canvas with a rewired Search graph and its finished run](images/web-workspace/canvas-light-1280.png)
+| Area | Address | What you can do |
+|---|---|---|
+| Home | `#/home` | See every project as a card with its name, profile and counts. Open a project. |
+| Chat | `#/chat/<collection>` | Ask a knowledge base a question. Read the answer, its citations and the evidence. Each question answers on its own. |
+| Knowledge Base | `#/knowledge-base/<collection>` | List sources, upload and ingest files, ingest from an approved folder, search, preview and confirm a deletion or a profile change. The upload panel shows the server's per-file limit and refuses a larger file before it is sent. Change the limit in Settings › Workspace. |
+| Studio | `#/studio`, `#/studio/<pipeline-id>` | Start a pipeline from a template, a profile preset or an empty graph. Add operations, connect ports, save a revision, validate, run and cancel. |
+| Experiments | `#/experiments`, `#/experiments/runs/<run-id>` | Create experiment folders and sub-experiments, issue a bound credential, register and open the notebook editor, and read pipeline runs. A preview that is cut offers Open full output, which shows the redacted value as text and downloads it. |
+| Integrations | `#/integrations` | See which optional parts are installed and copy the command that installs the rest. The page never installs anything. |
+| Settings | `#/settings` | Read the provider connections and test them, read the server log, copy the MCP client configuration, manage MCP access over HTTP, and set the per-file upload limit. |
 
-| View | What you can do | Light | Dark |
-|---|---|---|---|
-| Canvas | Start from a template, add operations, connect ports, save a revision, validate, run and cancel. | [image](images/web-workspace/canvas-light-1280.png) | [image](images/web-workspace/canvas-dark-1280.png) |
-| Runs | Read the admitted snapshot, replay events, inspect each node and open stored evidence. | [image](images/web-workspace/runs-detail-light-1280.png) | [image](images/web-workspace/runs-detail-dark-1280.png) |
-| Runs evidence | Read ranked rows with their score kind and open the full stored chunk. | [image](images/web-workspace/runs-evidence-light-1280.png) | [image](images/web-workspace/runs-evidence-dark-1280.png) |
-| Library | List sources, upload and ingest files, preview and confirm deletion or a profile change. | [image](images/web-workspace/library-light-1280.png) | [image](images/web-workspace/library-dark-1280.png) |
-| Search | Search a collection and open a stored chunk with its neighbours. | [image](images/web-workspace/search-light-1280.png) | [image](images/web-workspace/search-dark-1280.png) |
-| Ask | Ask a question and check the citations and the evidence given to the model. | [image](images/web-workspace/ask-light-1280.png) | [image](images/web-workspace/ask-dark-1280.png) |
-| Experiments | Register an experiment workspace, issue a bound credential and see experiment runs. | [image](images/web-workspace/experiments-light-1280.png) | [image](images/web-workspace/experiments-dark-1280.png) |
-| Settings | Read the workspace path, runtime capabilities and approved folders. Register a notebook plugin. | [image](images/web-workspace/settings-light-1280.png) | [image](images/web-workspace/settings-dark-1280.png) |
+The screenshots show a local server with small Markdown sources. The run output screenshot shows a search result passage that is longer than the 4 KiB preview.
 
-On narrow screens the views use one column. The navigation moves to the top and scrolls sideways.
+| Area | Light | Dark |
+|---|---|---|
+| Home | [image](images/web-workspace/home-light-1280.png) | [image](images/web-workspace/home-dark-1280.png) |
+| Chat | [image](images/web-workspace/chat-light-1280.png) | [image](images/web-workspace/chat-dark-1280.png) |
+| Studio gallery | [image](images/web-workspace/studio-gallery-light-1280.png) | [image](images/web-workspace/studio-gallery-dark-1280.png) |
+| Studio canvas | [image](images/web-workspace/studio-canvas-light-1280.png) | [image](images/web-workspace/studio-canvas-dark-1280.png) |
+| Experiments | [image](images/web-workspace/experiments-light-1280.png) | [image](images/web-workspace/experiments-dark-1280.png) |
+| Integrations | [image](images/web-workspace/integrations-light-1280.png) | [image](images/web-workspace/integrations-dark-1280.png) |
+| Run output | [image](images/web-workspace/run-output-light-1280.png) | [image](images/web-workspace/run-output-dark-1280.png) |
+| Settings › Workspace | [image](images/web-workspace/settings-light-1280.png) | [image](images/web-workspace/settings-dark-1280.png) |
 
-| Width | Canvas | Library | Runs |
-|---|---|---|---|
-| 768 px | [image](images/web-workspace/canvas-light-768.png) | [image](images/web-workspace/library-light-768.png) | [image](images/web-workspace/runs-light-768.png) |
-| 390 px | [image](images/web-workspace/canvas-light-390.png) | [image](images/web-workspace/library-light-390.png) | [image](images/web-workspace/runs-light-390.png) |
+![Studio canvas with the Search template](images/web-workspace/studio-canvas-light-1280.png)
 
-Keyboard use on the Canvas:
+On a phone, the areas use one column. Two examples at 390 px: [Home](images/web-workspace/home-light-390.png) and the [Studio canvas](images/web-workspace/studio-canvas-light-390.png).
+
+Keyboard use on the Studio canvas:
 
 1. Press Tab to move through the toolbar, the operation catalogue, the connections, the nodes and the controls.
 2. On a node, press Enter to select it. Use the arrow keys to move it. Press Delete to remove it.
 3. Use the Nodes and Connections lists and the Connect ports form to edit the graph without a pointer.
 
-A focused node or connection has a visible outline: [image](images/web-workspace/canvas-focus-light-1280.png).
-
-Image files: `docs/guides/images/web-workspace/canvas-light-1280.png`, `docs/guides/images/web-workspace/canvas-dark-1280.png`, `docs/guides/images/web-workspace/canvas-focus-light-1280.png`, `docs/guides/images/web-workspace/canvas-light-768.png`, `docs/guides/images/web-workspace/canvas-light-390.png`, `docs/guides/images/web-workspace/runs-detail-light-1280.png`, `docs/guides/images/web-workspace/runs-detail-dark-1280.png`, `docs/guides/images/web-workspace/runs-evidence-light-1280.png`, `docs/guides/images/web-workspace/runs-evidence-dark-1280.png`, `docs/guides/images/web-workspace/runs-light-768.png`, `docs/guides/images/web-workspace/runs-light-390.png`, `docs/guides/images/web-workspace/library-light-1280.png`, `docs/guides/images/web-workspace/library-dark-1280.png`, `docs/guides/images/web-workspace/library-light-768.png`, `docs/guides/images/web-workspace/library-light-390.png`, `docs/guides/images/web-workspace/search-light-1280.png`, `docs/guides/images/web-workspace/search-dark-1280.png`, `docs/guides/images/web-workspace/ask-light-1280.png`, `docs/guides/images/web-workspace/ask-dark-1280.png`, `docs/guides/images/web-workspace/experiments-light-1280.png`, `docs/guides/images/web-workspace/experiments-dark-1280.png`, `docs/guides/images/web-workspace/settings-light-1280.png`, `docs/guides/images/web-workspace/settings-dark-1280.png`. Third-party notices for the bundled application are in `web/THIRD_PARTY_NOTICES.md`.
+Third-party notices for the bundled application are in `web/THIRD_PARTY_NOTICES.md`.
 
 ## Optional parts
 
@@ -286,4 +341,4 @@ Image files: `docs/guides/images/web-workspace/canvas-light-1280.png`, `docs/gui
 | Experiment roots | Experiment workspaces and notebook runs | `omrg web --experiment-root DIR` |
 | marimo | The notebook editor | Outside OMRG. See [Notebooks](notebooks.md). |
 
-The workspace works without marimo. The Experiments view then shows how to install and register it.
+The workspace works without marimo. The Notebooks section of the Experiments area then shows how to install and register it.

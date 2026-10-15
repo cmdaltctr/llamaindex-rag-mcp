@@ -65,7 +65,16 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 4893
+_BASE_EXECUTED = 5109
+# The working-directory .env check adds 2 executed tests (5107 -> 5109).
+# Re-baselined at add-run-output-inspection-and-upload-limit: the run artefact
+# route, node summary artefacts, the upload-limit setting, routes and launch
+# option, and their contract checks add 49 executed tests (5058 -> 5107). 37 of
+# them need fastapi, 36 in two new modules (see _WEB_EXTRA_CASES below).
+# Re-baselined at redesign-web-workspace (backend tasks 5 to 7): the integration
+# catalogue, experiment folders, provider connections and server log routes
+# add 165 executed tests (4893 -> 5058). 70 of them are in four new
+# fastapi-dependent modules (see _WEB_EXTRA_CASES below).
 # Re-baselined at add-mcp-http-transport (2026-10-14): Engine client
 # completion and redaction, the MCP factory and context, workspace settings
 # and token storage, port selection, and the MCP-over-HTTP gate, end-to-end
@@ -279,8 +288,14 @@ if not _has_qwen_tokenizer:
 # the extra; without it each of the 28 modules reports one skip.
 # Re-measured at add-mcp-http-transport: six new fastapi-dependent modules add 58
 # cases (402 with the extra; 34 module skips without it).
-_WEB_EXTRA_CASES = 402
-_WEB_SKIP_DELTA = 34
+# Re-measured at redesign-web-workspace: four new fastapi-dependent modules
+# (integrations, experiment folders, connections, logs) add 70 cases (472
+# with the extra; 38 module skips without it).
+# Re-measured at add-run-output-inspection-and-upload-limit: two new
+# fastapi-dependent modules (run artefacts, upload limit) add 36 cases and the
+# MCP conformance module adds 1 (509 with the extra; 40 module skips without it).
+_WEB_EXTRA_CASES = 509
+_WEB_SKIP_DELTA = 40
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
     _BASE_SKIPPED += _WEB_SKIP_DELTA
