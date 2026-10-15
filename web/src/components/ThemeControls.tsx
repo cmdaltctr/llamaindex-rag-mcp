@@ -29,7 +29,7 @@ export function useEffectiveTheme(): "light" | "dark" {
   return preferences.theme;
 }
 
-/** The Select with System, Light and Dark. The top bar and Settings both show it. */
+/** The Select with System, Light and Dark. Settings shows it. */
 export function ThemeSelect() {
   const { preferences, setTheme } = usePreferences();
   return (

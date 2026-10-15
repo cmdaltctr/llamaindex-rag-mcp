@@ -1,5 +1,5 @@
 import { EngineStatus } from "./EngineStatus";
-import { ThemeSelect, ThemeToggle } from "./ThemeControls";
+import { ThemeToggle } from "./ThemeControls";
 
 export function TopBar() {
   return (
@@ -10,7 +10,6 @@ export function TopBar() {
       </p>
       <div className="flex items-center gap-2">
         <EngineStatus />
-        <ThemeSelect />
         <ThemeToggle />
       </div>
     </header>

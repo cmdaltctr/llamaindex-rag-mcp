@@ -2,6 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import App from "./App";
+import { NAV_COLLAPSED_KEY } from "./lib/navCollapsed";
 import { PREFERENCES_KEY } from "./lib/preferences";
 import { renderWithProviders } from "./test/providers";
 import { documentsServer, json } from "./test/fakeDocumentsServer";
@@ -132,23 +133,14 @@ describe("engine status pill", () => {
 });
 
 describe("theme controls", () => {
-  function themeSelect() {
-    return screen.getByRole("combobox", { name: "Theme" });
-  }
-
   it("follows the system theme by default", () => {
     start();
-    expect(themeSelect()).toHaveTextContent("System");
     expect(document.documentElement.dataset.theme).toBeUndefined();
   });
 
-  it("applies and stores a theme chosen in the select", async () => {
-    const user = userEvent.setup();
+  it("keeps the theme select out of the top bar", () => {
     start();
-    await user.click(themeSelect());
-    await user.click(await screen.findByRole("option", { name: "Dark" }));
-    expect(document.documentElement.dataset.theme).toBe("dark");
-    expect(JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) ?? "{}").theme).toBe("dark");
+    expect(screen.queryByRole("combobox", { name: "Theme" })).not.toBeInTheDocument();
   });
 
   it("switches between light and dark with one click and names the target", async () => {
@@ -173,7 +165,7 @@ describe("theme controls", () => {
   it("falls back to defaults and removes a stored value that fails validation", () => {
     window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ theme: "neon" }));
     start();
-    expect(themeSelect()).toHaveTextContent("System");
+    expect(document.documentElement.dataset.theme).toBeUndefined();
     expect(window.localStorage.getItem(PREFERENCES_KEY)).toBeNull();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
@@ -188,5 +180,23 @@ describe("theme controls", () => {
     start();
     await user.click(screen.getByRole("button", { name: "Switch to dark theme" }));
     expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+});
+
+describe("navigation collapse", () => {
+  it("collapses to icons, keeps link names and remembers the choice", async () => {
+    const user = userEvent.setup();
+    start();
+    const nav = screen.getByRole("navigation", { name: "Workspace" });
+    await user.click(within(nav).getByRole("button", { name: "Collapse navigation" }));
+    expect(within(nav).getByRole("button", { name: "Expand navigation" })).toHaveAttribute("aria-expanded", "false");
+    expect(within(nav).getByRole("link", { name: "Settings" })).toHaveAttribute("title", "Settings");
+    expect(window.localStorage.getItem(NAV_COLLAPSED_KEY)).toBe("true");
+  });
+
+  it("starts collapsed when the stored choice says so", () => {
+    window.localStorage.setItem(NAV_COLLAPSED_KEY, "true");
+    start();
+    expect(screen.getByRole("button", { name: "Expand navigation" })).toBeInTheDocument();
   });
 });

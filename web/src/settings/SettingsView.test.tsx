@@ -47,7 +47,7 @@ describe("Settings sections", () => {
 });
 
 describe("Appearance", () => {
-  it("shows the same theme as the top bar and changes it", async () => {
+  it("shows the stored theme and changes it", async () => {
     window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ theme: "dark", lastCollection: null }));
     const { user } = await openSettings();
     const appearance = screen.getByRole("region", { name: "Appearance" });
@@ -58,7 +58,7 @@ describe("Appearance", () => {
     expect(document.documentElement.dataset.theme).toBe("light");
     const stored = JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) ?? "{}") as { theme?: string };
     expect(stored.theme).toBe("light");
-    expect(screen.getAllByRole("combobox", { name: "Theme" }).every((box) => box.textContent === "Light")).toBe(true);
+    expect(screen.getByRole("button", { name: "Switch to dark theme" })).toBeInTheDocument();
   });
 });
 

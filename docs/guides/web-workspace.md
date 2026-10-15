@@ -294,7 +294,7 @@ If the process stops without this sequence, for example after a crash, unfinishe
 
 ## Screens
 
-The workspace has seven areas. Use the navigation on the left to open an area. Under 768 px the navigation becomes one row of icons under the top bar. The top bar shows the collection count, a theme control that selects System, Light or Dark, and one button that switches between Light and Dark.
+The workspace has seven areas. Use the navigation on the left to open an area. Use the button at the top of the navigation to collapse it to a column of icons. The browser remembers the choice. Under 768 px the navigation becomes one row of icons under the top bar. The top bar shows the collection count and one button that switches between Light and Dark. Choose System, Light or Dark in Settings.
 
 Every area has its own address. Back and forward move between them. An address that the app does not know opens Home.
 

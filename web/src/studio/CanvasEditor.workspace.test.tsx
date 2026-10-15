@@ -7,7 +7,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeEventSource } from "../runs/test/fakes";
 import { readDraft } from "./storage";
-import { addWithKeyboard, choose, EMPTY_PIPELINE, inspector, latestRun, outline, runPanel, TEMPLATE_PIPELINE, TEMPLATE_REVISION } from "./test/helpers";
+import { addWithKeyboard, EMPTY_PIPELINE, inspector, latestRun, outline, runPanel, TEMPLATE_PIPELINE, TEMPLATE_REVISION } from "./test/helpers";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
 
@@ -111,9 +111,9 @@ describe("canvas state across the workspace", () => {
     await addWithKeyboard(user, "Cross-encoder rerank", "select.rerank");
     await user.click(outlineNode("dense"));
 
-    await choose(user, screen.getByRole("combobox", { name: "Theme" }), "Dark");
+    await user.click(screen.getByRole("button", { name: "Switch to dark theme" }));
     expect(document.documentElement.dataset.theme).toBe("dark");
-    await choose(user, screen.getByRole("combobox", { name: "Theme" }), "Light");
+    await user.click(screen.getByRole("button", { name: "Switch to light theme" }));
     expect(document.documentElement.dataset.theme).toBe("light");
 
     expect(outlineNode("dense")).toHaveAttribute("aria-pressed", "true");
