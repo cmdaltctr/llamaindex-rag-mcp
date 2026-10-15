@@ -104,7 +104,7 @@ describe("navigation", () => {
 
   it("marks the top bar by border and shadow, so it stands out from the canvas in both themes", () => {
     start();
-    const bar = screen.getByText("OMRG").closest("header");
+    const bar = screen.getByText("Local workspace").closest("header");
     expect(bar).not.toBeNull();
     expect(bar).toHaveClass("border-b", "border-border", "shadow-floating");
   });
@@ -180,6 +180,32 @@ describe("theme controls", () => {
     start();
     await user.click(screen.getByRole("button", { name: "Switch to dark theme" }));
     expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+});
+
+describe("brand", () => {
+  it("shows the decorative logo and name in the navigation header", () => {
+    start();
+    const logo = nav().querySelector("img");
+    expect(logo).not.toBeNull();
+    expect(logo).toHaveAttribute("alt", "");
+    expect(logo?.getAttribute("src")).toMatch(/omrg-logo\.svg$/);
+    expect(within(nav()).getByText("OMRG")).toBeInTheDocument();
+  });
+
+  it("shows the server version beside the name and hides it when collapsed", async () => {
+    const user = userEvent.setup();
+    start("", documentsServer({ "GET /v1/health": () => ({ status: "ok", ready: true, version: "2.3.4" }) }));
+    expect(await within(nav()).findByText("v2.3.4")).toBeInTheDocument();
+    await user.click(within(nav()).getByRole("button", { name: "Collapse navigation" }));
+    expect(within(nav()).queryByText("v2.3.4")).not.toBeInTheDocument();
+  });
+
+  it("keeps the name for screen readers when collapsed", async () => {
+    const user = userEvent.setup();
+    start();
+    await user.click(within(nav()).getByRole("button", { name: "Collapse navigation" }));
+    expect(within(nav()).getByText("OMRG")).toHaveClass("sr-only");
   });
 });
 

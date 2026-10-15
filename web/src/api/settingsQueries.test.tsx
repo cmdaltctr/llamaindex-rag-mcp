@@ -26,7 +26,7 @@ describe("settings queries", () => {
 
   it("read health, the MCP state and the web port", async () => {
     const server = documentsServer({
-      "GET /v1/health": () => ({ status: "ok", ready: true }),
+      "GET /v1/health": () => ({ status: "ok", ready: true, version: "2.0.0" }),
       "GET /v1/mcp": () => ({ status: "ok", enabled: true, url: "http://127.0.0.1:8765/mcp", token: { exists: false, created_at: null } }),
       "GET /v1/settings/web-port": () => ({ status: "ok", saved: 9000, bound: 8765 }),
     });

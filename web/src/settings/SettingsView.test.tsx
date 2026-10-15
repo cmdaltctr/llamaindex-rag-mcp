@@ -74,7 +74,7 @@ describe("Runtime", () => {
   });
 
   it("says when the server is not ready", async () => {
-    const { user } = await openSettings({ "GET /v1/health": () => ({ status: "ok", ready: false }) });
+    const { user } = await openSettings({ "GET /v1/health": () => ({ status: "ok", ready: false, version: "2.0.0" }) });
     await user.click(chip("Runtime"));
     expect(await screen.findByText("Starting or shutting down")).toBeInTheDocument();
   });

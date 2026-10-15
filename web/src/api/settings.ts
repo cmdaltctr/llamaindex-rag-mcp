@@ -13,6 +13,8 @@ export interface Health {
   status: "ok";
   /** False while the server starts or shuts down. */
   ready: boolean;
+  /** The installed OMRG package version. */
+  version: string;
 }
 
 export const CONNECTION_PROVIDERS = ["ollama", "llamacpp", "openrouter"] as const;

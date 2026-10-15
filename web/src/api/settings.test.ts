@@ -38,8 +38,8 @@ function setup(handlers: Parameters<typeof documentsServer>[0]) {
 
 describe("settings API", () => {
   it("reads health", async () => {
-    const { api } = setup({ "GET /v1/health": () => ({ status: "ok", ready: true }) });
-    await expect(getHealth(api)).resolves.toEqual({ status: "ok", ready: true });
+    const { api } = setup({ "GET /v1/health": () => ({ status: "ok", ready: true, version: "2.0.0" }) });
+    await expect(getHealth(api)).resolves.toEqual({ status: "ok", ready: true, version: "2.0.0" });
   });
 
   it("reads the connections and the config directory", async () => {

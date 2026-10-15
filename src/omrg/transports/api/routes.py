@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from ... import __version__
 from ...core.experiments import ExperimentAdmissionError
 from .errors import API_HEADERS, error_response
 from .lifespan import AdmissionClosed, WebRuntime, get_runtime
@@ -61,9 +62,13 @@ def _policy(request: Request) -> AccessPolicy:
 
 @router.get("/health")
 async def health(request: Request) -> dict[str, Any]:
-    """Report liveness. Public: it returns no workspace data."""
+    """Report liveness and the OMRG version. Public: it returns no workspace data."""
     runtime = getattr(request.app.state, "runtime", None)
-    return {"status": "ok", "ready": runtime is not None and runtime.admission.is_open}
+    return {
+        "status": "ok",
+        "ready": runtime is not None and runtime.admission.is_open,
+        "version": __version__,
+    }
 
 
 @router.post("/session")

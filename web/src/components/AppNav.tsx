@@ -2,6 +2,7 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { formatRoute, type RouteArea } from "../lib/routes";
 import { AREAS } from "../lib/views";
 import { cn } from "../lib/utils";
+import { Brand } from "./Brand";
 import { Button } from "./ui/button";
 
 interface AppNavProps {
@@ -12,19 +13,26 @@ interface AppNavProps {
 }
 
 /**
- * The seven workspace areas. From the `md` breakpoint it is a side column
- * that collapses to an icon column; below it, one row of icons with short
- * labels and 44px targets. Links are plain hash anchors, so the browser
- * pushes the history entry.
+ * The seven workspace areas. From the `md` breakpoint it is a full-height side
+ * column with the brand and collapse button on top, and it collapses to an
+ * icon column. Below it, the brand sits in the top bar and the areas are one
+ * row of icons with short labels and 44px targets. Links are plain hash
+ * anchors, so the browser pushes the history entry.
  */
 export function AppNav({ current, collapsed, onToggle }: AppNavProps) {
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
   return (
     <nav
       aria-label="Workspace"
-      className={cn("border-b border-border bg-card md:border-e md:border-b-0", collapsed ? "md:p-2" : "md:p-3")}
+      className="border-b border-border bg-card md:col-start-1 md:row-span-2 md:row-start-1 md:border-e md:border-b-0"
     >
-      <div className={cn("hidden md:mb-2 md:flex", collapsed ? "md:justify-center" : "md:justify-end")}>
+      <div
+        className={cn(
+          "hidden border-b border-border md:flex",
+          collapsed ? "flex-col items-center gap-2 py-3" : "h-12 items-center justify-between gap-2 px-3",
+        )}
+      >
+        <Brand hideName={collapsed} showVersion />
         <Button
           variant="ghost"
           size="icon-sm"
@@ -35,7 +43,7 @@ export function AppNav({ current, collapsed, onToggle }: AppNavProps) {
           <ToggleIcon aria-hidden="true" />
         </Button>
       </div>
-      <ul className="flex md:flex-col md:gap-1">
+      <ul className={cn("flex md:flex-col md:gap-1", collapsed ? "md:p-2" : "md:p-3")}>
         {AREAS.map((area) => {
           const Icon = area.icon;
           return (

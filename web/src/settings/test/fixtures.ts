@@ -52,7 +52,7 @@ export function logRecord(seq: number, level: LogRecord["level"], message: strin
 /** The documents server plus a default answer for every route Settings reads. */
 export function settingsServer(handlers: Record<string, Handler> = {}) {
   return documentsServer({
-    "GET /v1/health": () => ({ status: "ok", ready: true }),
+    "GET /v1/health": () => ({ status: "ok", ready: true, version: "2.0.0" }),
     "GET /v1/session": () => ({ status: "ok", kind: "session", scopes: ["files", "graph", "read", "run"], workspace: "/home/u/.omrg/workspace" }),
     "GET /v1/pipeline-operations": () => ({
       status: "ok",

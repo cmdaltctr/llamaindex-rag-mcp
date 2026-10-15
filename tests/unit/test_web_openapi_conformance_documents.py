@@ -31,6 +31,7 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
 )
 from tests.unit.test_web_openapi_conformance_support import FAMILIES, ContractChecker  # noqa: E402
 
+from omrg import __version__  # noqa: E402
 from omrg.transports.api.app import create_app  # noqa: E402
 from omrg.transports.api.lifespan import WebConfig  # noqa: E402
 from omrg.transports.api.runs_wiring import run_service_factory  # noqa: E402
@@ -80,7 +81,9 @@ def test_foundation_and_job_responses_conform(
     check = ContractChecker()
     with TestClient(app, base_url=BASE) as client:
         # Public and bootstrap.
-        assert check.check(client.get("/v1/health"), 200)["ready"] is True
+        health = check.check(client.get("/v1/health"), 200)
+        assert health["ready"] is True
+        assert health["version"] == __version__
         check.check(client.get("/v1/session"), 401)
         check.check(client.post("/v1/session", json={"bootstrap": "x"}, headers=ORIGIN), 401)
         check.check(client.get("/v1/collections", params={"token": "x"}), 400)

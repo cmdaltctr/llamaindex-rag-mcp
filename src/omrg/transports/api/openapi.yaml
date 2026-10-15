@@ -108,7 +108,7 @@ paths:
   /health:
     get:
       operationId: getHealth
-      summary: Report liveness
+      summary: Report liveness and version
       description: Public. Returns no workspace data.
       security: []
       x-omrg-scopes: []
@@ -2762,7 +2762,7 @@ components:
     Health:
       type: object
       additionalProperties: false
-      required: [status, ready]
+      required: [status, ready, version]
       properties:
         status:
           type: string
@@ -2770,6 +2770,9 @@ components:
         ready:
           type: boolean
           description: False while the server starts or shuts down.
+        version:
+          type: string
+          description: The installed OMRG package version.
 
     BootstrapRequest:
       type: object
