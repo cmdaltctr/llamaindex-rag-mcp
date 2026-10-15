@@ -276,6 +276,29 @@ async def get_run_result(principal: ReadScope, run_id: str, runs: RunsDep) -> Re
     return ok({"run_id": run_id, "result": result})
 
 
+@router.get("/runs/{run_id}/artefacts/{name:path}", operation_id="getRunArtefact")
+async def get_run_artefact(principal: ReadScope, run_id: str, name: str, runs: RunsDep) -> Response:
+    """Return one stored, redacted artefact of a run, such as a cut summary in full.
+
+    *name* is the file name of an ``artefact_ref`` without ``.json``. It
+    must be one safe path segment; the store checks it before any read.
+    """
+    run = _graph_run(runs, run_id, principal)
+    if run is None:
+        return _unknown_run()
+    store = runs.service.artefacts_for(run)
+    ref = f"{run_id}/{name}.json"
+    try:
+        store.path(ref)
+    except ValueError:
+        return error_response(400, "That output name is not valid.")
+    try:
+        value = await run_in_threadpool(store.read_json, ref)
+    except (OSError, ValueError):
+        return error_response(404, "This run has no such output.")
+    return ok({"run_id": run_id, "name": name, "value": value})
+
+
 @router.get("/runs/{run_id}/events", operation_id="listRunEvents")
 async def list_run_events(
     principal: ReadScope,

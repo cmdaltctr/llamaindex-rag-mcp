@@ -102,16 +102,19 @@ class RunRecorder:
 
         The full redacted result goes to the ``result`` artefact. The event
         holds bounded previews, the measured end-to-end wall time, and each
-        node duration separately. Node durations are never summed.
+        node duration separately. Node durations are never summed. A node
+        summary that has to be cut keeps its full value in the artefact
+        ``node-<index>-summary``, as an event summary does.
         """
         if not isinstance(result, PipelineResult):
             self.fail(job.run_id, f"the executor returned {type(result).__name__}", wall=wall)
             return
         status = _RESULT_STATUS.get(getattr(result.status, "value", ""), "failed")
         data = to_jsonable(result)
-        for outcome in data.get("nodes") or []:
-            outcome["summary"] = preview(outcome.get("summary") or {})[0]
         store = self._store(job.run_id)
+        for index, outcome in enumerate(data.get("nodes") or []):
+            summary = outcome.get("summary") or {}
+            outcome["summary"] = store.safe_summary(job.run_id, f"node-{index}-summary", summary)
         ref = store.write_json(job.run_id, "result", {**data, "wall_time_s": wall})
         outputs, outputs_cut = preview(data["outputs"], max_bytes=_OUTPUT_PREVIEW_BYTES)
         durations, _ = bound_preview(
