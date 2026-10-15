@@ -4,8 +4,8 @@
 
 The palette comes from the `openchamber-light` and `openchamber-dark` themes at OpenChamber revision `02306f32e4d191e4840440cbafa643ae899471c2`. A distilled copy lives in the change folder, so no OpenChamber checkout is needed:
 
-- `openspec/changes/redesign-web-workspace/references/openchamber-design.md`
-- `openspec/changes/redesign-web-workspace/references/openchamber-light.json` and `openchamber-dark.json`
+- `openspec/changes/archive/2026-10-15-redesign-web-workspace/references/openchamber-design.md`
+- `openspec/changes/archive/2026-10-15-redesign-web-workspace/references/openchamber-light.json` and `openchamber-dark.json`
 
 After the change is archived, these files move under `openspec/changes/archive/`.
 

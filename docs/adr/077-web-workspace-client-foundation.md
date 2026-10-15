@@ -4,7 +4,7 @@
 - **Status:** Accepted (2026-10-15; evidence: `npm run lint`, `typecheck`, `test` (78 files, 816 tests) and `build` pass; guard tests `noLegacyResidue`, `cascade`, `gridColumns`, `design-md` and `App.failures` pass; visual matrix at 1280 px and 390 px in both themes)
 - **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 - **Related:** [ADR-075](075-omrg-owned-pipeline-runner-local-web-packaging-and-external-tool-plugins.md) (local web runtime), [ADR-076](076-serve-mcp-from-the-web-server-with-a-lifespan-provided-engine.md) (MCP on the web server)
-- **Change:** `openspec/changes/redesign-web-workspace/` (design D6, D9 to D13)
+- **Change:** `openspec/changes/archive/2026-10-15-redesign-web-workspace/` (design D6, D9 to D13)
 
 ## Context
 

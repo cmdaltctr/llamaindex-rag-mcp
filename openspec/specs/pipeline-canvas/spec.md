@@ -80,10 +80,10 @@ The inspector SHALL show node parameters, effective settings, safe input/output 
 - **THEN** the preview SHALL identify its bounds and exclude credentials and vector arrays
 
 ### Requirement: Application navigation preserves working state
-The workspace SHALL provide Canvas, Library, Search, Ask, Runs, Experiments, and Settings views. Navigation, theme changes, and inspector interactions SHALL preserve the current draft and admitted run identity. Stored-profile changes SHALL remain separate from saving a graph preset.
+Navigation between workspace views, theme changes, and detail-panel interactions SHALL preserve the current Studio canvas draft and admitted run identity. The set and order of views is defined by the `workspace-presentation` capability. Stored-profile changes SHALL remain separate from saving a graph preset.
 
 #### Scenario: User opens evidence and returns
-- **WHEN** a user navigates from a canvas result to citation evidence and back
+- **WHEN** a user navigates from a Studio canvas result to citation evidence and back
 - **THEN** the canvas draft, selection, and run identity SHALL remain available
 
 #### Scenario: Graph preset is saved
