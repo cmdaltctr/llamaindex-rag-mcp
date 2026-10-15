@@ -12,6 +12,7 @@ import {
   deleteDocuments,
   ingestPath,
   searchCollection,
+  setDisplayName,
   uploadFile,
   type ConfirmStep,
   type DeleteSelector,
@@ -106,6 +107,16 @@ export function useChangeProfile(collection: string) {
   return useMutation({
     mutationFn: (input: { profile: Profile; step: ConfirmStep }) => changeProfile(api, collection, input.profile, input.step),
     onSuccess: (_result, input) => ("preview" in input.step ? undefined : invalidateCollections(queryClient)),
+  });
+}
+
+/** Sets or clears the display name of one collection, then refreshes every view that shows it. */
+export function useSetDisplayName(collection: string) {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (displayName: string) => setDisplayName(api, collection, displayName),
+    onSuccess: () => invalidateCollections(queryClient),
   });
 }
 

@@ -15,7 +15,7 @@
 - [x] 3.1 Rename the logos to `lancedb.png` and `chroma.png` (the registered names) and place them in `web/public/integrations/vector-stores/`.
 - [x] 3.2 Add `store` to `CollectionInfo` in `web/src/api/documents.ts`. Add it to every fake server and fixture that builds a collection (`grep -rln "chunk_count" web/src`).
 - [x] 3.3 Write a failing Vitest test, then add `StoreBadge` (fixed `size-5` box, label text, hides a broken image).
-- [x] 3.4 Show `StoreBadge` with logo in the `Project.tsx` header. Show the label as text on the Home card and in `CollectionPicker`.
+- [x] 3.4 Show `StoreBadge` with logo in the `Project.tsx` header. Show `StoreBadge` with logo on the Home card, and the label as text in `CollectionPicker`.
 - [x] 3.5 Add the Database column to `SourceTable` (name only). Pass the label in from `SourcesSection`. Update its test.
 - [x] 3.6 Write failing tests for the Profile tab: stored `codebase` pre-selected; no profile gives the placeholder and a disabled button; a stored tag outside the list gives an empty list but still shows its badge; the badge shows in every case. Then change `ProfilePanel.tsx`.
 - [x] 3.7 Run the web type check, lint and Vitest. Check the header at phone width and in light and dark themes.

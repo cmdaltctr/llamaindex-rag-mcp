@@ -432,6 +432,26 @@ class TestCollectionMetadata:
         assert result.get("a") == 1
         assert result.get("b") == 2
 
+    def test_display_name_round_trips_and_clears_with_empty_string(
+        self, store: VectorStore
+    ) -> None:
+        """A display name is stored, overwritten, then cleared with ``""``.
+
+        Spec: local-web-workspace, 'Collections have an editable display
+        name'. Clearing stores an empty string because a metadata merge
+        cannot be relied on to delete a key on every backend.
+        """
+        store.create_collection("named")
+        store.update_collection_metadata("named", {"display_name": "Project docs"})
+        assert (store.get_collection_metadata("named") or {}).get("display_name") == "Project docs"
+        store.update_collection_metadata("named", {"display_name": "Renamed"})
+        assert (store.get_collection_metadata("named") or {}).get("display_name") == "Renamed"
+        store.update_collection_metadata("named", {"display_name": ""})
+        assert (store.get_collection_metadata("named") or {}).get("display_name") == ""
+        # Other keys survive the clear.
+        store.update_collection_metadata("named", {"profile": "codebase"})
+        assert (store.get_collection_metadata("named") or {}).get("profile") == "codebase"
+
 
 # ── Generation counter ────────────────────────────────────────────────
 

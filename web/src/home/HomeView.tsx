@@ -5,9 +5,11 @@ import { collectionsQuery } from "../api/queries";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { PageHeader } from "../components/PageHeader";
+import { StoreBadge } from "../components/StoreBadge";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { collectionTitle } from "../lib/collectionTitle";
 import { plural } from "../lib/labels";
 import { formatRoute } from "../lib/routes";
 import { areaById } from "../lib/views";
@@ -48,14 +50,15 @@ export function HomeView() {
               >
                 <Card className="transition-colors duration-150 group-hover:border-border-hover">
                   <CardHeader>
-                    <CardTitle className="break-words">{collection.name}</CardTitle>
+                    <CardTitle className="break-words">{collectionTitle(collection)}</CardTitle>
                     <CardDescription>
                       {plural(collection.document_count, "document")}, {plural(collection.chunk_count, "chunk")}
                     </CardDescription>
+                    <span className="font-mono text-meta text-muted-foreground break-all">Collection name: {collection.name}</span>
                   </CardHeader>
-                  <CardContent className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <CardContent className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
                     {collection.profile !== null ? <Badge variant="hue">{collection.profile}</Badge> : <Badge variant="neutral">No profile</Badge>}
-                    <span className="text-meta text-muted-foreground">{collection.store.label}</span>
+                    <StoreBadge store={collection.store} />
                   </CardContent>
                 </Card>
               </a>

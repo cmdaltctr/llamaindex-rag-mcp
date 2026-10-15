@@ -59,6 +59,7 @@ FAMILIES: dict[str, frozenset[str]] = {
             "getChunk",
             "deleteDocuments",
             "changeCollectionProfile",
+            "setCollectionDisplayName",
         }
     ),
     "graphs": frozenset(

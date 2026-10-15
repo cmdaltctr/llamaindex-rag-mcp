@@ -7,6 +7,7 @@ import { Button } from "../components/ui/button";
 import { plural } from "../lib/labels";
 import { AddSources } from "./AddSources";
 import { ProfilePanel } from "./ProfilePanel";
+import { DisplayNameEditor } from "./DisplayNameEditor";
 import { SearchSection } from "./SearchSection";
 import { SourcesSection } from "./SourcesSection";
 
@@ -33,8 +34,8 @@ export function Project({ project, collections, onJob, onSelect, onCollectionDel
   return (
     <div className="flex flex-col gap-4">
       <CollectionPicker label="Projects" collections={collections} selected={project.name} onSelect={onSelect} />
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h2 className="text-section-title font-semibold break-words">{project.name}</h2>
+      <div role="group" aria-label="Project summary" className="flex flex-wrap items-start gap-x-3 gap-y-1">
+        <DisplayNameEditor project={project} />
         {project.profile !== null ? <Badge variant="hue">{project.profile}</Badge> : <Badge variant="neutral">No profile</Badge>}
         <StoreBadge store={project.store} />
         <span className="text-meta text-muted-foreground">

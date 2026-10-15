@@ -1,7 +1,8 @@
-"""Preview-bound destructive routes: document deletion and profile change.
+"""Collection admin routes: document deletion, profile change and display name.
 
-These implement the reviewed ``/v1`` operations ``deleteDocuments`` and
-``changeCollectionProfile`` with a required preview step (design D8):
+Deletion and profile change implement the reviewed ``/v1`` operations
+``deleteDocuments`` and ``changeCollectionProfile`` with a required
+preview step (design D8):
 
 1. A preview request (``dry_run: true`` for deletion, ``confirm: false``
    for a profile change) mutates nothing. It returns the existing core
@@ -12,8 +13,11 @@ These implement the reviewed ``/v1`` operations ``deleteDocuments`` and
    expired. Otherwise the request fails with 409 (428 without a token)
    and the data stays unchanged.
 
+``setCollectionDisplayName`` has no preview step: it changes only a
+label in the collection metadata, loses no data and is reversible.
+
 The handlers reuse the existing writer and profile functions with the
-Engine's store; they do not reimplement deletion. Both routes need a
+Engine's store; they do not reimplement deletion. All routes need a
 browser session: bearer credentials for notebooks never pass.
 """
 
@@ -37,6 +41,7 @@ DestructiveScope = Annotated[Principal, Depends(require_session("manage"))]
 
 DELETE_ACTION = "delete_documents"
 PROFILE_ACTION = "change_collection_profile"
+DISPLAY_NAME_MAX = 80
 
 
 class DeleteBody(BaseModel):
@@ -58,6 +63,18 @@ class ProfileBody(BaseModel):
     profile: Literal["documents", "codebase"]
     confirm: bool = False
     confirmation_token: str | None = Field(default=None, max_length=128)
+
+
+class DisplayNameBody(BaseModel):
+    """Body of ``setCollectionDisplayName`` (schema ``DisplayNameRequest``).
+
+    The raw length bound only caps the payload. The 80 code point limit
+    applies after trimming, in :func:`_clean_display_name`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    display_name: str = Field(max_length=4096)
 
 
 def _rejected(exc: ConfirmationRejected) -> Response:
@@ -221,3 +238,56 @@ async def change_collection_profile(
         except ValueError as exc:
             return error_response(400, str(exc), error_type="validation")
     return JSONResponse(result)
+
+
+# ── Display name ─────────────────────────────────────────────────────────
+
+
+def _clean_display_name(raw: str) -> tuple[str, str | None]:
+    """Return ``(value, error)``: the trimmed name, or why it is invalid.
+
+    An empty trimmed value is valid and clears the display name. The limit
+    counts Unicode code points, the same unit the web editor counts.
+    """
+    value = raw.strip()
+    if any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in value):
+        return value, "The display name must not contain control characters."
+    if len(value) > DISPLAY_NAME_MAX:
+        return value, f"The display name must be at most {DISPLAY_NAME_MAX} characters."
+    return value, None
+
+
+def _write_display_name(store: Any, collection: str, value: str) -> bool:
+    """Store *value* (``""`` clears it); return ``False`` for an unknown collection.
+
+    The existence check comes first: without it Chroma would create an empty
+    collection and LanceDB would park the value for a name that has no data.
+    """
+    if not store.collection_exists(collection):
+        return False
+    store.update_collection_metadata(collection, {"display_name": value})
+    return True
+
+
+@router.patch("/collections/{collection}/display-name", operation_id="setCollectionDisplayName")
+async def set_collection_display_name(
+    collection: str,
+    body: DisplayNameBody,
+    runtime: RuntimeDep,
+    _: DestructiveScope,
+) -> Response:
+    """Set or clear the display name of a collection.
+
+    Only a label in the collection metadata changes. The collection name,
+    the stored vectors and every retrieval call stay as they were, so there
+    is no preview step. An empty value clears the name.
+    """
+    value, problem = _clean_display_name(body.display_name)
+    if problem is not None:
+        return error_response(400, problem, error_type="validation")
+    store = engine_store(runtime.engine)
+    async with admitted(runtime):
+        found = await run_in_threadpool(_write_display_name, store, collection, value)
+    if not found:
+        return error_response(404, "Unknown collection.")
+    return JSONResponse({"collection": collection, "display_name": value or None})

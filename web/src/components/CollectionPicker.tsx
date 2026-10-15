@@ -1,4 +1,5 @@
 import type { CollectionInfo } from "../api/documents";
+import { collectionTitle } from "../lib/collectionTitle";
 import { plural } from "../lib/labels";
 import { cn } from "../lib/utils";
 import { Button } from "./ui/button";
@@ -25,7 +26,7 @@ export function CollectionPicker({ label, collections, selected, onSelect, stack
             className="w-full justify-between gap-3"
             onClick={() => onSelect(collection.name)}
           >
-            <span className="truncate">{collection.name}</span>
+            <span className="truncate">{collectionTitle(collection)}</span>
             <span className="truncate text-meta font-normal text-muted-foreground">
               {plural(collection.document_count, "document")}, {plural(collection.chunk_count, "chunk")} · {collection.store.label}
             </span>

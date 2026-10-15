@@ -848,6 +848,49 @@ paths:
           $ref: "#/components/responses/ServiceUnavailable"
 
   # ── Graph catalogue, pipelines and revisions ────────────────────────
+  /collections/{collection}/display-name:
+    patch:
+      operationId: setCollectionDisplayName
+      summary: Set or clear the display name of a collection
+      description: >
+        Stores a label in the collection metadata. The collection name, the
+        stored vectors and every retrieval call stay as they were, so there
+        is no preview step. The server trims the value; an empty value
+        clears the display name. More than 80 Unicode code points, or a
+        control character, gives 400. An unknown collection gives 404 and
+        nothing is created. Needs the browser session: bearer credentials
+        for notebooks are refused with 403.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      parameters:
+        - $ref: "#/components/parameters/CollectionName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisplayNameRequest"
+      responses:
+        "200":
+          description: The display name now stored (`null` after a clear).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisplayNameResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
   /pipeline-operations:
     get:
       operationId: listPipelineOperations
@@ -3714,7 +3757,7 @@ components:
     CollectionInfo:
       type: object
       additionalProperties: false
-      required: [name, document_count, chunk_count, profile, store]
+      required: [name, document_count, chunk_count, profile, display_name, store]
       properties:
         name:
           type: string
@@ -3728,6 +3771,13 @@ components:
             Profile name stored in the collection metadata (for example
             `documents` or `codebase`), or `null` when no profile tag is
             stored or the metadata cannot be read.
+        display_name:
+          type: [string, "null"]
+          description: >
+            Label the user gave the collection in the workspace, or `null`
+            when none is set or the metadata cannot be read. It is not the
+            collection name: retrieval, ingestion and MCP tools still use
+            `name`.
         store:
           $ref: "#/components/schemas/VectorStoreInfo"
 
@@ -3907,6 +3957,28 @@ components:
           description: Force rebuild regardless of cache
 
     # ── Profile change ─────────────────────────────────────────────────
+    DisplayNameRequest:
+      type: object
+      additionalProperties: false
+      required: [display_name]
+      properties:
+        display_name:
+          type: string
+          maxLength: 4096
+          description: >
+            New display name. Trimmed by the server; empty clears it. At most
+            80 Unicode code points after trimming, and no control characters.
+
+    DisplayNameResult:
+      type: object
+      additionalProperties: false
+      required: [collection, display_name]
+      properties:
+        collection:
+          type: string
+        display_name:
+          type: [string, "null"]
+
     ProfileChangeRequest:
       type: object
       additionalProperties: false

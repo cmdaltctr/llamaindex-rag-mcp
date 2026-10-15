@@ -19,11 +19,41 @@ describe("Home", () => {
     expect(cards[1]).toHaveTextContent("No profile");
   });
 
-  it("names the vector database of each project as text", async () => {
+  it("shows the vector database of each project with its logo and name", async () => {
     startApp("#/home");
     const list = await screen.findByRole("list", { name: "Projects" });
-    for (const card of within(list).getAllByRole("listitem")) expect(card).toHaveTextContent("LanceDB");
-    expect(list.querySelector("img")).toBeNull();
+    for (const card of within(list).getAllByRole("listitem")) {
+      expect(card).toHaveTextContent("LanceDB");
+      const logo = card.querySelector("img");
+      expect(logo?.getAttribute("src")).toMatch(/integrations\/vector-stores\/lancedb\.png$/);
+      expect(logo).toHaveAttribute("alt", "");
+    }
+    // The card body is a column by default. The profile badge and the database name sit in one row,
+    // so a wrapping row must reset the direction, or the two items stack and centre.
+    for (const body of list.querySelectorAll("[data-slot=card-content]")) {
+      expect(body).toHaveClass("flex-row", "flex-wrap");
+      expect(body).not.toHaveClass("flex-col");
+    }
+  });
+
+  it("titles a card with its display name and links by the collection name", async () => {
+    startApp("#/home", documentsServer({ "GET /v1/collections": () => [{ name: "documents", document_count: 3, chunk_count: 12, profile: null, display_name: "Project docs", store: { name: "lancedb", label: "LanceDB" } }] }));
+    const link = await screen.findByRole("link", { name: /Project docs/ });
+    expect(link).toHaveAttribute("href", "#/knowledge-base/documents");
+    expect(within(link).getByRole("heading", { name: "Project docs" })).toBeInTheDocument();
+  });
+
+  it("shows the real collection name in grey under the counts, with or without a display name", async () => {
+    startApp("#/home", documentsServer({ "GET /v1/collections": () => [
+      { name: "documents", document_count: 3, chunk_count: 12, profile: null, display_name: "Project docs", store: { name: "lancedb", label: "LanceDB" } },
+      { name: "notes", document_count: 1, chunk_count: 2, profile: null, display_name: null, store: { name: "lancedb", label: "LanceDB" } },
+    ] }));
+    const cards = within(await screen.findByRole("list", { name: "Projects" })).getAllByRole("listitem");
+    const first = within(cards[0]!).getByText("Collection name: documents");
+    expect(within(cards[1]!).getByText("Collection name: notes")).toBeInTheDocument();
+    // It sits after the counts line, so the card reads title, counts, collection name.
+    const counts = within(cards[0]!).getByText("3 documents, 12 chunks");
+    expect(counts.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("opens the project in the Knowledge Base from the whole card", async () => {
@@ -37,7 +67,7 @@ describe("Home", () => {
   });
 
   it("encodes a collection name in the link", async () => {
-    startApp("#/home", documentsServer({ "GET /v1/collections": () => [{ name: "research notes", document_count: 0, chunk_count: 0, profile: null, store: { name: "lancedb", label: "LanceDB" } }] }));
+    startApp("#/home", documentsServer({ "GET /v1/collections": () => [{ name: "research notes", document_count: 0, chunk_count: 0, profile: null, display_name: null, store: { name: "lancedb", label: "LanceDB" } }] }));
     expect(await screen.findByRole("link", { name: /research notes/ })).toHaveAttribute("href", "#/knowledge-base/research%20notes");
   });
 

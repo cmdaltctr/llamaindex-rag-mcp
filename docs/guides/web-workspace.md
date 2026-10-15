@@ -260,6 +260,8 @@ A confirmed profile change applies to new queries. Existing chunks stay as they 
 
 Cleanup removes run records and run artefacts only. It never removes vector data, source files, uploads, notebooks or experiment outputs. See [Clean up old runs](workspace.md#clean-up-old-runs).
 
+Changing a display name needs the browser session but no preview and no token. It changes only a label, loses no data and can be undone by saving the old value.
+
 ## Errors never return HTML
 
 Every `/v1` error uses the JSON envelope `{"status": "error", "message": "..."}`. Some errors add `error_type` (`validation`, `retrieval` or `internal`) or `issues`.
@@ -312,9 +314,9 @@ Every area has its own address. Back and forward move between them. An address t
 
 | Area | Address | What you can do |
 |---|---|---|
-| Home | `#/home` | See every project as a card with its name, profile, counts and database. Open a project. |
-| Chat | `#/chat/<collection>` | Ask a knowledge base a question. Read the answer, its citations and the evidence. Each question answers on its own. |
-| Knowledge Base | `#/knowledge-base/<collection>` | See the database that holds the project (logo and name in the header, name in the project list and in the Sources table). List sources, upload and ingest files, ingest from an approved folder, search, preview and confirm a deletion or a profile change. The upload panel shows the server's per-file limit and refuses a larger file before it is sent. Change the limit in Settings › Workspace. |
+| Home | `#/home` | See every project as a card with its title, profile, counts and database. Open a project. |
+| Chat | `#/chat/<collection>` | Pick a knowledge base by its title and ask it a question. Read the answer, its citations and the evidence. Each question answers on its own. |
+| Knowledge Base | `#/knowledge-base/<collection>` | Rename the project title with the pencil. See the database that holds the project (logo and name in the header, name in the project list and in the Sources table). List sources, upload and ingest files, ingest from an approved folder, search, preview and confirm a deletion or a profile change. The upload panel shows the server's per-file limit and refuses a larger file before it is sent. Change the limit in Settings › Workspace. |
 | Studio | `#/studio`, `#/studio/<pipeline-id>` | Start a pipeline from a template, a profile preset or an empty graph. Add operations, connect ports, save a revision, validate, run and cancel. |
 | Experiments | `#/experiments`, `#/experiments/runs/<run-id>` | Create experiment folders and sub-experiments, issue a bound credential, register and open the notebook editor, and read pipeline runs. A preview that is cut offers Open full output, which shows the redacted value as text and downloads it. |
 | Integrations | `#/integrations` | See which optional parts are installed and copy the command that installs the rest. The page never installs anything. |
@@ -341,14 +343,27 @@ On a phone, the areas use one column. Two examples at 390 px: [Home](images/web-
 
 Each collection lives in one vector database. The workspace shows it in four places:
 
-1. The project header shows the logo and the name, for example LanceDB.
-2. The project list and the Home card show the name only.
+1. The project header and the Home card show the logo and the name, for example LanceDB.
+2. The project list shows the name only.
 3. The Sources table has a Database column with the name only.
 4. `GET /v1/collections` returns `store` for each collection, with `name` (for example `lancedb`) and `label` (for example `LanceDB`). It never returns a path, a tenant or a key.
 
 The label comes from the vector-store registry (`register(..., label=...)`). A backend without a label shows its registered name. The logo is a PNG in `web/public/integrations/vector-stores/`, named after the registered backend, for example `web/public/integrations/vector-stores/lancedb.png`. When the file is missing, the workspace shows the name only. To add a database, add its module, one `register()` call and one PNG.
 
 The Profile tab shows the stored profile as a badge. When a collection has no stored profile, the badge reads "No profile". The "New profile" list starts on the stored profile. When none is stored, it starts empty and "Preview profile change" stays disabled until you choose a profile.
+
+### Display name and collection name
+
+A project has two names. The collection name is the storage address. MCP tools, the CLI, the API and the address bar use it, so it never changes. The display name is a label for the workspace.
+
+1. Click the pencil next to the project title in the Knowledge Base. Type a name and press Enter to save. Press Escape to cancel. Save an empty value to remove the display name.
+2. The Home card, the project list in the Knowledge Base and in Chat, and the project title show the display name. Without one, they show the collection name.
+3. The line `Collection name: <name>` always shows the real name. It sits under the project title and under the counts on each Home card. Use it in MCP, CLI and API calls.
+4. "Sources in <name>", the Chat question box and the delete dialog keep the collection name, because you may need to type or match it.
+5. A display name has at most 80 characters, counted as Unicode code points, and no control characters. The server removes spaces at both ends.
+6. The route is `PATCH /v1/collections/{collection}/display-name` with `{"display_name": "..."}`. It returns `{"collection", "display_name"}`, and `display_name` is `null` after a clear. It needs the browser session. A bearer credential gets 403. An unknown collection gets 404 and nothing is created.
+
+The name is stored in the collection metadata, next to the profile. On LanceDB a change creates a new table version. The next keyword search rebuilds its index, and an open delete or profile preview must be made again.
 
 Keyboard use on the Studio canvas:
 

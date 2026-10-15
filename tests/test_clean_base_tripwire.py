@@ -67,7 +67,9 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # are present, and the optional OpenAI-like adapter is absent.
 # Re-baselined at add-vector-store-label-to-knowledge-base: two registry label
 # cases and three collection-list store cases add 5 executed tests (5142 -> 5147).
-_BASE_EXECUTED = 5147
+# Re-baselined at add-collection-display-name: the display name round-trip case,
+# 16 route cases and one OpenAPI case add 18 executed tests (5147 -> 5165).
+_BASE_EXECUTED = 5165
 # Re-baselined at add-web-allow-origin-option: the origin parser suite adds 23
 # executed tests that need no fastapi, and the policy, MCP and launch cases add
 # 10 that do (5109 -> 5142; see _WEB_EXTRA_CASES below).

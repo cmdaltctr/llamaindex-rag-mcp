@@ -291,4 +291,17 @@ describe("knowledge base panel and New chat", () => {
     expect(window.location.hash).toBe("#/chat/documents");
     expect(screen.getByRole("textbox", { name: "Question" })).toBeInTheDocument();
   });
+
+  it("shows the display name in the picker and keeps the collection name in the question box", async () => {
+    const collections = [
+      { name: "documents", document_count: 3, chunk_count: 12, profile: null, display_name: "Project docs", store: { name: "lancedb", label: "LanceDB" } },
+      { name: "notes", document_count: 1, chunk_count: 2, profile: null, display_name: null, store: { name: "lancedb", label: "LanceDB" } },
+    ];
+    startApp("#/chat/documents", documentsServer({ "GET /v1/collections": () => collections }));
+    const picker = await screen.findByRole("list", { name: "Knowledge bases" });
+    const buttons = within(picker).getAllByRole("button");
+    expect(buttons[0]).toHaveTextContent("Project docs");
+    expect(buttons[1]).toHaveTextContent("notes");
+    expect(await screen.findByPlaceholderText("Ask documents a question")).toBeInTheDocument();
+  });
 });

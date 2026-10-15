@@ -78,8 +78,8 @@ describe("creating from a card", () => {
 
   it("seeds the documents preset from the search template with rerank on and the chosen collection", async () => {
     const collections = [
-      { name: "papers", document_count: 3, chunk_count: 30, profile: "documents", store: { name: "lancedb", label: "LanceDB" } },
-      { name: "src", document_count: 5, chunk_count: 90, profile: "codebase", store: { name: "lancedb", label: "LanceDB" } },
+      { name: "papers", document_count: 3, chunk_count: 30, profile: "documents", display_name: null, store: { name: "lancedb", label: "LanceDB" } },
+      { name: "src", document_count: 5, chunk_count: 90, profile: "codebase", display_name: null, store: { name: "lancedb", label: "LanceDB" } },
     ];
     const { server, user } = openStudio("#/studio", { templates: TEMPLATES, collections });
     const documents = await screen.findByRole("group", { name: "Documents search" });
@@ -112,7 +112,7 @@ describe("creating from a card", () => {
 
   it("pre-fills the collection the user last worked with when the server still lists it", async () => {
     window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ theme: "system", lastCollection: "src" }));
-    const collections = [{ name: "src", document_count: 5, chunk_count: 90, profile: "codebase", store: { name: "lancedb", label: "LanceDB" } }];
+    const collections = [{ name: "src", document_count: 5, chunk_count: 90, profile: "codebase", display_name: null, store: { name: "lancedb", label: "LanceDB" } }];
     openStudio("#/studio", { templates: TEMPLATES, collections });
     const codebase = await screen.findByRole("group", { name: "Codebase search" });
     await waitFor(() => expect(within(codebase).getByLabelText("Collection")).toHaveTextContent("src"));

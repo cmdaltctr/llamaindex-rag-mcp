@@ -42,7 +42,7 @@ export function SourceTable({ collection, storeLabel, sources, onDelete }: Sourc
             <TableCell dir="ltr" className="min-w-48 font-mono text-code break-all">
               {source.source}
             </TableCell>
-            <TableCell dir="ltr" className="font-mono text-code break-all">
+            <TableCell dir="ltr" className="min-w-48 font-mono text-code break-all">
               {source.source_id ?? "No stable ID (legacy row)"}
             </TableCell>
             <TableCell>{source.chunks}</TableCell>

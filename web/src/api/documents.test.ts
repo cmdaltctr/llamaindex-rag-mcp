@@ -14,6 +14,7 @@ import {
   listDocuments,
   listRoots,
   searchCollection,
+  setDisplayName,
   uploadFile,
 } from "./documents";
 
@@ -107,6 +108,25 @@ describe("preview-bound actions", () => {
     expect(sent[0]?.init.method).toBe("PATCH");
     expect(bodyOf(sent[0]!)).toEqual({ profile: "codebase", confirm: false });
     expect(bodyOf(sent[1]!)).toEqual({ profile: "codebase", confirm: true, confirmation_token: "tok" });
+  });
+
+  it("sets and clears a display name with one PATCH to the display-name route", async () => {
+    const { sent, api } = recorder(
+      json({ collection: "my docs", display_name: "Docs" }),
+      json({ collection: "my docs", display_name: null }),
+    );
+    expect(await setDisplayName(api, "my docs", "Docs")).toEqual({ collection: "my docs", display_name: "Docs" });
+    expect(await setDisplayName(api, "my docs", "")).toEqual({ collection: "my docs", display_name: null });
+    expect(sent.map((s) => s.path)).toEqual(Array(2).fill("/v1/collections/my%20docs/display-name"));
+    expect(sent[0]?.init.method).toBe("PATCH");
+    expect(bodyOf(sent[0]!)).toEqual({ display_name: "Docs" });
+    expect(bodyOf(sent[1]!)).toEqual({ display_name: "" });
+  });
+
+  it.each(["", ".."])("refuses an unsafe collection name %j before a display-name call", async (name) => {
+    const { fetchImpl, api } = recorder();
+    await expect(setDisplayName(api, name, "x")).rejects.toMatchObject({ kind: "invalid-path" });
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it("reports a stale preview (409) and a missing token (428) as distinct errors", async () => {

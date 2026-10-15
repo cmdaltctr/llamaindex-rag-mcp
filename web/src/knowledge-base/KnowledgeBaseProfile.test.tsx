@@ -19,8 +19,8 @@ describe("stored collection profile", () => {
   it("shows the stored profile of the open project from the collection list", async () => {
     const server = documentsServer({
       "GET /v1/collections": () => [
-        { name: "documents", document_count: 3, chunk_count: 12, profile: "codebase", store: { name: "lancedb", label: "LanceDB" } },
-        { name: "notes", document_count: 1, chunk_count: 2, profile: null, store: { name: "lancedb", label: "LanceDB" } },
+        { name: "documents", document_count: 3, chunk_count: 12, profile: "codebase", display_name: null, store: { name: "lancedb", label: "LanceDB" } },
+        { name: "notes", document_count: 1, chunk_count: 2, profile: null, display_name: null, store: { name: "lancedb", label: "LanceDB" } },
       ],
     });
     const user = userEvent.setup();
@@ -75,7 +75,7 @@ describe("stored collection profile", () => {
   it("reloads the stored profile after a confirmed change", async () => {
     let stored = "documents";
     const server = documentsServer({
-      "GET /v1/collections": () => [{ name: "documents", document_count: 3, chunk_count: 12, profile: stored, store: { name: "lancedb", label: "LanceDB" } }],
+      "GET /v1/collections": () => [{ name: "documents", document_count: 3, chunk_count: 12, profile: stored, display_name: null, store: { name: "lancedb", label: "LanceDB" } }],
       "PATCH /v1/collections/documents/profile": (body) => {
         if (!body.confirm) {
           return {

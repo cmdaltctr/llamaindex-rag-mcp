@@ -42,12 +42,17 @@ A collection SHALL have an optional display name stored in its metadata. `GET /v
 - **AND** the list SHALL still succeed
 
 ### Requirement: The workspace shows the display name and the collection name
-The Home card, the project chips in the Knowledge Base and in Chat, and the project header SHALL show the display name when set and the collection name otherwise. The project header SHALL always show the collection name in small grey text under the title. Places where the name is an identifier SHALL keep the collection name: "Sources in <name>", the Chat input and the delete dialog. The header SHALL offer a pencil button that edits the display name in place. Enter SHALL save, Escape SHALL cancel, and an empty value SHALL clear the display name.
+The Home card, the project chips in the Knowledge Base and in Chat, and the project header SHALL show the display name when set and the collection name otherwise. The project header SHALL always show the collection name in small grey text under the title, and each Home card SHALL show it in the same style under the document and chunk counts. Places where the name is an identifier SHALL keep the collection name: "Sources in <name>", the Chat input and the delete dialog. The header SHALL offer a pencil button that edits the display name in place. Enter SHALL save, Escape SHALL cancel, and an empty value SHALL clear the display name.
 
 #### Scenario: Display name is set
 - **WHEN** collection `documents` has display name `Project docs`
 - **THEN** the Home card, the Knowledge Base chip, the Chat chip and the header title SHALL read `Project docs`
 - **AND** the header SHALL show `Collection name: documents`
+
+#### Scenario: Home card shows the collection name
+- **WHEN** Home lists collection `documents` with display name `Project docs`
+- **THEN** its card SHALL read `Project docs`, then the counts, then `Collection name: documents`
+- **AND** a card with no display name SHALL still show `Collection name: <name>`
 
 #### Scenario: Identifiers keep the collection name
 - **WHEN** collection `documents` has display name `Project docs`

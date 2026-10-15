@@ -66,6 +66,7 @@ def test_collections_list_counts_and_conforms(
         "document_count": 3,
         "chunk_count": 6,
         "profile": None,
+        "display_name": None,
         "store": {"name": "lancedb", "label": "LanceDB"},
     }
     assert by_name["other"]["chunk_count"] == 1

@@ -25,7 +25,15 @@ export interface CollectionInfo {
   chunk_count: number;
   /** Profile stored in the collection metadata; `null` when none is stored or it cannot be read. */
   profile: string | null;
+  /** Label the user gave the collection; `null` when none is set. The collection name stays `name`. */
+  display_name: string | null;
   store: VectorStoreInfo;
+}
+
+/** Reply of the display-name route: `display_name` is `null` after a clear. */
+export interface DisplayNameResult {
+  collection: string;
+  display_name: string | null;
 }
 
 export interface SessionInfo {
@@ -313,6 +321,19 @@ export async function changeProfile(
   const extra = "preview" in step ? { confirm: false } : { confirm: true, confirmation_token: step.token };
   return api.request<ProfilePreview | ProfileChangeResult>("PATCH", collectionPath(collection, "/profile"), {
     body: { profile, ...extra },
+    signal: options.signal,
+  });
+}
+
+/** Sets the display name of a collection. An empty value clears it. */
+export async function setDisplayName(
+  api: ApiClient,
+  collection: string,
+  displayName: string,
+  options: CallOptions = {},
+): Promise<DisplayNameResult> {
+  return api.request<DisplayNameResult>("PATCH", collectionPath(collection, "/display-name"), {
+    body: { display_name: displayName },
     signal: options.signal,
   });
 }

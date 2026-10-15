@@ -8,8 +8,8 @@ The Knowledge Base does not say which vector database holds a project. LanceDB i
 - `register()` in `core/vectordb/registry.py` takes a new optional `label` argument. A backend added later declares its label in its own `register()` call. Without a label, the registered name is shown. No web code changes.
 - The route reads the store name with the existing `compose.configured_vector_store()`. The public `Engine` API does not change.
 - The web workspace shows the database in four places:
-  - project header: logo and name, in a fixed-size box;
-  - Home card and project chips: name only;
+  - project header and Home card: logo and name, with the logo in a fixed-size box;
+  - project chips: name only;
   - `SourceTable`: a new **Database** column, name only.
 - Logos live in `web/public/integrations/vector-stores/<name>.png`. Each file is named after the registered backend (`lancedb.png`, `chroma.png`). The supplied files change from `.webp` to `.png` because they hold PNG data. A backend with no logo file shows its name only.
 - The Profile tab pre-selects the stored profile when one exists, and starts with no selection when none exists. "Preview profile change" stays disabled until a profile is selected. The status line shows a badge in both cases, including the neutral "No profile" badge.

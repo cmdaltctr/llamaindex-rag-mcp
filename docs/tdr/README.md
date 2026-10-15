@@ -58,6 +58,7 @@ architecture), see the [ADR index](../adr/).
 | 030 | [The LiteParse adapter joined every text piece with a line break — join pieces on one visual line](030-liteparse-adapter-joined-every-text-piece-with-a-line-break.md) | Accepted | 2026-09-25 |
 | 031 | [The Orca preview sign-in got 403 from an unapproved origin, so approve the origin with --allow-origin](031-orca-preview-sign-in-got-403-from-an-unapproved-origin.md) | Accepted | 2026-10-15 |
 | 032 | [The Knowledge Base hid the database and the profile list implied a stored profile, so name the database per collection and start the list on the stored profile](032-knowledge-base-hid-the-database-and-the-profile-list-implied-a-stored-profile.md) | Accepted | 2026-10-15 |
+| 033 | [The collection name was the only project title, so add an editable display name and keep the collection name fixed](033-the-collection-name-was-the-only-project-title-so-add-an-editable-display-name.md) | Accepted | 2026-10-15 |
 | 034 | [The clean-base tripwire ran a serial suite, so run it in parallel and stop pinning the skipped count](034-the-clean-base-tripwire-ran-a-serial-suite-so-run-it-in-parallel-and-stop-pinning-skips.md) | Accepted | 2026-10-15 |
 
 ## Status values

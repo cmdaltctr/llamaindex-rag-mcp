@@ -14,7 +14,7 @@ The collection name is both the project title in the web app and the storage add
   - No preview step, because the change loses no data.
 - The web workspace shows the display name when set, otherwise the collection name. This applies to the Home card, the project chips in the Knowledge Base and in Chat, and the project header.
 - The project header gets a pencil button. Click, type, Enter to save, Escape to cancel.
-- Under the title the header shows `Collection name: <name>` in small grey mono text. That is the name MCP, CLI and API calls use.
+- Under the title the header shows `Collection name: <name>` in small grey mono text. That is the name MCP, CLI and API calls use. The Home card shows the same line under its counts, so the real name is visible wherever a title can differ from it.
 - Places where the name acts as an identifier keep the collection name: "Sources in <name>", the Chat input "Ask <name> a question", and the delete dialog.
 - The collection name itself never changes. No rename of stored data.
 - Docs (`web-workspace.md`, `openapi.yaml`) and a TDR record the rule.

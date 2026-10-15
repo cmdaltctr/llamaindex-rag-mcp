@@ -18,8 +18,8 @@ export function json(body: unknown, status = 200): Response {
 }
 
 export const COLLECTIONS = [
-  { name: "documents", document_count: 3, chunk_count: 12, profile: "documents", store: { name: "lancedb", label: "LanceDB" } },
-  { name: "notes", document_count: 1, chunk_count: 2, profile: null, store: { name: "lancedb", label: "LanceDB" } },
+  { name: "documents", document_count: 3, chunk_count: 12, profile: "documents", display_name: null, store: { name: "lancedb", label: "LanceDB" } },
+  { name: "notes", document_count: 1, chunk_count: 2, profile: null, display_name: null, store: { name: "lancedb", label: "LanceDB" } },
 ];
 
 export const SOURCES = [

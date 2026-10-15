@@ -84,7 +84,7 @@ describe("project routes", () => {
     let fail = true;
     startApp(
       "#/knowledge-base/documents",
-      documentsServer({ "GET /v1/collections": () => (fail ? json({ status: "error", message: "Unexpected token <" }, 500) : [{ name: "documents", document_count: 3, chunk_count: 12, profile: null, store: { name: "lancedb", label: "LanceDB" } }]) }),
+      documentsServer({ "GET /v1/collections": () => (fail ? json({ status: "error", message: "Unexpected token <" }, 500) : [{ name: "documents", document_count: 3, chunk_count: 12, profile: null, display_name: null, store: { name: "lancedb", label: "LanceDB" } }]) }),
     );
     const alert = await screen.findByRole("alert");
     expect(alert).not.toHaveTextContent("Unexpected token");
@@ -119,12 +119,22 @@ describe("sources", () => {
   it("shows the vector database in the header with its logo and in each project chip", async () => {
     startApp("#/knowledge-base/documents");
     await sourcesTable();
-    const header = screen.getByRole("heading", { level: 2, name: "documents" }).parentElement!;
+    const header = screen.getByRole("group", { name: "Project summary" });
     expect(within(header).getByText("LanceDB")).toBeInTheDocument();
     expect(header.querySelector("img[src$='integrations/vector-stores/lancedb.png']")).not.toBeNull();
     const chips = within(screen.getByRole("list", { name: "Projects" })).getAllByRole("button");
     for (const chip of chips) expect(chip).toHaveTextContent("LanceDB");
     expect(screen.getByRole("list", { name: "Projects" }).querySelector("img")).toBeNull();
+  });
+
+  it("keeps the Source and Stable ID cells at a readable minimum width, then lets them wrap", async () => {
+    startApp("#/knowledge-base/documents");
+    const rows = within(await sourcesTable()).getAllByRole("row").slice(1);
+    for (const row of rows) {
+      const [source, stableId] = within(row).getAllByRole("cell");
+      expect(source).toHaveClass("min-w-48", "break-all");
+      expect(stableId).toHaveClass("min-w-48", "break-all");
+    }
   });
 
   it("names the vector database in a Database column of the sources table", async () => {
@@ -156,6 +166,57 @@ describe("sources", () => {
     await user.click(within(group).getByRole("button", { name: "Profile" }));
     expect(screen.getByRole("region", { name: "Collection profile" })).toBeInTheDocument();
     // Section is view state: the route does not change.
+    expect(window.location.hash).toBe("#/knowledge-base/documents");
+  });
+});
+
+const STORE = { name: "lancedb", label: "LanceDB" };
+
+function namedCollections(displayName: string | null) {
+  return [
+    { name: "documents", document_count: 3, chunk_count: 12, profile: null, display_name: displayName, store: STORE },
+    { name: "notes", document_count: 1, chunk_count: 2, profile: null, display_name: null, store: STORE },
+  ];
+}
+
+describe("display name", () => {
+  it("shows the display name as the title and in the chip, with the collection name kept where it is an identifier", async () => {
+    startApp("#/knowledge-base/documents", documentsServer({ "GET /v1/collections": () => namedCollections("Project docs") }));
+    expect(await screen.findByRole("heading", { level: 2, name: "Project docs" })).toBeInTheDocument();
+    expect(screen.getByText("Collection name: documents")).toBeInTheDocument();
+    const chips = within(screen.getByRole("list", { name: "Projects" })).getAllByRole("button");
+    expect(chips[0]).toHaveTextContent("Project docs");
+    expect(chips[1]).toHaveTextContent("notes");
+    // The identifier places keep the collection name.
+    expect(await sourcesTable()).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Sources in documents" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete collection documents" })).toBeInTheDocument();
+    expect(window.location.hash).toBe("#/knowledge-base/documents");
+  });
+
+  it("falls back to the collection name when no display name is set", async () => {
+    startApp("#/knowledge-base/documents", documentsServer({ "GET /v1/collections": () => namedCollections(null) }));
+    expect(await screen.findByRole("heading", { level: 2, name: "documents" })).toBeInTheDocument();
+    expect(screen.getByText("Collection name: documents")).toBeInTheDocument();
+  });
+
+  it("updates the title everywhere after an edit, without leaving the route", async () => {
+    let stored: string | null = null;
+    const server = documentsServer({
+      "GET /v1/collections": () => namedCollections(stored),
+      "PATCH /v1/collections/documents/display-name": (body) => {
+        stored = (body.display_name as string) || null;
+        return { collection: "documents", display_name: stored };
+      },
+    });
+    const user = userEvent.setup();
+    startApp("#/knowledge-base/documents", server);
+    await user.click(await screen.findByRole("button", { name: "Edit display name of documents" }));
+    await user.type(screen.getByRole("textbox", { name: "Display name" }), "Research notes{Enter}");
+    expect(await screen.findByRole("heading", { level: 2, name: "Research notes" })).toBeInTheDocument();
+    const chips = within(screen.getByRole("list", { name: "Projects" })).getAllByRole("button");
+    await waitFor(() => expect(chips[0]).toHaveTextContent("Research notes"));
+    expect(screen.getByText("Collection name: documents")).toBeInTheDocument();
     expect(window.location.hash).toBe("#/knowledge-base/documents");
   });
 });

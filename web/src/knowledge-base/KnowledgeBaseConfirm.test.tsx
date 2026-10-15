@@ -54,7 +54,7 @@ describe("confirmed deletion", () => {
   it("refreshes the collection list and the sources after a confirmed deletion, not after the preview", async () => {
     let removed = false;
     const { server, user } = await setup({
-      "GET /v1/collections": () => [{ name: "documents", document_count: removed ? 2 : 3, chunk_count: removed ? 7 : 12, profile: "documents", store: { name: "lancedb", label: "LanceDB" } }],
+      "GET /v1/collections": () => [{ name: "documents", document_count: removed ? 2 : 3, chunk_count: removed ? 7 : 12, profile: "documents", display_name: null, store: { name: "lancedb", label: "LanceDB" } }],
       "DELETE /v1/collections/documents/documents": (body) =>
         body.dry_run
           ? { status: "ok", dry_run: true, mode: "metadata", collection: "documents", would_delete: 5, confirmation: confirmation("tok9") }

@@ -384,6 +384,14 @@ def test_status_event_and_cancel_routes_are_protected() -> None:
     assert set(stream["x-omrg-sse-events"].values()) <= set(openapi_doc()["components"]["schemas"])
 
 
+def test_display_name_operation_is_session_only_without_confirmation() -> None:
+    operation = _operation("setCollectionDisplayName")
+    assert operation["security"] == [{"sessionCookie": ["manage"]}]
+    assert operation["x-omrg-scopes"] == ["manage"]
+    assert {"400", "403", "404"} <= set(operation["responses"])
+    assert not {"409", "428"} & set(operation["responses"])
+
+
 @pytest.mark.parametrize(
     ("operation_id", "statuses"),
     [

@@ -16,12 +16,16 @@
 - **THEN** the `store` object SHALL contain no tenant, database or key
 
 ### Requirement: The Knowledge Base shows the database of each project
-The project header SHALL show the database logo and label in a box of fixed size, so logos of different shapes never change the row height. The Home card, the project chips and the Sources table SHALL show the label as text only. A backend with no logo file SHALL show its label alone.
+The project header and the Home card SHALL show the database logo and label, with the logo in a box of fixed size so logos of different shapes never change the row height. The project chips and the Sources table SHALL show the label as text only. A backend with no logo file SHALL show its label alone.
 
 #### Scenario: Header shows logo and name
 - **WHEN** a user opens a project on LanceDB
 - **THEN** the header SHALL show the LanceDB logo and the text `LanceDB`
 - **AND** the logo box SHALL have the same width and height for every backend
+
+#### Scenario: Home card shows logo and name
+- **WHEN** a user opens Home
+- **THEN** each project card SHALL show the database logo and the text `LanceDB`
 
 #### Scenario: Sources table shows the name
 - **WHEN** a user opens the Sources section

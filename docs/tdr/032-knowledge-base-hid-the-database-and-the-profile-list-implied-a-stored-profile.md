@@ -47,8 +47,9 @@ correctly.
 5. **Every logo sits on a white tile in a fixed `size-5` box.** The LanceDB logo
    is black on a transparent background and disappears in the dark theme.
    Inverting it would break the coloured Chroma logo, so the tile serves both.
-6. **Where it shows.** Header: logo and name. Home card, project list and the
-   Sources table: name only.
+6. **Where it shows.** Header and Home card: logo and name. Project list and the
+   Sources table: name only. The Home card first showed text only; the logo was
+   added at the user's request, because a card with an icon is easier to scan.
 7. **Profile tab.** The list starts on the stored profile when it is `documents`
    or `codebase`, and otherwise starts empty with "Choose a profile". "Preview
    profile change" stays disabled until a profile is chosen. The status line

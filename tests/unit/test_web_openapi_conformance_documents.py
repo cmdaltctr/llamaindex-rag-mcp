@@ -212,6 +212,16 @@ def test_document_and_destructive_responses_conform(
         )
         reader = {"Authorization": f"Bearer {policy.issue_bearer({'read', 'run'}).token}"}
         check.check(client.patch(f"{base}/profile", json=body, headers=reader), 403)
+        # Display name: set, clear, rejected value, bearer refusal, unknown collection.
+        label = f"{base}/display-name"
+        named = check.check(client.patch(label, json={"display_name": "Docs"}, headers=ORIGIN), 200)
+        assert named == {"collection": COLLECTION, "display_name": "Docs"}
+        cleared = check.check(client.patch(label, json={"display_name": ""}, headers=ORIGIN), 200)
+        assert cleared == {"collection": COLLECTION, "display_name": None}
+        check.check(client.patch(label, json={"display_name": "x" * 81}, headers=ORIGIN), 400)
+        check.check(client.patch(label, json={"display_name": "x"}, headers=reader), 403)
+        ghost = "/v1/collections/ghost/display-name"
+        check.check(client.patch(ghost, json={"display_name": "x"}, headers=ORIGIN), 404)
     assert check.operations >= FAMILIES["documents"]
 
 

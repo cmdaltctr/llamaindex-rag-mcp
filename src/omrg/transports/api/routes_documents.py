@@ -64,17 +64,24 @@ def _json(payload: Any, status_code: int = 200) -> JSONResponse:
 # ── Listing ──────────────────────────────────────────────────────────────
 
 
-def _stored_profile(store: Any, collection: str) -> str | None:
-    """Return the collection's stored profile tag, or ``None``.
+def _stored_labels(store: Any, collection: str) -> dict[str, str | None]:
+    """Return the collection's stored ``profile`` and ``display_name``.
 
-    This is the same metadata read the profile-change preview uses. A
-    failed read gives ``None``; it never hides the collection.
+    One metadata read serves both values. This is the same read the
+    profile-change preview uses. A failed read gives ``None`` for both,
+    and an empty display name (a cleared one) reads as ``None``; neither
+    hides the collection.
     """
     try:
-        profile = (store.get_collection_metadata(collection) or {}).get("profile")
+        meta = store.get_collection_metadata(collection) or {}
     except Exception:
-        return None
-    return profile if isinstance(profile, str) else None
+        meta = {}
+    profile = meta.get("profile")
+    display_name = meta.get("display_name")
+    return {
+        "profile": profile if isinstance(profile, str) else None,
+        "display_name": display_name if isinstance(display_name, str) and display_name else None,
+    }
 
 
 def _store_info() -> dict[str, str]:
@@ -90,12 +97,12 @@ def _store_info() -> dict[str, str]:
     return {"name": name, "label": registry.describe(name)["label"]}
 
 
-def _collections_with_profiles(store: Any) -> list[dict[str, Any]]:
+def _collections_with_labels(store: Any) -> list[dict[str, Any]]:
     from ...core.retrieval import list_collections as core_list_collections
 
     rows = core_list_collections(store)
     info = _store_info()
-    return [{**row, "profile": _stored_profile(store, row["name"]), "store": info} for row in rows]
+    return [{**row, **_stored_labels(store, row["name"]), "store": info} for row in rows]
 
 
 @router.get("/collections", operation_id="listCollections")
@@ -103,7 +110,7 @@ async def list_collections(runtime: RuntimeDep, _: ReadScope) -> Response:
     """List collections with document and chunk counts and stored profile."""
     store = engine_store(runtime.engine)
     async with admitted(runtime):
-        rows = await run_in_threadpool(_collections_with_profiles, store)
+        rows = await run_in_threadpool(_collections_with_labels, store)
     return _json(rows)
 
 
