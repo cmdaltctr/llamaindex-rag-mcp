@@ -12,6 +12,7 @@ store. Importing this module has no runtime side effects.
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 from .capabilities import (  # noqa: F401  (re-exported for existing callers/tests)
@@ -91,6 +92,24 @@ def redaction_values() -> dict[str, str]:
         "chroma_cloud_database": settings.chroma_cloud_database,
         "openrouter_api_key": settings.openrouter_api_key,
     }
+
+
+def connection_summary() -> dict[str, Any]:
+    """Return the provider connection summary for ``GET /v1/connections``.
+
+    Composition-root surface: the web transport may not call
+    ``get_settings()``. The builder lives in ``compose_connections``.
+    """
+    from .compose_connections import build_connection_summary
+
+    return build_connection_summary(get_settings(), Path.cwd())
+
+
+def connection_targets() -> dict[str, Any]:
+    """Return the model-list requests the provider test sends (server side only)."""
+    from .compose_connections import build_connection_targets
+
+    return build_connection_targets(get_settings())
 
 
 def build_reranker(settings: Settings | None = None) -> Any:

@@ -19,6 +19,7 @@ _ALLOWED_TOP_LEVEL = {
     "engine_answer.py": "the public Engine: answer composition",
     "compose.py": "composition root",
     "compose_answer.py": "composition root: answer models",
+    "compose_connections.py": "composition root: provider connection summary and test targets",
     "compose_engine.py": "composition root: build_engine",
     "compose_experiments.py": "composition root: experiment contexts",
     "compose_pipelines.py": "composition root: Engine graph state",
