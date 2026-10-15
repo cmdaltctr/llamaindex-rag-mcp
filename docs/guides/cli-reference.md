@@ -312,6 +312,9 @@ omrg web --experiment-root ~/omrg-experiments
 
 # Raise the per-file upload limit to 200 MiB for this run
 omrg web --max-upload-mib 200
+
+# Allow an embedded preview pane to sign in
+omrg web --allow-origin http://name.orca.localhost:57977
 ```
 
 | Option | Default | Use |
@@ -321,6 +324,7 @@ omrg web --max-upload-mib 200
 | `--root DIR` | none | Approve a directory for file access. Repeat for more directories. |
 | `--host ADDR` | `127.0.0.1` | Loopback address only: `127.0.0.1`, `::1` or `localhost`. |
 | `--experiment-root DIR` | none | Approve a directory for experiment workspaces. Repeat for more directories. |
+| `--allow-origin ORIGIN` | none | Approve one extra loopback browser origin for this run, for example an embedded preview. Repeat for more origins. See [Web workspace](web-workspace.md). |
 | `--max-upload-mib MIB` | saved limit, else `50` | Per-file upload limit in whole MiB, 1 to 2048. Also read from `WEB_MAX_UPLOAD_MIB`. |
 
 The upload limit is the first value in this order: `--max-upload-mib`, then `WEB_MAX_UPLOAD_MIB` (environment or `.env`), then the limit saved in Settings > Workspace, then 50 MiB. A launch value locks the limit for that run, and Settings cannot change it. A value that is not a whole number from 1 to 2048 stops the command with exit code 2 before it binds a port. The message names the option, the variable and the range.

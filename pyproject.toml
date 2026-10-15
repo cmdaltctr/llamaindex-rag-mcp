@@ -163,6 +163,10 @@ allow-direct-references = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# pytest-xdist: keep each test file on one worker, in file order. Some tests
+# rely on logging state set up by an earlier test in the same file, so the
+# default per-test distribution fails them. Ignored when -n is not given.
+addopts = "--dist loadfile"
 testpaths = ["tests"]
 # Root on sys.path so tests can import experiments._lib.* (add-chroma-cloud-backend).
 pythonpath = ["."]
@@ -663,6 +667,7 @@ dev = [
     "pytest>=9.0.3",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.1.0",
+    "pytest-xdist>=3.8.0",
     # ruff floor raised so pre-commit (which runs ``uv run ruff``) formats
     # identically on the floors and on the locked version. See ADR-042.
     "ruff>=0.16.0",

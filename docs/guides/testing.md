@@ -16,7 +16,23 @@ uv run pytest -m slow -v
 uv run pytest tests/test_reranker.py -v
 ```
 
-The fast suite runs in about 80 seconds. It uses mock embeddings and an
+### Run in parallel
+
+```bash
+# Quick feedback. Skips the tripwire, which runs a second full suite inside.
+uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q
+```
+
+On a 15-core Mac this takes about 2.5 minutes. The serial run takes about
+7.5 minutes without the tripwire. The project sets `--dist loadfile`, so each
+test file stays on one worker, in file order. Do not override it with
+`--dist load`: some tests depend on logging state set up by an earlier test in
+the same file, and they fail when xdist splits a file across workers.
+
+Parallel runs give fast feedback only. Before you push, run
+`./scripts/local_ci.sh`. It runs the suite serially, with the tripwire, as CI does.
+
+The fast suite runs in about 7.5 minutes in series, without the tripwire. It uses mock embeddings and an
 in-memory database, so it needs no Ollama, no llama.cpp, no network, and
 downloads nothing.
 

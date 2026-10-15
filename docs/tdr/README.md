@@ -56,6 +56,7 @@ architecture), see the [ADR index](../adr/).
 | 028 | [Normalise reader Markdown before chunking — strip formatting-only HTML, keep links and tables](028-normalise-reader-markdown-before-chunking.md) | Accepted | 2026-09-25 |
 | 029 | [paddlex `restructure_pages` rewrites its input — build per-page Markdown first, from a deep copy](029-paddlex-restructure-pages-rewrites-its-input.md) | Accepted | 2026-09-25 |
 | 030 | [The LiteParse adapter joined every text piece with a line break — join pieces on one visual line](030-liteparse-adapter-joined-every-text-piece-with-a-line-break.md) | Accepted | 2026-09-25 |
+| 031 | [The Orca preview sign-in got 403 from an unapproved origin, so approve the origin with --allow-origin](031-orca-preview-sign-in-got-403-from-an-unapproved-origin.md) | Accepted | 2026-10-15 |
 
 ## Status values
 

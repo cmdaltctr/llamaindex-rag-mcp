@@ -9,9 +9,12 @@ uv sync                          # Install deps (uv, not pip/poetry)
 uv run omrg                   # Start MCP server (stdio)
 uv run omrg ingest ./docs     # CLI ingest
 uv run pytest -m "not slow" -v   # Fast tests (no Ollama, no disk I/O)
+uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q  # Parallel, ~2.5 min (xdist; serial ~7.5 min). Quick feedback only
 uv run pytest --cov=omrg      # Coverage
 ./scripts/local_ci.sh         # PR-blocking CI jobs, run locally before pushing
 ```
+
+**Parallel runs (`-n`).** `pyproject.toml` sets `--dist loadfile`, so each test file stays on one worker. Do not pass `--dist load`: tests that rely on logging state set earlier in the same file then fail at random. Skip the tripwire in parallel runs: it starts a second full serial suite (~7 min) that xdist cannot split. Run `./scripts/local_ci.sh` (serial, with the tripwire) before you push.
 
 ## Last known good reference point
 

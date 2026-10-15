@@ -85,6 +85,7 @@ def live_server(
     roots: tuple[Path, ...] = (),
     *,
     engine_factory: Callable[[], Any] | None = None,
+    extra_origins: tuple[str, ...] = (),
 ) -> Iterator[Live]:
     """Run the web app on a real socket until the block ends.
 
@@ -94,7 +95,7 @@ def live_server(
     sock = _free_socket()
     port = sock.getsockname()[1]
     config = WebConfig(workspace=workspace, port=port, roots=roots, static_dir=None)
-    policy = AccessPolicy.for_launch(config.host, port)
+    policy = AccessPolicy.for_launch(config.host, port, extra_origins=extra_origins)
     engines: list[Any] = []
 
     def make_engine() -> Any:

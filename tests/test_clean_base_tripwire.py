@@ -65,7 +65,10 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 5109
+_BASE_EXECUTED = 5142
+# Re-baselined at add-web-allow-origin-option: the origin parser suite adds 23
+# executed tests that need no fastapi, and the policy, MCP and launch cases add
+# 10 that do (5109 -> 5142; see _WEB_EXTRA_CASES below).
 # The working-directory .env check adds 2 executed tests (5107 -> 5109).
 # Re-baselined at add-run-output-inspection-and-upload-limit: the run artefact
 # route, node summary artefacts, the upload-limit setting, routes and launch
@@ -294,7 +297,9 @@ if not _has_qwen_tokenizer:
 # Re-measured at add-run-output-inspection-and-upload-limit: two new
 # fastapi-dependent modules (run artefacts, upload limit) add 36 cases and the
 # MCP conformance module adds 1 (509 with the extra; 40 module skips without it).
-_WEB_EXTRA_CASES = 509
+# Re-measured at add-web-allow-origin-option: new cases in three existing
+# fastapi-dependent modules add 10 (519 with the extra; still 40 module skips).
+_WEB_EXTRA_CASES = 519
 _WEB_SKIP_DELTA = 40
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES

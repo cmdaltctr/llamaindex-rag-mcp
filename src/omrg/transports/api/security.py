@@ -33,6 +33,7 @@ from typing import Any
 from fastapi import HTTPException, Request
 
 from ...core.vectordb.identity import redact_secret
+from .origins import parse_extra_origin
 
 SESSION_COOKIE = "omrg_session"
 BOOTSTRAP_PREFIX = "omrg_bs_"
@@ -134,13 +135,26 @@ class _BearerEntry:
 class AccessPolicy:
     """Per-launch credentials and the Host/Origin rules of one server."""
 
-    def __init__(self, host: str, port: int, *, bootstrap_secret: str) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        *,
+        bootstrap_secret: str,
+        extra_origins: Iterable[str] = (),
+    ) -> None:
         """Create a policy for a server bound to *host* and *port*.
 
         Args:
             host: The loopback address the server binds.
             port: The bound TCP port.
             bootstrap_secret: The one-time bootstrap secret.
+            extra_origins: Extra loopback browser origins the operator
+                approved with ``--allow-origin``. Only ``Origin`` is relaxed;
+                ``Host`` and fetch-metadata checks stay as they are.
+
+        Raises:
+            ValueError: An extra origin is malformed or not a loopback origin.
         """
         self.host = host
         self.port = port
@@ -153,12 +167,18 @@ class AccessPolicy:
         names = {"127.0.0.1", "localhost", "[::1]"}
         names.add(f"[{host}]" if ":" in host else host)
         self._host_names = frozenset(names)
-        self._origins = frozenset(f"http://{name}:{port}" for name in names)
+        own = {f"http://{name}:{port}" for name in names}
+        self._origins = frozenset(own | {parse_extra_origin(value) for value in extra_origins})
 
     @classmethod
-    def for_launch(cls, host: str, port: int) -> AccessPolicy:
+    def for_launch(cls, host: str, port: int, *, extra_origins: Iterable[str] = ()) -> AccessPolicy:
         """Create a policy with a fresh random bootstrap secret."""
-        return cls(host, port, bootstrap_secret=BOOTSTRAP_PREFIX + secrets.token_urlsafe(32))
+        return cls(
+            host,
+            port,
+            bootstrap_secret=BOOTSTRAP_PREFIX + secrets.token_urlsafe(32),
+            extra_origins=extra_origins,
+        )
 
     @property
     def allowed_hosts(self) -> frozenset[str]:

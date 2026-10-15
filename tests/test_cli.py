@@ -7,6 +7,7 @@ flag handling, progress reporting, and error messages.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import signal
@@ -1256,21 +1257,26 @@ class TestReportGeneration:
         assert result.exit_code == 0
         assert not report_path.exists()
 
-    def test_report_overwrites_existing(self, dir_with_docs: Path, tmp_path: Path) -> None:
+    def test_report_overwrites_existing(
+        self, dir_with_docs: Path, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """--report overwrites existing file and logs warning."""
         report_path = tmp_path / "report.json"
         report_path.write_text('{"old": true}')
 
-        result = runner.invoke(
-            app,
-            [
-                "ingest",
-                str(dir_with_docs),
-                "--json",
-                "--report",
-                str(report_path),
-            ],
-        )
+        # ``runner.invoke`` skips ``run_cli``, which is the only place that
+        # installs a stderr log handler. Read the log record, not the output.
+        with caplog.at_level(logging.WARNING, logger="omrg.transports.cli._report"):
+            result = runner.invoke(
+                app,
+                [
+                    "ingest",
+                    str(dir_with_docs),
+                    "--json",
+                    "--report",
+                    str(report_path),
+                ],
+            )
         assert result.exit_code == 0
         assert report_path.exists()
 
@@ -1280,7 +1286,7 @@ class TestReportGeneration:
         assert "timestamp" in report
 
         # Verify warning was logged about overwriting
-        assert "Overwriting" in result.output or "overwriting" in result.output.lower()
+        assert any("Overwriting existing report" in r.getMessage() for r in caplog.records)
 
 
 # ── I: Integration tests with real PDFs ─────────────────────────────────────
