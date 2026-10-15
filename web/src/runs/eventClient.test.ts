@@ -145,10 +145,10 @@ describe("run event client: polling fallback", () => {
   it("stops polling on an unknown run and reports the error", async () => {
     const fetchImpl = vi.fn(async () => json({ status: "error", message: "Unknown run." }, 404));
     const scheduler = manualScheduler();
-    const errors: string[] = [];
+    const errors: unknown[] = [];
     const rec = recorder();
     followRunEvents({ runId: "r1", eventSource: null, api: createApiClient(fetchImpl), schedule: scheduler.schedule, onError: (m) => errors.push(m), ...rec });
-    await vi.waitFor(() => expect(errors).toEqual(["Unknown run."]));
+    await vi.waitFor(() => expect(errors.map((error) => (error as Error).message)).toEqual(["Unknown run."]));
     expect(scheduler.pendingDelays()).toEqual([]);
     expect(rec.modes.at(-1)).toBe("closed");
   });
@@ -234,14 +234,14 @@ describe("run event client: authoritative refresh on reconnect", () => {
   it("reports a failed re-read and keeps following events", async () => {
     const factory = eventSourceFactory();
     const fetchImpl = vi.fn(async () => json({ status: "error", message: "Run store busy." }, 503));
-    const errors: string[] = [];
+    const errors: unknown[] = [];
     const rec = recorder();
     followRunEvents({ runId: "r1", eventSource: factory, api: createApiClient(fetchImpl), onRefresh: () => undefined, onError: (m) => errors.push(m), ...rec });
     const source = FakeEventSource.latest();
     source.open();
     source.fail(false);
     source.open();
-    await vi.waitFor(() => expect(errors).toEqual(["Run store busy."]));
+    await vi.waitFor(() => expect(errors.map((error) => (error as Error).message)).toEqual(["Run store busy."]));
     source.send(event(1, "node_started", { node_id: "dense" }));
     expect(rec.events).toHaveLength(1);
     expect(rec.modes.at(-1)).toBe("streaming");

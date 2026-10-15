@@ -1,5 +1,6 @@
 import { FolderInput } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
+import { ClientRefusal } from "../api/client";
 import { joinRootPath, type Job, type Root } from "../api/documents";
 import { useIngestPath } from "../api/mutations";
 import { ErrorNotice } from "../components/ErrorNotice";
@@ -37,7 +38,8 @@ export function IngestPanel({ collection, roots, onJob }: IngestPanelProps) {
     try {
       path = joinRootPath(root.path, relative);
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : "Enter a path inside the selected folder.");
+      if (!(error instanceof ClientRefusal)) console.error(error);
+      setProblem(error instanceof ClientRefusal ? error.message : "Enter a path inside the selected folder.");
       return;
     }
     setProblem(null);

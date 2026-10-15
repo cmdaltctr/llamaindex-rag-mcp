@@ -34,7 +34,7 @@ export interface FollowOptions {
   onMode?: (mode: MonitorMode) => void;
   /** `status` is null when the server closed before the run ended. */
   onEnd?: (info: { status: string | null }) => void;
-  onError?: (message: string) => void;
+  onError?: (error: unknown) => void;
   /** Receives the run record read again after each reconnect. The first connection reads nothing. */
   onRefresh?: (run: RunDetailRecord) => void;
   /** `undefined` uses the browser `EventSource`; `null` means none is available. */
@@ -125,7 +125,7 @@ export function followRunEvents(options: FollowOptions): { close: () => void } {
         if (!stopped) options.onRefresh?.(run);
       },
       (error: unknown) => {
-        if (!stopped) options.onError?.(error instanceof Error ? error.message : String(error));
+        if (!stopped) options.onError?.(error);
       },
     );
   }
@@ -152,7 +152,7 @@ export function followRunEvents(options: FollowOptions): { close: () => void } {
       cancelTimer = schedule(() => void poll(0), page.events.length >= MAX_EVENT_PAGE ? 0 : interval);
     } catch (error) {
       if (stopped) return;
-      options.onError?.(error instanceof Error ? error.message : String(error));
+      options.onError?.(error);
       if (error instanceof ApiError && error.status !== null && STOP_STATUSES.has(error.status)) return stop("closed");
       cancelTimer = schedule(() => void poll(failures + 1), interval * Math.min(failures + 1, 5));
     }

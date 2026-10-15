@@ -6,7 +6,7 @@
  * stop only. The editor token arrives once in the open response
  * (`token_delivery.method = "response_body_once"`) and never in a URL.
  */
-import type { ApiClient, CallOptions } from "./client";
+import { ClientRefusal, type ApiClient, type CallOptions } from "./client";
 import { safeId } from "./experiments";
 
 export const PLUGIN_STATUSES = ["compatible", "incompatible", "unchecked", "needs_approval", "unavailable"] as const;
@@ -99,13 +99,13 @@ export function editorTabUrl(editor: EditorInfo): string {
   try {
     url = new URL(editor.url_without_token);
   } catch {
-    throw new Error("The server gave an editor address that is not a valid URL.");
+    throw new ClientRefusal("The server gave an editor address that is not a valid URL.");
   }
   if (url.protocol !== "http:" || !LOOPBACK_HOSTS.has(url.hostname)) {
-    throw new Error("The server gave an editor address that is not on this computer.");
+    throw new ClientRefusal("The server gave an editor address that is not on this computer.");
   }
   if (url.search !== "" || url.hash !== "" || url.username !== "" || url.password !== "") {
-    throw new Error("The server gave an editor address with extra parts. It was not opened.");
+    throw new ClientRefusal("The server gave an editor address with extra parts. It was not opened.");
   }
   return url.href;
 }
@@ -114,7 +114,7 @@ export function editorTabUrl(editor: EditorInfo): string {
 export function editorToken(opened: EditorOpened): string {
   const delivery = opened.token_delivery as { method?: unknown; token?: unknown } | undefined;
   if (delivery?.method !== "response_body_once" || typeof delivery.token !== "string" || delivery.token === "") {
-    throw new Error("The server used a token delivery method that this page does not support.");
+    throw new ClientRefusal("The server used a token delivery method that this page does not support.");
   }
   return delivery.token;
 }

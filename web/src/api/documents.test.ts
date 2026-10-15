@@ -180,7 +180,7 @@ describe("joinRootPath", () => {
   it.each(["/etc/passwd", "~/x", "C:\\x", "\\\\server\\share", "../x", "a/../../x", "", "   ", "a\u0000b"])(
     "refuses %j",
     (relative) => {
-      expect(() => joinRootPath("/srv/docs", relative)).toThrow();
+      expect(() => joinRootPath("/srv/docs", relative)).toThrow(expect.objectContaining({ name: "ClientRefusal" }));
     },
   );
 });

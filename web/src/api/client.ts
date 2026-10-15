@@ -9,6 +9,18 @@
 
 export type ApiErrorKind = "invalid-path" | "network" | "not-json" | "invalid-json" | "http";
 
+/**
+ * A check in the page refused a value before or after a request. Its message
+ * is written for the person, so a form may show it; every other error goes
+ * through `describeError`.
+ */
+export class ClientRefusal extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ClientRefusal";
+  }
+}
+
 export class ApiError extends Error {
   readonly kind: ApiErrorKind;
   readonly status: number | null;

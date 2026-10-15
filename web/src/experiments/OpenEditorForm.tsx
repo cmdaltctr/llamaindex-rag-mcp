@@ -1,10 +1,12 @@
 import { SquareArrowOutUpRight } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { ApiError, ClientRefusal } from "../api/client";
 import type { ExperimentRecord } from "../api/experiments";
 import { editorTabUrl, editorToken, type PluginState } from "../api/plugins";
 import { AlertNotice } from "../components/AlertNotice";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Button } from "../components/ui/button";
+import { describeError } from "../lib/errors";
 import { Check, SelectField, TextField } from "./fields";
 import { contextLabel } from "./labels";
 import { useOpenEditor } from "./mutations";
@@ -51,8 +53,10 @@ export function OpenEditorForm({ plugins, active }: OpenEditorFormProps) {
       setOpened({ url, token });
       setConsent(false);
     } catch (failure) {
-      // An address or token the page refuses to use carries its own plain-English line; other failures go through the shared mapper.
-      if (failure instanceof Error && !("kind" in failure)) setRefusal(failure.message);
+      // An address or token the page refuses to use carries its own plain-English line. A request failure
+      // renders from the mutation; anything else gets the shared friendly line.
+      if (failure instanceof ClientRefusal) setRefusal(failure.message);
+      else if (!(failure instanceof ApiError)) setRefusal(describeError(failure).message);
     }
   }
 

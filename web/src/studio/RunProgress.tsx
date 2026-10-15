@@ -1,5 +1,6 @@
+import { useMemo } from "react";
+import { describeError } from "../lib/errors";
 import type { MonitorMode } from "../runs/eventClient";
-import { maskText } from "../runs/redact";
 import { unitCounts, type RunView } from "../runs/runState";
 import { RunStatusBadge } from "./RunStatusBadge";
 
@@ -19,12 +20,14 @@ interface RunProgressProps {
   mode: MonitorMode | null;
   /** False for a run that had already finished: its events are a record, not a live run. */
   live: boolean | null;
-  error: string | null;
+  /** A monitoring failure, or null. Monitoring retries on its own, so the line carries no action. */
+  error: unknown;
 }
 
 /** Run status, event mode, unit counter and committed effects. Every figure comes from a received event. */
 export function RunProgress({ runId, status, view, mode, live, error }: RunProgressProps) {
   const units = unitCounts(view);
+  const failure = useMemo(() => (error === null || error === undefined ? null : describeError(error).message), [error]);
   const prefix = live === false ? "Recorded run, not live" : "Live";
   return (
     <section aria-label="Run progress" className="flex flex-col gap-1">
@@ -39,7 +42,7 @@ export function RunProgress({ runId, status, view, mode, live, error }: RunProgr
       )}
       {view.effects.length > 0 && <p className="text-meta text-muted-foreground">{`Committed effects so far: ${view.effects.length}`}</p>}
       {view.wallTimeS !== null && <p className="text-meta text-muted-foreground">{`Run wall time: ${view.wallTimeS.toFixed(2)} s`}</p>}
-      {error && <p className="text-meta text-status-error-label">{`Event monitoring: ${maskText(error)}`}</p>}
+      {failure !== null && <p className="text-meta text-status-error-label">{`Event monitoring: ${failure}`}</p>}
     </section>
   );
 }

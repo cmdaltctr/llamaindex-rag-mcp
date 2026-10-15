@@ -97,13 +97,14 @@ describe("editor delivery", () => {
   it.each(["https://example.com/", "javascript:alert(1)", "http://10.0.0.5:2719/", "http://127.0.0.1:2719/?access_token=editor-secret"])(
     "refuses %s",
     (url) => {
-      expect(() => editorTabUrl({ ...OPENED, url_without_token: url })).toThrow();
+      expect(() => editorTabUrl({ ...OPENED, url_without_token: url })).toThrow(expect.objectContaining({ name: "ClientRefusal" }));
     },
   );
 
   it("returns the token only for the response-body-once method", () => {
     expect(editorToken(OPENED)).toBe("editor-secret");
     const other = { ...OPENED, token_delivery: { method: "query_parameter", token: "x" } } as unknown as EditorOpened;
+    expect(() => editorToken(other)).toThrow(expect.objectContaining({ name: "ClientRefusal" }));
     expect(() => editorToken(other)).toThrow(/delivery/);
   });
 });

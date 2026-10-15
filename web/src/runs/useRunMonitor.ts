@@ -18,14 +18,11 @@ export interface RunMonitor {
   live: boolean | null;
   /** Status read from the server after the stream ended (authoritative refresh). */
   refreshedStatus: string | null;
-  error: string | null;
+  /** The last monitoring failure, or null. Render it through `describeError`; its raw text never reaches the page. */
+  error: unknown;
 }
 
 const IDLE: RunMonitor = { view: EMPTY_RUN_VIEW, mode: null, live: null, refreshedStatus: null, error: null };
-
-function message(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 /**
  * Follows the events of one run and folds them into a view. Unmounting or a
@@ -58,18 +55,18 @@ export function useRunMonitor(runId: string | null, options: MonitorOptions = {}
           onEvent: (event) => update((current) => ({ view: applyEvent(current.view, event), error: null })),
           onMode: (mode) => update(() => ({ mode })),
           onRefresh: (latest) => update((current) => ({ view: reconcileRun(current.view, latest) })),
-          onError: (text) => update(() => ({ error: text })),
+          onError: (error) => update(() => ({ error })),
           onEnd: ({ status }) => {
             // A terminal status makes the cached run and every run list stale.
             if (status !== null) void queryClient.invalidateQueries({ queryKey: queryKeys.allRuns() });
             getRunRecord(api, runId).then(
               (latest) => update(() => ({ refreshedStatus: latest.status })),
-              (error: unknown) => update(() => ({ error: message(error) })),
+              (error: unknown) => update(() => ({ error })),
             );
           },
         });
       },
-      (error: unknown) => update(() => ({ error: message(error) })),
+      (error: unknown) => update(() => ({ error })),
     );
     return () => {
       detached = true;

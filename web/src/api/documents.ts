@@ -9,7 +9,7 @@
  * Omitted search and answer controls are sent as `null`, so the collection
  * profile decides them on the server.
  */
-import { ApiError, type ApiClient, type CallOptions } from "./client";
+import { ApiError, ClientRefusal, type ApiClient, type CallOptions } from "./client";
 
 export type JsonObject = { [key: string]: unknown };
 
@@ -338,13 +338,13 @@ export async function getJob(api: ApiClient, jobId: string, options: CallOptions
  */
 export function joinRootPath(root: string, relative: string): string {
   const trimmed = relative.trim();
-  if (trimmed === "" || trimmed.includes("\u0000")) throw new Error("Enter a path relative to the selected folder.");
+  if (trimmed === "" || trimmed.includes("\u0000")) throw new ClientRefusal("Enter a path relative to the selected folder.");
   if (/^([/\\~]|[A-Za-z]:)/.test(trimmed)) {
-    throw new Error("Use a path relative to the selected folder, not an absolute path.");
+    throw new ClientRefusal("Use a path relative to the selected folder, not an absolute path.");
   }
   const parts = trimmed.split(/[/\\]+/).filter((part) => part !== "" && part !== ".");
-  if (parts.includes("..")) throw new Error("The path must stay inside the selected folder.");
-  if (parts.length === 0) throw new Error("Enter a path relative to the selected folder.");
+  if (parts.includes("..")) throw new ClientRefusal("The path must stay inside the selected folder.");
+  if (parts.length === 0) throw new ClientRefusal("Enter a path relative to the selected folder.");
   const separator = root.includes("\\") && !root.includes("/") ? "\\" : "/";
   const base = root.replace(/[/\\]+$/, "");
   return [base, ...parts].join(separator);
