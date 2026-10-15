@@ -1,15 +1,20 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { documentsServer } from "../test/fakeDocumentsServer";
-import { LibraryView } from "./LibraryView";
+import { startApp } from "../test/startApp";
 
 function profilePanel() {
   return screen.getByRole("region", { name: "Collection profile" });
 }
 
+async function openProfile(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole("button", { name: "Profile" }));
+  return profilePanel();
+}
+
 describe("stored collection profile", () => {
-  it("shows the stored profile of the selected collection from the collection list", async () => {
+  it("shows the stored profile of the open project from the collection list", async () => {
     const server = documentsServer({
       "GET /v1/collections": () => [
         { name: "documents", document_count: 3, chunk_count: 12, profile: "codebase" },
@@ -17,10 +22,11 @@ describe("stored collection profile", () => {
       ],
     });
     const user = userEvent.setup();
-    render(<LibraryView fetchImpl={server.fetchImpl} pollMs={5} />);
+    startApp("#/knowledge-base/documents", server);
 
-    expect(await within(await screen.findByRole("region", { name: "Collection profile" })).findByText("Stored profile: codebase")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /notes/ }));
+    const panel = await openProfile(user);
+    expect(within(panel).getByText("codebase", { selector: "[data-slot=badge]" })).toBeInTheDocument();
+    await user.click(within(screen.getByRole("list", { name: "Projects" })).getByRole("button", { name: /notes/ }));
     expect(await within(profilePanel()).findByText("No profile is stored for this collection.")).toBeInTheDocument();
   });
 
@@ -42,12 +48,16 @@ describe("stored collection profile", () => {
       },
     });
     const user = userEvent.setup();
-    render(<LibraryView fetchImpl={server.fetchImpl} pollMs={5} />);
+    startApp("#/knowledge-base/documents", server);
 
-    expect(await screen.findByText("Stored profile: documents")).toBeInTheDocument();
-    await user.selectOptions(within(profilePanel()).getByRole("combobox", { name: "New profile" }), "codebase");
-    await user.click(within(profilePanel()).getByRole("button", { name: "Preview profile change" }));
+    const panel = await openProfile(user);
+    expect(within(panel).getByText("documents", { selector: "[data-slot=badge]" })).toBeInTheDocument();
+    await user.click(within(panel).getByRole("combobox", { name: "New profile" }));
+    await user.click(await screen.findByRole("option", { name: "codebase" }));
+    await user.click(within(panel).getByRole("button", { name: "Preview profile change" }));
     await user.click(await screen.findByRole("button", { name: "Confirm profile change" }));
-    await waitFor(() => expect(within(profilePanel()).getByText("Stored profile: codebase")).toBeInTheDocument());
+    await waitFor(() => expect(within(profilePanel()).getAllByText("codebase", { selector: "[data-slot=badge]" }).length).toBeGreaterThan(0));
+    // The picker and Home read the same cache, so the badge in the project header updates too.
+    await waitFor(() => expect(within(profilePanel()).queryByText("documents", { selector: "[data-slot=badge]" })).not.toBeInTheDocument());
   });
 });
