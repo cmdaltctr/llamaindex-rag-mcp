@@ -150,6 +150,37 @@ def test_read_saved_web_port_returns_the_saved_value(db: Path) -> None:
     assert read_saved_web_port(db) == 9100
 
 
+# ── Upload limit (add-run-output-inspection-and-upload-limit 3.1) ─────────
+
+
+def test_upload_limit_round_trips_and_none_clears_it(db: Path) -> None:
+    settings = WorkspaceSettings(db)
+    assert settings.get_upload_limit_mib() is None
+    settings.set_upload_limit_mib(200)
+    assert WorkspaceSettings(db).get_upload_limit_mib() == 200
+    for edge in (1, 2048):
+        settings.set_upload_limit_mib(edge)
+        assert settings.get_upload_limit_mib() == edge
+    settings.set_upload_limit_mib(None)
+    assert settings.get_upload_limit_mib() is None
+
+
+@pytest.mark.parametrize("stored", ["0", "2049", "big", "", "-5", "1.5", " 10"])
+def test_invalid_stored_upload_limit_reads_as_unset(db: Path, stored: str) -> None:
+    conn = sqlite3.connect(db)
+    conn.execute("INSERT INTO workspace_settings VALUES ('upload_limit_mib', ?)", (stored,))
+    conn.commit()
+    conn.close()
+    assert WorkspaceSettings(db).get_upload_limit_mib() is None
+
+
+@pytest.mark.parametrize("mib", [0, 2049, -1])
+def test_setting_an_out_of_range_upload_limit_is_refused(db: Path, mib: int) -> None:
+    with pytest.raises(ValueError):
+        WorkspaceSettings(db).set_upload_limit_mib(mib)
+    assert WorkspaceSettings(db).get_upload_limit_mib() is None
+
+
 # ── 2.3 Token repository ─────────────────────────────────────────────────
 
 

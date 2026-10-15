@@ -14,24 +14,29 @@ from omrg.integrations.workspace_sqlite.schema import connect
 
 MCP_HTTP_ENABLED = "mcp_http_enabled"
 WEB_PORT = "web_port"
+UPLOAD_LIMIT_MIB = "upload_limit_mib"
 #: The only keys the table may hold.
-SETTING_KEYS: frozenset[str] = frozenset({MCP_HTTP_ENABLED, WEB_PORT})
+SETTING_KEYS: frozenset[str] = frozenset({MCP_HTTP_ENABLED, WEB_PORT, UPLOAD_LIMIT_MIB})
 
 #: Saved ports must be unprivileged.
 MIN_WEB_PORT = 1024
 MAX_WEB_PORT = 65535
+
+#: Allowed per-file upload limit, in whole MiB.
+MIN_UPLOAD_LIMIT_MIB = 1
+MAX_UPLOAD_LIMIT_MIB = 2048
 
 
 class UnknownSettingError(KeyError):
     """A key outside :data:`SETTING_KEYS` was read or written."""
 
 
-def _parse_port(value: str | None) -> int | None:
-    """Return the port in *value*, or ``None`` when it is absent or invalid."""
+def _parse_bounded(value: str | None, low: int, high: int) -> int | None:
+    """Return the whole number in *value*, or ``None`` when absent, invalid or out of range."""
     if value is None or not value.isascii() or not value.isdigit():
         return None
-    port = int(value)
-    return port if MIN_WEB_PORT <= port <= MAX_WEB_PORT else None
+    number = int(value)
+    return number if low <= number <= high else None
 
 
 class WorkspaceSettings:
@@ -101,7 +106,7 @@ class WorkspaceSettings:
 
     def get_web_port(self) -> int | None:
         """Return the saved web port, or ``None`` when unset or invalid."""
-        return _parse_port(self.get(WEB_PORT))
+        return _parse_bounded(self.get(WEB_PORT), MIN_WEB_PORT, MAX_WEB_PORT)
 
     def set_web_port(self, port: int | None) -> None:
         """Save the web port for later launches; ``None`` clears it.
@@ -112,6 +117,25 @@ class WorkspaceSettings:
         if port is not None and not MIN_WEB_PORT <= port <= MAX_WEB_PORT:
             raise ValueError(f"Port must be between {MIN_WEB_PORT} and {MAX_WEB_PORT}.")
         self.set(WEB_PORT, None if port is None else str(port))
+
+    def get_upload_limit_mib(self) -> int | None:
+        """Return the saved per-file upload limit in MiB, or ``None`` when unset or invalid."""
+        return _parse_bounded(
+            self.get(UPLOAD_LIMIT_MIB), MIN_UPLOAD_LIMIT_MIB, MAX_UPLOAD_LIMIT_MIB
+        )
+
+    def set_upload_limit_mib(self, mib: int | None) -> None:
+        """Save the per-file upload limit in MiB; ``None`` clears it.
+
+        Raises:
+            ValueError: *mib* is outside 1 to 2048.
+        """
+        if mib is not None and not MIN_UPLOAD_LIMIT_MIB <= mib <= MAX_UPLOAD_LIMIT_MIB:
+            raise ValueError(
+                f"The upload limit must be between {MIN_UPLOAD_LIMIT_MIB} "
+                f"and {MAX_UPLOAD_LIMIT_MIB} MiB."
+            )
+        self.set(UPLOAD_LIMIT_MIB, None if mib is None else str(mib))
 
 
 def read_saved_web_port(path: Path) -> int | None:

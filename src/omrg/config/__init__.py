@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import logging
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
@@ -33,7 +33,7 @@ from ..core.metadata.settings import MetadataSettings
 from ..core.retrieval.settings import RetrievalSettings
 from ..core.settings import OCR_ROUTING_UNITS, EmbeddingSettings
 
-load_dotenv()
+load_dotenv(find_dotenv(usecwd=True))  # the working directory's .env, as env_file reads
 
 from .ocr_routes import OcrRouteSettingsMixin  # noqa: E402
 from .sources import LegacyBool  # noqa: E402

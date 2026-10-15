@@ -309,7 +309,21 @@ omrg web --workspace ~/omrg-demo --port 8765
 
 # Approve a root for experiment workspaces
 omrg web --experiment-root ~/omrg-experiments
+
+# Raise the per-file upload limit to 200 MiB for this run
+omrg web --max-upload-mib 200
 ```
+
+| Option | Default | Use |
+|---|---|---|
+| `--workspace PATH` | `~/.omrg/workspace` | Directory for records, run artefacts and uploads. |
+| `--port N` | saved port, else `8765` | TCP port. `0` picks a free port. |
+| `--root DIR` | none | Approve a directory for file access. Repeat for more directories. |
+| `--host ADDR` | `127.0.0.1` | Loopback address only: `127.0.0.1`, `::1` or `localhost`. |
+| `--experiment-root DIR` | none | Approve a directory for experiment workspaces. Repeat for more directories. |
+| `--max-upload-mib MIB` | saved limit, else `50` | Per-file upload limit in whole MiB, 1 to 2048. Also read from `WEB_MAX_UPLOAD_MIB`. |
+
+The upload limit is the first value in this order: `--max-upload-mib`, then `WEB_MAX_UPLOAD_MIB` (environment or `.env`), then the limit saved in Settings > Workspace, then 50 MiB. A launch value locks the limit for that run, and Settings cannot change it. A value that is not a whole number from 1 to 2048 stops the command with exit code 2 before it binds a port. The message names the option, the variable and the range.
 
 The port is `--port` if you give it, else the port saved in Settings > MCP, else 8765. `--port 0` picks a free port. If the port is taken, the command exits with code 1 and prints `Port <n> is in use. Start with --port <n> to choose another port, then save it in Settings > MCP.` The command writes the one-time sign-in link to stderr. It does not run the legacy process-default installer. It refuses a non-loopback `--host`. Every option, sign-in, file grants, jobs and shutdown: [Web workspace](web-workspace.md).
 
