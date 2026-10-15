@@ -4,7 +4,7 @@
 - **Status:** Accepted (2026-10-15; evidence: `tests/unit/test_web_upload_limit.py` (22) and `tests/unit/test_web_run_artefacts.py` (14) pass; live server: bad launch values exit 2, `.env` value 300 locks Settings and PUT returns 409, a saved 200 MiB applies without restart and survives one, "Open full output" opens an 8,306-character step summary)
 - **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 - **Related:** [ADR-075](075-omrg-owned-pipeline-runner-local-web-packaging-and-external-tool-plugins.md) (local web runtime), [ADR-077](077-web-workspace-client-foundation.md) (web client foundation)
-- **Change:** `openspec/changes/add-run-output-inspection-and-upload-limit/` (design D1 to D4)
+- **Change:** `openspec/changes/archive/2026-10-15-add-run-output-inspection-and-upload-limit/` (design D1 to D4)
 
 ## Context
 
