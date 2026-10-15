@@ -84,6 +84,7 @@ development of OMRG — Opinionated Modular RAG.
 | [075](./075-omrg-owned-pipeline-runner-local-web-packaging-and-external-tool-plugins.md) | OMRG-Owned Pipeline Runner, Local Web Packaging, and External-Tool Plugins | 2026-10-13 | Accepted |
 | [076](./076-serve-mcp-from-the-web-server-with-a-lifespan-provided-engine.md) | Serve MCP from the Web Server with a Lifespan-Provided Engine | 2026-10-14 | Accepted |
 | [077](./077-web-workspace-client-foundation.md) | Web Workspace Client Foundation | 2026-10-15 | Accepted |
+| [078](./078-upload-limit-as-a-workspace-setting-and-run-artefact-route.md) | Upload Limit as a Workspace Setting, and a Run Artefact Route | 2026-10-15 | Accepted |
 
 ## Convention
 
