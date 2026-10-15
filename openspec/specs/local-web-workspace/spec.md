@@ -310,3 +310,143 @@ The operator SHALL be able to approve extra loopback browser origins when the se
 
 - **WHEN** the server starts with approved origins
 - **THEN** the server SHALL print each approved origin before it prints the launch link
+
+### Requirement: The collection list names the vector database
+`GET /v1/collections` SHALL return, for every collection, a `store` object with the registered backend `name` and its `label`. The value SHALL come from the vector-store registry and SHALL NOT include a path, URI, tenant or credential.
+
+#### Scenario: LanceDB is the active store
+- **WHEN** the server runs with the default store and a client lists collections
+- **THEN** every item SHALL carry `store: {"name": "lancedb", "label": "LanceDB"}`
+
+#### Scenario: Chroma is the active store
+- **WHEN** the server runs with `VECTOR_STORE=chroma` and a client lists collections
+- **THEN** every item SHALL carry `store: {"name": "chroma", "label": "ChromaDB"}`
+
+#### Scenario: Cloud settings are configured
+- **WHEN** Chroma runs in cloud mode and a client lists collections
+- **THEN** the `store` object SHALL contain no tenant, database or key
+
+### Requirement: The Knowledge Base shows the database of each project
+The project header and the Home card SHALL show the database logo and label, with the logo in a box of fixed size so logos of different shapes never change the row height. The project chips and the Sources table SHALL show the label as text only. A backend with no logo file SHALL show its label alone.
+
+#### Scenario: Header shows logo and name
+- **WHEN** a user opens a project on LanceDB
+- **THEN** the header SHALL show the LanceDB logo and the text `LanceDB`
+- **AND** the logo box SHALL have the same width and height for every backend
+
+#### Scenario: Home card shows logo and name
+- **WHEN** a user opens Home
+- **THEN** each project card SHALL show the database logo and the text `LanceDB`
+
+#### Scenario: Sources table shows the name
+- **WHEN** a user opens the Sources section
+- **THEN** the table SHALL have a Database column whose cells hold the label as text
+
+#### Scenario: Logo file is missing
+- **WHEN** no logo file exists for a registered backend
+- **THEN** the header SHALL show the label with no broken image
+
+### Requirement: The Profile tab shows the stored profile truthfully
+The Profile tab SHALL pre-select the stored profile in the "New profile" list when the collection has one. When the collection has none, the list SHALL start with no selection and "Preview profile change" SHALL stay disabled until the user picks a profile. The status line SHALL show the profile as a badge, using the neutral "No profile" badge when none is stored.
+
+#### Scenario: Collection has a stored profile
+- **WHEN** a collection with profile `codebase` opens the Profile tab
+- **THEN** the list SHALL show `codebase` as selected
+- **AND** the status line SHALL show a `codebase` badge
+
+#### Scenario: Collection has no stored profile
+- **WHEN** a collection with no profile opens the Profile tab
+- **THEN** the list SHALL show the placeholder "Choose a profile"
+- **AND** the status line SHALL show the "No profile" badge
+- **AND** "Preview profile change" SHALL be disabled
+
+#### Scenario: Stored tag is not a selectable profile
+- **WHEN** a collection whose stored tag is not `documents` or `codebase` opens the Profile tab
+- **THEN** the status line SHALL show that tag as a badge
+- **AND** the list SHALL show the placeholder "Choose a profile"
+
+#### Scenario: User selects a profile
+- **WHEN** the user selects `documents` on a collection with no profile
+- **THEN** "Preview profile change" SHALL become enabled
+
+### Requirement: Collections have an editable display name
+A collection SHALL have an optional display name stored in its metadata. `GET /v1/collections` SHALL return it as `display_name`, or `null` when none is set. `PATCH /v1/collections/{collection}/display-name` SHALL set it and SHALL return `{collection, display_name}`. It SHALL require a browser session with the `manage` scope, the same guard as the profile change. It SHALL return 404 for an unknown collection and SHALL NOT create one. The server SHALL trim the value and SHALL clear the display name when the trimmed value is empty. It SHALL reject, with status 400, a value longer than 80 Unicode code points or one that contains a control character. The collection name, the stored vectors, retrieval, ingestion and MCP tools SHALL be unaffected.
+
+#### Scenario: Display name is set
+- **WHEN** a client sends `{"display_name": "  Project docs "}` for collection `documents`
+- **THEN** the response SHALL be `{"collection": "documents", "display_name": "Project docs"}`
+- **AND** the collection list SHALL return the same value
+
+#### Scenario: Display name is cleared
+- **WHEN** a client sends an empty or whitespace-only value
+- **THEN** the response SHALL carry `display_name: null`
+- **AND** `display_name` SHALL be `null` in the next collection list
+
+#### Scenario: Value is too long
+- **WHEN** a client sends 81 Unicode code points
+- **THEN** the server SHALL reject the request with status 400
+- **AND** the stored value SHALL stay unchanged
+
+#### Scenario: Value contains a control character
+- **WHEN** a client sends a value that contains a line feed or another control character
+- **THEN** the server SHALL reject the request with status 400
+- **AND** the stored value SHALL stay unchanged
+
+#### Scenario: Retrieval keeps working under the collection name
+- **WHEN** a display name is set on `documents`
+- **THEN** a search or ingest call that passes `collection="documents"` SHALL behave as before
+
+#### Scenario: Bearer credential
+- **WHEN** a bearer token or notebook credential sends the PATCH request
+- **THEN** the server SHALL reject it with status 403 before any write
+
+#### Scenario: Unknown collection
+- **WHEN** a client sends the PATCH request for a collection that does not exist
+- **THEN** the server SHALL return 404
+- **AND** no collection SHALL be created
+
+#### Scenario: Metadata cannot be read
+- **WHEN** reading a collection's metadata fails during the collection list
+- **THEN** that item SHALL carry `display_name: null` and `profile: null`
+- **AND** the list SHALL still succeed
+
+### Requirement: The workspace shows the display name and the collection name
+The Home card, the project chips in the Knowledge Base and in Chat, and the project header SHALL show the display name when set and the collection name otherwise. The project header SHALL always show the collection name in small grey text under the title, and each Home card SHALL show it in the same style under the document and chunk counts. Places where the name is an identifier SHALL keep the collection name: "Sources in <name>", the Chat input and the delete dialog. The header SHALL offer a pencil button that edits the display name in place. Enter SHALL save, Escape SHALL cancel, and an empty value SHALL clear the display name.
+
+#### Scenario: Display name is set
+- **WHEN** collection `documents` has display name `Project docs`
+- **THEN** the Home card, the Knowledge Base chip, the Chat chip and the header title SHALL read `Project docs`
+- **AND** the header SHALL show `Collection name: documents`
+
+#### Scenario: Home card shows the collection name
+- **WHEN** Home lists collection `documents` with display name `Project docs`
+- **THEN** its card SHALL read `Project docs`, then the counts, then `Collection name: documents`
+- **AND** a card with no display name SHALL still show `Collection name: <name>`
+
+#### Scenario: Identifiers keep the collection name
+- **WHEN** collection `documents` has display name `Project docs`
+- **THEN** the Sources heading SHALL read `Sources in documents`
+- **AND** the Chat input SHALL read `Ask documents a question`
+
+#### Scenario: No display name
+- **WHEN** a collection has no display name
+- **THEN** the title SHALL read the collection name
+- **AND** the grey line SHALL still show `Collection name: <name>`
+
+#### Scenario: User edits the name
+- **WHEN** the user clicks the pencil, types a new name and presses Enter
+- **THEN** the title SHALL update without a page reload
+- **AND** the route SHALL keep using the collection name
+
+#### Scenario: User cancels
+- **WHEN** the user presses Escape while editing
+- **THEN** the title SHALL keep its previous text and no request SHALL be sent
+
+#### Scenario: Name is too long in the editor
+- **WHEN** the user types 81 Unicode code points
+- **THEN** the editor SHALL block the save and SHALL say the limit
+- **AND** no request SHALL be sent
+
+#### Scenario: Save fails
+- **WHEN** the server rejects the change
+- **THEN** the editor SHALL stay open and SHALL show a friendly error
