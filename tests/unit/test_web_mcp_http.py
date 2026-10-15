@@ -92,6 +92,17 @@ def test_foreign_origin_is_403_even_with_a_valid_token(live: Live) -> None:
     assert calls == []
 
 
+def test_an_approved_origin_passes_the_gate_and_the_sdk_check(tmp_path: Path) -> None:
+    """``--allow-origin`` reaches both the gate and the MCP SDK's own origin list."""
+    approved = "http://wt.orca.localhost:57977"
+    with live_server(tmp_path / "ws", extra_origins=(approved,)) as server:
+        token = enable_mcp(server)
+        accepted = mcp_post(server, token, INITIALIZE, Origin=approved)
+        refused = mcp_post(server, token, INITIALIZE, Origin="http://other.orca.localhost:57977")
+    assert accepted.status_code == 200, accepted.text
+    assert refused.status_code == 403
+
+
 def test_an_absent_origin_passes_the_gate(live: Live) -> None:
     token = enable_mcp(live)
     response = mcp_post(live, token, INITIALIZE)

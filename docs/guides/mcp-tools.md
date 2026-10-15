@@ -36,7 +36,7 @@ With Claude Code: `claude mcp add --transport http omrg http://127.0.0.1:8765/mc
 
 Rules for HTTP:
 
-- A switched-off endpoint answers 404. A foreign `Origin` gets 403. A missing, wrong or revoked token gets 401. The checks run in that order.
+- A switched-off endpoint answers 404. A foreign `Origin` gets 403. An origin approved with `omrg web --allow-origin` is not foreign. A missing, wrong or revoked token gets 401. The checks run in that order.
 - Rotating the token ends access for the old token at the next request. Update each client.
 - `ingest_documents` and `get_codebase_map` accept only paths inside a directory that you approved with `--root`. A path outside, or a symlink that leads outside, returns `{"status": "error", ...}`. Stdio keeps its earlier behaviour.
 - The token works on `/mcp` only. It never opens a `/v1` route.

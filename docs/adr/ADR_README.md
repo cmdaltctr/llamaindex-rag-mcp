@@ -85,6 +85,7 @@ development of OMRG — Opinionated Modular RAG.
 | [076](./076-serve-mcp-from-the-web-server-with-a-lifespan-provided-engine.md) | Serve MCP from the Web Server with a Lifespan-Provided Engine | 2026-10-14 | Accepted |
 | [077](./077-web-workspace-client-foundation.md) | Web Workspace Client Foundation | 2026-10-15 | Accepted |
 | [078](./078-upload-limit-as-a-workspace-setting-and-run-artefact-route.md) | Upload Limit as a Workspace Setting, and a Run Artefact Route | 2026-10-15 | Accepted |
+| [079](./079-approve-extra-loopback-origins-at-launch.md) | Approve Extra Loopback Origins at Launch | 2026-10-15 | Accepted |
 
 ## Convention
 

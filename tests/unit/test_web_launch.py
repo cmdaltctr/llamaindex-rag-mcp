@@ -205,6 +205,57 @@ def test_web_rejects_missing_root(tmp_path: Path) -> None:
     serve.assert_not_called()
 
 
+@pytest.mark.parametrize(
+    ("value", "rule"),
+    [("http://example.com", "loopback"), ("http://*.localhost:3000", "wildcard")],
+)
+def test_web_rejects_bad_allow_origin_before_binding(value: str, rule: str, tmp_path: Path) -> None:
+    """A bad ``--allow-origin`` exits 2 and names the value, before any socket opens."""
+    with (
+        patch("omrg.transports.cli.web._bind_socket") as bind,
+        patch("omrg.transports.cli.web._serve") as serve,
+    ):
+        result = runner.invoke(
+            cli_app, ["web", "--workspace", str(tmp_path / "ws"), "--allow-origin", value]
+        )
+    assert result.exit_code == 2
+    assert rule in result.stderr
+    assert value in result.stderr.replace("\n", "")
+    bind.assert_not_called()
+    serve.assert_not_called()
+
+
+def test_web_passes_allowed_origins_to_the_policy_and_prints_them_first(tmp_path: Path) -> None:
+    """Each approved origin reaches the policy and is printed before the launch link."""
+    captured: dict[str, Any] = {}
+
+    def fake_serve(app: Any, sock: Any) -> None:
+        captured["policy"] = app.state.access_policy
+        sock.close()
+
+    with patch("omrg.transports.cli.web._serve", side_effect=fake_serve):
+        result = runner.invoke(
+            cli_app,
+            [
+                "web",
+                "--workspace",
+                str(tmp_path / "ws"),
+                "--allow-origin",
+                "http://a.orca.localhost:57977",
+                "--allow-origin",
+                "HTTP://localhost:3000/",
+            ],
+        )
+
+    assert result.exit_code == 0, result.output
+    origins = captured["policy"].allowed_origins
+    assert {"http://a.orca.localhost:57977", "http://localhost:3000"} <= origins
+    text = result.stderr
+    link = text.index("#bootstrap=")
+    assert text.index("http://a.orca.localhost:57977") < link
+    assert text.index("http://localhost:3000") < link
+
+
 # ── Lifespan ownership ───────────────────────────────────────────────────
 
 

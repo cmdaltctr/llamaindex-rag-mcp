@@ -367,3 +367,76 @@ def test_validation_errors_use_envelope_without_echoing_input(tmp_path: Path) ->
     assert body["error_type"] == "validation"
     assert "bootstrap" in body["message"]
     assert "omrg_bs_leak" not in response.text
+
+
+# ── Approved extra origins (--allow-origin) ──────────────────────────────
+
+APPROVED = "http://wt.orca.localhost:57977"
+
+
+def _make_approved(tmp_path: Path) -> tuple[Any, AccessPolicy]:
+    config = WebConfig(workspace=tmp_path / "ws", host="127.0.0.1", port=8765, static_dir=None)
+    policy = AccessPolicy.for_launch(config.host, config.port, extra_origins=[APPROVED])
+    return create_app(config, policy=policy, engine_factory=FakeEngine), policy
+
+
+def test_approved_origin_can_sign_in_and_submit_work(tmp_path: Path) -> None:
+    app, policy = _make_approved(tmp_path)
+    with TestClient(app, base_url=BASE) as client:
+        login = client.post(
+            "/v1/session", json={"bootstrap": policy.bootstrap_secret}, headers={"Origin": APPROVED}
+        )
+        created = client.post(
+            "/v1/credentials", json={"scopes": ["read"]}, headers={"Origin": APPROVED}
+        )
+    assert login.status_code == 200
+    assert "set-cookie" in login.headers
+    assert created.status_code == 201
+
+
+def test_unapproved_origin_is_still_rejected_beside_an_approved_one(tmp_path: Path) -> None:
+    app, policy = _make_approved(tmp_path)
+    other = {"Origin": "http://other.orca.localhost:57977"}
+    secret = {"bootstrap": policy.bootstrap_secret}
+    with TestClient(app, base_url=BASE) as client:
+        login = client.post("/v1/session", json=secret, headers=other)
+    assert login.status_code == 403
+
+
+def test_origin_is_rejected_when_nothing_is_approved(tmp_path: Path) -> None:
+    """With no flag the Orca origin gets the 403 it gets today."""
+    app, policy = _make(tmp_path)
+    with TestClient(app, base_url=BASE) as client:
+        login = client.post(
+            "/v1/session", json={"bootstrap": policy.bootstrap_secret}, headers={"Origin": APPROVED}
+        )
+    assert login.status_code == 403
+    assert policy.allowed_origins == AccessPolicy.for_launch("127.0.0.1", 8765).allowed_origins
+
+
+def test_approved_origin_does_not_relax_host_or_fetch_metadata(tmp_path: Path) -> None:
+    app, policy = _make_approved(tmp_path)
+    secret = {"bootstrap": policy.bootstrap_secret}
+    with TestClient(app, base_url=BASE) as client:
+        bad_host = client.post(
+            "/v1/session", json=secret, headers={"Origin": APPROVED, "Host": "evil.example:8765"}
+        )
+        cross_site = client.post(
+            "/v1/session",
+            json=secret,
+            headers={"Origin": APPROVED, "Sec-Fetch-Site": "cross-site"},
+        )
+    assert bad_host.status_code == 400
+    assert cross_site.status_code == 403
+    assert policy.allowed_hosts == AccessPolicy.for_launch("127.0.0.1", 8765).allowed_hosts
+
+
+def test_policy_lists_approved_origin_for_the_mcp_sdk(tmp_path: Path) -> None:
+    _, policy = _make_approved(tmp_path)
+    assert APPROVED in policy.allowed_origins
+    assert BASE in policy.allowed_origins
+
+
+def test_policy_refuses_a_non_loopback_extra_origin() -> None:
+    with pytest.raises(ValueError, match="loopback"):
+        AccessPolicy.for_launch("127.0.0.1", 8765, extra_origins=["http://example.com"])

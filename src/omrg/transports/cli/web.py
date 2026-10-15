@@ -201,6 +201,18 @@ def web(
             ),
         ),
     ] = None,
+    allow_origin: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--allow-origin",
+            metavar="ORIGIN",
+            help=(
+                "Approve one extra loopback browser origin for this run, for example the "
+                "address of an embedded preview (http://name.orca.localhost:57977). "
+                "Repeat for more origins."
+            ),
+        ),
+    ] = None,
     max_upload_mib: Annotated[
         str | None,
         typer.Option(
@@ -221,6 +233,7 @@ def web(
     from ..api.app import create_app
     from ..api.grants import RootGrants
     from ..api.lifespan import WebConfig, WorkspaceLock, WorkspaceLocked
+    from ..api.origins import parse_extra_origin
     from ..api.runs_wiring import run_service_factory
     from ..api.security import AccessPolicy, validate_bind_host
 
@@ -230,6 +243,7 @@ def web(
         RootGrants.from_paths(roots)
         experiment_roots = tuple(experiment_root or ())
         _check_experiment_roots(experiment_roots)
+        extra_origins = tuple(dict.fromkeys(parse_extra_origin(v) for v in allow_origin or ()))
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {escape(str(exc))}", soft_wrap=True)
         raise typer.Exit(code=2) from None
@@ -261,7 +275,7 @@ def web(
         raise typer.Exit(code=1) from None
 
     bound_port = sock.getsockname()[1]
-    policy = AccessPolicy.for_launch(bind_host, bound_port)
+    policy = AccessPolicy.for_launch(bind_host, bound_port, extra_origins=extra_origins)
     config = WebConfig(
         workspace=workspace_dir,
         host=bind_host,
@@ -275,6 +289,8 @@ def web(
         config, policy=policy, run_service_factory=run_service_factory, log_buffer=log_buffer
     )
 
+    for origin in extra_origins:
+        console.print(f"Approved extra origin: {origin}", markup=False, highlight=False)
     console.print("OMRG web workspace. Open this link in your browser (it works once):")
     console.print(policy.launch_url(), markup=False, highlight=False, soft_wrap=True)
     console.print("Press Ctrl+C to stop.")

@@ -63,6 +63,7 @@ Press Ctrl+C to stop.
 | `--host ADDR` | `127.0.0.1` | Loopback address only: `127.0.0.1`, `::1` or `localhost`. |
 | `--root DIR` | none | Approve a directory for file access. Repeat the option for more directories. |
 | `--experiment-root DIR` | none | Approve a directory below which you can register experiment workspaces. Repeat the option for more directories. |
+| `--allow-origin ORIGIN` | none | Approve one extra loopback browser origin for this run, for example `http://name.orca.localhost:57977`. Repeat the option for more origins. |
 | `--max-upload-mib MIB` | saved limit, else `50` | Per-file upload limit in whole MiB, 1 to 2048. Also read from `WEB_MAX_UPLOAD_MIB`. It locks the limit in Settings for this run. |
 <!-- /web-options -->
 
@@ -70,6 +71,7 @@ Rules for the options:
 
 - A non-loopback address, for example `0.0.0.0` or a LAN address, stops the command with exit code 2.
 - A `--root` or `--experiment-root` that is missing, or that is not a directory, stops the command with exit code 2.
+- An `--allow-origin` value that is not an exact `http` or `https` loopback origin stops the command with exit code 2 before it binds a port. The message names the rule that failed.
 - A busy port (from `--port`, the saved port or the default) stops the command with exit code 1. The message names the port, `--port <n>` and Settings > MCP.
 - The server runs as one process. Automatic reload is off.
 
@@ -136,10 +138,20 @@ A credential that you issue with `experiment_context` is bound to that experimen
 The server checks every request before any route runs:
 
 - The `Host` header must be a loopback name with the bound port. Otherwise the server returns 400.
-- On `/v1` paths, a foreign `Origin` or a cross-site fetch gets 403.
+- On `/v1` paths, a foreign `Origin` or a cross-site fetch gets 403. An origin is not foreign when it is the server's own loopback address or one that you approved with `--allow-origin`.
 - A credential in the query string gets 400. Put credentials in a header or the cookie.
 
 `GET /v1/health` and `POST /v1/session` are the only public `/v1` operations.
+
+#### Use an embedded preview
+
+Some preview panes, for example the Orca browser preview, serve the workspace page from their own address. The server then refuses the sign-in with 403, and the page shows "The workspace session was not accepted".
+
+1. Copy the origin from the address bar of the preview. It has the form `http://<name>.orca.localhost:<port>`.
+2. Start the server with `omrg web --allow-origin <origin>`.
+3. Open the link that the command prints, in the preview.
+
+The option approves that one origin for this run only. The host must be `localhost`, a `.localhost` name, `127.0.0.1` or `[::1]`. A wildcard, a path or any other host stops the command. The option does not change the `Host` check or the cookie rules. The preview can change its port, or the number at the end of its host name, when it reopens. If the sign-in fails again with 403, copy the new origin and start the server again. You can repeat `--allow-origin` to approve several host names in one launch.
 
 ## Give file access
 
