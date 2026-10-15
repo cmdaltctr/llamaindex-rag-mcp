@@ -8,7 +8,7 @@ function Table({ className, ...props }: ComponentProps<"table">) {
     <div
       data-slot="table-container"
       tabIndex={0}
-      className="w-full overflow-x-auto rounded-panel border border-border"
+      className="relative w-full overflow-x-auto rounded-panel border border-border"
     >
       <table
         data-slot="table"

@@ -55,4 +55,22 @@ describe("Table", () => {
     expect(table.parentElement).toHaveAttribute("tabindex", "0");
     expect(table.parentElement).toHaveClass("overflow-x-auto");
   });
+
+  it("clips visually hidden labels, so they cannot widen the page", () => {
+    // A `sr-only` element is absolutely positioned. Without a positioned
+    // ancestor its containing block is the page, so the scroll wrapper does not
+    // clip it and a long table pushes the page sideways on a phone.
+    render(
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>
+              <span className="sr-only">Actions</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+      </Table>,
+    );
+    expect(screen.getByRole("table").parentElement).toHaveClass("relative", "overflow-x-auto");
+  });
 });
