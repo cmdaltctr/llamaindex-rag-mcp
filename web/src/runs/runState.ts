@@ -75,6 +75,12 @@ function record(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
+/** Keeps the server's cut marker and artefact reference with the node data, so the full output can be opened. */
+function withCut(data: Record<string, unknown> | null, summary: Record<string, unknown>): Record<string, unknown> | null {
+  if (summary.truncated !== true) return data;
+  return { ...data, truncated: true, artefact_ref: summary.artefact_ref };
+}
+
 function nodeUpdate(previous: NodeRunState | undefined, event: RunEventRecord): NodeRunState {
   const message = text(event.summary.message);
   const base: NodeRunState = previous ?? {
@@ -91,7 +97,7 @@ function nodeUpdate(previous: NodeRunState | undefined, event: RunEventRecord): 
   const status = NODE_STATUS[event.kind]!;
   const next: NodeRunState = { ...base, status, unitId: event.unit_id ?? base.unitId, message: message ?? base.message };
   if (event.kind === "node_started") Object.assign(next, { startedAt: event.created_at, endedAt: null, error: null, fallback: null });
-  if (event.kind === "node_completed") next.summary = record(event.summary.data);
+  if (event.kind === "node_completed") next.summary = withCut(record(event.summary.data), event.summary);
   if (event.kind === "node_failed") next.error = message ?? "The node failed; the server gave no message.";
   if (ENDED.has(status)) next.endedAt = event.created_at;
   return next;

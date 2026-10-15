@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { NodeOutcomeRecord } from "../api/runs";
-import { outcomeRows } from "./NodeOutcomes";
-import { bypassReason, displayStatus, EMPTY_RUN_VIEW } from "./runState";
+import type { NodeOutcomeRecord } from "../../api/runs";
+import { bypassReason, displayStatus, EMPTY_RUN_VIEW } from "../../runs/runState";
+import { outcomeRows } from "./outcomeRows";
 
 const stored: NodeOutcomeRecord = {
   node_id: "rerank",

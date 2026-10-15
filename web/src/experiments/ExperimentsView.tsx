@@ -1,54 +1,62 @@
-import { useMemo } from "react";
-import type { FetchLike } from "../api/client";
-import { listExperiments } from "../api/experiments";
-import { listPlugins } from "../api/plugins";
-import { ErrorNotice, ViewHeader } from "../views/shared/controls";
-import { useLoad } from "../views/shared/useLoad";
-import { ContextTable } from "./ContextTable";
-import { CredentialPanel } from "./CredentialPanel";
-import { ExperimentRuns } from "./ExperimentRuns";
-import { contextLabel } from "./labels";
-import { NotebookPanel } from "./NotebookPanel";
-import { RegisterForm } from "./RegisterForm";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useApi } from "../api/ApiProvider";
+import { experimentsQuery, pluginsQuery } from "../api/queries";
+import { ErrorNotice } from "../components/ErrorNotice";
+import { PageHeader } from "../components/PageHeader";
+import { Button } from "../components/ui/button";
+import { areaById } from "../lib/views";
+import { FoldersSection } from "./FoldersSection";
+import { NotebooksSection } from "./NotebooksSection";
+import { RunPage } from "./runs/RunPage";
+import { RunsSection } from "./runs/RunsSection";
+import { TrustNotice } from "./TrustNotice";
 
-interface ExperimentsViewProps {
-  fetchImpl?: FetchLike;
-  focusHeading?: boolean;
-}
+const SECTIONS = [
+  { id: "experiments", label: "Experiments" },
+  { id: "notebooks", label: "Notebooks" },
+  { id: "runs", label: "Runs" },
+] as const;
 
-/** Experiment workspaces, bound notebook credentials, the optional notebook editor and experiment runs. */
-export function ExperimentsView({ fetchImpl, focusHeading = false }: ExperimentsViewProps) {
-  const experiments = useLoad(() => listExperiments({ fetchImpl }), "experiments");
-  const plugins = useLoad(() => listPlugins({ fetchImpl }), "plugins");
-  const entries = useMemo(() => experiments.data?.experiments ?? [], [experiments.data]);
-  const active = entries.map((entry) => entry.experiment).filter((record) => record.status === "active");
-  const names = useMemo(
-    () => Object.fromEntries(entries.map(({ experiment }) => [experiment.context_id, contextLabel(experiment)])),
-    [entries],
-  );
+type SectionId = (typeof SECTIONS)[number]["id"];
+
+/**
+ * Experiment folders, notebook tools and pipeline runs. A run id in the
+ * route opens that run's detail; otherwise one chip-switched section shows.
+ */
+export function ExperimentsView({ runId }: { runId: string | null }) {
+  const api = useApi();
+  const experiments = useQuery(experimentsQuery(api));
+  const plugins = useQuery(pluginsQuery(api));
+  const [section, setSection] = useState<SectionId>("experiments");
   const trustNotice = experiments.data?.trust_notice ?? plugins.data?.trust_notice ?? null;
 
+  if (runId !== null) return <RunPage runId={runId} />;
+
   return (
-    <section className="view view--documents" aria-labelledby="view-experiments-title">
-      <ViewHeader id="experiments" focusHeading={focusHeading} />
-      <section className="notice notice--warning trust-notice" aria-label="Trust notice">
-        <h2 className="type-section-title">Trust notice</h2>
-        {trustNotice !== null ? <p className="server-text">{trustNotice}</p> : <p className="type-meta">Loading the trust notice.</p>}
-      </section>
-
-      <RegisterForm roots={experiments.data?.roots} fetchImpl={fetchImpl} onRegistered={experiments.reload} />
-
-      <section className="panel" aria-labelledby="experiments-contexts">
-        <h2 id="experiments-contexts" className="type-section-title">
-          Experiment contexts
-        </h2>
-        <ErrorNotice message={experiments.error === null ? null : `Could not load experiment contexts: ${experiments.error}`} />
-        <ContextTable entries={entries} fetchImpl={fetchImpl} onChanged={experiments.reload} />
-      </section>
-
-      <CredentialPanel active={active} fetchImpl={fetchImpl} />
-      <NotebookPanel plugins={plugins} active={active} names={names} fetchImpl={fetchImpl} />
-      <ExperimentRuns fetchImpl={fetchImpl} names={names} />
+    <section className="flex flex-col gap-4">
+      <PageHeader title="Experiments" summary={areaById("experiments").summary} />
+      <TrustNotice text={trustNotice} />
+      <div role="group" aria-label="Sections" className="flex flex-wrap gap-2">
+        {SECTIONS.map(({ id, label }) => (
+          <Button key={id} variant="chip" aria-pressed={section === id} onClick={() => setSection(id)}>
+            {label}
+          </Button>
+        ))}
+      </div>
+      {section === "experiments" ? (
+        experiments.isError ? (
+          <ErrorNotice error={experiments.error} onRetry={() => void experiments.refetch()} />
+        ) : experiments.data === undefined ? (
+          <p role="status" className="text-meta text-muted-foreground">
+            Loading experiments.
+          </p>
+        ) : (
+          <FoldersSection list={experiments.data} />
+        )
+      ) : null}
+      {section === "notebooks" ? <NotebooksSection experiments={experiments.data} /> : null}
+      {section === "runs" ? <RunsSection experiments={experiments.data} /> : null}
     </section>
   );
 }

@@ -25,18 +25,20 @@ export function scoreText(score: unknown, kind: unknown): { label: string; value
   return { label, value };
 }
 
-export function boundText(text: string): { text: string; truncated: boolean } {
+/** The first `limit` bytes of UTF-8 text, without a broken last character. */
+export function boundText(text: string, limit = MAX_TEXT_BYTES): { text: string; truncated: boolean } {
   const bytes = new TextEncoder().encode(text);
-  if (bytes.length <= MAX_TEXT_BYTES) return { text, truncated: false };
-  const cut = new TextDecoder().decode(bytes.slice(0, MAX_TEXT_BYTES)).replace(/�+$/, "");
+  if (bytes.length <= limit) return { text, truncated: false };
+  const cut = new TextDecoder().decode(bytes.slice(0, limit)).replace(/�+$/, "");
   return { text: cut, truncated: true };
 }
 
 export type Row = Record<string, unknown>;
 
+/** `all` keeps every row, for "Open full output" when the preview shows only the first ones. */
 export type EvidenceItem =
-  | { name: string; kind: "rows"; rows: Row[]; total: number }
-  | { name: string; kind: "citations"; citations: Row[]; total: number }
+  | { name: string; kind: "rows"; rows: Row[]; total: number; all: Row[] }
+  | { name: string; kind: "citations"; citations: Row[]; total: number; all: Row[] }
   | { name: string; kind: "answer"; text: string };
 
 function isRow(value: unknown): value is Row {
@@ -53,7 +55,8 @@ function collect(name: string, value: unknown, depth: number, found: EvidenceIte
     if (rows.length === value.length && looksRanked(rows)) {
       const kind = name.endsWith("citations") ? "citations" : "rows";
       const bounded = rows.slice(0, MAX_PREVIEW_ROWS);
-      found.push(kind === "rows" ? { name, kind, rows: bounded, total: rows.length } : { name, kind, citations: bounded, total: rows.length });
+      const total = rows.length;
+      found.push(kind === "rows" ? { name, kind, rows: bounded, total, all: rows } : { name, kind, citations: bounded, total, all: rows });
     }
     return;
   }

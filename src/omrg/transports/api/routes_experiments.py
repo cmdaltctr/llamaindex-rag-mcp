@@ -16,10 +16,16 @@ from __future__ import annotations
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from ...core.experiments import ExperimentAdmissionError, ExperimentPathError
+from ...core.experiments import (
+    ExperimentAdmissionError,
+    ExperimentPathError,
+    create_folder,
+    folder_tree,
+)
 from .engine_access import RuntimeDep, require_session
 from .errors import API_HEADERS, error_response
 from .routes_graphs import ok
@@ -52,6 +58,15 @@ class ExperimentRequest(BaseModel):
     actions: list[str] | None = Field(default=None, min_length=1, max_length=2)
     store_backend: str = Field(default="lancedb", min_length=1, max_length=32)
     declared_factors: list[str] = Field(default_factory=list, max_length=8)
+
+
+class ExperimentFolderRequest(BaseModel):
+    """Body of ``POST /v1/experiment-folders``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    path: str = Field(min_length=1, max_length=4096)
+    root: str | None = Field(default=None, min_length=1, max_length=4096)
 
 
 def refusal(exc: ExperimentAdmissionError | ExperimentPathError, status_code: int) -> Response:
@@ -92,17 +107,57 @@ async def create_experiment(
     return ok({**_entry(experiments, context), "trust_notice": TRUST_NOTICE}, 201)
 
 
-@router.get("/experiments", operation_id="listExperiments")
-async def list_experiments(_: ManageScope, runtime: RuntimeDep) -> Response:
-    """List the approved roots and every context of this launch."""
+@router.post("/experiment-folders", status_code=201, operation_id="createExperimentFolder")
+async def create_experiment_folder(
+    _: ManageScope, body: ExperimentFolderRequest, runtime: RuntimeDep
+) -> Response:
+    """Create a folder below an approved experiment root.
+
+    The path is relative, has at most four levels and no ``..`` part, and
+    no part may be a link. A refused path creates nothing. Register a
+    sub-experiment in the folder with ``POST /v1/experiments``.
+    """
     experiments = runtime.experiments
     if experiments is None:
-        return ok({"roots": [], "experiments": [], "trust_notice": TRUST_NOTICE})
+        return error_response(409, _NO_ROOTS)
     registry = experiments.registry
+    try:
+        created = await run_in_threadpool(
+            create_folder, registry.approved_roots, body.path, root=body.root
+        )
+    except ExperimentPathError as exc:
+        return refusal(exc, 409 if exc.code == "exists" else 400)
+    root = next(item for item in registry.approved_roots if created.is_relative_to(item))
+    return ok(
+        {
+            "folder": {
+                "root": str(root),
+                "path": created.relative_to(root).as_posix(),
+                "name": created.name,
+                "workspace": str(created),
+            }
+        },
+        201,
+    )
+
+
+@router.get("/experiments", operation_id="listExperiments")
+async def list_experiments(_: ManageScope, runtime: RuntimeDep) -> Response:
+    """List the approved roots, their folder trees and every context of this launch."""
+    experiments = runtime.experiments
+    if experiments is None:
+        return ok({"roots": [], "folders": [], "experiments": [], "trust_notice": TRUST_NOTICE})
+    registry = experiments.registry
+    contexts = registry.contexts()
+    folders = [
+        {"root": str(root), "tree": await run_in_threadpool(folder_tree, root, contexts)}
+        for root in registry.approved_roots
+    ]
     return ok(
         {
             "roots": [str(root) for root in registry.approved_roots],
-            "experiments": [_entry(experiments, item) for item in registry.contexts()],
+            "folders": folders,
+            "experiments": [_entry(experiments, item) for item in contexts],
             "trust_notice": TRUST_NOTICE,
         }
     )

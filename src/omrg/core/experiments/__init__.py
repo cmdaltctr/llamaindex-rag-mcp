@@ -20,10 +20,12 @@ from .contexts import (
     verify_containment,
 )
 from .errors import ExperimentAdmissionError, ExperimentPathError
+from .folders import MAX_FOLDER_DEPTH, create_folder, folder_tree, split_folder_path
 
 __all__ = [
     "DEFAULT_STORE_BACKEND",
     "EXPERIMENT_ACTIONS",
+    "MAX_FOLDER_DEPTH",
     "OUTPUT_DIR_NAME",
     "STORE_FACTOR",
     "BackendIdentity",
@@ -34,6 +36,9 @@ __all__ = [
     "ExperimentRegistry",
     "check_credential_target",
     "check_experiment_snapshot",
+    "create_folder",
+    "folder_tree",
     "resolve_workspace",
+    "split_folder_path",
     "verify_containment",
 ]

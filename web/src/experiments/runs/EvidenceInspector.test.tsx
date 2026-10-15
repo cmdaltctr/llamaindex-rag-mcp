@@ -1,13 +1,15 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
+import { renderWithProviders } from "../../test/providers";
+import { experimentsServer } from "../test/experimentsServer";
+import { FAILED_RESULT } from "../test/runFixtures";
 import { EvidenceInspector } from "./EvidenceInspector";
-import { FAILED_RESULT, runServer } from "./test/runServer";
 
 function setup(outputs = FAILED_RESULT.outputs!) {
-  const server = runServer();
+  const server = experimentsServer();
   const user = userEvent.setup();
-  const view = render(<EvidenceInspector outputs={outputs} fallbackCollection="docs" fetchImpl={server.fetchImpl} />);
+  const view = renderWithProviders(<EvidenceInspector runId="r1" outputs={outputs} fallbackCollection="docs" />, { fetchImpl: server.fetchImpl });
   return { server, user, view };
 }
 
@@ -44,14 +46,14 @@ describe("evidence inspector", () => {
     expect(view.container.querySelector("b")).toBeNull();
   });
 
-  it("opens the full chunk through the protected chunk route", async () => {
-    const { server, user, view } = setup();
+  it("opens the full chunk in the shared chunk viewer, as text", async () => {
+    const { server, user } = setup();
     const row = within(table("reranked")).getAllByRole("row")[1]!;
     await user.click(within(row).getByRole("button", { name: "Show full chunk c-long" }));
-    const chunk = await screen.findByRole("region", { name: "Chunk c-long" });
-    await waitFor(() => expect(chunk).toHaveTextContent("Full text of c-long <script>alert(1)</script>"));
-    expect(server.calls.at(-1)?.path).toBe("/v1/collections/docs/chunks/c-long?window=0");
-    expect(view.container.querySelector("script")).toBeNull();
+    const dialog = await screen.findByRole("dialog", { name: "Stored chunk" });
+    await waitFor(() => expect(dialog).toHaveTextContent("Full text of c-long <script>alert(1)</script>"));
+    expect(server.calls.at(-1)?.path).toBe("/v1/collections/docs/chunks/c-long?window=1");
+    expect(document.querySelector("script")).toBeNull();
   });
 
   it("lists citations with links to their chunks", async () => {
@@ -60,8 +62,16 @@ describe("evidence inspector", () => {
     expect(citations).toHaveTextContent("[1] notes.md");
     expect(screen.getByText("RRF fuses ranks.")).toBeInTheDocument();
     await user.click(within(citations).getByRole("button", { name: "Show full chunk c-html" }));
-    await screen.findByRole("region", { name: "Chunk c-html" });
-    expect(server.calls.at(-1)?.path).toBe("/v1/collections/docs/chunks/c-html?window=0");
+    await screen.findByRole("dialog", { name: "Stored chunk" });
+    expect(server.calls.at(-1)?.path).toBe("/v1/collections/docs/chunks/c-html?window=1");
+  });
+
+  it("masks a secret in an evidence row", () => {
+    setup({ rows: [{ chunk_id: "c1", source: "https://u:s3cretpass@host/doc", text: "token is Bearer abcdefghijklmnop", score_kind: "rrf_v1", score: 0.1 }] });
+    const row = within(table("rows")).getAllByRole("row")[1]!;
+    expect(row).not.toHaveTextContent("s3cretpass");
+    expect(row).not.toHaveTextContent("abcdefghijklmnop");
+    expect(row).toHaveTextContent("[redacted]");
   });
 
   it("explains an output it cannot show as rows", () => {
