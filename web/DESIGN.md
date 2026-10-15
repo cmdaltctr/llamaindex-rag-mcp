@@ -243,8 +243,10 @@ import { cn } from "../lib/utils";
 
 | Primitive | Variants and rules |
 |---|---|
-| `Button` | `default` (accent tint), `destructive` (error tint), `outline`, `secondary`, `ghost`, and `chip` (selection, added by the redesign). One primary action per region. `type="button"` unless it submits. |
-| `Badge` | `neutral`, `accent`, `error`, `warning`, `success`, `info`, and a hue-hash variant for profile labels and node kinds (added by the redesign, task 1.3). Text always states the value. |
+| `Button` | `default` (accent tint), `destructive` (error tint), `outline`, `secondary`, `ghost`, and `chip`. One primary action per region. `type="button"` unless it submits. |
+| `Button` `chip` | Section switching and selection (a view tab, a chosen filter). Transparent with a hairline border at rest; the neutral `--selection` fill when `aria-pressed="true"` (or `data-selected="true"`). Never the primary action, and never the accent, so "selected" does not read as "do this". Set `aria-pressed` on every chip. Front matter entry: `button-chip-selected`. |
+| `Badge` | `neutral`, `accent`, `error`, `warning`, `success`, `info`, and `hue`. Text always states the value. |
+| `Badge` `hue` | Collection profiles and node kinds. Write `<Badge variant="hue">label</Badge>`. Transparent fill; the border takes the text colour. Text is `oklch(0.42 0.13 <hue>)` in light and `oklch(0.8 0.13 <hue>)` in dark. The hue (0 to 359) comes from a stable hash of the label, `hueFor` in `web/src/components/ui/badge.tsx`, so one label has one colour everywhere. Pass `hue` only to override it. The colour never carries meaning alone: the label text states the value. |
 | `Card` | Flat, 1px border, 12px radius, 16px padding. No shadow. |
 | `Dialog` | Radix. Focus trap, Escape closes, focus returns to the trigger, `DialogTitle` required, `shadow-floating`. |
 | `Input`, `Select`, `Label` | 36px, elevated fill, visible label bound by `htmlFor`, message tied by `aria-describedby`. |

@@ -16,7 +16,7 @@ Both live in `openspec/changes/`. The spec deltas are the contract. This skill t
 
 The web app is a React 19 + Vite single-page app, tested with Vitest, linted with ESLint, and built with `npm`. It has no router library: views switch on `location.hash`. It has no i18n library: copy is plain British English in the source.
 
-`web/src/styles/tokens.css` holds the palette. `web/src/styles/app.css` is the stylesheet entry and token bridge. Until `redesign-web-workspace` finishes, it also loads the old hand-written CSS (`legacy.css` and four per-view files) into a `legacy` layer; the redesign deletes all of it. Never write new hand-written CSS and never import a `.css` file from a component. `web/` has:
+`web/src/styles/tokens.css` holds the palette. `web/src/styles/app.css` is the stylesheet entry and token bridge. These two are the only stylesheets: no hand-written view CSS and no `legacy` layer exist. Never write new hand-written CSS and never import a `.css` file from a component (`cascade.test.ts` and `noLegacyResidue.test.ts` fail if you do). `web/` has:
 
 - Tailwind v4 through `@tailwindcss/vite`, CSS-first, no `tailwind.config` file.
 - An `@theme inline` bridge that aliases utility names to the `tokens.css` variables. `tokens.css` stays the single source of truth.

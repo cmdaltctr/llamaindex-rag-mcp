@@ -1,6 +1,6 @@
 # Component guidance
 
-Read [visual foundations](foundations.md) first. Paths marked "planned" come from `add-web-ui-stack`. Confirm they exist before you import from them.
+Read [visual foundations](foundations.md) first. Confirm a path exists before you import from it.
 
 ## Owners
 
@@ -11,10 +11,11 @@ Read [visual foundations](foundations.md) first. Paths marked "planned" come fro
 | shadcn CLI settings | `web/components.json` (css path `src/styles/app.css`) |
 | Tokens | `web/src/styles/tokens.css` |
 | Stylesheet entry, cascade layers, token bridge | `web/src/styles/app.css` |
-| Old hand-written CSS (deleted by `redesign-web-workspace` task 8.1) | `web/src/styles/legacy.css`, plus four per-view files imported by `app.css` |
-| Views list and hash routing | `web/src/lib/views.ts`, `web/src/App.tsx` |
+| The seven areas (id, label, short label, icon) | `web/src/lib/views.ts` |
+| Routes (typed, hash) | `web/src/lib/routes.ts`, `web/src/lib/RouteProvider.tsx`, `web/src/App.tsx` |
 | Navigation | `web/src/components/AppNav.tsx` |
-| Theme select | `web/src/components/ThemeSelect.tsx` |
+| Theme select and light/dark toggle | `web/src/components/ThemeControls.tsx` |
+| Friendly errors, empty and not-found states | `web/src/lib/errors.ts`, `web/src/components/{ErrorNotice,EmptyState,NotFound}.tsx` |
 | Dev proxy and test setup | `web/vite.config.ts`, `web/src/test/setup.ts` |
 
 Imports in this project are relative (`../components/ui/button`). `tsconfig.json` defines no path alias. Do not add one inside a design change.
@@ -57,7 +58,7 @@ Use `lucide-react`. Render at 16px, in `currentColor`, with `aria-hidden="true"`
 
 Task 1.2 lists these icons: home, message-circle, database, workflow, flask, plug, settings, upload, folder, search, x, play, trash, refresh, chevron-down. Export names change between Lucide releases (for example `House` and `Home`, `FlaskConical`). Check the installed version's exports before you import. Import named icons only, so the bundle tree-shakes.
 
-Navigation row, following the existing `AppNav` pattern:
+Navigation row, following the `AppNav` pattern:
 
 ```tsx
 <a className="app-nav__link" href="#/chat" aria-current={current === "chat" ? "page" : undefined}>
@@ -66,7 +67,7 @@ Navigation row, following the existing `AppNav` pattern:
 </a>
 ```
 
-Keep `aria-current="page"` and the modified-click handling already in `AppNav`. Selected rows use `--selection` and normal text.
+Keep `aria-current="page"` on the active link. Links are plain hash anchors, so modified clicks open a new tab with no extra handler. Selected rows use `--selection` and normal text.
 
 ## Badges
 
@@ -83,7 +84,7 @@ One label has one hue everywhere. Use one shared hue function, owned beside the 
 
 Keep Radix behaviour. Fields have an elevated fill, a 1px `--border`, `--border-hover` on hover, 36px height, a 10px radius, and the shared focus outline. Every field has a visible `Label` bound by `htmlFor`. Validation messages sit next to the field and are tied to it with `aria-describedby`.
 
-The Select primitive is Radix-based. Replace the old native `<select className="control control--select">` in `ThemeSelect.tsx` and `CollectionSelect` with it when the redesign rebuilds those components. Keep test queries working (`getByRole("combobox", { name })`). Radix Select renders differently from a native select in jsdom, so migrate the tests with the component.
+The Select primitive is Radix-based; use it for every dropdown, never a native `<select>`. Test queries use `getByRole("combobox", { name })`. jsdom lacks the pointer and scroll APIs Radix calls, so `web/src/test/setup.ts` polyfills them.
 
 ## Dialogs
 
