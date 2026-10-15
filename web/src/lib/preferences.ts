@@ -1,68 +1,40 @@
-import { isViewId, type ViewId } from "./views";
+import { readStored, writeStored } from "./storage";
 
 /**
- * Per-browser UI state. Storage can be missing or throw (private windows,
- * blocked site data), so every access is guarded and the app always falls
- * back to defaults. Nothing here is a source of truth for workspace data.
+ * Per-browser preferences: the theme, and the last collection as a
+ * navigation default. Nothing here is a source of truth for workspace data.
  */
-export const STORAGE_KEY = "omrg-workspace-ui";
-const VERSION = 1;
+export const PREFERENCES_KEY = "omrg-preferences";
 
 export const THEMES = ["system", "light", "dark"] as const;
 export type ThemePreference = (typeof THEMES)[number];
 
-export interface UiState {
-  view: ViewId;
-  inspectorOpen: boolean;
+export interface Preferences {
   theme: ThemePreference;
+  lastCollection: string | null;
 }
 
-export const DEFAULT_UI_STATE: UiState = { view: "canvas", inspectorOpen: false, theme: "system" };
+export const DEFAULT_PREFERENCES: Preferences = { theme: "system", lastCollection: null };
 
 function isTheme(value: unknown): value is ThemePreference {
   return typeof value === "string" && (THEMES as readonly string[]).includes(value);
 }
 
-function storage(): Storage | null {
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
+function isPreferences(value: unknown): value is Preferences {
+  if (typeof value !== "object" || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return isTheme(record.theme) && (record.lastCollection === null || typeof record.lastCollection === "string");
 }
 
-export function readUiState(): UiState {
-  let raw: string | null;
-  try {
-    raw = storage()?.getItem(STORAGE_KEY) ?? null;
-  } catch {
-    return DEFAULT_UI_STATE;
-  }
-  if (raw === null) return DEFAULT_UI_STATE;
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return DEFAULT_UI_STATE;
-  }
-  if (typeof parsed !== "object" || parsed === null) return DEFAULT_UI_STATE;
-  const record = parsed as Record<string, unknown>;
-  if (record.version !== VERSION) return DEFAULT_UI_STATE;
-
-  return {
-    view: isViewId(record.view) ? record.view : DEFAULT_UI_STATE.view,
-    inspectorOpen: typeof record.inspectorOpen === "boolean" ? record.inspectorOpen : DEFAULT_UI_STATE.inspectorOpen,
-    theme: isTheme(record.theme) ? record.theme : DEFAULT_UI_STATE.theme,
-  };
+export function readPreferences(): Preferences {
+  return readStored(PREFERENCES_KEY, isPreferences) ?? DEFAULT_PREFERENCES;
 }
 
-export function writeUiState(state: UiState): void {
-  try {
-    storage()?.setItem(STORAGE_KEY, JSON.stringify({ version: VERSION, ...state }));
-  } catch {
-    // Storage is optional. The current session keeps working without it.
-  }
+/** Merges a change into the stored preferences and returns the result. */
+export function updatePreferences(change: Partial<Preferences>): Preferences {
+  const next: Preferences = { ...readPreferences(), ...change };
+  writeStored(PREFERENCES_KEY, next);
+  return next;
 }
 
 /** Applies a theme preference to the document root. `system` follows the operating system. */

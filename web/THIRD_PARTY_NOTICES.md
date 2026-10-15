@@ -77,6 +77,7 @@ Versions are from `web/package-lock.json` on 2026-10-14. Update this list when a
 | `clsx` | 2.1.1 | MIT | Copyright (c) Luke Edwards |
 | `tailwind-merge` | 3.7.0 | MIT | Copyright (c) 2021 Dany Castillo |
 | `lucide-react` | 1.57.0 | ISC (MIT for icons derived from Feather) | Copyright (c) 2026 Lucide Icons and Contributors; Copyright (c) 2013-present Cole Bemis (Feather icons) |
+| `@tanstack/react-query`, `@tanstack/query-core` | 5.104.2, 5.104.2 | MIT | Copyright (c) 2021-present Tanner Linsley |
 
 The canvas keeps the React Flow attribution link that `@xyflow/react` shows by default.
 

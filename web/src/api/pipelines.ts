@@ -2,11 +2,11 @@
  * Typed client for the graph and run routes of the local `/v1` API.
  *
  * Shapes follow `src/omrg/transports/api/routes_graphs.py` and
- * `routes_runs.py`. GET requests reuse `getJson`. Writes use the same checks:
- * JSON content type, valid JSON, and the error envelope. A 422 envelope with
- * `issues` becomes `PipelineIssuesError`, so the canvas can mark nodes and ports.
+ * `routes_runs.py`. Every function takes the `ApiClient` first. An error
+ * envelope with `issues` becomes `PipelineIssuesError`, so the canvas can mark
+ * nodes and ports.
  */
-import { ApiError, getJson, type RequestOptions } from "./client";
+import { ApiError, type ApiClient, type CallOptions, type RequestInput } from "./client";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
@@ -185,103 +185,110 @@ function apiPath(template: TemplateStringsArray, ...ids: string[]): string {
   return template.reduce((path, part, index) => path + part + (ids[index] ?? ""), "");
 }
 
-function isJson(response: Response): boolean {
-  const type = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() ?? "";
-  return type === "application/json" || type.endsWith("+json");
-}
-
 function issuesOf(body: unknown): ValidationIssue[] | null {
   if (typeof body !== "object" || body === null) return null;
   const issues = (body as { issues?: unknown }).issues;
   return Array.isArray(issues) ? (issues as ValidationIssue[]) : null;
 }
 
-async function sendJson<T>(method: "POST" | "PUT", path: string, payload: unknown, options: RequestOptions): Promise<T> {
-  const fetchImpl = options.fetchImpl ?? ((input, init) => fetch(input, init));
-  let response: Response;
+/** One request through the client. A refusal that carries `issues` becomes `PipelineIssuesError`. */
+async function call<T>(api: ApiClient, method: "GET" | "POST" | "PUT", path: string, input: RequestInput): Promise<T> {
   try {
-    response = await fetchImpl(path, {
-      method,
-      headers: { Accept: "application/json", "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify(payload),
-      signal: options.signal,
-    });
+    return await api.request<T>(method, path, input);
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new ApiError("network", `Could not reach the local server: ${detail}`, path);
+    if (error instanceof ApiError && error.kind === "http") {
+      const issues = issuesOf(error.body);
+      if (issues !== null) throw new PipelineIssuesError(error.message, error.path, error.status ?? 0, issues);
+    }
+    throw error;
   }
-  if (!isJson(response)) {
-    const type = response.headers.get("content-type") ?? "no content type";
-    throw new ApiError("not-json", `Expected JSON from ${path} but received ${type} (status ${response.status}).`, path, response.status);
-  }
-  let body: unknown;
-  try {
-    body = await response.json();
-  } catch {
-    throw new ApiError("invalid-json", `The response from ${path} is not valid JSON.`, path, response.status);
-  }
-  if (!response.ok) {
-    const raw = (body as { message?: unknown } | null)?.message;
-    const message = typeof raw === "string" && raw ? raw : `Request to ${path} failed with status ${response.status}.`;
-    const issues = issuesOf(body);
-    if (issues !== null) throw new PipelineIssuesError(message, path, response.status, issues);
-    throw new ApiError("http", message, path, response.status);
-  }
-  return body as T;
 }
 
-export async function listOperations(options: RequestOptions = {}): Promise<OperationDescriptor[]> {
-  return (await getJson<{ operations: OperationDescriptor[] }>("/v1/pipeline-operations", options)).operations;
+export async function listOperations(api: ApiClient, options: CallOptions = {}): Promise<OperationDescriptor[]> {
+  return (await api.request<{ operations: OperationDescriptor[] }>("GET", "/v1/pipeline-operations", { signal: options.signal })).operations;
 }
 
-export async function listPipelines(options: RequestOptions = {}): Promise<PipelineRecord[]> {
-  return (await getJson<{ pipelines: PipelineRecord[] }>("/v1/pipelines", options)).pipelines;
+export async function listPipelines(api: ApiClient, options: CallOptions = {}): Promise<PipelineRecord[]> {
+  return (await api.request<{ pipelines: PipelineRecord[] }>("GET", "/v1/pipelines", { signal: options.signal })).pipelines;
 }
 
-export async function createPipeline(title: string, layout: GraphLayout, options: RequestOptions = {}): Promise<PipelineRecord> {
-  return (await sendJson<{ pipeline: PipelineRecord }>("POST", "/v1/pipelines", { title, layout }, options)).pipeline;
+export async function createPipeline(
+  api: ApiClient,
+  title: string,
+  layout: GraphLayout,
+  options: CallOptions = {},
+): Promise<PipelineRecord> {
+  const body = { title, layout };
+  return (await call<{ pipeline: PipelineRecord }>(api, "POST", "/v1/pipelines", { body, signal: options.signal })).pipeline;
 }
 
 export async function getPipeline(
+  api: ApiClient,
   pipelineId: string,
-  options: RequestOptions = {},
+  options: CallOptions = {},
 ): Promise<{ pipeline: PipelineRecord; current_revision: RevisionRecord | null }> {
-  return getJson(apiPath`/v1/pipelines/${pipelineId}`, options);
+  return api.request("GET", apiPath`/v1/pipelines/${pipelineId}`, { signal: options.signal });
 }
 
-export async function saveLayout(pipelineId: string, layout: GraphLayout, options: RequestOptions = {}): Promise<PipelineRecord> {
+export async function getRevision(
+  api: ApiClient,
+  pipelineId: string,
+  revisionId: string,
+  options: CallOptions = {},
+): Promise<RevisionRecord> {
+  const path = apiPath`/v1/pipelines/${pipelineId}/revisions/${revisionId}`;
+  return (await api.request<{ revision: RevisionRecord }>("GET", path, { signal: options.signal })).revision;
+}
+
+export async function saveLayout(api: ApiClient, pipelineId: string, layout: GraphLayout, options: CallOptions = {}): Promise<PipelineRecord> {
   const path = apiPath`/v1/pipelines/${pipelineId}/layout`;
-  return (await sendJson<{ pipeline: PipelineRecord }>("PUT", path, { layout }, options)).pipeline;
+  return (await call<{ pipeline: PipelineRecord }>(api, "PUT", path, { body: { layout }, signal: options.signal })).pipeline;
 }
 
 export async function saveRevision(
+  api: ApiClient,
   pipelineId: string,
   document: GraphDocument,
-  options: RequestOptions = {},
+  options: CallOptions = {},
 ): Promise<{ revision: RevisionRecord; created: boolean }> {
   const path = apiPath`/v1/pipelines/${pipelineId}/revisions`;
-  const body = await sendJson<{ revision: RevisionRecord; created: boolean }>("POST", path, { document }, options);
-  return { revision: body.revision, created: body.created };
+  const saved = await call<{ revision: RevisionRecord; created: boolean }>(api, "POST", path, {
+    body: { document },
+    signal: options.signal,
+  });
+  return { revision: saved.revision, created: saved.created };
 }
 
 /** Draft check without `inputs`; admission check (with effective controls) with `inputs`. */
 export async function validatePipeline(
+  api: ApiClient,
   document: GraphDocument,
   check: { inputs?: Record<string, JsonValue>; collection?: string },
-  options: RequestOptions = {},
+  options: CallOptions = {},
 ): Promise<ValidationReport> {
-  return sendJson<ValidationReport>("POST", "/v1/pipelines/validate", { document, ...check }, options);
+  return call<ValidationReport>(api, "POST", "/v1/pipelines/validate", { body: { document, ...check }, signal: options.signal });
 }
 
-export async function submitRun(revisionId: string, inputs: Record<string, JsonValue>, options: RequestOptions = {}): Promise<RunRecord> {
-  return (await sendJson<{ run: RunRecord }>("POST", "/v1/runs", { revision_id: revisionId, inputs }, options)).run;
+export async function submitRun(
+  api: ApiClient,
+  revisionId: string,
+  inputs: Record<string, JsonValue>,
+  options: CallOptions = {},
+): Promise<RunRecord> {
+  const body = { revision_id: revisionId, inputs };
+  return (await call<{ run: RunRecord }>(api, "POST", "/v1/runs", { body, signal: options.signal })).run;
 }
 
-export async function cancelRun(runId: string, options: RequestOptions = {}): Promise<RunRecord> {
-  return (await sendJson<{ run: RunRecord }>("POST", apiPath`/v1/runs/${runId}/cancel`, {}, options)).run;
+/** A canonical template from `GET /v1/pipeline-templates`: an editable starting point, not an executable revision. */
+export interface PipelineTemplate {
+  name: string;
+  title: string;
+  description: string;
+  standard_operation: string;
+  document: GraphDocument;
+  outputs: { name: string; description: string }[];
 }
 
-export async function getRun(runId: string, options: RequestOptions = {}): Promise<RunRecord> {
-  return (await getJson<{ run: RunRecord }>(apiPath`/v1/runs/${runId}`, options)).run;
+export async function listTemplates(api: ApiClient, options: CallOptions = {}): Promise<PipelineTemplate[]> {
+  return (await api.request<{ templates: PipelineTemplate[] }>("GET", "/v1/pipeline-templates", { signal: options.signal })).templates;
 }
