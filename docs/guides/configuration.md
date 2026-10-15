@@ -723,7 +723,20 @@ explicit algorithm selection is an operator contract. See
 
 ## Web workspace settings
 
-`omrg web` adds no `.env` setting. Its options are command-line flags: `--workspace`, `--port`, `--host`, `--root` and `--experiment-root`. The server builds its Engine from the same settings sources as the other commands. See [Web workspace](web-workspace.md).
+`omrg web` reads one `.env` setting, `WEB_MAX_UPLOAD_MIB`. Its other options are command-line flags only: `--workspace`, `--port`, `--host`, `--root` and `--experiment-root`. The server builds its Engine from the same settings sources as the other commands. See [Web workspace](web-workspace.md).
+
+| Variable | Default | Use |
+|---|---|---|
+| `WEB_MAX_UPLOAD_MIB` | unset | Per-file upload limit in whole MiB, 1 to 2048. Same as `--max-upload-mib`. |
+
+The server uses the first upload limit it finds in this order:
+
+1. `--max-upload-mib`.
+2. `WEB_MAX_UPLOAD_MIB`, from the environment or `.env`.
+3. The limit saved in Settings > Workspace.
+4. 50 MiB.
+
+A launch value (step 1 or 2) locks the limit for that run. Settings then shows the limit and cannot change it. Any other value stops `omrg web` with exit code 2 before it binds a port. The name is flat, because `omrg web` options are not engine settings.
 
 ---
 

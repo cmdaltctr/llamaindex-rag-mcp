@@ -1,34 +1,31 @@
 /*
- * Stylesheet entry. It loads Tailwind v4, the token bridge and every other
- * stylesheet into one fixed cascade order, lowest priority first:
+ * Stylesheet entry. It loads Tailwind v4 and third-party CSS into one fixed
+ * cascade order, lowest priority first:
  *
- *   theme, base  Tailwind theme variables. No preflight reset is loaded.
+ *   theme, base  Tailwind theme variables, then Tailwind's preflight reset and
+ *                the few global rules below.
  *   vendor       third-party CSS (React Flow).
- *   legacy       hand-written CSS that predates the Tailwind stack.
- *   components   reserved for shared component classes.
+ *   components   overrides that must target a third-party library's own class
+ *                names. Everything else is a utility on our own elements.
  *   utilities    Tailwind utility classes.
  *
  * A layered rule loses to any later layer whatever its specificity, so a
- * utility class on a migrated element beats every legacy rule, including
- * descendant rules such as ".panel p". A rule outside all layers beats every
- * layer. Add new stylesheets here, in a layer, and never import a .css file
- * from a component (cascade.test.ts fails if one does).
+ * utility class beats every vendor rule, including one with higher
+ * specificity. A rule outside all layers beats every layer. Add new
+ * stylesheets here, in a layer, and never import a .css file from a
+ * component (cascade.test.ts fails if one does, or if a third .css file
+ * appears).
  *
  * tokens.css holds custom properties only and main.tsx imports it first.
  */
-@layer theme, base, vendor, legacy, components, utilities;
+@layer theme, base, vendor, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities);
 @import "tw-animate-css";
 @import "@xyflow/react/dist/style.css" layer(vendor);
 
-/* Legacy order matches the order the bundler produced before layering. */
-@import "../canvas/canvas.css" layer(legacy);
-@import "../runs/runs.css" layer(legacy);
-@import "../views/views.css" layer(legacy);
-@import "../experiments/experiments.css" layer(legacy);
-@import "./legacy.css" layer(legacy);
 
 /*
  * Theme variants follow the same two switches as tokens.css: the data-theme
@@ -116,4 +113,86 @@
   --text-ui: var(--text-ui);
   --text-meta: var(--text-meta);
   --text-code: var(--text-code);
+}
+
+/*
+ * React Flow (Studio canvas). The library draws edges, handles and controls
+ * with its own classes, so these few rules map them to the tokens. Every
+ * other element of the canvas is a utility class in the component.
+ * Node markup lives in studio/OperationNode.tsx.
+ */
+/*
+ * Global rules that preflight does not provide. Preflight already resets
+ * box sizing, margins, headings and form controls.
+ */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--surface-canvas);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-ui);
+    line-height: 1.45;
+  }
+
+  /* One focus ring for every control; primitives add no ring of their own. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .react-flow {
+    --xy-background-color: var(--surface-canvas);
+    --xy-background-pattern-color: var(--border-hover);
+    --xy-edge-stroke: var(--text-secondary);
+    --xy-edge-stroke-selected: var(--accent);
+    --xy-connectionline-stroke: var(--accent);
+    --xy-handle-background-color: var(--surface-elevated);
+    --xy-handle-border-color: var(--text-secondary);
+    --xy-controls-button-background-color: var(--surface-elevated);
+    --xy-controls-button-background-color-hover: var(--surface-muted);
+    --xy-controls-button-color: var(--text-primary);
+    --xy-controls-button-border-color: var(--border);
+    --xy-attribution-background-color: transparent;
+    color: var(--text-primary);
+  }
+
+  /* The library sets "outline: none" on selectable nodes; keep a visible focus ring. */
+  .react-flow__node:focus-visible,
+  .react-flow__edge:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Set by FlowSurface: a connection the server refused, and the edge into a running node. */
+  .flow-edge--invalid .react-flow__edge-path {
+    stroke: var(--status-error);
+  }
+
+  .flow-edge--active .react-flow__edge-path {
+    stroke: var(--status-info);
+    stroke-width: 2;
+  }
 }

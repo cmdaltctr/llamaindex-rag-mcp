@@ -41,11 +41,13 @@ Test rules:
 
 1. No existing view imports a new primitive (task 3.4). Search imports of `components/ui`.
 2. One pre-existing view renders pixel-identical before and after (task 3.1). Capture both at the same theme, width, and data.
-3. The legacy tests stay green with no edits.
+3. The existing tests stay green with no edits.
+
+The redesign replaces this coexistence: when it finishes, only `tokens.css` and `app.css` exist and `cascade.test.ts` fails on any other stylesheet.
 
 ## Run the correct app
 
-`npm run dev` starts Vite. The `/v1` proxy forwards to the local web transport (default `http://127.0.0.1:8000`, overridable by environment variable). Read `web/vite.config.ts` for the variable name. Confirm the page loads styles from the checkout you are editing.
+`npm run dev` starts Vite. The `/v1` proxy forwards to the local web transport (default `http://127.0.0.1:8765`, overridable by environment variable). Read `web/vite.config.ts` for the variable name. Confirm the page loads styles from the checkout you are editing.
 
 The transport needs a one-time browser session. Read `docs/guides/web-workspace.md` ("Sign in") before you start. If the Vite origin cannot hold a session, build with `npm run build` and serve the built app through `omrg web`. The build writes to `src/omrg/transports/api/static/`, which is gitignored.
 
@@ -61,7 +63,7 @@ Chat needs a working answer pipeline. If no model is configured, use the fixture
 
 ## Screens
 
-From `redesign-web-workspace` task 8.2: Home, Chat, Knowledge Base, Studio gallery, Studio canvas, Experiments, Integrations, and Settings.
+From `redesign-web-workspace` task 9.2: Home, Chat, Knowledge Base, Studio gallery, Studio canvas, Experiments, Integrations, and each Settings section (Appearance, Connections, MCP, Server log, Runtime, Workspace).
 
 | Theme | Widths |
 | --- | --- |
@@ -85,7 +87,7 @@ With the Chrome DevTools tools, use `resize_page` or `emulate` for the viewport,
 4. Look for horizontal page overflow, clipped text, cramped icons, and hidden actions.
 5. Open each dialog and select. Check Escape, Tab order, focus trap, and focus return.
 6. Switch theme with a safe draft open. Confirm the route and draft stay.
-7. Reload. Confirm the theme and the active project persist. Confirm stale storage keys are dropped.
+7. Reload. Confirm the route (project, pipeline or run) and the theme are restored. Put a malformed value in `omrg-preferences` and confirm the app uses defaults and removes it. Open an unknown hash and confirm Home with `#/home`.
 8. Force a failure (stop the server or block `/v1`). Confirm one friendly line, one action, and no parser text in the DOM.
 9. Check reduced motion in the browser setting.
 10. Confirm status badges show text, not colour alone.

@@ -80,6 +80,7 @@ FAMILIES: dict[str, frozenset[str]] = {
             "listRuns",
             "getRun",
             "getRunResult",
+            "getRunArtefact",
             "cancelRun",
             "retryRun",
             "listRunEvents",
@@ -95,11 +96,22 @@ FAMILIES: dict[str, frozenset[str]] = {
             "revokeMcpToken",
             "getWebPort",
             "setWebPort",
+            "getUploadLimit",
+            "setUploadLimit",
         }
     ),
     "templates": frozenset({"listPipelineTemplates"}),
+    "integrations": frozenset({"listIntegrations"}),
+    "connections": frozenset({"getConnections", "testConnection"}),
+    "logs": frozenset({"getLogs", "streamLogs"}),
     "experiments": frozenset(
-        {"createExperiment", "listExperiments", "getExperiment", "revokeExperiment"}
+        {
+            "createExperiment",
+            "createExperimentFolder",
+            "listExperiments",
+            "getExperiment",
+            "revokeExperiment",
+        }
     ),
     "plugins": frozenset(
         {

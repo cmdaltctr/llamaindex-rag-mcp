@@ -3,13 +3,13 @@
  *
  * Shapes follow `src/omrg/transports/api/routes_documents.py`, `routes_jobs.py`,
  * `routes_inspect.py`, `routes_admin.py` and `routes.py` (roots, uploads,
- * session). GET requests reuse `getJson`. Writes apply the same checks: JSON
- * content type, valid JSON and the error envelope message.
+ * session). Every function takes the `ApiClient` first, which owns the
+ * transport checks: JSON content type, valid JSON and the error envelope.
  *
  * Omitted search and answer controls are sent as `null`, so the collection
  * profile decides them on the server.
  */
-import { ApiError, getJson, type RequestOptions } from "./client";
+import { ApiError, ClientRefusal, type ApiClient, type CallOptions } from "./client";
 
 export type JsonObject = { [key: string]: unknown };
 
@@ -190,8 +190,6 @@ export type Profile = "documents" | "codebase";
 /** A preview request, or a confirmation that carries the preview token. */
 export type ConfirmStep = { preview: true } | { token: string };
 
-const JSON_HEADERS = { Accept: "application/json", "Content-Type": "application/json" };
-
 /** Encodes one path segment and refuses empty, dot and separator-bearing values. */
 function segment(value: string): string {
   if (value === "" || value === "." || value === ".." || /[/\\]/.test(value) || value.includes("\u0000")) {
@@ -202,42 +200,6 @@ function segment(value: string): string {
 
 function collectionPath(collection: string, rest = ""): string {
   return `/v1/collections/${segment(collection)}${rest}`;
-}
-
-function isJson(response: Response): boolean {
-  const type = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() ?? "";
-  return type === "application/json" || type.endsWith("+json");
-}
-
-async function send<T>(method: string, path: string, init: RequestInit, options: RequestOptions): Promise<T> {
-  const fetchImpl = options.fetchImpl ?? ((input, request) => fetch(input, request));
-  let response: Response;
-  try {
-    response = await fetchImpl(path, { ...init, method, credentials: "same-origin", signal: options.signal });
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new ApiError("network", `Could not reach the local server: ${detail}`, path);
-  }
-  if (!isJson(response)) {
-    const type = response.headers.get("content-type") ?? "no content type";
-    throw new ApiError("not-json", `Expected JSON from ${path} but received ${type} (status ${response.status}).`, path, response.status);
-  }
-  let body: unknown;
-  try {
-    body = await response.json();
-  } catch {
-    throw new ApiError("invalid-json", `The response from ${path} is not valid JSON.`, path, response.status);
-  }
-  if (!response.ok) {
-    const message = (body as { message?: unknown } | null)?.message;
-    const text = typeof message === "string" && message ? message : `Request to ${path} failed with status ${response.status}.`;
-    throw new ApiError("http", text, path, response.status);
-  }
-  return body as T;
-}
-
-function sendJson<T>(method: string, path: string, payload: unknown, options: RequestOptions): Promise<T> {
-  return send<T>(method, path, { headers: JSON_HEADERS, body: JSON.stringify(payload) }, options);
 }
 
 /** True when the server refused a confirmation because the preview is stale, used or expired. */
@@ -252,25 +214,34 @@ export function isConfirmationRequired(error: unknown): boolean {
 
 // ── Listing and inspection ──────────────────────────────────────────────
 
-export function listCollections(options: RequestOptions = {}): Promise<CollectionInfo[]> {
-  return getJson<CollectionInfo[]>("/v1/collections", options);
+export function listCollections(api: ApiClient, options: CallOptions = {}): Promise<CollectionInfo[]> {
+  return api.request<CollectionInfo[]>("GET", "/v1/collections", { signal: options.signal });
 }
 
-export async function listDocuments(collection: string, options: RequestOptions = {}): Promise<DocumentInfo[]> {
-  return getJson<DocumentInfo[]>(collectionPath(collection, "/documents"), options);
+export async function listDocuments(api: ApiClient, collection: string, options: CallOptions = {}): Promise<DocumentInfo[]> {
+  return api.request<DocumentInfo[]>("GET", collectionPath(collection, "/documents"), { signal: options.signal });
 }
 
-export async function getChunk(collection: string, chunkId: string, window: number, options: RequestOptions = {}): Promise<ChunkInspection> {
+export async function getChunk(
+  api: ApiClient,
+  collection: string,
+  chunkId: string,
+  window: number,
+  options: CallOptions = {},
+): Promise<ChunkInspection> {
   const size = Math.max(0, Math.min(5, Math.trunc(window)));
-  return getJson<ChunkInspection>(collectionPath(collection, `/chunks/${segment(chunkId)}?window=${size}`), options);
+  return api.request<ChunkInspection>("GET", collectionPath(collection, `/chunks/${segment(chunkId)}`), {
+    query: { window: size },
+    signal: options.signal,
+  });
 }
 
-export async function listRoots(options: RequestOptions = {}): Promise<Root[]> {
-  return (await getJson<{ roots: Root[] }>("/v1/roots", options)).roots;
+export async function listRoots(api: ApiClient, options: CallOptions = {}): Promise<Root[]> {
+  return (await api.request<{ roots: Root[] }>("GET", "/v1/roots", { signal: options.signal })).roots;
 }
 
-export function getSession(options: RequestOptions = {}): Promise<SessionInfo> {
-  return getJson("/v1/session", options);
+export function getSession(api: ApiClient, options: CallOptions = {}): Promise<SessionInfo> {
+  return api.request<SessionInfo>("GET", "/v1/session", { signal: options.signal });
 }
 
 // ── Search and answer ───────────────────────────────────────────────────
@@ -285,55 +256,79 @@ function controlsBody(controls: QueryControls) {
   };
 }
 
-export async function searchCollection(collection: string, controls: QueryControls, options: RequestOptions = {}): Promise<SearchHit[]> {
-  return sendJson("POST", collectionPath(collection, "/search"), controlsBody(controls), options);
+export async function searchCollection(
+  api: ApiClient,
+  collection: string,
+  controls: QueryControls,
+  options: CallOptions = {},
+): Promise<SearchHit[]> {
+  return api.request<SearchHit[]>("POST", collectionPath(collection, "/search"), {
+    body: controlsBody(controls),
+    signal: options.signal,
+  });
 }
 
-export async function answerCollection(collection: string, controls: QueryControls, options: RequestOptions = {}): Promise<AnswerResult> {
-  return sendJson("POST", collectionPath(collection, "/answer"), controlsBody(controls), options);
+export async function answerCollection(
+  api: ApiClient,
+  collection: string,
+  controls: QueryControls,
+  options: CallOptions = {},
+): Promise<AnswerResult> {
+  return api.request<AnswerResult>("POST", collectionPath(collection, "/answer"), {
+    body: controlsBody(controls),
+    signal: options.signal,
+  });
 }
 
 // ── Preview-bound actions ───────────────────────────────────────────────
 
 export async function deleteDocuments(
+  api: ApiClient,
   collection: string,
   selector: DeleteSelector,
   step: ConfirmStep,
-  options: RequestOptions = {},
+  options: CallOptions = {},
 ): Promise<DeleteResult> {
   const extra = "preview" in step ? { dry_run: true } : { confirmation_token: step.token };
-  return sendJson("DELETE", collectionPath(collection, "/documents"), { ...selector, ...extra }, options);
+  return api.request<DeleteResult>("DELETE", collectionPath(collection, "/documents"), {
+    body: { ...selector, ...extra },
+    signal: options.signal,
+  });
 }
 
 export async function changeProfile(
+  api: ApiClient,
   collection: string,
   profile: Profile,
   step: ConfirmStep,
-  options: RequestOptions = {},
+  options: CallOptions = {},
 ): Promise<ProfilePreview | ProfileChangeResult> {
   const extra = "preview" in step ? { confirm: false } : { confirm: true, confirmation_token: step.token };
-  return sendJson("PATCH", collectionPath(collection, "/profile"), { profile, ...extra }, options);
+  return api.request<ProfilePreview | ProfileChangeResult>("PATCH", collectionPath(collection, "/profile"), {
+    body: { profile, ...extra },
+    signal: options.signal,
+  });
 }
 
 // ── Uploads and jobs ────────────────────────────────────────────────────
 
 /** Asks the server to check the name, type and size, then streams the raw bytes. */
-export async function uploadFile(file: File, options: RequestOptions = {}): Promise<UploadRecord> {
-  await sendJson("POST", "/v1/uploads/preflight", { name: file.name, size: file.size }, options);
-  const headers = {
-    Accept: "application/json",
-    "Content-Type": "application/octet-stream",
-    "X-Upload-Name": encodeURIComponent(file.name),
-  };
-  return (await send<{ upload: UploadRecord }>("POST", "/v1/uploads", { headers, body: file }, options)).upload;
+export async function uploadFile(api: ApiClient, file: File, options: CallOptions = {}): Promise<UploadRecord> {
+  await api.request("POST", "/v1/uploads/preflight", { body: { name: file.name, size: file.size }, signal: options.signal });
+  const { upload } = await api.request<{ upload: UploadRecord }>("POST", "/v1/uploads", {
+    body: file,
+    headers: { "Content-Type": "application/octet-stream", "X-Upload-Name": encodeURIComponent(file.name) },
+    signal: options.signal,
+  });
+  return upload;
 }
 
-export function ingestPath(path: string, collection: string, options: RequestOptions = {}): Promise<Job> {
-  return sendJson("POST", "/v1/ingestions", { path, collection }, options);
+export function ingestPath(api: ApiClient, path: string, collection: string, options: CallOptions = {}): Promise<Job> {
+  return api.request<Job>("POST", "/v1/ingestions", { body: { path, collection }, signal: options.signal });
 }
 
-export async function getJob(jobId: string, options: RequestOptions = {}): Promise<Job> {
-  return getJson<Job>(`/v1/jobs/${segment(jobId)}`, options);
+export async function getJob(api: ApiClient, jobId: string, options: CallOptions = {}): Promise<Job> {
+  return api.request<Job>("GET", `/v1/jobs/${segment(jobId)}`, { signal: options.signal });
 }
 
 /**
@@ -343,13 +338,13 @@ export async function getJob(jobId: string, options: RequestOptions = {}): Promi
  */
 export function joinRootPath(root: string, relative: string): string {
   const trimmed = relative.trim();
-  if (trimmed === "" || trimmed.includes("\u0000")) throw new Error("Enter a path relative to the selected folder.");
+  if (trimmed === "" || trimmed.includes("\u0000")) throw new ClientRefusal("Enter a path relative to the selected folder.");
   if (/^([/\\~]|[A-Za-z]:)/.test(trimmed)) {
-    throw new Error("Use a path relative to the selected folder, not an absolute path.");
+    throw new ClientRefusal("Use a path relative to the selected folder, not an absolute path.");
   }
   const parts = trimmed.split(/[/\\]+/).filter((part) => part !== "" && part !== ".");
-  if (parts.includes("..")) throw new Error("The path must stay inside the selected folder.");
-  if (parts.length === 0) throw new Error("Enter a path relative to the selected folder.");
+  if (parts.includes("..")) throw new ClientRefusal("The path must stay inside the selected folder.");
+  if (parts.length === 0) throw new ClientRefusal("Enter a path relative to the selected folder.");
   const separator = root.includes("\\") && !root.includes("/") ? "\\" : "/";
   const base = root.replace(/[/\\]+$/, "");
   return [base, ...parts].join(separator);

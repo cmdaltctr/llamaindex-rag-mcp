@@ -2,7 +2,7 @@
 
 OMRG can open a marimo notebook editor next to the web workspace. The editor is an optional external tool. You install and update it outside OMRG. This guide tells you how to trust, install, register, open, stop and update it, and how to use the starter notebook.
 
-The web workspace works without a notebook plugin. Search, Ask, Library, Canvas and Runs do not need marimo.
+The web workspace works without a notebook plugin. Home, Chat, Knowledge Base, Studio, Integrations and Settings do not need marimo.
 
 Related guides:
 
@@ -130,7 +130,7 @@ If the new version is outside the tested range, the plugin stays disabled. Keep 
 
 ## Use the starter notebook
 
-`plugins/marimo/starter_notebook.py` runs graphs through the same protected graph API as the canvas. It uses the Python standard library only.
+`plugins/marimo/starter_notebook.py` runs graphs through the same protected graph API as the Studio canvas. It uses the Python standard library only.
 
 ### In an editor that OMRG opens
 

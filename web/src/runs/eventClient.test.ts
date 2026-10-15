@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { createApiClient } from "../api/client";
 import type { RunEventRecord } from "../api/runs";
 import { followRunEvents, type MonitorMode } from "./eventClient";
 import { event, eventSourceFactory, FakeEventSource, json, manualScheduler } from "./test/fakes";
@@ -26,7 +27,7 @@ describe("run event client: server-sent events", () => {
   it("opens the stream and delivers events in sequence order", () => {
     const factory = eventSourceFactory();
     const rec = recorder();
-    followRunEvents({ runId: "r1", eventSource: factory, ...rec });
+    followRunEvents({ runId: "r1", eventSource: factory, api: createApiClient(), ...rec });
     const source = FakeEventSource.latest();
     expect(source.url).toBe("/v1/runs/r1/events/stream");
     source.open();
@@ -39,7 +40,7 @@ describe("run event client: server-sent events", () => {
   it("drops events that a reconnect replays again", () => {
     const factory = eventSourceFactory();
     const rec = recorder();
-    followRunEvents({ runId: "r1", eventSource: factory, ...rec });
+    followRunEvents({ runId: "r1", eventSource: factory, api: createApiClient(), ...rec });
     const source = FakeEventSource.latest();
     source.open();
     source.send(event(1, "node_started", { node_id: "dense" }));
@@ -55,14 +56,14 @@ describe("run event client: server-sent events", () => {
 
   it("resumes a new stream after the last seen sequence", () => {
     const factory = eventSourceFactory();
-    followRunEvents({ runId: "r1", afterSequence: 12, eventSource: factory, ...recorder() });
+    followRunEvents({ runId: "r1", afterSequence: 12, eventSource: factory, api: createApiClient(), ...recorder() });
     expect(FakeEventSource.latest().url).toBe("/v1/runs/r1/events/stream?after=12");
   });
 
   it("stops on run.end and reports the terminal status", () => {
     const factory = eventSourceFactory();
     const rec = recorder();
-    followRunEvents({ runId: "r1", eventSource: factory, ...rec });
+    followRunEvents({ runId: "r1", eventSource: factory, api: createApiClient(), ...rec });
     const source = FakeEventSource.latest();
     source.open();
     source.frame("run.end", { status: "succeeded", last_sequence: 9 });
@@ -74,7 +75,7 @@ describe("run event client: server-sent events", () => {
   it("closes on server shutdown without claiming a run status", () => {
     const factory = eventSourceFactory();
     const rec = recorder();
-    followRunEvents({ runId: "r1", eventSource: factory, ...rec });
+    followRunEvents({ runId: "r1", eventSource: factory, api: createApiClient(), ...rec });
     FakeEventSource.latest().frame("server.closing", { reason: "shutdown" });
     expect(rec.ends).toEqual([null]);
     expect(rec.modes.at(-1)).toBe("closed");
@@ -86,7 +87,7 @@ describe("run event client: polling fallback", () => {
     const fetchImpl = vi.fn(async () => page([event(1, "node_started", { node_id: "dense" })]));
     const scheduler = manualScheduler();
     const rec = recorder();
-    followRunEvents({ runId: "r1", eventSource: null, fetchImpl, schedule: scheduler.schedule, ...rec });
+    followRunEvents({ runId: "r1", eventSource: null, api: createApiClient(fetchImpl), schedule: scheduler.schedule, ...rec });
     await vi.waitFor(() => expect(rec.events).toHaveLength(1));
     expect(rec.modes[0]).toBe("polling");
     expect(fetchImpl).toHaveBeenCalledWith("/v1/runs/r1/events?after_sequence=0&limit=500", expect.anything());
@@ -96,7 +97,7 @@ describe("run event client: polling fallback", () => {
     const factory = eventSourceFactory();
     const fetchImpl = vi.fn(async () => page([event(3, "node_completed", { node_id: "dense" })], true, "succeeded"));
     const rec = recorder();
-    followRunEvents({ runId: "r1", eventSource: factory, fetchImpl, schedule: manualScheduler().schedule, ...rec });
+    followRunEvents({ runId: "r1", eventSource: factory, api: createApiClient(fetchImpl), schedule: manualScheduler().schedule, ...rec });
     const source = FakeEventSource.latest();
     source.open();
     source.send(event(1, "node_started", { node_id: "dense" }));
@@ -113,7 +114,7 @@ describe("run event client: polling fallback", () => {
     const factory = eventSourceFactory();
     const fetchImpl = vi.fn(async () => page([], false));
     const rec = recorder();
-    followRunEvents({ runId: "r1", eventSource: factory, fetchImpl, schedule: manualScheduler().schedule, maxStreamErrors: 3, ...rec });
+    followRunEvents({ runId: "r1", eventSource: factory, api: createApiClient(fetchImpl), schedule: manualScheduler().schedule, maxStreamErrors: 3, ...rec });
     const source = FakeEventSource.latest();
     source.fail(false);
     source.fail(false);
@@ -131,7 +132,7 @@ describe("run event client: polling fallback", () => {
     const fetchImpl = vi.fn(async () => pages.shift() ?? page([], true, "failed"));
     const scheduler = manualScheduler();
     const rec = recorder();
-    followRunEvents({ runId: "r1", eventSource: null, fetchImpl, schedule: scheduler.schedule, pollIntervalMs: 900, ...rec });
+    followRunEvents({ runId: "r1", eventSource: null, api: createApiClient(fetchImpl), schedule: scheduler.schedule, pollIntervalMs: 900, ...rec });
     await vi.waitFor(() => expect(rec.events).toHaveLength(2));
     expect(scheduler.pendingDelays()).toEqual([900]);
     scheduler.flush();
@@ -144,10 +145,10 @@ describe("run event client: polling fallback", () => {
   it("stops polling on an unknown run and reports the error", async () => {
     const fetchImpl = vi.fn(async () => json({ status: "error", message: "Unknown run." }, 404));
     const scheduler = manualScheduler();
-    const errors: string[] = [];
+    const errors: unknown[] = [];
     const rec = recorder();
-    followRunEvents({ runId: "r1", eventSource: null, fetchImpl, schedule: scheduler.schedule, onError: (m) => errors.push(m), ...rec });
-    await vi.waitFor(() => expect(errors).toEqual(["Unknown run."]));
+    followRunEvents({ runId: "r1", eventSource: null, api: createApiClient(fetchImpl), schedule: scheduler.schedule, onError: (m) => errors.push(m), ...rec });
+    await vi.waitFor(() => expect(errors.map((error) => (error as Error).message)).toEqual(["Unknown run."]));
     expect(scheduler.pendingDelays()).toEqual([]);
     expect(rec.modes.at(-1)).toBe("closed");
   });
@@ -157,13 +158,13 @@ describe("run event client: polling fallback", () => {
       throw new TypeError("offline");
     });
     const scheduler = manualScheduler();
-    followRunEvents({ runId: "r1", eventSource: null, fetchImpl, schedule: scheduler.schedule, ...recorder() });
+    followRunEvents({ runId: "r1", eventSource: null, api: createApiClient(fetchImpl), schedule: scheduler.schedule, ...recorder() });
     await vi.waitFor(() => expect(scheduler.pendingDelays()).toHaveLength(1));
   });
 
   it("close() stops both the stream and further polls", async () => {
     const factory = eventSourceFactory();
-    const handle = followRunEvents({ runId: "r1", eventSource: factory, ...recorder() });
+    const handle = followRunEvents({ runId: "r1", eventSource: factory, api: createApiClient(), ...recorder() });
     handle.close();
     expect(FakeEventSource.latest().readyState).toBe(2);
   });
@@ -184,7 +185,7 @@ describe("run event client: authoritative refresh on reconnect", () => {
     const status = { current: "running", last: 2 };
     const fetchImpl = server(status);
     const refreshed: string[] = [];
-    followRunEvents({ runId: "r1", eventSource: factory, fetchImpl, onRefresh: (run) => refreshed.push(run.status), ...recorder() });
+    followRunEvents({ runId: "r1", eventSource: factory, api: createApiClient(fetchImpl), onRefresh: (run) => refreshed.push(run.status), ...recorder() });
     const source = FakeEventSource.latest();
     source.open();
     source.send(event(1, "node_started", { node_id: "dense" }));
@@ -205,7 +206,7 @@ describe("run event client: authoritative refresh on reconnect", () => {
     const factory = eventSourceFactory();
     const fetchImpl = server({ current: "succeeded", last: 9 });
     const refreshed: string[] = [];
-    followRunEvents({ runId: "r1", eventSource: factory, fetchImpl, schedule: manualScheduler().schedule, onRefresh: (run) => refreshed.push(run.status), ...recorder() });
+    followRunEvents({ runId: "r1", eventSource: factory, api: createApiClient(fetchImpl), schedule: manualScheduler().schedule, onRefresh: (run) => refreshed.push(run.status), ...recorder() });
     const source = FakeEventSource.latest();
     source.open();
     source.fail(true);
@@ -222,7 +223,7 @@ describe("run event client: authoritative refresh on reconnect", () => {
     });
     const scheduler = manualScheduler();
     const refreshed: string[] = [];
-    followRunEvents({ runId: "r1", eventSource: null, fetchImpl, schedule: scheduler.schedule, onRefresh: (run) => refreshed.push(run.status), ...recorder() });
+    followRunEvents({ runId: "r1", eventSource: null, api: createApiClient(fetchImpl), schedule: scheduler.schedule, onRefresh: (run) => refreshed.push(run.status), ...recorder() });
     await vi.waitFor(() => expect(scheduler.pendingDelays()).toHaveLength(1));
     expect(refreshed).toEqual([]);
     offline = false;
@@ -233,14 +234,14 @@ describe("run event client: authoritative refresh on reconnect", () => {
   it("reports a failed re-read and keeps following events", async () => {
     const factory = eventSourceFactory();
     const fetchImpl = vi.fn(async () => json({ status: "error", message: "Run store busy." }, 503));
-    const errors: string[] = [];
+    const errors: unknown[] = [];
     const rec = recorder();
-    followRunEvents({ runId: "r1", eventSource: factory, fetchImpl, onRefresh: () => undefined, onError: (m) => errors.push(m), ...rec });
+    followRunEvents({ runId: "r1", eventSource: factory, api: createApiClient(fetchImpl), onRefresh: () => undefined, onError: (m) => errors.push(m), ...rec });
     const source = FakeEventSource.latest();
     source.open();
     source.fail(false);
     source.open();
-    await vi.waitFor(() => expect(errors).toEqual(["Run store busy."]));
+    await vi.waitFor(() => expect(errors.map((error) => (error as Error).message)).toEqual(["Run store busy."]));
     source.send(event(1, "node_started", { node_id: "dense" }));
     expect(rec.events).toHaveLength(1);
     expect(rec.modes.at(-1)).toBe("streaming");

@@ -35,6 +35,14 @@ def test_experiment_responses_conform(tmp_path: Path, effective_settings: Any) -
     with TestClient(parts.app, base_url=BASE) as client:
         login(client, parts.policy)
         check.check(client.get("/v1/experiments"), 200)
+        folder = check.check(
+            client.post("/v1/experiment-folders", json={"path": "main/sub"}, headers=ORIGIN), 201
+        )
+        assert folder["folder"]["path"] == "main/sub"
+        again = client.post("/v1/experiment-folders", json={"path": "main/sub"}, headers=ORIGIN)
+        assert check.check(again, 409)["code"] == "exists"
+        escape = client.post("/v1/experiment-folders", json={"path": "a/../b"}, headers=ORIGIN)
+        assert check.check(escape, 400)["code"] == "traversal"
         bad = client.post("/v1/experiments", json={"workspace": "relative"}, headers=ORIGIN)
         assert check.check(bad, 400)["code"] == "not_absolute"
         body = {"workspace": str(workspace), "name": "a", "actions": ["read"]}
@@ -81,4 +89,6 @@ def test_register_without_roots_conforms(tmp_path: Path, effective_settings: Any
         login(client, parts.policy)
         refused = client.post("/v1/experiments", json={"workspace": str(tmp_path)}, headers=ORIGIN)
         check.check(refused, 409)
+        no_root = client.post("/v1/experiment-folders", json={"path": "x"}, headers=ORIGIN)
+        check.check(no_root, 409)
         check.check(client.get("/v1/experiments"), 200)

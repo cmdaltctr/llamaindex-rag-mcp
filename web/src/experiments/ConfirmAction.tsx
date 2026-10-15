@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { messageOf } from "../views/shared/labels";
+import { ErrorNotice } from "../components/ErrorNotice";
+import { Button } from "../components/ui/button";
 
 interface ConfirmActionProps {
   /** Accessible name of the first button, for example "Revoke chunks". */
@@ -9,13 +10,13 @@ interface ConfirmActionProps {
   warning: string;
   confirmLabel: string;
   cancelLabel: string;
-  onConfirm: () => Promise<void>;
+  onConfirm: () => Promise<unknown>;
 }
 
 /** A button that asks once more before it acts. Nothing is sent until the user confirms. */
 export function ConfirmAction({ label, text, warning, confirmLabel, cancelLabel, onConfirm }: ConfirmActionProps) {
   const [phase, setPhase] = useState<"idle" | "asking" | "working">("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   async function confirm() {
     setPhase("working");
@@ -24,33 +25,29 @@ export function ConfirmAction({ label, text, warning, confirmLabel, cancelLabel,
       await onConfirm();
       setPhase("idle");
     } catch (failure) {
-      setError(messageOf(failure));
+      setError(failure);
       setPhase("asking");
     }
   }
 
   if (phase === "idle") {
     return (
-      <button type="button" className="button button--small button--ghost" aria-label={label} onClick={() => setPhase("asking")}>
+      <Button variant="ghost" size="sm" aria-label={label} onClick={() => setPhase("asking")}>
         {text}
-      </button>
+      </Button>
     );
   }
   return (
-    <div className="confirm-action" role="group" aria-label={label}>
-      <p className="type-meta">{warning}</p>
-      {error !== null ? (
-        <p className="notice notice--error" role="alert">
-          {error}
-        </p>
-      ) : null}
-      <div className="button-row">
-        <button type="button" className="button button--small button--danger" disabled={phase === "working"} onClick={() => void confirm()}>
+    <div role="group" aria-label={label} className="flex max-w-prose flex-col gap-2">
+      <p className="text-meta text-muted-foreground">{warning}</p>
+      {error !== null ? <ErrorNotice error={error} /> : null}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="destructive" size="sm" disabled={phase === "working"} onClick={() => void confirm()}>
           {confirmLabel}
-        </button>
-        <button type="button" className="button button--small button--ghost" disabled={phase === "working"} onClick={() => setPhase("idle")}>
+        </Button>
+        <Button variant="outline" size="sm" disabled={phase === "working"} onClick={() => setPhase("idle")}>
           {cancelLabel}
-        </button>
+        </Button>
       </div>
     </div>
   );

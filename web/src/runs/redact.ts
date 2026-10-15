@@ -28,3 +28,11 @@ export function safeEntry(key: string, value: unknown): unknown {
   if (isSecretKey(key) && value !== null && value !== undefined && value !== "") return REDACTED;
   return typeof value === "string" ? maskText(value) : value;
 }
+
+/** A copy of a whole JSON value with every entry passed through `safeEntry`, for plain-text display. */
+export function maskValue(value: unknown): unknown {
+  if (typeof value === "string") return maskText(value);
+  if (Array.isArray(value)) return value.map((item, index) => maskValue(safeEntry(String(index), item)));
+  if (typeof value !== "object" || value === null) return value;
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, maskValue(safeEntry(key, item))]));
+}

@@ -16,10 +16,11 @@ Options:
 | Option | Default | Use |
 | --- | --- | --- |
 | `--workspace PATH` | `~/.omrg/workspace` | Folder for run records, artefacts and uploads |
-| `--port N` | a free port | Loopback port |
+| `--port N` | saved port, else 8765 | Loopback port. `0` picks a free port |
 | `--host ADDR` | `127.0.0.1` | Loopback address only (`127.0.0.1`, `::1`, `localhost`) |
 | `--root DIR` | none | Folder that the server can read. Repeat for more folders |
 | `--experiment-root DIR` | none | Folder below which experiment workspaces can be registered. Repeat for more folders |
+| `--max-upload-mib MIB` | saved limit, else 50 | Per-file upload limit in whole MiB, 1 to 2048. Also read from `WEB_MAX_UPLOAD_MIB` |
 
 The server refuses a non-loopback address. The command writes nothing to
 stdout. One `omrg web` process can use a workspace at a time.
@@ -41,6 +42,9 @@ notebook plugin.
 | `security.py`, `middleware.py` | Session, bearer credentials, scopes, Host and Origin checks, redaction |
 | `grants.py`, `uploads.py` | Approved roots and managed uploads |
 | `routes*.py` | Route groups. They validate, delegate and format only |
+| `integrations_catalogue.py` | The integration catalogue and its availability probes (`GET /v1/integrations`) |
+| `connection_probe.py` | The one model-list request of a provider test (`POST /v1/connections/{provider}/test`) |
+| `log_buffer.py` | The in-memory server log (last 1,000 records, redacted); `omrg web` attaches it |
 | `runs_wiring.py` | Builds the workspace run service for graph runs and document jobs |
 | `static.py` | Serves the built frontend; never answers a `/v1` path with HTML |
 
@@ -78,12 +82,12 @@ only `sessionCookie`, the operation is session only.
 
 | Scope | Bearer can hold it | Operations |
 | --- | --- | --- |
-| `read` | yes | Session, collections, search, answer, chunks, jobs, operations, templates, pipelines, runs, events |
+| `read` | yes | Session, collections, search, answer, chunks, jobs, operations, templates, pipelines, runs, events, integrations, connections |
 | `graph` | yes | Create pipelines, save layouts and revisions, validate graphs |
 | `run` | yes | Submit, cancel and retry graph runs |
 | `files` | no | Roots, uploads, ingestion and codebase-map jobs |
 | `credentials` | no | Issue, list and revoke bearer credentials |
-| `manage` | no | Deletion, profile change, workspace cleanup and experiment registration |
+| `manage` | no | Deletion, profile change, workspace cleanup, experiment folders and registration, connection tests and the server log |
 | `plugins` | no | Plugin registration, recheck, removal, and editor open and stop |
 
 `GET /v1/session` returns the credential kind, its scopes and the
@@ -149,6 +153,31 @@ Events are stored before clients see them. Each event has a sequence number.
   `server.closing` when the server stops.
 
 Closing a stream does not cancel the run. Only the cancel route does.
+
+## Upload limit
+
+The per-file upload limit comes from the first source in this order:
+`--max-upload-mib`, `WEB_MAX_UPLOAD_MIB`, the value saved in Settings, then
+50 MiB. `GET /v1/settings/upload-limit` (`read`) returns `max_bytes`,
+`source` (`launch`, `saved` or `default`), `saved_mib`, `default_mib`,
+`min_mib` and `max_mib`. `PUT /v1/settings/upload-limit` (`manage`, session
+only) takes `{"max_mib": n}` or `{"max_mib": null}`. The server saves the
+value, then applies it to new uploads at once. An upload in progress keeps
+its start limit. An invalid body gets 422. When a launch option set the
+limit, the request gets 409 and nothing changes.
+
+## Full run output
+
+An event, status or node summary larger than 16 KiB is cut. It then has `truncated: true` and
+`artefact_ref: "<run_id>/<name>.json"`. The server keeps the full value, with
+credentials and raw vectors removed, in a private artefact.
+`GET /v1/runs/{run_id}/artefacts/{name}` (`read`) returns it as
+`{"status": "ok", "run_id", "name", "value"}`. `name` is the file name of the
+reference without `.json`.
+
+The route uses the same access rule as `GET /v1/runs/{run_id}`. A run that
+the caller cannot read gets 404, as an unknown run does. An unknown name gets
+404. A name that is not one plain path segment gets 400, and no file is read.
 
 ## Templates, experiments and plugins
 

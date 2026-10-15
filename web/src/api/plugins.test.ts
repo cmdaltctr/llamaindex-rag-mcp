@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { documentsServer, json } from "../views/test/fakeDocumentsServer";
+import { documentsServer, json } from "../test/fakeDocumentsServer";
+import { createApiClient } from "./client";
 import {
   editorTabUrl,
   editorToken,
@@ -39,18 +40,20 @@ describe("plugins client", () => {
     const server = documentsServer({
       "GET /v1/plugins": () => ({ status: "ok", plugins: [STATE], editors: [], install_hint: "Install outside OMRG.", trust_notice: "Trust text." }),
     });
-    const list = await listPlugins({ fetchImpl: server.fetchImpl });
+    const api = createApiClient(server.fetchImpl);
+    const list = await listPlugins(api);
     expect(list.plugins[0]!.status).toBe("compatible");
     expect(list.install_hint).toBe("Install outside OMRG.");
   });
 
   it("registers only with explicit approval", async () => {
     const server = documentsServer({ "POST /v1/plugins": () => json({ status: "ok", plugin: STATE, trust_notice: "Trust text." }, 201) });
-    await expect(registerPlugin({ manifestPath: "/m.json", executablePath: "/bin/marimo", approved: false }, { fetchImpl: server.fetchImpl })).rejects.toThrow(
+    const api = createApiClient(server.fetchImpl);
+    await expect(registerPlugin(api, { manifestPath: "/m.json", executablePath: "/bin/marimo", approved: false })).rejects.toThrow(
       /approval/,
     );
     expect(server.calls).toHaveLength(0);
-    await registerPlugin({ manifestPath: "/m.json", executablePath: "/bin/marimo", approved: true }, { fetchImpl: server.fetchImpl });
+    await registerPlugin(api, { manifestPath: "/m.json", executablePath: "/bin/marimo", approved: true });
     expect(server.calls[0]!.body).toEqual({ manifest_path: "/m.json", executable_path: "/bin/marimo", approved: true });
   });
 
@@ -59,25 +62,28 @@ describe("plugins client", () => {
       "POST /v1/plugins/marimo/recheck": () => ({ status: "ok", plugin: { ...STATE, status: "incompatible" } }),
       "DELETE /v1/plugins/marimo": () => ({ status: "ok", name: "marimo", unregistered: true }),
     });
-    expect((await recheckPlugin("marimo", { fetchImpl: server.fetchImpl })).status).toBe("incompatible");
-    await unregisterPlugin("marimo", { fetchImpl: server.fetchImpl });
+    const api = createApiClient(server.fetchImpl);
+    expect((await recheckPlugin(api, "marimo")).status).toBe("incompatible");
+    await unregisterPlugin(api, "marimo");
     expect(server.calls.map((c) => `${c.method} ${c.path}`)).toEqual(["POST /v1/plugins/marimo/recheck", "DELETE /v1/plugins/marimo"]);
-    await expect(unregisterPlugin("../session", { fetchImpl: server.fetchImpl })).rejects.toThrow(/unsafe/);
+    await expect(unregisterPlugin(api, "../session")).rejects.toThrow(/unsafe/);
   });
 
   it("opens an editor only with consent and sends the context and notebook", async () => {
     const server = documentsServer({ "POST /v1/plugins/marimo/editors": () => json(OPENED, 201) });
+    const api = createApiClient(server.fetchImpl);
     const request = { notebook: "starter.py", experimentContext: "exp_1" };
-    await expect(openEditor("marimo", { ...request, consent: false }, { fetchImpl: server.fetchImpl })).rejects.toThrow(/consent/);
+    await expect(openEditor(api, "marimo", { ...request, consent: false })).rejects.toThrow(/consent/);
     expect(server.calls).toHaveLength(0);
-    const opened = await openEditor("marimo", { ...request, consent: true }, { fetchImpl: server.fetchImpl });
+    const opened = await openEditor(api, "marimo", { ...request, consent: true });
     expect(opened.launch_id).toBe("launch_1");
     expect(server.calls[0]!.body).toEqual({ notebook: "starter.py", experiment_context: "exp_1", consent: true });
   });
 
   it("stops an editor by launch id", async () => {
     const server = documentsServer({ "DELETE /v1/plugin-editors/launch_1": () => ({ status: "ok", launch_id: "launch_1", stopped: true }) });
-    await stopEditor("launch_1", { fetchImpl: server.fetchImpl });
+    const api = createApiClient(server.fetchImpl);
+    await stopEditor(api, "launch_1");
     expect(server.calls[0]!.method).toBe("DELETE");
   });
 });
@@ -91,13 +97,14 @@ describe("editor delivery", () => {
   it.each(["https://example.com/", "javascript:alert(1)", "http://10.0.0.5:2719/", "http://127.0.0.1:2719/?access_token=editor-secret"])(
     "refuses %s",
     (url) => {
-      expect(() => editorTabUrl({ ...OPENED, url_without_token: url })).toThrow();
+      expect(() => editorTabUrl({ ...OPENED, url_without_token: url })).toThrow(expect.objectContaining({ name: "ClientRefusal" }));
     },
   );
 
   it("returns the token only for the response-body-once method", () => {
     expect(editorToken(OPENED)).toBe("editor-secret");
     const other = { ...OPENED, token_delivery: { method: "query_parameter", token: "x" } } as unknown as EditorOpened;
+    expect(() => editorToken(other)).toThrow(expect.objectContaining({ name: "ClientRefusal" }));
     expect(() => editorToken(other)).toThrow(/delivery/);
   });
 });

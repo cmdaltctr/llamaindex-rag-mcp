@@ -2,7 +2,7 @@
 
 ## Copy
 
-The web app has no i18n library. Visible text is English strings in the source (`views.ts`, components). Do not add a translation system inside a design change.
+The web app has no i18n library. Visible text is English strings in the source (`lib/views.ts`, components). Do not add a translation system inside a design change.
 
 - Write British English: colour, organise, licence (noun), behaviour, catalogue.
 - Follow the repository's writing rule: plain words, active voice, one idea per sentence, procedures in 20 words or fewer, no unexplained abbreviations.

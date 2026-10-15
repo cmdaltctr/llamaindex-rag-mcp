@@ -8,11 +8,11 @@ Navigation has seven items in this order: Home, Chat, Knowledge Base, Studio, Ex
 
 | Element | Rule |
 | --- | --- |
-| Top bar | Muted surface, 1px bottom border, elevation shadow. Shows the brand, an engine status pill (collection count, or "offline"), and the theme select. |
+| Top bar | Muted surface, 1px bottom border, elevation shadow. Shows the brand, an engine status pill (collection count, or "offline"), the theme `Select` (System, Light, Dark), and an icon-only button beside it that shows sun or moon for the theme in effect and switches Light and Dark in one click. Its accessible name names the target theme. |
 | Inspector | The global toggle and empty panel are gone. Detail regions open inside Chat, Studio, and Experiments on selection. |
 | Skip link, main focus | Keep the existing skip link. Focus moves to the view `h1` after navigation. |
-| Routes | Hash routes. The design names `#/home/<collection>`, `#/studio/<pipeline-id>`, `#/chat`, and `#/experiments`. The other view ids (`knowledge-base`, `integrations`, `settings`) are not named in the artefacts. Take them from `views.ts` when it is rewritten. Legacy `#/canvas`, `#/library`, `#/search`, `#/ask`, `#/runs` redirect once to Studio, Home, Chat, Chat, Experiments, and the hash is replaced. |
-| Narrow screens | Navigation targets are at least 44px tall. No horizontal page scroll. |
+| Routes | Typed hash routes from `lib/routes.ts` (design D9): `#/home`, `#/knowledge-base[/<collection>]`, `#/chat[/<collection>]`, `#/studio[/<pipeline-id>]`, `#/experiments`, `#/experiments/runs/<run-id>`, `#/integrations`, `#/settings`. Segments are URI-encoded. An unknown hash opens Home and is rewritten to `#/home`; earlier routes are not redirected. |
+| Narrow screens | Below `md`, the navigation becomes one row of the seven area icons with short labels under the top bar (owner decision; no menu button). Targets are at least 44px. No horizontal page scroll. |
 
 Read the presentation spec and `web/src/App.tsx` before you change route names.
 
@@ -22,7 +22,7 @@ A grid of project cards (`gap-3`, `items-start`). Each card is flat with a 1px b
 
 Empty state: icon, one sentence naming the cause, one action that starts an ingest into a named collection.
 
-Opening a project shows its library: source table with orphan status, upload panel, folder ingest panel, profile information, and deletion. Orphan status is a badge with text. The active project persists through the URL and a versioned `localStorage` key. Stale keys are dropped.
+A card opens `#/knowledge-base/<collection>`: source table with orphan status, upload panel, folder ingest panel, profile information, deletion, and search. Orphan status is a badge with text. The route is the active project; `lastCollection` in `omrg-preferences` is only the default for `#/knowledge-base` and `#/chat`.
 
 ## Chat
 
@@ -39,6 +39,8 @@ Layout: a centred transcript column at `min(100%, 48rem)`, the composer docked a
 Reuse `views/shared/ChunkViewer.tsx` (or its moved location). Delete `views/search/` and `views/ask/` only after chat tests cover their behaviour (task 3.5).
 
 ## Knowledge Base
+
+Four sections, switched with `chip` buttons and shown one at a time: Sources, Search, Add, Profile (owner decision).
 
 Manages the active project's sources: file upload (managed upload plus an ingest job), folder ingest from approved roots, and the source table.
 
@@ -78,4 +80,10 @@ State that availability reflects the running launch, and that installing needs t
 
 ## Settings
 
-Trimmed to appearance (theme), runtime capabilities, and workspace information. Controls that moved to other views are removed with their tests. Keep the workspace path in a `code` element with `overflow-wrap: anywhere`.
+Six sections switched with `chip` buttons, one at a time (redesign design D13): Appearance, Connections, MCP, Server log, Runtime, Workspace. Controls that moved to other views are removed with their tests.
+
+- Appearance: the same theme `Select` as the top bar.
+- Connections: one card per provider (Ollama, llama.cpp, OpenRouter) with URLs and model names in `code`, role badges (embeddings, answers, metadata, verification), "Key set" or "No key" as text, and a Test button that shows reachable or the reason as a status badge. Read-only: state that values come from `.env` and need a restart. Never render a key.
+- MCP: the stdio client configuration (`uv run --directory <config_dir> omrg`) in a `code` block with a copy button, and, from `add-mcp-http-transport`: the HTTP on/off switch (show only the state the server returns), the HTTP configuration with the `/mcp` URL, token rotate and revoke with a new token shown once, and the saved web port with a next-launch notice.
+- Server log: a monospace, terminal-style panel on the muted surface (`bg-muted`), one record per line (time, level badge, logger, message), level filter chips, Pause, Copy, and auto-scroll only while scrolled to the bottom. Mark it `role="log"` so screen readers announce new lines politely.
+- Runtime and Workspace: capabilities and the workspace path. Keep paths in `code` elements with `overflow-wrap: anywhere`.

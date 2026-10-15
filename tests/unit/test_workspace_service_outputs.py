@@ -18,7 +18,7 @@ from tests.unit.test_workspace_service_support import (
     saved_revision,
 )
 
-from omrg.core.pipelines import EventKind
+from omrg.core.pipelines import EventKind, NodeOutcome, NodeStatus
 from omrg.core.workspace import MAX_PREVIEW_ROWS, REDACTED
 
 
@@ -198,4 +198,28 @@ async def test_run_without_an_artefact_root_uses_the_workspace_store(tmp_path: P
     assert "artefact_root" not in record["resources"]
     assert service.artefacts_for(record).root == service.artefacts.root
     assert service.artefacts.path(record["result_ref"]).exists()
+    await service.shutdown()
+
+
+async def test_a_cut_node_summary_keeps_its_full_value_in_an_artefact(tmp_path: Path) -> None:
+    executor, admitter = FakeExecutor(), FakeAdmitter()
+    big = {"text": "y" * 40_000, "api_key": SECRET}
+    executor.nodes = (
+        NodeOutcome(node_id="big/node", status=NodeStatus.SUCCEEDED, summary=big),
+        NodeOutcome(node_id="small", status=NodeStatus.SUCCEEDED, summary={"n": 1}),
+    )
+    service = make_service(tmp_path, executor, admitter)
+    await service.start()
+    run = service.submit(saved_revision(service.repository), inputs={"name": "a"})
+    await idle(service)
+
+    record = service.repository.get_run(run["run_id"])
+    nodes = service.artefacts.read_json(record["result_ref"])["nodes"]
+    cut, small = nodes[0]["summary"], nodes[1]["summary"]
+    assert cut["truncated"] is True
+    assert cut["artefact_ref"] == f"{run['run_id']}/node-0-summary.json"
+    assert len(cut["text"]) < 40_000
+    full = service.artefacts.read_json(cut["artefact_ref"])
+    assert full == {"text": "y" * 40_000, "api_key": REDACTED}
+    assert small == {"n": 1}
     await service.shutdown()

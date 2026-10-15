@@ -1,31 +1,63 @@
 /**
- * Typed helpers for the local `/v1` API.
+ * The one request function for the local `/v1` API.
  *
  * The single-origin server also serves the application page, so a wrong or
- * missing API route can come back as HTML. These helpers check the response
- * content type and raise `ApiError` instead of parsing HTML as JSON.
+ * missing API route can come back as HTML. `request` checks the response
+ * content type and raises `ApiError` instead of parsing HTML as JSON. Every
+ * `api/*.ts` module is a thin typed layer over this function.
  */
 
 export type ApiErrorKind = "invalid-path" | "network" | "not-json" | "invalid-json" | "http";
+
+/**
+ * A check in the page refused a value before or after a request. Its message
+ * is written for the person, so a form may show it; every other error goes
+ * through `describeError`.
+ */
+export class ClientRefusal extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ClientRefusal";
+  }
+}
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind;
   readonly status: number | null;
   readonly path: string;
+  /** The parsed JSON error body of an `http` failure; `undefined` for every other kind. */
+  readonly body: unknown;
 
-  constructor(kind: ApiErrorKind, message: string, path: string, status: number | null = null) {
+  constructor(kind: ApiErrorKind, message: string, path: string, status: number | null = null, body?: unknown) {
     super(message);
     this.name = "ApiError";
     this.kind = kind;
     this.status = status;
     this.path = path;
+    this.body = body;
   }
 }
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
-export interface RequestOptions {
-  fetchImpl?: FetchLike;
+export type QueryValue = string | number | boolean | null | undefined;
+
+export interface RequestInput {
+  /** Appended to the path. `null` and `undefined` values are skipped. */
+  query?: Record<string, QueryValue>;
+  /** Sent as JSON, except a `Blob` (including `File`), which is sent as it is. */
+  body?: unknown;
+  /** Extra headers, for a raw body. */
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
+}
+
+export interface ApiClient {
+  request<T>(method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", path: string, input?: RequestInput): Promise<T>;
+}
+
+/** The part of a query that an API function accepts from a caller. */
+export interface CallOptions {
   signal?: AbortSignal;
 }
 
@@ -52,58 +84,69 @@ function isJsonType(contentType: string | null): boolean {
 
 function envelopeMessage(body: unknown): string | null {
   if (typeof body !== "object" || body === null) return null;
-  const message = (body as Record<string, unknown>).message;
+  const record = body as Record<string, unknown>;
+  const message = record.message ?? record.detail;
   return typeof message === "string" && message.length > 0 ? message : null;
 }
 
-/** Sends a GET request to a `/v1/` path and returns the parsed JSON body. */
-export async function getJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  if (!isApiPath(path)) {
-    throw new ApiError("invalid-path", `Refused a request outside ${API_PREFIX}: ${path}`, path);
+function withQuery(path: string, query: Record<string, QueryValue> | undefined): string {
+  if (query === undefined) return path;
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== null && value !== undefined) params.set(key, String(value));
   }
-
-  const fetchImpl = options.fetchImpl ?? ((input, init) => fetch(input, init));
-  let response: Response;
-  try {
-    response = await fetchImpl(path, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      credentials: "same-origin",
-      signal: options.signal,
-    });
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new ApiError("network", `Could not reach the local server: ${detail}`, path);
-  }
-
-  const contentType = response.headers.get("content-type");
-  if (!isJsonType(contentType)) {
-    throw new ApiError(
-      "not-json",
-      `Expected JSON from ${path} but received ${contentType ?? "no content type"} (status ${response.status}).`,
-      path,
-      response.status,
-    );
-  }
-
-  let body: unknown;
-  try {
-    body = await response.json();
-  } catch {
-    throw new ApiError("invalid-json", `The response from ${path} is not valid JSON.`, path, response.status);
-  }
-
-  if (!response.ok) {
-    const message = envelopeMessage(body) ?? `Request to ${path} failed with status ${response.status}.`;
-    throw new ApiError("http", message, path, response.status);
-  }
-  return body as T;
+  const text = params.toString();
+  return text === "" ? path : `${path}${path.includes("?") ? "&" : "?"}${text}`;
 }
 
-/**
- * Placeholder health check. The response shape is not part of the reviewed
- * contract yet, so callers receive an untyped record.
- */
-export function getHealth(fetchImpl?: FetchLike): Promise<Record<string, unknown>> {
-  return getJson<Record<string, unknown>>("/v1/health", { fetchImpl });
+/** Builds the client. `fetchImpl` is set once here; components never receive it. */
+export function createApiClient(fetchImpl: FetchLike = (input, init) => fetch(input, init)): ApiClient {
+  async function request<T>(method: string, path: string, input: RequestInput = {}): Promise<T> {
+    const url = withQuery(path, input.query);
+    if (!isApiPath(url)) {
+      throw new ApiError("invalid-path", `Refused a request outside ${API_PREFIX}: ${path}`, path);
+    }
+
+    const headers: Record<string, string> = { Accept: "application/json", ...input.headers };
+    let body: BodyInit | undefined;
+    if (input.body instanceof Blob) {
+      body = input.body;
+    } else if (input.body !== undefined) {
+      headers["Content-Type"] = "application/json";
+      body = JSON.stringify(input.body);
+    }
+
+    let response: Response;
+    try {
+      response = await fetchImpl(url, { method, headers, credentials: "same-origin", body, signal: input.signal });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new ApiError("network", `Could not reach the local server: ${detail}`, path);
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (!isJsonType(contentType)) {
+      throw new ApiError(
+        "not-json",
+        `Expected JSON from ${path} but received ${contentType ?? "no content type"} (status ${response.status}).`,
+        path,
+        response.status,
+      );
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = await response.json();
+    } catch {
+      throw new ApiError("invalid-json", `The response from ${path} is not valid JSON.`, path, response.status);
+    }
+
+    if (!response.ok) {
+      const message = envelopeMessage(parsed) ?? `Request to ${path} failed with status ${response.status}.`;
+      throw new ApiError("http", message, path, response.status, parsed);
+    }
+    return parsed as T;
+  }
+
+  return { request };
 }

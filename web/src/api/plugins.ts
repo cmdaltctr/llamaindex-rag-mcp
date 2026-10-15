@@ -6,8 +6,8 @@
  * stop only. The editor token arrives once in the open response
  * (`token_delivery.method = "response_body_once"`) and never in a URL.
  */
-import { getJson, type RequestOptions } from "./client";
-import { safeId, sendJson } from "./experiments";
+import { ClientRefusal, type ApiClient, type CallOptions } from "./client";
+import { safeId } from "./experiments";
 
 export const PLUGIN_STATUSES = ["compatible", "incompatible", "unchecked", "needs_approval", "unavailable"] as const;
 export type PluginStatus = (typeof PLUGIN_STATUSES)[number];
@@ -57,34 +57,35 @@ export interface OpenRequest {
   consent: boolean;
 }
 
-export function listPlugins(options: RequestOptions = {}): Promise<PluginList> {
-  return getJson<PluginList>("/v1/plugins", options);
+export function listPlugins(api: ApiClient, options: CallOptions = {}): Promise<PluginList> {
+  return api.request<PluginList>("GET", "/v1/plugins", { signal: options.signal });
 }
 
 /** Registration is an explicit trust decision: nothing is sent without approval. */
-export async function registerPlugin(request: RegisterRequest, options: RequestOptions = {}): Promise<PluginState> {
+export async function registerPlugin(api: ApiClient, request: RegisterRequest, options: CallOptions = {}): Promise<PluginState> {
   if (request.approved !== true) throw new Error("Registering a plugin needs your explicit approval.");
   const body = { manifest_path: request.manifestPath, executable_path: request.executablePath, approved: true };
-  return (await sendJson<{ plugin: PluginState }>("POST", "/v1/plugins", body, options)).plugin;
+  return (await api.request<{ plugin: PluginState }>("POST", "/v1/plugins", { body, signal: options.signal })).plugin;
 }
 
-export async function recheckPlugin(name: string, options: RequestOptions = {}): Promise<PluginState> {
-  return (await sendJson<{ plugin: PluginState }>("POST", `/v1/plugins/${safeId(name)}/recheck`, {}, options)).plugin;
+export async function recheckPlugin(api: ApiClient, name: string, options: CallOptions = {}): Promise<PluginState> {
+  const path = `/v1/plugins/${safeId(name)}/recheck`;
+  return (await api.request<{ plugin: PluginState }>("POST", path, { body: {}, signal: options.signal })).plugin;
 }
 
-export async function unregisterPlugin(name: string, options: RequestOptions = {}): Promise<void> {
-  await sendJson("DELETE", `/v1/plugins/${safeId(name)}`, undefined, options);
+export async function unregisterPlugin(api: ApiClient, name: string, options: CallOptions = {}): Promise<void> {
+  await api.request("DELETE", `/v1/plugins/${safeId(name)}`, { signal: options.signal });
 }
 
 /** Opening runs notebook Python with the user's permissions: nothing is sent without consent. */
-export async function openEditor(name: string, request: OpenRequest, options: RequestOptions = {}): Promise<EditorOpened> {
+export async function openEditor(api: ApiClient, name: string, request: OpenRequest, options: CallOptions = {}): Promise<EditorOpened> {
   if (request.consent !== true) throw new Error("Opening a notebook editor needs your consent.");
   const body = { notebook: request.notebook, experiment_context: request.experimentContext, consent: true };
-  return sendJson<EditorOpened>("POST", `/v1/plugins/${safeId(name)}/editors`, body, options);
+  return api.request<EditorOpened>("POST", `/v1/plugins/${safeId(name)}/editors`, { body, signal: options.signal });
 }
 
-export async function stopEditor(launchId: string, options: RequestOptions = {}): Promise<void> {
-  await sendJson("DELETE", `/v1/plugin-editors/${safeId(launchId)}`, undefined, options);
+export async function stopEditor(api: ApiClient, launchId: string, options: CallOptions = {}): Promise<void> {
+  await api.request("DELETE", `/v1/plugin-editors/${safeId(launchId)}`, { signal: options.signal });
 }
 
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
@@ -98,13 +99,13 @@ export function editorTabUrl(editor: EditorInfo): string {
   try {
     url = new URL(editor.url_without_token);
   } catch {
-    throw new Error("The server gave an editor address that is not a valid URL.");
+    throw new ClientRefusal("The server gave an editor address that is not a valid URL.");
   }
   if (url.protocol !== "http:" || !LOOPBACK_HOSTS.has(url.hostname)) {
-    throw new Error("The server gave an editor address that is not on this computer.");
+    throw new ClientRefusal("The server gave an editor address that is not on this computer.");
   }
   if (url.search !== "" || url.hash !== "" || url.username !== "" || url.password !== "") {
-    throw new Error("The server gave an editor address with extra parts. It was not opened.");
+    throw new ClientRefusal("The server gave an editor address with extra parts. It was not opened.");
   }
   return url.href;
 }
@@ -113,7 +114,7 @@ export function editorTabUrl(editor: EditorInfo): string {
 export function editorToken(opened: EditorOpened): string {
   const delivery = opened.token_delivery as { method?: unknown; token?: unknown } | undefined;
   if (delivery?.method !== "response_body_once" || typeof delivery.token !== "string" || delivery.token === "") {
-    throw new Error("The server used a token delivery method that this page does not support.");
+    throw new ClientRefusal("The server used a token delivery method that this page does not support.");
   }
   return delivery.token;
 }

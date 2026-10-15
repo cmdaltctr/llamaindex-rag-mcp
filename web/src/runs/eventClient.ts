@@ -12,7 +12,7 @@
  * It stops on `run.end`, on a complete polling page, or on `close()`.
  * Closing only stops monitoring; it never cancels the run.
  */
-import { ApiError, type FetchLike } from "../api/client";
+import { ApiError, type ApiClient } from "../api/client";
 import { eventStreamPath, getRunRecord, listRunEvents, MAX_EVENT_PAGE, type RunDetailRecord, type RunEventRecord } from "../api/runs";
 
 export type MonitorMode = "connecting" | "streaming" | "reconnecting" | "polling" | "ended" | "closed";
@@ -34,12 +34,12 @@ export interface FollowOptions {
   onMode?: (mode: MonitorMode) => void;
   /** `status` is null when the server closed before the run ended. */
   onEnd?: (info: { status: string | null }) => void;
-  onError?: (message: string) => void;
+  onError?: (error: unknown) => void;
   /** Receives the run record read again after each reconnect. The first connection reads nothing. */
   onRefresh?: (run: RunDetailRecord) => void;
   /** `undefined` uses the browser `EventSource`; `null` means none is available. */
   eventSource?: EventSourceFactory | null;
-  fetchImpl?: FetchLike;
+  api: ApiClient;
   pollIntervalMs?: number;
   schedule?: (fn: () => void, ms: number) => () => void;
   maxStreamErrors?: number;
@@ -120,12 +120,12 @@ export function followRunEvents(options: FollowOptions): { close: () => void } {
 
   function refresh() {
     if (stopped || !options.onRefresh) return;
-    getRunRecord(options.runId, { fetchImpl: options.fetchImpl }).then(
+    getRunRecord(options.api, options.runId).then(
       (run) => {
         if (!stopped) options.onRefresh?.(run);
       },
       (error: unknown) => {
-        if (!stopped) options.onError?.(error instanceof Error ? error.message : String(error));
+        if (!stopped) options.onError?.(error);
       },
     );
   }
@@ -140,7 +140,7 @@ export function followRunEvents(options: FollowOptions): { close: () => void } {
   async function poll(failures: number) {
     if (stopped) return;
     try {
-      const page = await listRunEvents(options.runId, last, { fetchImpl: options.fetchImpl });
+      const page = await listRunEvents(options.api, options.runId, last);
       if (failures > 0) refresh();
       for (const record of page.events) deliver(record);
       if (stopped) return;
@@ -152,7 +152,7 @@ export function followRunEvents(options: FollowOptions): { close: () => void } {
       cancelTimer = schedule(() => void poll(0), page.events.length >= MAX_EVENT_PAGE ? 0 : interval);
     } catch (error) {
       if (stopped) return;
-      options.onError?.(error instanceof Error ? error.message : String(error));
+      options.onError?.(error);
       if (error instanceof ApiError && error.status !== null && STOP_STATUSES.has(error.status)) return stop("closed");
       cancelTimer = schedule(() => void poll(failures + 1), interval * Math.min(failures + 1, 5));
     }

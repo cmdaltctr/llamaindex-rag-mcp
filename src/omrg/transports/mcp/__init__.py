@@ -26,7 +26,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 from mcp.server.mcpserver import MCPServer
 
 # The composition root owns all runtime construction. ``main()`` invokes it
@@ -64,8 +64,7 @@ logger = logging.getLogger(__name__)
 # provider messages never echo key material by design).
 _SETTINGS_UNRESOLVED = "(details unavailable: settings could not be resolved)"
 
-# Load .env from the working directory (project root when run via `uv run`)
-load_dotenv()
+load_dotenv(find_dotenv(usecwd=True))  # the working directory's .env, as env_file reads
 
 
 def _error_detail(exc: Exception) -> str:

@@ -2,10 +2,9 @@
  * Typed client for the run routes of the local `/v1` API.
  *
  * Shapes follow `src/omrg/transports/api/routes_runs.py` and
- * `routes_inspect.py`. GET requests reuse `getJson`. The two POST routes
- * (cancel, retry) apply the same JSON and error-envelope checks.
+ * `routes_inspect.py`. Every function takes the `ApiClient` first.
  */
-import { ApiError, getJson, type RequestOptions } from "./client";
+import { ApiError, type ApiClient, type CallOptions } from "./client";
 
 export const RUN_STATUSES = ["queued", "running", "cancelling", "succeeded", "failed", "cancelled", "interrupted"] as const;
 export const ACTIVE_RUN_STATUSES: ReadonlySet<string> = new Set(["queued", "running", "cancelling"]);
@@ -74,104 +73,82 @@ export interface RunResultRecord {
   error?: string | null;
 }
 
-export interface ChunkRecord {
-  chunk_id: string | null;
-  source_id: string | null;
-  source: string | null;
-  source_chunk_index: number | null;
-  source_chunk_count: number | null;
-  page_label: string | null;
-  text: string;
-}
-
-export interface ChunkView {
-  collection: string;
-  text_format: string;
-  chunk: ChunkRecord;
-}
-
 export const MAX_EVENT_PAGE = 500;
 const RUN_ID = /^[A-Za-z0-9_-]+$/;
+/** One artefact name: the server's own segment rule (`core/workspace/artefacts.py`), with no `..`. */
+const ARTEFACT_NAME = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
+
+function isArtefactName(name: string): boolean {
+  return ARTEFACT_NAME.test(name) && !name.includes("..");
+}
 
 function runPath(runId: string, rest = ""): string {
   if (!RUN_ID.test(runId)) throw new ApiError("invalid-path", `Refused an unsafe run identifier: ${runId}`, "/v1/runs");
   return `/v1/runs/${runId}${rest}`;
 }
 
-async function postJson<T>(path: string, options: RequestOptions): Promise<T> {
-  const fetchImpl = options.fetchImpl ?? ((input, init) => fetch(input, init));
-  let response: Response;
-  try {
-    response = await fetchImpl(path, {
-      method: "POST",
-      headers: { Accept: "application/json", "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: "{}",
-      signal: options.signal,
-    });
-  } catch (error) {
-    throw new ApiError("network", `Could not reach the local server: ${error instanceof Error ? error.message : String(error)}`, path);
-  }
-  const type = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() ?? "";
-  if (type !== "application/json") {
-    throw new ApiError("not-json", `Expected JSON from ${path} but received ${type || "no content type"}.`, path, response.status);
-  }
-  let body: unknown;
-  try {
-    body = await response.json();
-  } catch {
-    throw new ApiError("invalid-json", `The response from ${path} is not valid JSON.`, path, response.status);
-  }
-  if (!response.ok) {
-    const raw = (body as { message?: unknown } | null)?.message;
-    const message = typeof raw === "string" && raw ? raw : `Request to ${path} failed with status ${response.status}.`;
-    throw new ApiError("http", message, path, response.status);
-  }
-  return body as T;
-}
-
 export async function listRuns(
-  filter: { statuses?: readonly string[]; limit?: number },
-  options: RequestOptions = {},
+  api: ApiClient,
+  filter: { statuses?: readonly string[]; limit?: number; pipelineId?: string },
+  options: CallOptions = {},
 ): Promise<RunDetailRecord[]> {
+  // `query` holds one value per key, and the server reads `status` as a repeated key.
   const query = new URLSearchParams();
   for (const status of filter.statuses ?? []) query.append("status", status);
   if (filter.limit !== undefined) query.set("limit", String(filter.limit));
+  if (filter.pipelineId !== undefined) query.set("pipeline_id", filter.pipelineId);
   const search = query.toString();
-  return (await getJson<{ runs: RunDetailRecord[] }>(`/v1/runs${search ? `?${search}` : ""}`, options)).runs;
+  const path = `/v1/runs${search ? `?${search}` : ""}`;
+  return (await api.request<{ runs: RunDetailRecord[] }>("GET", path, { signal: options.signal })).runs;
 }
 
-export async function getRunRecord(runId: string, options: RequestOptions = {}): Promise<RunDetailRecord> {
-  return (await getJson<{ run: RunDetailRecord }>(runPath(runId), options)).run;
+export async function getRunRecord(api: ApiClient, runId: string, options: CallOptions = {}): Promise<RunDetailRecord> {
+  return (await api.request<{ run: RunDetailRecord }>("GET", runPath(runId), { signal: options.signal })).run;
 }
 
 /** Returns `null` when the run has no stored result yet (HTTP 404). */
-export async function getRunResult(runId: string, options: RequestOptions = {}): Promise<RunResultRecord | null> {
+export async function getRunResult(api: ApiClient, runId: string, options: CallOptions = {}): Promise<RunResultRecord | null> {
   try {
-    return (await getJson<{ result: RunResultRecord }>(runPath(runId, "/result"), options)).result;
+    return (await api.request<{ result: RunResultRecord }>("GET", runPath(runId, "/result"), { signal: options.signal })).result;
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return null;
     throw error;
   }
 }
 
-export async function listRunEvents(runId: string, afterSequence: number, options: RequestOptions = {}): Promise<RunEventsPage> {
-  return getJson<RunEventsPage>(runPath(runId, `/events?after_sequence=${afterSequence}&limit=${MAX_EVENT_PAGE}`), options);
+export function listRunEvents(api: ApiClient, runId: string, afterSequence: number, options: CallOptions = {}): Promise<RunEventsPage> {
+  return api.request<RunEventsPage>("GET", runPath(runId, "/events"), {
+    query: { after_sequence: afterSequence, limit: MAX_EVENT_PAGE },
+    signal: options.signal,
+  });
 }
 
-export async function cancelRunRecord(runId: string, options: RequestOptions = {}): Promise<RunDetailRecord> {
-  return (await postJson<{ run: RunDetailRecord }>(runPath(runId, "/cancel"), options)).run;
+export async function cancelRunRecord(api: ApiClient, runId: string, options: CallOptions = {}): Promise<RunDetailRecord> {
+  return (await api.request<{ run: RunDetailRecord }>("POST", runPath(runId, "/cancel"), { body: {}, signal: options.signal })).run;
 }
 
 /** Explicit retry: the server creates a new run and leaves the source run unchanged. */
-export async function retryRun(runId: string, options: RequestOptions = {}): Promise<RunDetailRecord> {
-  return (await postJson<{ run: RunDetailRecord }>(runPath(runId, "/retry"), options)).run;
+export async function retryRun(api: ApiClient, runId: string, options: CallOptions = {}): Promise<RunDetailRecord> {
+  return (await api.request<{ run: RunDetailRecord }>("POST", runPath(runId, "/retry"), { body: {}, signal: options.signal })).run;
 }
 
-/** The protected stored-chunk route. Text comes back as plain text and must render as text. */
-export async function getChunk(collection: string, chunkId: string, options: RequestOptions = {}): Promise<ChunkView> {
-  const path = `/v1/collections/${encodeURIComponent(collection)}/chunks/${encodeURIComponent(chunkId)}?window=0`;
-  return getJson<ChunkView>(path, options);
+/**
+ * The artefact name in an `artefact_ref` (`"<run_id>/<name>.json"`), or
+ * `null` when the reference is malformed or names another run. Only the run
+ * shown can be read, so a reference to any other run offers no action.
+ */
+export function artefactName(ref: unknown, runId: string): string | null {
+  if (typeof ref !== "string") return null;
+  const parts = ref.split("/");
+  if (parts.length !== 2 || parts[0] !== runId || !parts[1]!.endsWith(".json")) return null;
+  const name = parts[1]!.slice(0, -".json".length);
+  return isArtefactName(name) ? name : null;
+}
+
+/** The full, redacted value of one artefact of a run, such as a node summary the server cut. */
+export async function getRunArtefact(api: ApiClient, runId: string, name: string, options: CallOptions = {}): Promise<unknown> {
+  if (!isArtefactName(name)) throw new ApiError("invalid-path", `Refused an unsafe artefact name: ${name}`, "/v1/runs");
+  return (await api.request<{ value: unknown }>("GET", runPath(runId, `/artefacts/${name}`), { signal: options.signal })).value;
 }
 
 /** Server-sent events path. A fresh stream resumes with `after`; the browser's own reconnect sends `Last-Event-ID`. */

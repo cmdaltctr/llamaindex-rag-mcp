@@ -99,8 +99,9 @@ x-omrg-scope-catalogue:
   manage:
     session_only: true
     description: >
-      Preview-bound destructive actions (deletion, profile change, cleanup)
-      and experiment context approval and revocation.
+      Preview-bound destructive actions (deletion, profile change, cleanup),
+      experiment context approval and revocation, experiment folder
+      creation, provider connection tests and the server log.
 
 paths:
   # ── Health and session (public bootstrap) ───────────────────────────
@@ -1326,6 +1327,49 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
+  /runs/{run_id}/artefacts/{name}:
+    get:
+      operationId: getRunArtefact
+      summary: Return one stored, redacted artefact of a run
+      description: >
+        A summary that was cut carries `truncated: true` and an
+        `artefact_ref` of the form `<run_id>/<name>.json`. This route
+        returns the full redacted value of that artefact. It applies the
+        same access policy as `getRun`: a run the caller cannot read
+        answers 404 as an unknown run does. A name that is not one safe
+        path segment answers 400 and no file is read.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - name: name
+          in: path
+          required: true
+          description: The file name of the `artefact_ref`, without `.json`.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The stored artefact.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunArtefact"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
   /runs/{run_id}/cancel:
     post:
       operationId: cancelRun
@@ -1672,7 +1716,13 @@ paths:
           $ref: "#/components/responses/ServiceUnavailable"
     get:
       operationId: listExperiments
-      summary: List the approved experiment roots and contexts of this launch
+      summary: List the approved experiment roots, their folder trees and contexts
+      description: >
+        `folders` holds one directory tree for each approved root. A node
+        with a `context_id` is a registered workspace and has no children.
+        A node with no `context_id` and no children is an empty folder.
+        Hidden directories, links and levels below four are not scanned, and
+        a registered workspace is always listed.
       security:
         - sessionCookie: [manage]
       x-omrg-scopes: [manage]
@@ -1689,6 +1739,52 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /experiment-folders:
+    post:
+      operationId: createExperimentFolder
+      summary: Create a folder below an approved experiment root
+      description: >
+        Creates a directory. `path` is relative to the root, has one to four
+        segments separated by `/`, and no `..` part. A segment starts with a
+        letter or digit and uses letters, digits, `.`, `_`, `-` and single
+        spaces (at most 80 characters, and not `output`). No path part may be
+        a symbolic link. A refused path gives 400 with a stable `code`
+        (`traversal`, `not_relative`, `too_deep`, `invalid_name`,
+        `symlink_escape`, `not_a_directory`, `root_unknown`,
+        `root_required`) and creates nothing. A folder that exists gives 409
+        with `code: exists`. A server started without an experiment root
+        gives 409. `root` names an approved root and is needed only when
+        more than one root is approved. To register a sub-experiment in the
+        folder, send its `workspace` to `POST /v1/experiments`.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExperimentFolderRequest"
+      responses:
+        "201":
+          description: Folder created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExperimentFolderCreated"
+        "400":
+          $ref: "#/components/responses/ExperimentRefused"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/ExperimentRefused"
         "500":
           $ref: "#/components/responses/InternalError"
         "503":
@@ -2126,6 +2222,297 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WebPortState"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /settings/upload-limit:
+    get:
+      operationId: getUploadLimit
+      summary: Read the per-file upload limit in force and its range
+      description: >
+        `max_bytes` is the limit in force. `source` is `launch` when
+        `--max-upload-mib` or `WEB_MAX_UPLOAD_MIB` set it, `saved` when the
+        value saved in Settings applies, and `default` otherwise.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The upload limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadLimitState"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    put:
+      operationId: setUploadLimit
+      summary: Save or clear the per-file upload limit
+      description: >
+        Accepts a whole number of MiB from 1 to 2048, or `null` to return to
+        the default. The server saves the value first and then applies it to
+        new uploads at once. An upload in progress keeps the limit it
+        started with. A body that is not valid gets 400. When a launch
+        option set the limit, the request gets 409 and nothing changes.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadLimitRequest"
+      responses:
+        "200":
+          description: The upload limit after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadLimitState"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: A launch option set the limit. Nothing changed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  # ── Integrations (read) ──────────────────────────────────────────────
+  /integrations:
+    get:
+      operationId: listIntegrations
+      summary: List the installable integrations with their availability
+      description: >
+        Returns one entry for each installable extra (chroma, hybrid,
+        pdf-pypdfium2, pdf-inspector, community-leiden, azure, llamacpp,
+        openrouter, torch, web) and for the always-on magika integration.
+        `availability` comes from the probes of the running server, so it
+        describes this launch only. A probe that fails gives `unknown`; no
+        probe text is returned. The server never installs a package:
+        `install_command` and `pip_command` are for the user to run outside
+        the app, followed by a server restart.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The catalogue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntegrationList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  # ── Provider connections (read-only summary, on-request test) ───────
+  /connections:
+    get:
+      operationId: getConnections
+      summary: Read the provider endpoints, models and roles from the server settings
+      description: >
+        Returns `config_dir`, the working directory of the server, whose
+        `.env` the settings read, and one entry each for `ollama`,
+        `llamacpp` and `openrouter`. An entry lists the endpoint URLs, the
+        configured model names, `key_set` and the `roles` that use the
+        provider. Roles follow the startup rules: `embeddings`
+        (`EMBED_PROVIDER` with `LOCAL_BACKEND` and `CLOUD_BACKEND`),
+        `answers` (`ANSWER__PROVIDER`, when answering is enabled),
+        `metadata` (when metadata extraction calls a model) and
+        `verification` (`ANSWER__VERIFY_PROVIDER`, when claim verification
+        is on). Values are read once at startup; a change needs a server
+        restart. The key value is never returned. This route sends no
+        request to any provider.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /connections/{provider}/test:
+    post:
+      operationId: testConnection
+      summary: Send one model-list request to a provider
+      description: >
+        Ollama `GET /api/tags`, llama.cpp `GET /models` on each configured
+        URL, OpenRouter `GET /models` with the key. Each request has a
+        5-second timeout and is not redirected. The result holds `reachable`
+        and a `reason`: `null` when reachable, else `refused`, `timeout`,
+        `unauthorised`, `http-<status>` or `not-configured` (no URL, or no
+        OpenRouter key; nothing is sent). Response bodies and exception text
+        are never returned. This is the only route that contacts a provider,
+        and the OpenRouter request is the only cloud request. An unknown
+        provider gives 404.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [ollama, llamacpp, openrouter]
+      responses:
+        "200":
+          description: The test result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionTestResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  # ── Server log (session only) ───────────────────────────────────────
+  /logs:
+    get:
+      operationId: getLogs
+      summary: Read the buffered server log records
+      description: >
+        Returns the records with a `seq` above `after`, oldest first, and
+        `last_seq`, the newest sequence (0 when nothing was logged). The
+        server keeps the last 1,000 records in memory and writes no file. A
+        record is redacted before it is stored: provider keys and bearer
+        tokens never appear. Session only: a bearer credential gets 403.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      parameters:
+        - name: after
+          in: query
+          required: false
+          description: Return only records after this sequence.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: The records.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /logs/stream:
+    get:
+      operationId: streamLogs
+      summary: Follow the server log as server-sent events
+      description: >
+        The stream first sends `retry: 3000`. It then replays the buffered
+        records after `Last-Event-ID` (or `after`; the header wins) and
+        follows new ones. Each frame has `id: <seq>`, `event: log` and
+        `data: <LogRecord JSON>`. The stream ends with
+        `event: server.closing` when the server stops admitting requests.
+        Session only: a bearer credential gets 403.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      x-omrg-sse-events:
+        "*": LogRecord
+        log: LogRecord
+        server.closing: StreamClosing
+      parameters:
+        - name: after
+          in: query
+          required: false
+          description: Replay records after this sequence. `Last-Event-ID` wins.
+          schema:
+            type:
+              - integer
+              - "null"
+            minimum: 0
+        - name: Last-Event-ID
+          in: header
+          required: false
+          description: Sequence of the last record the client received.
+          schema:
+            type:
+              - string
+              - "null"
+      responses:
+        "200":
+          description: Event stream.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum: [no-store]
+          content:
+            text/event-stream:
+              schema:
+                type: string
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -2603,6 +2990,41 @@ components:
           type: [integer, "null"]
           minimum: 1024
           maximum: 65535
+
+    UploadLimitState:
+      type: object
+      additionalProperties: false
+      required: [status, max_bytes, source, saved_mib, default_mib, min_mib, max_mib]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        max_bytes:
+          type: integer
+          description: The per-file limit in force, in bytes.
+        source:
+          type: string
+          enum: [launch, saved, default]
+        saved_mib:
+          type: [integer, "null"]
+          description: The value saved in Settings, or null.
+        default_mib:
+          type: integer
+          description: The limit when nothing is saved (50).
+        min_mib:
+          type: integer
+        max_mib:
+          type: integer
+
+    UploadLimitRequest:
+      type: object
+      additionalProperties: false
+      required: [max_mib]
+      properties:
+        max_mib:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 2048
 
     Root:
       type: object
@@ -4122,6 +4544,23 @@ components:
                 items:
                   $ref: "#/components/schemas/EffectiveControl"
 
+    RunArtefact:
+      type: object
+      additionalProperties: false
+      required: [status, run_id, name, value]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        run_id:
+          type: string
+        name:
+          type: string
+        value:
+          description: >
+            The full redacted value. Credentials are removed and raw
+            vectors are replaced by an omission marker.
+
     NodeOutcome:
       type: object
       required: [node_id, status]
@@ -4150,7 +4589,9 @@ components:
             Bounded, redacted node summary, the data of its completed or
             bypassed event. For example a reranker switched off records
             `{reranked: false, reason}`; a node disabled in the graph
-            records the bypass reason.
+            records the bypass reason. A cut summary adds
+            `truncated: true` and an `artefact_ref`; `getRunArtefact`
+            returns the full value.
 
     RunEventRecord:
       type: object
@@ -4613,10 +5054,73 @@ components:
         trust_notice:
           type: string
 
+    ExperimentFolderRequest:
+      type: object
+      additionalProperties: false
+      required: [path]
+      properties:
+        path:
+          type: string
+          minLength: 1
+          maxLength: 4096
+          description: Relative folder path below the root, for example `hybrid-search/run-1`.
+        root:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 4096
+          description: Approved root. Needed only when more than one root is approved.
+
+    ExperimentFolder:
+      type: object
+      additionalProperties: false
+      required: [root, path, name, workspace]
+      properties:
+        root:
+          type: string
+        path:
+          type: string
+          description: Path below the root, with `/` between segments.
+        name:
+          type: string
+        workspace:
+          type: string
+          description: Absolute path, ready for `POST /v1/experiments`.
+
+    ExperimentFolderCreated:
+      type: object
+      additionalProperties: false
+      required: [status, folder]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        folder:
+          $ref: "#/components/schemas/ExperimentFolder"
+
+    ExperimentFolderNode:
+      type: object
+      additionalProperties: false
+      required: [name, path, workspace, context_id, children]
+      properties:
+        name:
+          type: string
+        path:
+          type: string
+          description: Path below the root, with `/` between segments.
+        workspace:
+          type: string
+        context_id:
+          type: [string, "null"]
+          description: The active context registered at this directory, else null.
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExperimentFolderNode"
+
     ExperimentList:
       type: object
       additionalProperties: false
-      required: [status, roots, experiments, trust_notice]
+      required: [status, roots, folders, experiments, trust_notice]
       properties:
         status:
           type: string
@@ -4625,6 +5129,19 @@ components:
           type: array
           items:
             type: string
+        folders:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [root, tree]
+            properties:
+              root:
+                type: string
+              tree:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExperimentFolderNode"
         experiments:
           type: array
           items:
@@ -4828,3 +5345,163 @@ components:
         stopped:
           type: boolean
           enum: [true]
+
+    # ── Integrations ────────────────────────────────────────────────────
+    Integration:
+      type: object
+      additionalProperties: false
+      required: [id, name, purpose, extra, install_command, pip_command, availability]
+      properties:
+        id:
+          type: string
+          description: The extra name, or `magika`.
+        name:
+          type: string
+        purpose:
+          type: string
+          description: One-line description.
+        extra:
+          type: [string, "null"]
+          description: The pip extra, or null for an always-on integration.
+        install_command:
+          type: [string, "null"]
+          description: Copy-ready `uv sync --extra <extra>`, or null without an extra.
+        pip_command:
+          type: [string, "null"]
+          description: Copy-ready `pip install "omrg[<extra>]"`, or null without an extra.
+        availability:
+          type: string
+          enum: [available, not-installed, unknown]
+          description: >
+            `unknown` means the probe failed or reported a broken install.
+
+    IntegrationList:
+      type: object
+      additionalProperties: false
+      required: [status, integrations]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        integrations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Integration"
+
+    # ── Provider connections ────────────────────────────────────────────
+    ConnectionLabelledUrl:
+      type: object
+      additionalProperties: false
+      required: [label, url]
+      properties:
+        label:
+          type: string
+          enum: [base, embeddings, chat]
+        url:
+          type: string
+
+    ConnectionLabelledModel:
+      type: object
+      additionalProperties: false
+      required: [label, name]
+      properties:
+        label:
+          type: string
+          enum: [embeddings, chat, answers, verification]
+        name:
+          type: string
+          description: Configured model name. Empty when none is set.
+
+    Connection:
+      type: object
+      additionalProperties: false
+      required: [provider, urls, models, key_set, roles]
+      properties:
+        provider:
+          type: string
+          enum: [ollama, llamacpp, openrouter]
+        urls:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConnectionLabelledUrl"
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConnectionLabelledModel"
+        key_set:
+          type: boolean
+          description: Whether an API key is configured. The key itself is never returned.
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [embeddings, answers, metadata, verification]
+
+    ConnectionList:
+      type: object
+      additionalProperties: false
+      required: [status, config_dir, connections]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        config_dir:
+          type: string
+          description: The server's working directory. The settings read `<config_dir>/.env`.
+        connections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Connection"
+
+    ConnectionTestResult:
+      type: object
+      additionalProperties: false
+      required: [status, reachable, reason]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        reachable:
+          type: boolean
+        reason:
+          type: [string, "null"]
+          pattern: "^(refused|timeout|unauthorised|not-configured|http-[0-9]{3})$"
+          description: Null when reachable.
+
+    # ── Server log ──────────────────────────────────────────────────────
+    LogRecord:
+      type: object
+      additionalProperties: false
+      required: [seq, time, level, logger, message]
+      properties:
+        seq:
+          type: integer
+          minimum: 1
+          description: Rises by one for each record in one launch.
+        time:
+          type: string
+          description: ISO 8601 time in UTC.
+        level:
+          type: string
+          enum: [debug, info, warning, error, critical]
+        logger:
+          type: string
+        message:
+          type: string
+          description: Redacted. Cut at 10,000 characters.
+
+    LogList:
+      type: object
+      additionalProperties: false
+      required: [status, records, last_seq]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/LogRecord"
+        last_seq:
+          type: integer
+          minimum: 0

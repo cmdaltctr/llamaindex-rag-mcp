@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import errno
 import importlib
+import logging
 import socket
 from pathlib import Path
 from typing import Annotated, Any
@@ -41,6 +42,23 @@ def resolve_port(given: int | None, saved: int | None) -> int:
     if given is not None:
         return given
     return saved if saved is not None else DEFAULT_PORT
+
+
+def _check_upload_mib(value: str | None) -> str | None:
+    """Refuse a launch upload limit that is not a whole number from 1 to 2048.
+
+    Typer then stops with a usage error (exit code 2) that names the
+    option and its environment variable.
+    """
+    if value is None:
+        return None
+    # Imported here: a bare ``omrg`` call must not load workspace modules.
+    from ...integrations.workspace_sqlite.settings import MAX_UPLOAD_LIMIT_MIB, MIN_UPLOAD_LIMIT_MIB
+
+    low, high = MIN_UPLOAD_LIMIT_MIB, MAX_UPLOAD_LIMIT_MIB
+    if not (value.isascii() and value.isdigit() and low <= int(value) <= high):
+        raise typer.BadParameter(f"{value!r} is not a whole number from {low} to {high}.")
+    return value
 
 
 def default_workspace() -> Path:
@@ -118,6 +136,19 @@ def _redaction_values() -> list[str]:
         return []
 
 
+def _install_log_buffer() -> Any:
+    """Attach the in-memory server log buffer to the root logger.
+
+    The buffer keeps the last 1,000 records for Settings > Server log. Its
+    redacting filter removes configured provider keys and credentials.
+    """
+    from ..api.log_buffer import LogBuffer
+
+    buffer = LogBuffer(_redaction_values())
+    logging.getLogger().addHandler(buffer)
+    return buffer
+
+
 def _check_experiment_roots(roots: tuple[Path, ...]) -> None:
     """Refuse an experiment root that is not an existing directory.
 
@@ -167,6 +198,20 @@ def web(
             help=(
                 "Approve a directory below which experiment workspaces may be registered. "
                 "Repeat for more directories."
+            ),
+        ),
+    ] = None,
+    max_upload_mib: Annotated[
+        str | None,
+        typer.Option(
+            "--max-upload-mib",
+            envvar="WEB_MAX_UPLOAD_MIB",
+            metavar="MIB",
+            callback=_check_upload_mib,
+            help=(
+                "Per-file upload limit in MiB, 1 to 2048. Wins over the limit saved in "
+                "Settings and locks it for this run. Without it the saved limit applies, "
+                "else 50."
             ),
         ),
     ] = None,
@@ -223,12 +268,20 @@ def web(
         port=bound_port,
         roots=roots,
         experiment_roots=experiment_roots,
+        launch_upload_limit_mib=None if max_upload_mib is None else int(max_upload_mib),
     )
-    application = create_app(config, policy=policy, run_service_factory=run_service_factory)
+    log_buffer = _install_log_buffer()
+    application = create_app(
+        config, policy=policy, run_service_factory=run_service_factory, log_buffer=log_buffer
+    )
 
     console.print("OMRG web workspace. Open this link in your browser (it works once):")
     console.print(policy.launch_url(), markup=False, highlight=False, soft_wrap=True)
     console.print("Press Ctrl+C to stop.")
-    if _serve(application, sock) is False:
+    try:
+        started = _serve(application, sock)
+    finally:
+        logging.getLogger().removeHandler(log_buffer)
+    if started is False:
         console.print("[red]Error:[/red] The web server did not start. See the log above.")
         raise typer.Exit(code=1)

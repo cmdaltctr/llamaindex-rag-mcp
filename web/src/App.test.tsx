@@ -1,96 +1,192 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import App from "./App";
+import { PREFERENCES_KEY } from "./lib/preferences";
+import { renderWithProviders } from "./test/providers";
+import { documentsServer, json } from "./test/fakeDocumentsServer";
 
-const VIEWS = ["Canvas", "Library", "Search", "Ask", "Runs", "Experiments", "Settings"];
+const AREAS = ["Home", "Chat", "Knowledge Base", "Studio", "Experiments", "Integrations", "Settings"];
 
 function nav() {
   return screen.getByRole("navigation", { name: "Workspace" });
 }
 
-describe("application navigation", () => {
-  it("lists every workspace view in order", () => {
-    render(<App />);
+function start(hash = "", server = documentsServer()) {
+  window.history.replaceState(null, "", `/${hash}`);
+  return { server, ...renderWithProviders(<App />, { fetchImpl: server.fetchImpl }) };
+}
+
+describe("navigation", () => {
+  it("lists the seven areas in order, each with a decorative icon", () => {
+    start();
     const links = within(nav()).getAllByRole("link");
-    expect(links.map((link) => link.textContent)).toEqual(VIEWS);
+    expect(links.map((link) => link.querySelector("span.sr-only")?.textContent)).toEqual(AREAS);
+    for (const link of links) {
+      const icon = link.querySelector("svg");
+      expect(icon).not.toBeNull();
+      expect(icon).toHaveAttribute("aria-hidden", "true");
+    }
   });
 
-  it("opens Canvas by default", () => {
-    render(<App />);
-    expect(screen.getByRole("heading", { level: 1, name: "Canvas" })).toBeInTheDocument();
-    expect(within(nav()).getByRole("link", { name: "Canvas" })).toHaveAttribute("aria-current", "page");
+  it("opens Home and writes #/home on a fresh visit", () => {
+    start();
+    expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
+    expect(within(nav()).getByRole("link", { name: "Home" })).toHaveAttribute("aria-current", "page");
+    expect(window.location.hash).toBe("#/home");
   });
 
-  it.each(VIEWS)("renders the %s view with a heading and an empty state", async (name) => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(within(nav()).getByRole("link", { name }));
-    expect(screen.getByRole("heading", { level: 1, name })).toBeInTheDocument();
+  it.each(["#/nope", "#/library", "#/canvas", "#/chat/a/b", "#"])("rewrites the unknown hash %s to Home", (hash) => {
+    start(hash);
+    expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
+    expect(window.location.hash).toBe("#/home");
+  });
+
+  it.each([
+    ["#/chat", "Chat"],
+    ["#/chat/papers", "Chat"],
+    ["#/knowledge-base/papers", "Knowledge Base"],
+    ["#/studio/pl_1", "Studio"],
+    ["#/experiments/runs/r1", "Experiments"],
+    ["#/integrations", "Integrations"],
+    ["#/settings", "Settings"],
+  ])("opens %s with %s active", (hash, name) => {
+    start(hash);
     expect(within(nav()).getByRole("link", { name })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByTestId("empty-state")).toBeInTheDocument();
+    expect(window.location.hash).toBe(hash);
   });
 
-  it("follows the address hash", () => {
-    window.history.replaceState(null, "", "/#/runs");
-    render(<App />);
-    expect(screen.getByRole("heading", { level: 1, name: "Runs" })).toBeInTheDocument();
-  });
-
-  it("restores the last selected view after a reload", async () => {
+  it("follows a click, pushes history, and follows back and forward", async () => {
     const user = userEvent.setup();
-    const first = render(<App />);
-    await user.click(within(nav()).getByRole("link", { name: "Library" }));
-    first.unmount();
-    window.history.replaceState(null, "", "/");
+    start();
+    await user.click(within(nav()).getByRole("link", { name: "Chat" }));
+    expect(window.location.hash).toBe("#/chat");
+    expect(within(nav()).getByRole("link", { name: "Chat" })).toHaveAttribute("aria-current", "page");
+    await user.click(within(nav()).getByRole("link", { name: "Settings" }));
+    expect(within(nav()).getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
 
-    render(<App />);
-    expect(screen.getByRole("heading", { level: 1, name: "Library" })).toBeInTheDocument();
+    window.history.back();
+    await waitFor(() => expect(within(nav()).getByRole("link", { name: "Chat" })).toHaveAttribute("aria-current", "page"));
+    window.history.forward();
+    await waitFor(() => expect(within(nav()).getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page"));
+  });
+
+  it("moves focus to the heading after the user navigates, not on first load", async () => {
+    const user = userEvent.setup();
+    start();
+    expect(screen.getByRole("heading", { level: 1, name: "Home" })).not.toHaveFocus();
+    await user.click(within(nav()).getByRole("link", { name: "Studio" }));
+    await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "Studio" })).toHaveFocus());
+  });
+
+  it("keeps a skip link to the main region", () => {
+    start();
+    expect(screen.getByRole("link", { name: "Skip to content" })).toHaveAttribute("href", "#workspace-main");
+  });
+
+  it("keeps every short label within eight characters so seven fit one row at 390px", () => {
+    start();
+    const labels = [...nav().querySelectorAll("span[aria-hidden='true']")].map((span) => span.textContent ?? "");
+    expect(labels).toHaveLength(7);
+    for (const label of labels) expect(label.length, label).toBeLessThanOrEqual(8);
+  });
+
+  it("truncates a short label that is still too wide instead of touching its neighbour", () => {
+    start();
+    for (const span of nav().querySelectorAll("span[aria-hidden='true']")) expect(span).toHaveClass("w-full", "truncate", "text-center");
+  });
+
+  it("gives narrow screens a row of targets at least 44px high", () => {
+    start();
+    for (const link of within(nav()).getAllByRole("link")) expect(link.className).toContain("min-h-11");
+  });
+
+  it("marks the top bar by border and shadow, so it stands out from the canvas in both themes", () => {
+    start();
+    const bar = screen.getByText("OMRG").closest("header");
+    expect(bar).not.toBeNull();
+    expect(bar).toHaveClass("border-b", "border-border", "shadow-floating");
+  });
+
+  it("has no global Inspector", () => {
+    start();
+    expect(screen.queryByRole("button", { name: "Inspector" })).not.toBeInTheDocument();
   });
 });
 
-describe("inspector", () => {
-  function toggle() {
-    return screen.getByRole("button", { name: "Inspector" });
+describe("engine status pill", () => {
+  it("shows the collection count", async () => {
+    start();
+    expect(await screen.findByText("2 collections")).toBeInTheDocument();
+  });
+
+  it("uses the singular for one collection", async () => {
+    start("", documentsServer({ "GET /v1/collections": () => [{ name: "a", document_count: 1, chunk_count: 1, profile: null }] }));
+    expect(await screen.findByText("1 collection")).toBeInTheDocument();
+  });
+
+  it("shows offline when the server is unreachable", async () => {
+    start("", documentsServer({ "GET /v1/collections": () => json({ message: "x" }, 503) }));
+    expect(await screen.findByText("Offline")).toBeInTheDocument();
+  });
+});
+
+describe("theme controls", () => {
+  function themeSelect() {
+    return screen.getByRole("combobox", { name: "Theme" });
   }
 
-  it("starts closed and opens with the keyboard", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    expect(toggle()).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("complementary", { name: "Inspector" })).not.toBeInTheDocument();
-
-    toggle().focus();
-    await user.keyboard("{Enter}");
-    expect(toggle()).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("complementary", { name: "Inspector" })).toBeInTheDocument();
-
-    await user.keyboard(" ");
-    expect(toggle()).toHaveAttribute("aria-expanded", "false");
+  it("follows the system theme by default", () => {
+    start();
+    expect(themeSelect()).toHaveTextContent("System");
+    expect(document.documentElement.dataset.theme).toBeUndefined();
   });
 
-  it("closes with Escape and returns focus to its toggle", async () => {
+  it("applies and stores a theme chosen in the select", async () => {
     const user = userEvent.setup();
-    render(<App />);
-    await user.click(toggle());
-    const close = within(screen.getByRole("complementary", { name: "Inspector" })).getByRole("button", {
-      name: "Close inspector",
-    });
-    close.focus();
-    await user.keyboard("{Escape}");
-    expect(screen.queryByRole("complementary", { name: "Inspector" })).not.toBeInTheDocument();
-    expect(toggle()).toHaveFocus();
+    start();
+    await user.click(themeSelect());
+    await user.click(await screen.findByRole("option", { name: "Dark" }));
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) ?? "{}").theme).toBe("dark");
   });
 
-  it("keeps its open state across navigation and reloads", async () => {
+  it("switches between light and dark with one click and names the target", async () => {
     const user = userEvent.setup();
-    const first = render(<App />);
-    await user.click(toggle());
-    await user.click(within(nav()).getByRole("link", { name: "Search" }));
-    expect(screen.getByRole("complementary", { name: "Inspector" })).toBeInTheDocument();
-    first.unmount();
+    start();
+    await user.click(screen.getByRole("button", { name: "Switch to dark theme" }));
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) ?? "{}").theme).toBe("dark");
+    await user.click(screen.getByRole("button", { name: "Switch to light theme" }));
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) ?? "{}").theme).toBe("light");
+  });
 
-    render(<App />);
-    expect(toggle()).toHaveAttribute("aria-expanded", "true");
+  it("restores the stored theme and keeps the current area", async () => {
+    window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ theme: "dark", lastCollection: null }));
+    start("#/settings");
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(screen.getByRole("button", { name: "Switch to light theme" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+  });
+
+  it("falls back to defaults and removes a stored value that fails validation", () => {
+    window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ theme: "neon" }));
+    start();
+    expect(themeSelect()).toHaveTextContent("System");
+    expect(window.localStorage.getItem(PREFERENCES_KEY)).toBeNull();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("still works when storage throws", async () => {
+    const denied = () => {
+      throw new DOMException("Storage is disabled", "SecurityError");
+    };
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(denied);
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(denied);
+    const user = userEvent.setup();
+    start();
+    await user.click(screen.getByRole("button", { name: "Switch to dark theme" }));
+    expect(document.documentElement.dataset.theme).toBe("dark");
   });
 });

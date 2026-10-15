@@ -4,12 +4,12 @@
 
 The palette comes from the `openchamber-light` and `openchamber-dark` themes at OpenChamber revision `02306f32e4d191e4840440cbafa643ae899471c2`. A distilled copy lives in the change folder, so no OpenChamber checkout is needed:
 
-- `openspec/changes/redesign-web-workspace/references/openchamber-design.md`
-- `openspec/changes/redesign-web-workspace/references/openchamber-light.json` and `openchamber-dark.json`
+- `openspec/changes/archive/2026-10-15-redesign-web-workspace/references/openchamber-design.md`
+- `openspec/changes/archive/2026-10-15-redesign-web-workspace/references/openchamber-light.json` and `openchamber-dark.json`
 
 After the change is archived, these files move under `openspec/changes/archive/`.
 
-`web/src/styles/tokens.css` already implements the palette. It is the single source of truth. Components never contain literal colours. `web/src/styles/app.css` is the stylesheet entry and token bridge. It loads Tailwind, React Flow and the legacy CSS (`legacy.css` holds layout, typography roles and shared controls) into cascade layers, so a utility class always beats a legacy rule. `cascade.test.ts` and `bridge.test.ts` guard this. Do not import CSS from components, and do not give a legacy class the name of a Tailwind utility.
+`web/src/styles/tokens.css` already implements the palette. It is the single source of truth. Components never contain literal colours. `web/src/styles/app.css` is the stylesheet entry and token bridge. It loads Tailwind and React Flow into cascade layers, so a utility class always beats a vendor rule. Tailwind's preflight loads into the `base` layer. Only `tokens.css` and `app.css` exist: there is no `legacy` layer and no hand-written view CSS. `cascade.test.ts`, `bridge.test.ts` and `noLegacyResidue.test.ts` guard this. Do not import CSS from components and do not write hand-written CSS.
 
 ## Palette and tokens
 
@@ -80,7 +80,7 @@ System sans for UI, monospace for code, identifiers, paths, and model names. Hea
 | Meta, helper | `--text-meta` | 0.8125rem | 400 | 1.5 |
 | Code | `--text-code` | 0.75rem | 400 | readable |
 
-`legacy.css` defines the legacy role classes `.type-page-title`, `.type-section-title`, `.type-meta`, and `.type-code`. They are not named `.text-*`, because those names are Tailwind utilities from the bridge. Migrated views use the `text-page-title`, `text-section-title`, `text-meta` and `text-code` utilities instead. Keep heading levels in order: one `h1` per view, which receives focus after navigation. Preserve browser zoom and wrapping. Do not use fixed heights on text containers.
+Use the `text-page-title`, `text-section-title`, `text-meta` and `text-code` utilities from the bridge. The old `.type-*` classes are gone; never reintroduce them. Keep heading levels in order: one `h1` per view, which receives focus after navigation. Preserve browser zoom and wrapping. Do not use fixed heights on text containers.
 
 ## Spacing and geometry
 
@@ -118,6 +118,4 @@ Layout uses logical properties only (`margin-inline`, `padding-block`, `inset-in
 
 ## Theme ownership
 
-`web/src/lib/preferences.ts` owns the per-browser UI state in one versioned `localStorage` entry (`omrg-workspace-ui`): view, theme (`system`, `light`, `dark`), and the inspector flag. Every storage access is guarded, because storage can be missing or throw. `data-theme` on the root element applies the theme. `web/src/theme.test.tsx` covers it.
-
-The redesign changes values and component styles, not theme persistence or startup timing. It does remove the inspector flag and adds versioned keys for the active project (spec: stale keys are dropped). Do not add a second theme store.
+Browser storage follows design D12: `lib/storage.ts` guards every access, `omrg-preferences` holds only `{ theme, lastCollection }`, values carry no version field, and a value that fails validation is ignored and removed. The view, project and pipeline come from the URL only. `data-theme` on the root element applies the theme (`system`, `light`, `dark`); `web/src/App.test.tsx` covers it. Do not add a second theme store.

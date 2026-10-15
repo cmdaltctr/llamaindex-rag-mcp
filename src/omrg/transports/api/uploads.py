@@ -26,8 +26,10 @@ from typing import Any
 
 from ...integrations.workspace_sqlite.schema import make_private_dirs
 
+#: One mebibyte in bytes.
+MIB = 1024 * 1024
 #: Default per-file limit: 50 MiB.
-DEFAULT_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+DEFAULT_MAX_UPLOAD_BYTES = 50 * MIB
 
 _PARTIAL = ".partial"
 _URL = re.compile(r"^[a-z][a-z0-9+.\-]*:", re.IGNORECASE)
@@ -56,6 +58,10 @@ def _check_name(name: str) -> str:
     if len(name.encode("utf-8")) > 255:
         raise UploadRejected(400, "The file name is longer than 255 bytes.")
     return name
+
+
+def _too_large(limit: int) -> str:
+    return f"The file is larger than the {limit} byte upload limit."
 
 
 class UploadStore:
@@ -90,13 +96,20 @@ class UploadStore:
             else:
                 leftover.unlink(missing_ok=True)
 
-    def preflight(self, name: str, size: int | None, extensions: Iterable[str]) -> str:
+    def preflight(
+        self,
+        name: str,
+        size: int | None,
+        extensions: Iterable[str],
+        max_bytes: int | None = None,
+    ) -> str:
         """Check a file name, declared size and type before any byte is stored.
 
         Args:
             name: The client file name.
             size: The declared size in bytes, or ``None`` when unknown.
             extensions: The ingestible extension set from resolved settings.
+            max_bytes: The limit to check against; ``None`` uses the current one.
 
         Returns:
             The normalised file name.
@@ -117,12 +130,10 @@ class UploadStore:
             )
         if size is not None and size < 0:
             raise UploadRejected(400, "The declared size is negative.")
-        if size is not None and size > self.max_bytes:
-            raise UploadRejected(413, self._too_large())
+        limit = self.max_bytes if max_bytes is None else max_bytes
+        if size is not None and size > limit:
+            raise UploadRejected(413, _too_large(limit))
         return name
-
-    def _too_large(self) -> str:
-        return f"The file is larger than the {self.max_bytes} byte upload limit."
 
     async def receive(
         self,
@@ -142,10 +153,14 @@ class UploadStore:
         Returns:
             ``{"id", "name", "size", "sha256"}`` for the stored file.
 
+        The limit is read once, at the start. A change to :attr:`max_bytes`
+        during the upload applies to later uploads only.
+
         Raises:
             UploadRejected: A preflight check failed or the body passed the limit.
         """
-        name = self.preflight(name, size, extensions)
+        limit = self.max_bytes
+        name = self.preflight(name, size, extensions, limit)
         make_private_dirs(self._partial_dir)
         upload_id = secrets.token_hex(16)
         partial = self._partial_dir / f"{upload_id}.part"
@@ -156,8 +171,8 @@ class UploadStore:
             with os.fdopen(fd, "wb") as handle:
                 async for chunk in chunks:
                     received += len(chunk)
-                    if received > self.max_bytes:
-                        raise UploadRejected(413, self._too_large())
+                    if received > limit:
+                        raise UploadRejected(413, _too_large(limit))
                     handle.write(chunk)
                     digest.update(chunk)
             final_dir = self.directory / upload_id

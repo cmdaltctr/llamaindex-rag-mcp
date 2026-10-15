@@ -131,6 +131,11 @@ def test_run_and_event_responses_conform(client: Any, engine: Any) -> None:
     assert check.check(client.get("/v1/runs", params={"status": "succeeded"}), 200)["runs"]
     check.check(client.get("/v1/runs", params={"limit": 0}), 400)
     check.check(client.get(f"/v1/runs/{run_id}/result"), 200)
+    service = client.app_ref.state.runtime.run_service.service
+    service.artefacts_for(run).safe_summary(run_id, "event-big", {"text": "x" * 40_000})
+    check.check(client.get(f"/v1/runs/{run_id}/artefacts/event-big"), 200)
+    check.check(client.get(f"/v1/runs/{run_id}/artefacts/event-none"), 404)
+    check.check(client.get(f"/v1/runs/{run_id}/artefacts/%2E%2E"), 400)
     page = check.check(client.get(f"/v1/runs/{run_id}/events"), 200)
     assert page["complete"] and page["last_sequence"] == run["last_sequence"]
     frames = check.check(client.get(f"/v1/runs/{run_id}/events/stream"), 200)
@@ -141,7 +146,7 @@ def test_run_and_event_responses_conform(client: Any, engine: Any) -> None:
     )
     assert all(int(f["id"]) > 2 for f in replay[1:-1])
     check.check(client.get(f"/v1/runs/{run_id}/events/stream", headers={"Last-Event-ID": "x"}), 400)
-    for path in ("", "/result", "/events", "/events/stream"):
+    for path in ("", "/result", "/artefacts/event-big", "/events", "/events/stream"):
         check.check(client.get(f"/v1/runs/unknown{path}"), 404)
     check.check(client.post("/v1/runs/unknown/cancel", headers=ORIGIN), 404)
     check.check(_submit(client, "unknown"), 404)

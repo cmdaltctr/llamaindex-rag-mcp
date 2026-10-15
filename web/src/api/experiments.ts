@@ -6,7 +6,7 @@
  * `code`; the user sees the server's `message`.
  */
 import { joinRootPath } from "./documents";
-import { ApiError, getJson, type RequestOptions } from "./client";
+import { ApiError, type ApiClient, type CallOptions } from "./client";
 
 export interface ExperimentRecord {
   context_id: string;
@@ -37,10 +37,34 @@ export interface ExperimentEntry {
   identity: BackendIdentity;
 }
 
+/** One directory below an approved root. A registered workspace is a leaf with a `context_id`. */
+export interface FolderNode {
+  name: string;
+  path: string;
+  workspace: string;
+  context_id: string | null;
+  children: FolderNode[];
+}
+
+export interface FolderRoot {
+  root: string;
+  tree: FolderNode[];
+}
+
 export interface ExperimentList {
   roots: string[];
+  /** One directory tree per approved root, capped by the server at 500 nodes. */
+  folders: FolderRoot[];
   experiments: ExperimentEntry[];
   trust_notice: string;
+}
+
+export interface CreatedFolder {
+  root: string;
+  path: string;
+  name: string;
+  /** Absolute path, ready to pass to `createExperiment`. */
+  workspace: string;
 }
 
 export type ExperimentAction = "read" | "ingest";
@@ -50,6 +74,7 @@ export interface ExperimentRequest {
   workspace: string;
   name: string;
   actions: ExperimentAction[];
+  declared_factors?: string[];
 }
 
 export interface IssuedCredential {
@@ -70,69 +95,54 @@ export function safeId(id: string): string {
   return id;
 }
 
-function isJson(response: Response): boolean {
-  const type = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() ?? "";
-  return type === "application/json" || type.endsWith("+json");
-}
-
-/** Sends a JSON write to a `/v1/` path and returns the parsed success body. */
-export async function sendJson<T>(method: "POST" | "DELETE", path: string, payload: unknown, options: RequestOptions): Promise<T> {
-  const fetchImpl = options.fetchImpl ?? ((input, init) => fetch(input, init));
-  let response: Response;
-  try {
-    response = await fetchImpl(path, {
-      method,
-      headers: { Accept: "application/json", "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: payload === undefined ? undefined : JSON.stringify(payload),
-      signal: options.signal,
-    });
-  } catch (error) {
-    throw new ApiError("network", `Could not reach the local server: ${error instanceof Error ? error.message : String(error)}`, path);
-  }
-  if (!isJson(response)) {
-    const type = response.headers.get("content-type") ?? "no content type";
-    throw new ApiError("not-json", `Expected JSON from ${path} but received ${type} (status ${response.status}).`, path, response.status);
-  }
-  let body: unknown;
-  try {
-    body = await response.json();
-  } catch {
-    throw new ApiError("invalid-json", `The response from ${path} is not valid JSON.`, path, response.status);
-  }
-  if (!response.ok) {
-    const raw = (body as { message?: unknown; detail?: unknown } | null)?.message ?? (body as { detail?: unknown } | null)?.detail;
-    const message = typeof raw === "string" && raw ? raw : `Request to ${path} failed with status ${response.status}.`;
-    throw new ApiError("http", message, path, response.status);
-  }
-  return body as T;
-}
-
 /** Joins a folder relative to an approved experiment root. The server expects the absolute result. */
 export function workspacePath(root: string, relative: string): string {
   return joinRootPath(root, relative);
 }
 
-export function listExperiments(options: RequestOptions = {}): Promise<ExperimentList> {
-  return getJson<ExperimentList>("/v1/experiments", options);
+export function listExperiments(api: ApiClient, options: CallOptions = {}): Promise<ExperimentList> {
+  return api.request<ExperimentList>("GET", "/v1/experiments", { signal: options.signal });
 }
 
-export function createExperiment(request: ExperimentRequest, options: RequestOptions = {}): Promise<ExperimentEntry & { trust_notice: string }> {
-  return sendJson("POST", "/v1/experiments", request, options);
+export function createExperiment(
+  api: ApiClient,
+  request: ExperimentRequest,
+  options: CallOptions = {},
+): Promise<ExperimentEntry & { trust_notice: string }> {
+  return api.request<ExperimentEntry & { trust_notice: string }>("POST", "/v1/experiments", {
+    body: request,
+    signal: options.signal,
+  });
 }
 
-export async function revokeExperiment(contextId: string, options: RequestOptions = {}): Promise<ExperimentRecord> {
+/**
+ * Creates a folder below an approved root. `root` is needed only when the
+ * server approved more than one. A refusal carries a stable `code` in
+ * `ApiError.body`.
+ */
+export async function createExperimentFolder(
+  api: ApiClient,
+  request: { path: string; root?: string | null },
+  options: CallOptions = {},
+): Promise<CreatedFolder> {
+  const body = { path: request.path, root: request.root ?? null };
+  const response = await api.request<{ folder: CreatedFolder }>("POST", "/v1/experiment-folders", { body, signal: options.signal });
+  return response.folder;
+}
+
+export async function revokeExperiment(api: ApiClient, contextId: string, options: CallOptions = {}): Promise<ExperimentRecord> {
   const path = `/v1/experiments/${safeId(contextId)}`;
-  return (await sendJson<{ experiment: ExperimentRecord }>("DELETE", path, undefined, options)).experiment;
+  return (await api.request<{ experiment: ExperimentRecord }>("DELETE", path, { signal: options.signal })).experiment;
 }
 
 /** Issues a bearer credential bound to one active context. The token is in this response only. */
 export async function issueBoundCredential(
+  api: ApiClient,
   contextId: string,
   scopes: BearerScope[],
   label: string,
-  options: RequestOptions = {},
+  options: CallOptions = {},
 ): Promise<IssuedCredential> {
   const body = { scopes, label, experiment_context: safeId(contextId) };
-  return sendJson<IssuedCredential>("POST", "/v1/credentials", body, options);
+  return api.request<IssuedCredential>("POST", "/v1/credentials", { body, signal: options.signal });
 }

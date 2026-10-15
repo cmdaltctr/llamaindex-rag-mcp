@@ -16,15 +16,19 @@ from fastapi import APIRouter, FastAPI
 from ... import __version__
 from .errors import install_error_handlers
 from .lifespan import RunServiceFactory, WebConfig, build_lifespan, default_engine_factory
+from .log_buffer import LogBuffer
 from .mcp_http import build_mcp_http
 from .middleware import GuardMiddleware
 from .routes import router as foundation_router
 from .routes_admin import router as admin_router
+from .routes_connections import router as connections_router
 from .routes_documents import router as documents_router
 from .routes_experiments import router as experiments_router
 from .routes_graphs import router as graphs_router
 from .routes_inspect import router as inspect_router
+from .routes_integrations import router as integrations_router
 from .routes_jobs import router as jobs_router
+from .routes_logs import router as logs_router
 from .routes_mcp import router as mcp_router
 from .routes_plugins import router as plugins_router
 from .routes_runs import router as runs_router
@@ -45,6 +49,9 @@ API_ROUTERS: tuple[APIRouter, ...] = (
     templates_router,
     plugins_router,
     mcp_router,
+    integrations_router,
+    connections_router,
+    logs_router,
 )
 
 
@@ -54,6 +61,7 @@ def create_app(
     policy: AccessPolicy | None = None,
     engine_factory: Callable[[], Any] | None = None,
     run_service_factory: RunServiceFactory | None = None,
+    log_buffer: LogBuffer | None = None,
 ) -> FastAPI:
     """Build the web application for one launch.
 
@@ -65,6 +73,8 @@ def create_app(
         engine_factory: Builds the owned Engine (default: ``compose.build_engine``).
         run_service_factory: Optional run-service hook started and drained
             by the lifespan.
+        log_buffer: The ring buffer ``omrg web`` attached to the root logger.
+            Without one the log routes serve an empty log.
 
     Returns:
         The configured FastAPI application.
@@ -89,6 +99,7 @@ def create_app(
     )
     app.state.access_policy = policy
     app.state.runtime = None
+    app.state.log_buffer = log_buffer if log_buffer is not None else LogBuffer()
     install_error_handlers(app)
     for router in API_ROUTERS:
         app.include_router(router)
