@@ -247,7 +247,10 @@ _BASE_EXECUTED = 5147
 # seven-tool discovery rename, plus five CLI transport cases for
 # `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
-_BASE_SKIPPED = 128  # Reference count before the environment adjustments below.
+# The exact skipped count is no longer pinned (see ``_base_suite_counts``): the
+# inner suite runs in parallel, and a parallel run reports one fewer skip than a
+# serial run. A test that stops running still moves the exact executed count, and
+# the Chroma skip sources are asserted statically below.
 # +2 at modular-ocr-workers-dots-mocr: the real-eq01 detector case and the
 # real dots.mocr patch case run only when OMRG_EQ01_PDF or
 # OMRG_DOTS_MOCR_MODEL_DIR names a local copy (131 -> 133).
@@ -260,13 +263,11 @@ _HISTORICAL_GT = (
 )
 if not _HISTORICAL_GT.exists():
     _BASE_EXECUTED -= 4
-    _BASE_SKIPPED += 4
 # The Exp25 installed-adapter cases run when the optional OpenAI-like
 # embedding package exists. They otherwise skip, so both supported
 # dependency sets keep an exact, documented manifest.
 if find_spec("llama_index.embeddings.openai_like") is not None:
     _BASE_EXECUTED += _OPENAI_LIKE_ADAPTER_CASES
-    _BASE_SKIPPED -= _OPENAI_LIKE_ADAPTER_CASES
 # Three model-token chunking cases use a cached Qwen3-Embedding-4B tokenizer
 # when it is present in the HuggingFace hub cache. They skip on a clean CI
 # runner, so both supported environments keep an exact, documented manifest.
@@ -282,7 +283,6 @@ _has_qwen_tokenizer = bool(
 )
 if not _has_qwen_tokenizer:
     _BASE_EXECUTED -= _CACHED_TOKENIZER_CASES
-    _BASE_SKIPPED += _CACHED_TOKENIZER_CASES
 # The reference counts assume the optional ``web`` extra (FastAPI) is
 # installed, as in the CI ``test`` job. Without it, each web test module
 # skips at import through ``pytest.importorskip("fastapi")``: its cases do
@@ -302,10 +302,8 @@ if not _has_qwen_tokenizer:
 # Re-measured at add-web-allow-origin-option: new cases in three existing
 # fastapi-dependent modules add 10 (519 with the extra; still 40 module skips).
 _WEB_EXTRA_CASES = 519
-_WEB_SKIP_DELTA = 40
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
-    _BASE_SKIPPED += _WEB_SKIP_DELTA
 _BASE_DESELECTED = 20  # -m "not slow": existing 14 plus four quality gates
 # plus the golden-answer gate (add-grounded-answer-synthesis-3 task 7.1)
 # plus the marimo-manifest wheel check (add-local-web-pipeline-workspace).
@@ -394,53 +392,73 @@ def test_base_default_search_runs_without_chroma() -> None:
     assert not leaked, f"search imported chroma modules: {leaked}"
 
 
-def _base_suite_run() -> subprocess.CompletedProcess[str]:
-    """Run the fast base suite in this environment, ignoring this module.
+def _pytest_args(*extra: str) -> list[str]:
+    """Return the inner pytest command, ignoring this module to avoid recursion."""
+    return [
+        sys.executable,
+        "-m",
+        "pytest",
+        "-m",
+        "not slow",
+        "-q",
+        "--ignore=tests/test_clean_base_tripwire.py",
+        *extra,
+    ]
 
-    The subprocess reuses the running interpreter so the assertion holds
-    for the exact environment under test. This module is ignored to avoid
-    recursing into itself.
+
+def _base_suite_counts() -> tuple[int, int]:
+    """Run the fast base suite in this environment; return ``(passed, deselected)``.
+
+    The subprocess reuses the running interpreter so the assertion holds for the
+    exact environment under test. It runs in parallel when pytest-xdist is
+    installed (``--dist loadfile`` comes from ``pyproject.toml``), about three
+    times faster than a serial run. A parallel summary line has no deselected
+    count, so that number comes from a separate collection-only run, which takes
+    seconds and gives the same answer in serial and parallel.
     """
     root = Path(__file__).resolve().parent.parent
-    return subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "pytest",
-            "-m",
-            "not slow",
-            "-q",
-            "-rs",
-            "--ignore=tests/test_clean_base_tripwire.py",
-        ],
+    parallel = ("-n", "auto", "--maxprocesses=8") if find_spec("xdist") is not None else ()
+    run = subprocess.run(
+        _pytest_args(*parallel),
         cwd=root,
         capture_output=True,
         text=True,
         timeout=1800,
     )
+    assert run.returncode == 0, f"base suite failed:\n{run.stdout}\n{run.stderr}"
+    summary = re.search(r"(\d+) passed", run.stdout)
+    assert summary, f"unparseable base suite summary:\n{run.stdout[-500:]}"
+
+    collect = subprocess.run(
+        _pytest_args("--collect-only"),
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert collect.returncode == 0, f"collection failed:\n{collect.stdout}\n{collect.stderr}"
+    collected = re.search(r"tests? collected(?: \((\d+) deselected\))?", collect.stdout)
+    assert collected, f"unparseable collection summary:\n{collect.stdout[-500:]}"
+    return int(summary.group(1)), int(collected.group(1) or 0)
 
 
 def test_base_skip_manifest_is_exact() -> None:
-    """The clean-base suite pins its executed/skipped counts and Chroma guards.
+    """The clean-base suite pins its executed and deselected counts and Chroma guards.
 
     Task 5.2: the only sanctioned base skips are the named Chroma-gated
     files, and every one of those cases must run in the chroma-extra CI
     job (which fails if anything skips with the ``chroma extra not
-    installed`` reason). The pinned counts come from the ``-rs`` summary
-    line — always printed — while the Chroma-skip sources are asserted
-    statically, because module-level ``importorskip`` output differs
-    across invocation contexts and is not reliably parseable.
+    installed`` reason). The exact executed count catches a test that stops
+    running, and the deselected count catches a test that gains or loses the
+    ``slow`` mark. The exact skipped count is not pinned: a parallel run
+    reports one fewer skip than a serial run, and a skip adds nothing the
+    other checks miss. The Chroma-skip sources are asserted statically,
+    because module-level ``importorskip`` output differs across invocation
+    contexts and is not reliably parseable.
     """
-    proc = _base_suite_run()
-    assert proc.returncode == 0, f"base suite failed:\n{proc.stdout}\n{proc.stderr}"
-    output = proc.stdout
-
-    summary = re.search(r"(\d+) passed, (\d+) skipped, (\d+) deselected", output)
-    assert summary, f"unparseable base suite summary:\n{output[-500:]}"
-    passed, skipped, deselected = (int(v) for v in summary.groups())
+    passed, deselected = _base_suite_counts()
 
     assert passed == _BASE_EXECUTED, f"base executed count drifted: {passed}"
-    assert skipped == _BASE_SKIPPED, f"base skipped count drifted: {skipped}"
     assert deselected == _BASE_DESELECTED, f"base deselected count drifted: {deselected}"
 
     # Static guard check: every declared chroma-gated file must carry its

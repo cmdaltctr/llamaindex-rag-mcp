@@ -56,7 +56,12 @@ def buffer() -> Iterator[LogBuffer]:
     logger = logging.getLogger(LOGGER)
     logger.setLevel(logging.DEBUG)
     logger.addHandler(log_buffer)
+    # Keep records away from handlers outside this logger. The CLI tests install a
+    # RichHandler on the root logger and never remove it, and RichHandler raises on a
+    # bad format string, so which tests share a worker decided whether this file passed.
+    propagate, logger.propagate = logger.propagate, False
     yield log_buffer
+    logger.propagate = propagate
     logger.removeHandler(log_buffer)
 
 

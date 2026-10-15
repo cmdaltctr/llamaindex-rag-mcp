@@ -29,8 +29,17 @@ test file stays on one worker, in file order. Do not override it with
 `--dist load`: some tests depend on logging state set up by an earlier test in
 the same file, and they fail when xdist splits a file across workers.
 
-Parallel runs give fast feedback only. Before you push, run
-`./scripts/local_ci.sh`. It runs the suite serially, with the tripwire, as CI does.
+The clean-base tripwire (`tests/test_clean_base_tripwire.py`) also runs its inner
+suite in parallel when pytest-xdist is installed. It takes about 2.5 minutes
+instead of 7.5. Its parallel summary line has no "deselected" count, so the
+tripwire reads that count from a collection-only run. It pins the exact passed
+count and the deselected count. It does not pin the skipped count, because a
+parallel run reports one fewer skip than a serial run. The static Chroma file
+checks stay.
+
+Before you push, run `./scripts/local_ci.sh`. It runs the main suite in
+parallel, then the tripwire as its own step, then the frontend gates. CI runs
+the suite serially and stays the source of truth.
 
 The fast suite runs in about 7.5 minutes in series, without the tripwire. It uses mock embeddings and an
 in-memory database, so it needs no Ollama, no llama.cpp, no network, and
