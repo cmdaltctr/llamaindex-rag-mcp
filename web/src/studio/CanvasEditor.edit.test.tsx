@@ -8,6 +8,8 @@ import {
   edgeNames,
   EMPTY_PIPELINE,
   inspector,
+  openAllSections,
+  openSections,
   outline,
   palette,
   runPanel,
@@ -29,7 +31,7 @@ function setup(options: Parameters<typeof openStudio>[1] = {}, id = "pnew") {
 describe("canvas catalogue and editing", () => {
   it("lists the catalogue and disables unavailable operations with their reasons", async () => {
     setup();
-    const verify = await within(await screen.findByRole("region", { name: "Operation catalogue" })).findByRole("button", {
+    const verify = await within(await screen.findByRole("region", { name: "Operations" })).findByRole("button", {
       name: "Add Verify claims (verify.claims)",
     });
     expect(verify).toBeDisabled();
@@ -38,21 +40,21 @@ describe("canvas catalogue and editing", () => {
     expect(screen.getByTestId("empty-state")).toHaveTextContent(/graph is empty/);
   });
 
-  it("puts the flow surface in the main column and the palette in the right column", async () => {
-    const { view } = setup({}, "p1");
-    await within(await screen.findByRole("region", { name: "Graph outline" })).findByRole("button", { name: /^Node rerank/ });
-    const surface = view.container.querySelector(".react-flow");
-    const columns = view.container.querySelectorAll("section > div.grid > div");
-    expect(columns).toHaveLength(2);
-    expect(columns[0]).toContainElement(surface as HTMLElement);
-    expect(columns[1]).toContainElement(palette());
-    expect(columns[1]).toContainElement(inspector());
-    expect(columns[0]).not.toContainElement(palette());
+  it("fills the main area with the flow surface and puts every control in one floating panel", async () => {
+    const { view, user } = setup({}, "p1");
+    await openAllSections(user);
+    const surface = view.container.querySelector(".react-flow") as HTMLElement;
+    const panel = screen.getByRole("complementary", { name: "Canvas panel" });
+    expect(surface).not.toBeNull();
+    expect(panel).not.toContainElement(surface);
+    const regions = ["Pipeline settings", "Operations", "Nodes and connections", "Connect ports", "Revision and run", "Node settings"];
+    for (const name of regions) expect(panel).toContainElement(screen.getByRole("region", { name }));
+    expect(view.container.querySelectorAll("[data-slot='card']")).toHaveLength(0);
   });
 
   it("filters the catalogue by search text", async () => {
     const { user } = setup();
-    await within(await screen.findByRole("region", { name: "Operation catalogue" })).findByRole("button", { name: /retrieve\.dense/ });
+    await within(await screen.findByRole("region", { name: "Operations" })).findByRole("button", { name: /retrieve\.dense/ });
     await user.type(within(palette()).getByLabelText("Search operations"), "cross-encoder");
     expect(within(palette()).getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual([
       "Add Cross-encoder rerank (select.rerank)",
@@ -61,7 +63,7 @@ describe("canvas catalogue and editing", () => {
 
   it("shows one friendly line with Retry when the catalogue cannot load", async () => {
     const { server, user } = setup({ failures: { "GET /v1/pipeline-operations": 500 } });
-    const alert = await within(await screen.findByRole("region", { name: "Operation catalogue" })).findByRole("alert");
+    const alert = await within(await screen.findByRole("region", { name: "Operations" })).findByRole("alert");
     expect(alert).toHaveTextContent("The local server could not complete that request.");
     expect(alert).not.toHaveTextContent("Boom");
     delete server.failures["GET /v1/pipeline-operations"];
@@ -71,7 +73,8 @@ describe("canvas catalogue and editing", () => {
 
   it("adds and connects nodes with the keyboard and saves the wiring", async () => {
     const { server, user } = setup();
-    await screen.findByRole("region", { name: "Operation catalogue" });
+    await screen.findByRole("region", { name: "Operations" });
+    await openAllSections(user);
     await addWithKeyboard(user, "Prepare query", "retrieve.prepare_query");
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
     await connectWithKeyboard(user, "prepare_query.query", "dense.query");
@@ -88,7 +91,8 @@ describe("canvas catalogue and editing", () => {
 
   it("explains an incompatible connection and does not add it", async () => {
     const { user } = setup();
-    await screen.findByRole("region", { name: "Operation catalogue" });
+    await screen.findByRole("region", { name: "Operations" });
+    await openAllSections(user);
     await addWithKeyboard(user, "Sparse retrieval", "retrieve.sparse");
     await addWithKeyboard(user, "Threshold and top-k", "select.threshold");
     await connectWithKeyboard(user, "sparse.evidence", "threshold.evidence");
@@ -98,7 +102,8 @@ describe("canvas catalogue and editing", () => {
 
   it("deletes a selected node with Delete and a connection with Backspace", async () => {
     const { user } = setup();
-    await screen.findByRole("region", { name: "Operation catalogue" });
+    await screen.findByRole("region", { name: "Operations" });
+    await openAllSections(user);
     await addWithKeyboard(user, "Prepare query", "retrieve.prepare_query");
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
     await addWithKeyboard(user, "Sparse retrieval", "retrieve.sparse");
@@ -120,16 +125,27 @@ describe("canvas catalogue and editing", () => {
 
   it("opens the settings of a node when it is selected, without leaving the page", async () => {
     const { user } = setup();
-    await screen.findByRole("region", { name: "Operation catalogue" });
+    await screen.findByRole("region", { name: "Operations" });
+    await openSections(user, "Node settings");
     expect(within(inspector()).getByText(/Select a node to edit its settings/)).toBeInTheDocument();
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
     expect(within(inspector()).getByRole("heading", { name: /Node dense/ })).toBeInTheDocument();
     expect(window.location.hash).toBe("#/studio/pnew");
   });
 
+  it("opens Node settings by itself when a node is added", async () => {
+    const { user } = setup();
+    await screen.findByRole("region", { name: "Operations" });
+    expect(screen.getByRole("button", { name: "Node settings" })).toHaveAttribute("aria-expanded", "false");
+    await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
+    expect(screen.getByRole("button", { name: "Node settings" })).toHaveAttribute("aria-expanded", "true");
+    expect(within(inspector()).getByRole("heading", { name: /Node dense/ })).toBeInTheDocument();
+  });
+
   it("rewires a saved template and saves the new connections, with layout kept apart", async () => {
     const { server, user } = setup({}, "p1");
-    await within(await screen.findByRole("region", { name: "Graph outline" })).findByRole("button", { name: /^Node rerank/ });
+    await openAllSections(user);
+    await within(outline()).findByRole("button", { name: /^Node rerank/ });
 
     await user.click(within(outline()).getByRole("button", { name: "Remove connection dense.evidence to rerank.evidence" }));
     await user.click(within(outline()).getByRole("button", { name: "Remove connection rerank.evidence to select.evidence" }));
@@ -161,7 +177,8 @@ describe("canvas catalogue and editing", () => {
     const { user, view } = setup({
       validate: () => json({ status: "error", message: "Invalid graph.", error_type: "validation", issues: [issue] }, 422),
     });
-    await screen.findByRole("region", { name: "Operation catalogue" });
+    await screen.findByRole("region", { name: "Operations" });
+    await openAllSections(user);
     await addWithKeyboard(user, "Threshold and top-k", "select.threshold");
     await user.click(within(runPanel()).getByRole("button", { name: "Validate" }));
 
@@ -176,7 +193,8 @@ describe("canvas catalogue and editing", () => {
 
   it("shows one friendly line when a save fails and keeps the draft", async () => {
     const { user } = setup({ failures: { "POST /v1/pipelines/pnew/revisions": 500 } });
-    await screen.findByRole("region", { name: "Operation catalogue" });
+    await screen.findByRole("region", { name: "Operations" });
+    await openAllSections(user);
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
     await user.click(within(runPanel()).getByRole("button", { name: "Save revision" }));
     const alert = await screen.findByRole("alert");
@@ -187,7 +205,8 @@ describe("canvas catalogue and editing", () => {
 
   it("selects the graph profile and keeps collection inheritance by default", async () => {
     const { server, user } = setup();
-    await screen.findByRole("region", { name: "Operation catalogue" });
+    await screen.findByRole("region", { name: "Operations" });
+    await openAllSections(user);
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
     await user.click(within(runPanel()).getByRole("button", { name: "Save revision" }));
     await waitFor(() => expect(server.last("POST", "/v1/pipelines/pnew/revisions")).toBeDefined());

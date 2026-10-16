@@ -339,6 +339,27 @@ The screenshots show a local server with small Markdown sources. The run output 
 
 On a phone, the areas use one column. Two examples at 390 px: [Home](images/web-workspace/home-light-390.png) and the [Studio canvas](images/web-workspace/studio-canvas-light-390.png).
 
+### Studio canvas layout
+
+On a pipeline canvas (`#/studio/<pipeline-id>`), the flow surface fills the whole main area. The workspace navigation shows as an icon column. Select "Expand navigation" to open it for this visit only. The stored navigation choice does not change, and the next canvas visit starts collapsed again.
+
+One panel floats over the right side of the canvas. It holds six sections. Each section has its own icon.
+
+1. Pipeline settings (Title, Profile and Collection).
+2. Operations.
+3. Nodes and connections.
+4. Connect ports.
+5. Revision and run.
+6. Node settings.
+
+You can open several sections at the same time. At first, only Operations is open. When you select a node, Node settings opens. When you start a run from the panel, Revision and run opens. Closing a section does not change the draft.
+
+Select "Collapse panel" to shrink the panel to a narrow icon rail. Each rail button shows a tooltip with its section name. A highlighted button means that its section is open. Select a rail button to expand the panel with that section open. Collapsing the panel does not change the draft, the selection or the open sections.
+
+![Studio canvas with the panel collapsed to the icon rail](images/web-workspace/studio-canvas-rail-light-1280.png)
+
+On a window narrower than 1024 px, the panel sits under the flow surface and shows its sections. The icon rail is not available.
+
 ### Database and profile in the Knowledge Base
 
 Each collection lives in one vector database. The workspace shows it in four places:
@@ -367,9 +388,9 @@ The name is stored in the collection metadata, next to the profile. On LanceDB a
 
 Keyboard use on the Studio canvas:
 
-1. Press Tab to move through the toolbar, the operation catalogue, the connections, the nodes and the controls.
+1. Press Tab to move through the panel section headers and the controls in each open section. Press Enter or Space on a header to open or close its section.
 2. On a node, press Enter to select it. Use the arrow keys to move it. Press Delete to remove it.
-3. Use the Nodes and Connections lists and the Connect ports form to edit the graph without a pointer.
+3. Use the Nodes and connections section and the Connect ports section to edit the graph without a pointer.
 
 Third-party notices for the bundled application are in `web/THIRD_PARTY_NOTICES.md`.
 

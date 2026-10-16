@@ -226,3 +226,90 @@ describe("navigation collapse", () => {
     expect(screen.getByRole("button", { name: "Expand navigation" })).toBeInTheDocument();
   });
 });
+
+describe("navigation on the canvas sub-page", () => {
+  const CANVAS = "#/studio/pl_1";
+
+  function toggleName() {
+    return within(nav()).queryByRole("button", { name: "Expand navigation" }) ? "collapsed" : "expanded";
+  }
+
+  async function goTo(hash: string) {
+    window.location.hash = hash;
+    await waitFor(() => expect(window.location.hash).toBe(hash));
+  }
+
+  it("collapses an expanded navigation to the icon column", () => {
+    window.localStorage.setItem(NAV_COLLAPSED_KEY, "false");
+    start(CANVAS);
+    expect(toggleName()).toBe("collapsed");
+  });
+
+  it("applies the stored choice again on other routes", async () => {
+    window.localStorage.setItem(NAV_COLLAPSED_KEY, "false");
+    start(CANVAS);
+    await goTo("#/knowledge-base");
+    await waitFor(() => expect(toggleName()).toBe("expanded"));
+    expect(window.localStorage.getItem(NAV_COLLAPSED_KEY)).toBe("false");
+  });
+
+  it("does not store a temporary expansion and collapses again on re-entry", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(NAV_COLLAPSED_KEY, "false");
+    start(CANVAS);
+    await user.click(within(nav()).getByRole("button", { name: "Expand navigation" }));
+    expect(toggleName()).toBe("expanded");
+    expect(window.localStorage.getItem(NAV_COLLAPSED_KEY)).toBe("false");
+
+    await goTo("#/knowledge-base");
+    expect(window.localStorage.getItem(NAV_COLLAPSED_KEY)).toBe("false");
+    await goTo(CANVAS);
+    await waitFor(() => expect(toggleName()).toBe("collapsed"));
+    expect(window.localStorage.getItem(NAV_COLLAPSED_KEY)).toBe("false");
+  });
+
+  it("collapses again when another pipeline opens", async () => {
+    const user = userEvent.setup();
+    start(CANVAS);
+    await user.click(within(nav()).getByRole("button", { name: "Expand navigation" }));
+    expect(toggleName()).toBe("expanded");
+    await goTo("#/studio/pl_2");
+    await waitFor(() => expect(toggleName()).toBe("collapsed"));
+  });
+
+  it("leaves the gallery on the stored choice", () => {
+    window.localStorage.setItem(NAV_COLLAPSED_KEY, "false");
+    start("#/studio");
+    expect(toggleName()).toBe("expanded");
+  });
+
+  it("keeps the toggle working as a stored choice off the canvas", async () => {
+    const user = userEvent.setup();
+    start("#/studio");
+    await user.click(within(nav()).getByRole("button", { name: "Collapse navigation" }));
+    expect(window.localStorage.getItem(NAV_COLLAPSED_KEY)).toBe("true");
+  });
+});
+
+describe("shell on the canvas sub-page", () => {
+  function main() {
+    return document.getElementById("workspace-main") as HTMLElement;
+  }
+
+  it("uses the full window height and drops the page padding", () => {
+    start("#/studio/pl_1");
+    const shell = main().parentElement as HTMLElement;
+    expect(shell).toHaveClass("h-dvh");
+    expect(shell).not.toHaveClass("min-h-dvh");
+    expect(main().className).not.toMatch(/(^|\s)(md:)?p-\d/);
+    expect(main()).toHaveClass("min-h-0", "overflow-auto", "lg:overflow-hidden");
+  });
+
+  it.each(["#/studio", "#/knowledge-base", "#/home"])("keeps the page padding and minimum height on %s", (hash) => {
+    start(hash);
+    const shell = main().parentElement as HTMLElement;
+    expect(shell).toHaveClass("min-h-dvh");
+    expect(shell).not.toHaveClass("h-dvh");
+    expect(main()).toHaveClass("p-4", "md:p-6");
+  });
+});

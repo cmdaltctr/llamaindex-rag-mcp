@@ -17,7 +17,7 @@ export function CanvasPage({ pipelineId }: { pipelineId: string }) {
   if (query.isError) {
     const missing = query.error instanceof ApiError && query.error.kind === "http" && query.error.status === 404;
     return (
-      <section>
+      <section className="p-4 md:p-6">
         <PageHeader title="Studio" />
         {missing ? (
           <NotFound what="pipeline" name={pipelineId} backHref={GALLERY} backLabel="Back to Studio" />
@@ -29,7 +29,7 @@ export function CanvasPage({ pipelineId }: { pipelineId: string }) {
   }
   if (query.data === undefined) {
     return (
-      <section>
+      <section className="p-4 md:p-6">
         <PageHeader title="Studio" />
         <p role="status" className="text-meta text-muted-foreground">
           Loading the pipeline.

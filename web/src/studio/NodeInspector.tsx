@@ -15,8 +15,6 @@ interface NodeInspectorProps {
   onChange: (change: (draft: Draft) => Draft) => void;
 }
 
-const PANEL = "flex flex-col gap-3 rounded-panel border border-border bg-card p-4";
-
 function Check({ checked, onChange, children }: { checked: boolean; onChange: (checked: boolean) => void; children: string }) {
   return (
     <label className="flex items-center gap-2 text-ui">
@@ -30,12 +28,7 @@ function Check({ checked, onChange, children }: { checked: boolean; onChange: (c
 export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onChange }: NodeInspectorProps) {
   const node = draft.graph.nodes.find((candidate) => candidate.id === nodeId);
   if (!node) {
-    return (
-      <section aria-label="Node settings" className={PANEL}>
-        <h2 className="text-section-title font-semibold">Node settings</h2>
-        <p className="text-meta text-muted-foreground">Select a node to edit its settings.</p>
-      </section>
-    );
+    return <p className="text-meta text-muted-foreground">Select a node to edit its settings.</p>;
   }
   const id = node.id;
   const operation = findOperation(catalogue, node.operation, node.version);
@@ -44,10 +37,10 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
   const isOutput = (port: string) => draft.graph.outputs.some((o) => o.source.node === id && o.source.port === port);
 
   return (
-    <section aria-label="Node settings" className={PANEL}>
-      <h2 className="text-section-title font-semibold">
+    <>
+      <h3 className="text-subsection-title font-semibold">
         Node <code className="font-mono">{id}</code>
-      </h2>
+      </h3>
       <p className="flex flex-wrap items-center gap-1.5 text-meta text-muted-foreground">
         {operation?.title ?? "Unknown operation"}
         {operation && <Badge variant="hue">{operation.family}</Badge>}
@@ -113,6 +106,6 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
       <Button variant="destructive" onClick={() => onChange((current) => removeNode(current, id))}>
         Remove node
       </Button>
-    </section>
+    </>
   );
 }

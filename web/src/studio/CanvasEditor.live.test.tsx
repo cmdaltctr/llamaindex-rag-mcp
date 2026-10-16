@@ -1,7 +1,7 @@
 import { act, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { event, FakeEventSource } from "../runs/test/fakes";
-import { runPanel, TEMPLATE_PIPELINE, TEMPLATE_REVISION } from "./test/helpers";
+import { openSections, runPanel, TEMPLATE_PIPELINE, TEMPLATE_REVISION } from "./test/helpers";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
 
@@ -27,6 +27,7 @@ async function openStream() {
   const run = { run_id: "run1", pipeline_id: "p1", revision_id: "p1-r1", status: "queued", last_sequence: 1 };
   const opened = openStudio("#/studio/p1", { pipelines: [TEMPLATE_PIPELINE], revisions: [TEMPLATE_REVISION], runs: [run] });
   await waitFor(() => expect(opened.view.container.querySelectorAll("[data-slot='op-node']")).toHaveLength(4));
+  await openSections(opened.user, "Revision and run");
   await waitFor(() => expect(FakeEventSource.instances).toHaveLength(1));
   const source = FakeEventSource.latest();
   act(() => source.open());

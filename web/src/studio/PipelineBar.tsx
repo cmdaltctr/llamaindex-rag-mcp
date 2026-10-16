@@ -15,7 +15,7 @@ const INHERIT = "__inherit__";
 export function PipelineBar({ draft, onChange }: PipelineBarProps) {
   const idBase = useId();
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div className="flex flex-col gap-3">
       <div className="flex min-w-0 flex-col gap-1.5">
         <Label htmlFor={`${idBase}-title`}>Title</Label>
         <Input id={`${idBase}-title`} value={draft.layout.title} onChange={(event) => onChange((d) => setTitle(d, event.target.value))} />

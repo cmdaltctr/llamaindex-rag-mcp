@@ -1,14 +1,14 @@
 import { ArrowLeft, Workflow } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { OperationDescriptor, PipelineRecord, PortRef, RevisionRecord } from "../api/pipelines";
 import { ACTIVE_RUN_STATUSES } from "../api/runs";
 import { EmptyState } from "../components/EmptyState";
-import { PageHeader } from "../components/PageHeader";
 import { Button } from "../components/ui/button";
 import { formatRoute } from "../lib/routes";
 import { useReducedMotion } from "../runs/useReducedMotion";
 import { useRunMonitor } from "../runs/useRunMonitor";
 import { checkConnection } from "./connections";
+import { CanvasPanel } from "./CanvasPanel";
 import { ConnectionMenu } from "./ConnectionMenu";
 import { FlowSurface } from "./FlowSurface";
 import { addEdge, addNode, setSelection } from "./graph";
@@ -27,9 +27,9 @@ interface CanvasEditorProps {
 }
 
 /**
- * The canvas sub-page of one pipeline: the flow surface in the main column,
- * the operation palette and the selected node's settings in the right column.
- * Mount with `key={pipelineId}`.
+ * The canvas sub-page of one pipeline: a slim bar, the flow surface filling the
+ * main area, and one floating panel on the right that holds every other
+ * control. Mount with `key={pipelineId}`.
  */
 export function CanvasEditor({ pipeline, revision }: CanvasEditorProps) {
   const session = useCanvasSession(pipeline, revision);
@@ -43,6 +43,10 @@ export function CanvasEditor({ pipeline, revision }: CanvasEditorProps) {
     () => (run && session.runRevision ? { ids: new Set(session.runRevision.document.nodes.map((node) => node.id)), states: monitor.view.nodes } : null),
     [run, session.runRevision, monitor.view.nodes],
   );
+
+  // Counts runs started from the panel, so the panel opens Revision and run for them and not for a run that existed at load.
+  const [runStarts, setRunStarts] = useState(0);
+  const actions = { ...session.actions, run: () => { setRunStarts((count) => count + 1); return session.actions.run(); } };
 
   const announce = (text: string) => setNotice({ kind: "status", text });
   const refuse = (text: string) => setNotice({ kind: "refused", text });
@@ -65,71 +69,79 @@ export function CanvasEditor({ pipeline, revision }: CanvasEditorProps) {
   const selectedNode = draft.layout.selection.find((id) => nodeIds.has(id)) ?? null;
   const inputNames = [...new Set([...draft.graph.inputs, ...(revision?.document.inputs ?? [])].map((input) => input.name))];
 
-  return (
-    <section>
-      <PageHeader
-        title={draft.layout.title || pipeline.title}
-        summary="Connect pipeline stages, check the graph and run it."
-        actions={
-          <Button asChild variant="outline">
-            <a href={formatRoute({ area: "studio", pipelineId: null })}>
-              <ArrowLeft aria-hidden="true" />
-              All pipelines
-            </a>
-          </Button>
-        }
+  const surface =
+    draft.graph.nodes.length === 0 ? (
+      <div className="p-4">
+        <EmptyState icon={Workflow} message="The graph is empty. Add an operation from the catalogue to start." />
+      </div>
+    ) : session.operations.isPending ? (
+      // Nodes need the catalogue for their ports, so the surface waits for it.
+      <p className="p-4 text-meta text-muted-foreground">Loading the catalogue.</p>
+    ) : (
+      <FlowSurface
+        draft={draft}
+        catalogue={catalogue}
+        issues={session.issues}
+        onChange={update}
+        onConnect={(source, target) => {
+          const reason = connect(source, target);
+          if (reason) refuse(`Cannot connect: ${reason}`);
+        }}
+        onRefused={refuse}
+        runNodes={runNodes}
+        reducedMotion={reducedMotion}
       />
-      <Notices notice={session.notice} />
-      <div className="mt-2 grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <PipelineBar draft={draft} onChange={update} />
-          {draft.graph.nodes.length === 0 ? (
-            <EmptyState icon={Workflow} message="The graph is empty. Add an operation from the catalogue to start." />
-          ) : session.operations.isPending ? (
-            // Nodes need the catalogue for their ports, so the surface waits for it.
-            <p className="text-meta text-muted-foreground">Loading the catalogue.</p>
-          ) : (
-            <FlowSurface
-              draft={draft}
-              catalogue={catalogue}
-              issues={session.issues}
-              onChange={update}
-              onConnect={(source, target) => {
-                const reason = connect(source, target);
-                if (reason) refuse(`Cannot connect: ${reason}`);
-              }}
-              onRefused={refuse}
-              runNodes={runNodes}
-              reducedMotion={reducedMotion}
-            />
-          )}
-          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
-            <GraphOutline draft={draft} issues={session.issues} onChange={update} onAnnounce={announce} />
-            <ConnectionMenu draft={draft} catalogue={catalogue} onConnect={connect} />
-          </div>
-          <RunPanel
-            revision={revision}
-            dirty={session.dirty}
-            busy={session.busy}
-            inputNames={inputNames}
-            inputValues={session.inputValues}
-            onInput={session.setInputValue}
-            issues={session.issues}
-            run={run ? { record: run, revision: session.runRevision } : null}
-            runActive={runStatus !== null && ACTIVE_RUN_STATUSES.has(runStatus)}
-            onSelectNode={(id) => update((current) => setSelection(current, [id]))}
-            actions={session.actions}
-            live={
-              run && runStatus ? (
-                <RunProgress runId={run.run_id} status={runStatus} view={monitor.view} mode={monitor.mode} live={monitor.live} error={monitor.error} />
-              ) : null
-            }
-          />
+    );
+
+  return (
+    <section className="flex min-h-0 flex-1 flex-col">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-card px-4 py-2">
+        <div className="min-w-0">
+          <h1 tabIndex={-1} className="text-page-title font-semibold outline-none [overflow-wrap:anywhere]">
+            {draft.layout.title || pipeline.title}
+          </h1>
+          <Notices notice={session.notice} />
         </div>
-        <div className="flex min-w-0 flex-col gap-4">
-          <Palette operations={session.operations.data} error={session.operations.error} onRetry={() => void session.operations.refetch()} onAdd={add} />
-          <NodeInspector draft={draft} nodeId={selectedNode} catalogue={catalogue} issues={session.issues} controls={session.controls} onChange={update} />
-        </div>
+        <Button asChild variant="outline">
+          <a href={formatRoute({ area: "studio", pipelineId: null })}>
+            <ArrowLeft aria-hidden="true" />
+            All pipelines
+          </a>
+        </Button>
+      </div>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <div className="h-[50vh] min-h-64 lg:absolute lg:inset-0 lg:h-auto">{surface}</div>
+        <CanvasPanel
+          selectedNode={selectedNode}
+          runStarts={runStarts}
+          sections={{
+            "pipeline-settings": <PipelineBar draft={draft} onChange={update} />,
+            operations: <Palette operations={session.operations.data} error={session.operations.error} onRetry={() => void session.operations.refetch()} onAdd={add} />,
+            nodes: <GraphOutline draft={draft} issues={session.issues} onChange={update} onAnnounce={announce} />,
+            connect: <ConnectionMenu draft={draft} catalogue={catalogue} onConnect={connect} />,
+            run: (
+              <RunPanel
+                revision={revision}
+                dirty={session.dirty}
+                busy={session.busy}
+                inputNames={inputNames}
+                inputValues={session.inputValues}
+                onInput={session.setInputValue}
+                issues={session.issues}
+                run={run ? { record: run, revision: session.runRevision } : null}
+                runActive={runStatus !== null && ACTIVE_RUN_STATUSES.has(runStatus)}
+                onSelectNode={(id) => update((current) => setSelection(current, [id]))}
+                actions={actions}
+                live={
+                  run && runStatus ? (
+                    <RunProgress runId={run.run_id} status={runStatus} view={monitor.view} mode={monitor.mode} live={monitor.live} error={monitor.error} />
+                  ) : null
+                }
+              />
+            ),
+            "node-settings": <NodeInspector draft={draft} nodeId={selectedNode} catalogue={catalogue} issues={session.issues} controls={session.controls} onChange={update} />,
+          }}
+        />
       </div>
     </section>
   );

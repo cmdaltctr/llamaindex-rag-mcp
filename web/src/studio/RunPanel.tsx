@@ -64,8 +64,7 @@ function LatestRun({ run, active, busy, onCancel, onRefresh, live }: { run: NonN
 export function RunPanel(props: RunPanelProps) {
   const { revision, dirty, busy, inputNames, inputValues, issues, run, actions } = props;
   return (
-    <section aria-label="Revision and run" className="flex min-w-0 flex-col gap-3 rounded-panel border border-border bg-card p-4">
-      <h2 className="text-section-title font-semibold">Revision and run</h2>
+    <>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" disabled={busy} onClick={actions.saveLayout}>
           Save layout
@@ -107,6 +106,6 @@ export function RunPanel(props: RunPanelProps) {
         </>
       )}
       {run && <LatestRun run={run} active={props.runActive} busy={busy} onCancel={actions.cancel} onRefresh={actions.refresh} live={props.live} />}
-    </section>
+    </>
   );
 }

@@ -70,8 +70,7 @@ export function ConnectionMenu({ draft, catalogue, onConnect }: ConnectionMenuPr
   }
 
   return (
-    <section aria-label="Connect ports" className="flex min-w-0 flex-col gap-3 rounded-panel border border-border bg-card p-4">
-      <h2 className="text-section-title font-semibold">Connect ports</h2>
+    <>
       <PortSelect id={`${idBase}-from`} label="From output" placeholder="Choose an output port" value={from} options={portOptions(draft, catalogue, "outputs")} onChange={setFrom} />
       <PortSelect id={`${idBase}-to`} label="To input" placeholder="Choose an input port" value={to} options={portOptions(draft, catalogue, "inputs")} onChange={setTo} />
       <Button disabled={!source || !target} onClick={connect} className="self-start">
@@ -82,6 +81,6 @@ export function ConnectionMenu({ draft, catalogue, onConnect }: ConnectionMenuPr
           {refusal}
         </p>
       )}
-    </section>
+    </>
   );
 }

@@ -149,7 +149,7 @@ export function FlowSurface({ draft, catalogue, issues, onChange, onConnect, onR
   }
 
   return (
-    <div className="h-[50vh] min-h-64 overflow-hidden md:h-[60vh] md:min-h-80 rounded-panel border border-border" onKeyDown={handleKeyDown}>
+    <div className="h-full min-h-64 overflow-hidden rounded-panel border border-border" onKeyDown={handleKeyDown}>
       <ReactFlow<OperationFlowNode>
         nodes={nodes}
         edges={edges}
