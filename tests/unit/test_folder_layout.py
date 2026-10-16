@@ -1,10 +1,12 @@
 """Folder layout guards (organise-backend-folders, design D8).
 
-Vector-store backends live in one folder each below ``core/vectordb/``.
-These checks read files and syntax trees only, so they need neither the
-``web`` nor the ``chroma`` extra and run in every CI job.  A backend file
-at the ``core/vectordb/`` root, a stale relative import, or a backend
-``__init__.py`` that imports something fails here.
+Vector-store backends live in one folder each below ``core/vectordb/``, and
+HTTP route groups live in ``transports/api/routes/``.  These checks read
+files and syntax trees only, so they need neither the ``web`` nor the
+``chroma`` extra and run in every CI job.  A backend file at the
+``core/vectordb/`` root, a route file at the ``transports/api/`` root, a
+stale relative import, or a package ``__init__.py`` that imports something
+fails here.
 """
 
 from __future__ import annotations
@@ -35,8 +37,18 @@ _VECTORDB_ROOT_MODULES = {
 }
 _VECTORDB_BACKEND_FOLDERS = {"chroma", "lancedb"}
 
+_API = _OMRG / "transports" / "api"
+_API_ROUTES = _API / "routes"
+
 #: Folders whose relative imports must all resolve (design D6).
-_RESOLVED_IMPORT_ROOTS = [_VECTORDB]
+_RESOLVED_IMPORT_ROOTS = [_VECTORDB, _API]
+
+#: Packages that hold code but re-export nothing (design D4).
+_IMPORT_FREE_PACKAGES = [
+    _VECTORDB / "chroma",
+    _VECTORDB / "lancedb",
+    _API_ROUTES,
+]
 
 
 def _python_files(root: Path) -> list[Path]:
@@ -58,9 +70,21 @@ def _package_of(path: Path) -> list[str]:
 
 
 def _defined_names(path: Path) -> set[str]:
-    """Return every name a module binds anywhere in its syntax tree."""
+    """Return every name a module binds or exports anywhere in its syntax tree.
+
+    Names listed in ``__all__`` count, because a package can serve them through
+    a lazy module ``__getattr__`` (PEP 562), as ``omrg.__version__`` does.
+    """
     names: set[str] = set()
     for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Name) and t.id == "__all__" for t in node.targets
+        ):
+            names.update(
+                c.value
+                for c in ast.walk(node.value)
+                if isinstance(c, ast.Constant) and isinstance(c.value, str)
+            )
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             names.add(node.name)
         elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
@@ -122,10 +146,12 @@ def test_vectordb_root_holds_only_shared_modules() -> None:
     assert folders == _VECTORDB_BACKEND_FOLDERS
 
 
-@pytest.mark.parametrize("backend", sorted(_VECTORDB_BACKEND_FOLDERS))
-def test_backend_package_marker_imports_nothing(backend: str) -> None:
-    """A backend ``__init__.py`` holds a docstring only (no re-export shim)."""
-    marker = _VECTORDB / backend / "__init__.py"
+@pytest.mark.parametrize(
+    "package", _IMPORT_FREE_PACKAGES, ids=lambda package: str(package.relative_to(_OMRG))
+)
+def test_package_marker_imports_nothing(package: Path) -> None:
+    """A backend or routes ``__init__.py`` holds a docstring only (no re-export shim)."""
+    marker = package / "__init__.py"
     assert marker.is_file(), f"{marker.relative_to(_SRC)} does not exist"
     imports = [
         node
@@ -186,4 +212,44 @@ def test_chroma_paged_import_does_not_load_chromadb() -> None:
     proc = subprocess.run([sys.executable, "-c", program], capture_output=True, text=True)
     assert proc.returncode == 0, (
         f"chroma/paged.py import failed or loaded chromadb:\n{proc.stdout}{proc.stderr}"
+    )
+
+
+# ── transports/api/ ──────────────────────────────────────────────────
+
+
+def _defines_router(path: Path) -> bool:
+    """Return whether *path* calls ``APIRouter(...)`` anywhere."""
+    return any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "APIRouter"
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+    )
+
+
+def test_api_root_defines_no_router() -> None:
+    """Route groups live in ``routes/``; no module at the API root builds a router."""
+    offenders = [p.name for p in sorted(_API.glob("*.py")) if _defines_router(p)]
+    assert not offenders, f"Move these route modules into api/routes/: {offenders}"
+
+
+def test_app_registers_the_router_of_every_route_module() -> None:
+    """``app.py`` imports ``router`` from each ``routes/`` module that builds one."""
+    route_modules = sorted(
+        p.stem for p in _API_ROUTES.glob("*.py") if p.stem != "__init__" and _defines_router(p)
+    )
+    assert route_modules, "no route modules found under api/routes/"
+    imported = {
+        node.module.removeprefix("routes.")
+        for node in ast.walk(ast.parse((_API / "app.py").read_text(encoding="utf-8")))
+        if isinstance(node, ast.ImportFrom)
+        and node.level == 1
+        and node.module
+        and node.module.startswith("routes.")
+        and any(alias.name == "router" for alias in node.names)
+    }
+    assert imported == set(route_modules), (
+        f"app.py misses: {sorted(set(route_modules) - imported)}; "
+        f"imports unknown: {sorted(imported - set(route_modules))}"
     )

@@ -19,9 +19,9 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from .engine_access import ReadScope, RuntimeDep, admitted, engine_store, failure_text
-from .errors import error_response
-from .security import redact
+from ..engine_access import ReadScope, RuntimeDep, admitted, engine_store, failure_text
+from ..errors import error_response
+from ..security import redact
 
 logger = logging.getLogger(__name__)
 
@@ -90,15 +90,15 @@ def _store_info() -> dict[str, str]:
     Only these two registry values are returned, so paths, URIs and cloud
     credentials never reach the response.
     """
-    from ... import compose
-    from ...core.vectordb import registry
+    from .... import compose
+    from ....core.vectordb import registry
 
     name = compose.configured_vector_store()
     return {"name": name, "label": registry.describe(name)["label"]}
 
 
 def _collections_with_labels(store: Any) -> list[dict[str, Any]]:
-    from ...core.retrieval import list_collections as core_list_collections
+    from ....core.retrieval import list_collections as core_list_collections
 
     rows = core_list_collections(store)
     info = _store_info()
@@ -117,7 +117,7 @@ async def list_collections(runtime: RuntimeDep, _: ReadScope) -> Response:
 @router.get("/collections/{collection}/documents", operation_id="listDocuments")
 async def list_documents(collection: str, runtime: RuntimeDep, _: ReadScope) -> Response:
     """List the sources of one collection with machine-local orphan status."""
-    from ...core.ingestion import list_documents as core_list_documents
+    from ....core.ingestion import list_documents as core_list_documents
 
     store = engine_store(runtime.engine)
     async with admitted(runtime):

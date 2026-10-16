@@ -11,9 +11,9 @@ from fastapi import APIRouter
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 
-from .engine_access import ReadScope, RuntimeDep, admitted
-from .integrations_catalogue import describe_integrations
-from .routes_graphs import ok
+from ..engine_access import ReadScope, RuntimeDep, admitted
+from ..integrations_catalogue import describe_integrations
+from .graphs import ok
 
 router = APIRouter(prefix="/v1")
 

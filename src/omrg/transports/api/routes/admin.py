@@ -30,10 +30,10 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from .confirmations import ConfirmationRejected, confirmation_book, observe
-from .engine_access import RuntimeDep, admitted, engine_resolver, engine_store, require_session
-from .errors import error_response
-from .security import Principal
+from ..confirmations import ConfirmationRejected, confirmation_book, observe
+from ..engine_access import RuntimeDep, admitted, engine_resolver, engine_store, require_session
+from ..errors import error_response
+from ..security import Principal
 
 router = APIRouter(prefix="/v1")
 
@@ -98,7 +98,7 @@ def _delete_selector(body: DeleteBody) -> dict[str, Any] | str:
 
 
 def _preview_delete(store: Any, collection: str, selector: dict[str, Any]) -> tuple[Any, dict]:
-    from ...core.ingestion import preview_delete
+    from ....core.ingestion import preview_delete
 
     # Observe first: a write between the two reads then makes the token stale.
     state = observe(store, collection)
@@ -112,19 +112,19 @@ def _preview_delete(store: Any, collection: str, selector: dict[str, Any]) -> tu
 
 
 def _remove_path(store: Any, collection: str, selector: dict[str, Any]) -> dict[str, Any]:
-    from ...core.ingestion import remove_document
+    from ....core.ingestion import remove_document
 
     return remove_document(selector["path"], collection, store)
 
 
 def _remove_metadata(store: Any, collection: str, selector: dict[str, Any]) -> dict[str, Any]:
-    from ...core.ingestion import remove_by_metadata
+    from ....core.ingestion import remove_by_metadata
 
     return remove_by_metadata(selector["metadata_filter"], collection, store)
 
 
 def _remove_collection(store: Any, collection: str, selector: dict[str, Any]) -> dict[str, Any]:
-    from ...core.ingestion import remove_collection
+    from ....core.ingestion import remove_collection
 
     return remove_collection(collection, store)
 
@@ -188,7 +188,7 @@ def _profile_state(store: Any, collection: str) -> Any:
 
 
 def _preview_profile(engine: Any, store: Any, collection: str, profile: str) -> tuple[Any, dict]:
-    from ...core.profiles import generate_safety_contract
+    from ....core.profiles import generate_safety_contract
 
     state = _profile_state(store, collection)
     contract = generate_safety_contract(
@@ -210,7 +210,7 @@ async def change_collection_profile(
     Existing chunks stay unchanged; query-time levers follow the new
     profile at once and ingest-time levers apply to later ingests.
     """
-    from ...core.profiles import apply_profile_change
+    from ....core.profiles import apply_profile_change
 
     store = engine_store(runtime.engine)
     book = confirmation_book(request.app.state)

@@ -21,12 +21,12 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from ...core.pipelines import PipelineValidationError, parse_definition
-from ...core.workspace import content_hash
-from .engine_access import ReadScope, RuntimeDep, admitted
-from .errors import API_HEADERS, error_response
-from .runs_wiring import TASK_LAYOUT_KEY, RunsDep, WorkspaceRuns, describe_operations
-from .security import Principal, redact, require_scope
+from ....core.pipelines import PipelineValidationError, parse_definition
+from ....core.workspace import content_hash
+from ..engine_access import ReadScope, RuntimeDep, admitted
+from ..errors import API_HEADERS, error_response
+from ..runs_wiring import TASK_LAYOUT_KEY, RunsDep, WorkspaceRuns, describe_operations
+from ..security import Principal, redact, require_scope
 
 router = APIRouter(prefix="/v1")
 

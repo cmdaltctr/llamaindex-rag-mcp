@@ -29,13 +29,13 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from ...core.workspace import TERMINAL_RUN_STATUSES, QueueFullError, ServiceClosedError
-from .engine_access import FilesScope, ReadScope, RuntimeDep, engine_store
-from .errors import error_response
-from .grants import GrantDenied
-from .lifespan import WebRuntime
-from .runs_wiring import RunsDep, WorkspaceRuns
-from .security import redact
+from ....core.workspace import TERMINAL_RUN_STATUSES, QueueFullError, ServiceClosedError
+from ..engine_access import FilesScope, ReadScope, RuntimeDep, engine_store
+from ..errors import error_response
+from ..grants import GrantDenied
+from ..lifespan import WebRuntime
+from ..runs_wiring import RunsDep, WorkspaceRuns
+from ..security import redact
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +170,7 @@ async def generate_codebase_map(
     engine, refresh = runtime.engine, body.refresh
 
     async def work() -> dict[str, Any]:
-        from ...core.codebase import codebase_map
+        from ....core.codebase import codebase_map
 
         settings = engine.resolve_settings()
         text = await asyncio.to_thread(

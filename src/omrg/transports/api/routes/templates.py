@@ -19,8 +19,8 @@ from fastapi import APIRouter
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 
-from .engine_access import ReadScope, RuntimeDep, admitted
-from .routes_graphs import ok
+from ..engine_access import ReadScope, RuntimeDep, admitted
+from .graphs import ok
 
 router = APIRouter(prefix="/v1")
 
@@ -37,7 +37,7 @@ OUTPUT_DESCRIPTIONS: dict[str, str] = {
 
 def describe_templates(engine: Any) -> list[dict[str, Any]]:
     """Return the Engine's canonical templates as JSON-ready entries."""
-    from ...compose_pipelines import pipeline_templates
+    from ....compose_pipelines import pipeline_templates
 
     entries = []
     for template in pipeline_templates(engine):

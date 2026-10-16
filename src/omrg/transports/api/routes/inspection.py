@@ -22,8 +22,8 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 
-from .engine_access import ReadScope, RuntimeDep, admitted, engine_store
-from .errors import error_response
+from ..engine_access import ReadScope, RuntimeDep, admitted, engine_store
+from ..errors import error_response
 
 router = APIRouter(prefix="/v1")
 
@@ -55,7 +55,7 @@ class _ChunkUnavailable(Exception):
 
 def _inspect(store: Any, collection: str, chunk_id: str, window: int) -> dict[str, Any] | None:
     """Read one chunk and its neighbours; ``None`` when the chunk is unknown."""
-    from ...core.retrieval.lineage import neighbours
+    from ....core.retrieval.lineage import neighbours
 
     try:
         rows = list(store.iter_filtered_documents(collection, {"chunk_id": chunk_id}))

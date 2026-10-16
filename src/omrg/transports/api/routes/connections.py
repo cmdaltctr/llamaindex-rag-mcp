@@ -15,13 +15,13 @@ from fastapi import APIRouter
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 
-from ... import compose
-from ...compose_connections import PROVIDERS
-from .connection_probe import probe
-from .engine_access import ReadScope, RuntimeDep, admitted
-from .errors import error_response
-from .routes_experiments import ManageScope
-from .routes_graphs import ok
+from .... import compose
+from ....compose_connections import PROVIDERS
+from ..connection_probe import probe
+from ..engine_access import ReadScope, RuntimeDep, admitted
+from ..errors import error_response
+from .experiments import ManageScope
+from .graphs import ok
 
 logger = logging.getLogger(__name__)
 

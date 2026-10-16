@@ -15,18 +15,18 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
 
-from ...integrations.workspace_sqlite.settings import (
+from ....integrations.workspace_sqlite.settings import (
     MAX_UPLOAD_LIMIT_MIB,
     MAX_WEB_PORT,
     MIN_UPLOAD_LIMIT_MIB,
     MIN_WEB_PORT,
 )
-from .engine_access import ReadScope, RuntimeDep, require_session
-from .errors import API_HEADERS, error_response
-from .lifespan import WebRuntime
-from .mcp_http import McpHttp
-from .security import Principal
-from .uploads import DEFAULT_MAX_UPLOAD_BYTES, MIB
+from ..engine_access import ReadScope, RuntimeDep, require_session
+from ..errors import API_HEADERS, error_response
+from ..lifespan import WebRuntime
+from ..mcp_http import McpHttp
+from ..security import Principal
+from ..uploads import DEFAULT_MAX_UPLOAD_BYTES, MIB
 
 router = APIRouter(prefix="/v1")
 

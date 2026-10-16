@@ -39,21 +39,21 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from ...core.experiments import ExperimentAdmissionError
-from ...core.plugins import (
+from ....core.experiments import ExperimentAdmissionError
+from ....core.plugins import (
     ManifestError,
     PluginConsentError,
     PluginLaunchError,
     PluginTrustError,
     parse_manifest,
 )
-from ...core.plugins.editor import EditorConnection
-from .engine_access import RuntimeDep
-from .errors import error_response
-from .lifespan import PluginHost
-from .routes_experiments import TRUST_NOTICE, refusal
-from .routes_graphs import ok
-from .security import AccessPolicy, Principal, require_scope
+from ....core.plugins.editor import EditorConnection
+from ..engine_access import RuntimeDep
+from ..errors import error_response
+from ..lifespan import PluginHost
+from ..security import AccessPolicy, Principal, require_scope
+from .experiments import TRUST_NOTICE, refusal
+from .graphs import ok
 
 router = APIRouter(prefix="/v1")
 
