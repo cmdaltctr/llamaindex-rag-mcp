@@ -13,7 +13,7 @@ See proposal.md (Why). This section lists only the facts that shape the approach
 - The Engine builds its answer model lazily and keeps it (`src/omrg/engine.py:112-116,459-463`). Each operation resolves per-collection settings through the profile resolver (`engine.py:471-482`). The judge factory runs at the start of every answer (`src/omrg/engine_answer.py:95-98`); graph runs cache judges per answer block (`src/omrg/compose_pipelines.py:392-406`). `engine.py` has 498 lines.
 - Metadata extraction reads provider values from the resolved `EffectiveSettings` of each ingest (`src/omrg/core/metadata/ollama.py:249`, `llamacpp.py:85`, `openrouter.py:170`). The embedder is built once at start (`compose_engine.py:122`). Ollama embeddings and the Ollama LLM share `ollama_base_url` (`src/omrg/core/providers/common.py:25`).
 - Workspace settings: a key/value table with a fixed key set (`src/omrg/integrations/workspace_sqlite/settings.py:15-19`). A schema migration copies the whole database to a `.bak` file (`schema.py:175-185`).
-- The upload limit is the model for a run-time setting (ADR-078): a launch value wins and locks; the route writes the database first, then changes the running value (`src/omrg/transports/api/routes_mcp.py:154-172`).
+- The upload limit is the model for a run-time setting (ADR-078): a launch value wins and locks; the route writes the database first, then changes the running value (`src/omrg/transports/api/routes/mcp.py:154-172`).
 - Log redaction gets the provider keys once at launch (`src/omrg/transports/cli/web.py:103,131,147`). `RedactingFilter` copies them into a tuple (`src/omrg/transports/api/security.py:438`). Validation errors never echo a value (`src/omrg/transports/api/errors.py:68-74`).
 - Chat calls `answerCollection`. With no model, core returns status `error` with `NO_PROVIDER_MESSAGE` (`src/omrg/core/answer/results.py:18-23`, `pipeline.py:270-271`). The web client then shows "The answer could not be completed." (`web/src/chat/answerStatus.ts:50-54`).
 - Settings sections are view state; the route stays `#/settings` (`web/src/settings/SettingsView.tsx:22-24`, `web/src/lib/routes.ts:37-38`).
@@ -171,7 +171,7 @@ The model list reads at most 8 MiB of the body and returns at most 1,000 names. 
 
 ### D7. Security
 
-- Every write, test and list route needs the browser session (`require_session`, `src/omrg/transports/api/engine_access.py:72-97`). Keys need the `credentials` scope, as the MCP token routes do (`routes_mcp.py:34`). A bearer credential never passes.
+- Every write, test and list route needs the browser session (`require_session`, `src/omrg/transports/api/engine_access.py:72-97`). Keys need the `credentials` scope, as the MCP token routes do (`routes/mcp.py:34`). A bearer credential never passes.
 - The existing middleware checks `Host`, rejects foreign `Origin` and cross-site fetch metadata on `/v1`, and refuses credentials in the query string (`src/omrg/transports/api/middleware.py:1-7`). No change is needed.
 - Address check before any save or request (spec "Provider addresses are validated"). Local network hosts are allowed because a user may run Ollama on another machine. Redirects stay off.
 - Redaction: a new append-only `SecretSet` in `security.py`. `RedactingFilter` and `LogBuffer` read it at filter time in place of the launch tuple. The key route adds a key to the set before it calls the keychain. The answer route runs the result's `error` text through the set. Replaced keys stay in the set until shutdown. A test proves a saved key never reaches a log record (task 6.1).

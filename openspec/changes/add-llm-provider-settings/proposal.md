@@ -2,7 +2,7 @@
 
 ## Why
 
-Today the Settings page can only show the language model (LLM) providers. It cannot change them. The Connections section reads every value from the server's `.env` file and says that a change needs a restart (`web/src/settings/ConnectionsSection.tsx:27-32`, `src/omrg/transports/api/routes_connections.py:1-8`). Chat has no place to choose its model. It uses the server answer model (`ANSWER__PROVIDER`, `ANSWER__MODEL`, `src/omrg/core/answer/settings.py:51-55`). When no model can be built, Chat shows only "The answer could not be completed." (`web/src/chat/answerStatus.ts:50-54`), and nothing tells the user where to fix it.
+Today the Settings page can only show the language model (LLM) providers. It cannot change them. The Connections section reads every value from the server's `.env` file and says that a change needs a restart (`web/src/settings/ConnectionsSection.tsx:27-32`, `src/omrg/transports/api/routes/connections.py:1-8`). Chat has no place to choose its model. It uses the server answer model (`ANSWER__PROVIDER`, `ANSWER__MODEL`, `src/omrg/core/answer/settings.py:51-55`). When no model can be built, Chat shows only "The answer could not be completed." (`web/src/chat/answerStatus.ts:50-54`), and nothing tells the user where to fix it.
 
 The user wants the web app to become the GUI for the whole system. This change lets the user set provider addresses and API keys in Settings, test them, and choose the Chat model by typing its name. Every change applies at once, with no restart. OMMS, a sibling project, has a similar settings page; this change reuses its page shape and its rule that the page never gets a key value, and stores keys in the system keychain in place of the plaintext files OMMS uses.
 

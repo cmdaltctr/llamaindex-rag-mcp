@@ -47,14 +47,14 @@ Work in a feature worktree that forks from `integration/core-web`. Do not work i
 - [x] 4.5 Add cases to `tests/unit/test_check_web_wheel.py` for a wheel that contains `omrg/core/AGENTS.md` and `omrg/CLAUDE.md`, and confirm that they fail. Extend `scripts/check_web_wheel.py` to report each such entry by name (design.md D13), and confirm that the cases pass.
 - [x] 4.6 Build a wheel into a temporary folder with `uv build --wheel --out-dir <tmp>`. List its entries with `python -c "import sys, zipfile; print([n for n in zipfile.ZipFile(sys.argv[1]).namelist() if n.endswith(('AGENTS.md', 'CLAUDE.md'))])" <tmp>/*.whl` and confirm that it prints `[]`. Delete the temporary folder.
 - [x] 4.7 In the root `AGENTS.md`, replace the last sentence of Architecture Invariant 2 so that `src/omrg/` holds the package marker, the public Engine and the composition-root modules, pinned by `tests/unit/test_verification_gaps_boundaries.py`. Add to Invariant 3 that API route groups live in `transports/api/routes/`. Add one sentence that each vector-store backend has its own folder under `core/vectordb/`. Add a "Folder guides" list of the ten guides. Run `uv run pytest tests/test_docs_references.py -q` and confirm that it passes.
-- [ ] 4.8 When the user approves, commit this group as `docs: add folder guides for agents and fix the root AGENTS.md`.
+- [x] 4.8 When the user approves, commit this group as `docs: add folder guides for agents and fix the root AGENTS.md`.
 
 ## 5. Final verification
 
-- [ ] 5.1 Run `uv run pytest tests/test_clean_base_tripwire.py -q`. Update `_BASE_EXECUTED` in `tests/test_clean_base_tripwire.py` to the measured executed count, with a dated comment that names this change and the delta. Run it again and confirm that it passes.
-- [ ] 5.2 Run `git grep -nP "$OLD|routes_[a-z]+\.py|api[./]routes_[a-z]+" -- . ':!docs/adr' ':!docs/tdr' ':!openspec'`, with `OLD` from task 2.7. Confirm that every hit is in an archived experiment listed in proposal.md. (The main specs under `openspec/specs/` change when this change is archived.)
-- [ ] 5.3 Run `uv run ruff check .`, `uv run ruff format --check .`, `uv run lint-imports` and `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q`. Confirm that all pass.
-- [ ] 5.4 In `web/`, run `npm run lint`, `npm run typecheck` and `npm test`. Confirm that all pass.
-- [ ] 5.5 Run `openspec validate organise-backend-folders --strict` and confirm that it reports the change as valid.
-- [ ] 5.6 Ask the user for approval, then run `./scripts/local_ci.sh` and confirm that every step passes.
-- [ ] 5.7 Run `git grep -nE 'routes_[a-z]+\.py|vectordb/(chroma|lancedb|lance_[a-z_]+|chroma_cloud|paged)\.py' -- openspec/changes ':!openspec/changes/archive' ':!openspec/changes/organise-backend-folders'`. Confirm no output, so the five changes in design.md D16 cite only the new paths. Report any hit to the user before you archive.
+- [x] 5.1 Run `uv run pytest tests/test_clean_base_tripwire.py -q`. Update `_BASE_EXECUTED` in `tests/test_clean_base_tripwire.py` to the measured executed count, with a dated comment that names this change and the delta. Run it again and confirm that it passes.
+- [x] 5.2 Run `git grep -nP "$OLD|routes_[a-z]+\.py|api[./]routes_[a-z]+" -- . ':!docs/adr' ':!docs/tdr' ':!openspec'`, with `OLD` from task 2.7. Confirm that every hit is in an archived experiment listed in proposal.md. (The main specs under `openspec/specs/` change when this change is archived.)
+- [x] 5.3 Run `uv run ruff check .`, `uv run ruff format --check .`, `uv run lint-imports` and `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q`. Confirm that all pass.
+- [x] 5.4 In `web/`, run `npm run lint`, `npm run typecheck` and `npm test`. Confirm that all pass.
+- [x] 5.5 Run `openspec validate organise-backend-folders --strict` and confirm that it reports the change as valid.
+- [x] 5.6 Ask the user for approval, then run `./scripts/local_ci.sh` and confirm that every step passes.
+- [x] 5.7 Run `git grep -nE 'routes_[a-z]+\.py|vectordb/(chroma|lancedb|lance_[a-z_]+|chroma_cloud|paged)\.py' -- openspec/changes ':!openspec/changes/archive' ':!openspec/changes/organise-backend-folders'`. Confirm no output, so the five changes in design.md D16 cite only the new paths. Report any hit to the user before you archive.
