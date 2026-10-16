@@ -11,13 +11,13 @@ qualified default backend.
 ## Requirements
 ### Requirement: LanceDB SHALL implement the VectorStore contract
 
-The system SHALL provide `core/vectordb/lancedb.py` implementing the
+The system SHALL provide `core/vectordb/lancedb/store.py` implementing the
 `VectorStore` ABC (`core/vectordb/base.py`). A single `lancedb.connect(uri)`
 connection SHALL back the store, and each RAG collection SHALL map to one
-LanceDB table. The implementation SHALL be split across `lancedb.py`,
-`lance_paged.py`, and `lance_filter.py` so no file exceeds 500 lines
-(architecture invariant #11). No module outside `core/vectordb/` SHALL
-import `lancedb`.
+LanceDB table. The implementation SHALL be split across the modules of the
+`core/vectordb/lancedb/` folder (`store.py`, `paged.py`, `filter.py` and
+their siblings) so no file exceeds 500 lines (architecture invariant #11).
+No module outside `core/vectordb/lancedb/` SHALL import `lancedb`.
 
 #### Scenario: Collection maps to a table
 
@@ -28,7 +28,7 @@ import `lancedb`.
 #### Scenario: Single lancedb import site
 
 - **WHEN** `src/omrg/` is searched for `import lancedb`
-- **THEN** the only matches MUST be within `core/vectordb/`
+- **THEN** the only matches MUST be within `core/vectordb/lancedb/`
 
 #### Scenario: Contract parity with the ABC
 
@@ -63,7 +63,7 @@ first write.
 The store SHALL persist the embedding-identity triple (`provider`, `model`,
 `index_identity`) and profile tags in the table's durable Arrow schema
 metadata, written read-merge-write through pylance's
-`update_schema_metadata` seam (`core/vectordb/lance_meta.py`). (The
+`update_schema_metadata` seam (`core/vectordb/lancedb/meta.py`). (The
 originally named mechanisms — table `update_config` and a table-level
 `replace_schema_metadata` — do not exist in the lancedb Python SDK as of
 0.37.1; schema metadata is the verified durable key-value bag, recorded in
@@ -100,7 +100,7 @@ nor check.
 ### Requirement: LanceDB SHALL translate ChromaDB where clauses safely
 
 The store SHALL translate the ChromaDB-style `where` dict into LanceDB
-filters in `core/vectordb/lance_filter.py`, with every VALUE serialised
+filters in `core/vectordb/lancedb/filter.py`, with every VALUE serialised
 through the `lancedb.expr` type-safe literal builder (whose unparser
 performs the engine's own quoting), every field name validated against a
 conservative identifier grammar and backtick-quoted in the emitted SQL,
@@ -194,7 +194,7 @@ an error naming the crossed limit.
 
 LanceDB fixes the Arrow `metadata` struct on the first write, and pylance
 has no nested `add_columns`, so the store SHALL grow the struct itself in
-`core/vectordb/lance_meta.py` when a later write introduces metadata keys
+`core/vectordb/lancedb/meta.py` when a later write introduces metadata keys
 the struct lacks: existing rows gain nulls for the new fields (ChromaDB's
 key-absent state), the schema metadata bag (identity triple, profile
 tags) SHALL survive the growth, and no incoming metadata key SHALL be
@@ -219,7 +219,7 @@ silently dropped.
 ### Requirement: LanceDB reads SHALL use bounded scanner pages
 
 The store SHALL implement `iter_metadatas`, `iter_documents`, and
-`fetch_all` over LanceDB's scanner in `core/vectordb/lance_paged.py`, using
+`fetch_all` over LanceDB's scanner in `core/vectordb/lancedb/paged.py`, using
 bounded pages for the iterators. The BM25 sparse retriever SHALL read
 through `iter_documents` unchanged, and the process-local generation counter
 SHALL advance on every write, row delete, and collection drop so the
@@ -345,7 +345,7 @@ ingestion or retrieval. The legacy directory SHALL remain untouched.
 lancedb 0.37.x exposes no bind-parameter filter API, and its expression
 objects cannot address the struct sub-fields where user metadata lives
 (verified live; ADR-046). On that engine, a SQL filter string assembled
-by `core/vectordb/lance_filter.py` with engine-owned quoting and
+by `core/vectordb/lancedb/filter.py` with engine-owned quoting and
 fail-closed verification is the sanctioned filter mechanism, for the
 `search_documents` and `answer_documents` paths alike (ADR-058). The
 exception SHALL NOT extend to any other store or code path: any backend
@@ -369,4 +369,3 @@ migrate to it and this exception SHALL lapse.
   objects that can address user metadata sub-fields
 - **THEN** the adapter MUST migrate to that path
 - **AND** the exception recorded in ADR-058 SHALL lapse
-
