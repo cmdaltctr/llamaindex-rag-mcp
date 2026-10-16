@@ -34,7 +34,7 @@ from tests.unit.test_workspace_service_support import (
 
 from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition
 from omrg.core.pipelines import CancellationToken, PipelineResult, RunStatus
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 from omrg.core.workspace import Admission, ArtefactStore, RevisionRecord, RunJob, RunService
 from omrg.engine import Engine
 from omrg.integrations.workspace_sqlite import SCHEMA_MIGRATIONS, SqliteWorkspaceRepository

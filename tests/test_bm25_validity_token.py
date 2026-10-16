@@ -33,7 +33,7 @@ from omrg.core.retrieval.sparse import (
     BM25SparseRetriever,
     reset_fallback_warning_state,
 )
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 _DURABLE_PREFIX = "lancedb-durable-v1"
 
@@ -272,7 +272,7 @@ _WRITER_SCRIPT = textwrap.dedent(
     """
     import sys
     from omrg.core.vectordb.identity import EmbeddingIdentity
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
     uri, collection, phase = sys.argv[1], sys.argv[2], sys.argv[3]
     vector = [1.0] + [0.0] * 383

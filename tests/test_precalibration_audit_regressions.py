@@ -158,8 +158,8 @@ def test_hybrid_dense_threshold_is_not_applied_to_rrf_score(monkeypatch) -> None
 
 def test_each_vector_store_mutation_owns_generation_invalidation() -> None:
     """Chroma and Lance must expose the same store-owned mutation contract."""
-    from omrg.core.vectordb.chroma import ChromaVectorStore
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
     for store_cls in (ChromaVectorStore, LanceVectorStore):
         for method_name in ("write_nodes", "delete_where", "delete_collection"):

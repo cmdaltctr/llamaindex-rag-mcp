@@ -21,7 +21,7 @@ from llama_index.core.embeddings import MockEmbedding
 
 from omrg.core.ingestion import ingest_path_async
 from omrg.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 
 class _UnitNormMockEmbedding(MockEmbedding):

@@ -97,6 +97,40 @@ def test_index_that_references_no_assets_fails(tmp_path: Path) -> None:
     assert "references no ./assets/ files" in problems[0]
 
 
+def test_wheel_with_folder_guides_fails_and_names_each(tmp_path: Path) -> None:
+    members = _complete_members()
+    members["omrg/core/AGENTS.md"] = "# guide"
+    members["omrg/CLAUDE.md"] = "# guide"
+    wheel = _wheel(tmp_path, members)
+
+    problems = check_web_wheel.check_wheel(str(wheel))
+
+    assert problems == [
+        f"{wheel}: contains agent guide omrg/CLAUDE.md",
+        f"{wheel}: contains agent guide omrg/core/AGENTS.md",
+    ]
+    assert check_web_wheel.main([str(wheel)]) == 1
+
+
+def test_folder_guides_are_reported_when_the_web_assets_are_missing(tmp_path: Path) -> None:
+    wheel = _wheel(tmp_path, {"omrg/core/AGENTS.md": "# guide"})
+
+    problems = check_web_wheel.check_wheel(str(wheel))
+
+    assert len(problems) == 2
+    assert any("missing omrg/transports/api/static/index.html" in p for p in problems)
+    assert f"{wheel}: contains agent guide omrg/core/AGENTS.md" in problems
+
+
+def test_only_files_named_exactly_like_a_guide_are_reported(tmp_path: Path) -> None:
+    members = _complete_members()
+    members["omrg/MYAGENTS.md"] = "# not a guide"
+    members["omrg/AGENTS.md.bak"] = "# not a guide"
+    wheel = _wheel(tmp_path, members)
+
+    assert check_web_wheel.check_wheel(str(wheel)) == []
+
+
 def test_main_without_arguments_prints_usage(capsys: pytest.CaptureFixture[str]) -> None:
     assert check_web_wheel.main([]) == 2
     assert "usage:" in capsys.readouterr().err

@@ -22,15 +22,30 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 # records that legitimately cite moved paths.
 _SCAN_PATHS: list[Path] = [
     _REPO_ROOT / "tests" / "TEST_README.md",
+    _REPO_ROOT / "AGENTS.md",
 ]
 _SCAN_DIRS: list[Path] = [
     _REPO_ROOT / "docs" / "guides",
+]
+# Folders that hold a folder guide (``AGENTS.md``); every guide below them is scanned.
+_GUIDE_DIRS: list[Path] = [
+    _REPO_ROOT / "src" / "omrg",
+    _REPO_ROOT / "web" / "src",
+    _REPO_ROOT / "tests",
 ]
 
 # Match src/omrg/...py paths in documentation.  Path components may
 # contain hyphens (e.g. ``providers/llama-cpp.py``) as well as word
 # characters, so the class includes ``-`` alongside ``\w``, ``/``, ``.``.
 _SRC_PATH_RE = re.compile(r"src/omrg/[\w./-]+\.py")
+
+# Short citations start at a package folder and omit the ``src/omrg/`` prefix
+# (``core/vectordb/lancedb/store.py``).  The lookbehind rejects a match that
+# sits inside a longer path.  A placeholder such as ``core/chunking/<name>.py``
+# does not match, because ``<`` is not a path character.
+_SHORT_PATH_RE = re.compile(
+    r"(?<![\w./-])(?:core|transports|integrations|config|daemon)/[\w./-]+\.py"
+)
 
 
 def _scan_files() -> list[Path]:
@@ -39,6 +54,9 @@ def _scan_files() -> list[Path]:
     for dir_path in _SCAN_DIRS:
         if dir_path.is_dir():
             files.extend(sorted(dir_path.rglob("*.md")))
+    for dir_path in _GUIDE_DIRS:
+        if dir_path.is_dir():
+            files.extend(sorted(dir_path.rglob("AGENTS.md")))
     return files
 
 
@@ -47,14 +65,17 @@ def test_documented_src_paths_exist() -> None:
 
     A path either resolves or it does not — there is no judgement and no
     suppression mechanism needed.  A guide that cites a moved file fails
-    this check rather than misleading a contributor.
+    this check rather than misleading a contributor.  Short citations that
+    start at ``core/``, ``transports/``, ``integrations/``, ``config/`` or
+    ``daemon/`` resolve below ``src/omrg/``.
     """
     findings: list[str] = []
     for file_path in _scan_files():
         text = file_path.read_text(encoding="utf-8")
         for lineno, line in enumerate(text.splitlines(), start=1):
-            for match in _SRC_PATH_RE.finditer(line):
-                cited = match.group()
+            cited_paths = [m.group() for m in _SRC_PATH_RE.finditer(line)]
+            cited_paths += [f"src/omrg/{m.group()}" for m in _SHORT_PATH_RE.finditer(line)]
+            for cited in cited_paths:
                 resolved = _REPO_ROOT / cited
                 if not resolved.exists():
                     rel = file_path.relative_to(_REPO_ROOT)

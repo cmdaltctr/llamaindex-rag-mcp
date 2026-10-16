@@ -242,7 +242,7 @@ Two stores sit behind the `VectorStore` ABC (ADR-034): `lancedb`, the
 base-install default, and `chroma`, an explicit optional extra selected with
 `VECTOR_STORE` (ADR-049).
 
-`core/vectordb/chroma.py` is the single module that imports `chromadb` and
+`core/vectordb/chroma/store.py` is the single module that imports `chromadb` and
 the single construction site for both deployments. Local mode builds a
 `PersistentClient` over the resolved persist directory; cloud mode builds
 and validates a `CloudClient`, with a heartbeat round trip so
@@ -251,7 +251,7 @@ Following upstream LlamaIndex's client-construction/VectorStore split, the
 constructed client is injected into `ChromaVectorStore`, which stays
 deployment-agnostic.
 
-`core/vectordb/lancedb.py` is the LanceDB implementation (ADR-046): one
+`core/vectordb/lancedb/store.py` is the LanceDB implementation (ADR-046): one
 `lancedb.connect(uri)` connection backs the store, and each RAG collection
 maps to one LanceDB table. Table creation is lazy — the vector dimension
 locks on first write — and the LlamaIndex adapter is constructed with
@@ -269,25 +269,29 @@ complete map, so existing profile tags are read and merged first. The
 LanceDB store keeps the same triple in each table's durable Arrow schema
 metadata, merged through pylance's `update_schema_metadata`.
 
-Supporting modules keep each store under the 500-line ceiling:
+Each backend has its own folder: `core/vectordb/lancedb/` and
+`core/vectordb/chroma/`. The modules shared by every backend stay at the
+`core/vectordb/` root, and `tests/unit/test_folder_layout.py` fails when
+backend code lands there. Supporting modules keep each store under the
+500-line ceiling:
 
 - `core/vectordb/identity.py` — the `EmbeddingIdentity` type and the
   `IdentityGuardMixin` (stamping plus write/query-path mismatch rejection)
-- `core/vectordb/paged.py` — the `PagedReadMixin` (bounded and bulk
+- `core/vectordb/chroma/paged.py` — the `PagedReadMixin` (bounded and bulk
   collection reads, formerly `chroma_utils.py`)
 - `core/vectordb/naming.py` — deterministic experiment collection names
   (e.g. `exp14-qasper-openrouter-qwen3-8b-liteparse-cs512-co100`)
-- `core/vectordb/lance_meta.py` — the LanceDB table-metadata seam and its
+- `core/vectordb/lancedb/meta.py` — the LanceDB table-metadata seam and its
   identity guard, reusing `identity.py`'s pure helpers, plus the metadata
   struct evolution that grows a table's Arrow struct when later writes
   introduce new metadata keys
-- `core/vectordb/lance_filter.py` — ChromaDB `where` dict → LanceDB filter
+- `core/vectordb/lancedb/filter.py` — ChromaDB `where` dict → LanceDB filter
   translation through the `lancedb.expr` value serialiser; operators are
   null-aware and schema-absent fields fold to constants, preserving
   ChromaDB missing-field semantics across backends
-- `core/vectordb/lance_paged.py` — the LanceDB paged-read mixin (scanner
+- `core/vectordb/lancedb/paged.py` — the LanceDB paged-read mixin (scanner
   pages plus `strip_internal_metadata`)
-- `core/vectordb/lance_fts.py` — the native full-text-search seam: additive
+- `core/vectordb/lancedb/fts.py` — the native full-text-search seam: additive
   FTS index lifecycle, native sparse queries, coverage diagnostics, and the
   capability probe
 - `core/vectordb/validation.py` — the fail-closed embedding write contract
@@ -341,7 +345,7 @@ directory, `{LANCEDB_URI}/{collection_name}.lance`. A regression test pins
 this layout against a real temporary store (`TestNativeLayoutPin`); it
 asserts layout only and says nothing about concurrency. Collection names are
 validated as non-empty single path components at the adapter's table-access
-boundary (`core/vectordb/lance_table_name.py`); Chroma name validation stays
+boundary (`core/vectordb/lancedb/table_name.py`); Chroma name validation stays
 deferred with the per-directory scope. Three layers stay distinct: the
 process-global ingestion mutation lock (`write_lock` in
 `core/ingestion/_state.py`) serialises mutations across all collections
@@ -397,7 +401,7 @@ argument instead of reading a global.
 
 ### A new chunking strategy
 
-1. Write `core/chunking/mystrategy.py`
+1. Write `core/chunking/<name>.py`
 2. Add one line to `core/chunking/registry.py`:
 
 ```python
@@ -428,10 +432,11 @@ default seed of `0` keeps partitions deterministic run to run.
 Implement `VectorStore` from `core/vectordb/base.py`, add one `register()`
 line to `core/vectordb/registry.py`, and let `compose.build_vector_store`
 resolve it by name — never a branch over the name (invariant #10).
-ChromaDB is confined to `core/vectordb/chroma.py`; LanceDB is confined to
-`core/vectordb/lancedb.py` and the filter translator
-`core/vectordb/lance_filter.py`. Contracts fail the build if either
-library is imported anywhere else.
+Put the backend in its own folder (`core/vectordb/<name>/`). ChromaDB is
+confined to `core/vectordb/chroma/store.py` and `core/vectordb/chroma/cloud.py`;
+LanceDB is confined to `core/vectordb/lancedb/store.py`,
+`core/vectordb/lancedb/literal.py` and `core/vectordb/lancedb/fts.py`.
+Contracts fail the build if either library is imported anywhere else.
 
 ### OCR engines and maths routing
 
@@ -660,7 +665,7 @@ Live registry contents, kept in step with the code by contract tests:
   owns the retry budget plus exactly one local fallback.
 - Native sparse retrieval is implemented: `bm25` and `native` are registered
   in `core/retrieval/sparse_registry.py`, the LanceDB FTS lifecycle lives in
-  `core/vectordb/lance_fts.py`, and `auto` resolves at the composition
+  `core/vectordb/lancedb/fts.py`, and `auto` resolves at the composition
   boundary through the store capability probe.
 - Every other current family already uses a registry or a documented policy
   alias or sentinel. No migration was required for this change.
@@ -673,8 +678,8 @@ These are not documentation. They fail the build.
 
 | Rule                                                               | Enforced by                                      |
 | ------------------------------------------------------------------ | ------------------------------------------------ |
-| ChromaDB only in `core/vectordb/chroma.py`                         | `chromadb-confined-to-vectordb`                  |
-| LanceDB only in `core/vectordb/` (`lancedb.py`, `lance_filter.py`) | `lancedb-confined-to-vectordb`                   |
+| ChromaDB only in `core/vectordb/chroma/`                           | `chromadb-confined-to-vectordb`                  |
+| LanceDB only in `core/vectordb/lancedb/`                           | `lancedb-confined-to-vectordb`                   |
 | `config/` never imports business logic                             | `config-is-leaf`                                 |
 | `integrations/` never imports core or transports                   | `integrations-are-leaves`                        |
 | `core/` never imports transports or providers                      | `core-business-avoids-providers-transports`      |

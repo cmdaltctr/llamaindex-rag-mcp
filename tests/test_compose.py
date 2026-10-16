@@ -326,7 +326,7 @@ class TestResolveSparseBackendNative:
     def test_native_with_probe_true_returns_native(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A native request with the probe passing returns native."""
         import omrg.compose as compose
-        import omrg.core.vectordb.lance_fts as lance_fts
+        import omrg.core.vectordb.lancedb.fts as lance_fts
 
         monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: True)
         assert compose.resolve_sparse_backend(self._settings("native")) == "native"
@@ -340,7 +340,7 @@ class TestResolveSparseBackendNative:
         import logging
 
         import omrg.compose as compose
-        import omrg.core.vectordb.lance_fts as lance_fts
+        import omrg.core.vectordb.lancedb.fts as lance_fts
 
         monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: False)
         with caplog.at_level(logging.WARNING, logger="omrg.compose"):
@@ -742,7 +742,7 @@ def test_build_vector_store_chroma_delegates_to_factory() -> None:
     """build_vector_store with chroma delegates to build_chroma_vector_store."""
     from omrg.compose import build_vector_store
 
-    with patch("omrg.core.vectordb.chroma.build_chroma_vector_store") as mock_build:
+    with patch("omrg.core.vectordb.chroma.store.build_chroma_vector_store") as mock_build:
         build_vector_store(_settings(vector_store="chroma"))
         mock_build.assert_called_once()
 
@@ -757,7 +757,7 @@ def test_build_vector_store_lancedb_constructs_store(tmp_path: Path) -> None:
     ``test_vectordb_registry.py``).
     """
     from omrg.compose import build_vector_store
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
     uri = str(tmp_path / "lancedb")
     settings = _settings(
@@ -1119,7 +1119,7 @@ def test_build_vector_store_none_delegates_to_get_settings() -> None:
     controlled = _settings(vector_store="chroma")
     with (
         patch("omrg.compose.get_settings", return_value=controlled) as mock_gs,
-        patch("omrg.core.vectordb.chroma.build_chroma_vector_store"),
+        patch("omrg.core.vectordb.chroma.store.build_chroma_vector_store"),
     ):
         build_vector_store(None)
     mock_gs.assert_called_once()

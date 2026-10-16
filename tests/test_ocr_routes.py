@@ -432,7 +432,7 @@ def test_engine_close_stops_both_route_processes(
     """The engine owns the route pair; close() stops every started route."""
     from unittest.mock import MagicMock
 
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
     from omrg.engine import Engine
 
     make_engine(tmp_path, "dots-mocr", "dots_mocr")

@@ -1,7 +1,7 @@
 /**
  * Typed client for the notebook plugin and editor routes.
  *
- * Shapes follow `src/omrg/transports/api/routes_plugins.py`. OMRG installs
+ * Shapes follow `src/omrg/transports/api/routes/plugins.py`. OMRG installs
  * and updates nothing: these calls register, recheck, unregister, open and
  * stop only. The editor token arrives once in the open response
  * (`token_delivery.method = "response_body_once"`) and never in a URL.

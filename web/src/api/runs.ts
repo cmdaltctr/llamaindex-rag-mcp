@@ -1,8 +1,8 @@
 /**
  * Typed client for the run routes of the local `/v1` API.
  *
- * Shapes follow `src/omrg/transports/api/routes_runs.py` and
- * `routes_inspect.py`. Every function takes the `ApiClient` first.
+ * Shapes follow `src/omrg/transports/api/routes/runs.py` and
+ * `inspection.py`. Every function takes the `ApiClient` first.
  */
 import { ApiError, type ApiClient, type CallOptions } from "./client";
 

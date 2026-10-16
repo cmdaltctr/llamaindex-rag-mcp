@@ -243,7 +243,7 @@ def test_bearer_credentials_cannot_run_destructive_actions(setup: dict) -> None:
 
 def test_destructive_scope_is_session_only() -> None:
     """``manage`` guards deletion and profile changes; no bearer may hold it."""
-    from omrg.transports.api import routes_admin
+    from omrg.transports.api.routes import admin as routes_admin
     from omrg.transports.api.security import BEARER_SCOPES, SESSION_SCOPES, AccessPolicy
 
     assert "manage" in SESSION_SCOPES and "manage" not in BEARER_SCOPES

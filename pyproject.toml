@@ -151,6 +151,9 @@ packages = ["src/omrg"]
 # that has not built them; scripts/check_web_wheel.py fails release
 # preparation when a wheel lacks them.
 artifacts = ["src/omrg/transports/api/static/**"]
+# Folder guides for agents (AGENTS.md and its CLAUDE.md link) are for source
+# checkouts only; a pattern without a slash matches at any depth.
+exclude = ["AGENTS.md", "CLAUDE.md"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/omrg/config/defaults.yaml" = "omrg/config/defaults.yaml"
@@ -521,8 +524,8 @@ type = "forbidden"
 source_modules = ["omrg"]
 forbidden_modules = ["chromadb"]
 ignore_imports = [
-    "omrg.core.vectordb.chroma -> chromadb",
-    "omrg.core.vectordb.chroma_cloud -> chromadb",
+    "omrg.core.vectordb.chroma.store -> chromadb",
+    "omrg.core.vectordb.chroma.cloud -> chromadb",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -536,9 +539,9 @@ type = "forbidden"
 source_modules = ["omrg"]
 forbidden_modules = ["lancedb"]
 ignore_imports = [
-    "omrg.core.vectordb.lancedb -> lancedb",
-    "omrg.core.vectordb.lance_literal -> lancedb",
-    "omrg.core.vectordb.lance_fts -> lancedb",
+    "omrg.core.vectordb.lancedb.store -> lancedb",
+    "omrg.core.vectordb.lancedb.literal -> lancedb",
+    "omrg.core.vectordb.lancedb.fts -> lancedb",
 ]
 unmatched_ignore_imports_alerting = "error"
 

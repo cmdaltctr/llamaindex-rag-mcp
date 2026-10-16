@@ -196,7 +196,7 @@ own table directory, `{LANCEDB_URI}/{collection_name}.lance`. A collection
 name must be a non-empty single path component. Separators, control
 characters, `.`, `..`, and absolute paths are rejected. Validation runs
 before any table access touches
-disk (`core/vectordb/lance_table_name.py`). Chroma (the optional extra) keeps
+disk (`core/vectordb/lancedb/table_name.py`). Chroma (the optional extra) keeps
 collection names as logical identifiers inside one shared persist directory
 (`CHROMA_PERSIST_DIR`). Per-collection Chroma persist directories, and Chroma
 name validation, are deferred to a future change.

@@ -31,7 +31,7 @@ from omrg.core.ingestion.source_state import (  # noqa: E402
 )
 from omrg.core.vectordb.base import VectorStore  # noqa: E402
 from omrg.core.vectordb.identity import EmbeddingIdentity  # noqa: E402
-from omrg.core.vectordb.lancedb import LanceVectorStore  # noqa: E402
+from omrg.core.vectordb.lancedb.store import LanceVectorStore  # noqa: E402
 from omrg.engine import Engine  # noqa: E402
 from omrg.transports.api.app import create_app  # noqa: E402
 from omrg.transports.api.lifespan import WebConfig  # noqa: E402

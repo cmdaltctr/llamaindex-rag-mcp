@@ -72,7 +72,7 @@ def test_engine_constructs_directly_without_runtime_setup(tmp_path: Path) -> Non
     No ``ensure_runtime_setup()`` call is needed — the engine owns its
     store, embedder and settings.
     """
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
     from omrg.engine import Engine
 
     settings = EffectiveSettings(
@@ -106,7 +106,7 @@ def test_engine_from_environment_delegates_to_build_engine() -> None:
 
 def test_two_engines_have_independent_query_caches(tmp_path: Path) -> None:
     """Two engines do not share query-embedding caches."""
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
     from omrg.engine import Engine
 
     settings = EffectiveSettings(
@@ -129,7 +129,7 @@ def test_two_engines_have_independent_query_caches(tmp_path: Path) -> None:
 def test_engine_close_evicts_only_own_bm25_entries(tmp_path: Path) -> None:
     """Closing one engine evicts only its own BM25 cache entries."""
     from omrg.core.retrieval.sparse import BM25SparseRetriever
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
     from omrg.engine import Engine
 
     settings = EffectiveSettings(
@@ -162,7 +162,7 @@ def test_engine_close_evicts_only_own_bm25_entries(tmp_path: Path) -> None:
 
 def test_engine_close_is_idempotent(tmp_path: Path) -> None:
     """Calling close() twice is safe."""
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
     from omrg.engine import Engine
 
     settings = EffectiveSettings(

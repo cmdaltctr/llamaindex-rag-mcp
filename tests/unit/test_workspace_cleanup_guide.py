@@ -91,9 +91,17 @@ def test_layout_table_matches_workspace_layout(tmp_path: Path) -> None:
     assert backup == [f"{layout.records.name}.v<old>-to-v<new>.<time>.bak"]
 
 
+def _api_files() -> list[Path]:
+    return sorted((REPO / "src/omrg/transports/api").rglob("*.py"))
+
+
 def _api_source() -> str:
-    files = sorted((REPO / "src/omrg/transports/api").glob("*.py"))
-    return "\n".join(path.read_text(encoding="utf-8") for path in files)
+    return "\n".join(path.read_text(encoding="utf-8") for path in _api_files())
+
+
+def test_api_source_reads_the_route_modules() -> None:
+    """The scan must reach ``api/routes/``, or the checks below read nothing there."""
+    assert any(path.parent.name == "routes" for path in _api_files())
 
 
 def test_layout_names_match_the_web_wiring(tmp_path: Path) -> None:

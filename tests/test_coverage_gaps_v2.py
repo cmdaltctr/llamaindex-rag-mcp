@@ -205,7 +205,7 @@ class TestCapabilityProbes:
     def test_bm25_needs_no_probe(self, monkeypatch) -> None:
         """An explicit bm25 selection short-circuits before probing."""
         import omrg.compose as compose
-        import omrg.core.vectordb.lance_fts as lance_fts
+        import omrg.core.vectordb.lancedb.fts as lance_fts
 
         def _boom():  # pragma: no cover - must not run
             raise AssertionError("probe ran for an explicit bm25 selection")
@@ -216,7 +216,7 @@ class TestCapabilityProbes:
     @pytest.mark.parametrize("available, expected", [(True, "native"), (False, "bm25")])
     def test_auto_follows_the_probe(self, monkeypatch, available, expected) -> None:
         import omrg.compose as compose
-        import omrg.core.vectordb.lance_fts as lance_fts
+        import omrg.core.vectordb.lancedb.fts as lance_fts
 
         monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: available)
         assert compose.resolve_sparse_backend(self._settings("auto")) == expected

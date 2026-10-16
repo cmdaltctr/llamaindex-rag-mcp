@@ -123,7 +123,7 @@ def test_chroma_store_keeps_explicit_unsupported_response() -> None:
     pytest.importorskip(
         "chromadb", reason="chroma extra not installed; runs in the chroma-extra CI job"
     )
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     store = ChromaVectorStore()
     with pytest.raises(NotImplementedError, match="does not support native sparse"):
@@ -135,7 +135,7 @@ def test_chroma_store_keeps_explicit_unsupported_response() -> None:
 
 def _lance_store(tmp_path, name: str = "fts"):
     """Return a LanceVectorStore over an isolated tmp_path database."""
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
     return LanceVectorStore(uri=str(tmp_path / name))
 
@@ -297,7 +297,7 @@ class TestFTSLifecycle:
 
     def test_index_creation_failure_propagates_for_fallback(self, tmp_path, monkeypatch) -> None:
         """First-use creation failure raises (the BM25 fallback signal)."""
-        from omrg.core.vectordb import lance_fts
+        from omrg.core.vectordb.lancedb import fts as lance_fts
 
         store = _lance_store(tmp_path)
         _write_rows(store, "docs", _CORPUS)
@@ -311,7 +311,7 @@ class TestFTSLifecycle:
 
     def test_refresh_failure_propagates_for_fallback(self, tmp_path, monkeypatch) -> None:
         """Refresh failure on a stale index raises (lifecycle fallback)."""
-        from omrg.core.vectordb import lance_fts
+        from omrg.core.vectordb.lancedb import fts as lance_fts
 
         store = _lance_store(tmp_path)
         _write_rows(store, "docs", _CORPUS)
@@ -330,7 +330,7 @@ class TestNativeFTSProbe:
     """The real capability probe used by composition (task 3.2 input)."""
 
     def test_probe_true_on_locked_runtime(self) -> None:
-        from omrg.core.vectordb.lance_fts import probe_native_fts
+        from omrg.core.vectordb.lancedb.fts import probe_native_fts
 
         assert probe_native_fts() is True
 
@@ -338,7 +338,7 @@ class TestNativeFTSProbe:
         """A runtime without the FTS surface probes as unavailable."""
         import sys
 
-        from omrg.core.vectordb.lance_fts import probe_native_fts
+        from omrg.core.vectordb.lancedb.fts import probe_native_fts
 
         # A None module entry makes `from lancedb.index import FTS`
         # raise ImportError inside the probe, which must report False.
@@ -458,7 +458,7 @@ class TestHybridNativePipeline:
         def _no_refresh(_table):  # keep the stale marker durable
             pass
 
-        from omrg.core.vectordb import lance_fts
+        from omrg.core.vectordb.lancedb import fts as lance_fts
 
         monkeypatch.setattr(lance_fts, "refresh_fts_index", _no_refresh)
         with caplog.at_level(logging.WARNING):
@@ -687,7 +687,7 @@ class TestNativeRetrieverEdges:
         it does not own.
         """
         from omrg.core.vectordb.identity import EmbeddingIdentity
-        from omrg.core.vectordb.lancedb import LanceVectorStore
+        from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
         uri = str(tmp_path / "identity-guard")
         writer = LanceVectorStore(

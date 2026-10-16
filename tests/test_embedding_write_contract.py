@@ -37,7 +37,7 @@ from llama_index.core.schema import BaseNode, TextNode
 
 from omrg.core.vectordb.base import VectorStore
 from omrg.core.vectordb.identity import EmbeddingIdentity
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 _CHROMA_EXTRA = find_spec("chromadb") is not None
 
@@ -50,7 +50,7 @@ def _store_class(backend: str) -> type[VectorStore]:
     """Resolve the concrete class lazily (chromadb may be absent)."""
     if backend == "lancedb":
         return LanceVectorStore
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     return ChromaVectorStore
 

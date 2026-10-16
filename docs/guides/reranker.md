@@ -104,7 +104,7 @@ Hybrid search fuses two rankings: dense embedding similarity and a sparse keywor
 | `bm25` (default) | In-process BM25, cached per store and collection, invalidated on every mutation | Base install, backend-agnostic |
 | `native` | LanceDB native full-text search over the stored `text` column | LanceDB only |
 
-The registry (`core/retrieval/sparse_registry.py`) maps backend names to implementations; adding a backend is one new file plus one `register()` line. `auto` is deliberately not a backend: the composition root resolves it before query time through the selected store's capability metadata plus a real native-FTS probe (`omrg.core.vectordb.lance_fts:probe_native_fts`). On LanceDB `auto` resolves to `native`. Chroma declares no native capability, so `auto` resolves to `bm25` there. An unknown concrete name fails startup listing `auto` plus the registered names.
+The registry (`core/retrieval/sparse_registry.py`) maps backend names to implementations; adding a backend is one new file plus one `register()` line. `auto` is deliberately not a backend: the composition root resolves it before query time through the selected store's capability metadata plus a real native-FTS probe (`omrg.core.vectordb.lancedb.fts:probe_native_fts`). On LanceDB `auto` resolves to `native`. Chroma declares no native capability, so `auto` resolves to `bm25` there. An unknown concrete name fails startup listing `auto` plus the registered names.
 
 Scores are not comparable across backends. Native rows carry `score_kind` `native_fts_v1`, the engine's raw higher-is-better score. Only rank order feeds RRF, so the scale difference never affects fusion.
 
@@ -128,7 +128,7 @@ Selecting `native` on a store without the capability logs a WARNING at compositi
 
 ### FTS lifecycle (LanceDB)
 
-The native path owns one full-text-search index per collection. The contract lives in `core/vectordb/lance_fts.py` and is pinned by `tests/test_lancedb_native_fts_contract.py`:
+The native path owns one full-text-search index per collection. The contract lives in `core/vectordb/lancedb/fts.py` and is pinned by `tests/test_lancedb_native_fts_contract.py`:
 
 - **Creation** is additive and triggered on the first native query, indexing existing rows synchronously. A collection without an index keeps working through every other operation.
 - **Staleness** is a durable property: writes by any process show as `num_unindexed_rows > 0` in `list_indices()` statistics. The process-local generation counter is not used for this. BM25 cache validity uses the store's durable data version where one exists ([ADR-056](../adr/056-lineage-navigation-replaces-a-document-store.md)); the process-local counter is the fallback.

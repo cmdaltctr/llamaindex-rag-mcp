@@ -46,7 +46,7 @@ For tests or multi-engine setups, pass already-composed dependencies:
 
 ```python
 from omrg import Engine, EffectiveSettings
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 settings = EffectiveSettings(...)
 store = LanceVectorStore(uri="/path/to/lancedb")
@@ -54,6 +54,8 @@ engine = Engine(settings, store=store, embed_model=my_embedder)
 ```
 
 The constructor accepts the dependencies and constructs nothing itself.
+Backend classes such as `LanceVectorStore` are internal and can move in any
+release. The public API is `omrg.Engine`.
 See [Configuration](configuration.md) for the full settings schema.
 
 ---
@@ -118,14 +120,15 @@ catalogue and the validation errors, see [Pipeline graphs](pipelines.md).
 Start from a canonical template. `pipeline_templates(engine)` returns the
 `ingestion`, `search` and `answer` graphs, shaped for this engine:
 
-> **Advanced imports.** The examples below import two names that are not
-> in `omrg.__all__`. They are internal and can change without a major
+> **Advanced imports.** The examples in this guide import three names that
+> are not in `omrg.__all__`. They are internal and can change without a major
 > version:
 >
 > - `pipeline_templates` from `omrg.compose_pipelines` (template helper).
 > - `RunCancellation` from `omrg.core.pipelines` (cancellation token).
+> - `LanceVectorStore` from `omrg.core.vectordb.lancedb.store` (vector store).
 >
-> Neither one is necessary. You can send your own `PipelineDefinition`
+> The first two are not necessary. You can send your own `PipelineDefinition`
 > to `Engine.run_pipeline()`, and the `cancellation` argument is optional.
 
 <!-- pipeline-python: library-run -->
@@ -181,7 +184,7 @@ Construct two engines with different stores and embedders. They do not share sta
 
 ```python
 from omrg import Engine, EffectiveSettings
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 docs = Engine(
     EffectiveSettings(...), store=LanceVectorStore(uri="./docs.lance"), embed_model=doc_embedder

@@ -41,7 +41,7 @@ notebook plugin.
 | `lifespan.py` | Owns one Engine and the run service; drains them at shutdown |
 | `security.py`, `middleware.py` | Session, bearer credentials, scopes, Host and Origin checks, redaction |
 | `grants.py`, `uploads.py` | Approved roots and managed uploads |
-| `routes*.py` | Route groups. They validate, delegate and format only |
+| `routes/` | Route groups, one module each. They validate, delegate and format only |
 | `integrations_catalogue.py` | The integration catalogue and its availability probes (`GET /v1/integrations`) |
 | `connection_probe.py` | The one model-list request of a provider test (`POST /v1/connections/{provider}/test`) |
 | `log_buffer.py` | The in-memory server log (last 1,000 records, redacted); `omrg web` attaches it |

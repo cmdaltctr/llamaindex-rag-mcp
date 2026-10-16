@@ -69,7 +69,11 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # cases and three collection-list store cases add 5 executed tests (5142 -> 5147).
 # Re-baselined at add-collection-display-name: the display name round-trip case,
 # 16 route cases and one OpenAPI case add 18 executed tests (5147 -> 5165).
-_BASE_EXECUTED = 5165
+# Re-baselined at organise-backend-folders (2026-10-16): the folder-layout (11)
+# and folder-guide (41) suites, 9 registry-string and import-detector cases, 3
+# wheel-guide cases, 1 route-scan case and 3 contract-coverage cases for the new
+# packages add 68 executed tests (5165 -> 5233). No test was removed.
+_BASE_EXECUTED = 5233
 # Re-baselined at add-web-allow-origin-option: the origin parser suite adds 23
 # executed tests that need no fastapi, and the policy, MCP and launch cases add
 # 10 that do (5109 -> 5142; see _WEB_EXTRA_CASES below).

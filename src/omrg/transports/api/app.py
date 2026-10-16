@@ -19,20 +19,20 @@ from .lifespan import RunServiceFactory, WebConfig, build_lifespan, default_engi
 from .log_buffer import LogBuffer
 from .mcp_http import build_mcp_http
 from .middleware import GuardMiddleware
-from .routes import router as foundation_router
-from .routes_admin import router as admin_router
-from .routes_connections import router as connections_router
-from .routes_documents import router as documents_router
-from .routes_experiments import router as experiments_router
-from .routes_graphs import router as graphs_router
-from .routes_inspect import router as inspect_router
-from .routes_integrations import router as integrations_router
-from .routes_jobs import router as jobs_router
-from .routes_logs import router as logs_router
-from .routes_mcp import router as mcp_router
-from .routes_plugins import router as plugins_router
-from .routes_runs import router as runs_router
-from .routes_templates import router as templates_router
+from .routes.admin import router as admin_router
+from .routes.connections import router as connections_router
+from .routes.documents import router as documents_router
+from .routes.experiments import router as experiments_router
+from .routes.foundation import router as foundation_router
+from .routes.graphs import router as graphs_router
+from .routes.inspection import router as inspect_router
+from .routes.integrations import router as integrations_router
+from .routes.jobs import router as jobs_router
+from .routes.logs import router as logs_router
+from .routes.mcp import router as mcp_router
+from .routes.plugins import router as plugins_router
+from .routes.runs import router as runs_router
+from .routes.templates import router as templates_router
 from .security import AccessPolicy, validate_bind_host
 from .static import FrontendFallback
 
