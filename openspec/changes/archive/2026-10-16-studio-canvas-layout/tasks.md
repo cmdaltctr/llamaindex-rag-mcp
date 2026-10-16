@@ -44,5 +44,5 @@ Work in the worktree `llamaindex-rag-mcp-feat-studio-canvas-layout` on branch `f
 
 - [x] 7.1 Run `openspec validate studio-canvas-layout --strict` and `openspec validate --all --strict`. Verify: both exit 0.
 - [x] 7.2 Run `./scripts/local_ci.sh` in the worktree. Verify: exit 0. Note that CI also runs `floors` and `extras` jobs that this script does not cover.
-- [ ] 7.3 Commit with Conventional Commits (`feat(web): …`) on `feat/studio-canvas-layout` and merge into `integration/core-web` after the user confirms the preview. Verify: `git log integration/core-web` shows the merge and the worktree is clean.
-- [ ] 7.4 Before `git worktree remove`, copy any gitignored artefacts worth keeping to `integration/core-web` (Critical Gotcha 15). Never copy `.env`. Verify: the copy list is checked, then the worktree is removed.
+- [x] 7.3 Commit with Conventional Commits (`feat(web): …`) on `feat/studio-canvas-layout` and merge into `integration/core-web` after the user confirms the preview. Verify: `git log integration/core-web` shows the merge and the worktree is clean.
+- [x] 7.4 Before `git worktree remove`, copy any gitignored artefacts worth keeping to `integration/core-web` (Critical Gotcha 15). Never copy `.env`. Verify: the copy list is checked, then the worktree is removed.
