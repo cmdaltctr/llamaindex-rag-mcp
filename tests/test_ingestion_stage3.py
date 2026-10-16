@@ -18,7 +18,7 @@ from omrg.core.ingestion import ingest_path_async
 from omrg.core.ingestion.metrics import sample_peak_rss_bytes
 from omrg.core.settings import EffectiveSettings, MetadataBlock
 from omrg.core.vectordb import get_default_store, set_default_store
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 _COLLECTION = "stage3_ingestion"
 

@@ -3,7 +3,7 @@
 One ``lancedb.connect(uri)`` connection backs the store; each RAG
 "collection" maps to one LanceDB table (``{uri}/{name}.lance``) whose
 name is validated as a single safe path component before table access
-can touch disk (:func:`.lance_table_name.validate_table_name`).
+can touch disk (:func:`.table_name.validate_table_name`).
 Writes go through a throwaway LlamaIndex ``LanceDBVectorStore``
 adapter per table with ``mode="create"`` so a fresh adapter can never
 overwrite a populated table (the default mode is ``"overwrite"``).
@@ -16,12 +16,12 @@ listings match ChromaDB's create-on-demand semantics.
 Collection metadata (profile tags and the embedding-identity triple)
 lives in the table's durable Arrow schema metadata, written through
 pylance's ``update_schema_metadata`` (read-merge-write); that seam
-and the identity guards live in :mod:`.lance_meta`.  Schema metadata
+and the identity guards live in :mod:`.meta`.  Schema metadata
 is the durable key-value bag that survives reconnection and adapter
 writes (verified against lancedb 0.37.1 / pylance 10.0.0).
 
 This is one of the few modules that imports ``lancedb`` directly
-(alongside ``lance_filter.py`` and ``lance_fts.py``); all pipeline
+(alongside ``filter.py`` and ``fts.py``); all pipeline
 code goes through the ABC.
 """
 
@@ -40,18 +40,18 @@ from llama_index.vector_stores.lancedb import (
     LanceDBVectorStore as _LlamaLanceVectorStore,
 )
 
-from .base import VectorStore
-from .identity import EmbeddingIdentity, embedding_identity_from_settings
-from .lance_epoch import LanceDatasetEpochMixin
-from .lance_filter import translate_where
-from .lance_fts import LanceFTSMixin
-from .lance_meta import LanceTableMetadataMixin, infer_arrow_type, metadata_field_names
-from .lance_node_schema import evolve_for_nodes
-from .lance_paged import LancePagedReadMixin, strip_internal_metadata
-from .lance_rows import rows_to_arrow, upsert_schema
-from .lance_table_name import validate_table_name
-from .score import DENSE_SCORE_KIND, canonical_score_from_l2
-from .validation import materialise_and_validate_node_embeddings, validate_embedding_batch
+from ..base import VectorStore
+from ..identity import EmbeddingIdentity, embedding_identity_from_settings
+from ..score import DENSE_SCORE_KIND, canonical_score_from_l2
+from ..validation import materialise_and_validate_node_embeddings, validate_embedding_batch
+from .epoch import LanceDatasetEpochMixin
+from .filter import translate_where
+from .fts import LanceFTSMixin
+from .meta import LanceTableMetadataMixin, infer_arrow_type, metadata_field_names
+from .node_schema import evolve_for_nodes
+from .paged import LancePagedReadMixin, strip_internal_metadata
+from .rows import rows_to_arrow, upsert_schema
+from .table_name import validate_table_name
 
 __all__ = ["LanceVectorStore", "build_vector_store_from_settings"]
 

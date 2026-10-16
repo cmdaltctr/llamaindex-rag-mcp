@@ -31,7 +31,7 @@ from omrg.core.ingestion.loader import list_documents
 from omrg.core.ingestion.replacement import IngestionStageError, replace_source_nodes_async
 from omrg.core.ingestion.writer import preview_delete, remove_document
 from omrg.core.vectordb import get_default_store, set_default_store
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 _COLLECTION = "lineage_store"
 

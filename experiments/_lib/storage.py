@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from omrg.config import Settings
-from omrg.core.vectordb.chroma import (
+from omrg.core.vectordb.chroma.store import (
     EmbeddingIdentity,
     build_chroma_vector_store,
 )
@@ -112,7 +112,7 @@ class ExperimentStorageConfig:
         if self.backend == "lancedb":
             if self.mode == "cloud":
                 raise ValueError("lancedb backend has no cloud mode; use chroma or local")
-            from omrg.core.vectordb.lancedb import LanceVectorStore
+            from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
             return LanceVectorStore(
                 uri=self.persist_dir or settings.lancedb_uri,

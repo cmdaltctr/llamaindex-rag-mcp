@@ -151,7 +151,7 @@ def test_engines_resolve_same_named_collection_from_their_own_stores(
     The profile tag is read from the ENGINE's store, never from the
     process-default store (which may belong to another engine).
     """
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
     from omrg.engine import Engine
 
     base = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
@@ -180,7 +180,7 @@ def test_engines_resolve_same_named_collection_from_their_own_stores(
 
 def test_engine_search_propagates_invalid_profile_tag(tmp_path: Path) -> None:
     """An invalid tag on a collection surfaces from engine operations."""
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
     from omrg.engine import Engine
 
     base = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))

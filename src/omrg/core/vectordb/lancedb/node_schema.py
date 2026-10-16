@@ -6,8 +6,8 @@ from typing import Any
 
 import pyarrow as pa
 
-from .lance_meta import infer_arrow_type, metadata_field_names
-from .lance_paged import INTERNAL_METADATA_KEYS
+from .meta import infer_arrow_type, metadata_field_names
+from .paged import INTERNAL_METADATA_KEYS
 
 
 def evolve_for_nodes(store: Any, collection_name: str, nodes: list[Any]) -> None:

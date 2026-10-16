@@ -1,8 +1,8 @@
 """Paged collection reads and row-ID deletion for the Chroma store.
 
-Extracted from ``chroma.py`` to respect the 500-line file ceiling. These
+Extracted from ``store.py`` to respect the 500-line file ceiling. These
 methods operate on duck-typed Chroma collection handles, keeping the direct
-``chromadb`` import confined to ``chroma.py``.
+``chromadb`` import confined to ``store.py``.
 """
 
 from __future__ import annotations

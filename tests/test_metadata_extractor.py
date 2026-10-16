@@ -593,7 +593,7 @@ class TestHybridCategoryTaxonomy:
         )
         import chromadb
 
-        from omrg.core.vectordb.chroma import ChromaVectorStore
+        from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
         client = chromadb.PersistentClient(path="ignored")
         coll = client.get_or_create_collection("test_taxonomy")
@@ -1254,7 +1254,7 @@ class TestCoverageGaps:
 
         import omrg.config as _config
         from omrg.core.settings import EffectiveSettings, set_default_effective_settings
-        from omrg.core.vectordb.chroma import ChromaVectorStore
+        from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
         set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
 

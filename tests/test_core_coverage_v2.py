@@ -98,7 +98,7 @@ class TestFetchAll:
     """The bulk read added for the document graph (task 6.1)."""
 
     def _store(self, collection):
-        from omrg.core.vectordb.chroma import ChromaVectorStore
+        from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
         store = ChromaVectorStore(persist_dir="/tmp/x")
         store._get_collection = MagicMock(return_value=collection)
@@ -118,7 +118,7 @@ class TestFetchAll:
         assert self._store(collection).fetch_all("documents", ["metadatas"]) is None
 
     def test_missing_collection_returns_none(self) -> None:
-        from omrg.core.vectordb.chroma import ChromaVectorStore
+        from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
         store = ChromaVectorStore(persist_dir="/tmp/x")
         store._get_collection = MagicMock(side_effect=Exception("no such collection"))

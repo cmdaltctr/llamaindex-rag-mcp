@@ -38,7 +38,7 @@ class CollectionView:
     codebase that bypassed the vector-store abstraction (ADR-034). This view
     keeps the graph code's ``.get(include=[...])`` shape while routing the
     read through ``VectorStore.fetch_all``, so ChromaDB stays confined to
-    ``core/vectordb/chroma.py``.
+    ``core/vectordb/chroma/store.py``.
     """
 
     def __init__(self, store, collection_name: str = "documents") -> None:

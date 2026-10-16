@@ -1,6 +1,6 @@
 """Engine literal serialisation and fail-closed verification.
 
-The LanceDB filter adapter (``lance_filter.py``) serialises every VALUE
+The LanceDB filter adapter (``filter.py``) serialises every VALUE
 through the engine's own literal builder — ``lit(value).to_sql()`` —
 whose unparser performs the engine's quoting.  The engine's unparser is
 treated as untrusted: every fragment is checked against a closed form

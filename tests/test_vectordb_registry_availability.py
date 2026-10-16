@@ -236,7 +236,7 @@ def test_sparse_capability_follows_selected_store(
     # a warning and never loads chromadb.
     _scrub_chroma_from_sys_modules(monkeypatch)
     assert _chroma_modules_loaded() == []
-    import omrg.core.vectordb.lance_fts as lance_fts
+    import omrg.core.vectordb.lancedb.fts as lance_fts
 
     monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: False)
     native_settings = Settings(

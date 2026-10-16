@@ -364,7 +364,7 @@ def _engine(tmp_path, name: str, settings: EffectiveSettings) -> Any:
     from llama_index.core.embeddings import MockEmbedding
 
     from omrg.core.profiles.resolver import ProfileResolver
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
     from omrg.engine import Engine
 
     store = LanceVectorStore(uri=str(tmp_path / f"store-{name}"), scan_page_size=1)

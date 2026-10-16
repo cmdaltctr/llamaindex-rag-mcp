@@ -2,8 +2,8 @@
 
 Seam module owning the FTS lifecycle and native sparse query
 execution (``implement-native-sparse-backend-strategy``, tasks
-2.1-2.4) so ``lancedb.py`` stays inside the 500-line ceiling — the
-``lance_rows``/``lance_filter``/``lance_meta`` seam precedent.
+2.1-2.4) so ``store.py`` stays inside the 500-line ceiling — the
+``rows``/``filter``/``meta`` seam precedent.
 
 Lifecycle contract (feasibility-verified on lancedb 0.37.1 /
 pylance 10.0.0; see the change's ``feasibility-notes.md`` and the
@@ -42,10 +42,10 @@ from typing import Any
 
 from lancedb.index import FTS
 
-from .lance_filter import translate_where
-from .lance_meta import metadata_field_names
-from .lance_paged import strip_internal_metadata
-from .score import NATIVE_SPARSE_SCORE_KIND
+from ..score import NATIVE_SPARSE_SCORE_KIND
+from .filter import translate_where
+from .meta import metadata_field_names
+from .paged import strip_internal_metadata
 
 logger = logging.getLogger(__name__)
 

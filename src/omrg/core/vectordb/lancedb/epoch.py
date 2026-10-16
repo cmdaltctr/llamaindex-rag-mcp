@@ -12,7 +12,7 @@ The durable token therefore combines two components:
 
 * ``omrg_dataset_epoch`` — an OMRG-owned random UUID stored in the
   *current* table schema metadata through the existing
-  :mod:`.lance_meta` seam.  One epoch identifies one incarnation of
+  :mod:`.meta` seam.  One epoch identifies one incarnation of
   the dataset: table creation, delete/recreate and every
   ``mode="overwrite"`` rebuild mint a fresh one; ordinary row
   mutations preserve it; version-history cleanup and optimisation
@@ -44,7 +44,7 @@ import uuid
 from collections.abc import Callable
 from typing import Any
 
-from .lance_meta import OMRG_EPOCH_KEY, read_dataset_epoch
+from .meta import OMRG_EPOCH_KEY, read_dataset_epoch
 
 __all__ = [
     "OMRG_EPOCH_KEY",
@@ -99,7 +99,7 @@ class LanceDatasetEpochMixin:
     The concrete store supplies ``_open_table`` (which re-opens the
     table on every call — the refresh path that keeps long-lived
     readers current) and ``_write_table_metadata`` (the guarded
-    read-merge-write seam from :class:`.lance_meta.LanceTableMetadataMixin`).
+    read-merge-write seam from :class:`.meta.LanceTableMetadataMixin`).
     """
 
     # Supplied by the concrete store.
@@ -156,7 +156,7 @@ class LanceDatasetEpochMixin:
         """Return a schema-metadata update minting a new dataset epoch.
 
         Used at table creation and by every ``mode="overwrite"``
-        rebuild (:mod:`.lance_meta` bakes it into the rewritten
+        rebuild (:mod:`.meta` bakes it into the rewritten
         schema), so one epoch always identifies exactly one
         incarnation of the dataset.
 

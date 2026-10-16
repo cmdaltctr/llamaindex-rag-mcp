@@ -15,7 +15,7 @@ The concrete store supplies ``_identity``, ``_pending_metadata``,
 ``_open_table`` and ``_get_connection``; this module owns the
 read-merge-write and mismatch-rejection logic, plus the metadata
 struct evolution below.  The store also supplies the dataset-epoch
-helpers from :mod:`.lance_epoch` (``ensure_dataset_epoch`` and
+helpers from :mod:`.epoch` (``ensure_dataset_epoch`` and
 ``fresh_epoch_metadata``): every ``mode="overwrite"`` rebuild in
 this module bakes a freshly minted epoch into the rewritten schema,
 so one epoch always identifies one incarnation of the dataset.
@@ -39,7 +39,7 @@ from typing import Any
 
 import pyarrow as pa
 
-from .identity import (
+from ..identity import (
     IDENTITY_INDEX_KEY,
     IDENTITY_MODEL_KEY,
     IDENTITY_PROVIDER_KEY,
@@ -48,7 +48,7 @@ from .identity import (
 )
 
 #: Schema-metadata key holding the OMRG-owned dataset epoch UUID
-#: (see :mod:`.lance_epoch`).  Defined at this seam so both modules
+#: (see :mod:`.epoch`).  Defined at this seam so both modules
 #: share one constant without a circular import.
 OMRG_EPOCH_KEY = "omrg_dataset_epoch"
 
@@ -104,9 +104,9 @@ def read_table_metadata(table: Any) -> dict[str, Any]:
 def read_dataset_epoch(table: Any) -> str | None:
     """Return the dataset epoch stored in a table's schema metadata.
 
-    Lives here (not in :mod:`.lance_epoch`) so the epoch read shares
+    Lives here (not in :mod:`.epoch`) so the epoch read shares
     this module's tolerant decode and the import direction stays
-    one-way: ``lance_epoch`` imports from this seam, never the
+    one-way: ``epoch`` imports from this seam, never the
     reverse.  Duck-typed calls (``self.ensure_dataset_epoch``,
     ``self.fresh_epoch_metadata``) need no import at all.
 

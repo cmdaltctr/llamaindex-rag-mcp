@@ -128,7 +128,7 @@ Selecting `native` on a store without the capability logs a WARNING at compositi
 
 ### FTS lifecycle (LanceDB)
 
-The native path owns one full-text-search index per collection. The contract lives in `core/vectordb/lance_fts.py` and is pinned by `tests/test_lancedb_native_fts_contract.py`:
+The native path owns one full-text-search index per collection. The contract lives in `core/vectordb/lancedb/fts.py` and is pinned by `tests/test_lancedb_native_fts_contract.py`:
 
 - **Creation** is additive and triggered on the first native query, indexing existing rows synchronously. A collection without an index keeps working through every other operation.
 - **Staleness** is a durable property: writes by any process show as `num_unindexed_rows > 0` in `list_indices()` statistics. The process-local generation counter is not used for this. BM25 cache validity uses the store's durable data version where one exists ([ADR-056](../adr/056-lineage-navigation-replaces-a-document-store.md)); the process-local counter is the fallback.

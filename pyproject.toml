@@ -521,8 +521,8 @@ type = "forbidden"
 source_modules = ["omrg"]
 forbidden_modules = ["chromadb"]
 ignore_imports = [
-    "omrg.core.vectordb.chroma -> chromadb",
-    "omrg.core.vectordb.chroma_cloud -> chromadb",
+    "omrg.core.vectordb.chroma.store -> chromadb",
+    "omrg.core.vectordb.chroma.cloud -> chromadb",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -536,9 +536,9 @@ type = "forbidden"
 source_modules = ["omrg"]
 forbidden_modules = ["lancedb"]
 ignore_imports = [
-    "omrg.core.vectordb.lancedb -> lancedb",
-    "omrg.core.vectordb.lance_literal -> lancedb",
-    "omrg.core.vectordb.lance_fts -> lancedb",
+    "omrg.core.vectordb.lancedb.store -> lancedb",
+    "omrg.core.vectordb.lancedb.literal -> lancedb",
+    "omrg.core.vectordb.lancedb.fts -> lancedb",
 ]
 unmatched_ignore_imports_alerting = "error"
 

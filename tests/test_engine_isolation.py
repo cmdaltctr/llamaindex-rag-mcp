@@ -28,7 +28,7 @@ from llama_index.core.embeddings import MockEmbedding
 
 from omrg.core.profiles.resolver import ProfileResolver
 from omrg.core.settings import AnswerBlock
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 from omrg.engine import Engine
 
 # The engines use the native sparse backend (Lance FTS): rank_bm25 is an

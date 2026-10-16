@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .identity import redact_cloud_secrets
+from ..identity import redact_cloud_secrets
 
 
 def construct_cloud_client(

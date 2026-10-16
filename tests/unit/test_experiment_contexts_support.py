@@ -16,7 +16,7 @@ from llama_index.core import Settings as LlamaIndexSettings
 from omrg.compose_settings import settings_to_effective
 from omrg.config import Settings
 from omrg.core.metadata.settings import MetadataSettings
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 from omrg.engine import Engine
 
 

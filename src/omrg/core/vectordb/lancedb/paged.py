@@ -13,8 +13,8 @@ import logging
 from collections.abc import Callable, Iterator
 from typing import Any
 
-from .lance_filter import translate_where
-from .lance_meta import metadata_field_names
+from .filter import translate_where
+from .meta import metadata_field_names
 
 __all__ = ["INTERNAL_METADATA_KEYS", "LancePagedReadMixin", "strip_internal_metadata"]
 

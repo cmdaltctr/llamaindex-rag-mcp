@@ -33,7 +33,7 @@ from omrg.core.pipelines import EventKind, NodeStatus, PipelineResult, RunCancel
 from omrg.core.retrieval import _reranker_cache
 from omrg.core.retrieval.reranker import CrossEncoderReranker, reset_model_cache
 from omrg.core.settings import EffectiveSettings, MetadataBlock
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 from omrg.engine import Engine
 
 _MODEL_ID = "fake-org/fake-cross-encoder"

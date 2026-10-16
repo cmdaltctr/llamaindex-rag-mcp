@@ -24,16 +24,16 @@ from typing import TYPE_CHECKING, Any
 
 from llama_index.core import StorageContext, VectorStoreIndex
 
-from .base import VectorStore
-from .chroma_cloud import construct_cloud_client
-from .identity import (
+from ..base import VectorStore
+from ..identity import (
     EmbeddingIdentity,
     IdentityGuardMixin,
     embedding_identity_from_settings,
 )
+from ..score import DENSE_SCORE_KIND, canonical_score_from_l2, require_l2_metric
+from ..validation import materialise_and_validate_node_embeddings, validate_embedding_batch
+from .cloud import construct_cloud_client
 from .paged import PagedReadMixin
-from .score import DENSE_SCORE_KIND, canonical_score_from_l2, require_l2_metric
-from .validation import materialise_and_validate_node_embeddings, validate_embedding_batch
 
 if TYPE_CHECKING:
     import chromadb
@@ -399,7 +399,7 @@ def _resolve_local_persist_dir(persist_dir: str | None) -> str:
     """Resolve the local persist directory, defaulting to the composition root."""
     if persist_dir is not None:
         return persist_dir
-    from ..settings import get_default_effective_settings
+    from ...settings import get_default_effective_settings
 
     return get_default_effective_settings().chroma_persist_dir
 

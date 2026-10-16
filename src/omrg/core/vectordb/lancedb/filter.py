@@ -57,7 +57,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 
-from omrg.core.vectordb.lance_literal import _literal_sql
+from .literal import _literal_sql
 
 __all__ = ["translate_where"]
 

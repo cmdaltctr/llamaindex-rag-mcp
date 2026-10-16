@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import ast
 import importlib
+import importlib.util
 import subprocess
 import sys
 import textwrap
@@ -27,10 +28,13 @@ _SRC_ROOT = Path(__file__).resolve().parent.parent / "src"
 _COMPOSE_PY = _SRC_ROOT / "omrg" / "compose.py"
 
 _FACTORY_MODULE = {
-    "chroma": "omrg.core.vectordb.chroma",
-    "lancedb": "omrg.core.vectordb.lancedb",
+    "chroma": "omrg.core.vectordb.chroma.store",
+    "lancedb": "omrg.core.vectordb.lancedb.store",
 }
-_CONCRETE_STORE_MODULES = frozenset(_FACTORY_MODULE.values())
+# The backend folders: each folder and every module below it is concrete (D9).
+_CONCRETE_STORE_MODULES = frozenset({"omrg.core.vectordb.chroma", "omrg.core.vectordb.lancedb"})
+# Importing the registry must load neither a backend folder nor its store module.
+_LAZY_MODULES = sorted(_CONCRETE_STORE_MODULES | set(_FACTORY_MODULE.values()))
 
 
 def test_available_lists_both_backends() -> None:
@@ -110,7 +114,7 @@ def test_registry_is_lazy() -> None:
             sys.exit(1)
         sys.exit(0)
         """
-    ).format(concrete=sorted(_CONCRETE_STORE_MODULES))
+    ).format(concrete=_LAZY_MODULES)
     proc = subprocess.run(
         [sys.executable, "-c", program],
         capture_output=True,
@@ -120,6 +124,79 @@ def test_registry_is_lazy() -> None:
         "omrg.core.vectordb.registry eagerly imported concrete store "
         f"modules on import: {proc.stdout.strip()}"
     )
+
+
+# ── Registry import strings resolve (design D10) ──────────────────────
+
+
+def _import_string_problem(import_string: str) -> str | None:
+    """Return why a ``module:attr`` string does not resolve, or ``None``.
+
+    Finds the module file with ``find_spec`` and parses it, so the check
+    imports no backend module and runs without the ``chroma`` extra.  The
+    attribute must be a top-level function, class or assignment.
+    """
+    module_path, _, attr = import_string.partition(":")
+    try:
+        spec = importlib.util.find_spec(module_path)
+    except (ImportError, ValueError):
+        spec = None
+    if spec is None or not spec.origin or not spec.origin.endswith(".py"):
+        return f"{import_string!r}: module {module_path!r} not found"
+    tree = ast.parse(Path(spec.origin).read_text(encoding="utf-8"))
+    defined: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            defined.add(node.name)
+        elif isinstance(node, ast.Assign):
+            defined.update(t.id for t in node.targets if isinstance(t, ast.Name))
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            defined.add(node.target.id)
+    if attr not in defined:
+        return f"{import_string!r}: {module_path!r} has no top-level {attr!r}"
+    return None
+
+
+def _registry_import_strings() -> list[tuple[str, str, str]]:
+    """Return ``(backend, field, import string)`` for every registered string."""
+    from omrg.core.vectordb import registry
+
+    strings: list[tuple[str, str, str]] = []
+    for name in registry.available():
+        strings.append((name, "factory", registry._registry[name]))
+        meta = registry.describe(name)
+        for field in ("native_sparse_probe", "summary"):
+            if meta[field]:
+                strings.append((name, field, meta[field]))
+    return strings
+
+
+@pytest.mark.parametrize(
+    ("backend", "field", "import_string"),
+    _registry_import_strings(),
+    ids=lambda value: str(value),
+)
+def test_registry_import_string_resolves(backend: str, field: str, import_string: str) -> None:
+    """Every registry string names a module and a top-level attribute that exist."""
+    assert _import_string_problem(import_string) is None, (
+        f"{backend} {field} string does not resolve"
+    )
+
+
+@pytest.mark.parametrize(
+    ("import_string", "expected"),
+    [
+        ("omrg.core.vectordb.no_such_module:factory", "no_such_module"),
+        ("omrg.core.vectordb.registry:no_such_attribute", "no_such_attribute"),
+    ],
+    ids=["missing-module", "missing-attribute"],
+)
+def test_import_string_check_names_the_bad_string(import_string: str, expected: str) -> None:
+    """Negative controls: a bad string fails and the message names it."""
+    problem = _import_string_problem(import_string)
+    assert problem is not None
+    assert import_string in problem
+    assert expected in problem
 
 
 # ── compose.py dispatch boundary ──────────────────────────────────────
@@ -160,20 +237,27 @@ def _module_level_concrete_imports(source: str) -> set[str]:
             return f"omrg.{module}" if module else "omrg"
         return module  # No level-2+ package contains compose.py.
 
+    def _is_concrete(module: str) -> bool:
+        # A backend folder and every module below it is concrete (design D9).
+        return module in _CONCRETE_STORE_MODULES or module.startswith(
+            tuple(f"{concrete}." for concrete in _CONCRETE_STORE_MODULES)
+        )
+
     tree = ast.parse(source)
     offenders: set[str] = set()
     for node in tree.body:
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name in _CONCRETE_STORE_MODULES:
+                if _is_concrete(alias.name):
                     offenders.add(alias.name)
         elif isinstance(node, ast.ImportFrom):
             base = _resolve(node.module or "", node.level)
-            if base in _CONCRETE_STORE_MODULES:
+            if _is_concrete(base):
                 offenders.add(base)
+                continue
             for alias in node.names:
                 full = f"{base}.{alias.name}" if base else alias.name
-                if full in _CONCRETE_STORE_MODULES:
+                if _is_concrete(full):
                     offenders.add(full)
     return offenders
 
@@ -228,13 +312,18 @@ def test_compose_has_no_module_level_concrete_store_import() -> None:
             {"omrg.core.vectordb.chroma"},
         ),
         (
-            "from omrg.core.vectordb.chroma import build_chroma_vector_store",
+            "from omrg.core.vectordb.chroma import store",
             {"omrg.core.vectordb.chroma"},
         ),
         ("from .core.vectordb import lancedb", {"omrg.core.vectordb.lancedb"}),
         ("from omrg.core.vectordb import registry", set()),
         ("import lancedb", set()),
         ("import omrg.core.vectordb.chroma", {"omrg.core.vectordb.chroma"}),
+        (
+            "from omrg.core.vectordb.chroma.store import build_chroma_vector_store",
+            {"omrg.core.vectordb.chroma.store"},
+        ),
+        ("from .core.vectordb.lancedb import store", {"omrg.core.vectordb.lancedb"}),
     ],
     ids=[
         "alias-import",
@@ -243,6 +332,8 @@ def test_compose_has_no_module_level_concrete_store_import() -> None:
         "registry-import",
         "sdk-import",
         "dotted-import",
+        "from-backend-submodule",
+        "relative-backend-folder",
     ],
 )
 def test_import_detector_expands_aliases(source: str, expected: set[str]) -> None:

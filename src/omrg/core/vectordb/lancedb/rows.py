@@ -2,16 +2,16 @@
 
 The upsert path builds a pyarrow table against the live table schema
 before handing it to ``merge_insert``; these helpers own that
-construction so ``lancedb.py`` stays inside the 500-line ceiling
+construction so ``store.py`` stays inside the 500-line ceiling
 (invariant #11), matching the sibling seam modules
-(``lance_filter``/``lance_meta``/``lance_paged``).
+(``filter``/``meta``/``paged``).
 """
 
 from __future__ import annotations
 
 import pyarrow as pa
 
-from .lance_meta import infer_arrow_type
+from .meta import infer_arrow_type
 
 __all__ = ["rows_to_arrow", "upsert_schema"]
 
@@ -22,7 +22,7 @@ def upsert_schema(dim: int, metadatas: list[dict]) -> pa.Schema:
     Mirrors the adapter's column layout (``id``, ``doc_id``, ``vector``,
     ``text``, ``metadata`` struct) with ``doc_id`` as a nullable string
     so later adapter writes cast cleanly into it.  Metadata field types
-    use the shared inference rule (:func:`.lance_meta.infer_arrow_type`),
+    use the shared inference rule (:func:`.meta.infer_arrow_type`),
     so an all-null sample defaults to string instead of locking a
     ``pa.null()`` field that no later non-null write could satisfy.
 

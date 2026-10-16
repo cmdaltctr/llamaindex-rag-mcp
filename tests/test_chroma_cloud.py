@@ -38,8 +38,8 @@ import pytest
 from llama_index.core.schema import TextNode
 
 from omrg.config import Settings
-from omrg.core.vectordb import chroma as chroma_mod
-from omrg.core.vectordb.chroma import ChromaVectorStore
+from omrg.core.vectordb.chroma import store as chroma_mod
+from omrg.core.vectordb.chroma.store import ChromaVectorStore
 from omrg.core.vectordb.identity import redact_secret
 
 # Test key chosen so no prefix collides with words that legitimately
@@ -93,7 +93,7 @@ def _embedding_identity(
     index_identity: str | None = None,
 ):
     """Construct an ``EmbeddingIdentity`` lazily (red pre-implementation)."""
-    from omrg.core.vectordb.chroma import EmbeddingIdentity
+    from omrg.core.vectordb.chroma.store import EmbeddingIdentity
 
     return EmbeddingIdentity(provider=provider, model=model, index_identity=index_identity)
 
@@ -972,7 +972,7 @@ class TestFourModeIndependence:
             chroma_cloud_tenant="t-9" if cloud else "",
             chroma_cloud_database="d-9" if cloud else "",
         )
-        with patch("omrg.core.vectordb.chroma.build_chroma_vector_store") as mock_build:
+        with patch("omrg.core.vectordb.chroma.store.build_chroma_vector_store") as mock_build:
             build_vector_store(settings)
         kwargs = mock_build.call_args.kwargs
         assert kwargs["mode"] == chroma_mode
@@ -1035,7 +1035,7 @@ class TestComposeEmbeddingIdentity:
             local_backend="llamacpp",
             llamacpp_embed_model="t.gguf",
         )
-        with patch("omrg.core.vectordb.chroma.build_chroma_vector_store") as mock_build:
+        with patch("omrg.core.vectordb.chroma.store.build_chroma_vector_store") as mock_build:
             build_vector_store(settings)
         identity = mock_build.call_args.kwargs.get("embedding_identity")
         assert identity is not None
@@ -1141,10 +1141,10 @@ class TestChromaImportBoundary:
         src_root = Path(__file__).resolve().parent.parent / "src" / "omrg"
         allowed = frozenset(
             {
-                "core/vectordb/chroma.py",
+                "core/vectordb/chroma/store.py",
                 # Cloud-connection helper extracted from the adapter; same
                 # boundary, one import site per concern.
-                "core/vectordb/chroma_cloud.py",
+                "core/vectordb/chroma/cloud.py",
             }
         )
         pattern = re.compile(r"^\s*(?:import chromadb|from chromadb)", re.MULTILINE)
@@ -1157,5 +1157,5 @@ class TestChromaImportBoundary:
         )
         assert offenders == [], f"unexpected chromadb import sites: {offenders}"
         # Guard against vacuous passage: the canonical adapter must still import it.
-        adapter_source = (src_root / "core/vectordb/chroma.py").read_text(encoding="utf-8")
+        adapter_source = (src_root / "core/vectordb/chroma/store.py").read_text(encoding="utf-8")
         assert pattern.search(adapter_source) is not None

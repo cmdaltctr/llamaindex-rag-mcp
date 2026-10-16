@@ -290,7 +290,7 @@ async def test_query_instruction_change_keeps_unchanged_source_skipped(sample_md
     from llama_index.core import Settings as LlamaIndexSettings
 
     from omrg.core.ingestion.pipeline import ingest_path_async
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
     store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
     embedder = LlamaIndexSettings.embed_model

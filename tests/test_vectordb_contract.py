@@ -24,9 +24,9 @@ from pathlib import Path
 import pytest
 
 from omrg.core.vectordb.base import VectorStore
+from omrg.core.vectordb.chroma.paged import PagedReadMixin
 from omrg.core.vectordb.identity import EmbeddingIdentity
-from omrg.core.vectordb.lancedb import LanceVectorStore
-from omrg.core.vectordb.paged import PagedReadMixin
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 # Task 5.1: the ChromaDB adapter import is lazy so this shared contract
 # module collects (and runs every LanceDB parameter) in the base install
@@ -40,7 +40,7 @@ def _store_class(backend: str) -> type[VectorStore]:
     """Resolve the concrete class lazily (chromadb may be absent)."""
     if backend == "lancedb":
         return LanceVectorStore
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     return ChromaVectorStore
 
@@ -670,8 +670,8 @@ class TestFilteredDocuments:
         """
         import inspect
 
-        from omrg.core.vectordb.lance_paged import LancePagedReadMixin
-        from omrg.core.vectordb.paged import PagedReadMixin
+        from omrg.core.vectordb.chroma.paged import PagedReadMixin
+        from omrg.core.vectordb.lancedb.paged import LancePagedReadMixin
 
         lance_source = inspect.getsource(LancePagedReadMixin.iter_filtered_documents)
         assert "translate_where" in lance_source
@@ -809,7 +809,7 @@ class TestChromaWhereTranslation:
         assert [row[0] for row in rows] == ["c1"]
 
     def test_compound_filter_key_order_is_preserved(self) -> None:
-        from omrg.core.vectordb.paged import _chroma_where
+        from omrg.core.vectordb.chroma.paged import _chroma_where
 
         where = _chroma_where({"b": 2, "a": 1})
         assert where == {"$and": [{"b": 2}, {"a": 1}]}

@@ -38,7 +38,7 @@ from omrg.core.ingestion.backends.orchestrator import BackendRead
 from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition
 from omrg.core.metadata import extractor
 from omrg.core.pipelines import RunStatus
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 from omrg.engine import Engine
 
 _SOURCES = ["guide.md", "nested/appendix.md", "notes.txt"]

@@ -22,7 +22,7 @@ from tests.unit.test_ingestion_graph_adapters_support import offline_settings
 
 from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition
 from omrg.core.pipelines import RunStatus
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 from omrg.engine import Engine
 
 

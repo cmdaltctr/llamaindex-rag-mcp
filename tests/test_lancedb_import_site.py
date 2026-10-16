@@ -3,7 +3,7 @@
 Guards two ``lancedb-vector-store`` spec scenarios:
 
 * **Single lancedb import site** — a direct ``import lancedb`` /
-  ``from lancedb`` may appear only in modules under ``core/vectordb/``.
+  ``from lancedb`` may appear only in modules under ``core/vectordb/lancedb/``.
   ``from llama_index.vector_stores.lancedb import ...`` is a
   llama_index module and must NOT be flagged; the regex anchors
   ``lancedb`` immediately after the ``import``/``from`` keyword so the
@@ -32,17 +32,17 @@ _DIRECT_LANCEDB_IMPORT = re.compile(r"^\s*(?:import|from)\s+lancedb\b", re.MULTI
 
 
 def test_lancedb_imports_confined_to_vectordb() -> None:
-    """Every direct ``lancedb`` import must live under ``core/vectordb/``."""
+    """Every direct ``lancedb`` import must live under ``core/vectordb/lancedb/``."""
     assert _SRC_ROOT.is_dir(), f"configured source root is missing: {_SRC_ROOT}"
     offenders: list[str] = []
     for path in sorted(_SRC_ROOT.rglob("*.py")):
         source = path.read_text(encoding="utf-8")
         if _DIRECT_LANCEDB_IMPORT.search(source):
             rel = path.relative_to(_SRC_ROOT).as_posix()
-            if not rel.startswith("core/vectordb/"):
+            if not rel.startswith("core/vectordb/lancedb/"):
                 offenders.append(rel)
     assert not offenders, (
-        f"Direct lancedb imports found outside core/vectordb/: {offenders}. "
+        f"Direct lancedb imports found outside core/vectordb/lancedb/: {offenders}. "
         "Only the vector-store layer may import lancedb directly."
     )
 
@@ -76,7 +76,7 @@ def test_registry_and_filter_imports_stay_torch_free() -> None:
         import sys
 
         importlib.import_module("omrg.core.vectordb.registry")
-        importlib.import_module("omrg.core.vectordb.lance_filter")
+        importlib.import_module("omrg.core.vectordb.lancedb.filter")
 
         assert "torch" not in sys.modules, "torch leaked onto the base import path"
         """
@@ -90,6 +90,6 @@ def test_registry_and_filter_imports_stay_torch_free() -> None:
     # assertion, so the message stays neutral and carries stderr.
     assert proc.returncode == 0, (
         "Isolated import or torch-boundary check failed in a fresh interpreter "
-        "(the registry/lance_filter imports failed, or torch leaked onto the "
+        "(the registry/lancedb.filter imports failed, or torch leaked onto the "
         f"base path); the base path is ONNX-only. stderr: {proc.stderr}"
     )
