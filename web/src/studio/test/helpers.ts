@@ -4,12 +4,25 @@ import { expect } from "vitest";
 import type { GraphDocument, PipelineRecord, RevisionRecord } from "../../api/pipelines";
 
 export function palette() {
-  return screen.getByRole("region", { name: "Operation catalogue" });
+  return screen.getByRole("region", { name: "Operations" });
 }
 
 export function outline() {
-  return screen.getByRole("region", { name: "Graph outline" });
+  return screen.getByRole("region", { name: "Nodes and connections" });
 }
+
+/** Every panel section. The panel opens only Operations at first. */
+export const ALL_SECTIONS = ["Pipeline settings", "Operations", "Nodes and connections", "Connect ports", "Revision and run", "Node settings"];
+
+/** Opens the named panel sections that are still closed, once the canvas has loaded. */
+export async function openSections(user: UserEvent, ...titles: string[]) {
+  for (const title of titles) {
+    const header = await screen.findByRole("button", { name: title });
+    if (header.getAttribute("aria-expanded") !== "true") await user.click(header);
+  }
+}
+
+export const openAllSections = (user: UserEvent) => openSections(user, ...ALL_SECTIONS);
 
 export function inspector() {
   return screen.getByRole("region", { name: "Node settings" });

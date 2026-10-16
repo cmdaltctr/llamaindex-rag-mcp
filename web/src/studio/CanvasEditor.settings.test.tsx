@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it } from "vitest";
 import { json } from "./test/fakeServer";
-import { addWithKeyboard, EMPTY_PIPELINE, inspector, outline, runPanel, savedDocument } from "./test/helpers";
+import { addWithKeyboard, EMPTY_PIPELINE, inspector, openAllSections, outline, runPanel, savedDocument } from "./test/helpers";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
 
@@ -9,8 +9,9 @@ beforeAll(mockReactFlow);
 
 async function setup(options: Parameters<typeof openStudio>[1] = {}) {
   const view = openStudio("#/studio/pnew", { pipelines: [EMPTY_PIPELINE], ...options });
-  await screen.findByRole("region", { name: "Operation catalogue" });
-  await within(screen.getByRole("region", { name: "Operation catalogue" })).findByRole("button", { name: /retrieve\.dense/ });
+  await screen.findByRole("region", { name: "Operations" });
+  await within(screen.getByRole("region", { name: "Operations" })).findByRole("button", { name: /retrieve\.dense/ });
+  await openAllSections(view.user);
   return view;
 }
 

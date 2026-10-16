@@ -30,7 +30,7 @@ The shell moves focus to the page `h1` after the user navigates to another area.
 
 ### D1. The route decides the navigation state, and the stored choice stays untouched
 
-`Shell` computes `collapsed = onCanvas ? expandedFor !== route.pipelineId : stored`. `onCanvas` is `route.area === "studio" && route.pipelineId !== null`. `expandedFor` is a `useState<string | null>(null)` that holds the pipeline id the user expanded the navigation on. On the canvas the toggle sets it to the current pipeline id, or back to `null`. Elsewhere the toggle calls the existing stored toggle. Leaving the canvas and coming back, or opening another pipeline, no longer matches the stored id, so the navigation is collapsed again with no effect and no reset code. `useNavCollapsed` does not change.
+`Shell` computes `collapsed = onCanvas ? expandedFor !== route.pipelineId : stored`. `onCanvas` is `route.area === "studio" && route.pipelineId !== null`. `expandedFor` is a `useState<string | null>(null)` that holds the pipeline id the user expanded the navigation on. On the canvas the toggle sets it to the current pipeline id, or back to `null`. Elsewhere the toggle calls the existing stored toggle. Opening another pipeline no longer matches the held id, so the navigation is collapsed again. Leaving the canvas clears `expandedFor` during render (`if (!onCanvas && expandedFor !== null) setExpandedFor(null)`, React's "adjust state when a value changes" pattern), so coming back to the same pipeline also starts collapsed. There is no effect. `useNavCollapsed` does not change.
 
 *Why:* The user wants the bar to minimise by itself, not to lose their saved choice. Deriving the value from the route avoids an effect that writes storage on route change.
 

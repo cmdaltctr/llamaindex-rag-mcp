@@ -41,8 +41,8 @@ export function GraphOutline({ draft, issues, onChange, onAnnounce }: GraphOutli
   }
 
   return (
-    <section aria-label="Graph outline" className="flex min-w-0 flex-col gap-3 rounded-panel border border-border bg-card p-4">
-      <h2 className="text-section-title font-semibold">Nodes</h2>
+    <>
+      <h3 className="text-subsection-title font-semibold">Nodes</h3>
       {draft.graph.nodes.length === 0 ? (
         <p className="text-meta text-muted-foreground">No nodes yet.</p>
       ) : (
@@ -71,7 +71,7 @@ export function GraphOutline({ draft, issues, onChange, onAnnounce }: GraphOutli
           })}
         </ul>
       )}
-      <h2 className="text-section-title font-semibold">Connections</h2>
+      <h3 className="text-subsection-title font-semibold">Connections</h3>
       {draft.graph.edges.length === 0 ? (
         <p className="text-meta text-muted-foreground">No connections yet.</p>
       ) : (
@@ -100,6 +100,6 @@ export function GraphOutline({ draft, issues, onChange, onAnnounce }: GraphOutli
           })}
         </ul>
       )}
-    </section>
+    </>
   );
 }

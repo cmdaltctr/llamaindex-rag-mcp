@@ -29,8 +29,7 @@ export function Palette({ operations, error, onRetry, onAdd }: PaletteProps) {
   const visible = (operations ?? []).filter((operation) => matches(operation, query));
 
   return (
-    <section aria-label="Operation catalogue" className="flex flex-col gap-3 rounded-panel border border-border bg-card p-4">
-      <h2 className="text-section-title font-semibold">Operations</h2>
+    <>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idBase}-search`}>Search operations</Label>
         <Input id={`${idBase}-search`} type="search" value={query} onChange={(event) => setQuery(event.target.value)} />
@@ -66,6 +65,6 @@ export function Palette({ operations, error, onRetry, onAdd }: PaletteProps) {
         })}
       </ul>
       {operations !== undefined && visible.length === 0 && <p className="text-meta text-muted-foreground">No operation matches this search.</p>}
-    </section>
+    </>
   );
 }

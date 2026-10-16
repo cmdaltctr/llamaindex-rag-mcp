@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { PREFERENCES_KEY } from "../lib/preferences";
 import { readDraft } from "./storage";
-import { choose, edgeNames, outline, TEMPLATE_PIPELINE, TEMPLATE_REVISION, TEMPLATES } from "./test/helpers";
+import { choose, edgeNames, openAllSections, openSections, outline, TEMPLATE_PIPELINE, TEMPLATE_REVISION, TEMPLATES } from "./test/helpers";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
 
@@ -50,7 +50,8 @@ describe("creating from a card", () => {
     expect(server.calls.some((call) => call.path.endsWith("/revisions"))).toBe(false);
     expect(readDraft("pnew")?.graph.edges).toHaveLength(3);
 
-    await within(await screen.findByRole("region", { name: "Graph outline" })).findByRole("button", { name: /^Node rerank/ });
+    await openAllSections(user);
+    await within(outline()).findByRole("button", { name: /^Node rerank/ });
     expect(edgeNames()).toHaveLength(3);
     expect(screen.getByRole("heading", { level: 1, name: "Search" })).toBeInTheDocument();
   });
@@ -65,7 +66,8 @@ describe("creating from a card", () => {
     await user.click(await within(await screen.findByRole("group", { name: "Search" })).findByRole("button", { name: "Create pipeline" }));
 
     await waitFor(() => expect(window.location.hash).toBe("#/studio/pnew"));
-    await within(await screen.findByRole("region", { name: "Graph outline" })).findByRole("button", { name: /^Node rerank/ });
+    await openAllSections(user);
+    await within(outline()).findByRole("button", { name: /^Node rerank/ });
     expect(edgeNames()).toHaveLength(3);
   });
 
@@ -94,6 +96,7 @@ describe("creating from a card", () => {
     expect(draft?.graph.nodes.find((node) => node.operation === "select.rerank")?.params).toEqual({ enabled: true });
 
     // The canvas opens with that graph, ready to save as the first revision.
+    await openSections(user, "Pipeline settings");
     expect(await screen.findByLabelText("Collection")).toHaveValue("papers");
     expect(screen.getByLabelText("Profile")).toHaveTextContent("documents");
   });
@@ -134,8 +137,9 @@ describe("creating from a card", () => {
 
 describe("saved pipelines", () => {
   it("opens a saved pipeline at its latest revision with validate and run offered", async () => {
-    openStudio("#/studio/p1", { pipelines: [TEMPLATE_PIPELINE], revisions: [TEMPLATE_REVISION] });
-    await within(await screen.findByRole("region", { name: "Graph outline" })).findByRole("button", { name: /^Node rerank/ });
+    const { user } = openStudio("#/studio/p1", { pipelines: [TEMPLATE_PIPELINE], revisions: [TEMPLATE_REVISION] });
+    await openAllSections(user);
+    await within(outline()).findByRole("button", { name: /^Node rerank/ });
     expect(screen.getByRole("heading", { level: 1, name: "Search copy" })).toBeInTheDocument();
     expect(outline()).toBeInTheDocument();
     const panel = screen.getByRole("region", { name: "Revision and run" });
