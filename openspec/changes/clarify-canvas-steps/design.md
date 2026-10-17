@@ -138,9 +138,17 @@ New `NodeDetails.tsx` renders `<details>` with `<summary>Details</summary>`, clo
 
 - Alternative: the accordion primitive. Rejected: an accordion inside an accordion section adds a heading level and more markup for one disclosure.
 
-### D9. The intro line sits in the slim bar
+### D9. The intro line is one visible line above the tabs
 
-The slim bar in `CanvasEditor.tsx:98-104` holds the `h1` and the notices. The intro is a `p` (`text-meta text-muted-foreground`) under the `h1`, above the notices, from one exported constant `CANVAS_INTRO`. It shows whatever the graph holds. Text: "Build your own profile. Click a step to change it in Step settings. Drag from one port to another to connect steps, or use Connect ports." The line names the sections "Step settings" and "Connect ports", so the user can find them, and it names the keyboard route. The empty state reads "The graph is empty. Add a step from Operations to start."
+`ProfileHeader` renders the intro as a `p` (`text-meta text-muted-foreground`, `py-1`) between the title row and the pipeline tabs. The text is the exported constant `CANVAS_INTRO` in `profileCopy.ts`, so there is one place to change it. It shows whatever the graph holds, and it is not repeated anywhere else.
+
+Each pipeline tab also has a small "i" button (`InfoPopover`). A click opens a panel under the button with two paragraphs at most: the description of that pipeline, and the read-only note of a built-in profile. "Duplicate to edit" sits beside "All profiles" at the right.
+
+The popover is a plain button with `aria-expanded` and `aria-controls`, and a panel that closes on Escape (focus returns to the button), on a click elsewhere and on a second click. It uses the popover colour tokens. The project has no popover primitive, and `@radix-ui/react-popover` would be a new package, which this change does not add. A tooltip does not fit, because it opens on hover and a tooltip must not hold the only copy of important text.
+
+Alternatives, in the order the review rejected them:
+- A closed "About this pipeline" disclosure with a chevron: the user wants an icon on each tab and no chevron.
+- The intro line inside every popover: the same text three times, and the user wants it visible in one place.
 
 The word "profile" matches `unify-profiles-and-pipelines`. "Step settings" is the section name from `studio-profiles-gallery`. The constant is the one place to change if either name changes.
 
@@ -182,7 +190,7 @@ Every string this change adds says "step": "+N more in Step settings", "<step na
 - [The automatic check sends a request after each pause in editing] → It waits 500 ms after the last graph change, makes no model call and writes nothing. Layout edits send none.
 - [The check is slow or fails] → Cards and Step settings show "From profile" with no number until a check returns. The canvas keeps working.
 - [A stale response could show old values] → The query key is the document, so TanStack Query ignores an answer for an older draft, and `sameDocument` drops values that no longer match.
-- [Taller cards overlap on the 260 by 180 pixel grid (`graph.ts:156`, `drafts.ts:21`)] → Ports lose their type-kind line and the summary is one line. Task 4.11 measures template cards and raises the row step if a card is taller than 170 pixels. Positions are layout only, so revisions do not change.
+- [Taller cards overlap on the 260 by 180 pixel grid (`graph.ts:156`, `drafts.ts:21`)] → Ports lose their type-kind line and the summary is one line. Task 4.11 measures template cards and raises the row step if a card is taller than 170 pixels (it is now 280, because the settings mini card makes Prepare query 257 pixels tall). Positions are layout only, so revisions do not change.
 - [The label map drifts when the backend adds or renames a parameter] → The fallback is the schema title in sentence case, so a new field still shows. A test checks that each fixture parameter gets a label from the map.
 - [The connection summary reads the model name from settings, while the store identity uses the embedder's `model_name` (`compose_pipelines.py:74-80`)] → They agree for the three providers today. `add-profile-embedding-model` replaces this line.
 - [React Flow's click selection may not fire in jsdom] → The click test uses the same handler as Enter. If the click does not fire in jsdom, the test uses Enter and the browser check covers the click.
