@@ -23,6 +23,6 @@ export function renderArea(route: Route) {
     case "settings":
       return <SettingsView />;
     case "studio":
-      return <StudioView pipelineId={route.pipelineId} />;
+      return <StudioView profileId={route.profileId} purpose={route.purpose} />;
   }
 }

@@ -4,8 +4,19 @@ import { describe, expect, it } from "vitest";
 import { documentsServer, json } from "../test/fakeDocumentsServer";
 import { renderHookWithProviders } from "../test/providers";
 import { useApi } from "./ApiProvider";
-import { useAnswer, useChangeProfile, useCreatePipeline, useDeleteDocuments, useIngestPath, useSaveRevision, useSearch, useUploadFile } from "./mutations";
-import { collectionsQuery, documentsQuery, pipelinesQuery } from "./queries";
+import {
+  useAnswer,
+  useChangeProfile,
+  useCreateProfile,
+  useDeleteDocuments,
+  useDeleteProfile,
+  useIngestPath,
+  useSaveRevision,
+  useSearch,
+  useUpdateProfile,
+  useUploadFile,
+} from "./mutations";
+import { collectionsQuery, documentsQuery, pipelineQuery, profileQuery, profilesQuery } from "./queries";
 
 const JOB = { job_id: "j1", result: null, error: null, created_at: "", updated_at: "" };
 const PREVIEW = { status: "preview", contract: { collection: "documents", new_profile: "codebase", old_profile: "documents", chunk_count: 12, lever_impacts: [], reingest_pointer: "" }, confirm_required: true };
@@ -128,38 +139,78 @@ describe("mutations that change what the collection list shows", () => {
 });
 
 describe("mutations for pipelines", () => {
-  it("refreshes the pipeline list after a revision is saved", async () => {
+  it("refreshes an open pipeline after a revision is saved", async () => {
     const server = documentsServer({
-      "GET /v1/pipelines": () => ({ pipelines: [] }),
+      "GET /v1/pipelines/p1": () => ({ pipeline: { pipeline_id: "p1" }, current_revision: null }),
       "POST /v1/pipelines/p1/revisions": () => ({ revision: { revision_id: "r1" }, created: true }),
     });
     const { result } = renderHookWithProviders(
       () => {
         const api = useApi();
-        return { list: useQuery(pipelinesQuery(api)), save: useSaveRevision("p1") };
+        return { list: useQuery(pipelineQuery(api, "p1")), save: useSaveRevision("p1") };
       },
       { fetchImpl: server.fetchImpl },
     );
     await waitFor(() => expect(result.current.list.isSuccess).toBe(true));
     await act(() => result.current.save.mutateAsync({ schema_version: 1, nodes: [], edges: [], inputs: [], outputs: [] } as never));
-    await waitFor(() => expect(server.find("GET", "/v1/pipelines").filter((c) => c.path === "/v1/pipelines")).toHaveLength(2));
+    await waitFor(() => expect(server.find("GET", "/v1/pipelines/p1")).toHaveLength(2));
+  });
+});
+
+describe("mutations for profiles", () => {
+  const PROFILE = { profile_id: "papers", kind: "user", title: "Papers", description: "", base_profile: "documents", slots: { ingest: "p1", search: "p2", answer: "p3" }, ready: true, not_ready_reasons: [], used_by: [] };
+
+  function profileReads(server: ReturnType<typeof documentsServer>) {
+    return server.find("GET", "/v1/profiles").filter((call) => call.path === "/v1/profiles").length;
+  }
+
+  function mountProfiles<T>(server: ReturnType<typeof documentsServer>, hook: () => T) {
+    return renderHookWithProviders(() => ({ list: useQuery(profilesQuery(useApi())), hook: hook() }), { fetchImpl: server.fetchImpl });
+  }
+
+  it("refreshes the profile list after a profile is created", async () => {
+    const server = documentsServer({ "GET /v1/profiles": () => ({ profiles: [] }), "POST /v1/profiles": () => json({ profile: PROFILE }, 201) });
+    const { result } = mountProfiles(server, useCreateProfile);
+    await waitFor(() => expect(result.current.list.isSuccess).toBe(true));
+    await act(() => result.current.hook.mutateAsync({ source: null, title: "Papers" }));
+    await waitFor(() => expect(profileReads(server)).toBe(2));
+    expect(server.find("POST", "/v1/profiles")[0]?.body).toEqual({ source: null, title: "Papers" });
   });
 
-  it("refreshes the pipeline list after a pipeline is created", async () => {
-    const server = documentsServer({
-      "GET /v1/pipelines": () => ({ pipelines: [] }),
-      "POST /v1/pipelines": () => ({ pipeline: { pipeline_id: "p9", title: "T" } }),
-    });
-    const { result } = renderHookWithProviders(
-      () => {
-        const api = useApi();
-        return { list: useQuery(pipelinesQuery(api)), create: useCreatePipeline() };
-      },
-      { fetchImpl: server.fetchImpl },
-    );
+  it("refreshes the profile list after a profile is renamed", async () => {
+    const server = documentsServer({ "GET /v1/profiles": () => ({ profiles: [PROFILE] }), "PATCH /v1/profiles/papers": () => ({ profile: { ...PROFILE, title: "New" } }) });
+    const { result } = mountProfiles(server, () => useUpdateProfile("papers"));
     await waitFor(() => expect(result.current.list.isSuccess).toBe(true));
-    await act(() => result.current.create.mutateAsync({ title: "T", layout: { title: "T", positions: {} } }));
-    await waitFor(() => expect(server.find("GET", "/v1/pipelines").filter((c) => c.path === "/v1/pipelines")).toHaveLength(2));
+    await act(() => result.current.hook.mutateAsync({ title: "New" }));
+    await waitFor(() => expect(profileReads(server)).toBe(2));
+    expect(server.find("PATCH", "/v1/profiles/papers")[0]?.body).toEqual({ title: "New" });
+  });
+
+  it("refreshes the profile list after a profile is deleted", async () => {
+    const server = documentsServer({ "GET /v1/profiles": () => ({ profiles: [PROFILE] }), "DELETE /v1/profiles/papers": () => ({ profile: PROFILE }) });
+    const { result } = mountProfiles(server, () => useDeleteProfile("papers"));
+    await waitFor(() => expect(result.current.list.isSuccess).toBe(true));
+    await act(() => result.current.hook.mutateAsync());
+    await waitFor(() => expect(profileReads(server)).toBe(2));
+  });
+
+  it("refreshes the profile list after a revision is saved, because readiness and use can change", async () => {
+    const server = documentsServer({
+      "GET /v1/profiles": () => ({ profiles: [PROFILE] }),
+      "POST /v1/pipelines/p1/revisions": () => ({ revision: { revision_id: "r1" }, created: true, affected_collections: ["kb"] }),
+    });
+    const { result } = mountProfiles(server, () => useSaveRevision("p1"));
+    await waitFor(() => expect(result.current.list.isSuccess).toBe(true));
+    await act(() => result.current.hook.mutateAsync({ schema_version: 1, nodes: [] }));
+    await waitFor(() => expect(profileReads(server)).toBe(2));
+  });
+
+  it("refreshes the open profile as well as the list", async () => {
+    const server = documentsServer({ "GET /v1/profiles/papers": () => ({ profile: { ...PROFILE, standard_graphs: null } }), "PATCH /v1/profiles/papers": () => ({ profile: PROFILE }) });
+    const { result } = renderHookWithProviders(() => ({ one: useQuery(profileQuery(useApi(), "papers")), rename: useUpdateProfile("papers") }), { fetchImpl: server.fetchImpl });
+    await waitFor(() => expect(result.current.one.isSuccess).toBe(true));
+    await act(() => result.current.rename.mutateAsync({ title: "New" }));
+    await waitFor(() => expect(server.find("GET", "/v1/profiles/papers")).toHaveLength(2));
   });
 });
 

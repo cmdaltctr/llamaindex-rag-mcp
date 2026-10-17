@@ -1,15 +1,26 @@
 /**
  * The typed route model. The address bar hash is the only source of location:
- * nothing else stores the current area, project or pipeline.
+ * nothing else stores the current area, project, profile, purpose or Settings section.
  */
+
+/** The three pipelines of a profile, in the order the tabs show them. */
+export const PURPOSES = ["ingest", "search", "answer"] as const;
+
+export type Purpose = (typeof PURPOSES)[number];
+
+/** The Settings sections, in the order the chips show them. */
+export const SETTINGS_SECTIONS = ["appearance", "connections", "mcp", "log", "runtime", "workspace"] as const;
+
+export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
+
 export type Route =
   | { area: "home" }
   | { area: "knowledge-base"; collection: string | null }
   | { area: "chat"; collection: string | null }
-  | { area: "studio"; pipelineId: string | null }
+  | { area: "studio"; profileId: string | null; purpose: Purpose | null }
   | { area: "experiments"; runId: string | null }
   | { area: "integrations" }
-  | { area: "settings" };
+  | { area: "settings"; section: SettingsSection | null };
 
 export type RouteArea = Route["area"];
 
@@ -34,8 +45,12 @@ export function parseRoute(hash: string): Route {
   switch (area) {
     case "home":
     case "integrations":
-    case "settings":
       return first === undefined ? { area } : HOME;
+    case "settings": {
+      if (second !== undefined) return HOME;
+      if (first === undefined) return { area, section: null };
+      return isSettingsSection(first) ? { area, section: first } : HOME;
+    }
     case "knowledge-base":
     case "chat": {
       if (second !== undefined) return HOME;
@@ -44,10 +59,11 @@ export function parseRoute(hash: string): Route {
       return collection === null ? HOME : { area, collection };
     }
     case "studio": {
-      if (second !== undefined) return HOME;
-      if (first === undefined) return { area, pipelineId: null };
-      const pipelineId = decode(first);
-      return pipelineId === null ? HOME : { area, pipelineId };
+      if (first === undefined) return second === undefined ? { area, profileId: null, purpose: null } : HOME;
+      const profileId = decode(first);
+      if (profileId === null) return HOME;
+      if (second === undefined) return { area, profileId, purpose: null };
+      return isPurpose(second) ? { area, profileId, purpose: second } : HOME;
     }
     case "experiments": {
       if (first === undefined) return { area, runId: null };
@@ -60,6 +76,14 @@ export function parseRoute(hash: string): Route {
   }
 }
 
+function isPurpose(value: string): value is Purpose {
+  return (PURPOSES as readonly string[]).includes(value);
+}
+
+function isSettingsSection(value: string): value is SettingsSection {
+  return (SETTINGS_SECTIONS as readonly string[]).includes(value);
+}
+
 function withSegment(base: string, value: string | null): string {
   return value === null ? base : `${base}/${encodeURIComponent(value)}`;
 }
@@ -69,13 +93,15 @@ export function formatRoute(route: Route): string {
   switch (route.area) {
     case "home":
     case "integrations":
-    case "settings":
       return `#/${route.area}`;
+    case "settings":
+      return route.section === null ? "#/settings" : `#/settings/${route.section}`;
     case "knowledge-base":
     case "chat":
       return withSegment(`#/${route.area}`, route.collection);
     case "studio":
-      return withSegment("#/studio", route.pipelineId);
+      if (route.profileId === null) return "#/studio";
+      return withSegment(withSegment("#/studio", route.profileId), route.purpose);
     case "experiments":
       return route.runId === null ? "#/experiments" : `#/experiments/runs/${encodeURIComponent(route.runId)}`;
   }

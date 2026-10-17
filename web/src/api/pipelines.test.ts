@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { ApiError, createApiClient } from "./client";
 import {
-  createPipeline,
   getPipeline,
   getRevision,
   listOperations,
@@ -35,18 +34,6 @@ describe("pipeline API client", () => {
     expect(fetchImpl.mock.calls[0]?.[0]).toBe("/v1/pipeline-operations");
   });
 
-  it("creates a pipeline with a POST body", async () => {
-    const fetchImpl = fetchReturning(json({ status: "ok", pipeline: { pipeline_id: "p1" } }, 201));
-    const api = createApiClient(fetchImpl);
-    const pipeline = await createPipeline(api, "Hybrid", { title: "Hybrid" });
-    expect(pipeline.pipeline_id).toBe("p1");
-    const [path, init] = fetchImpl.mock.calls[0]!;
-    expect(path).toBe("/v1/pipelines");
-    expect(init?.method).toBe("POST");
-    expect(JSON.parse(String(init?.body))).toEqual({ title: "Hybrid", layout: { title: "Hybrid" } });
-    expect(new Headers(init?.headers).get("content-type")).toBe("application/json");
-  });
-
   it("saves a layout with PUT and never posts a revision", async () => {
     const fetchImpl = fetchReturning(json({ status: "ok", pipeline: { pipeline_id: "p1" } }));
     const api = createApiClient(fetchImpl);
@@ -70,10 +57,17 @@ describe("pipeline API client", () => {
     const fetchImpl = fetchReturning(json({ status: "ok", revision: { revision_id: "r1" }, created: true }, 201));
     const api = createApiClient(fetchImpl);
     const saved = await saveRevision(api, "p1", DOC);
-    expect(saved).toEqual({ revision: { revision_id: "r1" }, created: true });
+    expect(saved).toEqual({ revision: { revision_id: "r1" }, created: true, affected_collections: [] });
     const [path, init] = fetchImpl.mock.calls[0]!;
     expect(path).toBe("/v1/pipelines/p1/revisions");
     expect(JSON.parse(String(init?.body))).toEqual({ document: DOC });
+  });
+
+  it("returns the collections that a revision save affects", async () => {
+    const fetchImpl = fetchReturning(json({ status: "ok", revision: { revision_id: "r2" }, created: true, affected_collections: ["kb-a", "kb-b"] }, 201));
+    const api = createApiClient(fetchImpl);
+    const saved = await saveRevision(api, "p1", DOC);
+    expect(saved.affected_collections).toEqual(["kb-a", "kb-b"]);
   });
 
   it("reports structured validation issues from a 422 envelope", async () => {

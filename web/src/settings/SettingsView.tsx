@@ -1,6 +1,7 @@
-import { useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { Button } from "../components/ui/button";
+import { useRoute } from "../lib/RouteProvider";
+import type { SettingsSection } from "../lib/routes";
 import { AppearanceSection } from "./AppearanceSection";
 import { ConnectionsSection } from "./ConnectionsSection";
 import { LogSection } from "./LogSection";
@@ -8,20 +9,20 @@ import { McpSection } from "./McpSection";
 import { RuntimeSection } from "./RuntimeSection";
 import { WorkspaceSection } from "./WorkspaceSection";
 
-const SECTIONS = [
+const SECTIONS: { id: SettingsSection; label: string }[] = [
   { id: "appearance", label: "Appearance" },
   { id: "connections", label: "Connections" },
   { id: "mcp", label: "MCP" },
   { id: "log", label: "Server log" },
   { id: "runtime", label: "Runtime" },
   { id: "workspace", label: "Workspace" },
-] as const;
+];
 
-type SectionId = (typeof SECTIONS)[number]["id"];
-
-/** Settings. Sections are view state: one shows at a time and the route stays put. */
+/** Settings. The address names the section (`#/settings/<section>`); `#/settings` shows Appearance. */
 export function SettingsView() {
-  const [section, setSection] = useState<SectionId>("appearance");
+  const { route, navigate } = useRoute();
+  const section: SettingsSection = (route.area === "settings" ? route.section : null) ?? "appearance";
+  const setSection = (next: SettingsSection) => navigate({ area: "settings", section: next });
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title="Settings" summary="Appearance, connections, MCP access, server log and runtime." />

@@ -29,20 +29,48 @@ describe("Settings sections", () => {
     expect(screen.getByRole("region", { name: "Appearance" })).toBeInTheDocument();
   });
 
-  it("shows only the selected section and marks its chip selected", async () => {
+  it("shows only the selected section, marks its chip selected and writes its address", async () => {
     const { user } = await openSettings();
     await user.click(chip("Server log"));
     expect(chip("Server log")).toHaveAttribute("aria-pressed", "true");
     expect(chip("Appearance")).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("region", { name: "Server log" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Appearance" })).toBeNull();
-    expect(window.location.hash).toBe("#/settings");
+    expect(window.location.hash).toBe("#/settings/log");
   });
 
-  it("keeps the selected section out of the route", async () => {
+  it.each([
+    ["Appearance", "#/settings/appearance"],
+    ["Connections", "#/settings/connections"],
+    ["MCP", "#/settings/mcp"],
+    ["Server log", "#/settings/log"],
+    ["Runtime", "#/settings/runtime"],
+    ["Workspace", "#/settings/workspace"],
+  ])("writes %s to the address bar", async (name, hash) => {
+    const { user } = await openSettings();
+    await user.click(chip(name));
+    expect(window.location.hash).toBe(hash);
+  });
+
+  it("opens the section the address names", async () => {
+    startApp("#/settings/runtime", settingsServer());
+    expect(await screen.findByRole("region", { name: "Runtime" })).toBeInTheDocument();
+    expect(chip("Runtime")).toHaveAttribute("aria-pressed", "true");
+    expect(chip("Appearance")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("goes back to the previous section with the Back button", async () => {
     const { user } = await openSettings();
     await user.click(chip("Runtime"));
-    expect(window.location.hash).toBe("#/settings");
+    await user.click(chip("Workspace"));
+    window.history.back();
+    expect(await screen.findByRole("region", { name: "Runtime" })).toBeInTheDocument();
+  });
+
+  it("shows Home for a section that does not exist", async () => {
+    startApp("#/settings/keys", settingsServer());
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
+    expect(window.location.hash).toBe("#/home");
   });
 });
 

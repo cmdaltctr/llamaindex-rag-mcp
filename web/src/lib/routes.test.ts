@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRoute, parseRoute, type Route } from "./routes";
+import { formatRoute, parseRoute, PURPOSES, SETTINGS_SECTIONS, type Route } from "./routes";
 
 const ROUTES: { route: Route; hash: string }[] = [
   { route: { area: "home" }, hash: "#/home" },
@@ -7,12 +7,16 @@ const ROUTES: { route: Route; hash: string }[] = [
   { route: { area: "knowledge-base", collection: "papers" }, hash: "#/knowledge-base/papers" },
   { route: { area: "chat", collection: null }, hash: "#/chat" },
   { route: { area: "chat", collection: "papers" }, hash: "#/chat/papers" },
-  { route: { area: "studio", pipelineId: null }, hash: "#/studio" },
-  { route: { area: "studio", pipelineId: "pl_123" }, hash: "#/studio/pl_123" },
+  { route: { area: "studio", profileId: null, purpose: null }, hash: "#/studio" },
+  { route: { area: "studio", profileId: "papers-search", purpose: null }, hash: "#/studio/papers-search" },
+  { route: { area: "studio", profileId: "papers-search", purpose: "ingest" }, hash: "#/studio/papers-search/ingest" },
+  { route: { area: "studio", profileId: "papers-search", purpose: "search" }, hash: "#/studio/papers-search/search" },
+  { route: { area: "studio", profileId: "papers-search", purpose: "answer" }, hash: "#/studio/papers-search/answer" },
   { route: { area: "experiments", runId: null }, hash: "#/experiments" },
   { route: { area: "experiments", runId: "run_9" }, hash: "#/experiments/runs/run_9" },
   { route: { area: "integrations" }, hash: "#/integrations" },
-  { route: { area: "settings" }, hash: "#/settings" },
+  { route: { area: "settings", section: null }, hash: "#/settings" },
+  ...SETTINGS_SECTIONS.map((section) => ({ route: { area: "settings", section } as Route, hash: `#/settings/${section}` })),
 ];
 
 describe("routes", () => {
@@ -36,9 +40,20 @@ describe("routes", () => {
     expect(parseRoute(hash)).toEqual(route);
   });
 
-  it("encodes a pipeline and a run identifier the same way", () => {
-    expect(parseRoute(formatRoute({ area: "studio", pipelineId: "a b" }))).toEqual({ area: "studio", pipelineId: "a b" });
+  it("encodes a profile and a run identifier the same way", () => {
+    const profile: Route = { area: "studio", profileId: "a b/c", purpose: "search" };
+    expect(formatRoute(profile)).toBe("#/studio/a%20b%2Fc/search");
+    expect(parseRoute(formatRoute(profile))).toEqual(profile);
     expect(parseRoute(formatRoute({ area: "experiments", runId: "a/b" }))).toEqual({ area: "experiments", runId: "a/b" });
+  });
+
+  it("knows the three purposes and today's Settings sections", () => {
+    expect(PURPOSES).toEqual(["ingest", "search", "answer"]);
+    expect(SETTINGS_SECTIONS).toEqual(["appearance", "connections", "mcp", "log", "runtime", "workspace"]);
+  });
+
+  it("leaves out the purpose when no profile is named", () => {
+    expect(formatRoute({ area: "studio", profileId: null, purpose: "search" })).toBe("#/studio");
   });
 
   it.each([
@@ -54,6 +69,15 @@ describe("routes", () => {
     "#/home/extra",
     "#/experiments/runs",
     "#/experiments/other/x",
+    "#/studio/papers-search/rerank",
+    "#/studio/papers-search/Search",
+    "#/studio/papers-search/search/extra",
+    "#/studio//search",
+    "#/studio/%E0%A4%A",
+    "#/settings/keys",
+    "#/settings/Appearance",
+    "#/settings/appearance/extra",
+    "#/settings//",
     "#/knowledge-base/%E0%A4%A",
     "chat",
   ])("resolves the unknown hash %j to Home", (hash) => {

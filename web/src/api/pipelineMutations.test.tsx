@@ -5,7 +5,7 @@ import { documentsServer } from "../test/fakeDocumentsServer";
 import { renderHookWithProviders } from "../test/providers";
 import { useApi } from "./ApiProvider";
 import { useCancelRun, useSaveLayout, useSubmitRun, useValidatePipeline } from "./mutations";
-import { pipelinesQuery, revisionQuery, runsQuery } from "./queries";
+import { pipelineQuery, revisionQuery, runsQuery } from "./queries";
 
 const DOC = { schema_version: 1, nodes: [{ id: "dense", operation: "retrieve.dense" }] };
 
@@ -14,34 +14,34 @@ function reads(server: ReturnType<typeof documentsServer>, path: string) {
 }
 
 describe("mutations for layouts, validation and runs", () => {
-  it("refreshes the pipelines after a layout save", async () => {
+  it("refreshes an open pipeline after a layout save", async () => {
     const server = documentsServer({
-      "GET /v1/pipelines": () => ({ pipelines: [] }),
+      "GET /v1/pipelines/p1": () => ({ pipeline: { pipeline_id: "p1" }, current_revision: null }),
       "PUT /v1/pipelines/p1/layout": () => ({ pipeline: { pipeline_id: "p1" } }),
     });
     const { result } = renderHookWithProviders(
-      () => ({ list: useQuery(pipelinesQuery(useApi())), save: useSaveLayout("p1") }),
+      () => ({ list: useQuery(pipelineQuery(useApi(), "p1")), save: useSaveLayout("p1") }),
       { fetchImpl: server.fetchImpl },
     );
     await waitFor(() => expect(result.current.list.isSuccess).toBe(true));
     await act(() => result.current.save.mutateAsync({ title: "T" }));
-    await waitFor(() => expect(reads(server, "/v1/pipelines")).toBe(2));
+    await waitFor(() => expect(reads(server, "/v1/pipelines/p1")).toBe(2));
   });
 
   it("checks a draft without refreshing anything", async () => {
     const server = documentsServer({
-      "GET /v1/pipelines": () => ({ pipelines: [] }),
+      "GET /v1/pipelines/p1": () => ({ pipeline: { pipeline_id: "p1" }, current_revision: null }),
       "POST /v1/pipelines/validate": () => ({ valid: true, admitted: false, order: ["dense"] }),
     });
     const { result } = renderHookWithProviders(
-      () => ({ list: useQuery(pipelinesQuery(useApi())), check: useValidatePipeline() }),
+      () => ({ list: useQuery(pipelineQuery(useApi(), "p1")), check: useValidatePipeline() }),
       { fetchImpl: server.fetchImpl },
     );
     await waitFor(() => expect(result.current.list.isSuccess).toBe(true));
     const report = await act(() => result.current.check.mutateAsync({ document: DOC }));
     expect(report.order).toEqual(["dense"]);
     expect(server.find("POST", "/v1/pipelines/validate")[0]?.body).toEqual({ document: DOC });
-    expect(reads(server, "/v1/pipelines")).toBe(1);
+    expect(reads(server, "/v1/pipelines/p1")).toBe(1);
   });
 
   it("refreshes the run lists after a run is submitted and after it is cancelled", async () => {

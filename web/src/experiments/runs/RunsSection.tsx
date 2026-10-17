@@ -115,7 +115,7 @@ export function RunsSection({ experiments }: { experiments: ExperimentList | und
               </Button>
             ) : (
               <Button asChild variant="outline">
-                <a href={formatRoute({ area: "studio", pipelineId: null })}>Open Studio</a>
+                <a href={formatRoute({ area: "studio", profileId: null, purpose: null })}>Open Studio</a>
               </Button>
             )
           }

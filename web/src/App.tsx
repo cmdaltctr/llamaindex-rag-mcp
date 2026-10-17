@@ -12,10 +12,10 @@ function Shell() {
   const [storedCollapsed, toggleStored] = useNavCollapsed();
   const mainRef = useRef<HTMLElement>(null);
 
-  // On a pipeline canvas the navigation is an icon column whatever the stored
+  // On a profile canvas the navigation is an icon column whatever the stored
   // choice says. The user can expand it for this visit only: `expandedFor` holds
-  // the pipeline they expanded it on and is never stored.
-  const canvasId = route.area === "studio" ? route.pipelineId : null;
+  // the profile they expanded it on and is never stored.
+  const canvasId = route.area === "studio" ? route.profileId : null;
   const onCanvas = canvasId !== null;
   const [expandedFor, setExpandedFor] = useState<string | null>(null);
   if (!onCanvas && expandedFor !== null) setExpandedFor(null);

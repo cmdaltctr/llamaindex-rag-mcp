@@ -1,7 +1,10 @@
 import { vi } from "vitest";
 import type { GraphDocument, PipelineRecord, RevisionRecord } from "../../api/pipelines";
+import type { ProfileDetail } from "../../api/profiles";
 import type { RunDetailRecord } from "../../api/runs";
 import { CATALOGUE } from "./catalogueFixture";
+import { createFakeProfiles } from "./fakeProfiles";
+import { PROFILES } from "./helpers";
 
 export interface Call {
   method: string;
@@ -16,8 +19,8 @@ export interface FakeServerOptions {
   runs?: Partial<RunDetailRecord>[];
   collections?: { name: string; document_count: number; chunk_count: number; profile: string | null; display_name: string | null; store: { name: string; label: string } }[];
   validate?: (body: { document: GraphDocument; inputs?: Record<string, unknown> }) => Response;
-  /** Answers `GET /v1/pipeline-templates`; omitted means the route is missing (404). */
-  templates?: unknown[];
+  /** The profiles the server holds. Omitted means `PROFILES` from `helpers.ts`. */
+  profiles?: ProfileDetail[];
   /** Routes that answer with an HTTP error, as `"METHOD /path": status`. Delete a key to let the route work again. */
   failures?: Record<string, number>;
 }
@@ -54,14 +57,16 @@ export function fakeServer(options: FakeServerOptions = {}) {
   const pipelines = new Map((options.pipelines ?? []).map((p) => [p.pipeline_id, { ...p }]));
   const revisions = new Map((options.revisions ?? []).map((r) => [r.revision_id, r]));
   const runs = (options.runs ?? []).map(runRecord);
-  let created = 0;
+  const profileStore = createFakeProfiles(options.profiles ?? PROFILES, pipelines);
 
   function pipelineRoute(method: string, id: string, rest: string, body: Record<string, unknown>): Response {
     const pipeline = pipelines.get(id);
     if (pipeline === undefined) return json({ status: "error", message: "Unknown pipeline." }, 404);
     if (method === "GET" && rest === "") {
       const current = pipeline.current_revision_id ? revisions.get(pipeline.current_revision_id) : null;
-      return json({ status: "ok", pipeline, current_revision: current ?? null });
+      const owner = profileStore.slotOf(id);
+      const profile_slot = owner === null ? null : { profile_id: owner.profile.profile_id, slot: owner.slot };
+      return json({ status: "ok", pipeline, current_revision: current ?? null, profile_slot });
     }
     const one = /^\/revisions\/([^/]+)$/.exec(rest);
     if (method === "GET" && one) {
@@ -85,7 +90,9 @@ export function fakeServer(options: FakeServerOptions = {}) {
       };
       revisions.set(revision.revision_id, revision);
       pipeline.current_revision_id = revision.revision_id;
-      return json({ status: "ok", revision, created: true }, 201);
+      const owner = profileStore.slotOf(id);
+      const affected = owner === null ? {} : { affected_collections: owner.profile.used_by };
+      return json({ status: "ok", revision, created: true, ...affected }, 201);
     }
     return json({ status: "error", message: "Not found." }, 404);
   }
@@ -122,22 +129,10 @@ export function fakeServer(options: FakeServerOptions = {}) {
     if (failure !== undefined) return json({ status: "error", message: "Boom: /srv/private/path" }, failure);
     const url = new URL(path, "http://localhost");
     if (path === "/v1/pipeline-operations") return json({ status: "ok", operations: CATALOGUE });
-    if (path === "/v1/pipeline-templates" && options.templates) return json({ status: "ok", templates: options.templates });
     if (path === "/v1/collections") return json(options.collections ?? []);
+    const asProfile = profileStore.route(method, path, body);
+    if (asProfile !== null) return json(asProfile.body, asProfile.status);
     if (path === "/v1/pipelines" && method === "GET") return json({ status: "ok", pipelines: [...pipelines.values()] });
-    if (path === "/v1/pipelines" && method === "POST") {
-      created += 1;
-      const pipeline: PipelineRecord = {
-        pipeline_id: created === 1 ? "pnew" : `pnew${created}`,
-        title: String(body.title),
-        current_revision_id: null,
-        layout: (body.layout ?? {}) as PipelineRecord["layout"],
-        created_at: "2026-10-13T12:00:00Z",
-        updated_at: "2026-10-13T12:00:00Z",
-      };
-      pipelines.set(pipeline.pipeline_id, pipeline);
-      return json({ status: "ok", pipeline }, 201);
-    }
     if (path === "/v1/pipelines/validate") {
       const custom = options.validate?.(body as { document: GraphDocument; inputs?: Record<string, unknown> });
       if (custom !== undefined) return custom;
@@ -162,5 +157,5 @@ export function fakeServer(options: FakeServerOptions = {}) {
     return [...calls].reverse().find((call) => call.method === method && call.path === path);
   }
 
-  return { fetchImpl, calls, last, pipelines, revisions, runs, failures: options.failures ?? {} };
+  return { fetchImpl, calls, last, pipelines, revisions, runs, profiles: profileStore.profiles, failures: options.failures ?? {} };
 }

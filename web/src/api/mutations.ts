@@ -20,7 +20,6 @@ import {
   type QueryControls,
 } from "./documents";
 import {
-  createPipeline,
   saveLayout,
   saveRevision,
   submitRun,
@@ -29,6 +28,7 @@ import {
   type GraphLayout,
   type JsonValue,
 } from "./pipelines";
+import { createProfile, deleteProfile, updateProfile, type ProfileCreateInput, type ProfileUpdateInput } from "./profiles";
 import { jobQuery, queryKeys } from "./queries";
 import { cancelRunRecord } from "./runs";
 
@@ -133,21 +133,49 @@ export function useSearch(collection: string) {
   return useMutation({ mutationFn: (controls: QueryControls) => searchCollection(api, collection, controls) });
 }
 
-export function useCreatePipeline() {
-  const api = useApi();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: { title: string; layout: GraphLayout }) => createPipeline(api, input.title, input.layout),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.pipelines() }),
-  });
-}
-
+/** A revision save also refreshes the profiles, because it can change readiness and which collections it affects. */
 export function useSaveRevision(pipelineId: string) {
   const api = useApi();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (document: GraphDocument) => saveRevision(api, pipelineId, document),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.pipelines() }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.pipelines() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.profiles() }),
+      ]),
+  });
+}
+
+/** `queryKeys.profiles()` is the prefix of every profile entry, so one call refreshes the list and each open profile. */
+function invalidateProfiles(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: queryKeys.profiles() });
+}
+
+export function useCreateProfile() {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ProfileCreateInput) => createProfile(api, input),
+    onSuccess: () => invalidateProfiles(queryClient),
+  });
+}
+
+export function useUpdateProfile(profileId: string) {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ProfileUpdateInput) => updateProfile(api, profileId, input),
+    onSuccess: () => invalidateProfiles(queryClient),
+  });
+}
+
+export function useDeleteProfile(profileId: string) {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => deleteProfile(api, profileId),
+    onSuccess: () => invalidateProfiles(queryClient),
   });
 }
 

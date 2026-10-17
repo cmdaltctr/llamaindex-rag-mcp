@@ -18,7 +18,7 @@ function htmlServer() {
   const html: Handler = () => new Response(HTML, { status: 502, headers: { "content-type": "text/html" } });
   return documentsServer(
     Object.fromEntries(
-      ["GET /v1/collections", "GET /v1/integrations", "GET /v1/pipelines", "GET /v1/pipeline-templates", "GET /v1/experiments", "GET /v1/runs", "GET /v1/plugins", "GET /v1/connections", "GET /v1/mcp", "GET /v1/session", "GET /v1/roots", "GET /v1/pipeline-operations", "GET /v1/settings/web-port", "GET /v1/health"].map((key) => [key, html]),
+      ["GET /v1/collections", "GET /v1/integrations", "GET /v1/pipelines", "GET /v1/profiles", "GET /v1/profiles/papers-search", "GET /v1/experiments", "GET /v1/runs", "GET /v1/plugins", "GET /v1/connections", "GET /v1/mcp", "GET /v1/session", "GET /v1/roots", "GET /v1/pipeline-operations", "GET /v1/settings/web-port", "GET /v1/health"].map((key) => [key, html]),
     ),
   );
 }
@@ -39,7 +39,7 @@ const HASHES = [
   "#/knowledge-base",
   "#/knowledge-base/documents",
   "#/studio",
-  "#/studio/p1",
+  "#/studio/papers-search/search",
   "#/experiments",
   "#/experiments/runs/r1",
   "#/integrations",

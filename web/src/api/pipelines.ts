@@ -208,20 +208,6 @@ export async function listOperations(api: ApiClient, options: CallOptions = {}):
   return (await api.request<{ operations: OperationDescriptor[] }>("GET", "/v1/pipeline-operations", { signal: options.signal })).operations;
 }
 
-export async function listPipelines(api: ApiClient, options: CallOptions = {}): Promise<PipelineRecord[]> {
-  return (await api.request<{ pipelines: PipelineRecord[] }>("GET", "/v1/pipelines", { signal: options.signal })).pipelines;
-}
-
-export async function createPipeline(
-  api: ApiClient,
-  title: string,
-  layout: GraphLayout,
-  options: CallOptions = {},
-): Promise<PipelineRecord> {
-  const body = { title, layout };
-  return (await call<{ pipeline: PipelineRecord }>(api, "POST", "/v1/pipelines", { body, signal: options.signal })).pipeline;
-}
-
 export async function getPipeline(
   api: ApiClient,
   pipelineId: string,
@@ -245,18 +231,25 @@ export async function saveLayout(api: ApiClient, pipelineId: string, layout: Gra
   return (await call<{ pipeline: PipelineRecord }>(api, "PUT", path, { body: { layout }, signal: options.signal })).pipeline;
 }
 
+export interface SavedRevision {
+  revision: RevisionRecord;
+  created: boolean;
+  /** The collections whose profile this pipeline belongs to. Empty for a pipeline outside a profile or a profile in no use. */
+  affected_collections: string[];
+}
+
 export async function saveRevision(
   api: ApiClient,
   pipelineId: string,
   document: GraphDocument,
   options: CallOptions = {},
-): Promise<{ revision: RevisionRecord; created: boolean }> {
+): Promise<SavedRevision> {
   const path = apiPath`/v1/pipelines/${pipelineId}/revisions`;
-  const saved = await call<{ revision: RevisionRecord; created: boolean }>(api, "POST", path, {
+  const saved = await call<{ revision: RevisionRecord; created: boolean; affected_collections?: string[] }>(api, "POST", path, {
     body: { document },
     signal: options.signal,
   });
-  return { revision: saved.revision, created: saved.created };
+  return { revision: saved.revision, created: saved.created, affected_collections: saved.affected_collections ?? [] };
 }
 
 /** Draft check without `inputs`; admission check (with effective controls) with `inputs`. */
@@ -277,18 +270,4 @@ export async function submitRun(
 ): Promise<RunRecord> {
   const body = { revision_id: revisionId, inputs };
   return (await call<{ run: RunRecord }>(api, "POST", "/v1/runs", { body, signal: options.signal })).run;
-}
-
-/** A canonical template from `GET /v1/pipeline-templates`: an editable starting point, not an executable revision. */
-export interface PipelineTemplate {
-  name: string;
-  title: string;
-  description: string;
-  standard_operation: string;
-  document: GraphDocument;
-  outputs: { name: string; description: string }[];
-}
-
-export async function listTemplates(api: ApiClient, options: CallOptions = {}): Promise<PipelineTemplate[]> {
-  return (await api.request<{ templates: PipelineTemplate[] }>("GET", "/v1/pipeline-templates", { signal: options.signal })).templates;
 }

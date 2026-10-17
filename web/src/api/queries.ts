@@ -8,8 +8,9 @@ import { ApiError, type ApiClient } from "./client";
 import { getChunk, getJob, getSession, listCollections, listDocuments, listRoots } from "./documents";
 import { listExperiments } from "./experiments";
 import { listIntegrations } from "./integrations";
-import { getPipeline, getRevision, listOperations, listPipelines, listTemplates } from "./pipelines";
+import { getPipeline, getRevision, listOperations } from "./pipelines";
 import { listPlugins } from "./plugins";
+import { getProfile, listProfiles } from "./profiles";
 import { getRunArtefact, getRunRecord, getRunResult, listRuns } from "./runs";
 import { getConnections, getHealth, getMcpState, getUploadLimit, getWebPort } from "./settings";
 
@@ -32,7 +33,8 @@ export const queryKeys = {
   pipelines: () => ["pipelines"] as const,
   pipeline: (id: string) => ["pipelines", id] as const,
   revision: (pipelineId: string, revisionId: string) => ["pipelines", pipelineId, "revisions", revisionId] as const,
-  pipelineTemplates: () => ["pipeline-templates"] as const,
+  profiles: () => ["profiles"] as const,
+  profile: (id: string) => ["profiles", id] as const,
   operations: () => ["pipeline-operations"] as const,
   allRuns: () => ["runs"] as const,
   runs: (filters: RunFilters) => ["runs", filters] as const,
@@ -89,9 +91,6 @@ export const chunkQuery = (api: ApiClient, collection: string, chunkId: string, 
     queryFn: ({ signal }) => getChunk(api, collection, chunkId, window, { signal }),
   });
 
-export const pipelinesQuery = (api: ApiClient) =>
-  queryOptions({ queryKey: queryKeys.pipelines(), queryFn: ({ signal }) => listPipelines(api, { signal }) });
-
 export const pipelineQuery = (api: ApiClient, id: string) =>
   queryOptions({ queryKey: queryKeys.pipeline(id), queryFn: ({ signal }) => getPipeline(api, id, { signal }) });
 
@@ -102,10 +101,14 @@ export const revisionQuery = (api: ApiClient, pipelineId: string, revisionId: st
     staleTime: Infinity, // A revision never changes.
   });
 
-export const pipelineTemplatesQuery = (api: ApiClient) =>
-  queryOptions({ queryKey: queryKeys.pipelineTemplates(), queryFn: ({ signal }) => listTemplates(api, { signal }) });
+/** Built-in profiles first, then user profiles. Items carry no standard graphs; read `profileQuery` for those. */
+export const profilesQuery = (api: ApiClient) =>
+  queryOptions({ queryKey: queryKeys.profiles(), queryFn: ({ signal }) => listProfiles(api, { signal }) });
 
-export const operationsQuery = (api: ApiClient) =>
+export const profileQuery = (api: ApiClient, id: string) =>
+  queryOptions({ queryKey: queryKeys.profile(id), queryFn: ({ signal }) => getProfile(api, id, { signal }) });
+
+export const operationsQuery =(api: ApiClient) =>
   queryOptions({ queryKey: queryKeys.operations(), queryFn: ({ signal }) => listOperations(api, { signal }) });
 
 export const runsQuery = (api: ApiClient, filters: RunFilters = {}) =>

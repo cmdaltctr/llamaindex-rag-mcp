@@ -47,7 +47,7 @@ describe("navigation", () => {
     ["#/chat", "Chat"],
     ["#/chat/papers", "Chat"],
     ["#/knowledge-base/papers", "Knowledge Base"],
-    ["#/studio/pl_1", "Studio"],
+    ["#/studio/papers-search/search", "Studio"],
     ["#/experiments/runs/r1", "Experiments"],
     ["#/integrations", "Integrations"],
     ["#/settings", "Settings"],
@@ -228,7 +228,7 @@ describe("navigation collapse", () => {
 });
 
 describe("navigation on the canvas sub-page", () => {
-  const CANVAS = "#/studio/pl_1";
+  const CANVAS = "#/studio/papers-search/search";
 
   function toggleName() {
     return within(nav()).queryByRole("button", { name: "Expand navigation" }) ? "collapsed" : "expanded";
@@ -268,12 +268,12 @@ describe("navigation on the canvas sub-page", () => {
     expect(window.localStorage.getItem(NAV_COLLAPSED_KEY)).toBe("false");
   });
 
-  it("collapses again when another pipeline opens", async () => {
+  it("collapses again when another profile opens", async () => {
     const user = userEvent.setup();
     start(CANVAS);
     await user.click(within(nav()).getByRole("button", { name: "Expand navigation" }));
     expect(toggleName()).toBe("expanded");
-    await goTo("#/studio/pl_2");
+    await goTo("#/studio/other-profile");
     await waitFor(() => expect(toggleName()).toBe("collapsed"));
   });
 
@@ -297,7 +297,7 @@ describe("shell on the canvas sub-page", () => {
   }
 
   it("uses the full window height and drops the page padding", () => {
-    start("#/studio/pl_1");
+    start("#/studio/papers-search/search");
     const shell = main().parentElement as HTMLElement;
     expect(shell).toHaveClass("h-dvh");
     expect(shell).not.toHaveClass("min-h-dvh");
