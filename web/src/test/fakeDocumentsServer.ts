@@ -33,6 +33,12 @@ export const ROOTS = [
   { id: "root_managed", path: "/home/u/.omrg/workspace/uploads", kind: "managed" },
 ];
 
+/** The two built-in profiles, both ready and unused. Tests that need a user profile pass their own `GET /v1/profiles` handler. */
+export const PROFILES = [
+  { profile_id: "documents", kind: "builtin", title: "Documents", description: "", base_profile: "documents", slots: { ingest: null, search: null, answer: null }, ready: true, not_ready_reasons: [], used_by: [] },
+  { profile_id: "codebase", kind: "builtin", title: "Codebase", description: "", base_profile: "codebase", slots: { ingest: null, search: null, answer: null }, ready: true, not_ready_reasons: [], used_by: [] },
+];
+
 /** `GET /v1/settings/upload-limit` with no saved value: the 50 MiB default. */
 export const UPLOAD_LIMIT: UploadLimitState = { status: "ok", max_bytes: 50 * 1024 * 1024, source: "default", saved_mib: null, default_mib: 50, min_mib: 1, max_mib: 2048 };
 
@@ -40,6 +46,7 @@ const DEFAULTS: Record<string, Handler> = {
   "GET /v1/collections": () => COLLECTIONS,
   "GET /v1/collections/documents/documents": () => SOURCES,
   "GET /v1/collections/notes/documents": () => [],
+  "GET /v1/profiles": () => ({ status: "ok", profiles: PROFILES }),
   "GET /v1/roots": () => ({ status: "ok", roots: ROOTS }),
   "GET /v1/settings/upload-limit": () => UPLOAD_LIMIT,
 };

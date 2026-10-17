@@ -1,21 +1,36 @@
+import { useQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
+import { useApi } from "../api/ApiProvider";
 import type { Profile, ProfileChangeResult, ProfilePreview } from "../api/documents";
 import { useChangeProfile } from "../api/mutations";
+import type { ProfileRecord } from "../api/profiles";
+import { profilesQuery } from "../api/queries";
+import { ErrorNotice } from "../components/ErrorNotice";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Label } from "../components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { plural } from "../lib/labels";
 import { ConfirmationNote, FlowButtons } from "./FlowControls";
 import { usePreviewConfirm } from "./usePreviewConfirm";
 
 const TIMING: Record<string, string> = { "query-time": "Next query", "ingest-time": "Next ingestion only" };
-const PROFILES: readonly Profile[] = ["documents", "codebase"];
 
-function selectable(stored: string | null): Profile | null {
-  return PROFILES.find((name) => name === stored) ?? null;
+/** The line under the list for a profile that cannot be picked yet. */
+function notReadyLine(profile: ProfileRecord): string {
+  const reason = profile.not_ready_reasons[0];
+  return reason === undefined ? `${profile.title} is not ready.` : `${profile.title} is not ready: ${reason}`;
+}
+
+function ProfileOption({ profile }: { profile: ProfileRecord }) {
+  return (
+    <SelectItem value={profile.profile_id}>
+      <span>{profile.title}</span>{" "}
+      <span className="ms-1 font-mono text-code text-muted-foreground">{profile.profile_id}</span>
+    </SelectItem>
+  );
 }
 
 interface ProfilePanelProps {
@@ -30,9 +45,19 @@ interface ProfilePanelProps {
  */
 export function ProfilePanel({ collection, storedProfile }: ProfilePanelProps) {
   const selectId = useId();
-  // Start on the stored profile when it is selectable, else on no selection,
-  // so the list never suggests a profile that is not stored.
-  const [profile, setProfile] = useState<Profile | null>(selectable(storedProfile));
+  const profiles = useQuery(profilesQuery(useApi()));
+  const all = profiles.data ?? [];
+  const ready = all.filter((entry) => entry.ready);
+  const builtIn = ready.filter((entry) => entry.kind === "builtin");
+  const yours = ready.filter((entry) => entry.kind === "user");
+  const notReady = all.filter((entry) => !entry.ready);
+  // The list starts on the stored profile when it is a ready option, else on no
+  // selection, so it never suggests a profile that is not stored. A pick that
+  // leaves the ready list drops out.
+  const [picked, setPicked] = useState<Profile | null>(null);
+  const known = (id: string | null) => ready.find((entry) => entry.profile_id === id);
+  const selected = known(picked) ?? known(storedProfile);
+  const profile: Profile | null = selected?.profile_id ?? null;
   const [open, setOpen] = useState(false);
   const change = useChangeProfile(collection);
   const flow = usePreviewConfirm(
@@ -53,18 +78,29 @@ export function ProfilePanel({ collection, storedProfile }: ProfilePanelProps) {
         {storedProfile !== null ? <Badge variant="hue">{storedProfile}</Badge> : <Badge variant="neutral">No profile</Badge>}
       </p>
       <div className="flex flex-wrap items-end gap-3">
-        <div className="flex w-48 max-w-full flex-col gap-1.5">
+        <div className="flex w-64 max-w-full flex-col gap-1.5">
           <Label htmlFor={selectId}>New profile</Label>
-          <Select value={profile ?? ""} disabled={open} onValueChange={(value) => setProfile(value as Profile)}>
+          <Select value={profile ?? ""} disabled={open || ready.length === 0} onValueChange={setPicked}>
             <SelectTrigger id={selectId}>
-              <SelectValue placeholder="Choose a profile" />
+              <SelectValue placeholder="Choose a profile">{selected?.title}</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {PROFILES.map((name) => (
-                <SelectItem key={name} value={name}>
-                  {name}
-                </SelectItem>
-              ))}
+              {builtIn.length > 0 ? (
+                <SelectGroup>
+                  <SelectLabel>Built-in profiles</SelectLabel>
+                  {builtIn.map((entry) => (
+                    <ProfileOption key={entry.profile_id} profile={entry} />
+                  ))}
+                </SelectGroup>
+              ) : null}
+              {yours.length > 0 ? (
+                <SelectGroup>
+                  <SelectLabel>Your profiles</SelectLabel>
+                  {yours.map((entry) => (
+                    <ProfileOption key={entry.profile_id} profile={entry} />
+                  ))}
+                </SelectGroup>
+              ) : null}
             </SelectContent>
           </Select>
         </div>
@@ -72,6 +108,14 @@ export function ProfilePanel({ collection, storedProfile }: ProfilePanelProps) {
           Preview profile change
         </Button>
       </div>
+      {profiles.isError ? <ErrorNotice error={profiles.error} onRetry={() => void profiles.refetch()} /> : null}
+      {notReady.length > 0 ? (
+        <ul className="flex flex-col gap-1 text-meta text-muted-foreground">
+          {notReady.map((entry) => (
+            <li key={entry.profile_id}>{notReadyLine(entry)}</li>
+          ))}
+        </ul>
+      ) : null}
       {open ? <ProfileFlow flow={flow} onClose={() => setOpen(false)} /> : null}
     </section>
   );

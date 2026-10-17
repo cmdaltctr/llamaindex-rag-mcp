@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { documentsServer, json, type Handler } from "../test/fakeDocumentsServer";
+import { documentsServer, json, PROFILES, type Handler } from "../test/fakeDocumentsServer";
 import { startApp } from "../test/startApp";
 
 const WARNING = "The vector store reports only a process-local validity token.";
@@ -18,7 +18,7 @@ function confirmation(token: string, validity: "durable" | "process_local" = "pr
 
 async function setup(handlers: Record<string, Handler>, section: string | null = null) {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
-  const { server } = startApp("#/knowledge-base/documents", documentsServer(handlers));
+  const { server } = startApp("#/knowledge-base/documents", documentsServer({ "GET /v1/profiles": () => ({ status: "ok", profiles: PROFILES }), ...handlers }));
   const user = userEvent.setup();
   await screen.findByRole("table", { name: "Sources in documents" });
   if (section !== null) await user.click(screen.getByRole("button", { name: section }));
@@ -179,7 +179,7 @@ describe("confirmed profile change", () => {
 
   async function choose(user: ReturnType<typeof userEvent.setup>) {
     await user.click(screen.getByRole("combobox", { name: "New profile" }));
-    await user.click(await screen.findByRole("option", { name: "codebase" }));
+    await user.click(await screen.findByRole("option", { name: /^Codebase/ }));
     await user.click(screen.getByRole("button", { name: "Preview profile change" }));
     return screen.findByRole("region", { name: "Profile change preview" });
   }

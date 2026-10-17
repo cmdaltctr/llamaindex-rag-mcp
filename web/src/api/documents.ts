@@ -200,7 +200,8 @@ export interface ProfileChangeResult {
   chunk_count_unchanged: number;
 }
 
-export type Profile = "documents" | "codebase";
+/** A profile ID: a built-in name or the ID of a user profile from `GET /v1/profiles`. */
+export type Profile = string;
 
 /** A preview request, or a confirmation that carries the preview token. */
 export type ConfirmStep = { preview: true } | { token: string };

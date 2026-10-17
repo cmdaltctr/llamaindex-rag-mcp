@@ -110,6 +110,12 @@ describe("preview-bound actions", () => {
     expect(bodyOf(sent[1]!)).toEqual({ profile: "codebase", confirm: true, confirmation_token: "tok" });
   });
 
+  it("sends the ID of a user profile as it is", async () => {
+    const { sent, api } = recorder(json({ status: "preview" }));
+    await changeProfile(api, "documents", "papers-search", { preview: true });
+    expect(bodyOf(sent[0]!)).toEqual({ profile: "papers-search", confirm: false });
+  });
+
   it("sets and clears a display name with one PATCH to the display-name route", async () => {
     const { sent, api } = recorder(
       json({ collection: "my docs", display_name: "Docs" }),
