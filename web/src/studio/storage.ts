@@ -36,9 +36,10 @@ function asDraft(value: unknown): Draft | null {
   if (!isArray(graph.nodes, isNode) || !isArray(graph.edges, isEdge)) return null;
   if (!Array.isArray(graph.inputs) || !Array.isArray(graph.outputs) || !isRecord(layout.positions)) return null;
   const base = emptyDraft();
+  const kept = Object.fromEntries(Object.entries(layout).filter(([key]) => key !== "title")); // earlier versions stored a title
   return {
     graph: { ...base.graph, ...(graph as Partial<Draft["graph"]>) },
-    layout: { ...base.layout, ...(layout as Partial<Draft["layout"]>) },
+    layout: { ...base.layout, ...(kept as Partial<Draft["layout"]>) },
   };
 }
 

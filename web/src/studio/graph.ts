@@ -31,7 +31,6 @@ export interface DraftGraph {
 }
 
 export interface DraftLayout {
-  title: string;
   positions: Record<string, { x: number; y: number }>;
   viewport: { x: number; y: number; zoom: number };
   selection: string[];
@@ -44,10 +43,10 @@ export interface Draft {
 
 type Position = { x: number; y: number };
 
-export function emptyDraft(title = ""): Draft {
+export function emptyDraft(): Draft {
   return {
     graph: { nodes: [], edges: [], inputs: [], outputs: [], profile: null, collection: null, overrides: {} },
-    layout: { title, positions: {}, viewport: { x: 0, y: 0, zoom: 1 }, selection: [] },
+    layout: { positions: {}, viewport: { x: 0, y: 0, zoom: 1 }, selection: [] },
   };
 }
 
@@ -70,7 +69,7 @@ function cleanNode(node: NodeSpec): NodeSpec {
 
 /** Normalises a stored revision (which carries filled-in defaults) and a layout into a draft. */
 export function fromDocument(document: GraphDocument | null, layout: GraphLayout): Draft {
-  const base = emptyDraft(layout.title ?? "");
+  const base = emptyDraft();
   const graph: DraftGraph = document
     ? {
         nodes: document.nodes.map(cleanNode),
@@ -90,7 +89,6 @@ export function fromDocument(document: GraphDocument | null, layout: GraphLayout
   return {
     graph,
     layout: {
-      title: layout.title ?? "",
       positions: { ...(layout.positions ?? {}) },
       viewport: layout.viewport ?? base.layout.viewport,
       selection: [...(layout.selection ?? [])],
@@ -113,8 +111,8 @@ export function toDocument(draft: Draft): GraphDocument {
 }
 
 export function toLayout(draft: Draft): GraphLayout {
-  const { title, positions, viewport, selection } = draft.layout;
-  return { title, positions, viewport, selection };
+  const { positions, viewport, selection } = draft.layout;
+  return { positions, viewport, selection };
 }
 
 function canonical(value: unknown): string {
@@ -241,10 +239,6 @@ export function setProfile(draft: Draft, profile: string | null): Draft {
 
 export function setCollection(draft: Draft, collection: string | null): Draft {
   return withGraph(draft, { collection: collection || null });
-}
-
-export function setTitle(draft: Draft, title: string): Draft {
-  return withLayout(draft, { title });
 }
 
 export function moveNode(draft: Draft, nodeId: string, position: Position): Draft {

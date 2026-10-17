@@ -6,13 +6,13 @@ import { CanvasPanel } from "./CanvasPanel";
 import { SECTIONS } from "./panelSections";
 
 function Harness({ selectedNode = null, runStarts = 0 }: { selectedNode?: string | null; runStarts?: number }) {
-  const [title, setTitle] = useState("Search");
+  const [collection, setCollection] = useState("papers");
   return (
     <CanvasPanel
       selectedNode={selectedNode}
       runStarts={runStarts}
       sections={{
-        "pipeline-settings": <input aria-label="Title" value={title} onChange={(event) => setTitle(event.target.value)} />,
+        "pipeline-settings": <input aria-label="Collection" value={collection} onChange={(event) => setCollection(event.target.value)} />,
         operations: <button type="button">Add dense</button>,
         nodes: <p>Node list</p>,
         connect: <p>Connect form</p>,
@@ -47,7 +47,7 @@ describe("CanvasPanel sections", () => {
     }
   });
 
-  it("also opens Node settings at load when a node is already selected", () => {
+  it("also opens Step settings at load when a node is already selected", () => {
     render(<Harness selectedNode="dense" />);
     const open = SECTIONS.filter((section) => header(section.title).getAttribute("aria-expanded") === "true");
     expect(open.map((section) => section.id)).toEqual(["operations", "node-settings"]);
@@ -67,12 +67,12 @@ describe("CanvasPanel sections", () => {
     expect(header("Operations")).toHaveAttribute("aria-expanded", "true");
   });
 
-  it("opens Node settings when a node is selected after load", () => {
+  it("opens Step settings when a node is selected after load", () => {
     const { rerender } = render(<Harness />);
-    expect(header("Node settings")).toHaveAttribute("aria-expanded", "false");
+    expect(header("Step settings")).toHaveAttribute("aria-expanded", "false");
     rerender(<Harness selectedNode="dense" />);
-    expect(header("Node settings")).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("region", { name: "Node settings" })).toHaveTextContent("Node form");
+    expect(header("Step settings")).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("region", { name: "Step settings" })).toHaveTextContent("Node form");
   });
 
   it("opens Revision and run when a run starts from the panel, not at load", () => {
@@ -86,11 +86,11 @@ describe("CanvasPanel sections", () => {
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(header("Pipeline settings"));
-    await user.type(screen.getByLabelText("Title"), " copy");
+    await user.type(screen.getByLabelText("Collection"), " copy");
     await user.click(header("Pipeline settings"));
-    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Collection")).not.toBeInTheDocument();
     await user.click(header("Pipeline settings"));
-    expect(screen.getByLabelText("Title")).toHaveValue("Search copy");
+    expect(screen.getByLabelText("Collection")).toHaveValue("papers copy");
   });
 
   it("toggles a header with Enter and Space", async () => {
@@ -157,28 +157,28 @@ describe("CanvasPanel rail", () => {
     }
   });
 
-  it("stays collapsed when a node is selected and highlights Node settings", async () => {
+  it("stays collapsed when a node is selected and highlights Step settings", async () => {
     const user = userEvent.setup();
     const { rerender } = render(<Harness />);
     await user.click(screen.getByRole("button", { name: "Collapse panel" }));
     rerender(<Harness selectedNode="dense" />);
     expect(screen.getByRole("button", { name: "Expand panel" })).toBeInTheDocument();
     expect(card()).toHaveClass("lg:hidden");
-    expect(railButton("Node settings, open")).toHaveClass("bg-selection");
-    await user.click(railButton("Node settings, open"));
-    expect(screen.getByRole("region", { name: "Node settings" })).toHaveTextContent("Node form");
+    expect(railButton("Step settings, open")).toHaveClass("bg-selection");
+    await user.click(railButton("Step settings, open"));
+    expect(screen.getByRole("region", { name: "Step settings" })).toHaveTextContent("Node form");
   });
 
   it("keeps the open sections and the draft over a collapse and expand round trip", async () => {
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(header("Pipeline settings"));
-    await user.type(screen.getByLabelText("Title"), "!");
+    await user.type(screen.getByLabelText("Collection"), "!");
     await user.click(screen.getByRole("button", { name: "Collapse panel" }));
     await user.click(screen.getByRole("button", { name: "Expand panel" }));
     expect(header("Pipeline settings")).toHaveAttribute("aria-expanded", "true");
     expect(header("Operations")).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByLabelText("Title")).toHaveValue("Search!");
+    expect(screen.getByLabelText("Collection")).toHaveValue("papers!");
   });
 
   it("shows a tooltip with the section title on a rail button", async () => {

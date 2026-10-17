@@ -27,7 +27,7 @@ function op(id: string) {
 }
 
 function chain() {
-  let draft = emptyDraft("Search");
+  let draft = emptyDraft();
   for (const id of ["retrieve.prepare_query", "retrieve.dense", "select.rerank", "select.threshold"]) {
     draft = addNode(draft, op(id)).draft;
   }
@@ -68,7 +68,8 @@ describe("graph draft", () => {
     expect(doc.nodes.map((n) => n.id)).toEqual(["prepare_query", "dense", "rerank", "threshold"]);
     expect(JSON.stringify(doc)).not.toContain("positions");
     expect(JSON.stringify(doc)).not.toContain("Search");
-    expect(toLayout(chain()).title).toBe("Search");
+    expect(toLayout(chain())).not.toHaveProperty("title");
+    expect(Object.keys(toLayout(chain())).sort()).toEqual(["positions", "selection", "viewport"]);
   });
 
   it("changes only the layout when a node moves, the viewport changes or the selection changes", () => {

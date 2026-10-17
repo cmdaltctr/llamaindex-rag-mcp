@@ -6,11 +6,19 @@ describe("panel sections", () => {
     expect(SECTIONS.map((section) => section.title)).toEqual([
       "Pipeline settings",
       "Operations",
-      "Nodes and connections",
+      "Steps and connections",
       "Connect ports",
       "Revision and run",
-      "Node settings",
+      "Step settings",
     ]);
+  });
+
+  it("uses no section title that contains the word node", () => {
+    for (const section of SECTIONS) expect(section.title.toLowerCase()).not.toContain("node");
+  });
+
+  it("keeps the section ids", () => {
+    expect(SECTIONS.map((section) => section.id)).toEqual(["pipeline-settings", "operations", "nodes", "connect", "run", "node-settings"]);
   });
 
   it("gives every section its own icon", () => {

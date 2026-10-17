@@ -12,8 +12,8 @@ export interface PanelSection {
 export const SECTIONS: readonly PanelSection[] = [
   { id: "pipeline-settings", title: "Pipeline settings", icon: SlidersHorizontal },
   { id: "operations", title: "Operations", icon: Blocks },
-  { id: "nodes", title: "Nodes and connections", icon: ListTree },
+  { id: "nodes", title: "Steps and connections", icon: ListTree },
   { id: "connect", title: "Connect ports", icon: Cable },
   { id: "run", title: "Revision and run", icon: Play },
-  { id: "node-settings", title: "Node settings", icon: Settings2 },
+  { id: "node-settings", title: "Step settings", icon: Settings2 },
 ];
