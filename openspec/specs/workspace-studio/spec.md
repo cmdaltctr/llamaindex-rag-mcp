@@ -5,37 +5,9 @@ Studio as the home of pipelines: a gallery of templates, profile presets and sav
 
 ## Requirements
 
-### Requirement: Studio opens on a pipeline gallery
-
-The Studio view SHALL list the engine pipeline templates from `listPipelineTemplates`, profile preset cards for the `documents` and `codebase` profiles, and the saved pipelines from `listPipelines`, each as a card with a title and description. Creating a pipeline from any card SHALL create the pipeline on the server and open its canvas sub-page at `#/studio/<pipeline-id>` with that starting graph as the draft.
-
-#### Scenario: Gallery contents
-
-- **WHEN** the engine offers the ingestion, search and answer templates and one saved pipeline exists
-- **THEN** the gallery MUST show the three template cards, the empty pipeline card, the documents and codebase preset cards, and the saved pipeline card
-
-#### Scenario: Start from a profile preset
-
-- **WHEN** the user creates a pipeline from the documents preset card
-- **THEN** a new pipeline MUST exist on the server and its canvas sub-page MUST open seeded from the search template with the documents profile's retrieval defaults
-
-### Requirement: The gallery offers an empty pipeline
-
-The gallery SHALL offer an "Empty pipeline" card that needs no template. Creating from it SHALL create the pipeline on the server and open its canvas sub-page with an empty graph. The card SHALL stay available when the templates cannot be loaded.
-
-#### Scenario: Start from nothing
-
-- **WHEN** the user creates a pipeline from the empty pipeline card
-- **THEN** a new pipeline MUST exist on the server and its canvas sub-page MUST open with an empty graph and the operation catalogue available
-
-#### Scenario: Templates unavailable
-
-- **WHEN** the template listing fails
-- **THEN** the gallery MUST show one friendly failure with a Retry action and the empty pipeline card MUST remain enabled
-
 ### Requirement: The canvas sub-page gives the graph the full width
 
-Editing or creating a pipeline SHALL open the `#/studio/<pipeline-id>` sub-page. From the `lg` breakpoint up, the flow surface SHALL fill the whole main area from the top bar to the bottom of the window, with no page padding, and one panel SHALL float over its right side. The panel SHALL hold every other control of the sub-page (see "The canvas panel groups the controls in icon accordion sections"). A slim bar above the surface SHALL show the pipeline title as the page heading, the "All pipelines" link and the notices. Selecting a node SHALL open that node's settings in the panel. Adding a box from the catalogue SHALL add the operation node; removing a node SHALL remove it with its connections. Below the `lg` breakpoint the panel SHALL stack under the flow surface instead of floating.
+Opening a profile SHALL open the `#/studio/<profile-id>` or `#/studio/<profile-id>/<purpose>` sub-page. From the `lg` breakpoint up, the flow surface SHALL fill the whole main area from the top bar to the bottom of the window, with no page padding, and one panel SHALL float over its right side. The panel SHALL hold every other control of the sub-page (see "The canvas panel groups the controls in icon accordion sections"). A slim bar above the surface SHALL show the profile header as the page heading (see "The canvas page shows the profile and its three pipelines"), the "All profiles" link and the notices. Selecting a step SHALL open that step's settings in the panel. Adding a box from the catalogue SHALL add the operation step; removing a step SHALL remove it with its connections. Below the `lg` breakpoint the panel SHALL stack under the flow surface instead of floating.
 
 #### Scenario: Canvas fills the main area
 
@@ -57,17 +29,17 @@ Editing or creating a pipeline SHALL open the `#/studio/<pipeline-id>` sub-page.
 #### Scenario: One panel on the right
 
 - **WHEN** the user opens a pipeline in the canvas sub-page
-- **THEN** the pipeline settings, operation catalogue, node outline, connection menu, revision and run controls and node settings MUST all be inside one right-hand panel
+- **THEN** the pipeline settings, operation catalogue, step outline, connection menu, revision and run controls and step settings MUST all be inside one right-hand panel
 - **AND** no other card MUST render outside that panel
 
 #### Scenario: Node settings on selection
 
-- **WHEN** the user selects a node on the canvas
-- **THEN** the node's parameters MUST open in the panel without leaving the sub-page
+- **WHEN** the user selects a step on the canvas
+- **THEN** the step's parameters MUST open in the panel without leaving the sub-page
 
 #### Scenario: Empty graph
 
-- **WHEN** the pipeline has no nodes
+- **WHEN** the pipeline has no steps
 - **THEN** the main area MUST show the empty-graph message and the operation catalogue MUST be available in the panel
 
 #### Scenario: Narrow window
@@ -75,23 +47,19 @@ Editing or creating a pipeline SHALL open the `#/studio/<pipeline-id>` sub-page.
 - **WHEN** the window is narrower than 1024 px
 - **THEN** the panel MUST stack below the flow surface, MUST NOT offer the icon rail, and every control MUST stay reachable
 
-### Requirement: Saved pipelines reopen from the gallery
-
-Each saved pipeline card SHALL reopen the canvas sub-page at its latest revision. Revision, validation and run behaviour SHALL follow the `pipeline-canvas`, `pipeline-graphs` and `pipeline-run-records` requirements.
-
-#### Scenario: Reopen a saved pipeline
-
-- **WHEN** the user opens a saved pipeline card
-- **THEN** the canvas sub-page MUST load that pipeline's latest revision and offer the validate and run actions
-
 ### Requirement: The canvas panel groups the controls in icon accordion sections
 
-The canvas panel SHALL be one card with these accordion sections in this order: Pipeline settings (Title, Profile, Collection), Operations, Nodes and connections, Connect ports, Revision and run, Node settings. Each section SHALL have its own icon, shown before its title in the section header. Each section header SHALL be a button that shows whether the section is open. Several sections MAY be open at the same time. When the sub-page loads, Operations SHALL be open, and Node settings SHALL also be open if the restored draft already has a selected node. After load, selecting a node SHALL open Node settings, and starting a run from the panel SHALL open Revision and run. A run record that already exists when the sub-page loads SHALL NOT open Revision and run. Each section's content SHALL be a region named by its section title, and section headers SHALL sit one level below the page heading. Opening or closing a section SHALL NOT change the draft, the selection or the run identity.
+The canvas panel SHALL be one card with these accordion sections in this order: Pipeline settings (Base profile, Collection), Operations, Steps and connections, Connect ports, Revision and run, Step settings. Pipeline settings SHALL show the base profile as read-only text and SHALL NOT offer a title or a profile choice. Each section SHALL have its own icon, shown before its title in the section header. Each section header SHALL be a button that shows whether the section is open. Several sections MAY be open at the same time. When the sub-page loads, Operations SHALL be open, and Step settings SHALL also be open if the restored draft already has a selected step. After load, selecting a step SHALL open Step settings, and starting a run from the panel SHALL open Revision and run. A run record that already exists when the sub-page loads SHALL NOT open Revision and run. Each section's content SHALL be a region named by its section title, and section headers SHALL sit one level below the page heading. Opening or closing a section SHALL NOT change the draft, the selection or the run identity.
 
 #### Scenario: Pipeline settings sit above Operations
 
 - **WHEN** the user opens the canvas sub-page
 - **THEN** the Pipeline settings section header MUST come before the Operations section header in the panel
+
+#### Scenario: Base profile is shown, not chosen
+
+- **WHEN** the user opens Pipeline settings on a pipeline whose graph names the base profile `documents`
+- **THEN** the section MUST show the text "Base profile: documents" and no title field and no profile list
 
 #### Scenario: Every section has an icon
 
@@ -100,13 +68,19 @@ The canvas panel SHALL be one card with these accordion sections in this order: 
 
 #### Scenario: Default open state
 
-- **WHEN** the canvas sub-page loads with no selected node
+- **WHEN** the canvas sub-page loads with no selected step
 - **THEN** Operations MUST be open and the other sections MUST be closed
 
 #### Scenario: Restored selection
 
-- **WHEN** the canvas sub-page loads a draft that has a selected node
-- **THEN** Operations and Node settings MUST be open and the other sections MUST be closed
+- **WHEN** the canvas sub-page loads a draft that has a selected step
+- **THEN** Operations and Step settings MUST be open and the other sections MUST be closed
+
+#### Scenario: Sections use the word step
+
+- **WHEN** the panel is expanded
+- **THEN** the section titles MUST read "Pipeline settings", "Operations", "Steps and connections", "Connect ports", "Revision and run" and "Step settings", in this order
+- **AND** no section title MUST contain the word "node"
 
 #### Scenario: Earlier run does not open its section
 
@@ -126,8 +100,8 @@ The canvas panel SHALL be one card with these accordion sections in this order: 
 
 #### Scenario: Selection opens node settings
 
-- **WHEN** the user selects a node while Node settings is closed
-- **THEN** Node settings MUST open and show that node's parameters
+- **WHEN** the user selects a step while Step settings is closed
+- **THEN** Step settings MUST open and show that step's parameters
 
 #### Scenario: Run opens its section
 
@@ -136,8 +110,8 @@ The canvas panel SHALL be one card with these accordion sections in this order: 
 
 #### Scenario: Closing keeps work
 
-- **WHEN** the user closes Pipeline settings after editing the title
-- **THEN** the edited title MUST remain in the draft and reappear when the section opens again
+- **WHEN** the user closes Pipeline settings after editing the collection
+- **THEN** the edited collection MUST remain in the draft and reappear when the section opens again
 
 #### Scenario: Keyboard use
 
@@ -168,10 +142,10 @@ From the `lg` breakpoint up, the panel header SHALL have a button that collapses
 
 #### Scenario: Selection while collapsed
 
-- **WHEN** the panel is collapsed and the user selects a node
+- **WHEN** the panel is collapsed and the user selects a step
 - **THEN** the panel MUST stay collapsed
-- **AND** the Node settings rail button MUST show the highlight
-- **AND** pressing it MUST expand the panel with that node's parameters
+- **AND** the Step settings rail button MUST show the highlight and have the accessible name "Step settings, open"
+- **AND** pressing it MUST expand the panel with that step's parameters
 
 #### Scenario: State survives a round trip
 
@@ -192,3 +166,257 @@ From the `lg` breakpoint up, the panel header SHALL have a button that collapses
 
 - **WHEN** a keyboard user tabs to a rail button and presses Enter or Space
 - **THEN** the panel MUST expand with that section open and focus MUST move to that section's header
+
+### Requirement: Studio explains what a profile is
+
+The Studio page header SHALL show two sentences under the heading: "Profiles are groups of steps that you connect into pipelines to ingest files, search them and answer questions. Each collection uses one profile, and the profile decides how that collection works." Under the header, a closed disclosure named "How profiles work" SHALL hold four lines of plain text that explain built-in and user profiles, the three pipelines, where a collection picks its profile, and the embedding model lock.
+
+#### Scenario: Header text
+
+- **WHEN** the user opens `#/studio`
+- **THEN** the text under the "Studio" heading MUST read "Profiles are groups of steps that you connect into pipelines to ingest files, search them and answer questions. Each collection uses one profile, and the profile decides how that collection works."
+- **AND** the text "Build pipelines from templates and run them." MUST NOT appear
+
+#### Scenario: Disclosure is closed at first
+
+- **WHEN** the user opens `#/studio`
+- **THEN** a disclosure named "How profiles work" MUST be present and closed
+
+#### Scenario: Disclosure text
+
+- **WHEN** the user opens "How profiles work"
+- **THEN** it MUST show these four lines in this order:
+  1. "Built-in profiles come with OMRG and are read-only. Your profiles are copies that you can rename, change and delete."
+  2. "Each profile has three pipelines: Ingest reads files and splits them into chunks, Search finds the best chunks for a question, and Answer writes a cited answer."
+  3. "To use a profile, pick it for a collection in Knowledge Base, under Profile."
+  4. "When a collection holds vectors, the embedding model of its profile is locked, because the stored vectors were made with that model."
+
+### Requirement: Studio opens on a profile gallery
+
+The Studio view SHALL list the profiles from `GET /v1/profiles` in two sections: "Built-in profiles" and "Your profiles". Each card SHALL show the title, the profile ID in grey, the description and how many collections use it. A built-in card SHALL offer "Open profile" and "Duplicate". A user profile card SHALL also offer a rename pencil and "Delete". A profile that is not ready SHALL show a "Not ready" badge and its reasons as text. "Your profiles" SHALL end with a "New empty profile" card.
+
+#### Scenario: Gallery contents
+
+- **WHEN** the server lists the built-in profiles Documents and Codebase and one user profile "Papers search"
+- **THEN** the "Built-in profiles" section MUST show the Documents and Codebase cards
+- **AND** the "Your profiles" section MUST show the "Papers search" card and then the "New empty profile" card
+- **AND** no "Templates", "Profile presets" or "Saved pipelines" section MUST appear
+
+#### Scenario: Card details
+
+- **WHEN** the user profile `papers-search` with the title "Papers search" is used by the collections `papers` and `notes`
+- **THEN** its card MUST show "Papers search", the grey text `papers-search` and "Used by 2 collections"
+
+#### Scenario: Unused profile
+
+- **WHEN** no collection uses a profile
+- **THEN** its card MUST show "Not used by any collection"
+
+#### Scenario: Built-in card actions
+
+- **WHEN** the gallery shows the Documents card
+- **THEN** it MUST offer "Open profile" and "Duplicate"
+- **AND** it MUST NOT offer a rename pencil or "Delete"
+
+#### Scenario: Not ready profile
+
+- **WHEN** the server marks a user profile not ready with the reason "The Answer pipeline has no `answer` output."
+- **THEN** its card MUST show a "Not ready" status badge and the text "The Answer pipeline has no `answer` output."
+
+#### Scenario: Open a profile
+
+- **WHEN** the user selects "Open profile" on the card of `papers-search`
+- **THEN** `#/studio/papers-search` MUST open on that profile's Ingest pipeline
+
+#### Scenario: No user profiles yet
+
+- **WHEN** the server lists no user profile
+- **THEN** "Your profiles" MUST show the line "You have no profiles yet. Duplicate a built-in profile or start an empty one." and the "New empty profile" card
+
+#### Scenario: Profiles cannot load
+
+- **WHEN** the profile listing fails
+- **THEN** the gallery MUST show one friendly failure line with a Retry action
+- **AND** the "New empty profile" card MUST remain enabled
+
+### Requirement: A new profile starts from a copy or from nothing
+
+"Duplicate" and "New empty profile" SHALL open one dialog that asks for the title before anything is created, because the server makes the permanent profile ID from it. The dialog SHALL say "The profile ID is made from this title. It cannot change later." Creating SHALL call `POST /v1/profiles` with the source profile ID, or `null` for an empty profile, and the title. On success `#/studio/<new-profile-id>` SHALL open.
+
+#### Scenario: Duplicate a built-in profile
+
+- **WHEN** the user selects "Duplicate" on the Documents card, keeps the proposed title "Documents copy" and selects "Create profile", and the server returns the ID `documents-copy`
+- **THEN** the client MUST send `{source: "documents", title: "Documents copy"}` to `POST /v1/profiles`
+- **AND** `#/studio/documents-copy` MUST open on the Ingest pipeline of the copy
+
+#### Scenario: Start an empty profile
+
+- **WHEN** the user selects the "New empty profile" card, types "Notes" and selects "Create profile"
+- **THEN** the client MUST send `{source: null, title: "Notes"}` to `POST /v1/profiles`
+
+#### Scenario: Empty title is refused
+
+- **WHEN** the title field holds only spaces and the user selects "Create profile"
+- **THEN** the dialog MUST show "Enter a title." next to the field and MUST NOT send a request
+
+#### Scenario: Server refuses the title
+
+- **WHEN** the server refuses the create request
+- **THEN** the dialog MUST stay open with the typed title and show one friendly failure line
+
+#### Scenario: Cancel creates nothing
+
+- **WHEN** the user selects "Cancel" or presses Escape in the dialog
+- **THEN** no request MUST be sent and focus MUST return to the button that opened the dialog
+
+### Requirement: User profiles can be renamed in place
+
+A pencil next to a user profile title SHALL open an inline title field, on the gallery card and in the canvas header. Enter or "Save" SHALL send `PATCH /v1/profiles/{id}` with the trimmed title. Escape or "Cancel" SHALL close the field with no request. The profile ID SHALL stay shown in grey and SHALL NOT change. The profile title SHALL be the only title Studio shows for a profile; the web SHALL NOT read or write a title in the pipeline layout.
+
+#### Scenario: Rename from the gallery
+
+- **WHEN** the user renames "Papers search" to "Papers, strict" on its card and presses Enter
+- **THEN** the client MUST send `{title: "Papers, strict"}` to `PATCH /v1/profiles/papers-search`
+- **AND** the card MUST show "Papers, strict" with the grey ID `papers-search`
+
+#### Scenario: Rename on the canvas shows in the gallery
+
+- **WHEN** the user renames the profile from the canvas header and then selects "All profiles"
+- **THEN** the gallery card MUST show the new title
+
+#### Scenario: Layout title is ignored
+
+- **WHEN** a pipeline layout from an earlier version holds the title "Old name" and the profile title is "Papers search"
+- **THEN** the canvas heading MUST read "Papers search"
+- **AND** a saved layout MUST NOT carry a title
+
+#### Scenario: Empty title is refused
+
+- **WHEN** the user clears the title and presses Enter
+- **THEN** the field MUST show "Enter a title." and MUST NOT send a request
+
+#### Scenario: Rename fails
+
+- **WHEN** the server refuses the rename
+- **THEN** the old title MUST stay and one friendly failure line with a Retry action MUST show
+
+#### Scenario: Built-in profiles keep their title
+
+- **WHEN** the gallery or the canvas header shows a built-in profile
+- **THEN** no rename pencil MUST be offered
+
+### Requirement: User profiles can be deleted when no collection uses them
+
+"Delete" on a user profile card SHALL open a confirmation dialog titled "Delete <title>?" that says "Collections can no longer pick this profile. Past runs stay in Experiments." Confirming SHALL call `DELETE /v1/profiles/{id}` and remove the card. While any collection uses the profile, "Delete" SHALL be disabled and visible text SHALL give the reason and name the collections.
+
+#### Scenario: Delete an unused profile
+
+- **WHEN** the user deletes an unused profile and selects "Delete profile" in the dialog
+- **THEN** the client MUST call `DELETE /v1/profiles/<id>` once
+- **AND** the card MUST disappear and the status line "Profile deleted." MUST show
+
+#### Scenario: Profile in use
+
+- **WHEN** the collections `papers` and `notes` use a profile
+- **THEN** its "Delete" button MUST be disabled
+- **AND** the card MUST show "You cannot delete this profile while collections use it: papers, notes. Pick another profile for them in Knowledge Base first."
+
+#### Scenario: Server refuses because the profile came into use
+
+- **WHEN** the server answers the delete with status 409 and `used_by` `["papers"]`
+- **THEN** the dialog MUST show "You cannot delete this profile while collections use it: papers." and MUST NOT remove the card
+
+#### Scenario: Cancel keeps the profile
+
+- **WHEN** the user selects "Cancel" in the dialog
+- **THEN** no request MUST be sent and focus MUST return to the "Delete" button
+
+### Requirement: The canvas page shows the profile and its three pipelines
+
+`#/studio/<profile-id>/<purpose>` SHALL open the pipeline of that purpose on the canvas; `#/studio/<profile-id>` SHALL open Ingest. The slim bar SHALL show the profile title as the page heading, the profile ID in grey, a "Built-in" or "Your profile" badge, the "Not ready" badge with reasons when it applies, and a navigation named "Pipelines of this profile" with links Ingest, Search and Answer. The link of the open purpose SHALL be marked current. One line SHALL describe the open purpose.
+
+#### Scenario: Tabs open the slot pipelines
+
+- **WHEN** the user opens the Search link on the canvas page of `papers-search`
+- **THEN** the address bar MUST read `#/studio/papers-search/search` and the canvas MUST load the profile's Search pipeline
+- **AND** the Search link MUST have `aria-current="page"`
+
+#### Scenario: No purpose in the route
+
+- **WHEN** the user opens `#/studio/papers-search`
+- **THEN** the Ingest pipeline MUST open and the Ingest link MUST have `aria-current="page"`
+
+#### Scenario: Purpose line
+
+- **WHEN** the Ingest, Search or Answer pipeline is open
+- **THEN** the line under the links MUST read "Reads files, splits them into chunks and stores them in the collection.", "Finds the chunks that best match a question." or "Writes an answer from the best chunks and cites them." respectively
+
+#### Scenario: Switching tabs keeps unsaved edits
+
+- **WHEN** the user edits the Ingest pipeline, opens the Search link and then opens the Ingest link again
+- **THEN** the unsaved Ingest draft MUST be shown again
+
+#### Scenario: Unknown profile
+
+- **WHEN** the user opens `#/studio/pl_1` and the server returns no profile with the ID `pl_1`
+- **THEN** the page MUST show a not-found state for the profile with the link "Back to Studio" to `#/studio`
+
+#### Scenario: Back to the gallery
+
+- **WHEN** the user selects "All profiles"
+- **THEN** the gallery at `#/studio` MUST open
+
+### Requirement: Built-in profiles open read-only
+
+A built-in profile SHALL show, for each purpose, the standard graph that a duplicate of it would get, from the `standard_graphs` field of `GET /v1/profiles/{id}`, on a read-only canvas (see the `pipeline-canvas` requirement "A read-only canvas shows a graph without changing it"). The slim bar SHALL show "Built-in profiles are read-only. Duplicate this profile to change it." with a "Duplicate to edit" button that opens the duplicate dialog for that profile.
+
+#### Scenario: Read-only notice
+
+- **WHEN** the user opens `#/studio/documents/search`
+- **THEN** the canvas MUST show the graph from `standard_graphs.search` of `documents`
+- **AND** the slim bar MUST show "Built-in profiles are read-only. Duplicate this profile to change it." and a "Duplicate to edit" button
+
+#### Scenario: No run on a built-in
+
+- **WHEN** the user opens Revision and run on a built-in profile
+- **THEN** the section MUST show "Duplicate this profile to save and run its pipelines." and a Validate button, and no Run button
+
+#### Scenario: Duplicate to edit
+
+- **WHEN** the user selects "Duplicate to edit" and creates the copy
+- **THEN** the canvas page of the copy MUST open on Ingest and allow editing
+
+### Requirement: Saving a pipeline of a profile in use warns first
+
+When the open pipeline belongs to a profile that one or more collections use, "Save revision" SHALL first open a dialog titled "Save this revision?" that names those collections. The text SHALL depend on the purpose. "Save revision" in the dialog SHALL save; "Cancel" SHALL save nothing. When no collection uses the profile, the save SHALL start with no dialog. After a save, the status line SHALL name the collections from the `affected_collections` field of the response.
+
+#### Scenario: Search pipeline in use
+
+- **WHEN** the collections `papers` and `notes` use the profile and the user selects "Save revision" on the Search pipeline
+- **THEN** the dialog MUST say "Saving changes how 2 collections are searched: papers, notes."
+- **AND** no revision MUST be sent until the user confirms
+
+#### Scenario: Answer pipeline in use
+
+- **WHEN** one collection `papers` uses the profile and the user saves the Answer pipeline
+- **THEN** the dialog MUST say "Saving changes how 1 collection answers questions: papers."
+
+#### Scenario: Ingest pipeline in use
+
+- **WHEN** the collection `papers` uses the profile and the user saves the Ingest pipeline
+- **THEN** the dialog MUST say "Saving changes how 1 collection ingests files: papers. Documents already in these collections keep their old chunks until you ingest them again."
+
+#### Scenario: Profile not in use
+
+- **WHEN** no collection uses the profile and the user selects "Save revision"
+- **THEN** the revision MUST be sent with no dialog
+
+#### Scenario: Status names the affected collections
+
+- **WHEN** the server saves revision 4 and returns `affected_collections` `["papers", "notes"]`
+- **THEN** the status line MUST read "Saved revision 4. It now applies to 2 collections: papers, notes."
+
+#### Scenario: Cancel keeps the draft
+
+- **WHEN** the user selects "Cancel" in the dialog
+- **THEN** no revision MUST be sent and the draft MUST stay unchanged

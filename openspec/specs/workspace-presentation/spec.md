@@ -16,12 +16,12 @@ The app navigation SHALL offer exactly Home, Chat, Knowledge Base, Studio, Exper
 
 #### Scenario: Active item follows the route
 
-- **WHEN** the app shows `#/studio/<pipeline-id>`
+- **WHEN** the app shows `#/studio/<profile-id>/<purpose>`
 - **THEN** Studio MUST be the marked navigation item
 
 ### Requirement: The URL is the only source of location
 
-The current area, project, pipeline and run SHALL be read from the URL hash only, using these routes: `#/home`, `#/knowledge-base`, `#/knowledge-base/<collection>`, `#/chat`, `#/chat/<collection>`, `#/studio`, `#/studio/<pipeline-id>`, `#/experiments`, `#/experiments/runs/<run-id>`, `#/integrations` and `#/settings`, with each segment URI-encoded. A hash that matches no route SHALL show Home and rewrite the address bar to `#/home`. Back and forward SHALL restore the previous location. A route naming a collection, pipeline or run that the server does not return SHALL show a not-found state with a link back to its picker. Browser storage SHALL hold only the theme preference, the last-used collection as a default for `#/chat` and `#/knowledge-base`, and unsaved canvas drafts; stored values that fail validation SHALL be ignored and removed.
+The current area, project, profile, purpose, run and Settings section SHALL be read from the URL hash only, using these routes: `#/home`, `#/knowledge-base`, `#/knowledge-base/<collection>`, `#/chat`, `#/chat/<collection>`, `#/studio`, `#/studio/<profile-id>`, `#/studio/<profile-id>/<purpose>` (purpose `ingest`, `search` or `answer`), `#/experiments`, `#/experiments/runs/<run-id>`, `#/integrations`, `#/settings` and `#/settings/<section>`, with each segment URI-encoded. A hash that matches no route SHALL show Home and rewrite the address bar to `#/home`. Back and forward SHALL restore the previous location. A route naming a collection, profile or run that the server does not return SHALL show a not-found state with a link back to its picker. Browser storage SHALL hold only the theme preference, the last-used collection as a default for `#/chat` and `#/knowledge-base`, and unsaved canvas drafts; stored values that fail validation SHALL be ignored and removed.
 
 #### Scenario: Reload keeps the location
 
@@ -31,6 +31,11 @@ The current area, project, pipeline and run SHALL be read from the URL hash only
 #### Scenario: Unknown route
 
 - **WHEN** the app opens at `#/search`
+- **THEN** Home MUST be shown and the address bar MUST read `#/home`
+
+#### Scenario: Unknown purpose
+
+- **WHEN** the app opens at `#/studio/papers-search/rerank`
 - **THEN** Home MUST be shown and the address bar MUST read `#/home`
 
 #### Scenario: Back restores the previous location
@@ -47,6 +52,11 @@ The current area, project, pipeline and run SHALL be read from the URL hash only
 
 - **WHEN** browser storage holds a preferences value that fails validation
 - **THEN** the app MUST use the default theme, MUST remove the stored value, and MUST NOT show an error
+
+#### Scenario: Unknown Settings section
+
+- **WHEN** the app opens at `#/settings/keys`
+- **THEN** Home MUST be shown and the address bar MUST read `#/home`
 
 ### Requirement: Workspace data stays consistent across views
 
@@ -133,11 +143,11 @@ The top bar SHALL hold a theme select with System, Light and Dark, and an icon-o
 
 ### Requirement: The navigation collapses on the canvas sub-page
 
-On the Studio canvas sub-page (`#/studio/<pipeline-id>`) the navigation SHALL show as its icon column from the `md` breakpoint up, whatever the stored per-browser choice is. The user MAY expand it for the current visit with its toggle. That expansion SHALL NOT be stored and SHALL reset the next time the canvas sub-page opens. The stored choice SHALL stay unchanged and SHALL apply on every other route. Below the `md` breakpoint nothing changes.
+On the Studio canvas sub-page (`#/studio/<profile-id>` or `#/studio/<profile-id>/<purpose>`) the navigation SHALL show as its icon column from the `md` breakpoint up, whatever the stored per-browser choice is. The user MAY expand it for the current visit with its toggle. That expansion SHALL NOT be stored and SHALL reset the next time the canvas sub-page opens. The stored choice SHALL stay unchanged and SHALL apply on every other route. Below the `md` breakpoint nothing changes.
 
 #### Scenario: Expanded navigation collapses on the canvas
 
-- **WHEN** the stored choice is "expanded" and the user opens `#/studio/<pipeline-id>`
+- **WHEN** the stored choice is "expanded" and the user opens `#/studio/<profile-id>`
 - **THEN** the navigation MUST render as the icon column
 
 #### Scenario: Stored choice returns on other routes
