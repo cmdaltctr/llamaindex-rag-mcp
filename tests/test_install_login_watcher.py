@@ -76,6 +76,18 @@ def invoke_happy(tmp_path):
     return _run
 
 
+def _built_in_resolver(settings: object | None = None) -> MagicMock:
+    """Return a resolver double for a collection that follows a built-in profile."""
+    from omrg.core.profiles.catalogue import ProfileBinding
+
+    resolver = MagicMock()
+    resolver.resolve_bound.return_value = (
+        settings if settings is not None else MagicMock(),
+        ProfileBinding("documents", "documents"),
+    )
+    return resolver
+
+
 @pytest.fixture
 def macos_home(monkeypatch: pytest.MonkeyPatch):
     """Force macOS detection and redirect home into tmp space.
@@ -499,7 +511,7 @@ class TestDifferentLabelReplacement:
                 "omrg.core.ingestion.ingest_path_async",
                 new=AsyncMock(return_value={"status": "error", "message": "boom"}),
             ),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.compose.build_profile_resolver", return_value=_built_in_resolver()),
             patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = runner.invoke(
@@ -711,8 +723,7 @@ class TestInitialIngest:
         watched.mkdir()
         _ = home  # patched home guarantees no write outside tmp space
         sentinel_settings = effective_settings(collection_name="research")
-        resolver = MagicMock()
-        resolver.resolve.return_value = sentinel_settings
+        resolver = _built_in_resolver(sentinel_settings)
 
         parent = MagicMock()
         with (
@@ -747,6 +758,67 @@ class TestInitialIngest:
         positional = mock_ing.call_args.args
         assert Path(positional[0]).resolve() == watched.resolve()
 
+    def test_catch_up_ingest_on_a_user_profile_runs_its_ingest_pipeline(
+        self, effective_settings, macos_home, tmp_path, monkeypatch
+    ) -> None:
+        """A collection bound to a user profile is ingested through the profile's pipeline."""
+        from tests.fixtures.pipeline_parity.ingestion.snapshot import copy_sources, pin_detection
+        from tests.unit.test_cli_user_profiles_support import (
+            PROFILE,
+            USER_COLLECTION,
+            count_graph_runs,
+            link_workspace,
+            tag_collection,
+            use_mock_embedder,
+        )
+
+        home = macos_home(tmp_path / "hu")
+        use_mock_embedder(monkeypatch)
+        pin_detection(monkeypatch)
+        link_workspace(tmp_path, effective_settings, home)
+        tag_collection(tmp_path, USER_COLLECTION, PROFILE)
+        runs = count_graph_runs(monkeypatch)
+        watched = copy_sources(tmp_path / "wd")
+        with patch(
+            "omrg.transports.cli._launchagent.run_launchctl",
+            new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
+        ):
+            result = self._invoke(
+                watched, ["--collection", USER_COLLECTION, "--initial-ingest", "--load", "--yes"]
+            )
+        assert result.exit_code == 0, result.output
+        assert runs == ["run_pipeline"]
+        assert "3 file(s) indexed" in result.output
+
+    def test_catch_up_ingest_without_a_workspace_stops_with_the_binding_message(
+        self, macos_home, tmp_path, monkeypatch
+    ) -> None:
+        """No workspace database: the install stops before any file write or launchctl call."""
+        from tests.unit.test_cli_user_profiles_support import (
+            PROFILE,
+            USER_COLLECTION,
+            tag_collection,
+            use_mock_embedder,
+        )
+
+        home = macos_home(tmp_path / "hn")
+        use_mock_embedder(monkeypatch)
+        tag_collection(tmp_path, USER_COLLECTION, PROFILE)
+        watched = tmp_path / "nw-docs"
+        watched.mkdir()
+        with patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc:
+            result = self._invoke(
+                watched, ["--collection", USER_COLLECTION, "--initial-ingest", "--load", "--yes"]
+            )
+        assert result.exit_code == 1
+        text = " ".join(result.output.split())
+        assert "'my-notes'" in text and "~/.omrg/workspace/workspace.db" in text
+        assert "Start `omrg web` once" in text
+        mock_lc.assert_not_called()
+        assert not (home / "Library/LaunchAgents").exists() or not any(
+            (home / "Library/LaunchAgents").iterdir()
+        )
+
     def test_profile_resolution_failure_is_fail_closed(
         self, effective_settings, macos_home, tmp_path
     ) -> None:
@@ -755,7 +827,9 @@ class TestInitialIngest:
         watched = tmp_path / "pf-docs"
         watched.mkdir()
         resolver = MagicMock()
-        resolver.resolve.side_effect = ValueError("No profile registered for collection 'research'")
+        resolver.resolve_bound.side_effect = ValueError(
+            "No profile registered for collection 'research'"
+        )
         with (
             patch("omrg.compose.build_profile_resolver", return_value=resolver),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()) as mock_ing,
@@ -781,7 +855,7 @@ class TestInitialIngest:
         watched = tmp_path / "ie-docs"
         watched.mkdir()
         with (
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.compose.build_profile_resolver", return_value=_built_in_resolver()),
             patch(
                 "omrg.core.ingestion.ingest_path_async",
                 new=AsyncMock(return_value={"status": "error", "message": "boom"}),
@@ -806,7 +880,7 @@ class TestInitialIngest:
         watched = tmp_path / "if-docs"
         watched.mkdir()
         with (
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.compose.build_profile_resolver", return_value=_built_in_resolver()),
             patch(
                 "omrg.core.ingestion.ingest_path_async",
                 new=AsyncMock(return_value={"status": "error", "message": "boom"}),
@@ -840,7 +914,7 @@ class TestInitialIngest:
         watched = tmp_path / "nf-docs"
         watched.mkdir()
         resolver = MagicMock()
-        resolver.resolve.side_effect = ValueError("No profile registered")
+        resolver.resolve_bound.side_effect = ValueError("No profile registered")
         with (
             patch("omrg.compose.build_profile_resolver", return_value=resolver),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
@@ -883,7 +957,7 @@ class TestInitialIngest:
         watched = tmp_path / "ex-docs"
         watched.mkdir()
         with (
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.compose.build_profile_resolver", return_value=_built_in_resolver()),
             patch(
                 "omrg.core.ingestion.ingest_path_async",
                 new=AsyncMock(side_effect=RuntimeError("kaboom")),

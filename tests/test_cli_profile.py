@@ -60,6 +60,25 @@ class TestValidation:
         assert result.exit_code == 1
 
 
+class TestUserProfileIsRefused:
+    """A user profile is bound in the web workspace, never from the CLI (design D11)."""
+
+    _MESSAGE = (
+        "Bind user profiles in Knowledge Base > Profile, or through the MCP endpoint of `omrg web`."
+    )
+
+    @pytest.mark.parametrize("extra", [[], ["--yes"], ["--json"], ["--json", "--yes"]])
+    def test_a_user_profile_id_is_refused_and_the_tag_stays(self, extra: list[str]) -> None:
+        c, a, r = _patched()
+        with c as contract_mock, a as apply_mock, r:
+            result = runner.invoke(app, ["set-profile", "-c", "docs", "-p", "my-notes", *extra])
+        assert result.exit_code == 1
+        assert self._MESSAGE in " ".join(result.stderr.split())
+        assert result.stdout == ""
+        contract_mock.assert_not_called()
+        apply_mock.assert_not_called()
+
+
 class TestPreviewAndConfirm:
     """The safety contract must be shown before any change is applied."""
 

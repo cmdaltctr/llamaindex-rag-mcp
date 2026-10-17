@@ -1421,3 +1421,89 @@ class TestOnDeletedHandler:
             case_sensitive=False,
         )
         assert not matched
+
+
+# ── User-profile collections (unify-profiles tasks 8.12, 8.13) ───────────────
+
+
+class TestUserProfileCollections:
+    """The watcher reads user profiles from the default workspace (design D11)."""
+
+    @pytest.fixture
+    def home(self, monkeypatch, tmp_path):
+        from tests.unit.test_cli_user_profiles_support import use_home, use_mock_embedder
+
+        use_mock_embedder(monkeypatch)
+        return use_home(monkeypatch, tmp_path / "home")
+
+    @pytest.fixture
+    def source(self, monkeypatch, tmp_path):
+        from tests.fixtures.pipeline_parity.ingestion.snapshot import copy_sources, pin_detection
+
+        pin_detection(monkeypatch)
+        return str(copy_sources(tmp_path / "src") / "guide.md")
+
+    def test_a_user_profile_collection_runs_its_ingest_pipeline(
+        self, home, source, tmp_path, effective_settings, monkeypatch
+    ):
+        from tests.unit.test_cli_user_profiles_support import (
+            PROFILE,
+            USER_COLLECTION,
+            count_graph_runs,
+            link_workspace,
+            tag_collection,
+        )
+
+        link_workspace(tmp_path, effective_settings, home)
+        tag_collection(tmp_path, USER_COLLECTION, PROFILE)
+        runs = count_graph_runs(monkeypatch)
+        handler = DocumentIngestHandler(collection_name=USER_COLLECTION)
+
+        handler._dispatch_ingest(source, "h1")
+
+        assert runs == ["run_pipeline"]
+        assert handler._hash_cache[source] == "h1"
+        assert handler._consecutive_errors == 0
+
+    def test_a_built_in_collection_keeps_the_direct_call(
+        self, home, source, tmp_path, effective_settings, monkeypatch
+    ):
+        from tests.unit.test_cli_user_profiles_support import (
+            count_graph_runs,
+            link_workspace,
+            tag_collection,
+        )
+
+        link_workspace(tmp_path, effective_settings, home)
+        tag_collection(tmp_path, "plain", "documents")
+        runs = count_graph_runs(monkeypatch)
+        handler = DocumentIngestHandler(collection_name="plain")
+        with _patch_ingest(return_value={"status": "ok", "chunks_created": 1}) as direct:
+            handler._dispatch_ingest(source, "h1")
+
+        direct.assert_called_once_with(source, collection_name="plain", effective_settings=ANY)
+        assert runs == []
+
+    def test_no_workspace_logs_the_error_and_keeps_running(
+        self, home, source, tmp_path, monkeypatch, caplog
+    ):
+        from tests.unit.test_cli_user_profiles_support import (
+            PROFILE,
+            USER_COLLECTION,
+            count_graph_runs,
+            tag_collection,
+        )
+
+        tag_collection(tmp_path, USER_COLLECTION, PROFILE)
+        runs = count_graph_runs(monkeypatch)
+        handler = DocumentIngestHandler(collection_name=USER_COLLECTION)
+        caplog.set_level(logging.WARNING)
+        with _patch_ingest() as direct:
+            handler._dispatch_ingest(source, "h1")  # must not raise
+
+        text = " ".join(caplog.text.split())
+        assert "'my-notes'" in text and "~/.omrg/workspace/workspace.db" in text
+        assert "Start `omrg web` once" in text
+        direct.assert_not_called()
+        assert runs == []
+        assert source not in handler._hash_cache

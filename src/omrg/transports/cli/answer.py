@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import Callable
 from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from io import StringIO
 from typing import Any
@@ -18,6 +19,7 @@ from typing import Any
 import typer
 
 from ... import compose
+from ...compose_profile_setup import workspace_profile_catalogue
 from . import _OLLAMA_URL, _print_ollama_error, app, console
 
 
@@ -73,41 +75,22 @@ def _ollama_message(detail: str) -> str:
     return msg
 
 
-@app.command()
-def answer(
-    query: str = typer.Argument(..., help="Natural language question to answer."),
-    top_k: int | None = typer.Option(None, "--top-k", "-k", help="Max evidence chunks."),
-    rerank: bool | None = typer.Option(
-        None,
-        "--rerank/--no-rerank",
-        help="Re-score evidence with the cross-encoder reranker (omit for policy default).",
-    ),
-    hybrid: bool | None = typer.Option(
-        None,
-        "--hybrid/--no-hybrid",
-        help="Fuse dense vector retrieval with sparse BM25 via RRF (omit for policy default).",
-    ),
-    collection: str = typer.Option(
-        "documents",
-        "--collection",
-        "-c",
-        help="Collection to answer over.",
-    ),
-    diagnostics: bool = typer.Option(
-        False,
-        "--diagnostics",
-        help="Include retrieval/generation timings and completion counts.",
-    ),
-    json_output: bool = typer.Option(False, "--json", help="Output the result as JSON."),
-) -> None:
-    """Answer a question from indexed documents with verifiable citations."""
-    from ...core.answer import answer as do_answer
+def _direct_runner(
+    query: str,
+    effective: Any,
+    top_k: int | None,
+    rerank: bool | None,
+    hybrid: bool | None,
+    collection: str,
+    diagnostics: bool,
+    json_output: bool,
+) -> Callable[[], dict[str, Any]]:
+    """Resolve the answer model and judge, then return the direct core call.
 
-    try:
-        effective = compose.build_profile_resolver().resolve(collection)
-    except ValueError as exc:
-        _emit_failure(query, str(exc), json_output)
-        raise typer.Exit(code=1) from None
+    Raises:
+        typer.Exit: With code 1 when the answer model cannot be built.
+    """
+    from ...core.answer import answer as do_answer
 
     if top_k is None:
         top_k = effective.top_k
@@ -144,25 +127,89 @@ def answer(
                     "verification provider unavailable (no judge configured)"
                 )
 
+    def run() -> dict[str, Any]:
+        return asyncio.run(
+            do_answer(
+                query,
+                top_k=top_k,
+                rerank=rerank,
+                hybrid=hybrid,
+                collection_name=collection,
+                include_diagnostics=diagnostics,
+                complete=complete,
+                verify_complete=verify_complete,
+                verify_unavailable_reason=verify_unavailable_reason,
+                completion_source=source,
+                effective_settings=effective,
+            )
+        )
+
+    return run
+
+
+@app.command()
+def answer(
+    query: str = typer.Argument(..., help="Natural language question to answer."),
+    top_k: int | None = typer.Option(None, "--top-k", "-k", help="Max evidence chunks."),
+    rerank: bool | None = typer.Option(
+        None,
+        "--rerank/--no-rerank",
+        help="Re-score evidence with the cross-encoder reranker (omit for policy default).",
+    ),
+    hybrid: bool | None = typer.Option(
+        None,
+        "--hybrid/--no-hybrid",
+        help="Fuse dense vector retrieval with sparse BM25 via RRF (omit for policy default).",
+    ),
+    collection: str = typer.Option(
+        "documents",
+        "--collection",
+        "-c",
+        help="Collection to answer over.",
+    ),
+    diagnostics: bool = typer.Option(
+        False,
+        "--diagnostics",
+        help="Include retrieval/generation timings and completion counts.",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output the result as JSON."),
+) -> None:
+    """Answer a question from indexed documents with verifiable citations.
+
+    A collection that follows a user profile runs that profile's Answer
+    pipeline (the default workspace is read, never written).
+    """
     try:
-        output_guard = redirect_stdout(StringIO()) if json_output else nullcontext()
-        error_guard = redirect_stderr(StringIO()) if json_output else nullcontext()
-        with output_guard, error_guard:
-            result = asyncio.run(
-                do_answer(
+        resolver = compose.build_profile_resolver(catalogue=workspace_profile_catalogue())
+        effective, binding = resolver.resolve_bound(collection)
+    except ValueError as exc:
+        _emit_failure(query, str(exc), json_output)
+        raise typer.Exit(code=1) from None
+
+    if binding.user:
+        # The Engine builds the answer model and the judge itself. A value the
+        # user did not type leaves the step settings of the profile's graph.
+        def run() -> dict[str, Any]:
+            return asyncio.run(
+                compose.runtime_engine().answer(
                     query,
                     top_k=top_k,
                     rerank=rerank,
                     hybrid=hybrid,
                     collection_name=collection,
                     include_diagnostics=diagnostics,
-                    complete=complete,
-                    verify_complete=verify_complete,
-                    verify_unavailable_reason=verify_unavailable_reason,
-                    completion_source=source,
-                    effective_settings=effective,
                 )
             )
+    else:
+        run = _direct_runner(
+            query, effective, top_k, rerank, hybrid, collection, diagnostics, json_output
+        )
+
+    try:
+        output_guard = redirect_stdout(StringIO()) if json_output else nullcontext()
+        error_guard = redirect_stderr(StringIO()) if json_output else nullcontext()
+        with output_guard, error_guard:
+            result = run()
     except ConnectionError as exc:
         if json_output:
             _emit_failure(query, _ollama_message(str(exc)), json_output)
