@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -20,7 +21,9 @@ from omrg.core.pipelines import (
     ResolverProfileSource,
     admit_pipeline,
     parse_definition,
+    preflight,
 )
+from omrg.core.pipelines.admission import draft_node_controls
 from omrg.core.profiles.resolver import ProfileResolver
 
 
@@ -267,3 +270,156 @@ def test_profile_resolved_once_per_collection(effective_settings: Any) -> None:
     )
     _admit(search_graph(), Counting(resolver), inputs={"query": "q"})
     assert Counting.calls == ["documents"]
+
+
+# ── Draft controls (design D24) ───────────────────────────────────────
+
+
+def _draft(
+    data: dict[str, Any], profiles: Any, host: Any = None
+) -> dict[str, list[dict[str, Any]]]:
+    """Return the draft controls keyed by node id (no run inputs)."""
+    definition = parse_definition(data)
+    catalogue = fixture_catalogue()
+    host = host or fixture_host()
+    report = preflight(definition, catalogue, host=host)
+    rows = draft_node_controls(definition.graph, report, catalogue, host=host, profiles=profiles)
+    return {row["node_id"]: row["controls"] for row in rows}
+
+
+def _draft_control(draft: dict[str, Any], node_id: str, lever: str) -> dict[str, Any]:
+    return next(c for c in draft[node_id] if c["lever"] == lever)
+
+
+def test_draft_returns_controls_of_every_valid_node(effective_settings: Any) -> None:
+    """Without run inputs, each node of a valid graph carries its controls."""
+    store = FakeStore({"documents": "documents"})
+    draft = _draft(search_graph(), _profiles(store, effective_settings))
+    assert set(draft) == {"dense", "sparse", "fuse", "rerank", "context", "answer"}
+    top_k = _draft_control(draft, "dense", "retrieval.top_k")
+    assert top_k["source"] == "profile"
+    assert (
+        top_k["value"] == _profiles(store, effective_settings).resolve("documents").retrieval.top_k
+    )
+    assert draft["fuse"] == []
+
+
+def test_draft_graph_profile_beats_collection_profile(effective_settings: Any) -> None:
+    """``graph.profile`` supplies the values although the collection is tagged otherwise."""
+    data = search_graph()
+    data["profile"] = "documents"
+    data["collection"] = "code"
+    store = FakeStore({"code": "codebase"})
+    profiles = _profiles(store, effective_settings)
+    control = _draft_control(_draft(data, profiles), "dense", "retrieval.top_k")
+    assert control["value"] == profiles.load_profile("documents").retrieval.top_k
+    assert control["value"] != profiles.load_profile("codebase").retrieval.top_k
+    assert "(graph)" in control["detail"]
+
+
+def test_draft_collection_profile_when_graph_names_none(effective_settings: Any) -> None:
+    """Without ``graph.profile`` the collection's profile supplies the values."""
+    data = search_graph()
+    data["collection"] = "code"
+    store = FakeStore({"code": "codebase"})
+    control = _draft_control(
+        _draft(data, _profiles(store, effective_settings)), "dense", "retrieval.top_k"
+    )
+    assert (control["value"], control["source"]) == (20, "profile")
+    assert "(collection)" in control["detail"]
+
+
+def test_draft_node_parameter_beats_graph_override(effective_settings: Any) -> None:
+    """Precedence is node, then graph-wide, then profile."""
+    data = search_graph()
+    data["overrides"] = {"retrieval.top_k": 15}
+    data["nodes"][0]["params"] = {"top_k": 3}
+    store = FakeStore({"documents": "documents"})
+    draft = _draft(data, _profiles(store, effective_settings))
+    dense = _draft_control(draft, "dense", "retrieval.top_k")
+    sparse = _draft_control(draft, "sparse", "retrieval.top_k")
+    assert (dense["value"], dense["source"]) == (3, "node")
+    assert (sparse["value"], sparse["source"]) == (15, "graph")
+
+
+def test_draft_collection_chain(effective_settings: Any) -> None:
+    """Node collection, then graph collection, then request collection, then host default."""
+    store = FakeStore({"documents": "documents", "code": "codebase", "other": "codebase"})
+    profiles = _profiles(store, effective_settings)
+
+    # Host default only: every node reads the default collection (documents, top_k 10).
+    base = _draft(search_graph(), profiles)
+    assert _draft_control(base, "dense", "retrieval.top_k")["value"] != 20
+
+    # Request collection stands in for the host default (the caller passes it as such).
+    host = replace(fixture_host(), default_collection="other")
+    requested = _draft(search_graph(), profiles, host)
+    assert _draft_control(requested, "dense", "retrieval.top_k")["value"] == 20
+
+    # graph.collection beats the request collection.
+    data = search_graph()
+    data["collection"] = "documents"
+    graph_level = _draft(data, profiles, host)
+    assert _draft_control(graph_level, "dense", "retrieval.top_k")["value"] != 20
+    # A node without a collection parameter follows graph.collection as well.
+    assert _draft_control(graph_level, "rerank", "retrieval.rerank_enabled")["value"] is True
+    assert _draft_control(requested, "rerank", "retrieval.rerank_enabled")["value"] is False
+
+    # The node's collection parameter beats both.
+    data["nodes"][0]["params"] = {"collection": "code"}
+    node_level = _draft(data, profiles, host)
+    assert _draft_control(node_level, "dense", "retrieval.top_k")["value"] == 20
+    assert "(collection)" in _draft_control(node_level, "dense", "retrieval.top_k")["detail"]
+
+
+def test_draft_skips_node_with_invalid_parameters(effective_settings: Any) -> None:
+    """Valid nodes keep their controls although another node has invalid parameters."""
+    data = search_graph()
+    data["nodes"][0]["params"] = {"top_k": 0}
+    store = FakeStore({"documents": "documents"})
+    draft = _draft(data, _profiles(store, effective_settings))
+    assert "dense" not in draft
+    assert {"sparse", "fuse", "rerank", "context", "answer"} <= set(draft)
+
+
+def test_draft_skips_node_whose_profile_cannot_resolve(effective_settings: Any) -> None:
+    """A node bound to a collection with an unusable profile gets no controls."""
+    data = search_graph()
+    data["nodes"][0]["params"] = {"collection": "broken"}
+    store = FakeStore({"documents": "documents", "broken": "hybrid"})
+    draft = _draft(data, _profiles(store, effective_settings))
+    assert "dense" not in draft
+    assert "sparse" in draft
+
+
+def test_draft_unsupported_graph_profile_resolves_nothing() -> None:
+    """``hybrid`` is already a validation issue; the resolver is not called."""
+
+    class Exploding:
+        def resolve(self, collection: str) -> Any:
+            raise AssertionError("resolver must not run for an unsupported profile")
+
+        load_profile = resolve
+
+        def environment_keys(self) -> frozenset[str]:
+            return frozenset()
+
+    data = search_graph()
+    data["profile"] = "hybrid"
+    assert _draft(data, Exploding()) == {}
+
+
+def test_draft_controls_equal_admission_controls(effective_settings: Any) -> None:
+    """Draft and admitted controls cannot drift for the same graph."""
+    data = search_graph()
+    data["overrides"] = {"retrieval.top_k": 15}
+    data["nodes"][0]["params"] = {"top_k": 3}
+    data["nodes"][3]["params"] = {"enabled": False}
+    store = FakeStore({"documents": "documents"})
+    env = {"RETRIEVAL__TOP_K": "7"}
+    profiles = _profiles(store, effective_settings, env)
+    draft = _draft(data, profiles)
+    snapshot = _admit(data, profiles, inputs={"query": "q"})
+    assert set(draft) == {n.node_id for n in snapshot.nodes}
+    for node in snapshot.nodes:
+        assert draft[node.node_id] == [c.model_dump(mode="json") for c in node.controls]

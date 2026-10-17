@@ -9,7 +9,7 @@ place.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict
@@ -74,18 +74,25 @@ class PipelineValidationError(ValueError):
 
     Attributes:
         issues: Every problem found, in discovery order.
+        nodes: On a draft check, the effective controls of each node whose
+            parameters passed validation, as ``{"node_id", "controls"}``
+            entries. ``None`` when the check was not a draft check.
     """
 
-    def __init__(self, issues: Iterable[PipelineIssue]) -> None:
+    def __init__(
+        self, issues: Iterable[PipelineIssue], *, nodes: Iterable[Mapping[str, Any]] | None = None
+    ) -> None:
         """Create the error from one or more issues.
 
         Args:
             issues: The validation problems. Must not be empty.
+            nodes: Draft controls for the nodes that are valid so far.
 
         Raises:
             ValueError: If ``issues`` is empty.
         """
         self.issues: tuple[PipelineIssue, ...] = tuple(issues)
+        self.nodes: tuple[Mapping[str, Any], ...] | None = None if nodes is None else tuple(nodes)
         if not self.issues:
             raise ValueError("PipelineValidationError needs at least one issue")
         super().__init__(self._summary())

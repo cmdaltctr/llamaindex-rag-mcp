@@ -18,9 +18,11 @@ import collections
 import logging
 from typing import TYPE_CHECKING, Any
 
-from .compose_pipelines import EnginePipelines, build_graph_host
+from . import engine_profiles
+from .compose_pipelines import EnginePipelines
 from .core.vectordb.identity import RedactionSecrets
 from .engine_answer import ClientCompletion, build_verifier, select_completion
+from .engine_lifecycle import graph_host, install_as_process_default, release_resources
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -150,7 +152,16 @@ class Engine:
         self._check_open()
         from .core.ingestion.pipeline import ingest_path_async
 
-        effective = self._resolve_settings(collection_name)
+        effective, binding = self._resolve_bound(collection_name)
+        if binding is not None and binding.user:
+            return await engine_profiles.ingest(
+                self,
+                binding,
+                path,
+                collection_name,
+                progress_callback=progress_callback,
+                values={"chunk_size": chunk_size, "chunk_overlap": chunk_overlap},
+            )
         return await ingest_path_async(
             path,
             chunk_size=chunk_size,
@@ -182,7 +193,25 @@ class Engine:
         self._check_open()
         from .core.retrieval.pipeline import search
 
-        effective = self._resolve_settings(collection_name)
+        effective, binding = self._resolve_bound(collection_name)
+        if binding is not None and binding.user:
+            return engine_profiles.search(
+                self,
+                binding,
+                query,
+                collection_name,
+                include_diagnostics=include_diagnostics,
+                values={
+                    "top_k": top_k,
+                    "similarity_threshold": similarity_threshold,
+                    "rerank": rerank,
+                    "hybrid": hybrid,
+                    "expand_window": expand_window or None,
+                    "metadata_filter": metadata_filter,
+                    "technical_fraction": technical_fraction,
+                    "fetch_k": fetch_k,
+                },
+            )
         return search(
             query,
             top_k=top_k,
@@ -238,7 +267,24 @@ class Engine:
         self._check_open()
         from .core.answer.pipeline import answer as core_answer
 
-        effective = self._resolve_settings(collection_name)
+        effective, binding = self._resolve_bound(collection_name)
+        if binding is not None and binding.user:
+            engine_profiles.refuse_caller_inputs(binding, client_completion, rows)
+            return await engine_profiles.answer(
+                self,
+                binding,
+                question,
+                collection_name,
+                values={
+                    "top_k": top_k,
+                    "similarity_threshold": similarity_threshold,
+                    "rerank": rerank,
+                    "hybrid": hybrid,
+                    "expand_window": expand_window or None,
+                    "metadata_filter": metadata_filter,
+                    "include_diagnostics": include_diagnostics or None,
+                },
+            )
         complete, effective, source = select_completion(
             effective, client_completion, self._get_answer_llm
         )
@@ -382,48 +428,7 @@ class Engine:
             )
         self._closed = True
         self._pipelines.release()
-        # Drop the engine-owned query embedding cache.
-        self._query_cache.clear()
-        # Evict BM25 cache entries for this store's identity only.
-        from .core.retrieval.sparse import evict_bm25_cache
-
-        evict_bm25_cache(self._store.cache_identity)
-        # Close the owned store; a failure is logged, not raised, so the
-        # reference release below always completes.
-        try:
-            self._store.close()
-        except Exception as exc:
-            logger.warning(
-                "store close() failed during engine close: %s: %s",
-                type(exc).__name__,
-                exc,
-                exc_info=True,
-            )
-        # Close the owned OCR worker client (task 2.6a): stop accepting
-        # requests, close stdin, bounded graceful wait, then terminate.
-        # A failure is logged, not raised, mirroring the store release.
-        if self._ocr_client is not None:
-            try:
-                self._ocr_client.close()
-            except Exception as exc:
-                logger.warning(
-                    "OCR worker client close() failed during engine close: %s: %s",
-                    type(exc).__name__,
-                    exc,
-                    exc_info=True,
-                )
-        # Release owned references (ADR-061: the embedder reference must
-        # go so a closed engine never pins model resources). Shared
-        # process-wide caches (reranker model cache) are untouched.
-        self._store = None  # type: ignore[assignment]
-        self._embed_model = None  # type: ignore[assignment]
-        self._reranker = None
-        self._profile_resolver = None
-        self._profile_resolver_factory = None
-        self._answer_llm = None
-        self._answer_llm_factory = None
-        self._verify_llm_factory = None
-        self._ocr_client = None
+        release_resources(self)
 
     # ── Internal helpers ───────────────────────────────────────────
 
@@ -438,23 +443,7 @@ class Engine:
 
     def _graph_host(self, collection: str | None) -> Any:
         """Describe this Engine's resources to graph validation and runs."""
-        answer_llm = self._get_answer_llm if self._answer_llm_factory is not None else None
-        resources = {
-            "store": self._store,
-            "embedder": self._embed_model,
-            "reranker": self._reranker,
-            "ocr": self._ocr_client,
-            "answer_llm": answer_llm,
-            "verify_llm": self._pipelines.judge(self._verify_llm_factory),
-        }
-        settings, resolver = self._effective_settings, self._resolver()
-        return build_graph_host(
-            settings,
-            resources=resources,
-            resolver=resolver,
-            collection=collection,
-            ocr_factory=self._pipelines.ocr_client,
-        )
+        return graph_host(self, collection)
 
     def _get_answer_llm(self) -> Any:
         """Build the answer LLM on first use and keep it."""
@@ -476,10 +465,23 @@ class Engine:
         Resolution errors propagate: an invalid collection profile tag
         is a configuration error, not an absent optional capability.
         """
+        return self._resolve_bound(collection_name)[0]
+
+    def _resolve_bound(self, collection_name: str) -> tuple[EffectiveSettings, Any]:
+        """Resolve the settings and the profile binding with one tag read.
+
+        The binding is ``None`` when the Engine has no resolver or the resolver
+        does not report bindings. A caller that finds a user binding runs the
+        profile's pipelines; every other caller keeps the direct path.
+        """
+        from .core.profiles.resolver import ProfileResolver
+
         resolver = self._resolver()
-        if resolver is not None:
-            return resolver.resolve(collection_name)
-        return self._effective_settings
+        if resolver is None:
+            return self._effective_settings, None
+        if not isinstance(resolver, ProfileResolver):
+            return resolver.resolve(collection_name), None
+        return resolver.resolve_bound(collection_name)
 
     def _install_as_process_default(self) -> None:
         """Install this engine's components as process defaults (legacy transports).
@@ -488,11 +490,4 @@ class Engine:
         itself never installs; this method is the installer over the
         built engine.
         """
-        from llama_index.core import Settings as LlamaIndexSettings
-
-        from .core.settings import set_default_effective_settings
-        from .core.vectordb import set_default_store
-
-        LlamaIndexSettings.embed_model = self._embed_model
-        set_default_store(self._store)
-        set_default_effective_settings(self._effective_settings)
+        install_as_process_default(self)

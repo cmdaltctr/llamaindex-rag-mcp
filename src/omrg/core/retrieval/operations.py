@@ -14,7 +14,9 @@ them and adds no second copy.
 
 from __future__ import annotations
 
+import threading
 import time
+import weakref
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -26,6 +28,20 @@ if TYPE_CHECKING:
 
 #: Score kind of a row the cross-encoder re-scored successfully.
 RERANK_SCORE_KIND = "reranker_sigmoid_v1"
+
+# A reranker keeps its last failure reason on the instance. Runs that read at the
+# same time share one reranker, so "rerank, then read the reason" must be one step.
+_RERANK_LOCKS: weakref.WeakKeyDictionary[Any, threading.Lock] = weakref.WeakKeyDictionary()
+_RERANK_LOCKS_GUARD = threading.Lock()
+
+
+def _rerank_lock(reranker: Any) -> threading.Lock:
+    """Return the lock that covers one reranker instance."""
+    try:
+        with _RERANK_LOCKS_GUARD:
+            return _RERANK_LOCKS.setdefault(reranker, threading.Lock())
+    except TypeError:  # an object that cannot be weakly referenced
+        return _RERANK_LOCKS_GUARD
 
 
 @dataclass(frozen=True)
@@ -225,7 +241,9 @@ def run_reranker(
 
         reranker = backend.build_reranker_from_settings(settings)
     t0 = time.perf_counter()
-    result = reranker.rerank(query, rows, top_k=top_k)
+    with _rerank_lock(reranker):
+        result = reranker.rerank(query, rows, top_k=top_k)
+        failure_reason = getattr(reranker, "last_failure_reason", None) or None
     t1 = time.perf_counter()
     if timing_report is not None:
         timing_report["rerank_seconds"] = timing_report.get("rerank_seconds", 0.0) + (t1 - t0)
@@ -236,7 +254,7 @@ def run_reranker(
     return RerankOutcome(
         rows=result,
         backend=getattr(reranker, "backend_name", None),
-        failure_reason=getattr(reranker, "last_failure_reason", None) or None,
+        failure_reason=failure_reason,
     )
 
 

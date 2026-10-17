@@ -21,7 +21,7 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from ..settings import EffectiveSettings
 from .catalogue import OperationCatalogue, OperationDescriptor
@@ -146,14 +146,10 @@ class _Admission:
         params = self.report.params[node_id]
         collection = self.report.collections.get(node_id)
         base = self.collections[collection or self.default_collection]
-        node_values = {
-            lever: getattr(params, param)
-            for param, lever in descriptor.lever_params.items()
-            if getattr(params, param) is not None
-        }
-        graph_values = dict(self.graph.overrides)
         try:
-            settings = apply_levers(base.settings, {**graph_values, **node_values})
+            settings, controls = _effective_node(
+                self.graph, node_id, descriptor, params, base, env_keys
+            )
         except ValidationError as exc:
             self.issues.append(
                 PipelineIssue(
@@ -163,23 +159,6 @@ class _Admission:
                 )
             )
             return None
-        controls = []
-        for lever in sorted({*descriptor.lever_params.values(), *graph_values}):
-            if lever in node_values:
-                source, detail = ControlSource.NODE, f"node {node_id!r} parameter"
-            elif lever in graph_values:
-                source, detail = ControlSource.GRAPH, "graph-wide override"
-            else:
-                in_env = ALLOWED_LEVERS[lever].env_name in env_keys
-                source = ControlSource.ENVIRONMENT if in_env else ControlSource.PROFILE
-                detail = f"profile {base.profile_name!r} ({base.profile_origin})"
-                if in_env:
-                    detail = f"{ALLOWED_LEVERS[lever].env_name} within {detail}"
-            controls.append(
-                EffectiveControl(
-                    lever=lever, value=read_lever(settings, lever), source=source, detail=detail
-                )
-            )
         return NodeSnapshot(
             node_id=node_id,
             operation=descriptor.operation_id,
@@ -190,9 +169,126 @@ class _Admission:
             params_json=json.dumps(
                 params.model_dump(mode="json", exclude_unset=True), sort_keys=True
             ),
-            controls=tuple(controls),
+            controls=controls,
             settings=settings,
         )
+
+
+def _effective_node(
+    graph: GraphDocument,
+    node_id: str,
+    descriptor: OperationDescriptor,
+    params: BaseModel,
+    base: CollectionSnapshot,
+    env_keys: frozenset[str],
+) -> tuple[EffectiveSettings, tuple[EffectiveControl, ...]]:
+    """Return one node's effective settings and controls.
+
+    Admission and the draft check both call this function, so the values a
+    draft shows are the values admission freezes.
+
+    Args:
+        graph: The graph document (graph-wide overrides).
+        node_id: Node being resolved.
+        descriptor: The node's operation descriptor.
+        params: The node's validated parameter model.
+        base: Settings resolved for the node's collection.
+        env_keys: Environment keys profile resolution consulted.
+
+    Returns:
+        The node's settings and its controls, sorted by lever.
+
+    Raises:
+        pydantic.ValidationError: If a node or graph value fails its lever.
+        KeyError: If a graph override names an unknown lever.
+    """
+    node_values = {
+        lever: getattr(params, param)
+        for param, lever in descriptor.lever_params.items()
+        if getattr(params, param) is not None
+    }
+    graph_values = dict(graph.overrides)
+    settings = apply_levers(base.settings, {**graph_values, **node_values})
+    controls = []
+    for lever in sorted({*descriptor.lever_params.values(), *graph_values}):
+        if lever in node_values:
+            source, detail = ControlSource.NODE, f"node {node_id!r} parameter"
+        elif lever in graph_values:
+            source, detail = ControlSource.GRAPH, "graph-wide override"
+        else:
+            in_env = ALLOWED_LEVERS[lever].env_name in env_keys
+            source = ControlSource.ENVIRONMENT if in_env else ControlSource.PROFILE
+            detail = f"profile {base.profile_name!r} ({base.profile_origin})"
+            if in_env:
+                detail = f"{ALLOWED_LEVERS[lever].env_name} within {detail}"
+        controls.append(
+            EffectiveControl(
+                lever=lever, value=read_lever(settings, lever), source=source, detail=detail
+            )
+        )
+    return settings, tuple(controls)
+
+
+def draft_node_controls(
+    graph: GraphDocument,
+    report: PreflightReport,
+    catalogue: OperationCatalogue,
+    *,
+    host: HostContext,
+    profiles: ProfileSource,
+) -> list[dict[str, Any]]:
+    """Return the effective controls of each usable node of a draft graph.
+
+    The draft check calls this without run inputs. It resolves collections as
+    admission does: the node's collection parameter, else ``graph.collection``,
+    else the host default collection. A caller with a request collection
+    passes a ``host`` whose ``default_collection`` is that collection, and
+    builds ``report`` from the same host. It resolves nothing for a graph with
+    an unsupported profile, because the preflight issue already says why.
+
+    A node gets controls only when its parameters passed validation, its
+    collection's profile resolved and its graph and node values fit their
+    levers. Other nodes are left out. The function runs no node, calls no
+    model and writes nothing.
+
+    Args:
+        graph: The draft graph document.
+        report: Preflight report of the same graph, built without run inputs.
+        catalogue: Registered operations.
+        host: Host resources and default collection.
+        profiles: Profile resolution from the composition root.
+
+    Returns:
+        One ``{"node_id": str, "controls": list[dict]}`` entry per usable
+        node, in document order. Each control holds ``lever``, ``value``,
+        ``source`` and ``detail`` as JSON values, and equals the control
+        :func:`admit_pipeline` freezes for the same graph.
+    """
+    if any(issue.code == IssueCode.UNSUPPORTED_PROFILE for issue in report.issues):
+        return []
+    admission = _Admission(graph, report, host)
+    admission.resolve_collections(profiles)
+    env_keys = profiles.environment_keys()
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for node in graph.nodes:
+        if node.id in seen or node.id not in report.params:
+            continue
+        seen.add(node.id)
+        entry = catalogue.get(node.operation, report.resolved_versions[node.id])
+        base = admission.collections.get(
+            report.collections.get(node.id) or admission.default_collection
+        )
+        if entry is None or base is None:
+            continue
+        try:
+            _, controls = _effective_node(
+                graph, node.id, entry.descriptor, report.params[node.id], base, env_keys
+            )
+        except (ValidationError, KeyError):
+            continue
+        rows.append({"node_id": node.id, "controls": [c.model_dump(mode="json") for c in controls]})
+    return rows
 
 
 def admit_pipeline(

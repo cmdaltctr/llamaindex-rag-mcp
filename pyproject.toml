@@ -468,9 +468,14 @@ forbidden_modules = [
     "omrg.compose_experiments",
     "omrg.compose_pipeline_runs",
     "omrg.compose_pipelines",
+    "omrg.compose_profile_setup",
+    "omrg.compose_profiles",
     "omrg.compose_settings",
+    "omrg.compose_templates",
     "omrg.engine",
     "omrg.engine_answer",
+    "omrg.engine_lifecycle",
+    "omrg.engine_profiles",
     "omrg.pipeline_templates",
 ]
 ignore_imports = [

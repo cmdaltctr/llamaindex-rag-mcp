@@ -111,6 +111,10 @@ class FakeStore(harness.ParityStore):
         """Return whether metadata exists for ``name``."""
         return name in self._metadata
 
+    def list_collections(self) -> list[str]:
+        """Return the collections that have metadata."""
+        return list(self._metadata)
+
     def get_collection_metadata(self, name: str) -> dict | None:
         """Return a copy of the collection metadata."""
         meta = self._metadata.get(name)

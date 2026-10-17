@@ -16,8 +16,10 @@ The Engine delegates graph validation and execution to
   the ingestion shape and the OCR client of an ingestion graph. The OCR
   client belongs to the Engine. A run borrows it and never builds or
   closes a client of its own.
-* It leases the Engine's resources to runs. Runs on one Engine are
-  serialised with one ``asyncio.Lock``; other Engines are not affected.
+* It leases the Engine's resources to runs. Graphs that only read run at
+  the same time. Graphs with an enabled write step (``SOURCE_COMMIT``) are
+  serialised on one Engine with one ``asyncio.Lock``; other Engines are not
+  affected.
 
 Heavy imports (the pipeline package and the domain adapters) happen inside
 functions, so building an Engine imports nothing new.
@@ -26,10 +28,12 @@ functions, so building an Engine imports nothing new.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
+import threading
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from .core.pipelines import (
@@ -303,7 +307,10 @@ def _profile_issues(graph: Any, profiles: ProfileSource) -> list[PipelineIssue]:
 
 
 class EnginePipelines:
-    """Graph state that one Engine owns: catalogue, run lock and leases.
+    """Graph state that one Engine owns: catalogue, write lock and leases.
+
+    Graphs that only read run at the same time. A graph with an enabled write
+    step (``SOURCE_COMMIT``) waits for other writing graphs.
 
     Attributes:
         active_runs: Runs that hold or wait for this Engine's resources.
@@ -314,6 +321,7 @@ class EnginePipelines:
         self._catalogue_factory = catalogue_factory or build_operation_catalogue
         self._catalogue: OperationCatalogue | None = None
         self._lock = asyncio.Lock()
+        self._runs_lock = threading.Lock()
         self._judges: dict[Any, Any] = {}
         self._ocr: Any = None
         self.active_runs = 0
@@ -335,28 +343,36 @@ class EnginePipelines:
 
         Returns:
             The admission snapshot when ``inputs`` is given, else the
-            preflight report of a draft.
+            preflight report of a draft. The report and the error of a draft
+            carry the effective controls of each usable node (``nodes``).
 
         Raises:
             PipelineValidationError: With every issue found.
         """
+        from dataclasses import replace
+
         from .core.pipelines import (
             PipelineValidationError,
             admit_pipeline,
             parse_definition,
             preflight,
         )
+        from .core.pipelines.admission import draft_node_controls
 
         parsed = parse_definition(definition)
         catalogue = self.catalogue()
         report = preflight(parsed, catalogue, host=graph_host.host, inputs=inputs)
         issues = [*report.issues, *request_limit_issues(parsed.graph, catalogue, inputs)]
+        nodes = None
         if inputs is None:
             issues += _profile_issues(parsed.graph, graph_host.profiles)
+            nodes = draft_node_controls(
+                parsed.graph, report, catalogue, host=graph_host.host, profiles=graph_host.profiles
+            )
         if issues:
-            raise PipelineValidationError(issues)
+            raise PipelineValidationError(issues, nodes=nodes)
         if inputs is None:
-            return report
+            return replace(report, nodes=tuple(nodes or ()))
         return admit_pipeline(
             parsed, catalogue, host=graph_host.host, profiles=graph_host.profiles, inputs=inputs
         )
@@ -422,7 +438,12 @@ class EnginePipelines:
             ValueError: If an admitted snapshot comes with separate inputs.
         """
         from .compose_pipeline_runs import SUMMARY_EVENTS, plan_run, with_provenance
-        from .core.pipelines import AdmissionSnapshot, PipelineValidationError, run_pipeline
+        from .core.pipelines import (
+            AdmissionSnapshot,
+            EffectClass,
+            PipelineValidationError,
+            run_pipeline,
+        )
         from .core.pipelines.cancellation import run_cancellation
 
         if isinstance(definition, AdmissionSnapshot):
@@ -433,11 +454,19 @@ class EnginePipelines:
             if issues:
                 raise PipelineValidationError(issues)
         else:
-            snapshot = self.validate(definition, graph_host, inputs=dict(inputs or {}))
+            snapshot = cast(
+                "AdmissionSnapshot",
+                self.validate(definition, graph_host, inputs=dict(inputs or {})),
+            )
         token = run_cancellation(cancellation)
-        self.active_runs += 1
+        writes = any(n.enabled and n.effect == EffectClass.SOURCE_COMMIT for n in snapshot.nodes)
+        # User-profile searches run on worker threads, so the counter needs a lock.
+        with self._runs_lock:
+            self.active_runs += 1
         try:
-            async with self._lock:
+            async with contextlib.AsyncExitStack() as stack:
+                if writes:
+                    await stack.enter_async_context(self._lock)
                 plan = plan_run(snapshot, self.catalogue(), graph_host)
                 summaries: dict[tuple[str, str | None], dict[str, Any]] = {}
 
@@ -458,4 +487,5 @@ class EnginePipelines:
                 )
                 return with_provenance(result, snapshot, summaries)
         finally:
-            self.active_runs -= 1
+            with self._runs_lock:
+                self.active_runs -= 1

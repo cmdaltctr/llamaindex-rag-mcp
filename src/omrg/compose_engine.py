@@ -45,7 +45,7 @@ def _snapshot_profile_env() -> dict[str, str]:
     return {key: os.environ[key] for key in _PROFILE_ENV_OVERRIDE_KEYS if key in os.environ}
 
 
-def build_engine(settings: Settings | None = None) -> Any:
+def build_engine(settings: Settings | None = None, *, catalogue: Any = None) -> Any:
     """Construct an :class:`Engine` from resolved settings.
 
     The single production construction path. Resolves ``Settings`` from
@@ -62,6 +62,11 @@ def build_engine(settings: Settings | None = None) -> Any:
             Explicit settings skip the environment-only safeguards
             (legacy env-var tripwire, legacy Chroma-data protection)
             but still run the shared strategy validation.
+        catalogue: Optional :class:`ProfileCatalogue` that user profile tags
+            resolve through (``compose_profile_setup.workspace_profile_catalogue``
+            for processes that only read the workspace). ``None`` means the
+            process found no workspace: a tag that is not built-in is refused
+            with an explanation.
 
     Returns:
         An :class:`omrg.Engine` owning its composed dependencies.
@@ -151,7 +156,7 @@ def build_engine(settings: Settings | None = None) -> Any:
         embed_model=embed_model,
         reranker=reranker,
         profile_resolver_factory=lambda: build_profile_resolver(
-            settings, store=store, env_overrides=profile_env
+            settings, store=store, env_overrides=profile_env, catalogue=catalogue
         ),
         answer_llm_factory=lambda: _build_answer_llm(settings),
         verify_llm_factory=lambda block: _build_verify_llm(settings, block),

@@ -1,8 +1,8 @@
 """Engine graph leases, serialisation and isolation (task 4.3).
 
-Covers the run lock per Engine, two Engines that run at the same time
-without shared state, ``close()`` during an active run, and poisoned
-process defaults.
+Covers two Engines that run at the same time without shared state,
+``close()`` during an active run, and poisoned process defaults. The run
+lock per Engine is covered in ``test_engine_pipelines_locking.py``.
 """
 
 from __future__ import annotations
@@ -60,26 +60,6 @@ def test_two_engines_run_concurrently_and_stay_isolated(effective_settings) -> N
     store_a.barrier = None
     again = asyncio.run(engine_a.run_pipeline(retrieval_graph(), inputs={"query": "q"}))
     assert again.status is RunStatus.SUCCEEDED and not store_a.closed
-
-
-def test_runs_on_one_engine_are_serialised(effective_settings) -> None:
-    """A second run on the same Engine waits until the first one ends."""
-    store = FakeStore(chunks())
-    store.gate = threading.Event()
-    engine = build_engine(effective_settings(), store)
-
-    async def scenario() -> list:
-        first = asyncio.create_task(engine.run_pipeline(retrieval_graph(), inputs={"query": "1"}))
-        await _until(store.entered)
-        second = asyncio.create_task(engine.run_pipeline(retrieval_graph(), inputs={"query": "2"}))
-        await asyncio.sleep(0.1)
-        assert store.counted == ["documents"], "second run started while the first held the lock"
-        store.gate.set()
-        return await asyncio.gather(first, second)
-
-    results = asyncio.run(scenario())
-    assert [r.status for r in results] == [RunStatus.SUCCEEDED] * 2
-    assert store.counted == ["documents", "documents"]
 
 
 def test_close_during_a_run_fails_and_keeps_the_engine_usable(effective_settings) -> None:

@@ -61,6 +61,8 @@ class PreflightReport:
         resolved_versions: Node to resolved operation version.
         params: Node to validated parameter model.
         collections: Node to bound collection, for collection-bound nodes.
+        nodes: On a draft check, the effective controls of each usable node as
+            ``{"node_id", "controls"}`` entries. Empty otherwise.
     """
 
     issues: tuple[PipelineIssue, ...]
@@ -68,6 +70,7 @@ class PreflightReport:
     resolved_versions: Mapping[str, int] = field(default_factory=dict)
     params: Mapping[str, BaseModel] = field(default_factory=dict)
     collections: Mapping[str, str] = field(default_factory=dict)
+    nodes: tuple[Mapping[str, Any], ...] = ()
 
     @property
     def ok(self) -> bool:
