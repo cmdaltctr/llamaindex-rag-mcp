@@ -505,16 +505,21 @@ async def test_similarity_threshold_bounds_and_finiteness() -> None:
 
 
 class _SlowRetriever:
-    """Stand-in retriever whose synchronous retrieve sleeps."""
+    """Stand-in retriever whose synchronous retrieve waits for a second caller."""
+
+    rendezvous: Any = None
 
     def __init__(self, **kwargs: Any) -> None:
         self.rows: list[dict] = []
 
     def retrieve(self, query: str) -> list[Any]:
-        """Sleep in the caller's thread, then serve one evidence row."""
-        import time as _time
+        """Block in the caller's thread until a second retrieval is also running.
 
-        _time.sleep(0.2)
+        Two retrievals reach the barrier only if they run at the same time. If
+        retrieval blocked the event loop, the second would never start and the
+        barrier would time out, so the check does not depend on the clock.
+        """
+        self.rendezvous.wait()
         self.rows = [
             {
                 "chunk_id": "slow-1",
@@ -533,23 +538,23 @@ class _SlowRetriever:
 async def test_concurrent_answers_are_not_serialised_by_retrieval(
     monkeypatch: Any,
 ) -> None:
-    """Two answers over a 0.2 s retrieval complete in under 0.35 s."""
+    """Two answers overlap their retrievals instead of queueing them."""
     import asyncio as _asyncio
-    import time as _time
+    import threading as _threading
 
     from omrg.core.answer import pipeline as answer_pipeline
 
     monkeypatch.setattr(answer_pipeline, "SearchRetriever", _SlowRetriever)
+    monkeypatch.setattr(_SlowRetriever, "rendezvous", _threading.Barrier(2, timeout=10))
     seam = RecordingSeam("The slow evidence body [1].")
-    start = _time.perf_counter()
     results = await _asyncio.gather(
         answer("first question", complete=seam, **_answer_kwargs()),
         answer("second question", complete=seam, **_answer_kwargs()),
     )
-    elapsed = _time.perf_counter() - start
 
-    assert all(result["status"] == "ok" for result in results), results
-    assert elapsed < 0.35, f"synchronous retrieval serialised concurrent answers ({elapsed:.3f} s)"
+    assert all(result["status"] == "ok" for result in results), (
+        f"synchronous retrieval serialised concurrent answers: {results}"
+    )
 
 
 # ── Honest diagnostics through the transport interface (review F11) ─────

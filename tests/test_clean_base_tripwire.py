@@ -77,7 +77,9 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # service, upgrade, resolver, contract, Engine dispatch, route, MCP, CLI and
 # watcher suites add 349 executed tests (5233 -> 5582). One test was removed:
 # the old "runs on one Engine are serialised" case, replaced by the locking suite.
-_BASE_EXECUTED = 5582
+_BASE_EXECUTED = 5584
+# Re-baselined at ci-integration-core-web: the sse-starlette shutdown-flag isolation
+# module adds 2 executed tests that need no fastapi (5582 -> 5584).
 # Re-baselined at add-web-allow-origin-option: the origin parser suite adds 23
 # executed tests that need no fastapi, and the policy, MCP and launch cases add
 # 10 that do (5109 -> 5142; see _WEB_EXTRA_CASES below).
@@ -311,7 +313,11 @@ if not _has_qwen_tokenizer:
 # MCP conformance module adds 1 (509 with the extra; 40 module skips without it).
 # Re-measured at add-web-allow-origin-option: new cases in three existing
 # fastapi-dependent modules add 10 (519 with the extra; still 40 module skips).
-_WEB_EXTRA_CASES = 519
+# Re-measured at ci-integration-core-web: CI had not run on integration/core-web,
+# so the count drifted unseen while the profiles, pipelines and Studio changes
+# landed. The floors job (no web extra) ran 4951 executed tests against 5056
+# pinned, so the fastapi-dependent cases are 105 more (624 with the extra).
+_WEB_EXTRA_CASES = 624
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)
