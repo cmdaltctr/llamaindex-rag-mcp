@@ -77,7 +77,9 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # service, upgrade, resolver, contract, Engine dispatch, route, MCP, CLI and
 # watcher suites add 349 executed tests (5233 -> 5582). One test was removed:
 # the old "runs on one Engine are serialised" case, replaced by the locking suite.
-_BASE_EXECUTED = 5582
+_BASE_EXECUTED = 5584
+# Re-baselined at ci-integration-core-web: the sse-starlette shutdown-flag isolation
+# module adds 2 executed tests that need no fastapi (5582 -> 5584).
 # Re-baselined at add-web-allow-origin-option: the origin parser suite adds 23
 # executed tests that need no fastapi, and the policy, MCP and launch cases add
 # 10 that do (5109 -> 5142; see _WEB_EXTRA_CASES below).

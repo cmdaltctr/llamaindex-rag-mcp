@@ -16,6 +16,7 @@ from __future__ import annotations
 import math
 import os
 import tempfile
+from collections.abc import Iterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -271,6 +272,22 @@ def _plain_cli_help_output(monkeypatch: pytest.MonkeyPatch) -> None:
     variables inside a test would not work, because the read is already done.
     """
     monkeypatch.setattr("typer.rich_utils.FORCE_TERMINAL", False, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _reset_sse_shutdown_flag() -> Iterator[None]:
+    """Clear sse-starlette's process-wide shutdown flag around every test.
+
+    ``AppStatus.should_exit`` latches true once uvicorn's ``handle_exit`` runs
+    and never resets. Any later streamed response in the same worker then ends
+    at once, so MCP calls return a cut-off body. Which tests share a worker
+    depends on the worker count, so the failure shows on CI and not locally.
+    """
+    from sse_starlette.sse import AppStatus
+
+    AppStatus.should_exit = False
+    yield
+    AppStatus.should_exit = False
 
 
 @pytest.fixture(autouse=True)
