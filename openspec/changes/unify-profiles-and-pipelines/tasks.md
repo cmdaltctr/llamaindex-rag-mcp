@@ -103,7 +103,7 @@ Work in a feature worktree that forks from the integration branch. Start after `
 
 ## 10. Release coordination and final verification
 
-- [ ] 10.1 Confirm with the owner of `studio-profiles-gallery` that both changes merge into the integration branch before the next release. Record the planned release in the pull request description. Verify no release tag falls between the two merges.
+- [x] 10.1 Confirm with the owner of `studio-profiles-gallery` that both changes merge into the integration branch before the next release. Record the planned release in the pull request description. Verify no release tag falls between the two merges.
 - [x] 10.2 Run `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q`. Verify no failures.
 - [x] 10.3 Run `uv run lint-imports`, `uv run ruff check .` and `uv run ruff format --check .`. Verify all three pass.
 - [x] 10.4 Run `uv run pytest tests/test_file_size_ceiling.py`. Verify every file stays under 500 lines.

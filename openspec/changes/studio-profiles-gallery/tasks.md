@@ -81,7 +81,7 @@ Work in a feature worktree that forks from `integration/core-web` after `studio-
 
 ## 11. Release coordination and verification
 
-- [ ] 11.1 Confirm with the owner of `unify-profiles-and-pipelines` that both changes merge into the integration branch before the next release. Record the planned release in the pull request description. Verify that no release tag falls between the two merges.
+- [x] 11.1 Confirm with the owner of `unify-profiles-and-pipelines` that both changes merge into the integration branch before the next release. Record the planned release in the pull request description. Verify that no release tag falls between the two merges.
 - [x] 11.2 Run `npm test` in `web/` and verify that every test passes.
 - [x] 11.3 Run `npm run typecheck` and `npm run lint` in `web/` and verify that both report no error.
 - [x] 11.4 Search `web/src` for `layout.title`, `presetDraft`, `pipeline-templates`, `pipelineId` in studio routes, and hard-coded `"documents"` and `"codebase"` option lists. Verify that only test fixtures and the API layer remain.
