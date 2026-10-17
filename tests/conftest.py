@@ -260,6 +260,20 @@ def effective_settings():
 
 
 @pytest.fixture(autouse=True)
+def _plain_cli_help_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep Typer help output free of ANSI styling, whatever the runner sets.
+
+    Typer reads ``GITHUB_ACTIONS``, ``FORCE_COLOR`` and ``PY_COLORS`` once, at
+    import, into ``typer.rich_utils.FORCE_TERMINAL``. On GitHub Actions that
+    constant is true, so ``--help`` text gains escape codes and help-text
+    assertions fail there while they pass on a laptop. Setting the constant
+    off makes the output the same everywhere. Deleting the environment
+    variables inside a test would not work, because the read is already done.
+    """
+    monkeypatch.setattr("typer.rich_utils.FORCE_TERMINAL", False, raising=False)
+
+
+@pytest.fixture(autouse=True)
 def _install_default_effective_settings(_isolate_env, _reset_default_store, tmp_path: Path):
     """Install a composition-root default EffectiveSettings for every test.
 
