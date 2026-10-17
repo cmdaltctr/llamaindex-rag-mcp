@@ -34,6 +34,7 @@ from omrg.core.workspace.cleanup import (
     CleanupSelector,
     WorkspaceCleanup,
     WorkspaceLayout,
+    default_workspace,
 )
 from omrg.core.workspace.cleanup_files import CleanupFile, CleanupSkip
 from omrg.core.workspace.events import STATUS_EVENT, RunEventLog
@@ -54,12 +55,18 @@ from omrg.core.workspace.jobs import (
 from omrg.core.workspace.records import (
     NONTERMINAL_RUN_STATUSES,
     PLUGIN_COMPATIBILITY,
+    PROFILE_BASES,
+    PROFILE_ID_PATTERN,
+    PROFILE_SLOTS,
+    RESERVED_PROFILE_IDS,
     RUN_ORIGINS,
     RUN_STATUSES,
+    TASK_LAYOUT_KEY,
     TERMINAL_RUN_STATUSES,
     PipelineRecord,
     PluginCompatibility,
     PluginRecord,
+    ProfileRecord,
     RevisionRecord,
     RunEventRecord,
     RunOrigin,
@@ -75,7 +82,7 @@ from omrg.core.workspace.redaction import (
     redact,
     redact_text,
 )
-from omrg.core.workspace.repository import WorkspaceRepository
+from omrg.core.workspace.repository import ProfileRepository, WorkspaceRepository
 
 __all__ = [
     "ARTEFACT_ROOT_KEY",
@@ -87,11 +94,16 @@ __all__ = [
     "MAX_TEXT_BYTES",
     "NONTERMINAL_RUN_STATUSES",
     "PLUGIN_COMPATIBILITY",
+    "PROFILE_BASES",
+    "PROFILE_ID_PATTERN",
+    "PROFILE_SLOTS",
     "REDACTED",
+    "RESERVED_PROFILE_IDS",
     "RETRYABLE_STATUSES",
     "RUN_ORIGINS",
     "RUN_STATUSES",
     "STATUS_EVENT",
+    "TASK_LAYOUT_KEY",
     "TERMINAL_RUN_STATUSES",
     "Admission",
     "Admitter",
@@ -107,6 +119,8 @@ __all__ = [
     "PipelineRecord",
     "PluginCompatibility",
     "PluginRecord",
+    "ProfileRecord",
+    "ProfileRepository",
     "QueueFullError",
     "RevisionRecord",
     "RunEventLog",
@@ -129,6 +143,7 @@ __all__ = [
     "canonical_json",
     "contains_secret",
     "content_hash",
+    "default_workspace",
     "is_secret_key",
     "preview",
     "redact",

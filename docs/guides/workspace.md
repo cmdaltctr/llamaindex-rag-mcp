@@ -43,6 +43,7 @@ The file `workspace.db` has these tables:
 | `plugin_registrations` | Approved external tools and their compatibility status. |
 | `workspace_settings` | Web-server settings: whether MCP over HTTP is on (`mcp_http_enabled`) and the saved port (`web_port`). |
 | `mcp_tokens` | The one MCP token, as a SHA-256 hash with its creation time. The token value is never stored. |
+| `profiles` | User profiles: id, title, description, base profile and the three pipelines (Ingest, Search, Answer) that each profile owns. Deleting a profile sets `archived_at`; the row stays. |
 
 A layout change does not create a revision. A semantic graph change creates a new revision. Database triggers stop all updates and deletes of revisions.
 

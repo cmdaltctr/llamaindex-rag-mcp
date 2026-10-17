@@ -46,6 +46,22 @@ def pipeline_record(row: sqlite3.Row) -> Record:
     }
 
 
+def profile_record(row: sqlite3.Row) -> Record:
+    """Convert a ``profile`` row to a plain record."""
+    return {
+        "profile_id": row["profile_id"],
+        "title": row["title"],
+        "description": row["description"],
+        "base_profile": row["base_profile"],
+        "ingest_pipeline_id": row["ingest_pipeline_id"],
+        "search_pipeline_id": row["search_pipeline_id"],
+        "answer_pipeline_id": row["answer_pipeline_id"],
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
+        "archived_at": row["archived_at"],
+    }
+
+
 def revision_record(row: sqlite3.Row) -> Record:
     """Convert a ``revision`` row to a plain record."""
     return {

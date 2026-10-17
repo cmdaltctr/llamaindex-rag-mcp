@@ -40,6 +40,7 @@ from fastapi import Depends, HTTPException
 from ...core.experiments import ExperimentAdmissionError, check_credential_target
 from ...core.pipelines import PipelineResult, RunStatus
 from ...core.workspace import (
+    TASK_LAYOUT_KEY,
     Admission,
     ArtefactStore,
     RunJob,
@@ -50,9 +51,6 @@ from ...core.workspace import (
 )
 from ...integrations.workspace_sqlite import SqliteWorkspaceRepository
 from .lifespan import WebRuntime, get_runtime
-
-#: Layout key that marks a reserved document-job pipeline.
-TASK_LAYOUT_KEY = "omrg_task"
 
 TaskWorkFn = Callable[[], Awaitable[Any]]
 

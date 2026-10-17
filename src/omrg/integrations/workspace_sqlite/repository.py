@@ -8,21 +8,25 @@ hash form in step with the core contract.
 
 from __future__ import annotations
 
-import hashlib
 import sqlite3
-import uuid
-from collections.abc import Callable, Collection, Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from collections.abc import Callable, Collection, Mapping, Sequence
+from contextlib import AbstractContextManager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from omrg.integrations.workspace_sqlite import rows as codec
 from omrg.integrations.workspace_sqlite.deletion import delete_finished_runs
+from omrg.integrations.workspace_sqlite.pipeline_sql import (
+    insert_pipeline,
+    insert_revision,
+    new_id,
+    read_connection,
+    write_transaction,
+)
 from omrg.integrations.workspace_sqlite.schema import (
     SCHEMA_MIGRATIONS,
     Migration,
-    connect,
     make_private_dirs,
     migrate,
     touch_private,
@@ -45,10 +49,6 @@ _TRANSITIONS: dict[str, frozenset[str]] = {
 }
 
 Record = codec.Record
-
-
-def _new_id() -> str:
-    return uuid.uuid4().hex
 
 
 def _default_clock() -> datetime:
@@ -91,28 +91,12 @@ class SqliteWorkspaceRepository:
     def _now(self) -> str:
         return self._clock().isoformat()
 
-    @contextmanager
-    def _read(self) -> Iterator[sqlite3.Connection]:
-        conn = connect(self.path)
-        try:
-            yield conn
-        finally:
-            conn.close()
+    def _read(self) -> AbstractContextManager[sqlite3.Connection]:
+        return read_connection(self.path)
 
-    @contextmanager
-    def _write(self) -> Iterator[sqlite3.Connection]:
-        """Yield a connection inside one transaction; roll back on any error."""
-        conn = connect(self.path)
-        try:
-            conn.execute("BEGIN IMMEDIATE")
-            try:
-                yield conn
-            except BaseException:
-                conn.execute("ROLLBACK")
-                raise
-            conn.execute("COMMIT")
-        finally:
-            conn.close()
+    def _write(self) -> AbstractContextManager[sqlite3.Connection]:
+        """Return a connection inside one transaction; roll back on any error."""
+        return write_transaction(self.path)
 
     @staticmethod
     def _one(conn: sqlite3.Connection, sql: str, key: str, label: str) -> sqlite3.Row:
@@ -125,12 +109,9 @@ class SqliteWorkspaceRepository:
 
     def create_pipeline(self, title: str, *, layout: Mapping[str, Any] | None = None) -> Record:
         """Create a pipeline with no revision yet."""
-        pipeline_id, now, layout_json = _new_id(), self._now(), codec.dumps(dict(layout or {}))
+        pipeline_id, now, layout_json = new_id(), self._now(), codec.dumps(dict(layout or {}))
         with self._write() as conn:
-            conn.execute(
-                "INSERT INTO pipelines VALUES (?, ?, NULL, ?, ?, ?)",
-                (pipeline_id, title, layout_json, now, now),
-            )
+            insert_pipeline(conn, pipeline_id, title, layout_json, now)
         return self.get_pipeline(pipeline_id)
 
     def get_pipeline(self, pipeline_id: str) -> Record:
@@ -171,39 +152,9 @@ class SqliteWorkspaceRepository:
                 content was stored under another schema version.
         """
         document_json = codec.dumps(dict(document))
-        digest = hashlib.sha256(document_json.encode("utf-8")).hexdigest()
         now = self._now()
         with self._write() as conn:
-            self._one(
-                conn, "SELECT 1 FROM pipelines WHERE pipeline_id = ?", pipeline_id, "pipeline"
-            )
-            existing = conn.execute(
-                "SELECT * FROM pipeline_revisions WHERE pipeline_id = ? AND content_hash = ?",
-                (pipeline_id, digest),
-            ).fetchone()
-            if existing is not None:
-                if existing["schema_version"] != schema_version:
-                    raise ValueError(
-                        f"revision {existing['revision_id']} has identical content "
-                        f"under schema version {existing['schema_version']}"
-                    )
-                revision_id = existing["revision_id"]
-            else:
-                revision_id = _new_id()
-                number = conn.execute(
-                    "SELECT COALESCE(MAX(revision_number), 0) + 1 FROM pipeline_revisions "
-                    "WHERE pipeline_id = ?",
-                    (pipeline_id,),
-                ).fetchone()[0]
-                conn.execute(
-                    "INSERT INTO pipeline_revisions VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (revision_id, pipeline_id, number, digest, schema_version, document_json, now),
-                )
-            conn.execute(
-                "UPDATE pipelines SET current_revision_id = ?, updated_at = ? "
-                "WHERE pipeline_id = ?",
-                (revision_id, now, pipeline_id),
-            )
+            revision_id = insert_revision(conn, pipeline_id, document_json, schema_version, now)
         return self.get_revision(revision_id)
 
     def get_revision(self, revision_id: str) -> Record:
@@ -247,7 +198,7 @@ class SqliteWorkspaceRepository:
             codec.dumps(dict(inputs)),
         )
         event_json = codec.dumps({"status": "queued"})
-        run_id, now = _new_id(), self._now()
+        run_id, now = new_id(), self._now()
         with self._write() as conn:
             revision = self._one(
                 conn,

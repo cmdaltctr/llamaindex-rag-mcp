@@ -357,7 +357,7 @@ specification: `openspec/changes/add-per-collection-persist-dirs/`.
 
 ### `transports/` — exposes it
 
-- `transports/mcp/` — the MCP server, eight tools, over stdio (split by tool)
+- `transports/mcp/` — the MCP server, nine tools, over stdio (split by tool)
 - `transports/cli/` — the `omrg` command, one file per command group
 - `transports/api/`: the optional local web runtime (`omrg web`). It is a
   FastAPI application with the `web` extra. Its routes call the Engine and
@@ -532,7 +532,7 @@ peers stays an integration.
 Every Python module under `src/omrg/integrations/`, classified. A contract
 test fails when a module is missing from this table.
 
-<!-- integration-inventory:start count=32 -->
+<!-- integration-inventory:start count=34 -->
 
 | Module                                   | Availability                                                   | Selector                                                            | Shared contract                               | Fallback owner                                                                    | Disposition                                                         |
 | ---------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -563,6 +563,8 @@ test fails when a module is missing from this table.
 | `omrg.integrations.process_launcher`  | Native (standard library; no shell)                            | A registered and enabled external-tool plugin                       | Owned process group, private directory, loopback port | None; a used port or failed launch is refused                             | Only plugin module that starts processes; imports no `omrg.core` module |
 | `omrg.integrations.workspace_sqlite`  | Native (standard-library `sqlite3`)                            | None; the web runtime composes it                                   | `core/workspace/repository.py` contract       | None                                                                              | Facade; exports `SqliteWorkspaceRepository` and schema errors       |
 | `omrg.integrations.workspace_sqlite.deletion` | Native (standard-library `sqlite3`)                    | Previewed workspace cleanup                                         | Finished runs and their events                | None; runs inside the caller's transaction                                        | Deletes run rows only; pipelines and revisions stay                 |
+| `omrg.integrations.workspace_sqlite.pipeline_sql` | Native (standard-library `sqlite3`)                    | None                                                                | Shared pipeline and revision inserts, read and write transactions | None; a failed transaction rolls back                                 | Used by the repository and the profile store; imports no `omrg.core` module |
+| `omrg.integrations.workspace_sqlite.profiles` | Native (standard-library `sqlite3`)                        | None                                                                | User profiles and the pipelines they own; a read-only catalogue | None; the catalogue opens the file read-only and never migrates it    | Profile store for the web server; catalogue for every other process |
 | `omrg.integrations.workspace_sqlite.repository` | Native (standard-library `sqlite3`)                  | None                                                                | Workspace records as plain dictionaries       | None; a failed transaction rolls back                                             | Repository adapter; imports no `omrg.core` module                   |
 | `omrg.integrations.workspace_sqlite.rows` | Native                                                     | None                                                                | JSON encoding and row-to-record conversion    | None                                                                              | Helper for the repository adapter                                   |
 | `omrg.integrations.workspace_sqlite.schema` | Native (standard-library `sqlite3`)                      | None                                                                | Versioned migrations, backups, owner-only files | Migration rollback to the last version                                          | Application records only; never opens a vector store                |

@@ -112,7 +112,8 @@ def test_layout_names_match_the_web_wiring(tmp_path: Path) -> None:
     for path in (layout.records, layout.lock, layout.artefacts, layout.uploads):
         assert f'"{path.name}"' not in source, f"duplicate literal {path.name!r}"
     web_source = (REPO / "src/omrg/transports/cli/web.py").read_text(encoding="utf-8")
-    assert '".omrg" / "workspace"' in web_source
+    cleanup_source = (REPO / "src/omrg/core/workspace/cleanup.py").read_text(encoding="utf-8")
+    assert '".omrg" / "workspace"' in cleanup_source
     assert "~/.omrg/workspace" in _spans()
     for option in [s for s in _spans() if s.startswith("--")]:
         assert f'"{option}"' in web_source, option
@@ -135,6 +136,7 @@ def test_table_names_and_backup_name_match_the_database(tmp_path: Path) -> None:
         "plugin_registrations",
         "workspace_settings",
         "mcp_tokens",
+        "profiles",
     }
     assert tables <= set(_spans())
     schema = (REPO / "src/omrg/integrations/workspace_sqlite/schema.py").read_text("utf-8")

@@ -44,6 +44,11 @@ INTERRUPTED_WARNING = (
 )
 
 
+def default_workspace() -> Path:
+    """Return the default workspace directory, ``~/.omrg/workspace``."""
+    return Path.home() / ".omrg" / "workspace"
+
+
 @dataclass(frozen=True)
 class WorkspaceLayout:
     """Fixed names inside one workspace directory.

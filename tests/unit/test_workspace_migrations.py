@@ -142,3 +142,126 @@ def test_existing_database_permissions_are_tightened(tmp_path: Path) -> None:
     path.chmod(0o644)
     SqliteWorkspaceRepository(path)
     assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
+
+
+# --- Schema version 3: the profiles table (unify-profiles-and-pipelines, D1) ---
+
+
+def _v2_database(path: Path) -> None:
+    """Create a version 2 workspace with one pipeline, as an older release left it."""
+    repo = SqliteWorkspaceRepository(path, migrations=SCHEMA_MIGRATIONS[:2])
+    repo.create_pipeline("Old")
+
+
+def _raw(path: Path) -> sqlite3.Connection:
+    conn = sqlite3.connect(path, isolation_level=None)
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+
+def _pipeline_ids(path: Path, count: int) -> list[str]:
+    repo = SqliteWorkspaceRepository(path)
+    return [repo.create_pipeline(f"Slot {i}")["pipeline_id"] for i in range(count)]
+
+
+def _insert_profile(
+    conn: sqlite3.Connection,
+    profile_id: str,
+    slots: tuple[str, str, str],
+    base: str = "documents",
+) -> None:
+    conn.execute(
+        "INSERT INTO profiles (profile_id, title, base_profile, ingest_pipeline_id, "
+        "search_pipeline_id, answer_pipeline_id, created_at, updated_at) "
+        "VALUES (?, 'T', ?, ?, ?, ?, 'now', 'now')",
+        (profile_id, base, *slots),
+    )
+
+
+def test_version_two_database_migrates_to_profiles_table_with_backup(tmp_path: Path) -> None:
+    path = tmp_path / "app.sqlite3"
+    _v2_database(path)
+    assert _user_version(path) == 2
+    SqliteWorkspaceRepository(path)
+    assert _user_version(path) == 3
+    assert "profile_id" in _columns(path, "profiles")
+    (backup,) = list(tmp_path.glob("*.bak"))
+    assert "v2-to-v3" in backup.name
+    assert _user_version(backup) == 2
+    assert _columns(backup, "profiles") == []
+
+
+@pytest.mark.parametrize("reserved", ["documents", "codebase", "hybrid"])
+def test_reserved_profile_ids_are_refused(tmp_path: Path, reserved: str) -> None:
+    path = tmp_path / "app.sqlite3"
+    slots = _pipeline_ids(path, 3)
+    conn = _raw(path)
+    with pytest.raises(sqlite3.IntegrityError):
+        _insert_profile(conn, reserved, (slots[0], slots[1], slots[2]))
+    conn.close()
+
+
+def test_unknown_base_profile_is_refused(tmp_path: Path) -> None:
+    path = tmp_path / "app.sqlite3"
+    slots = _pipeline_ids(path, 3)
+    conn = _raw(path)
+    with pytest.raises(sqlite3.IntegrityError):
+        _insert_profile(conn, "mine", (slots[0], slots[1], slots[2]), base="hybrid")
+    conn.close()
+
+
+def test_one_pipeline_cannot_fill_two_slots(tmp_path: Path) -> None:
+    path = tmp_path / "app.sqlite3"
+    slots = _pipeline_ids(path, 6)
+    conn = _raw(path)
+    with pytest.raises(sqlite3.IntegrityError):
+        _insert_profile(conn, "same-column", (slots[0], slots[1], slots[2]))
+        _insert_profile(conn, "other", (slots[0], slots[4], slots[5]))
+    with pytest.raises(sqlite3.IntegrityError):
+        _insert_profile(conn, "cross-slot", (slots[3], slots[3], slots[4]))
+    conn.close()
+
+
+def test_pipeline_cannot_move_between_slots_of_two_profiles(tmp_path: Path) -> None:
+    path = tmp_path / "app.sqlite3"
+    slots = _pipeline_ids(path, 6)
+    conn = _raw(path)
+    _insert_profile(conn, "first", (slots[0], slots[1], slots[2]))
+    with pytest.raises(sqlite3.IntegrityError):
+        _insert_profile(conn, "second", (slots[3], slots[4], slots[0]))
+    conn.close()
+
+
+@pytest.mark.parametrize(
+    "assignment",
+    [
+        "profile_id = 'renamed'",
+        "base_profile = 'codebase'",
+        "ingest_pipeline_id = (SELECT pipeline_id FROM pipelines WHERE title = 'Spare')",
+        "search_pipeline_id = (SELECT pipeline_id FROM pipelines WHERE title = 'Spare')",
+        "answer_pipeline_id = (SELECT pipeline_id FROM pipelines WHERE title = 'Spare')",
+    ],
+)
+def test_profile_identity_columns_never_change(tmp_path: Path, assignment: str) -> None:
+    path = tmp_path / "app.sqlite3"
+    slots = _pipeline_ids(path, 3)
+    SqliteWorkspaceRepository(path).create_pipeline("Spare")
+    conn = _raw(path)
+    _insert_profile(conn, "mine", (slots[0], slots[1], slots[2]))
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(f"UPDATE profiles SET {assignment} WHERE profile_id = 'mine'")  # noqa: S608 - fixed literals
+    conn.close()
+
+
+def test_profile_title_description_and_archive_may_change(tmp_path: Path) -> None:
+    path = tmp_path / "app.sqlite3"
+    slots = _pipeline_ids(path, 3)
+    conn = _raw(path)
+    _insert_profile(conn, "mine", (slots[0], slots[1], slots[2]))
+    conn.execute(
+        "UPDATE profiles SET title = 'New', description = 'd', updated_at = 'later', "
+        "archived_at = 'later' WHERE profile_id = 'mine'"
+    )
+    row = conn.execute("SELECT title, archived_at FROM profiles").fetchone()
+    assert row == ("New", "later")
+    conn.close()

@@ -26,6 +26,18 @@ RUN_ORIGINS: frozenset[str] = frozenset({"submit", "repeat", "retry"})
 PLUGIN_COMPATIBILITY: frozenset[str] = frozenset({"unchecked", "compatible", "incompatible"})
 
 
+# The three pipelines a user profile owns, one per purpose.
+PROFILE_SLOTS: tuple[str, ...] = ("ingest", "search", "answer")
+# The built-in profiles a user profile can be based on.
+PROFILE_BASES: tuple[str, ...] = ("documents", "codebase")
+# Ids a user profile cannot take. ``hybrid`` is a mode selector, not a profile.
+RESERVED_PROFILE_IDS: frozenset[str] = frozenset({"documents", "codebase", "hybrid"})
+PROFILE_ID_PATTERN = r"^[a-z0-9][a-z0-9-]{0,63}$"
+
+#: Layout key that marks a reserved workspace job pipeline (not a user graph).
+TASK_LAYOUT_KEY = "omrg_task"
+
+
 class PipelineRecord(TypedDict):
     """A pipeline identity with its presentation layout.
 
@@ -38,6 +50,25 @@ class PipelineRecord(TypedDict):
     layout: dict[str, Any]
     created_at: str
     updated_at: str
+
+
+class ProfileRecord(TypedDict):
+    """A user profile: an id, a base built-in profile and three pipelines.
+
+    The id, the base profile and the three pipeline ids never change after
+    creation. ``archived_at`` is set by a soft delete.
+    """
+
+    profile_id: str
+    title: str
+    description: str
+    base_profile: str
+    ingest_pipeline_id: str
+    search_pipeline_id: str
+    answer_pipeline_id: str
+    created_at: str
+    updated_at: str
+    archived_at: str | None
 
 
 class RevisionRecord(TypedDict):

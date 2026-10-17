@@ -12,10 +12,73 @@ from typing import Any, Protocol, runtime_checkable
 from omrg.core.workspace.records import (
     PipelineRecord,
     PluginRecord,
+    ProfileRecord,
     RevisionRecord,
     RunEventRecord,
     RunRecord,
 )
+
+
+@runtime_checkable
+class ProfileRepository(Protocol):
+    """Persistence for user profiles and the pipelines they own.
+
+    Lookups of an unknown profile raise ``KeyError``. Invalid values raise
+    ``ValueError``. A deleted (archived) profile stays readable by id.
+    """
+
+    def create_profile(
+        self,
+        title: str,
+        *,
+        base_profile: str,
+        slots: Mapping[str, Mapping[str, Any] | str | None],
+        schema_version: int,
+        description: str = "",
+        layouts: Mapping[str, Mapping[str, Any]] | None = None,
+    ) -> ProfileRecord:
+        """Create a profile, its pipelines and their first revisions at once.
+
+        The id comes from the title. A taken or reserved id gets ``-2``, ``-3``
+        and so on, and an archived id is never reused.
+
+        ``slots`` maps each of ``ingest``, ``search`` and ``answer`` to one
+        of: a graph document (a new pipeline whose first revision is that
+        graph), ``None`` (a new pipeline with no revision) or a pipeline id
+        string (an existing pipeline that becomes the slot). ``layouts`` gives
+        the presentation layout of each new pipeline, by slot.
+
+        Everything is written in one transaction: when any step fails, no row
+        stays.
+
+        Raises:
+            ValueError: If a slot is missing or unknown, the base profile is
+                not built-in, or an existing pipeline already fills a slot.
+            KeyError: If a named existing pipeline does not exist.
+        """
+        ...
+
+    def get_profile(self, profile_id: str) -> ProfileRecord:
+        """Return one profile, deleted or not."""
+        ...
+
+    def list_profiles(self, *, include_archived: bool = False) -> list[ProfileRecord]:
+        """Return profiles in creation order; deleted ones only on request."""
+        ...
+
+    def update_profile(
+        self, profile_id: str, *, title: str | None = None, description: str | None = None
+    ) -> ProfileRecord:
+        """Change the title or the description. The id never changes."""
+        ...
+
+    def archive_profile(self, profile_id: str) -> ProfileRecord:
+        """Soft-delete a profile. Archiving twice keeps the first time."""
+        ...
+
+    def find_profile_by_pipeline(self, pipeline_id: str) -> tuple[ProfileRecord, str] | None:
+        """Return the profile and the slot a pipeline fills, or ``None``."""
+        ...
 
 
 @runtime_checkable

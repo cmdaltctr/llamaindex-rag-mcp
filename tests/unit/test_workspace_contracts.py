@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.workspace import canonical_json, content_hash
+from omrg.core.workspace import ProfileRepository, canonical_json, content_hash
 from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
 
@@ -49,3 +49,16 @@ def test_contract_import_stays_free_of_persistence_and_domain_modules() -> None:
         [sys.executable, "-c", probe], capture_output=True, text=True, check=True
     )
     assert result.stdout.strip() == ""
+
+
+def test_profile_repository_protocol_names_the_profile_operations() -> None:
+    names = {
+        "create_profile",
+        "get_profile",
+        "list_profiles",
+        "update_profile",
+        "archive_profile",
+        "find_profile_by_pipeline",
+    }
+    assert names <= set(dir(ProfileRepository))
+    assert not isinstance(object(), ProfileRepository)

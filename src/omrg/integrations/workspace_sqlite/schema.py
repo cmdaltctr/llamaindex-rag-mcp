@@ -104,6 +104,47 @@ SCHEMA_MIGRATIONS: tuple[Migration, ...] = (
             )""",
         ),
     ),
+    (
+        3,
+        (
+            """CREATE TABLE profiles (
+                profile_id TEXT PRIMARY KEY
+                    CHECK (profile_id NOT IN ('documents', 'codebase', 'hybrid')),
+                title TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                base_profile TEXT NOT NULL CHECK (base_profile IN ('documents', 'codebase')),
+                ingest_pipeline_id TEXT NOT NULL UNIQUE REFERENCES pipelines(pipeline_id),
+                search_pipeline_id TEXT NOT NULL UNIQUE REFERENCES pipelines(pipeline_id),
+                answer_pipeline_id TEXT NOT NULL UNIQUE REFERENCES pipelines(pipeline_id),
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                archived_at TEXT
+            )""",
+            """CREATE TRIGGER profiles_fixed_columns
+                BEFORE UPDATE OF profile_id, base_profile, ingest_pipeline_id,
+                    search_pipeline_id, answer_pipeline_id ON profiles
+                WHEN NEW.profile_id IS NOT OLD.profile_id
+                    OR NEW.base_profile IS NOT OLD.base_profile
+                    OR NEW.ingest_pipeline_id IS NOT OLD.ingest_pipeline_id
+                    OR NEW.search_pipeline_id IS NOT OLD.search_pipeline_id
+                    OR NEW.answer_pipeline_id IS NOT OLD.answer_pipeline_id
+                BEGIN SELECT RAISE(ABORT, 'profile id, base and slots never change'); END""",
+            """CREATE TRIGGER profiles_one_slot_per_pipeline
+                BEFORE INSERT ON profiles
+                WHEN NEW.ingest_pipeline_id IN (NEW.search_pipeline_id, NEW.answer_pipeline_id)
+                    OR NEW.search_pipeline_id = NEW.answer_pipeline_id
+                    OR EXISTS (
+                        SELECT 1 FROM profiles WHERE
+                            ingest_pipeline_id IN (NEW.ingest_pipeline_id,
+                                NEW.search_pipeline_id, NEW.answer_pipeline_id)
+                            OR search_pipeline_id IN (NEW.ingest_pipeline_id,
+                                NEW.search_pipeline_id, NEW.answer_pipeline_id)
+                            OR answer_pipeline_id IN (NEW.ingest_pipeline_id,
+                                NEW.search_pipeline_id, NEW.answer_pipeline_id)
+                    )
+                BEGIN SELECT RAISE(ABORT, 'a pipeline fills one slot only'); END""",  # noqa: S608
+        ),
+    ),
 )
 
 

@@ -61,11 +61,6 @@ def _check_upload_mib(value: str | None) -> str | None:
     return value
 
 
-def default_workspace() -> Path:
-    """Return the default workspace directory, ``~/.omrg/workspace``."""
-    return Path.home() / ".omrg" / "workspace"
-
-
 def _require_web_extra() -> None:
     """Exit with an install instruction when FastAPI or Uvicorn is missing."""
     for module in ("fastapi", "uvicorn"):
@@ -247,8 +242,9 @@ def web(
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {escape(str(exc))}", soft_wrap=True)
         raise typer.Exit(code=2) from None
+    from ...core.workspace import WorkspaceLayout, default_workspace
+
     workspace_dir = (workspace or default_workspace()).expanduser()
-    from ...core.workspace import WorkspaceLayout
     from ...integrations.workspace_sqlite.settings import read_saved_web_port
 
     wanted_port = resolve_port(port, read_saved_web_port(WorkspaceLayout(workspace_dir).records))
