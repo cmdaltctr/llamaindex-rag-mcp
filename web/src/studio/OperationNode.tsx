@@ -17,7 +17,7 @@ export type OperationNodeData = {
 
 export type OperationFlowNode = Node<OperationNodeData, "operation">;
 
-function PortRow({ port, side, issues }: { port: PortDescriptor; side: "in" | "out"; issues: ValidationIssue[] }) {
+function PortRow({ port, side, issues, connectable }: { port: PortDescriptor; side: "in" | "out"; issues: ValidationIssue[]; connectable: boolean }) {
   const invalid = issues.some((issue) => issue.port === port.name);
   return (
     <li className={cn("relative flex flex-col py-1", side === "in" ? "ps-2" : "items-end pe-2")} data-invalid={invalid || undefined}>
@@ -25,6 +25,7 @@ function PortRow({ port, side, issues }: { port: PortDescriptor; side: "in" | "o
         type={side === "in" ? "target" : "source"}
         position={side === "in" ? Position.Left : Position.Right}
         id={port.name}
+        isConnectable={connectable}
         className="size-2.5 border-muted-foreground bg-card"
         title={`${port.name}: ${port.type.kind}${port.cardinality === "many" ? ", many" : ""}`}
       />
@@ -43,7 +44,7 @@ function borderFor(data: OperationNodeData, selected: boolean): string {
 }
 
 /** One catalogue operation on the canvas, with a typed handle per port. */
-export function OperationNode({ data, selected }: NodeProps<OperationFlowNode>) {
+export function OperationNode({ data, selected, isConnectable }: NodeProps<OperationFlowNode>) {
   const { operation, issues } = data;
   return (
     <div
@@ -73,12 +74,12 @@ export function OperationNode({ data, selected }: NodeProps<OperationFlowNode>) 
         <div className="grid grid-cols-2 gap-2">
           <ul aria-label="Inputs">
             {operation.inputs.map((port) => (
-              <PortRow key={port.name} port={port} side="in" issues={issues} />
+              <PortRow key={port.name} port={port} side="in" issues={issues} connectable={isConnectable} />
             ))}
           </ul>
           <ul aria-label="Outputs">
             {operation.outputs.map((port) => (
-              <PortRow key={port.name} port={port} side="out" issues={issues} />
+              <PortRow key={port.name} port={port} side="out" issues={issues} connectable={isConnectable} />
             ))}
           </ul>
         </div>

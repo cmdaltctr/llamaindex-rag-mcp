@@ -10,6 +10,8 @@ interface ParamFieldProps {
   value: JsonValue | undefined;
   effective: EffectiveControl | undefined;
   onChange: (value: JsonValue) => void;
+  /** Shows the value without allowing a change. */
+  disabled?: boolean;
 }
 
 const INHERIT = "__inherit__";
@@ -20,10 +22,10 @@ function display(value: JsonValue): string {
   return typeof value === "string" ? value : JSON.stringify(value);
 }
 
-function Choice({ type, name, checked, onChange, children }: { type: "radio" | "checkbox"; name?: string; checked: boolean; onChange: (checked: boolean) => void; children: string }) {
+function Choice({ type, name, checked, disabled, onChange, children }: { type: "radio" | "checkbox"; name?: string; checked: boolean; disabled?: boolean; onChange: (checked: boolean) => void; children: string }) {
   return (
     <label className="flex items-center gap-2 text-ui">
-      <input type={type} name={name} checked={checked} className="size-4 accent-primary" onChange={(event) => onChange(event.target.checked)} />
+      <input type={type} name={name} checked={checked} disabled={disabled} className="size-4 accent-primary" onChange={(event) => onChange(event.target.checked)} />
       {children}
     </label>
   );
@@ -40,7 +42,7 @@ function InheritNote({ field, effective }: { field: Field; effective: EffectiveC
   );
 }
 
-function TriState({ value, onChange, name }: ParamFieldProps & { name: string }) {
+function TriState({ value, onChange, disabled, name }: ParamFieldProps & { name: string }) {
   const options: [string, JsonValue][] = [
     ["Inherit", null],
     ["On", true],
@@ -50,7 +52,7 @@ function TriState({ value, onChange, name }: ParamFieldProps & { name: string })
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1">
       {options.map(([label, option]) => (
-        <Choice key={label} type="radio" name={name} checked={current === option} onChange={() => onChange(option)}>
+        <Choice key={label} type="radio" name={name} checked={current === option} disabled={disabled} onChange={() => onChange(option)}>
           {label}
         </Choice>
       ))}
@@ -58,7 +60,7 @@ function TriState({ value, onChange, name }: ParamFieldProps & { name: string })
   );
 }
 
-function NumberInput({ field, value, onChange, name }: ParamFieldProps & { name: string }) {
+function NumberInput({ field, value, onChange, disabled, name }: ParamFieldProps & { name: string }) {
   const [inherit, setInherit] = useState(field.nullable && value == null);
   const [text, setText] = useState(value == null ? "" : String(value));
   const [error, setError] = useState<string | null>(null);
@@ -83,10 +85,10 @@ function NumberInput({ field, value, onChange, name }: ParamFieldProps & { name:
     <>
       {field.nullable && (
         <div className="flex flex-wrap gap-x-4 gap-y-1">
-          <Choice type="radio" name={name} checked={inherit} onChange={chooseInherit}>
+          <Choice type="radio" name={name} checked={inherit} disabled={disabled} onChange={chooseInherit}>
             Inherit
           </Choice>
-          <Choice type="radio" name={name} checked={!inherit} onChange={() => setInherit(false)}>
+          <Choice type="radio" name={name} checked={!inherit} disabled={disabled} onChange={() => setInherit(false)}>
             Set value
           </Choice>
         </div>
@@ -98,7 +100,7 @@ function NumberInput({ field, value, onChange, name }: ParamFieldProps & { name:
           type="text"
           inputMode={field.kind === "integer" ? "numeric" : "decimal"}
           value={text}
-          disabled={inherit}
+          disabled={inherit || disabled}
           placeholder={field.defaultValue != null ? String(field.defaultValue) : undefined}
           aria-invalid={error !== null}
           aria-describedby={error ? errorId : undefined}
@@ -114,10 +116,10 @@ function NumberInput({ field, value, onChange, name }: ParamFieldProps & { name:
   );
 }
 
-function EnumSelect({ field, value, onChange }: ParamFieldProps) {
+function EnumSelect({ field, value, onChange, disabled }: ParamFieldProps) {
   const current = value == null ? INHERIT : String(value);
   return (
-    <Select value={current} onValueChange={(next) => onChange(next === INHERIT ? null : next)}>
+    <Select value={current} disabled={disabled} onValueChange={(next) => onChange(next === INHERIT ? null : next)}>
       <SelectTrigger aria-label={`${field.title} value`}>
         <SelectValue />
       </SelectTrigger>
@@ -141,7 +143,7 @@ export function ParamField(props: ParamFieldProps) {
   if (field.kind === "boolean" && field.nullable) control = <TriState {...props} name={name} />;
   else if (field.kind === "boolean") {
     control = (
-      <Choice type="checkbox" checked={Boolean(value ?? field.defaultValue)} onChange={(checked) => onChange(checked)}>
+      <Choice type="checkbox" checked={Boolean(value ?? field.defaultValue)} disabled={props.disabled} onChange={(checked) => onChange(checked)}>
         {field.title}
       </Choice>
     );
@@ -153,6 +155,7 @@ export function ParamField(props: ParamFieldProps) {
         aria-label={`${field.title} value`}
         value={value == null ? "" : String(value)}
         placeholder={field.nullable ? "Inherit" : undefined}
+        disabled={props.disabled}
         onChange={(event) => onChange(event.target.value || null)}
       />
     );

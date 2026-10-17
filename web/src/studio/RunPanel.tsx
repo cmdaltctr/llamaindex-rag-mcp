@@ -4,6 +4,7 @@ import type { RunDetailRecord } from "../api/runs";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { READ_ONLY_RUN_LINE } from "./profileCopy";
 
 interface RunPanelProps {
   revision: RevisionRecord | null;
@@ -20,6 +21,8 @@ interface RunPanelProps {
   actions: { saveLayout: () => void; saveRevision: () => void; validate: () => void; run: () => void; cancel: () => void; refresh: () => void };
   /** Event-driven run progress, shown inside the latest run. */
   live?: ReactNode;
+  /** A built-in profile: Validate stays; saving and running are not offered. */
+  readOnly?: boolean;
 }
 
 function RevisionState({ revision, dirty }: { revision: RevisionRecord | null; dirty: boolean }) {
@@ -62,24 +65,30 @@ function LatestRun({ run, active, busy, onCancel, onRefresh, live }: { run: NonN
 
 /** Save, validate, run and cancel controls. */
 export function RunPanel(props: RunPanelProps) {
-  const { revision, dirty, busy, inputNames, inputValues, issues, run, actions } = props;
+  const { revision, dirty, busy, inputNames, inputValues, issues, run, actions, readOnly = false } = props;
   return (
     <>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" disabled={busy} onClick={actions.saveLayout}>
-          Save layout
-        </Button>
-        <Button variant="outline" disabled={busy} onClick={actions.saveRevision}>
-          Save revision
-        </Button>
+        {!readOnly && (
+          <>
+            <Button variant="outline" disabled={busy} onClick={actions.saveLayout}>
+              Save layout
+            </Button>
+            <Button variant="outline" disabled={busy} onClick={actions.saveRevision}>
+              Save revision
+            </Button>
+          </>
+        )}
         <Button variant="outline" disabled={busy} onClick={actions.validate}>
           Validate
         </Button>
-        <Button disabled={busy || !revision} onClick={actions.run}>
-          Run
-        </Button>
+        {!readOnly && (
+          <Button disabled={busy || !revision} onClick={actions.run}>
+            Run
+          </Button>
+        )}
       </div>
-      <RevisionState revision={revision} dirty={dirty} />
+      {readOnly ? <p className="text-meta text-muted-foreground">{READ_ONLY_RUN_LINE}</p> : <RevisionState revision={revision} dirty={dirty} />}
       {inputNames.map((name) => (
         <div key={name} className="flex flex-col gap-1.5">
           <Label htmlFor={`run-input-${name}`}>{`Input ${name}`}</Label>

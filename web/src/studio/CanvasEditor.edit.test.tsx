@@ -3,7 +3,6 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { json } from "./test/fakeServer";
 import {
   addWithKeyboard,
-  choose,
   connectWithKeyboard,
   edgeNames,
   EMPTY_PIPELINE,
@@ -16,6 +15,7 @@ import {
   savedDocument,
   TEMPLATE_PIPELINE,
   TEMPLATE_REVISION,
+  UNUSED_PROFILES,
 } from "./test/helpers";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
@@ -25,7 +25,7 @@ beforeAll(mockReactFlow);
 /** Opens the empty pipeline `pnew`, or the saved search copy `p1`. */
 function setup(options: Parameters<typeof openStudio>[1] = {}, id = "pnew") {
   const pipelines = id === "pnew" ? [EMPTY_PIPELINE] : [TEMPLATE_PIPELINE];
-  return openStudio(`#/studio/${id}`, { pipelines, revisions: id === "pnew" ? [] : [TEMPLATE_REVISION], ...options });
+  return openStudio(`#/studio/search-copy/${id === "pnew" ? "ingest" : "search"}`, { pipelines, revisions: id === "pnew" ? [] : [TEMPLATE_REVISION], profiles: UNUSED_PROFILES, ...options });
 }
 
 describe("canvas catalogue and editing", () => {
@@ -47,7 +47,7 @@ describe("canvas catalogue and editing", () => {
     const panel = screen.getByRole("complementary", { name: "Canvas panel" });
     expect(surface).not.toBeNull();
     expect(panel).not.toContainElement(surface);
-    const regions = ["Pipeline settings", "Operations", "Nodes and connections", "Connect ports", "Revision and run", "Node settings"];
+    const regions = ["Pipeline settings", "Operations", "Steps and connections", "Connect ports", "Revision and run", "Step settings"];
     for (const name of regions) expect(panel).toContainElement(screen.getByRole("region", { name }));
     expect(view.container.querySelectorAll("[data-slot='card']")).toHaveLength(0);
   });
@@ -126,19 +126,19 @@ describe("canvas catalogue and editing", () => {
   it("opens the settings of a node when it is selected, without leaving the page", async () => {
     const { user } = setup();
     await screen.findByRole("region", { name: "Operations" });
-    await openSections(user, "Node settings");
-    expect(within(inspector()).getByText(/Select a node to edit its settings/)).toBeInTheDocument();
+    await openSections(user, "Step settings");
+    expect(within(inspector()).getByText(/Select a step to edit its settings/)).toBeInTheDocument();
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
     expect(within(inspector()).getByRole("heading", { name: /Node dense/ })).toBeInTheDocument();
-    expect(window.location.hash).toBe("#/studio/pnew");
+    expect(window.location.hash).toBe("#/studio/search-copy/ingest");
   });
 
-  it("opens Node settings by itself when a node is added", async () => {
+  it("opens Step settings by itself when a node is added", async () => {
     const { user } = setup();
     await screen.findByRole("region", { name: "Operations" });
-    expect(screen.getByRole("button", { name: "Node settings" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Step settings" })).toHaveAttribute("aria-expanded", "false");
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
-    expect(screen.getByRole("button", { name: "Node settings" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "Step settings" })).toHaveAttribute("aria-expanded", "true");
     expect(within(inspector()).getByRole("heading", { name: /Node dense/ })).toBeInTheDocument();
   });
 
@@ -150,7 +150,7 @@ describe("canvas catalogue and editing", () => {
     await user.click(within(outline()).getByRole("button", { name: "Remove connection dense.evidence to rerank.evidence" }));
     await user.click(within(outline()).getByRole("button", { name: "Remove connection rerank.evidence to select.evidence" }));
     await user.click(within(outline()).getByRole("button", { name: /^Node rerank/ }));
-    await user.click(within(inspector()).getByRole("button", { name: "Remove node" }));
+    await user.click(within(inspector()).getByRole("button", { name: "Remove step" }));
     await connectWithKeyboard(user, "dense.evidence", "select.evidence");
     await user.click(within(runPanel()).getByRole("button", { name: "Save revision" }));
 
@@ -167,7 +167,7 @@ describe("canvas catalogue and editing", () => {
     await user.click(within(runPanel()).getByRole("button", { name: "Save layout" }));
     await waitFor(() => expect(server.last("PUT", "/v1/pipelines/p1/layout")).toBeDefined());
     const layout = (server.last("PUT", "/v1/pipelines/p1/layout")!.body as { layout: Record<string, unknown> }).layout;
-    expect(Object.keys(layout).sort()).toEqual(["positions", "selection", "title", "viewport"]);
+    expect(Object.keys(layout).sort()).toEqual(["positions", "selection", "viewport"]);
     expect(layout.positions).toHaveProperty("dense", { x: 240, y: 0 });
     expect(server.calls.filter((c) => c.path.endsWith("/revisions") && c.method === "POST")).toHaveLength(1);
   });
@@ -203,16 +203,24 @@ describe("canvas catalogue and editing", () => {
     expect(within(outline()).getByRole("button", { name: /^Node dense/ })).toBeInTheDocument();
   });
 
-  it("selects the graph profile and keeps collection inheritance by default", async () => {
-    const { server, user } = setup();
+  it("shows the graph profile as read-only text, with no Title field and no profile list", async () => {
+    const revision = { ...TEMPLATE_REVISION, document: { ...TEMPLATE_REVISION.document, profile: "documents" } };
+    const { user } = setup({ revisions: [revision] }, "p1");
     await screen.findByRole("region", { name: "Operations" });
     await openAllSections(user);
-    await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
-    await user.click(within(runPanel()).getByRole("button", { name: "Save revision" }));
-    await waitFor(() => expect(server.last("POST", "/v1/pipelines/pnew/revisions")).toBeDefined());
-    expect(savedDocument(server.last("POST", "/v1/pipelines/pnew/revisions"))).not.toHaveProperty("profile");
-    await choose(user, screen.getByLabelText("Profile"), "codebase");
-    await user.click(within(runPanel()).getByRole("button", { name: "Save revision" }));
-    await waitFor(() => expect(savedDocument(server.last("POST", "/v1/pipelines/pnew/revisions")).profile).toBe("codebase"));
+    expect(within(screen.getByRole("region", { name: "Pipeline settings" })).getByText("Base profile: documents")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Profile")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Collection")).toBeInTheDocument();
+  });
+
+  it("shows the inherited base profile as text when the graph names none", async () => {
+    const { user } = setup();
+    await screen.findByRole("region", { name: "Operations" });
+    await openAllSections(user);
+    expect(screen.getByText("Base profile: inherited from each collection")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Profile")).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Profile" })).not.toBeInTheDocument();
   });
 });

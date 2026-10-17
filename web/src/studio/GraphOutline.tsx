@@ -8,15 +8,17 @@ interface GraphOutlineProps {
   issues: readonly ValidationIssue[];
   onChange: (change: (draft: Draft) => Draft) => void;
   onAnnounce: (message: string) => void;
+  /** A read-only graph: items can be selected, never removed. */
+  readOnly?: boolean;
 }
 
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
 /**
  * Keyboard route to every node and connection. Enter or Space selects an
- * item; Delete or Backspace removes the focused item.
+ * item; Delete or Backspace removes the focused item (not on a read-only graph).
  */
-export function GraphOutline({ draft, issues, onChange, onAnnounce }: GraphOutlineProps) {
+export function GraphOutline({ draft, issues, onChange, onAnnounce, readOnly = false }: GraphOutlineProps) {
   const selected = new Set(draft.layout.selection);
 
   function select(id: string) {
@@ -24,7 +26,7 @@ export function GraphOutline({ draft, issues, onChange, onAnnounce }: GraphOutli
   }
 
   function removeOnKey(event: KeyboardEvent<HTMLButtonElement>, remove: () => void) {
-    if (event.key !== "Delete" && event.key !== "Backspace") return;
+    if (readOnly || (event.key !== "Delete" && event.key !== "Backspace")) return;
     event.preventDefault();
     event.stopPropagation();
     remove();
@@ -92,9 +94,11 @@ export function GraphOutline({ draft, issues, onChange, onAnnounce }: GraphOutli
                 >
                   <code className="font-mono text-code">{label}</code>
                 </Button>
-                <Button variant="ghost" size="sm" aria-label={`Remove connection ${label}`} onClick={() => dropEdge(key, label)}>
-                  Remove
-                </Button>
+                {!readOnly && (
+                  <Button variant="ghost" size="sm" aria-label={`Remove connection ${label}`} onClick={() => dropEdge(key, label)}>
+                    Remove
+                  </Button>
+                )}
               </li>
             );
           })}

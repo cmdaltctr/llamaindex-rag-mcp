@@ -27,9 +27,13 @@ interface FlowSurfaceProps {
   /** Node states from the events of the shown run, keyed by the run's own node ids. Absent: no run is shown. */
   runNodes?: { ids: ReadonlySet<string>; states: Readonly<Record<string, NodeRunState>> } | null;
   reducedMotion?: boolean;
+  /** A read-only graph can be panned, zoomed and selected, never changed. */
+  readOnly?: boolean;
 }
 
 type Size = { width: number; height: number };
+
+const refuseAll = () => false;
 
 function isTextField(target: EventTarget): boolean {
   return target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName));
@@ -45,7 +49,7 @@ function applySelection(selection: string[], changes: { id: string; selected: bo
 }
 
 /** The visual graph editor. Node and edge state live in the draft; this component only translates changes. */
-export function FlowSurface({ draft, catalogue, issues, onChange, onConnect, onRefused, runNodes = null, reducedMotion = false }: FlowSurfaceProps) {
+export function FlowSurface({ draft, catalogue, issues, onChange, onConnect, onRefused, runNodes = null, reducedMotion = false, readOnly = false }: FlowSurfaceProps) {
   const [measured, setMeasured] = useState<Record<string, Size>>({});
   const selected = useMemo(() => new Set(draft.layout.selection), [draft.layout.selection]);
 
@@ -94,7 +98,7 @@ export function FlowSurface({ draft, catalogue, issues, onChange, onConnect, onR
     (changes: NodeChange<OperationFlowNode>[]) => {
       const sizes = changes.flatMap((c) => (c.type === "dimensions" && c.dimensions ? [[c.id, c.dimensions] as const] : []));
       if (sizes.length > 0) setMeasured((current) => ({ ...current, ...Object.fromEntries(sizes) }));
-      const relevant = changes.filter((c) => c.type === "position" || c.type === "select" || c.type === "remove");
+      const relevant = changes.filter((c) => c.type === "select" || (!readOnly && (c.type === "position" || c.type === "remove")));
       if (relevant.length === 0) return;
       onChange((current) =>
         relevant.reduce((next, change) => {
@@ -105,11 +109,13 @@ export function FlowSurface({ draft, catalogue, issues, onChange, onConnect, onR
         }, current),
       );
     },
-    [onChange],
+    [onChange, readOnly],
   );
 
   const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) => {
+    (all: EdgeChange[]) => {
+      const changes = readOnly ? all.filter((change) => change.type === "select") : all;
+      if (changes.length === 0) return;
       onChange((current) =>
         changes.reduce((next, change) => {
           if (change.type === "select") return setSelection(next, applySelection(next.layout.selection, [change]));
@@ -118,31 +124,31 @@ export function FlowSurface({ draft, catalogue, issues, onChange, onConnect, onR
         }, current),
       );
     },
-    [onChange],
+    [onChange, readOnly],
   );
 
   const handleConnect = useCallback(
     (connection: Connection) => {
-      if (!connection.sourceHandle || !connection.targetHandle) return;
+      if (readOnly || !connection.sourceHandle || !connection.targetHandle) return;
       onConnect({ node: connection.source, port: connection.sourceHandle }, { node: connection.target, port: connection.targetHandle });
     },
-    [onConnect],
+    [onConnect, readOnly],
   );
 
   // A drag that ends on an incompatible handle gets the same explanation as the keyboard menu.
   const handleConnectEnd = useCallback(
     (_: MouseEvent | TouchEvent, state: FinalConnectionState) => {
       const { fromHandle, toHandle } = state;
-      if (state.isValid !== false || !fromHandle?.id || !toHandle?.id) return;
+      if (readOnly || state.isValid !== false || !fromHandle?.id || !toHandle?.id) return;
       const [out, into] = fromHandle.type === "source" ? [fromHandle, toHandle] : [toHandle, fromHandle];
       const reason = checkConnection(draft, catalogue, { node: out.nodeId, port: out.id! }, { node: into.nodeId, port: into.id! });
       if (reason) onRefused(`Cannot connect: ${reason}`);
     },
-    [draft, catalogue, onRefused],
+    [draft, catalogue, onRefused, readOnly],
   );
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if ((event.key === "Delete" || event.key === "Backspace") && !isTextField(event.target)) {
+    if (!readOnly && (event.key === "Delete" || event.key === "Backspace") && !isTextField(event.target)) {
       event.preventDefault();
       onChange(removeSelection);
     }
@@ -158,10 +164,12 @@ export function FlowSurface({ draft, catalogue, issues, onChange, onConnect, onR
         onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
         onConnectEnd={handleConnectEnd}
-        isValidConnection={connectionGuard(draft, catalogue)}
+        isValidConnection={readOnly ? refuseAll : connectionGuard(draft, catalogue)}
         onMoveEnd={(_, viewport) => onChange((current) => setViewport(current, viewport))}
         defaultViewport={draft.layout.viewport}
         deleteKeyCode={null}
+        nodesDraggable={!readOnly}
+        nodesConnectable={!readOnly}
         minZoom={0.25}
       >
         <Background gap={20} />

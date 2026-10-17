@@ -25,7 +25,7 @@ afterEach(() => vi.unstubAllGlobals());
 /** Opens the saved pipeline whose latest run the server reports as queued, and its event stream. */
 async function openStream() {
   const run = { run_id: "run1", pipeline_id: "p1", revision_id: "p1-r1", status: "queued", last_sequence: 1 };
-  const opened = openStudio("#/studio/p1", { pipelines: [TEMPLATE_PIPELINE], revisions: [TEMPLATE_REVISION], runs: [run] });
+  const opened = openStudio("#/studio/search-copy/search", { pipelines: [TEMPLATE_PIPELINE], revisions: [TEMPLATE_REVISION], runs: [run] });
   await waitFor(() => expect(opened.view.container.querySelectorAll("[data-slot='op-node']")).toHaveLength(4));
   await openSections(opened.user, "Revision and run");
   await waitFor(() => expect(FakeEventSource.instances).toHaveLength(1));

@@ -11,6 +11,8 @@ interface PaletteProps {
   error: unknown;
   onRetry: () => void;
   onAdd: (operation: OperationDescriptor) => void;
+  /** A read-only graph: every operation is disabled, with the reason. */
+  readOnly?: boolean;
 }
 
 function matches(operation: OperationDescriptor, query: string): boolean {
@@ -23,10 +25,11 @@ function matches(operation: OperationDescriptor, query: string): boolean {
 }
 
 /** Searchable operation catalogue. Unavailable operations stay listed, disabled, with the host's reasons. */
-export function Palette({ operations, error, onRetry, onAdd }: PaletteProps) {
+export function Palette({ operations, error, onRetry, onAdd, readOnly = false }: PaletteProps) {
   const [query, setQuery] = useState("");
   const idBase = useId();
   const visible = (operations ?? []).filter((operation) => matches(operation, query));
+  const readOnlyId = `${idBase}-read-only`;
 
   return (
     <>
@@ -34,6 +37,11 @@ export function Palette({ operations, error, onRetry, onAdd }: PaletteProps) {
         <Label htmlFor={`${idBase}-search`}>Search operations</Label>
         <Input id={`${idBase}-search`} type="search" value={query} onChange={(event) => setQuery(event.target.value)} />
       </div>
+      {readOnly && (
+        <p id={readOnlyId} className="text-meta text-muted-foreground">
+          Read-only profile
+        </p>
+      )}
       {error !== null && error !== undefined && <ErrorNotice error={error} onRetry={onRetry} />}
       {operations === undefined && !error && <p className="text-meta text-muted-foreground">Loading the catalogue.</p>}
       <ul className="flex max-h-80 flex-col gap-1 overflow-y-auto">
@@ -43,9 +51,9 @@ export function Palette({ operations, error, onRetry, onAdd }: PaletteProps) {
             <li key={`${operation.operation_id}@${operation.version}`} className="flex flex-col gap-1">
               <Button
                 variant="outline"
-                disabled={!operation.available}
+                disabled={readOnly || !operation.available}
                 aria-label={`Add ${operation.title} (${operation.operation_id})`}
-                aria-describedby={operation.available ? undefined : reasonId}
+                aria-describedby={[readOnly ? readOnlyId : null, operation.available ? null : reasonId].filter(Boolean).join(" ") || undefined}
                 onClick={() => onAdd(operation)}
                 className="h-auto w-full flex-col items-start gap-0.5 whitespace-normal rounded-control px-2.5 py-1.5 text-start"
               >

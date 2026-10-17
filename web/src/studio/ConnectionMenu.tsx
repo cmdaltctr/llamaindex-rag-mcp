@@ -11,6 +11,8 @@ interface ConnectionMenuProps {
   catalogue: readonly OperationDescriptor[];
   /** Returns the refusal reason, or `null` when the connection was added. */
   onConnect: (source: PortRef, target: PortRef) => string | null;
+  /** A read-only graph cannot take a connection. */
+  readOnly?: boolean;
 }
 
 type Option = { value: string; label: string };
@@ -54,7 +56,7 @@ function PortSelect({ id, label, placeholder, value, options, onChange }: { id: 
 }
 
 /** Creates a connection without dragging: choose the source port, then the target port. */
-export function ConnectionMenu({ draft, catalogue, onConnect }: ConnectionMenuProps) {
+export function ConnectionMenu({ draft, catalogue, onConnect, readOnly = false }: ConnectionMenuProps) {
   const idBase = useId();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -68,6 +70,8 @@ export function ConnectionMenu({ draft, catalogue, onConnect }: ConnectionMenuPr
     setRefusal(reason === null ? null : `Cannot connect: ${reason}`);
     if (reason === null) setTo("");
   }
+
+  if (readOnly) return <p className="text-meta text-muted-foreground">This pipeline is read-only.</p>;
 
   return (
     <>

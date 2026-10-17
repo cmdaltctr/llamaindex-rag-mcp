@@ -13,22 +13,24 @@ interface NodeInspectorProps {
   issues: readonly ValidationIssue[];
   controls: Record<string, EffectiveControl[]>;
   onChange: (change: (draft: Draft) => Draft) => void;
+  /** A read-only graph shows the values: every field is disabled and the step cannot be removed. */
+  readOnly?: boolean;
 }
 
-function Check({ checked, onChange, children }: { checked: boolean; onChange: (checked: boolean) => void; children: string }) {
+function Check({ checked, onChange, disabled, children }: { checked: boolean; onChange: (checked: boolean) => void; disabled: boolean; children: string }) {
   return (
     <label className="flex items-center gap-2 text-ui">
-      <input type="checkbox" checked={checked} className="size-4 accent-primary" onChange={(event) => onChange(event.target.checked)} />
+      <input type="checkbox" checked={checked} disabled={disabled} className="size-4 accent-primary" onChange={(event) => onChange(event.target.checked)} />
       {children}
     </label>
   );
 }
 
 /** Settings for the selected node, generated from its operation's catalogue entry. */
-export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onChange }: NodeInspectorProps) {
+export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onChange, readOnly = false }: NodeInspectorProps) {
   const node = draft.graph.nodes.find((candidate) => candidate.id === nodeId);
   if (!node) {
-    return <p className="text-meta text-muted-foreground">Select a node to edit its settings.</p>;
+    return <p className="text-meta text-muted-foreground">Select a step to edit its settings.</p>;
   }
   const id = node.id;
   const operation = findOperation(catalogue, node.operation, node.version);
@@ -62,8 +64,8 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
       )}
       {operation?.bypass && (
         <>
-          <Check checked={node.enabled === false} onChange={(checked) => onChange((current) => setEnabled(current, id, !checked))}>
-            Bypass this node
+          <Check disabled={readOnly} checked={node.enabled === false} onChange={(checked) => onChange((current) => setEnabled(current, id, !checked))}>
+            Bypass this step
           </Check>
           <p className="text-meta text-muted-foreground">
             A bypassed node passes its <code className="font-mono text-code">{operation.bypass.input_port}</code> input through unchanged.
@@ -75,6 +77,7 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
           <ParamField
             key={`${id}:${field.name}`}
             field={field}
+            disabled={readOnly}
             value={node.params?.[field.name]}
             effective={field.lever ? controls[id]?.find((control) => control.lever === field.lever) : undefined}
             onChange={(value) => onChange((current) => setParam(current, id, field.name, value))}
@@ -86,6 +89,7 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
           {operation.inputs.map((port) => (
             <Check
               key={`in:${port.name}`}
+              disabled={readOnly}
               checked={isInput(port.name)}
               onChange={(checked) => onChange((current) => toggleGraphInput(current, id, port.name, port.type.kind, checked))}
             >
@@ -95,6 +99,7 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
           {operation.outputs.map((port) => (
             <Check
               key={`out:${port.name}`}
+              disabled={readOnly}
               checked={isOutput(port.name)}
               onChange={(checked) => onChange((current) => toggleGraphOutput(current, id, port.name, checked))}
             >
@@ -103,9 +108,11 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
           ))}
         </fieldset>
       )}
-      <Button variant="destructive" onClick={() => onChange((current) => removeNode(current, id))}>
-        Remove node
-      </Button>
+      {!readOnly && (
+        <Button variant="destructive" onClick={() => onChange((current) => removeNode(current, id))}>
+          Remove step
+        </Button>
+      )}
     </>
   );
 }

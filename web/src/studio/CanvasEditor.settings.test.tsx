@@ -1,14 +1,14 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it } from "vitest";
 import { json } from "./test/fakeServer";
-import { addWithKeyboard, EMPTY_PIPELINE, inspector, openAllSections, outline, runPanel, savedDocument } from "./test/helpers";
+import { addWithKeyboard, EMPTY_PIPELINE, inspector, openAllSections, outline, runPanel, savedDocument, UNUSED_PROFILES } from "./test/helpers";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
 
 beforeAll(mockReactFlow);
 
 async function setup(options: Parameters<typeof openStudio>[1] = {}) {
-  const view = openStudio("#/studio/pnew", { pipelines: [EMPTY_PIPELINE], ...options });
+  const view = openStudio("#/studio/search-copy/ingest", { pipelines: [EMPTY_PIPELINE], profiles: UNUSED_PROFILES, ...options });
   await screen.findByRole("region", { name: "Operations" });
   await within(screen.getByRole("region", { name: "Operations" })).findByRole("button", { name: /retrieve\.dense/ });
   await openAllSections(view.user);
@@ -81,9 +81,9 @@ describe("node controls", () => {
   it("offers a bypass only when the operation declares one", async () => {
     const { server, user } = await setup();
     await addWithKeyboard(user, "Threshold and top-k", "select.threshold");
-    expect(within(inspector()).queryByRole("checkbox", { name: "Bypass this node" })).not.toBeInTheDocument();
+    expect(within(inspector()).queryByRole("checkbox", { name: "Bypass this step" })).not.toBeInTheDocument();
     await addWithKeyboard(user, "Cross-encoder rerank", "select.rerank");
-    await user.click(within(inspector()).getByRole("checkbox", { name: "Bypass this node" }));
+    await user.click(within(inspector()).getByRole("checkbox", { name: "Bypass this step" }));
     expect((await saveRevision(user, server)).nodes.find((n) => n.id === "rerank")?.enabled).toBe(false);
   });
 });
@@ -117,7 +117,7 @@ describe("revision, run and cancellation", () => {
     // Edits after submission change the draft only.
     await user.click(within(group("Enabled")).getByRole("radio", { name: "Inherit" }));
     await user.click(within(outline()).getByRole("button", { name: /^Node prepare_query/ }));
-    await user.click(within(inspector()).getByRole("button", { name: "Remove node" }));
+    await user.click(within(inspector()).getByRole("button", { name: "Remove step" }));
     expect(runPanel()).toHaveTextContent("The draft differs from revision 1.");
     expect(submitted).toHaveTextContent('"enabled": true');
     expect(submitted).not.toHaveTextContent('"enabled": false');
