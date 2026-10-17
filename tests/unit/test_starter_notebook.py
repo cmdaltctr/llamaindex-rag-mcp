@@ -35,6 +35,8 @@ from tests.unit.test_web_experiments_support import (  # noqa: E402
 )
 from tests.unit.test_web_runs_support import make_engine  # noqa: E402
 
+from omrg.core.profiles.resolver import ProfileResolver  # noqa: E402
+
 NOTEBOOK = Path(__file__).resolve().parents[2] / "plugins" / "marimo" / "starter_notebook.py"
 
 
@@ -101,7 +103,12 @@ def notebook(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
 
 @pytest.fixture
 def lab(tmp_path: Path, effective_settings: Any, notebook: ModuleType) -> Any:
-    parts = build_experiment_app(tmp_path, make_engine(effective_settings), effective_settings)
+    settings = effective_settings()
+    resolver = ProfileResolver(
+        store=None, server_profile="documents", base=settings, env_overrides={}
+    )
+    engine = make_engine(effective_settings, profile_resolver=resolver)
+    parts = build_experiment_app(tmp_path, engine, effective_settings)
     with TestClient(parts.app, base_url=BASE) as client:
         login(client, parts.policy)
         context_id = register(client, parts.root, actions=["read"])["experiment"]["context_id"]
@@ -402,3 +409,41 @@ def test_token_is_never_shown(
     assert "<hidden>" in repr(session.client)
     captured = capsys.readouterr()
     assert lab["token"] not in captured.out + captured.err
+
+
+# ── Profiles for experiment credentials (unify-profiles-and-pipelines) ───
+
+
+def test_the_session_creates_one_profile_and_saves_into_its_slot(
+    notebook: ModuleType, lab: dict
+) -> None:
+    session, transport = lab["session"], lab["transport"]
+    session.run(_search(notebook, session, 2), {"query": "a"}, run_requested=True)
+    session.run(_search(notebook, session, 3), {"query": "b"}, run_requested=True)
+    posts = [c for c in transport.calls if c[0] == "POST"]
+    assert posts.count(("POST", "/v1/profiles")) == 1
+    assert ("POST", "/v1/pipelines") not in posts
+    profile = session._profile
+    assert profile["base_profile"] == "documents"
+    saved = lab["client"].get(f"/v1/pipelines/{profile['slots']['search']}").json()
+    assert saved["current_revision"]["document"]["profile"] == "documents"
+    assert saved["current_revision"]["revision_number"] == 3  # standard graph + two saves
+
+
+def test_graphs_go_to_the_slot_that_fits_their_ports(notebook: ModuleType) -> None:
+    ingest = {"inputs": [{"name": "path"}], "outputs": [{"name": "summary"}]}
+    answer = {"inputs": [{"name": "query"}], "outputs": [{"name": "answer"}]}
+    search = {"inputs": [{"name": "query"}], "outputs": [{"name": "results"}]}
+    slot = notebook.ExperimentSession.slot_for
+    assert (slot(ingest), slot(answer), slot(search)) == ("ingest", "answer", "search")
+
+
+def test_an_experiment_credential_creates_a_profile_but_cannot_list_or_read_them(
+    lab: dict,
+) -> None:
+    client = lab["client"]
+    headers = {"Authorization": f"Bearer {lab['token']}", "Origin": ORIGIN["Origin"]}
+    assert client.post("/v1/profiles", json={"title": "E"}, headers=headers).status_code == 201
+    assert client.get("/v1/profiles", headers=headers).status_code == 403
+    assert client.get("/v1/profiles/documents", headers=headers).status_code == 403
+    assert client.delete("/v1/profiles/e", headers=headers).status_code == 403

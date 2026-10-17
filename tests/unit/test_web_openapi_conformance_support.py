@@ -75,6 +75,9 @@ FAMILIES: dict[str, frozenset[str]] = {
             "validatePipeline",
         }
     ),
+    "profiles": frozenset(
+        {"listProfiles", "createProfile", "getProfile", "updateProfile", "deleteProfile"}
+    ),
     "runs": frozenset(
         {
             "submitRun",

@@ -345,8 +345,15 @@ def _authenticate(policy: AccessPolicy, request: Request) -> Principal:
     return principal
 
 
-def experiment_path_allowed(path: str) -> bool:
-    """Return whether an experiment-bound bearer credential may use *path*."""
+def experiment_path_allowed(path: str, method: str = "GET") -> bool:
+    """Return whether an experiment-bound bearer credential may use *path*.
+
+    ``POST /v1/profiles`` is the one profile route allowed: an experiment makes
+    a profile to hold its pipelines. The profile list and reads show which
+    collections use a profile (``used_by``), which is the live library.
+    """
+    if path == "/v1/profiles" and method.upper() == "POST":
+        return True
     return any(
         path == prefix or path.startswith(prefix + "/") for prefix in EXPERIMENT_BEARER_PATHS
     )
@@ -372,12 +379,12 @@ def require_scope(scope: str) -> Callable[[Request], Any]:
         if scope not in principal.scopes:
             raise HTTPException(403, f"This credential lacks the {scope!r} scope.")
         if principal.experiment_context is not None and not experiment_path_allowed(
-            request.url.path
+            request.url.path, request.method
         ):
             raise HTTPException(
                 403,
                 "An experiment credential cannot read or change the live library; "
-                "it can use only pipeline, run and template routes.",
+                "it can use only pipeline, run and template routes, and create a profile.",
             )
         request.state.principal = principal
         return principal

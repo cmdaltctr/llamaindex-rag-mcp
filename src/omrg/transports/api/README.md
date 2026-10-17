@@ -82,8 +82,8 @@ only `sessionCookie`, the operation is session only.
 
 | Scope | Bearer can hold it | Operations |
 | --- | --- | --- |
-| `read` | yes | Session, collections, search, answer, chunks, jobs, operations, templates, pipelines, runs, events, integrations, connections |
-| `graph` | yes | Create pipelines, save layouts and revisions, validate graphs |
+| `read` | yes | Session, collections, search, answer, chunks, jobs, operations, templates, profiles, pipelines, runs, events, integrations, connections |
+| `graph` | yes | Create, rename and delete profiles, save pipeline layouts and revisions, validate graphs |
 | `run` | yes | Submit, cancel and retry graph runs |
 | `files` | no | Roots, uploads, ingestion and codebase-map jobs |
 | `credentials` | no | Issue, list and revoke bearer credentials |
@@ -178,6 +178,29 @@ reference without `.json`.
 The route uses the same access rule as `GET /v1/runs/{run_id}`. A run that
 the caller cannot read gets 404, as an unknown run does. An unknown name gets
 404. A name that is not one plain path segment gets 400, and no file is read.
+
+## Profiles and pipelines
+
+A user profile owns three pipelines: Ingest, Search and Answer. A pipeline
+belongs to a profile, so the pipeline routes edit pipelines that exist and
+no route creates a loose pipeline.
+
+| Operation id | Method and path | Scope | Use |
+| --- | --- | --- | --- |
+| `listProfiles` | GET `/v1/profiles` | `read` | Built-in profiles first, then user profiles. Each item has `slots`, `ready`, `not_ready_reasons` and `used_by` |
+| `createProfile` | POST `/v1/profiles` | `graph` | Duplicate a built-in profile or a user profile (`source`), or start empty. 201 |
+| `getProfile` | GET `/v1/profiles/{profile_id}` | `read` | One profile. A built-in profile also has `standard_graphs` |
+| `updateProfile` | PATCH `/v1/profiles/{profile_id}` | `graph` | Change the title and the description only |
+| `deleteProfile` | DELETE `/v1/profiles/{profile_id}` | `graph` | Soft delete. 409 while a collection uses the profile |
+| `createPipeline` | POST `/v1/pipelines` | `graph` | Withdrawn. Always 410 and creates nothing. Use `createProfile` |
+| `listPipelines` | GET `/v1/pipelines` | `read` | Saved pipelines |
+| `getPipeline` | GET `/v1/pipelines/{pipeline_id}` | `read` | One pipeline with its current revision and `profile_slot` (`{"profile_id", "slot"}`, or `null` for a pipeline outside a profile) |
+| `savePipelineRevision` | POST `/v1/pipelines/{pipeline_id}/revisions` | `graph` | New revision. The response lists `affected_collections`, the collections that use the profile. 409 with `not_ready_reasons` when the save would make a profile in use not ready |
+| `validatePipeline` | POST `/v1/pipelines/validate` | `graph` | Check a draft graph. The response has `nodes`, the effective value and source of each step setting |
+
+A Chat answer or a Knowledge Base search on a collection of a user profile runs
+the Search or Answer graph inside the request. The request adds no run record.
+A run record exists only for a run you submit with `POST /v1/runs`.
 
 ## Templates, experiments and plugins
 

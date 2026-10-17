@@ -64,10 +64,10 @@ class GatedEngine(Engine):
         return await super().run_pipeline(definition, **kwargs)
 
 
-def make_engine(effective_settings: Callable[..., Any]) -> GatedEngine:
+def make_engine(effective_settings: Callable[..., Any], **kwargs: Any) -> GatedEngine:
     """Return a gated Engine over a fake store and embedder."""
     store = FakeStore(chunks())
-    return GatedEngine(effective_settings(), store=store, embed_model=FakeEmbedder())
+    return GatedEngine(effective_settings(), store=store, embed_model=FakeEmbedder(), **kwargs)
 
 
 def build_app(
@@ -110,10 +110,21 @@ def graph(**params: Any) -> dict[str, Any]:
     return retrieval_graph(**params)
 
 
+def new_pipeline(
+    app: Any, title: str = "Search", layout: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Create a loose pipeline in the workspace of *app* and return its record.
+
+    ``POST /v1/pipelines`` is withdrawn, so tests write the record directly.
+    The app must be running (inside the ``TestClient`` block).
+    """
+    repository = app.state.runtime.run_service.service.repository
+    return dict(repository.create_pipeline(title, layout=layout))
+
+
 def save_revision(client: TestClient, document: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Create a pipeline and save one revision; return the revision."""
-    pipeline = client.post("/v1/pipelines", json={"title": "Search"}, headers=ORIGIN).json()
-    pipeline_id = pipeline["pipeline"]["pipeline_id"]
+    """Create a loose pipeline and save one revision; return the revision."""
+    pipeline_id = new_pipeline(client.app)["pipeline_id"]
     response = client.post(
         f"/v1/pipelines/{pipeline_id}/revisions",
         json={"document": document or graph(top_k=2)},

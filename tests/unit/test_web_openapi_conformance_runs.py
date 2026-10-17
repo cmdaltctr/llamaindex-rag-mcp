@@ -28,6 +28,7 @@ from tests.unit.test_web_runs_support import (  # noqa: E402
     graph,
     login,
     make_engine,
+    new_pipeline,
 )
 
 from omrg.core.workspace import WorkspaceLayout  # noqa: E402
@@ -63,8 +64,7 @@ def _wait(client: TestClient, check: ContractChecker, run_id: str) -> dict[str, 
 
 
 def _revision(client: TestClient, check: ContractChecker, **params: Any) -> dict[str, Any]:
-    pipeline = check.check(client.post("/v1/pipelines", json={"title": "S"}, headers=ORIGIN), 201)
-    pipeline_id = pipeline["pipeline"]["pipeline_id"]
+    pipeline_id = new_pipeline(client.app, "S")["pipeline_id"]
     body = {"document": graph(**(params or {"top_k": 2}))}
     saved = client.post(f"/v1/pipelines/{pipeline_id}/revisions", json=body, headers=ORIGIN)
     return check.check(saved, 201)["revision"]
@@ -79,12 +79,11 @@ def test_graph_responses_conform(client: Any) -> None:
     check = ContractChecker()
     catalogue = check.check(client.get("/v1/pipeline-operations"), 200)
     assert any(op["operation_id"] == "retrieve.dense" for op in catalogue["operations"])
-    created = check.check(
-        client.post("/v1/pipelines", json={"title": "Search"}, headers=ORIGIN), 201
-    )
-    pipeline_id = created["pipeline"]["pipeline_id"]
-    reserved = {"title": "x", "layout": {TASK_LAYOUT_KEY: "ingest"}}
-    check.check(client.post("/v1/pipelines", json=reserved, headers=ORIGIN), 400)
+    check.check(client.post("/v1/pipelines", json={"title": "Search"}, headers=ORIGIN), 410)
+    pipeline_id = new_pipeline(client.app_ref, "Search")["pipeline_id"]
+    reserved = {"layout": {TASK_LAYOUT_KEY: "ingest"}}
+    reserved_path = f"/v1/pipelines/{pipeline_id}/layout"
+    check.check(client.put(reserved_path, json=reserved, headers=ORIGIN), 400)
     reader = {"Authorization": f"Bearer {client.policy.issue_bearer({'read'}).token}"}
     check.check(client.post("/v1/pipelines", json={"title": "x"}, headers=reader), 403)
     assert check.check(client.get("/v1/pipelines"), 200)["pipelines"]

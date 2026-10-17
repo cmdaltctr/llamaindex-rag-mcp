@@ -132,6 +132,7 @@ def build_mcp_http(app: FastAPI, config: WebConfig, policy: AccessPolicy) -> Mcp
             runtime.engine,
             PathPolicy.from_grants(runtime.grants),
             runtime.admission.enter,
+            profiles=runtime.profiles,
         )
 
     server = create_mcp_server(lifespan)

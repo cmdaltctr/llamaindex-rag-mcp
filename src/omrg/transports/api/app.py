@@ -31,6 +31,7 @@ from .routes.jobs import router as jobs_router
 from .routes.logs import router as logs_router
 from .routes.mcp import router as mcp_router
 from .routes.plugins import router as plugins_router
+from .routes.profiles import router as profiles_router
 from .routes.runs import router as runs_router
 from .routes.templates import router as templates_router
 from .security import AccessPolicy, validate_bind_host
@@ -44,6 +45,7 @@ API_ROUTERS: tuple[APIRouter, ...] = (
     inspect_router,
     admin_router,
     graphs_router,
+    profiles_router,
     runs_router,
     experiments_router,
     templates_router,
@@ -53,6 +55,24 @@ API_ROUTERS: tuple[APIRouter, ...] = (
     connections_router,
     logs_router,
 )
+
+
+def _default_factory(config: WebConfig) -> Callable[[], Any]:
+    """Return the factory that builds the Engine with the catalogue of this workspace.
+
+    The catalogue reads user profiles from the workspace database of the server,
+    so a collection tagged with a user profile resolves in this process.
+    """
+
+    def factory() -> Any:
+        from ...core.workspace import WorkspaceLayout
+        from ...integrations.workspace_sqlite import SqliteProfileCatalogue
+
+        return default_engine_factory(
+            SqliteProfileCatalogue(WorkspaceLayout(config.workspace).records)
+        )
+
+    return factory
 
 
 def create_app(
@@ -70,7 +90,8 @@ def create_app(
     Args:
         config: Launch options; ``config.host`` must be a loopback address.
         policy: Access policy; a fresh per-launch policy when omitted.
-        engine_factory: Builds the owned Engine (default: ``compose.build_engine``).
+        engine_factory: Builds the owned Engine (default: ``compose.build_engine`` with
+            the profile catalogue of ``config.workspace``).
         run_service_factory: Optional run-service hook started and drained
             by the lifespan.
         log_buffer: The ring buffer ``omrg web`` attached to the root logger.
@@ -85,12 +106,14 @@ def create_app(
     host = validate_bind_host(config.host)
     if policy is None:
         policy = AccessPolicy.for_launch(host, config.port)
+    if engine_factory is None:
+        engine_factory = _default_factory(config)
     app = FastAPI(
         title="OMRG local workspace",
         version=__version__,
         lifespan=build_lifespan(
             config,
-            engine_factory=engine_factory or default_engine_factory,
+            engine_factory=engine_factory,
             run_service_factory=run_service_factory,
         ),
         docs_url=None,

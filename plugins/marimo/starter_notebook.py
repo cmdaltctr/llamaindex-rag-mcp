@@ -302,8 +302,8 @@ def checkpoint(record: dict, output_dir: Path, name: str) -> Path:
 class ExperimentSession:
     """Explicit-run graph experiments in one experiment context.
 
-    The session creates its pipeline once and saves a revision only for a
-    new graph document. A run happens only when the caller passes
+    The session creates one profile once (its pipelines hold the graphs) and
+    saves a revision only for a new graph document. A run happens only when the caller passes
     ``run_requested=True`` (the notebook's Run button), so a parameter
     change alone admits nothing.
     """
@@ -328,18 +328,37 @@ class ExperimentSession:
         self.timeout = timeout
         self._sleep = sleep
         self._clock = clock
-        self._pipeline_id = None
+        self._profile = None
         self._revisions: dict = {}
         self.runs_submitted = 0
 
+    @staticmethod
+    def slot_for(document: dict) -> str:
+        """Return the profile slot a graph fits: ``ingest``, ``answer`` or ``search``."""
+        inputs = {item.get("name") for item in document.get("inputs") or []}
+        outputs = {item.get("name") for item in document.get("outputs") or []}
+        if "path" in inputs:
+            return "ingest"
+        return "answer" if "answer" in outputs else "search"
+
     def revision_for(self, document: dict) -> dict:
-        """Return the saved revision of *document*; save it once."""
+        """Return the saved revision of *document*; save it once.
+
+        The first call creates one profile for this session. Its base is the
+        profile the first graph names (``codebase``), else ``documents``. A
+        graph with no profile gets the base. Each graph is saved in the slot
+        pipeline that fits its inputs and outputs.
+        """
+        if self._profile is None:
+            base = document.get("profile")
+            base = base if base in ("documents", "codebase") else "documents"
+            body = {"title": self.title, "source": base}
+            self._profile = self.client.request("POST", "/v1/profiles", body)["profile"]
+        document = {**document, "profile": document.get("profile") or self._profile["base_profile"]}
         digest = document_digest(document)
         if digest not in self._revisions:
-            if self._pipeline_id is None:
-                created = self.client.request("POST", "/v1/pipelines", {"title": self.title})
-                self._pipeline_id = created["pipeline"]["pipeline_id"]
-            path = f"/v1/pipelines/{self._pipeline_id}/revisions"
+            pipeline_id = self._profile["slots"][self.slot_for(document)]
+            path = f"/v1/pipelines/{pipeline_id}/revisions"
             saved = self.client.request("POST", path, {"document": document})
             self._revisions[digest] = saved["revision"]
         return self._revisions[digest]

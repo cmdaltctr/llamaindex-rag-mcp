@@ -25,6 +25,7 @@ from tests.unit.test_web_runs_support import (  # noqa: E402
     graph,
     login,
     make_engine,
+    new_pipeline,
     parse_sse,
     save_revision,
     submit,
@@ -175,8 +176,7 @@ async def _start_held_run(app: Any, engine: Any) -> tuple[str, str, Any]:
     transport = httpx.ASGITransport(app=app)
     auth = {"Authorization": f"Bearer {token}"}
     async with httpx.AsyncClient(transport=transport, base_url=BASE, headers=auth) as client:
-        pipeline = (await client.post("/v1/pipelines", json={"title": "p"})).json()
-        pipeline_id = pipeline["pipeline"]["pipeline_id"]
+        pipeline_id = new_pipeline(app, "p")["pipeline_id"]
         revision = (
             await client.post(f"/v1/pipelines/{pipeline_id}/revisions", json={"document": graph()})
         ).json()["revision"]

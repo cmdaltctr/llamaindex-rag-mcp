@@ -12,6 +12,7 @@ identical content returns the existing revision (content-hash dedupe).
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Callable
 from typing import Annotated, Any
 
@@ -21,25 +22,17 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
+from ....compose_profiles import ProfileDeletedError, ProfileNotReadyError
 from ....core.pipelines import PipelineValidationError, parse_definition
-from ....core.workspace import content_hash
+from ....core.workspace import TASK_LAYOUT_KEY, content_hash
 from ..engine_access import ReadScope, RuntimeDep, admitted
 from ..errors import API_HEADERS, error_response
-from ..runs_wiring import TASK_LAYOUT_KEY, RunsDep, WorkspaceRuns, describe_operations
+from ..runs_wiring import RunsDep, WorkspaceRuns, describe_operations
 from ..security import Principal, redact, require_scope
 
 router = APIRouter(prefix="/v1")
 
 GraphScope = Annotated[Principal, Depends(require_scope("graph"))]
-
-
-class CreatePipelineBody(BaseModel):
-    """Body of ``POST /v1/pipelines``."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    title: str = Field(min_length=1, max_length=200)
-    layout: dict[str, Any] = Field(default_factory=dict)
 
 
 class LayoutBody(BaseModel):
@@ -88,12 +81,14 @@ def validation_failure(
         return redact(redactor(text) if redactor else text)
 
     issues = [{**issue.model_dump(), "message": clean(issue.message)} for issue in exc.issues]
-    body = {
+    body: dict[str, Any] = {
         "status": "error",
         "message": clean(str(exc)),
         "error_type": "validation",
         "issues": issues,
     }
+    if exc.nodes is not None:
+        body["nodes"] = list(exc.nodes)
     return JSONResponse(body, status_code=422, headers=API_HEADERS)
 
 
@@ -132,13 +127,10 @@ async def list_pipeline_operations(_: ReadScope, runtime: RuntimeDep) -> Respons
 # ── Pipelines and layouts ────────────────────────────────────────────────
 
 
-@router.post("/pipelines", status_code=201, operation_id="createPipeline")
-async def create_pipeline(_: GraphScope, body: CreatePipelineBody, runs: RunsDep) -> Response:
-    """Create a pipeline with a title and an optional layout, and no revision."""
-    if (refused := _reserved_layout(body.layout)) is not None:
-        return refused
-    record = runs.service.repository.create_pipeline(body.title, layout=body.layout)
-    return ok({"pipeline": record}, 201)
+@router.post("/pipelines", operation_id="createPipeline", deprecated=True)
+async def create_pipeline(_: GraphScope) -> Response:
+    """Withdrawn. Pipelines belong to profiles; create a profile instead."""
+    return error_response(410, "Create a profile instead: POST /v1/profiles.")
 
 
 @router.get("/pipelines", operation_id="listPipelines")
@@ -149,19 +141,27 @@ async def list_pipelines(_: ReadScope, runs: RunsDep) -> Response:
 
 
 @router.get("/pipelines/{pipeline_id}", operation_id="getPipeline")
-async def get_pipeline(_: ReadScope, pipeline_id: str, runs: RunsDep) -> Response:
-    """Return a pipeline, its layout and its current revision (or ``null``)."""
+async def get_pipeline(
+    _: ReadScope, pipeline_id: str, runs: RunsDep, runtime: RuntimeDep
+) -> Response:
+    """Return a pipeline, its layout, its current revision (or ``null``) and its profile slot.
+
+    ``profile_slot`` names the profile and the slot (``ingest``, ``search`` or
+    ``answer``) that the pipeline fills. It is ``null`` for any other pipeline.
+    """
     record = _pipeline(runs, pipeline_id)
     if record is None:
         return _unknown_pipeline()
     current = record.get("current_revision_id")
     revision = runs.service.repository.get_revision(current) if current else None
-    return ok({"pipeline": record, "current_revision": revision})
+    owner = runtime.profiles.owner_of(pipeline_id) if runtime.profiles is not None else None
+    slot = None if owner is None else {"profile_id": owner[0]["profile_id"], "slot": owner[1]}
+    return ok({"pipeline": record, "current_revision": revision, "profile_slot": slot})
 
 
 @router.put("/pipelines/{pipeline_id}/layout", operation_id="savePipelineLayout")
 async def save_pipeline_layout(
-    _: GraphScope, pipeline_id: str, body: LayoutBody, runs: RunsDep
+    _: GraphScope, pipeline_id: str, body: LayoutBody, runs: RunsDep, runtime: RuntimeDep
 ) -> Response:
     """Replace the presentation layout. No revision is created."""
     record = _pipeline(runs, pipeline_id)
@@ -171,6 +171,11 @@ async def save_pipeline_layout(
         return _reserved()
     if (refused := _reserved_layout(body.layout)) is not None:
         return refused
+    if runtime.profiles is not None:
+        try:
+            runtime.profiles.check_slot_editable(pipeline_id)
+        except ProfileDeletedError as exc:
+            return error_response(409, str(exc))
     return ok({"pipeline": runs.service.repository.save_layout(pipeline_id, body.layout)})
 
 
@@ -198,11 +203,49 @@ async def save_pipeline_revision(
     except PipelineValidationError as exc:
         return validation_failure(exc, runtime.engine.redact)
     document = graph.model_dump(mode="json")
+    try:
+        async with admitted(runtime):
+            revision, created, affected = await run_in_threadpool(
+                _store_revision, runs, runtime.profiles, pipeline_id, document, graph.schema_version
+            )
+    except ProfileNotReadyError as exc:
+        failure = {
+            "status": "error",
+            "message": runtime.engine.redact(str(exc)),
+            "error_type": "validation",
+            "not_ready_reasons": exc.reasons,
+        }
+        return JSONResponse(failure, status_code=409, headers=API_HEADERS)
+    except ProfileDeletedError as exc:
+        return error_response(409, str(exc))
+    except ValueError as exc:
+        return error_response(400, str(exc), error_type="validation")
+    payload: dict[str, Any] = {"revision": revision, "created": created}
+    if affected is not None:
+        payload["affected_collections"] = affected
+    return ok(payload, 201 if created else 200)
+
+
+def _store_revision(
+    runs: WorkspaceRuns,
+    profiles: Any,
+    pipeline_id: str,
+    document: dict[str, Any],
+    schema_version: int,
+) -> tuple[dict[str, Any], bool, list[str] | None]:
+    """Check the slot rules, then save the revision, under the lock that a delete takes.
+
+    Returns:
+        The revision, whether it is new, and the collections that the save
+        affects (``None`` for a pipeline that belongs to no profile).
+    """
     repository = runs.service.repository
-    known = {rev["content_hash"] for rev in repository.list_revisions(pipeline_id)}
-    created = content_hash(document) not in known
-    revision = repository.save_revision(pipeline_id, document, schema_version=graph.schema_version)
-    return ok({"revision": revision, "created": created}, 201 if created else 200)
+    with profiles.lock if profiles is not None else contextlib.nullcontext():
+        affected = profiles.check_slot_save(pipeline_id, document) if profiles else None
+        known = {rev["content_hash"] for rev in repository.list_revisions(pipeline_id)}
+        created = content_hash(document) not in known
+        revision = repository.save_revision(pipeline_id, document, schema_version=schema_version)
+    return dict(revision), created, affected
 
 
 @router.get("/pipelines/{pipeline_id}/revisions", operation_id="listPipelineRevisions")
@@ -259,6 +302,7 @@ def _draft_view(report: Any) -> dict[str, Any]:
         "order": list(report.order),
         "resolved_versions": dict(report.resolved_versions),
         "collections": dict(report.collections),
+        "nodes": list(report.nodes),
     }
 
 

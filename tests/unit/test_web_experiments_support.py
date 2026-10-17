@@ -22,9 +22,10 @@ pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient  # noqa: E402
 from tests.unit.test_engine_pipelines_support import FakeEmbedder, FakeStore, chunks
 from tests.unit.test_experiment_contexts_support import base_settings
-from tests.unit.test_web_runs_support import BASE, ORIGIN, GatedEngine, graph, login
+from tests.unit.test_web_runs_support import BASE, ORIGIN, GatedEngine, graph, login, new_pipeline
 
 from omrg.compose_experiments import ExperimentEngines, experiment_registry
+from omrg.core.profiles.resolver import ProfileResolver
 from omrg.transports.api.app import create_app
 from omrg.transports.api.lifespan import WebConfig
 from omrg.transports.api.runs_wiring import run_service_factory
@@ -44,8 +45,16 @@ class ContextEngineBuilder:
     def __call__(self, settings: Any) -> GatedEngine:
         """Return a new gated Engine over experiment rows."""
         self.calls.append(settings)
+        effective = self.effective_settings()
+        # As in production, a context Engine resolves the built-in profiles by name.
+        resolver = ProfileResolver(
+            store=None, server_profile="documents", base=effective, env_overrides={}
+        )
         engine = GatedEngine(
-            self.effective_settings(), store=FakeStore(chunks("exp")), embed_model=FakeEmbedder()
+            effective,
+            store=FakeStore(chunks("exp")),
+            embed_model=FakeEmbedder(),
+            profile_resolver=resolver,
         )
         self.engines.append(engine)
         return engine
@@ -133,9 +142,9 @@ def bound_bearer(
 
 def save_revision(client: TestClient, document: dict[str, Any] | None = None) -> str:
     """Save a read-only retrieval revision through the session; return its id."""
-    pipeline = client.post("/v1/pipelines", json={"title": "Search"}, headers=ORIGIN).json()
+    pipeline = new_pipeline(client.app)
     response = client.post(
-        f"/v1/pipelines/{pipeline['pipeline']['pipeline_id']}/revisions",
+        f"/v1/pipelines/{pipeline['pipeline_id']}/revisions",
         json={"document": document or graph(top_k=2)},
         headers=ORIGIN,
     )

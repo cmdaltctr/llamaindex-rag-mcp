@@ -24,6 +24,7 @@ from tests.unit.test_web_runs_support import (  # noqa: E402
     build_app,
     login,
     make_engine,
+    new_pipeline,
     wait_run,
 )
 
@@ -72,9 +73,9 @@ def test_templates_need_the_read_scope(client: Any) -> None:
 def test_a_saved_search_template_runs_with_public_rows(client: Any) -> None:
     templates = client.get("/v1/pipeline-templates").json()["templates"]
     search = next(t for t in templates if t["name"] == "search")
-    pipeline = client.post("/v1/pipelines", json={"title": "From template"}, headers=ORIGIN).json()
+    pipeline = new_pipeline(client.app, "From template")
     saved = client.post(
-        f"/v1/pipelines/{pipeline['pipeline']['pipeline_id']}/revisions",
+        f"/v1/pipelines/{pipeline['pipeline_id']}/revisions",
         json={"document": search["document"]},
         headers=ORIGIN,
     )

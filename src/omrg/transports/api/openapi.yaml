@@ -804,7 +804,11 @@ paths:
       description: >
         Profiles control retrieval behaviour: `documents` (quality-first,
         reranker on, dense-only) or `codebase` (speed-first, reranker off,
-        hybrid). The change does not re-chunk or re-embed existing chunks.
+        hybrid), or a ready user profile (its id). A user profile runs its
+        Ingest, Search and Answer pipelines for the collection. The change
+        does not re-chunk or re-embed existing chunks. A profile that is not
+        ready, unknown or deleted gives 400 with `not_ready_reasons` and no
+        confirmation.
         Step 1: send `confirm: false` (the default). This returns a
         `ProfilePreview` with the lever impacts and a single-use
         `confirmation`. Step 2: send `confirm: true` with the same profile
@@ -891,6 +895,180 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
+  /profiles:
+    get:
+      operationId: listProfiles
+      summary: List built-in and user profiles
+      description: >
+        Built-in profiles first, then user profiles that are not deleted. Each
+        item carries readiness and the collections that use it. List items do
+        not carry `standard_graphs`.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The profiles.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    post:
+      operationId: createProfile
+      summary: Create a user profile
+      description: >
+        `source` is a built-in id (the standard graphs, shaped by that
+        built-in), a user profile id (a copy of its current revisions and
+        layouts) or null (base `documents`, three pipelines with no saved
+        graph). The id comes from the title. The profile is ready only when
+        each pipeline passes the readiness check.
+      security:
+        - sessionCookie: [graph]
+        - bearerToken: [graph]
+      x-omrg-scopes: [graph]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileCreateRequest"
+      responses:
+        "201":
+          description: Profile created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /profiles/{profile_id}:
+    get:
+      operationId: getProfile
+      summary: Return one profile
+      description: >
+        A built-in profile also carries `standard_graphs`: the Ingest, Search
+        and Answer graphs that a duplicate of it gets. For a user profile
+        `standard_graphs` is null.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      parameters:
+        - $ref: "#/components/parameters/ProfileId"
+      responses:
+        "200":
+          description: The profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileDetailEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    patch:
+      operationId: updateProfile
+      summary: Change the title or the description of a user profile
+      description: >
+        The id never changes. A title holds 1 to 80 characters after
+        trimming and no control characters (400). A built-in profile gives
+        403.
+      security:
+        - sessionCookie: [graph]
+        - bearerToken: [graph]
+      x-omrg-scopes: [graph]
+      parameters:
+        - $ref: "#/components/parameters/ProfileId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdateRequest"
+      responses:
+        "200":
+          description: The changed profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    delete:
+      operationId: deleteProfile
+      summary: Delete a user profile that no collection uses
+      description: >
+        A soft delete: the pipelines, revisions and run records stay. A
+        profile that a collection uses gives 409 with `used_by`. A built-in
+        profile gives 403. A deleted id is never given to a new profile.
+      security:
+        - sessionCookie: [graph]
+        - bearerToken: [graph]
+      x-omrg-scopes: [graph]
+      parameters:
+        - $ref: "#/components/parameters/ProfileId"
+      responses:
+        "200":
+          description: The profile as it was before the delete.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
   /pipeline-operations:
     get:
       operationId: listPipelineOperations
@@ -920,31 +1098,26 @@ paths:
   /pipelines:
     post:
       operationId: createPipeline
-      summary: Create a pipeline with a title and an optional layout
-      description: No revision is created. The layout key `omrg_task` is reserved (400).
+      deprecated: true
+      summary: Withdrawn. Create a profile instead
+      description: >
+        Pipelines belong to profiles. This operation answers 410 and creates
+        nothing. Use `createProfile` (`POST /v1/profiles`). Slot pipelines of
+        a profile stay readable and editable through the other `/pipelines`
+        operations.
       security:
         - sessionCookie: [graph]
         - bearerToken: [graph]
       x-omrg-scopes: [graph]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreatePipelineRequest"
       responses:
-        "201":
-          description: Pipeline created.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PipelineEnvelope"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "410":
+          $ref: "#/components/responses/Gone"
         "500":
           $ref: "#/components/responses/InternalError"
         "503":
@@ -984,7 +1157,8 @@ paths:
         is the draft check (`admitted: false`). With `inputs` it is the
         admission check that a run submission applies (`admitted: true`).
         No node, model call or write runs. An invalid graph gets 422 with
-        every structured issue.
+        every structured issue. A draft check that fails also returns `nodes`
+        for the nodes that are valid so far.
       security:
         - sessionCookie: [graph]
         - bearerToken: [graph]
@@ -1020,7 +1194,7 @@ paths:
   /pipelines/{pipeline_id}:
     get:
       operationId: getPipeline
-      summary: Return a pipeline and its current revision
+      summary: Return a pipeline, its current revision and its profile slot
       security:
         - sessionCookie: [read]
         - bearerToken: [read]
@@ -1052,8 +1226,9 @@ paths:
       operationId: savePipelineLayout
       summary: Replace the presentation layout
       description: >
-        No revision is created. A document-job pipeline gives 409. The
-        layout key `omrg_task` is reserved (400).
+        No revision is created. A document-job pipeline gives 409, and so
+        does a pipeline of a deleted profile. The layout key `omrg_task` is
+        reserved (400).
       security:
         - sessionCookie: [graph]
         - bearerToken: [graph]
@@ -1097,7 +1272,12 @@ paths:
         graph itself or `{"graph", "layout"}` (only the graph is stored).
         Full checks run at validation and admission. A new revision gives
         201 (`created: true`). Identical content gives 200 with the existing
-        revision (`created: false`).
+        revision (`created: false`). A pipeline of a user profile must name
+        the base profile of the profile as its graph `profile` (400). The
+        response lists the collections that the save affects in
+        `affected_collections`. A save that would make a profile in use not
+        ready gives 409 with `not_ready_reasons`. A pipeline of a deleted
+        profile gives 409.
       security:
         - sessionCookie: [graph]
         - bearerToken: [graph]
@@ -2603,6 +2783,16 @@ components:
       required: true
       schema:
         type: string
+    ProfileId:
+      name: profile_id
+      in: path
+      required: true
+      description: A built-in profile name or the id of a user profile.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+
     PipelineId:
       name: pipeline_id
       in: path
@@ -2678,11 +2868,19 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    Gone:
+      description: The operation is withdrawn. The message names the replacement.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     Conflict:
       description: >
         The request conflicts with the current state: a stale, used or
-        expired confirmation (preview again), a reserved job pipeline, or a
-        run in the wrong state.
+        expired confirmation (preview again), a reserved job pipeline, a
+        run in the wrong state, a profile that collections use, a pipeline
+        of a deleted profile, or a save that would make a profile in use not
+        ready.
       content:
         application/json:
           schema:
@@ -2774,6 +2972,25 @@ components:
           description: Present only on 422 graph validation failures.
           items:
             $ref: "#/components/schemas/ValidationIssue"
+        nodes:
+          type: array
+          description: >
+            Present only on a 422 draft check: the effective controls of each
+            node whose parameters passed validation.
+          items:
+            $ref: "#/components/schemas/DraftNode"
+        used_by:
+          type: array
+          description: Present on a 409 profile delete, the collections that use the profile.
+          items:
+            type: string
+        not_ready_reasons:
+          type: array
+          description: >
+            Present when a profile is not ready (400 on a bind, 409 on a
+            slot save): plain lines that say what to fix.
+          items:
+            type: string
 
     ValidationIssue:
       type: object
@@ -3979,6 +4196,186 @@ components:
         display_name:
           type: [string, "null"]
 
+    # ── Profiles ───────────────────────────────────────────────────────
+    ProfileSlots:
+      type: object
+      additionalProperties: false
+      required: [ingest, search, answer]
+      description: Pipeline ids by slot. All null for a built-in profile.
+      properties:
+        ingest:
+          type: [string, "null"]
+        search:
+          type: [string, "null"]
+        answer:
+          type: [string, "null"]
+
+    ProfileItem:
+      type: object
+      additionalProperties: false
+      required:
+        - profile_id
+        - kind
+        - title
+        - description
+        - base_profile
+        - slots
+        - ready
+        - not_ready_reasons
+        - used_by
+      properties:
+        profile_id:
+          type: string
+        kind:
+          type: string
+          enum: [builtin, user]
+        title:
+          type: string
+        description:
+          type: string
+        base_profile:
+          type: string
+          enum: [documents, codebase]
+        slots:
+          $ref: "#/components/schemas/ProfileSlots"
+        ready:
+          type: boolean
+        not_ready_reasons:
+          type: array
+          description: Plain lines that say which pipeline to fix and how.
+          items:
+            type: string
+        used_by:
+          type: array
+          description: Names of the collections whose stored profile tag is this id.
+          items:
+            type: string
+
+    ProfileDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - profile_id
+        - kind
+        - title
+        - description
+        - base_profile
+        - slots
+        - ready
+        - not_ready_reasons
+        - used_by
+        - standard_graphs
+      properties:
+        profile_id:
+          type: string
+        kind:
+          type: string
+          enum: [builtin, user]
+        title:
+          type: string
+        description:
+          type: string
+        base_profile:
+          type: string
+          enum: [documents, codebase]
+        slots:
+          $ref: "#/components/schemas/ProfileSlots"
+        ready:
+          type: boolean
+        not_ready_reasons:
+          type: array
+          description: Plain lines that say which pipeline to fix and how.
+          items:
+            type: string
+        used_by:
+          type: array
+          description: Names of the collections whose stored profile tag is this id.
+          items:
+            type: string
+        standard_graphs:
+          description: >
+            Only a built-in profile has graphs: the graph documents that a
+            duplicate copies into its pipelines. Null for a user profile.
+          oneOf:
+            - type: object
+              additionalProperties: false
+              required: [ingest, search, answer]
+              properties:
+                ingest:
+                  type: object
+                search:
+                  type: object
+                answer:
+                  type: object
+            - type: "null"
+
+    ProfileList:
+      type: object
+      additionalProperties: false
+      required: [status, profiles]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        profiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfileItem"
+
+    ProfileEnvelope:
+      type: object
+      additionalProperties: false
+      required: [status, profile]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        profile:
+          $ref: "#/components/schemas/ProfileItem"
+
+    ProfileDetailEnvelope:
+      type: object
+      additionalProperties: false
+      required: [status, profile]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        profile:
+          $ref: "#/components/schemas/ProfileDetail"
+
+    ProfileCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [title]
+      properties:
+        title:
+          type: string
+          maxLength: 4096
+          description: >
+            1 to 80 characters after trimming, with no control characters.
+            The raw limit only caps the payload.
+        description:
+          type: [string, "null"]
+          maxLength: 1000
+        source:
+          type: [string, "null"]
+          maxLength: 128
+          description: >
+            A built-in profile id, a user profile id, or null for an empty
+            profile.
+
+    ProfileUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: [string, "null"]
+          maxLength: 4096
+        description:
+          type: [string, "null"]
+          maxLength: 1000
+
     ProfileChangeRequest:
       type: object
       additionalProperties: false
@@ -3987,8 +4384,10 @@ components:
       properties:
         profile:
           type: string
-          enum: [documents, codebase]
-          description: Target operational profile
+          pattern: "^[a-z0-9][a-z0-9-]{0,63}$"
+          description: >
+            `documents`, `codebase` or the id of a ready user profile.
+            `hybrid` is not a profile and gives 400.
         confirm:
           type: boolean
           default: false
@@ -4043,6 +4442,28 @@ components:
                     enum: [query-time, ingest-time]
             reingest_pointer:
               type: string
+            pipelines:
+              type: array
+              description: >
+                Only for a user profile: its three pipelines with their
+                current revision numbers.
+              items:
+                type: object
+                additionalProperties: false
+                required: [slot, title, revision_number]
+                properties:
+                  slot:
+                    type: string
+                    enum: [ingest, search, answer]
+                  title:
+                    type: string
+                  revision_number:
+                    type: [integer, "null"]
+            notes:
+              type: array
+              description: Only for a user profile, what changes at once and at the next ingestion.
+              items:
+                type: string
         confirm_required:
           type: boolean
           enum: [true]
@@ -4247,19 +4668,6 @@ components:
           type: string
           format: date-time
 
-    CreatePipelineRequest:
-      type: object
-      additionalProperties: false
-      required: [title]
-      properties:
-        title:
-          type: string
-          minLength: 1
-          maxLength: 200
-        layout:
-          type: object
-          default: {}
-
     LayoutRequest:
       type: object
       additionalProperties: false
@@ -4304,7 +4712,7 @@ components:
     PipelineDetail:
       type: object
       additionalProperties: false
-      required: [status, pipeline, current_revision]
+      required: [status, pipeline, current_revision, profile_slot]
       properties:
         status:
           type: string
@@ -4314,6 +4722,19 @@ components:
         current_revision:
           oneOf:
             - $ref: "#/components/schemas/RevisionRecord"
+            - type: "null"
+        profile_slot:
+          description: The profile and the slot that the pipeline fills, or null.
+          oneOf:
+            - type: object
+              additionalProperties: false
+              required: [profile_id, slot]
+              properties:
+                profile_id:
+                  type: string
+                slot:
+                  type: string
+                  enum: [ingest, search, answer]
             - type: "null"
 
     RevisionSaved:
@@ -4329,6 +4750,13 @@ components:
         created:
           type: boolean
           description: False when identical content already existed.
+        affected_collections:
+          type: array
+          description: >
+            Only for a pipeline of a user profile: the collections that use
+            the profile (maybe none).
+          items:
+            type: string
 
     RevisionList:
       type: object
@@ -4376,7 +4804,7 @@ components:
     DraftValidation:
       type: object
       additionalProperties: false
-      required: [status, valid, admitted, order, resolved_versions, collections]
+      required: [status, valid, admitted, order, resolved_versions, collections, nodes]
       properties:
         status:
           type: string
@@ -4400,6 +4828,26 @@ components:
           description: Node id to bound collection name.
           additionalProperties:
             type: string
+        nodes:
+          type: array
+          description: >
+            The effective value of each step setting, with its source, for
+            every node whose parameters passed validation. No run inputs are
+            needed.
+          items:
+            $ref: "#/components/schemas/DraftNode"
+
+    DraftNode:
+      type: object
+      additionalProperties: false
+      required: [node_id, controls]
+      properties:
+        node_id:
+          type: string
+        controls:
+          type: array
+          items:
+            $ref: "#/components/schemas/EffectiveControl"
 
     EffectiveControl:
       type: object

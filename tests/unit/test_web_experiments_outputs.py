@@ -33,7 +33,7 @@ from tests.unit.test_web_experiments_support import (  # noqa: E402
     register,
     wait_run,
 )
-from tests.unit.test_web_runs_support import make_engine  # noqa: E402
+from tests.unit.test_web_runs_support import make_engine, new_pipeline  # noqa: E402
 
 from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition  # noqa: E402
 
@@ -52,10 +52,10 @@ def setup(tmp_path: Path, effective_settings: Any, monkeypatch: pytest.MonkeyPat
 
 
 def _ingestion_revision(client: TestClient) -> str:
-    pipeline = client.post("/v1/pipelines", json={"title": "Ingest"}, headers=ORIGIN).json()
+    pipeline = new_pipeline(client.app, "Ingest")
     document = canonical_ingestion_definition("graph").model_dump(mode="json")
     response = client.post(
-        f"/v1/pipelines/{pipeline['pipeline']['pipeline_id']}/revisions",
+        f"/v1/pipelines/{pipeline['pipeline_id']}/revisions",
         json={"document": document},
         headers=ORIGIN,
     )

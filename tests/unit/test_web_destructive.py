@@ -355,3 +355,149 @@ def test_profile_change_on_missing_collection_is_rejected(setup: dict) -> None:
     assert applied.status_code == 400
     assert "does not exist" in applied.json()["message"]
     assert "absent" not in setup["store"].list_collections()
+
+
+# ── User profiles (unify-profiles-and-pipelines, tasks 7.3 and 7.4) ──────
+
+
+def _make_profile(client: TestClient, title: str = "Mine", **body: Any) -> dict[str, Any]:
+    response = client.post(
+        "/v1/profiles", json={"title": title, "source": "documents", **body}, headers=ORIGIN
+    )
+    assert response.status_code == 201, response.text
+    return response.json()["profile"]
+
+
+def _confirm(client: TestClient, profile: str, token: str) -> Any:
+    return client.patch(
+        PROFILE,
+        json={"profile": profile, "confirm": True, "confirmation_token": token},
+        headers=ORIGIN,
+    )
+
+
+def test_a_ready_user_profile_previews_and_confirms(setup: dict) -> None:
+    store = setup["store"]
+    with TestClient(setup["app"], base_url=BASE) as client:
+        login(client, setup["policy"])
+        item = _make_profile(client)
+        preview = client.patch(PROFILE, json={"profile": item["profile_id"]}, headers=ORIGIN)
+        body = preview.json()
+        assert preview.status_code == 200, preview.text
+        assert _profile_tag(store) is None  # the preview mutates nothing
+        applied = _confirm(client, item["profile_id"], body["confirmation"]["token"])
+    assert body["status"] == "preview" and body["confirm_required"] is True
+    assert body["contract"]["new_profile"] == item["profile_id"]
+    assert [p["slot"] for p in body["contract"]["pipelines"]] == ["ingest", "search", "answer"]
+    assert [p["revision_number"] for p in body["contract"]["pipelines"]] == [1, 1, 1]
+    assert applied.status_code == 200, applied.text
+    assert applied.json()["profile"] == item["profile_id"]
+    assert _profile_tag(store) == item["profile_id"]
+    assert _count(store) == 5  # no chunk or vector changed
+
+
+def test_a_profile_that_is_not_ready_is_refused_with_reasons_and_no_token(setup: dict) -> None:
+    with TestClient(setup["app"], base_url=BASE) as client:
+        login(client, setup["policy"])
+        item = _make_profile(client, "Blank", source=None)
+        response = client.patch(PROFILE, json={"profile": item["profile_id"]}, headers=ORIGIN)
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body["status"] == "error" and "confirmation" not in body
+    assert len(body["not_ready_reasons"]) == 3
+    assert _profile_tag(setup["store"]) is None
+
+
+@pytest.mark.parametrize("name", ["nope", "has space", "-x"])
+def test_an_unknown_profile_id_is_refused(setup: dict, name: str) -> None:
+    with TestClient(setup["app"], base_url=BASE) as client:
+        login(client, setup["policy"])
+        response = client.patch(PROFILE, json={"profile": name}, headers=ORIGIN)
+    assert response.status_code == 400, response.text
+    assert "confirmation" not in response.json()
+
+
+def test_a_deleted_profile_is_refused(setup: dict) -> None:
+    with TestClient(setup["app"], base_url=BASE) as client:
+        login(client, setup["policy"])
+        item = _make_profile(client)
+        client.delete(f"/v1/profiles/{item['profile_id']}", headers=ORIGIN)
+        response = client.patch(PROFILE, json={"profile": item["profile_id"]}, headers=ORIGIN)
+    assert response.status_code == 400 and "confirmation" not in response.json()
+
+
+def _save_search_revision(tmp_path: Path, item: dict[str, Any]) -> None:
+    """Save a new Search revision of the profile, as Studio would."""
+    from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+
+    repository = SqliteWorkspaceRepository(tmp_path / "ws" / "workspace.db")
+    pipeline = repository.get_pipeline(item["slots"]["search"])
+    document = dict(repository.get_revision(pipeline["current_revision_id"])["document"])
+    document["overrides"] = {"retrieval.top_k": 3}
+    repository.save_revision(item["slots"]["search"], document, schema_version=1)
+
+
+def test_a_slot_save_between_preview_and_confirm_makes_the_token_stale(
+    setup: dict, tmp_path: Path
+) -> None:
+    with TestClient(setup["app"], base_url=BASE) as client:
+        login(client, setup["policy"])
+        item = _make_profile(client)
+        preview = client.patch(PROFILE, json={"profile": item["profile_id"]}, headers=ORIGIN)
+        token = preview.json()["confirmation"]["token"]
+        _save_search_revision(tmp_path, item)
+        stale = _confirm(client, item["profile_id"], token)
+        again = client.patch(PROFILE, json={"profile": item["profile_id"]}, headers=ORIGIN)
+        fresh = _confirm(client, item["profile_id"], again.json()["confirmation"]["token"])
+    assert stale.status_code == 409, stale.text
+    assert _profile_tag(setup["store"]) == item["profile_id"]
+    assert fresh.status_code == 200, fresh.text
+    assert [p["revision_number"] for p in again.json()["contract"]["pipelines"]] == [1, 2, 1]
+
+
+def test_a_delete_between_preview_and_confirm_makes_the_token_stale(setup: dict) -> None:
+    with TestClient(setup["app"], base_url=BASE) as client:
+        login(client, setup["policy"])
+        item = _make_profile(client)
+        token = client.patch(PROFILE, json={"profile": item["profile_id"]}, headers=ORIGIN).json()[
+            "confirmation"
+        ]["token"]
+        assert (
+            client.delete(f"/v1/profiles/{item['profile_id']}", headers=ORIGIN).status_code == 200
+        )
+        stale = _confirm(client, item["profile_id"], token)
+    assert stale.status_code == 409, stale.text
+    assert _profile_tag(setup["store"]) is None
+
+
+def test_a_profile_that_stops_being_ready_before_confirm_is_refused(
+    setup: dict, tmp_path: Path
+) -> None:
+    """The confirmation checks the profile again, in the same lock as the tag write."""
+    with TestClient(setup["app"], base_url=BASE) as client:
+        login(client, setup["policy"])
+        item = _make_profile(client)
+        token = client.patch(PROFILE, json={"profile": item["profile_id"]}, headers=ORIGIN).json()[
+            "confirmation"
+        ]["token"]
+        from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+
+        repository = SqliteWorkspaceRepository(tmp_path / "ws" / "workspace.db")
+        pipeline = repository.get_pipeline(item["slots"]["search"])
+        document = dict(repository.get_revision(pipeline["current_revision_id"])["document"])
+        document["outputs"] = []
+        repository.save_revision(item["slots"]["search"], document, schema_version=1)
+        response = _confirm(client, item["profile_id"], token)
+    assert response.status_code in (400, 409), response.text
+    assert _profile_tag(setup["store"]) is None
+
+
+def test_binding_the_built_ins_still_works_after_a_user_profile_exists(setup: dict) -> None:
+    with TestClient(setup["app"], base_url=BASE) as client:
+        login(client, setup["policy"])
+        _make_profile(client)
+        token = client.patch(PROFILE, json={"profile": "codebase"}, headers=ORIGIN).json()[
+            "confirmation"
+        ]["token"]
+        applied = _confirm(client, "codebase", token)
+    assert applied.status_code == 200 and _profile_tag(setup["store"]) == "codebase"

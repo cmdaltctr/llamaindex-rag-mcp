@@ -23,16 +23,19 @@ browser session: bearer credentials for notebooks never pass.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from ....compose_profiles import UnknownProfileError
+from ....core.workspace import PROFILE_ID_PATTERN
 from ..confirmations import ConfirmationRejected, confirmation_book, observe
 from ..engine_access import RuntimeDep, admitted, engine_resolver, engine_store, require_session
-from ..errors import error_response
+from ..errors import API_HEADERS, error_response
+from ..lifespan import WebRuntime
 from ..security import Principal
 
 router = APIRouter(prefix="/v1")
@@ -56,13 +59,23 @@ class DeleteBody(BaseModel):
 
 
 class ProfileBody(BaseModel):
-    """Body of ``changeCollectionProfile`` (``ProfileChangeRequest`` plus the token)."""
+    """Body of ``changeCollectionProfile`` (``ProfileChangeRequest`` plus the token).
+
+    ``profile`` is ``documents``, ``codebase`` or the id of a ready user profile.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
-    profile: Literal["documents", "codebase"]
+    profile: str = Field(pattern=PROFILE_ID_PATTERN)
     confirm: bool = False
     confirmation_token: str | None = Field(default=None, max_length=128)
+
+    @field_validator("profile")
+    @classmethod
+    def _not_a_mode(cls, value: str) -> str:
+        if value == "hybrid":
+            raise ValueError("hybrid selects a mode and is not a profile")
+        return value
 
 
 class DisplayNameBody(BaseModel):
@@ -178,23 +191,69 @@ async def delete_documents(
 # ── Profile change ───────────────────────────────────────────────────────
 
 
-def _profile_state(store: Any, collection: str) -> Any:
-    """Observe the store and the collection's current profile tag."""
+def _profile_state(store: Any, collection: str, target: str = "") -> Any:
+    """Observe the store, the collection's profile tag and the target profile.
+
+    ``target`` is the fingerprint of the profile being bound. A save of one of
+    its pipelines, or its delete, between preview and confirm changes it.
+    """
     try:
         meta = store.get_collection_metadata(collection) or {}
     except Exception:
         meta = {}
-    return observe(store, collection, extra=f"profile={meta.get('profile')}")
+    return observe(store, collection, extra=f"profile={meta.get('profile')};target={target}")
 
 
-def _preview_profile(engine: Any, store: Any, collection: str, profile: str) -> tuple[Any, dict]:
+def _profile_service(runtime: WebRuntime) -> Any:
+    """Return the profile service of the running server."""
+    if runtime.profiles is None:
+        raise ValueError("Profiles are not available in this server.")
+    return runtime.profiles
+
+
+def _preview_profile(
+    runtime: WebRuntime, store: Any, collection: str, profile: str
+) -> tuple[Any, dict]:
     from ....core.profiles import generate_safety_contract
 
-    state = _profile_state(store, collection)
-    contract = generate_safety_contract(
-        collection, profile, store=store, resolver=engine_resolver(engine)
-    )
+    profiles = _profile_service(runtime)
+    with profiles.lock:
+        profiles.check_binding(profile, collection)
+        state = _profile_state(store, collection, profiles.fingerprint(profile))
+        contract = generate_safety_contract(
+            collection,
+            profile,
+            store=store,
+            resolver=engine_resolver(runtime.engine),
+            catalogue=profiles.catalogue,
+        )
     return state, contract
+
+
+def _apply_profile(runtime: WebRuntime, store: Any, collection: str, profile: str) -> dict:
+    """Check the profile again, then write the tag, under the lock that a delete takes."""
+    from ....core.profiles import apply_profile_change
+
+    profiles = _profile_service(runtime)
+    with profiles.lock:
+        profiles.check_binding(profile, collection)
+        return apply_profile_change(collection, profile, store, catalogue=profiles.catalogue)
+
+
+def _refusal(runtime: WebRuntime, exc: Exception) -> Response:
+    """Map a profile check failure to 400 with the reasons."""
+    from ....compose_profiles import ProfileNotReadyError
+
+    redactor = runtime.engine.redact
+    if isinstance(exc, ProfileNotReadyError):
+        body = {
+            "status": "error",
+            "message": redactor(str(exc)),
+            "error_type": "validation",
+            "not_ready_reasons": exc.reasons,
+        }
+        return JSONResponse(body, status_code=400, headers=API_HEADERS)
+    return error_response(400, str(exc), error_type="validation", redactor=redactor)
 
 
 @router.patch("/collections/{collection}/profile", operation_id="changeCollectionProfile")
@@ -207,19 +266,23 @@ async def change_collection_profile(
 ) -> Response:
     """Preview, or confirm a previewed, change of the stored collection profile.
 
-    Existing chunks stay unchanged; query-time levers follow the new
+    The profile is ``documents``, ``codebase`` or the id of a ready user
+    profile. Existing chunks stay unchanged; query-time levers follow the new
     profile at once and ingest-time levers apply to later ingests.
     """
-    from ....core.profiles import apply_profile_change
-
+    if runtime.profiles is None:
+        return error_response(503, "Profiles are not available in this server.")
     store = engine_store(runtime.engine)
     book = confirmation_book(request.app.state)
     selector = {"profile": body.profile}
     async with admitted(runtime):
         if not body.confirm:
-            state, contract = await run_in_threadpool(
-                _preview_profile, runtime.engine, store, collection, body.profile
-            )
+            try:
+                state, contract = await run_in_threadpool(
+                    _preview_profile, runtime, store, collection, body.profile
+                )
+            except (ValueError, UnknownProfileError) as exc:
+                return _refusal(runtime, exc)
             return JSONResponse(
                 {
                     "status": "preview",
@@ -228,15 +291,18 @@ async def change_collection_profile(
                     "confirmation": book.issue(PROFILE_ACTION, collection, selector, state),
                 }
             )
-        state = await run_in_threadpool(_profile_state, store, collection)
+        fingerprint = await run_in_threadpool(runtime.profiles.fingerprint, body.profile)
+        state = await run_in_threadpool(_profile_state, store, collection, fingerprint)
         try:
             book.redeem(body.confirmation_token, PROFILE_ACTION, collection, selector, state)
         except ConfirmationRejected as exc:
             return _rejected(exc)
         try:
-            result = await run_in_threadpool(apply_profile_change, collection, body.profile, store)
-        except ValueError as exc:
-            return error_response(400, str(exc), error_type="validation")
+            result = await run_in_threadpool(
+                _apply_profile, runtime, store, collection, body.profile
+            )
+        except (ValueError, UnknownProfileError) as exc:
+            return _refusal(runtime, exc)
     return JSONResponse(result)
 
 

@@ -24,6 +24,7 @@ from tests.unit.test_web_runs_support import (  # noqa: E402
     graph,
     login,
     make_engine,
+    new_pipeline,
     save_revision,
     submit,
 )
@@ -70,11 +71,7 @@ def test_catalogue_needs_read_scope(client: Any) -> None:
 
 
 def test_pipeline_lifecycle_keeps_layout_out_of_revisions(client: Any) -> None:
-    created = client.post(
-        "/v1/pipelines", json={"title": "Search", "layout": {"zoom": 1}}, headers=ORIGIN
-    )
-    assert created.status_code == 201, created.text
-    pipeline_id = created.json()["pipeline"]["pipeline_id"]
+    pipeline_id = new_pipeline(client.app, "Search", {"zoom": 1})["pipeline_id"]
     first = client.post(
         f"/v1/pipelines/{pipeline_id}/revisions", json={"document": graph()}, headers=ORIGIN
     )
@@ -126,24 +123,28 @@ def test_unknown_pipeline_and_revision_are_404(client: Any) -> None:
     assert response.status_code == 404
     assert response.json()["status"] == "error"
     revision = save_revision(client)
-    other = client.post("/v1/pipelines", json={"title": "Other"}, headers=ORIGIN).json()
-    wrong = client.get(
-        f"/v1/pipelines/{other['pipeline']['pipeline_id']}/revisions/{revision['revision_id']}"
-    )
+    other = new_pipeline(client.app, "Other")
+    wrong = client.get(f"/v1/pipelines/{other['pipeline_id']}/revisions/{revision['revision_id']}")
     assert wrong.status_code == 404
 
 
 def test_graph_saves_need_graph_scope(client: Any) -> None:
+    pipeline_id = new_pipeline(client.app, "x")["pipeline_id"]
+    revisions = f"/v1/pipelines/{pipeline_id}/revisions"
     client.cookies.clear()
     reader = bearer(client.policy, "read", "run")
-    assert client.post("/v1/pipelines", json={"title": "x"}, headers=reader).status_code == 403
+    body = {"document": graph()}
+    assert client.post(revisions, json=body, headers=reader).status_code == 403
     editor = bearer(client.policy, "graph")
-    assert client.post("/v1/pipelines", json={"title": "x"}, headers=editor).status_code == 201
+    assert client.post(revisions, json=body, headers=editor).status_code == 201
 
 
 def test_reserved_layout_key_is_refused(client: Any) -> None:
-    response = client.post(
-        "/v1/pipelines", json={"title": "x", "layout": {"omrg_task": "ingest"}}, headers=ORIGIN
+    pipeline_id = new_pipeline(client.app, "x")["pipeline_id"]
+    response = client.put(
+        f"/v1/pipelines/{pipeline_id}/layout",
+        json={"layout": {"omrg_task": "ingest"}},
+        headers=ORIGIN,
     )
     assert response.status_code == 400
 
@@ -209,8 +210,7 @@ def test_cycle_is_rejected_with_node_names(client: Any, engine: Any) -> None:
 
 
 def test_revision_save_rejects_unsupported_schema_before_storage(client: Any) -> None:
-    pipeline = client.post("/v1/pipelines", json={"title": "x"}, headers=ORIGIN).json()
-    pipeline_id = pipeline["pipeline"]["pipeline_id"]
+    pipeline_id = new_pipeline(client.app, "x")["pipeline_id"]
     document = graph()
     document["schema_version"] = 2
     response = client.post(
@@ -263,3 +263,145 @@ def test_routes_without_run_service_answer_503(tmp_path: Path, engine: Any) -> N
         response = client.get("/v1/pipelines")
     assert response.status_code == 503
     assert response.json()["status"] == "error"
+
+
+# ── Draft check: effective step values (unify-profiles-and-pipelines, D24) ──
+
+
+class _ByCollection:
+    """A resolver with a distinct ``top_k`` per collection, so the value shows the collection."""
+
+    def __init__(self, effective_settings: Any, tops: dict[str, int]) -> None:
+        self._settings = {
+            name: effective_settings(**{"retrieval.top_k": top}) for name, top in tops.items()
+        }
+        self._env_overrides: dict[str, str] = {}
+
+    def resolve(self, collection: str) -> Any:
+        if collection not in self._settings:
+            raise ValueError(f"Collection {collection!r} has an invalid profile tag.")
+        return self._settings[collection]
+
+    def _load_effective(self, profile: str) -> Any:
+        raise ValueError(f"unknown profile {profile!r}")
+
+
+_TOPS = {"documents": 10, "kb": 20, "graphcol": 30, "nodecol": 40}
+
+
+@pytest.fixture
+def tops_client(tmp_path: Path, effective_settings: Any) -> Any:
+    from tests.unit.test_engine_pipelines_support import FakeEmbedder, FakeStore, chunks
+    from tests.unit.test_web_runs_support import GatedEngine
+
+    engine = GatedEngine(
+        effective_settings(),
+        store=FakeStore(chunks()),
+        embed_model=FakeEmbedder(),
+        profile_resolver=_ByCollection(effective_settings, _TOPS),
+    )
+    app, policy = build_app(tmp_path, engine)
+    with TestClient(app, base_url=BASE) as test_client:
+        login(test_client, policy)
+        yield test_client
+
+
+def _validate(client: Any, document: dict[str, Any], **extra: Any) -> Any:
+    return client.post(
+        "/v1/pipelines/validate", json={"document": document, **extra}, headers=ORIGIN
+    )
+
+
+def _top_k(body: dict[str, Any], node_id: str) -> dict[str, Any]:
+    node = next(n for n in body["nodes"] if n["node_id"] == node_id)
+    return next(c for c in node["controls"] if c["lever"] == "retrieval.top_k")
+
+
+def test_a_valid_draft_returns_the_controls_of_each_node(client: Any) -> None:
+    response = _validate(client, graph())
+    assert response.status_code == 200, response.text
+    nodes = response.json()["nodes"]
+    assert [n["node_id"] for n in nodes] == ["prepare", "dense", "select", "context"]
+    prepare = next(n for n in nodes if n["node_id"] == "prepare")
+    control = next(c for c in prepare["controls"] if c["lever"] == "retrieval.top_k")
+    assert set(control) == {"lever", "value", "source", "detail"}
+    assert control["source"] == "profile"
+
+
+def test_draft_controls_equal_the_admitted_controls(client: Any) -> None:
+    document = graph(top_k=3)
+    draft = _validate(client, document).json()["nodes"]
+    admitted = client.post(
+        "/v1/pipelines/validate",
+        json={"document": document, "inputs": {"query": "q"}},
+        headers=ORIGIN,
+    ).json()["nodes"]
+    assert {n["node_id"]: n["controls"] for n in draft} == {
+        n["node_id"]: n["controls"] for n in admitted
+    }
+    assert _top_k({"nodes": draft}, "prepare") == {
+        "lever": "retrieval.top_k",
+        "value": 3,
+        "source": "node",
+        "detail": "node 'prepare' parameter",
+    }
+
+
+def test_the_collection_comes_from_the_node_then_graph_then_request_then_host(
+    tops_client: Any,
+) -> None:
+    def value(document: dict[str, Any], **extra: Any) -> int:
+        response = _validate(tops_client, document, **extra)
+        assert response.status_code == 200, response.text
+        return _top_k(response.json(), "prepare")["value"]
+
+    plain = graph()
+    assert value(plain) == 10  # host default collection
+    assert value(plain, collection="kb") == 20  # request collection
+    named = graph()
+    named["collection"] = "graphcol"
+    assert value(named, collection="kb") == 30  # graph collection wins over the request
+    node = graph()
+    node["collection"] = "graphcol"
+    next(n for n in node["nodes"] if n["id"] == "prepare")["params"] = {"collection": "nodecol"}
+    assert value(node, collection="kb") == 40  # node parameter wins over the graph
+
+
+def test_a_draft_with_an_unconnected_port_returns_422_with_nodes_for_valid_nodes(
+    client: Any,
+) -> None:
+    document = graph()
+    document["edges"] = [e for e in document["edges"] if e["target"]["node"] != "select"]
+    response = _validate(client, document)
+    assert response.status_code == 422, response.text
+    body = response.json()
+    assert body["issues"]
+    assert {n["node_id"] for n in body["nodes"]} >= {"prepare", "dense"}
+    assert all(n["controls"] is not None for n in body["nodes"])
+
+
+def test_a_node_with_invalid_parameters_gets_no_controls(client: Any) -> None:
+    document = graph()
+    next(n for n in document["nodes"] if n["id"] == "prepare")["params"] = {"top_k": 0}
+    response = _validate(client, document)
+    assert response.status_code == 422
+    node_ids = {n["node_id"] for n in response.json()["nodes"]}
+    assert "prepare" not in node_ids and "dense" in node_ids
+
+
+def test_a_collection_whose_profile_does_not_resolve_gives_that_node_no_controls(
+    tops_client: Any,
+) -> None:
+    document = graph()
+    next(n for n in document["nodes"] if n["id"] == "prepare")["params"] = {"collection": "missing"}
+    response = _validate(tops_client, document)
+    ids = {n["node_id"] for n in (response.json().get("nodes") or [])}
+    assert "prepare" not in ids and "dense" in ids
+
+
+def test_an_admission_failure_carries_no_draft_nodes(client: Any) -> None:
+    response = client.post(
+        "/v1/pipelines/validate", json={"document": graph(), "inputs": {}}, headers=ORIGIN
+    )
+    assert response.status_code == 422
+    assert "nodes" not in response.json()

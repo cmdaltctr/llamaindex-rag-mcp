@@ -256,15 +256,21 @@ class WebRuntime:
     loop: asyncio.AbstractEventLoop | None = None
     experiments: Any | None = None
     plugins: PluginHost | None = None
+    profiles: Any | None = None
     upload_limit_source: str = "default"
     _shut_down: bool = False
 
 
-def default_engine_factory() -> Any:
-    """Build the Engine through the composition root (no process default)."""
+def default_engine_factory(catalogue: Any = None) -> Any:
+    """Build the Engine through the composition root (no process default).
+
+    Args:
+        catalogue: Where user profile tags resolve. ``omrg web`` passes the
+            catalogue of its own workspace.
+    """
     from ... import compose
 
-    return compose.build_engine()
+    return compose.build_engine(catalogue=catalogue)
 
 
 def default_experiments_factory(config: WebConfig) -> Any | None:
@@ -415,6 +421,7 @@ async def _owned_runtime(
     try:
         runtime.experiments = (config.experiments_factory or default_experiments_factory)(config)
         runtime.plugins = (config.plugins_factory or default_plugins_factory)(config)
+        runtime.profiles = await _start_profiles(config, runtime.engine)
         if run_service_factory is not None:
             runtime.run_service = run_service_factory(runtime)
             await runtime.run_service.start()
@@ -426,6 +433,26 @@ async def _owned_runtime(
     finally:
         app.state.runtime = None
         await shutdown_runtime(runtime)
+
+
+async def _start_profiles(config: WebConfig, engine: Any) -> Any:
+    """Build the profile service and turn saved Studio pipelines into profiles (D10).
+
+    The upgrade step handles only pipelines that belong to no profile, so it does
+    nothing on later starts. A failure is logged and does not stop the server:
+    the pipelines stay as they are and the next start tries again.
+    """
+    from ...compose_profile_setup import build_profile_service
+
+    service = build_profile_service(engine, config.workspace)
+    try:
+        created = await asyncio.to_thread(service.upgrade_saved_pipelines)
+    except Exception:
+        logger.exception("Turning saved pipelines into profiles failed; the next start retries.")
+    else:
+        if created:
+            logger.info("Turned %d saved pipeline(s) into profiles.", len(created))
+    return service
 
 
 def request_shutdown(app: FastAPI) -> None:
