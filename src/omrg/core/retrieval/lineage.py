@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterable, Mapping
-from typing import Any
+from typing import Any, TypeGuard
 
 from ..vectordb.base import VectorStore
 
@@ -80,7 +80,7 @@ def _valid_index(value: Any) -> bool:
     return _is_int(value) and value >= 0
 
 
-def _valid_count(value: Any) -> bool:
+def _valid_count(value: Any) -> TypeGuard[int]:
     """Return whether *value* is a usable chunk count."""
     return _is_int(value) and value > 0
 
