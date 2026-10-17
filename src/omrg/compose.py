@@ -38,6 +38,7 @@ EMBEDDING_PROVIDER_SCOPE = "engine"
 # ── Runtime setup state ─────────────────────────────────────────────
 
 _runtime_setup_done: bool = False
+_runtime_engine: Any = None
 
 
 # ── Runtime capability probes ────────────────────────────────────────
@@ -208,6 +209,7 @@ def build_profile_resolver(
     *,
     store: Any = None,
     env_overrides: Any = None,
+    catalogue: Any = None,
 ) -> Any:
     """Construct the :class:`ProfileResolver` with its dependencies injected.
 
@@ -229,10 +231,13 @@ def build_profile_resolver(
             overrides, captured at composition time so an
             already-constructed engine never observes later environment
             changes. ``None`` keeps the legacy live-environment read.
+        catalogue: Optional :class:`ProfileCatalogue` that user profile tags
+            resolve through. ``None`` means this process found no workspace,
+            so a tag that is not built-in is refused with an explanation.
 
     Returns:
         A :class:`ProfileResolver` with ``server_profile``, ``base``,
-        ``store`` and ``env_overrides`` injected.
+        ``store``, ``env_overrides`` and ``catalogue`` injected.
     """
     from .core.profiles import ProfileResolver
 
@@ -244,6 +249,7 @@ def build_profile_resolver(
         server_profile=settings.rag_profile,
         base=settings_to_effective(settings),
         env_overrides=env_overrides,
+        catalogue=catalogue,
     )
 
 
@@ -404,12 +410,25 @@ def ensure_runtime_setup() -> None:
 
     Safe to call multiple times — only runs once.
     """
-    global _runtime_setup_done
+    global _runtime_setup_done, _runtime_engine
     if _runtime_setup_done:
         return
-    engine = build_engine()
+    from .compose_profile_setup import workspace_profile_catalogue
+
+    engine = build_engine(catalogue=workspace_profile_catalogue())
     engine._install_as_process_default()
+    _runtime_engine = engine
     _runtime_setup_done = True
+
+
+def runtime_engine() -> Any:
+    """Return the Engine that :func:`ensure_runtime_setup` built.
+
+    Commands that must run a user profile's pipelines use it, so they do not
+    open a second store client on the same path.
+    """
+    ensure_runtime_setup()
+    return _runtime_engine
 
 
 def reset_runtime_setup() -> None:
@@ -417,8 +436,9 @@ def reset_runtime_setup() -> None:
 
     Used by tests that need to re-trigger setup with different env vars.
     """
-    global _runtime_setup_done
+    global _runtime_setup_done, _runtime_engine
     _runtime_setup_done = False
+    _runtime_engine = None
 
 
 # Engine construction lives in a sibling module (this module sits at the

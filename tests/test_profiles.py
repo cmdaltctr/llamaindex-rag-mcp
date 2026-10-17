@@ -206,7 +206,9 @@ class TestProfileSelection:
     def test_collection_tagged_nonexistent_profile_rejected(self) -> None:
         """A collection tagged with a non-existent profile is rejected."""
         store = _make_mock_store(collection_meta={"bad": {"profile": "nonexistent"}})
-        resolver = ProfileResolver(store=store, server_profile="documents")
+        resolver = ProfileResolver(
+            store=store, server_profile="documents", catalogue=_FakeCatalogue()
+        )
         with pytest.raises(ValueError, match="Available profiles"):
             resolver.resolve("bad")
 
@@ -400,7 +402,7 @@ class TestNonDestructiveProfileChanges:
     def test_apply_profile_change_rejects_unknown(self) -> None:
         """Applying an unknown profile is rejected."""
         store = _make_mock_store()
-        with pytest.raises(ValueError, match="operational profiles"):
+        with pytest.raises(ValueError, match="no workspace database"):
             apply_profile_change("coll", "unknown", store=store)
 
 
@@ -813,3 +815,213 @@ class TestResolverCoverage:
         resolver = ProfileResolver(store=store)
         profile = resolver._get_server_profile()
         assert profile in ("documents", "codebase", "hybrid")
+
+
+# ── User profiles (unify-profiles-and-pipelines, tasks 2.1 and 2.4) ────
+
+
+class _FakeCatalogue:
+    """An in-memory profile catalogue with the same reads as the SQLite one."""
+
+    def __init__(self, *profiles: dict, revisions: dict[tuple[str, str], int] | None = None):
+        self._profiles = {p["profile_id"]: p for p in profiles}
+        self._revisions = revisions or {}
+
+    def get_profile(self, profile_id: str) -> dict | None:
+        return self._profiles.get(profile_id)
+
+    def list_profiles(self) -> list[dict]:
+        return [p for p in self._profiles.values() if p.get("archived_at") is None]
+
+    def slot_revision(self, profile_id: str, slot: str) -> dict | None:
+        number = self._revisions.get((profile_id, slot))
+        if number is None:
+            return None
+        return {"revision_id": f"{profile_id}-{slot}-{number}", "revision_number": number}
+
+    def slot_document(self, profile_id: str, slot: str) -> dict | None:
+        return {"version": 1} if (profile_id, slot) in self._revisions else None
+
+
+def _user_profile(profile_id: str, base: str = "documents", archived: bool = False) -> dict:
+    return {
+        "profile_id": profile_id,
+        "title": profile_id.title(),
+        "description": "",
+        "base_profile": base,
+        "ingest_pipeline_id": f"{profile_id}-i",
+        "search_pipeline_id": f"{profile_id}-s",
+        "answer_pipeline_id": f"{profile_id}-a",
+        "created_at": "t",
+        "updated_at": "t",
+        "archived_at": "t" if archived else None,
+    }
+
+
+class TestUserProfileResolution:
+    """A collection tag can name a user profile from the workspace catalogue."""
+
+    def _resolver(self, tag: str | None, catalogue: object | None) -> ProfileResolver:
+        meta = {"notes": {"profile": tag} if tag else None}
+        return ProfileResolver(
+            store=_make_mock_store(collection_meta=meta),
+            server_profile="documents",
+            catalogue=catalogue,
+        )
+
+    def test_user_tag_resolves_to_base_settings_under_the_user_name(self) -> None:
+        catalogue = _FakeCatalogue(_user_profile("my-notes", base="codebase"))
+        resolver = self._resolver("my-notes", catalogue)
+        effective = resolver.resolve("notes")
+        codebase = ProfileResolver(
+            store=_make_mock_store(collection_meta={"c": {"profile": "codebase"}}),
+            server_profile="documents",
+        ).resolve("c")
+        assert effective.profile_name == "my-notes"
+        assert effective.model_dump(exclude={"profile_name"}) == codebase.model_dump(
+            exclude={"profile_name"}
+        )
+
+    def test_binding_names_the_user_profile_and_its_base(self) -> None:
+        catalogue = _FakeCatalogue(_user_profile("my-notes", base="codebase"))
+        binding = self._resolver("my-notes", catalogue).binding("notes")
+        assert (binding.name, binding.base_profile, binding.user) == (
+            "my-notes",
+            "codebase",
+            True,
+        )
+
+    @pytest.mark.parametrize(
+        ("tag", "expected"),
+        [("codebase", "codebase"), ("documents", "documents"), (None, "documents")],
+    )
+    def test_binding_of_a_built_in_or_untagged_collection(
+        self, tag: str | None, expected: str
+    ) -> None:
+        binding = self._resolver(tag, _FakeCatalogue()).binding("notes")
+        assert (binding.name, binding.base_profile, binding.user) == (expected, expected, False)
+
+    def test_unknown_tag_lists_built_in_and_ready_user_profiles(self) -> None:
+        catalogue = _FakeCatalogue(_user_profile("my-notes"), _user_profile("old", archived=True))
+        with pytest.raises(ValueError) as excinfo:
+            self._resolver("nope", catalogue).resolve("notes")
+        message = str(excinfo.value)
+        assert "'nope'" in message
+        assert "codebase" in message and "documents" in message and "my-notes" in message
+        assert "old" not in message
+
+    def test_deleted_profile_gives_a_deleted_error(self) -> None:
+        catalogue = _FakeCatalogue(_user_profile("old", archived=True))
+        with pytest.raises(ValueError, match="deleted") as excinfo:
+            self._resolver("old", catalogue).resolve("notes")
+        assert "'old'" in str(excinfo.value)
+        assert "another profile" in str(excinfo.value)
+
+    def test_binding_also_refuses_a_deleted_profile(self) -> None:
+        catalogue = _FakeCatalogue(_user_profile("old", archived=True))
+        with pytest.raises(ValueError, match="deleted"):
+            self._resolver("old", catalogue).binding("notes")
+
+    def test_no_catalogue_gives_the_no_workspace_message(
+        self, tmp_path: object, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("HOME", str(tmp_path))
+        with pytest.raises(ValueError) as excinfo:
+            self._resolver("my-notes", None).resolve("notes")
+        message = str(excinfo.value)
+        assert "'notes'" in message and "'my-notes'" in message
+        assert "~/.omrg/workspace/workspace.db" in message
+        assert "omrg web" in message
+        assert "'documents' or 'codebase'" in message
+
+    def test_hybrid_tag_is_still_rejected_with_a_catalogue(self) -> None:
+        with pytest.raises(ValueError, match="mode selector"):
+            self._resolver("hybrid", _FakeCatalogue(_user_profile("my-notes"))).resolve("notes")
+
+    def test_built_in_resolution_never_reads_the_catalogue(self) -> None:
+        catalogue = MagicMock()
+        self._resolver("codebase", catalogue).resolve("notes")
+        catalogue.get_profile.assert_not_called()
+
+
+def _ready_catalogue(*extra: dict) -> _FakeCatalogue:
+    revisions = {("my-notes", "ingest"): 2, ("my-notes", "search"): 3, ("my-notes", "answer"): 1}
+    return _FakeCatalogue(_user_profile("my-notes", base="codebase"), *extra, revisions=revisions)
+
+
+class TestUserProfileSafetyContract:
+    """The safety contract and the apply step accept user profiles."""
+
+    def _contract(self, new_profile: str = "my-notes", **kwargs: object) -> dict:
+        store = _make_mock_store(
+            collection_meta={"notes": {"profile": "documents"}}, chunk_counts={"notes": 12}
+        )
+        return generate_safety_contract("notes", new_profile, store=store, **kwargs)
+
+    def test_user_target_names_its_three_pipelines_with_revision_numbers(self) -> None:
+        contract = self._contract(catalogue=_ready_catalogue())
+        assert contract["new_profile"] == "my-notes"
+        assert contract["pipelines"] == [
+            {"slot": "ingest", "title": "Ingest", "revision_number": 2},
+            {"slot": "search", "title": "Search", "revision_number": 3},
+            {"slot": "answer", "title": "Answer", "revision_number": 1},
+        ]
+
+    def test_user_target_states_the_ingest_note(self) -> None:
+        contract = self._contract(catalogue=_ready_catalogue())
+        text = " ".join(contract["notes"])
+        assert "Search and Answer pipelines" in text
+        assert "at once" in text
+        assert "processed again on their next ingestion" in text
+
+    def test_lever_impacts_follow_the_base_profile(self) -> None:
+        contract = self._contract(catalogue=_ready_catalogue())
+        levers = {i["lever"]: i["change"] for i in contract["lever_impacts"]}
+        assert levers["reranker_enabled"] == "True → False"  # documents → codebase base
+        assert levers["chunk_strategy_fallback"].startswith("markdown → ")
+
+    def test_old_user_profile_is_compared_through_its_base(self) -> None:
+        store = _make_mock_store(collection_meta={"notes": {"profile": "my-notes"}})
+        contract = generate_safety_contract(
+            "notes", "documents", store=store, catalogue=_ready_catalogue()
+        )
+        assert contract["old_profile"] == "my-notes"
+        levers = {i["lever"]: i["change"] for i in contract["lever_impacts"]}
+        assert levers["reranker_enabled"] == "False → True"
+
+    def test_built_in_target_has_no_pipeline_section(self) -> None:
+        contract = self._contract("codebase", catalogue=_ready_catalogue())
+        assert "pipelines" not in contract and "notes" not in contract
+
+    def test_apply_accepts_a_ready_user_profile(self) -> None:
+        store = _make_mock_store(collection_meta={"notes": None})
+        result = apply_profile_change(
+            "notes", "my-notes", store=store, catalogue=_ready_catalogue()
+        )
+        assert result["profile"] == "my-notes"
+        store.update_collection_metadata.assert_called_once_with("notes", {"profile": "my-notes"})
+
+    @pytest.mark.parametrize(
+        ("catalogue", "match"),
+        [
+            (_FakeCatalogue(), "not a profile"),
+            (_FakeCatalogue(_user_profile("my-notes", archived=True)), "deleted"),
+            (_FakeCatalogue(_user_profile("my-notes")), "not ready"),
+            (None, "workspace"),
+        ],
+    )
+    def test_apply_refuses_other_user_ids(self, catalogue: object, match: str) -> None:
+        store = _make_mock_store(collection_meta={"notes": None})
+        with pytest.raises(ValueError, match=match):
+            apply_profile_change("notes", "my-notes", store=store, catalogue=catalogue)
+        store.update_collection_metadata.assert_not_called()
+
+    def test_apply_still_accepts_built_ins_without_a_catalogue(self) -> None:
+        store = _make_mock_store(collection_meta={"notes": None})
+        apply_profile_change("notes", "codebase", store=store)
+        store.update_collection_metadata.assert_called_once_with("notes", {"profile": "codebase"})
+
+    def test_apply_refuses_hybrid(self) -> None:
+        store = _make_mock_store(collection_meta={"notes": None})
+        with pytest.raises(ValueError):
+            apply_profile_change("notes", "hybrid", store=store, catalogue=_ready_catalogue())

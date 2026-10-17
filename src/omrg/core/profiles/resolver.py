@@ -18,6 +18,9 @@ Resolution rules (spec: profiles-dual-use-case):
     selector, not an operational profile.
 5.  A collection tagged with a non-existent profile name is rejected
     listing available profiles.
+6.  A collection tagged with a user profile id resolves to the settings of
+    that profile's base profile, reported under the user profile's id. User
+    profiles come from the injected :class:`ProfileCatalogue`.
 
 Tier classification (design D1):
 
@@ -38,6 +41,13 @@ from ..ingestion.settings import parse_extension_set
 from ..settings import EffectiveSettings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
+from .catalogue import (
+    ProfileBinding,
+    ProfileCatalogue,
+    deleted_message,
+    no_workspace_message,
+    unknown_message,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -216,6 +226,7 @@ class ProfileResolver:
         server_profile: str | None = None,
         base: EffectiveSettings | None = None,
         env_overrides: Mapping[str, str] | None = None,
+        catalogue: ProfileCatalogue | None = None,
     ) -> None:
         """Initialise the resolver.
 
@@ -237,14 +248,23 @@ class ProfileResolver:
             env_overrides: Snapshot of the applicable profile env
                 overrides, captured at composition time. ``None`` reads
                 the live environment (legacy transport behaviour).
+            catalogue: Where user profiles are read. ``None`` means this
+                process found no workspace, so a tag that is not built-in
+                is refused with an explanation.
         """
         self._store = store
         self._server_profile = server_profile
         self._base = base
         self._env_overrides = env_overrides
+        self._catalogue = catalogue
         self._cache: dict[str, EffectiveSettings] = {}
 
     # ── Public API ──────────────────────────────────────────────────
+
+    @property
+    def catalogue(self) -> ProfileCatalogue | None:
+        """The catalogue user profiles are read from, or ``None`` without a workspace."""
+        return self._catalogue
 
     def resolve(self, collection_name: str) -> EffectiveSettings:
         """Resolve the effective settings for a collection.
@@ -253,57 +273,79 @@ class ProfileResolver:
             collection_name: The target ChromaDB collection name.
 
         Returns:
-            Frozen :class:`EffectiveSettings` for this collection.
+            Frozen :class:`EffectiveSettings` for this collection. For a user
+            profile these are the base profile's settings under the user
+            profile's name.
 
         Raises:
             ValueError: If the collection's profile tag is ``hybrid``
-                (mode selector, not operational) or names a non-existent
-                profile.
+                (mode selector, not operational), names a non-existent or
+                deleted profile, or names a user profile this process cannot
+                read.
         """
-        store = self._get_store()
-        server_profile = self._get_server_profile()
+        return self.resolve_bound(collection_name)[0]
 
-        # Read the collection's profile tag from metadata.
-        tag = self._read_collection_tag(store, collection_name)
+    def resolve_bound(self, collection_name: str) -> tuple[EffectiveSettings, ProfileBinding]:
+        """Resolve the settings and the profile binding of a collection with one tag read.
 
-        if tag is None:
-            # No tag → inherit server default.
-            profile = server_profile
-            if profile == "hybrid":
-                profile = self._resolve_hybrid_default()
-        else:
-            profile = tag
+        Returns:
+            The effective settings and the binding. A caller that must know
+            whether the collection follows a user profile uses the binding.
 
-        # Validate the resolved profile name.
-        self._validate_profile(profile, tag, collection_name)
-
-        return self._load_effective(profile)
+        Raises:
+            ValueError: As :meth:`resolve`.
+        """
+        binding = self.binding(collection_name)
+        effective = self._load_effective(binding.base_profile)
+        if binding.user:
+            effective = effective.model_copy(update={"profile_name": binding.name})
+        return effective, binding
 
     def resolve_profile_name(self, collection_name: str) -> str:
-        """Resolve just the operational profile name for a collection.
+        """Resolve just the profile name for a collection.
 
         Convenience method for the safety-contract generator and
         diagnostics that need the name without loading the full bundle.
 
         Returns:
-            The operational profile name (``documents`` or ``codebase``).
+            The profile id: ``documents`` or ``codebase``, or the id of a
+            user profile.
 
         Raises:
             ValueError: If the tag is invalid.
         """
-        store = self._get_store()
-        server_profile = self._get_server_profile()
-        tag = self._read_collection_tag(store, collection_name)
+        return self.binding(collection_name).name
 
-        if tag is None:
-            profile = server_profile
-            if profile == "hybrid":
-                profile = self._resolve_hybrid_default()
-        else:
-            profile = tag
+    def binding(self, collection_name: str) -> ProfileBinding:
+        """Return the profile a collection follows, built-in or user.
 
+        Args:
+            collection_name: The target collection name.
+
+        Raises:
+            ValueError: If the tag is ``hybrid``, unknown, deleted, or names a
+                user profile when this process has no catalogue.
+        """
+        tag = self._read_collection_tag(self._get_store(), collection_name)
+        if tag is not None and tag not in OPERATIONAL_PROFILES and tag != "hybrid":
+            return self._user_binding(tag, collection_name)
+        profile = tag if tag is not None else self._get_server_profile()
+        if tag is None and profile == "hybrid":
+            profile = self._resolve_hybrid_default()
         self._validate_profile(profile, tag, collection_name)
-        return profile
+        return ProfileBinding(profile, profile)
+
+    def _user_binding(self, tag: str, collection_name: str) -> ProfileBinding:
+        """Look up a user profile tag in the catalogue."""
+        if self._catalogue is None:
+            raise ValueError(no_workspace_message(collection_name, tag))
+        record = self._catalogue.get_profile(tag)
+        if record is None:
+            ready = [str(p["profile_id"]) for p in self._catalogue.list_profiles()]
+            raise ValueError(unknown_message(collection_name, tag, ready))
+        if record.get("archived_at"):
+            raise ValueError(deleted_message(collection_name, tag))
+        return ProfileBinding(tag, str(record["base_profile"]))
 
     # ── Internal helpers ────────────────────────────────────────────
 

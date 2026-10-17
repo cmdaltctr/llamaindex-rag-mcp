@@ -130,6 +130,50 @@ collections fall back to `default_profile` in `hybrid.yaml`.
 
 A collection cannot be tagged `hybrid` — it selects a mode, it is not one.
 
+### User profiles
+
+A user profile is a profile that you make in the web workspace. It has an id,
+a title, a **base profile** (`documents` or `codebase`) and three pipelines:
+**Ingest**, **Search** and **Answer**. The base profile gives the five profile
+settings. The pipelines decide how the collection reads, searches and answers.
+
+A collection follows a user profile when its `profile` tag holds the user
+profile id, for example `my-notes`. `RAG_PROFILE` and `default_profile` in
+`hybrid.yaml` accept `documents` and `codebase` only.
+
+The web server owns the workspace. It reads and writes the database file
+`workspace.db` in the folder of `omrg web --workspace` (default
+`~/.omrg/workspace`). Other processes read user profiles from that default
+folder, read-only, when the file exists:
+
+| Process | Reads user profiles | Binds a user profile to a collection |
+|---|---|---|
+| `omrg web` and its MCP endpoint | Yes, from its own workspace | Yes |
+| Stdio MCP server (`omrg`) | Yes, from the default workspace | No |
+| CLI (`search`, `answer`, `ingest`, `watch`) | Yes, from the default workspace | No (`omrg set-profile` takes built-in names only) |
+
+To bind a user profile, use Knowledge Base > Profile in the web app, or the
+`change_collection_profile` tool on the MCP endpoint of `omrg web`.
+
+If the default workspace file does not exist, a collection tagged with a user
+profile fails with this error:
+
+```text
+Collection 'notes' uses the profile 'my-notes', which is not a built-in
+profile. User profiles live in the web workspace, and no workspace database
+was found at ~/.omrg/workspace/workspace.db. Start `omrg web` once with the
+default workspace, or change the collection's profile to 'documents' or
+'codebase'.
+```
+
+To fix it, do one of these:
+
+1. Start `omrg web` once with the default workspace.
+2. Run `omrg set-profile -c notes -p documents` (or `codebase`).
+
+If you start `omrg web` with another `--workspace` folder, the other
+processes do not find its profiles. The error names the path they read.
+
 ### Why the reranker differs
 
 The `documents` profile turns the reranker on; `codebase` leaves it off. That
