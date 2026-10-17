@@ -11,7 +11,7 @@ Navigation has seven items in this order: Home, Chat, Knowledge Base, Studio, Ex
 | Top bar | Muted surface, 1px bottom border, elevation shadow. Shows the brand, an engine status pill (collection count, or "offline"), the theme `Select` (System, Light, Dark), and an icon-only button beside it that shows sun or moon for the theme in effect and switches Light and Dark in one click. Its accessible name names the target theme. |
 | Inspector | The global toggle and empty panel are gone. Detail regions open inside Chat, Studio, and Experiments on selection. |
 | Skip link, main focus | Keep the existing skip link. Focus moves to the view `h1` after navigation. |
-| Routes | Typed hash routes from `lib/routes.ts` (design D9): `#/home`, `#/knowledge-base[/<collection>]`, `#/chat[/<collection>]`, `#/studio[/<pipeline-id>]`, `#/experiments`, `#/experiments/runs/<run-id>`, `#/integrations`, `#/settings`. Segments are URI-encoded. An unknown hash opens Home and is rewritten to `#/home`; earlier routes are not redirected. |
+| Routes | Typed hash routes from `lib/routes.ts` (design D9): `#/home`, `#/knowledge-base[/<collection>]`, `#/chat[/<collection>]`, `#/studio[/<profile-id>[/<purpose>]]` (purpose is `ingest`, `search` or `answer`), `#/experiments`, `#/experiments/runs/<run-id>`, `#/integrations`, `#/settings`. Segments are URI-encoded. An unknown hash opens Home and is rewritten to `#/home`; earlier routes are not redirected. |
 | Narrow screens | Below `md`, the navigation becomes one row of the seven area icons with short labels under the top bar (owner decision; no menu button). Targets are at least 44px. No horizontal page scroll. |
 
 Read the presentation spec and `web/src/App.tsx` before you change route names.
@@ -51,13 +51,13 @@ Manages the active project's sources: file upload (managed upload plus an ingest
 
 ## Studio
 
-Gallery first: cards for engine templates (ingestion, search, answer), the `documents` and `codebase` profile presets, and saved pipelines. Each card has a title, a description, and one action.
+Gallery first: profile cards in two groups, "Built-in profiles" and "Your profiles", plus a "New empty profile" card. A closed "How profiles work" disclosure sits under the header. Each card shows the title, the profile ID, use and readiness, with Open profile, Duplicate and (for your profiles) Delete. Built-in profiles are read-only.
 
-The canvas sub-page (`#/studio/<pipeline-id>`):
+The canvas sub-page (`#/studio/<profile-id>/<purpose>`). The header shows the profile, an Ingest, Search and Answer switch and an "All profiles" link. A built-in profile shows a read-only notice and "Duplicate to edit". The panel sections are Pipeline settings (Base profile as text, Collection), Operations, Steps and connections, Connect ports, Revision and run, Step settings. "Save revision" asks "Save this revision?" when a collection uses the profile:
 
 - The flow surface fills the main area.
 - The operation palette is the right-hand column.
-- Selecting a node opens its settings in a detail region on the same page.
+- Selecting a step opens its settings in a detail region on the same page.
 - Revision, validation, and run behaviour are unchanged.
 
 React Flow nodes and edges read the semantic tokens. Node kind badges use the hue hash. Run state on a node pairs the status colour with text. Respect `prefers-reduced-motion` for edge animation (`runs/useReducedMotion.ts` exists). The canvas needs a keyboard route to add, select, and delete nodes. Do not regress what `CanvasView` tests cover.

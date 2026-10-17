@@ -210,7 +210,7 @@ Copy is plain British English. Buttons say what they do ("Upload files", "Run pi
 - Spacing steps: 4, 8, 12, 16, 24, 32px. 8px between an icon and its label, 12px inside a card, 16px card padding, 24px between related groups, 32px between page sections. Never one gap everywhere.
 - Controls are 36px high (32px small). Touch targets on narrow screens are at least 44px.
 - Chat's transcript is a centred column of `min(100%, 48rem)`.
-- Studio's canvas takes the full main area; the operation palette is the right-hand column.
+- Studio opens on a gallery of profile cards. A profile canvas takes the full main area; one floating panel holds six sections: Pipeline settings, Operations, Steps and connections, Connect ports, Revision and run, Step settings.
 - Card grids use `items-start` so short cards do not stretch.
 - Use logical properties only (`ms-*`, `pe-*`, `border-s`, `text-start`), so the layout mirrors for right-to-left text.
 - At 390px wide there is no horizontal page scroll.

@@ -317,7 +317,7 @@ Every area has its own address. Back and forward move between them. An address t
 | Home | `#/home` | See every project as a card with its title, profile, counts and database. Open a project. |
 | Chat | `#/chat/<collection>` | Pick a knowledge base by its title and ask it a question. Read the answer, its citations and the evidence. Each question answers on its own. |
 | Knowledge Base | `#/knowledge-base/<collection>` | Rename the project title with the pencil. See the database that holds the project (logo and name in the header, name in the project list and in the Sources table). List sources, upload and ingest files, ingest from an approved folder, search, preview and confirm a deletion or a profile change. The upload panel shows the server's per-file limit and refuses a larger file before it is sent. Change the limit in Settings › Workspace. |
-| Studio | `#/studio`, `#/studio/<pipeline-id>` | Start a pipeline from a template, a profile preset or an empty graph. Add operations, connect ports, save a revision, validate, run and cancel. |
+| Studio | `#/studio`, `#/studio/<profile-id>`, `#/studio/<profile-id>/<purpose>` | Open a gallery of profiles. Duplicate a profile, start an empty one, rename it or delete it. Open the Ingest, Search or Answer pipeline of a profile. Add operations, connect ports, save a revision, validate, run and cancel. |
 | Experiments | `#/experiments`, `#/experiments/runs/<run-id>` | Create experiment folders and sub-experiments, issue a bound credential, register and open the notebook editor, and read pipeline runs. A preview that is cut offers Open full output, which shows the redacted value as text and downloads it. |
 | Integrations | `#/integrations` | See which optional parts are installed and copy the command that installs the rest. The page never installs anything. |
 | Settings | `#/settings` | Read the provider connections and test them, read the server log, copy the MCP client configuration, manage MCP access over HTTP, and set the per-file upload limit. |
@@ -335,24 +335,62 @@ The screenshots show a local server with small Markdown sources. The run output 
 | Run output | [image](images/web-workspace/run-output-light-1280.png) | [image](images/web-workspace/run-output-dark-1280.png) |
 | Settings › Workspace | [image](images/web-workspace/settings-light-1280.png) | [image](images/web-workspace/settings-dark-1280.png) |
 
-![Studio canvas with the Search template](images/web-workspace/studio-canvas-light-1280.png)
+![Studio canvas of a profile](images/web-workspace/studio-canvas-light-1280.png)
 
 On a phone, the areas use one column. Two examples at 390 px: [Home](images/web-workspace/home-light-390.png) and the [Studio canvas](images/web-workspace/studio-canvas-light-390.png).
 
+### Profiles in Studio
+
+Studio opens on a gallery of profiles. A profile is a group of three pipelines. A collection uses one profile, and the profile decides how that collection works.
+
+The gallery has two groups:
+
+1. Built-in profiles. They come with OMRG. You cannot change them.
+2. Your profiles. They are copies that you can rename, change and delete.
+
+Each profile has three pipelines. Open them with the Ingest, Search and Answer links in the profile header.
+
+1. Ingest reads files, splits them into chunks and stores them in the collection.
+2. Search finds the chunks that best match a question.
+3. Answer writes an answer from the best chunks and cites them.
+
+Each profile card shows the title, the profile ID and the collections that use it. A "Not ready" badge shows when the profile cannot run, and the card lists the reasons. Open "How profiles work" at the top of the gallery for a short summary.
+
+To duplicate a profile:
+
+1. Select "Duplicate" on a profile card. In the header of a built-in profile, you can select "Duplicate to edit".
+2. Enter a title in the Title field.
+3. Select "Create profile".
+
+To start with no steps, select "New empty profile" and give it a title.
+
+To rename one of your profiles, select the pencil next to its title. Enter the new title and select "Save".
+
+To delete one of your profiles:
+
+1. Select "Delete" on its card.
+2. Select "Delete profile" in the dialog.
+
+The "Delete" button is off while a collection uses the profile. Pick another profile for those collections in Knowledge Base first. Past runs stay in Experiments.
+
+The canvas of a built-in profile is read-only. The header shows "Built-in profiles are read-only. Duplicate this profile to change it." You cannot save a revision or run the pipeline.
+
+When a collection uses the profile that you edit, "Save revision" first opens the "Save this revision?" dialog. The dialog names the collections that the save changes. Select "Save revision" in the dialog to save. Select "Cancel" to save nothing. When no collection uses the profile, the save starts with no dialog. After a save, the status line names the collections that now use the new revision.
+
 ### Studio canvas layout
 
-On a pipeline canvas (`#/studio/<pipeline-id>`), the flow surface fills the whole main area. The workspace navigation shows as an icon column. Select "Expand navigation" to open it for this visit only. The stored navigation choice does not change, and the next canvas visit starts collapsed again.
+On a pipeline canvas (`#/studio/<profile-id>/<purpose>`), the flow surface fills the whole main area. The workspace navigation shows as an icon column. Select "Expand navigation" to open it for this visit only. The stored navigation choice does not change, and the next canvas visit starts collapsed again.
 
 One panel floats over the right side of the canvas. It holds six sections. Each section has its own icon.
 
-1. Pipeline settings (Title, Profile and Collection).
+1. Pipeline settings (Base profile and Collection). The base profile shows as text. The section has no Title field and no Profile list.
 2. Operations.
-3. Nodes and connections.
+3. Steps and connections.
 4. Connect ports.
 5. Revision and run.
-6. Node settings.
+6. Step settings.
 
-You can open several sections at the same time. At first, only Operations is open. When you select a node, Node settings opens. When you start a run from the panel, Revision and run opens. Closing a section does not change the draft.
+You can open several sections at the same time. At first, only Operations is open. When you select a step, Step settings opens. When you start a run from the panel, Revision and run opens. Closing a section does not change the draft.
 
 Select "Collapse panel" to shrink the panel to a narrow icon rail. Each rail button shows a tooltip with its section name. A highlighted button means that its section is open. Select a rail button to expand the panel with that section open. Collapsing the panel does not change the draft, the selection or the open sections.
 
@@ -371,7 +409,7 @@ Each collection lives in one vector database. The workspace shows it in four pla
 
 The label comes from the vector-store registry (`register(..., label=...)`). A backend without a label shows its registered name. The logo is a PNG in `web/public/integrations/vector-stores/`, named after the registered backend, for example `web/public/integrations/vector-stores/lancedb.png`. When the file is missing, the workspace shows the name only. To add a database, add its module, one `register()` call and one PNG.
 
-The Profile tab shows the stored profile as a badge. When a collection has no stored profile, the badge reads "No profile". The "New profile" list starts on the stored profile. When none is stored, it starts empty and "Preview profile change" stays disabled until you choose a profile.
+The Profile tab shows the stored profile as a badge. When a collection has no stored profile, the badge reads "No profile". The "New profile" list has two groups, "Built-in profiles" and "Your profiles". Each option shows the profile title and its ID. A profile that is not ready does not appear in the list. A line under the list names each hidden profile and says why it is not ready. The list starts on the stored profile. When none is stored, it starts empty and "Preview profile change" stays disabled until you choose a profile.
 
 ### Display name and collection name
 
@@ -390,7 +428,7 @@ Keyboard use on the Studio canvas:
 
 1. Press Tab to move through the panel section headers and the controls in each open section. Press Enter or Space on a header to open or close its section.
 2. On a node, press Enter to select it. Use the arrow keys to move it. Press Delete to remove it.
-3. Use the Nodes and connections section and the Connect ports section to edit the graph without a pointer.
+3. Use the Steps and connections section and the Connect ports section to edit the graph without a pointer.
 
 Third-party notices for the bundled application are in `web/THIRD_PARTY_NOTICES.md`.
 
