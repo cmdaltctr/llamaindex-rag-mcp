@@ -91,7 +91,7 @@ Each step card on the canvas SHALL show the step name, a one-line summary of wha
 #### Scenario: Main settings are chosen
 - **WHEN** a Prepare query step is on the canvas
 - **THEN** the card SHALL show "Number of results", "Minimum similarity" and "Reranker", because the card takes settings in catalogue order and puts the collection setting last
-- **AND** the card SHALL say how many more settings Step settings holds
+- **AND** the card SHALL say how many settings are left, on the button "+N more settings"
 - **AND** a setting that the canvas cannot edit SHALL not be one of the three
 
 #### Scenario: A step has no settings
@@ -107,6 +107,12 @@ Each step card on the canvas SHALL show the step name, a one-line summary of wha
 - **WHEN** the graph holds two Dense retrieval steps with node ids `dense` and `dense_2`
 - **THEN** each of the two cards SHALL show its node id in muted text under the step name
 - **AND** the accessible name of each card SHALL include its node id
+
+#### Scenario: Connected ports are green
+- **WHEN** a step has a port with at least one connection
+- **THEN** the handle of that port SHALL show in the success colour
+- **AND** a port with no connection SHALL keep the neutral handle colour
+- **AND** an input and an output with the same name SHALL show their own state
 
 #### Scenario: Status badges stay
 - **WHEN** a step is bypassed, unavailable, has validation issues, or is part of a shown run
@@ -142,14 +148,115 @@ Each step card SHALL show that it opens its settings. The card SHALL show a sett
 - **THEN** it SHALL announce the name "Discover sources step"
 
 ### Requirement: The canvas explains how to edit it
-The canvas page SHALL show one intro line under the page heading: "Build your own profile. Click a step to change it in Step settings. Drag from one port to another to connect steps, or use Connect ports." The line SHALL show for an empty graph and for a graph with steps. It SHALL not cover any step.
+The canvas page SHALL show this intro as one visible line with a little vertical padding, above the pipeline tabs: "Build your own profile. Click a step to change it in Step settings. Drag from one port to another to connect steps, or use Connect ports." Each pipeline tab SHALL also have an info button with an "i" icon and no chevron. A click on the button SHALL open a popover that holds the description of that pipeline and, for a built-in profile, the read-only note. The popover SHALL close on Escape, on a click elsewhere and on a second click on the button. The intro line SHALL show once and SHALL not repeat inside any popover. The intro line and the info buttons SHALL show for an empty graph and for a graph with steps. They SHALL not cover any step.
 
 #### Scenario: The graph is empty
 - **WHEN** a user opens a pipeline with no steps
-- **THEN** the intro line SHALL show under the page heading
+- **THEN** the intro line SHALL show above the pipeline tabs without a click
+- **AND** an info button SHALL show on each pipeline tab
+- **AND** no popover SHALL hold the intro line
 - **AND** the empty state SHALL read "The graph is empty. Add a step from Operations to start."
 
 #### Scenario: The graph has steps
 - **WHEN** a user opens a pipeline with steps
-- **THEN** the intro line SHALL show under the page heading
-- **AND** the line SHALL sit outside the flow surface, so it covers no step
+- **THEN** the intro line SHALL show above the pipeline tabs without a click
+- **AND** an info button SHALL show on each pipeline tab
+- **AND** no popover SHALL hold the intro line
+- **AND** the intro line and the info buttons SHALL sit outside the flow surface, so they cover no step
+
+### Requirement: The edge into a step that just finished animates
+While a run is live, the canvas SHALL animate the edge into a step for 1.5 seconds after that step finishes with success, so the user sees data move one step ahead. The canvas SHALL keep animating the edge into a step while that step runs. The canvas SHALL not animate any edge for a run that had finished before the canvas began to watch it. With reduced motion, the canvas SHALL show a static highlight and no movement.
+
+#### Scenario: A step finishes in a live run
+- **WHEN** a live run reports that the Dense retrieval step finished with success
+- **THEN** the edge into Dense retrieval SHALL animate and show the success colour
+- **AND** the animation SHALL stop 1.5 seconds later
+
+#### Scenario: A step runs
+- **WHEN** a live run reports that a step runs
+- **THEN** the edge into that step SHALL animate for as long as the step runs
+
+#### Scenario: A finished run is opened
+- **WHEN** the user opens a pipeline whose latest run had finished before the canvas began to watch it
+- **THEN** no edge SHALL animate
+
+#### Scenario: A step fails
+- **WHEN** a live run reports that a step failed
+- **THEN** the edge into that step SHALL not show the finished animation
+
+#### Scenario: Motion is reduced
+- **WHEN** the system asks for reduced motion and a live step finishes
+- **THEN** the edge into that step SHALL show the success colour for 1.5 seconds
+- **AND** the edge SHALL not move
+
+### Requirement: Connections are drawn as smooth-step lines
+The canvas SHALL draw each connection as a smooth-step line, with right-angle bends and rounded corners, and not as a diagonal curve. The line shape SHALL be presentation only: it SHALL not change the saved graph, the saved layout or the execution identity.
+
+#### Scenario: A connection runs back across the canvas
+- **WHEN** a connection joins a step in the first row to a step in the second row, so that its target lies to the left of its source
+- **THEN** the line SHALL be a smooth-step line
+- **AND** the line SHALL not be the default curve
+
+#### Scenario: Line shape does not touch the saved graph
+- **WHEN** a user saves a revision or a layout
+- **THEN** the saved document and the saved layout SHALL hold no line type
+
+### Requirement: The step summary expands in place
+The one-line summary on a step card SHALL be a button. A click or Enter or Space on it SHALL show the whole first sentence of the catalogue description on the card, and a second one SHALL return it to one line. The card SHALL grow to fit the text, and the summary SHALL show no chevron. Using the summary SHALL not select the card, open Step settings or start a drag.
+
+#### Scenario: A long summary is read in full
+- **WHEN** a card shows "List the eligible files under a path…" cut to one line and the user clicks the summary
+- **THEN** the card SHALL show the whole sentence
+- **AND** the summary button SHALL report that it is expanded
+
+#### Scenario: The summary is collapsed again
+- **WHEN** the user clicks an expanded summary
+- **THEN** the card SHALL show the summary on one line again
+
+#### Scenario: The summary does not select the card
+- **WHEN** the user clicks the summary, or presses Enter on it
+- **THEN** the card SHALL not become selected
+- **AND** Step settings SHALL not change
+
+### Requirement: Step settings sit in a mini card that expands in place
+A step card SHALL show its settings inside a mini card nested in the card: the main settings with their values, the Embed chunks model line, or "No settings". When the step has more editable settings than the card shows, the mini card SHALL end with a button "+N more settings", where N is the number left over. A click or Enter or Space on that button SHALL show the other settings, with their values and sources, inside the mini card, and the button SHALL then read "Show fewer settings". Using the button SHALL not select the card, open Step settings or start a drag. A step with no more settings SHALL show no such button.
+
+#### Scenario: A step has more settings
+- **WHEN** the Prepare query card shows three settings and has two more
+- **THEN** the mini card SHALL end with a button "+2 more settings" that reports `aria-expanded` false
+
+#### Scenario: The user expands the settings
+- **WHEN** the user clicks "+2 more settings"
+- **THEN** the mini card SHALL show five settings, each with its value
+- **AND** the button SHALL read "Show fewer settings" and report `aria-expanded` true
+- **AND** the card SHALL not be selected
+
+#### Scenario: The user folds the settings
+- **WHEN** the user clicks "Show fewer settings"
+- **THEN** the mini card SHALL show the three main settings again
+
+#### Scenario: A step has no more settings
+- **WHEN** a card shows all the editable settings of its step
+- **THEN** the mini card SHALL show no "more settings" button
+
+### Requirement: The canvas header slides up to give the canvas more room
+The canvas header SHALL have a toggle button with a panel-top icon, at the right end of the title row. Its name SHALL be "Hide header" while the header is shown and "Show header" while it is hidden. A click on "Hide header" SHALL slide the intro line and the pipeline tabs up. The title row SHALL stay in place: the profile name, its badges, the profile ID, "Duplicate to edit", "All profiles" and the toggle. The hidden intro line and tabs SHALL not take focus, and the toggle SHALL keep focus. A click on "Show header" SHALL slide them down again. Notices SHALL stay visible while the header is hidden. The header SHALL start shown on every visit, and the canvas SHALL fill the room that the hidden part leaves. With reduced motion, the header SHALL change without a slide.
+
+#### Scenario: The user hides the header
+- **WHEN** the user clicks "Hide header"
+- **THEN** the intro line and the pipeline tabs SHALL be hidden and SHALL not take focus
+- **AND** the title row, "Duplicate to edit" and "All profiles" SHALL stay visible
+- **AND** the toggle SHALL read "Show header" and SHALL keep focus
+
+#### Scenario: The user shows the header again
+- **WHEN** the user clicks "Show header"
+- **THEN** the intro line and the pipeline tabs SHALL show again
+- **AND** the toggle SHALL read "Hide header" and SHALL keep focus
+
+#### Scenario: A notice appears while the header is hidden
+- **WHEN** the header is hidden and a notice appears, for example a refused connection
+- **THEN** the notice SHALL show
+
+#### Scenario: A new visit
+- **WHEN** the user opens the canvas again
+- **THEN** the header SHALL be shown

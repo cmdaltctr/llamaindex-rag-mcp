@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it } from "vitest";
 import { json } from "./test/fakeServer";
-import { addWithKeyboard, EMPTY_PIPELINE, inspector, openAllSections, outline, runPanel, savedDocument, UNUSED_PROFILES } from "./test/helpers";
+import { addWithKeyboard, choose, EMPTY_PIPELINE, inspector, openAllSections, outline, runPanel, savedDocument, UNUSED_PROFILES } from "./test/helpers";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
 
@@ -46,30 +46,84 @@ describe("node controls", () => {
     await user.click(within(inspector()).getByRole("checkbox", { name: "Use input query as a graph input" }));
     await addWithKeyboard(user, "Cross-encoder rerank", "select.rerank");
 
-    expect(within(group("Enabled")).getByRole("radio", { name: "Inherit" })).toBeChecked();
-    expect(group("Enabled")).toHaveTextContent(/Validate with run inputs to see the effective value/);
+    expect(within(group("Reranker")).getByRole("radio", { name: "Inherit" })).toBeChecked();
+    // No Validate: the automatic draft check supplies the value.
+    await waitFor(() => expect(group("Reranker")).toHaveTextContent("Value in use: Off (from profile)"), { timeout: 3000 });
 
     await user.type(within(runPanel()).getByLabelText("Input query"), "What is RRF?");
     await user.click(within(runPanel()).getByRole("button", { name: "Validate" }));
-    await waitFor(() => expect(group("Enabled")).toHaveTextContent("Effective value: Off (profile: documents profile)"));
-    expect(server.last("POST", "/v1/pipelines/validate")?.body).toMatchObject({ inputs: { query: "What is RRF?" } });
+    await waitFor(() => expect(server.last("POST", "/v1/pipelines/validate")?.body).toMatchObject({ inputs: { query: "What is RRF?" } }));
+    expect(group("Reranker")).toHaveTextContent("Value in use: Off (from profile)");
 
-    await user.click(within(group("Enabled")).getByRole("radio", { name: "Off" }));
+    await user.click(within(group("Reranker")).getByRole("radio", { name: "Off" }));
     expect((await saveRevision(user, server)).nodes.find((n) => n.id === "rerank")?.params).toEqual({ enabled: false });
-    await user.click(within(group("Enabled")).getByRole("radio", { name: "On" }));
+    await user.click(within(group("Reranker")).getByRole("radio", { name: "On" }));
     expect((await saveRevision(user, server)).nodes.find((n) => n.id === "rerank")?.params).toEqual({ enabled: true });
-    await user.click(within(group("Enabled")).getByRole("radio", { name: "Inherit" }));
+    await user.click(within(group("Reranker")).getByRole("radio", { name: "Inherit" }));
     expect((await saveRevision(user, server)).nodes.find((n) => n.id === "rerank")).not.toHaveProperty("params");
+  });
+
+  it("drops the value after a graph edit until the next check, and keeps it after a layout edit", async () => {
+    const { user } = await setup();
+    await addWithKeyboard(user, "Cross-encoder rerank", "select.rerank");
+    await waitFor(() => expect(group("Reranker")).toHaveTextContent("Value in use: Off (from profile)"), { timeout: 3000 });
+
+    // A layout edit: select another step and come back. The value stays and no check runs.
+    await addWithKeyboard(user, "Threshold and top-k", "select.threshold");
+    await user.click(within(outline()).getByRole("button", { name: /^Node rerank/ }));
+    expect(group("Reranker")).toHaveTextContent("Comes from the profile. The value shows when the check finishes.");
+    expect(group("Reranker")).not.toHaveTextContent("Value in use");
+    await waitFor(() => expect(group("Reranker")).toHaveTextContent("Value in use: Off (from profile)"), { timeout: 3000 });
+    await user.click(within(outline()).getByRole("button", { name: /^Node threshold/ }));
+    await user.click(within(outline()).getByRole("button", { name: /^Node rerank/ }));
+    expect(group("Reranker")).toHaveTextContent("Value in use: Off (from profile)");
+  });
+
+  it("keeps the setting path and operation id inside a closed Details area", async () => {
+    const { user } = await setup();
+    await addWithKeyboard(user, "Cross-encoder rerank", "select.rerank");
+    await waitFor(() => expect(group("Reranker")).toHaveTextContent("Value in use: Off (from profile)"), { timeout: 3000 });
+    const details = within(inspector()).getByText("Details").closest("details")!;
+    expect(details).not.toHaveAttribute("open");
+    expect(details).toHaveTextContent("retrieval.rerank_enabled");
+    // Outside Details the technical text is absent.
+    const outside = (text: string) => [...inspector().querySelectorAll("*")].some((el) => !details.contains(el) && el.children.length === 0 && (el.textContent ?? "").includes(text));
+    expect(outside("retrieval.rerank_enabled")).toBe(false);
+    expect(outside("select.rerank")).toBe(false);
+
+    await user.click(within(details).getByText("Details"));
+    expect(details).toHaveAttribute("open");
+    expect(details).toHaveTextContent("rerank");
+    expect(details).toHaveTextContent("select.rerank");
+    expect(details).toHaveTextContent("version 1");
+    expect(details).toHaveTextContent("retrieval.rerank_enabled");
+    expect(details).toHaveTextContent("profile 'documents' (collection)");
+    await user.click(within(details).getByText("Details"));
+    expect(details).not.toHaveAttribute("open");
+  });
+
+  it("shows readable option labels and saves the raw value", async () => {
+    const { server, user } = await setup();
+    await addWithKeyboard(user, "Extract metadata", "prepare.enrich");
+    const trigger = within(inspector()).getByRole("combobox", { name: "Metadata categories value" });
+    await choose(user, trigger, "File type");
+    expect(await screen.findByRole("combobox", { name: "Metadata categories value" })).toHaveTextContent("File type");
+    await user.click(screen.getByRole("combobox", { name: "Metadata categories value" }));
+    expect(screen.getByRole("option", { name: "Category" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "File type" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "file_type" })).not.toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect((await saveRevision(user, server)).nodes[0]?.params).toEqual({ taxonomy_mode: "file_type" });
   });
 
   it("refuses values outside the parameter schema", async () => {
     const { server, user } = await setup();
     await addWithKeyboard(user, "Prepare query", "retrieve.prepare_query");
-    await user.click(within(group("Top K")).getByRole("radio", { name: "Set value" }));
-    const field = within(group("Top K")).getByLabelText("Top K value");
+    await user.click(within(group("Number of results")).getByRole("radio", { name: "Set value" }));
+    const field = within(group("Number of results")).getByLabelText("Number of results value");
     await user.type(field, "0");
     expect(field).toHaveAttribute("aria-invalid", "true");
-    expect(group("Top K")).toHaveTextContent("Enter a value of at least 1.");
+    expect(group("Number of results")).toHaveTextContent("Enter a value of at least 1.");
     expect((await saveRevision(user, server)).nodes[0]).not.toHaveProperty("params");
 
     await user.clear(field);
@@ -97,11 +151,11 @@ describe("revision, run and cancellation", () => {
     expect(within(runPanel()).getByRole("button", { name: "Run" })).toBeDisabled();
     expect(runPanel()).toHaveTextContent("Save a revision before you run.");
 
-    await user.click(within(group("Enabled")).getByRole("radio", { name: "On" }));
+    await user.click(within(group("Reranker")).getByRole("radio", { name: "On" }));
     await saveRevision(user, server);
     await waitFor(() => expect(runPanel()).toHaveTextContent("The draft matches revision 1."));
     // An unsaved edit before submission: Run must still submit revision 1 as saved.
-    await user.click(within(group("Enabled")).getByRole("radio", { name: "Off" }));
+    await user.click(within(group("Reranker")).getByRole("radio", { name: "Off" }));
     expect(runPanel()).toHaveTextContent("The draft differs from revision 1.");
     await user.type(within(runPanel()).getByLabelText("Input query"), "What is RRF?");
     await user.click(within(runPanel()).getByRole("button", { name: "Run" }));
@@ -115,7 +169,7 @@ describe("revision, run and cancellation", () => {
     expect(submitted).not.toHaveTextContent('"enabled": false');
 
     // Edits after submission change the draft only.
-    await user.click(within(group("Enabled")).getByRole("radio", { name: "Inherit" }));
+    await user.click(within(group("Reranker")).getByRole("radio", { name: "Inherit" }));
     await user.click(within(outline()).getByRole("button", { name: /^Node prepare_query/ }));
     await user.click(within(inspector()).getByRole("button", { name: "Remove step" }));
     expect(runPanel()).toHaveTextContent("The draft differs from revision 1.");

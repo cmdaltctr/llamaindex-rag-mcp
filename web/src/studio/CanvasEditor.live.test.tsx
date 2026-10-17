@@ -1,6 +1,7 @@
 import { act, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { event, FakeEventSource } from "../runs/test/fakes";
+import { FINISH_HOLD_MS } from "../runs/useRecentlyFinished";
 import { openSections, runPanel, TEMPLATE_PIPELINE, TEMPLATE_REVISION } from "./test/helpers";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
@@ -35,9 +36,7 @@ async function openStream() {
 }
 
 function nodeCard(nodeId: string): HTMLElement {
-  const card = [...document.querySelectorAll<HTMLElement>("[data-slot='op-node']")].find(
-    (el) => el.querySelector(":scope > div > code")?.textContent === nodeId,
-  );
+  const card = document.querySelector<HTMLElement>(`.react-flow__node[data-id="${nodeId}"] [data-slot='op-node']`);
   if (!card) throw new Error(`No canvas node ${nodeId}; rendered: ${document.querySelectorAll("[data-slot='op-node']").length} nodes`);
   return card;
 }
@@ -136,6 +135,37 @@ describe("canvas live run state", () => {
     await new Promise((r) => setTimeout(r, 300));
     await waitFor(() => expect(view.container.querySelector(".flow-edge--active")).not.toBeNull());
     expect(view.container.querySelector(".flow-edge--active")).toHaveClass("animated");
+  });
+
+  it("draws every connection as a smooth-step line, not the default curve", async () => {
+    const { view } = await openStream();
+    await waitFor(() => expect(view.container.querySelectorAll(".react-flow__edge")).toHaveLength(3));
+    const edges = [...view.container.querySelectorAll(".react-flow__edge")];
+    for (const edge of edges) {
+      expect(edge).toHaveClass("react-flow__edge-smoothstep");
+      expect(edge).not.toHaveClass("react-flow__edge-default");
+    }
+  });
+
+  it("animates the edge into a step that just finished, in the success style, and stops after the hold time", async () => {
+    const { source, view } = await openStream();
+    const edgeInto = () => view.container.querySelector(".flow-edge--done");
+    act(() => source.send(event(1, "node_started", { node_id: "dense" })));
+    await waitFor(() => expect(view.container.querySelector(".flow-edge--active")).not.toBeNull());
+    act(() => source.send(event(2, "node_completed", { node_id: "dense" })));
+    await waitFor(() => expect(edgeInto()).not.toBeNull());
+    expect(edgeInto()).toHaveClass("animated");
+    expect(view.container.querySelector(".flow-edge--active")).toBeNull();
+    await waitFor(() => expect(edgeInto()).toBeNull(), { timeout: FINISH_HOLD_MS + 1500 });
+  });
+
+  it("does not animate an edge into a step that failed", async () => {
+    const { source, view } = await openStream();
+    act(() => source.send(event(1, "node_started", { node_id: "dense" })));
+    act(() => source.send(event(2, "node_failed", { node_id: "dense", summary: { message: "No index." } })));
+    await new Promise((r) => setTimeout(r, 300));
+    expect(nodeCard("dense")).toHaveTextContent("Failed");
+    expect(view.container.querySelector(".flow-edge--done")).toBeNull();
   });
 
   it("keeps a static highlight when reduced motion is requested", async () => {

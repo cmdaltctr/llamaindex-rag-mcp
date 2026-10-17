@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyEvent, bypassReason, displayStatus, edgeRunStyle, EMPTY_RUN_VIEW, foldEvents, reconcileRun, statusLabel, unitCounts } from "./runState";
+import { applyEvent, bypassReason, displayStatus, edgeRunStyle, EMPTY_RUN_VIEW, finishedNodes, foldEvents, reconcileRun, statusLabel, unitCounts } from "./runState";
 import { event } from "./test/fakes";
 
 describe("run state from events", () => {
@@ -127,3 +127,33 @@ describe("edge highlighting", () => {
     expect(edgeRunStyle("running", true)).toEqual({ animated: false, className: "flow-edge--active" });
   });
 });
+
+describe("edge into a step that just finished", () => {
+  it("animates in the success style, or shows it still when motion is reduced", () => {
+    expect(edgeRunStyle("succeeded", false, true)).toEqual({ animated: true, className: "flow-edge--done" });
+    expect(edgeRunStyle("succeeded", true, true)).toEqual({ animated: false, className: "flow-edge--done" });
+  });
+
+  it("leaves a running step as it was, and ignores the flag for any other status", () => {
+    expect(edgeRunStyle("running", false, true)).toEqual({ animated: true, className: "flow-edge--active" });
+    expect(edgeRunStyle("failed", false, true)).toEqual({ animated: false, className: undefined });
+    expect(edgeRunStyle("queued", false, true)).toEqual({ animated: false, className: undefined });
+    expect(edgeRunStyle("succeeded", false, false)).toEqual({ animated: false, className: undefined });
+  });
+});
+
+describe("finishedNodes", () => {
+  const state = (status: "queued" | "running" | "succeeded" | "failed") => ({ status, fallback: null, error: null, message: null, summary: null, unitId: null, startedAt: null, endedAt: null });
+
+  it("names a step that went from running to succeeded, and no other", () => {
+    const before = { a: state("running"), b: state("running"), c: state("queued"), d: state("succeeded") };
+    const after = { a: state("succeeded"), b: state("failed"), c: state("succeeded"), d: state("succeeded"), e: state("succeeded") };
+    expect(finishedNodes(before, after)).toEqual(["a"]);
+  });
+
+  it("names nothing when nothing changed", () => {
+    const same = { a: state("running") };
+    expect(finishedNodes(same, same)).toEqual([]);
+  });
+});
+

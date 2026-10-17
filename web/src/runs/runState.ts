@@ -184,8 +184,22 @@ export function statusLabel(status: NodeDisplayStatus | null): string {
   return status ? LABELS[status] : "Not started";
 }
 
-/** An edge is active only while its target node runs. Reduced motion keeps a static highlight. */
-export function edgeRunStyle(target: NodeRunStatus | undefined, reducedMotion: boolean): { animated: boolean; className: string | undefined } {
-  if (target !== "running") return { animated: false, className: undefined };
-  return { animated: !reducedMotion, className: "flow-edge--active" };
+/**
+ * The edge into a running step is active, and so is the edge into a step that
+ * has just finished with success (`recentlyFinished`). Reduced motion keeps a
+ * static highlight. Every other status leaves the edge plain.
+ */
+export function edgeRunStyle(
+  target: NodeRunStatus | undefined,
+  reducedMotion: boolean,
+  recentlyFinished = false,
+): { animated: boolean; className: string | undefined } {
+  if (target === "running") return { animated: !reducedMotion, className: "flow-edge--active" };
+  if (target === "succeeded" && recentlyFinished) return { animated: !reducedMotion, className: "flow-edge--done" };
+  return { animated: false, className: undefined };
+}
+
+/** The steps that went from running to succeeded between two states. A step that first appears as succeeded is not one. */
+export function finishedNodes(previous: Readonly<Record<string, NodeRunState>>, next: Readonly<Record<string, NodeRunState>>): string[] {
+  return Object.keys(next).filter((id) => previous[id]?.status === "running" && next[id]?.status === "succeeded");
 }

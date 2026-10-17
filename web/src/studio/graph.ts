@@ -151,8 +151,8 @@ function newNodeId(draft: Draft, operationId: string): string {
 function freeSlot(draft: Draft): Position {
   const taken = Object.values(draft.layout.positions);
   for (let index = 0; ; index += 1) {
-    const slot = { x: 40 + 260 * (index % 4), y: 40 + 180 * Math.floor(index / 4) };
-    if (taken.every((at) => Math.abs(at.x - slot.x) >= 260 || Math.abs(at.y - slot.y) >= 180)) return slot;
+    const slot = { x: 40 + 260 * (index % 4), y: 40 + 280 * Math.floor(index / 4) };
+    if (taken.every((at) => Math.abs(at.x - slot.x) >= 260 || Math.abs(at.y - slot.y) >= 280)) return slot;
   }
 }
 

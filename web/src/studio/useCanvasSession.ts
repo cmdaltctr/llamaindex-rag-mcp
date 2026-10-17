@@ -2,13 +2,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useApi } from "../api/ApiProvider";
 import { useCancelRun, useSaveLayout, useSaveRevision, useSubmitRun, useValidatePipeline } from "../api/mutations";
-import { PipelineIssuesError, type GraphDocument, type PipelineRecord, type RevisionRecord, type ValidationIssue, type ValidationReport } from "../api/pipelines";
-import { operationsQuery, queryKeys, revisionQuery, runsQuery } from "../api/queries";
+import { PipelineIssuesError, type GraphDocument, type NodeControls, type PipelineRecord, type RevisionRecord, type ValidationIssue, type ValidationReport } from "../api/pipelines";
+import { connectionsQuery, operationsQuery, queryKeys, revisionQuery, runsQuery } from "../api/queries";
 import { initialDraft } from "./drafts";
-import { fromDocument, sameDocument, toDocument, toLayout } from "./graph";
+import { fromDocument, sameDocument, toDocument, toLayout, type DraftGraph } from "./graph";
 import type { Notice } from "./Notices";
 import { savedStatus } from "./profileCopy";
 import { useDraft } from "./useDraft";
+import { useDraftCheck } from "./useDraftCheck";
 
 /**
  * What the canvas opens: a saved pipeline with its current revision, or a
@@ -55,6 +56,12 @@ export function useCanvasSession(source: CanvasSource) {
   );
 
   const operations = useQuery(operationsQuery(api));
+  const connections = useQuery(connectionsQuery(api));
+  // The model of the provider that holds the embeddings role. `null` while the summary loads, fails or names none.
+  const embeddingModel = useMemo(() => {
+    const provider = connections.data?.connections.find((connection) => connection.roles.includes("embeddings"));
+    return provider?.models.find((model) => model.label === "embeddings")?.name ?? null;
+  }, [connections.data]);
   const latest = useQuery({ ...runsQuery(api, { pipelineId, limit: 1 }), enabled: !readOnly });
   const run = latest.data?.[0] ?? null;
   const runUsesCurrent = run !== null && run.revision_id === revision?.revision_id;
@@ -69,12 +76,20 @@ export function useCanvasSession(source: CanvasSource) {
   const busy = [saveLayoutMutation, saveRevisionMutation, validateMutation, submitMutation, cancelMutation].some((m) => m.isPending);
 
   const [issues, setIssues] = useState<ValidationIssue[]>([]);
-  const [report, setReport] = useState<ValidationReport | null>(null);
+  // The graph that Validate sent is kept next to its report, so a value shows only while the draft still matches it.
+  const [report, setReport] = useState<{ report: ValidationReport; graph: DraftGraph } | null>(null);
+  const draftCheck = useDraftCheck(draft);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<Notice | null>(null);
 
   const dirty = readOnly ? false : revision ? !sameDocument(fromDocument(revision.document, {}).graph, draft.graph) : draft.graph.nodes.length > 0;
-  const controls = useMemo(() => Object.fromEntries((report?.nodes ?? []).map((node) => [node.node_id, node.controls])), [report]);
+  const controls = useMemo(() => {
+    const candidates: { graph: DraftGraph; nodes: NodeControls[] }[] = [];
+    if (report) candidates.push({ graph: report.graph, nodes: report.report.nodes ?? [] });
+    if (draftCheck) candidates.push(draftCheck);
+    const current = candidates.find((candidate) => candidate.nodes.length > 0 && sameDocument(candidate.graph, draft.graph));
+    return Object.fromEntries((current?.nodes ?? []).map((node) => [node.node_id, node.controls]));
+  }, [report, draftCheck, draft.graph]);
 
   const status = (text: string) => setNotice({ kind: "status", text });
 
@@ -119,7 +134,7 @@ export function useCanvasSession(source: CanvasSource) {
         const admit = required.length > 0 && required.every((name) => name in inputs);
         setIssues([]);
         const result = await validateMutation.mutateAsync({ document: toDocument(draft), inputs: admit ? inputs : undefined });
-        setReport(result);
+        setReport({ report: result, graph: draft.graph });
         status(
           result.admitted
             ? `The graph is valid and admissible. Order: ${result.order.join(", ")}.`
@@ -153,6 +168,7 @@ export function useCanvasSession(source: CanvasSource) {
     dirty,
     issues,
     controls,
+    embeddingModel,
     run,
     runRevision,
     inputValues,

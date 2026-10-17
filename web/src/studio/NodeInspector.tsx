@@ -3,8 +3,10 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { findOperation } from "./connections";
 import { removeNode, setEnabled, setParam, toggleGraphInput, toggleGraphOutput, type Draft } from "./graph";
+import { NodeDetails } from "./NodeDetails";
 import { ParamField } from "./ParamField";
 import { paramFields } from "./schema";
+import { controlFor, firstSentence, valueNote } from "./stepSummary";
 
 interface NodeInspectorProps {
   draft: Draft;
@@ -40,15 +42,13 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
 
   return (
     <>
-      <h3 className="text-subsection-title font-semibold">
-        Node <code className="font-mono">{id}</code>
-      </h3>
-      <p className="flex flex-wrap items-center gap-1.5 text-meta text-muted-foreground">
-        {operation?.title ?? "Unknown operation"}
-        {operation && <Badge variant="hue">{operation.family}</Badge>}
-        <code className="font-mono text-code">{node.operation}</code>
-      </p>
-      {operation?.description && <p className="text-meta text-muted-foreground">{operation.description}</p>}
+      <h3 className="text-subsection-title font-semibold">{operation?.title ?? "Unknown operation"}</h3>
+      {operation && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant="hue">{operation.family}</Badge>
+        </div>
+      )}
+      {operation?.description && <p className="text-meta text-muted-foreground">{firstSentence(operation.description)}</p>}
       {operation && !operation.available && (
         <p className="text-meta text-status-warning-label">Unavailable on this host: {operation.unavailable_reasons.join(" ")}</p>
       )}
@@ -56,7 +56,7 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
         <ul className="flex flex-col gap-1">
           {nodeIssues.map((issue, index) => (
             <li key={index} className="text-meta text-status-error-label">
-              <code className="font-mono text-code">{issue.code}</code> {issue.port ? `${issue.port}: ` : ""}
+              {issue.port ? `${issue.port}: ` : ""}
               {issue.message}
             </li>
           ))}
@@ -79,7 +79,7 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
             field={field}
             disabled={readOnly}
             value={node.params?.[field.name]}
-            effective={field.lever ? controls[id]?.find((control) => control.lever === field.lever) : undefined}
+            note={valueNote(field, node, controlFor(field, controls[id]), draft.graph)}
             onChange={(value) => onChange((current) => setParam(current, id, field.name, value))}
           />
         ))}
@@ -113,6 +113,7 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
           Remove step
         </Button>
       )}
+      <NodeDetails node={node} operation={operation} issues={nodeIssues} controls={controls[id] ?? []} />
     </>
   );
 }

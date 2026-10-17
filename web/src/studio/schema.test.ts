@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { mappedFieldLabel, optionLabel } from "./labels";
 import { checkValue, paramFields } from "./schema";
 import { CATALOGUE } from "./test/catalogueFixture";
 
@@ -49,5 +50,49 @@ describe("parameter schema", () => {
     expect(checkValue(prepare.similarity_threshold!, "1.5")).toEqual({ error: "Enter a value of at most 1." });
     expect(checkValue(prepare.similarity_threshold!, "0.25")).toEqual({ value: 0.25 });
     expect(checkValue(prepare.top_k!, "")).toEqual({ value: null });
+  });
+});
+
+describe("plain labels", () => {
+  it("names the main settings in plain words", () => {
+    const prepare = fields("retrieve.prepare_query");
+    expect(prepare.top_k!.label).toBe("Number of results");
+    expect(prepare.similarity_threshold!.label).toBe("Minimum similarity");
+    expect(prepare.rerank!.label).toBe("Reranker");
+    expect(fields("select.rerank").enabled!.label).toBe("Reranker");
+    expect(fields("combine.rrf").rrf_k!.label).toBe("Fusion constant (k)");
+  });
+
+  it("keeps the schema title on the field", () => {
+    expect(fields("retrieve.prepare_query").top_k).toMatchObject({ title: "Top K", label: "Number of results" });
+  });
+
+  it("falls back to the schema title in sentence case for a field without a label", () => {
+    const [field] = paramFields({
+      ...CATALOGUE[0]!,
+      lever_params: {},
+      parameters: { type: "object", properties: { widget_count: { type: "integer", title: "Widget Count" } } },
+    });
+    expect(field!.label).toBe("Widget count");
+  });
+
+  it("takes the label of every fixture parameter from the map, not from the fallback", () => {
+    const unmapped = CATALOGUE.flatMap((operation) =>
+      paramFields(operation)
+        .filter((field) => mappedFieldLabel(field) === undefined)
+        .map((field) => `${operation.operation_id}.${field.name}`),
+    );
+    expect(unmapped).toEqual([]);
+  });
+
+  it("maps option values to readable labels and keeps an unmapped value as it is", () => {
+    const taxonomy = fields("prepare.enrich").taxonomy_mode!;
+    expect(optionLabel(taxonomy, "category")).toBe("Category");
+    expect(optionLabel(taxonomy, "file_type")).toBe("File type");
+    expect(optionLabel(taxonomy, "other_value")).toBe("other_value");
+    const fallback = { name: "strategy_fallback", title: "Strategy Fallback", lever: "chunking.strategy_fallback" };
+    expect(optionLabel(fallback, "markdown")).toBe("Markdown");
+    expect(optionLabel(fallback, "code")).toBe("Code");
+    expect(optionLabel(fallback, "sentence")).toBe("Sentences");
   });
 });

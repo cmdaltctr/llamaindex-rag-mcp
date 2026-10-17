@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it } from "vitest";
 import { json } from "./test/fakeServer";
 import {
@@ -38,6 +38,112 @@ describe("canvas catalogue and editing", () => {
     expect(within(palette()).getByText(/no judge model is configured/)).toBeInTheDocument();
     expect(within(palette()).getByRole("button", { name: "Add Dense retrieval (retrieve.dense)" })).toBeEnabled();
     expect(screen.getByTestId("empty-state")).toHaveTextContent(/graph is empty/);
+  });
+
+  describe("hideable header", () => {
+    const INTRO_START = /^Build your own profile\./;
+
+    async function opened() {
+      const result = setup({}, "pnew");
+      await screen.findByRole("button", { name: "Operations" });
+      return result;
+    }
+
+    const intro = () => screen.getByText(INTRO_START);
+    const tabs = () => screen.getByRole("navigation", { name: "Pipelines of this profile" });
+
+    it("starts shown, with one toggle that reports it is expanded", async () => {
+      await opened();
+      expect(screen.getByRole("button", { name: "Hide header" })).toHaveAttribute("aria-expanded", "true");
+      expect(intro().closest("[inert]")).toBeNull();
+      expect(tabs().closest("[inert]")).toBeNull();
+    });
+
+    it("hides only the intro line and the tabs, and the toggle keeps its place and its focus", async () => {
+      const { user } = await opened();
+      const toggle = screen.getByRole("button", { name: "Hide header" });
+      await user.click(toggle);
+      const hidden = screen.getByRole("button", { name: "Show header" });
+      expect(hidden).toBe(toggle);
+      expect(hidden).toHaveAttribute("aria-expanded", "false");
+      expect(hidden).toHaveFocus();
+      expect(intro().closest("[inert]")).not.toBeNull();
+      expect(tabs().closest("[inert]")).not.toBeNull();
+      expect(screen.getByRole("heading", { level: 1 }).closest("[inert]")).toBeNull();
+      expect(screen.getByRole("link", { name: "All profiles" }).closest("[inert]")).toBeNull();
+      expect(document.querySelector("[data-slot='header-strip']")).toBeNull();
+    });
+
+    it("shows them again with the same toggle", async () => {
+      const { user } = await opened();
+      const toggle = screen.getByRole("button", { name: "Hide header" });
+      await user.click(toggle);
+      await user.click(screen.getByRole("button", { name: "Show header" }));
+      expect(screen.getByRole("button", { name: "Hide header" })).toBe(toggle);
+      expect(toggle).toHaveFocus();
+      expect(intro().closest("[inert]")).toBeNull();
+      expect(tabs().closest("[inert]")).toBeNull();
+    });
+
+    it("clips the hidden part with no padding on the clipped element, so nothing peeks out", async () => {
+      await opened();
+      const clipped = intro().closest(".overflow-hidden") as HTMLElement;
+      expect(clipped).not.toBeNull();
+      expect(clipped.className).toMatch(/min-h-0/);
+      expect(clipped.className).not.toMatch(/(^|\s)(p|px|py|pt|pb)-\d/);
+    });
+
+    it("keeps a notice visible while the header is hidden", async () => {
+      const { user } = await opened();
+      await user.click(screen.getByRole("button", { name: "Hide header" }));
+      await openAllSections(user);
+      await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
+      const notice = await screen.findByText(/Added node dense/);
+      expect(notice).toBeVisible();
+      expect(notice.closest("[inert]")).toBeNull();
+    });
+
+    it("starts shown again on a new visit", async () => {
+      const { user, view } = await opened();
+      await user.click(screen.getByRole("button", { name: "Hide header" }));
+      view.unmount();
+      cleanup();
+      await opened();
+      expect(screen.getByRole("button", { name: "Hide header" })).toBeInTheDocument();
+    });
+  });
+
+  describe("intro line", () => {
+    const INTRO =
+      "Build your own profile. Click a step to change it in Step settings. Drag from one port to another to connect steps, or use Connect ports.";
+
+    async function expectIntroAboveTabs(user: Awaited<ReturnType<typeof setup>>["user"]) {
+      const heading = await screen.findByRole("heading", { level: 1 });
+      await screen.findByRole("button", { name: "Operations" });
+      const intro = screen.getByText(INTRO);
+      const tabs = screen.getByRole("navigation", { name: "Pipelines of this profile" });
+      expect(heading.compareDocumentPosition(intro) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(intro.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(intro.closest(".react-flow")).toBeNull();
+      expect(intro.closest("[data-slot='op-node']")).toBeNull();
+      expect(intro.closest("[data-slot='info-popover-content']")).toBeNull();
+      expect(intro).toHaveClass("py-1");
+      await user.click(screen.getByRole("button", { name: "About the Ingest pipeline" }));
+      expect(screen.getAllByText(INTRO)).toHaveLength(1);
+    }
+
+    it("shows once above the tabs for an empty pipeline, with the new empty state", async () => {
+      const { user } = setup();
+      await expectIntroAboveTabs(user);
+      expect(await screen.findByTestId("empty-state")).toHaveTextContent("The graph is empty. Add a step from Operations to start.");
+    });
+
+    it("shows once above the tabs for a pipeline with steps, outside the flow surface", async () => {
+      const { view, user } = setup({}, "p1");
+      await waitFor(() => expect(view.container.querySelectorAll("[data-slot='op-node']")).toHaveLength(4));
+      await expectIntroAboveTabs(user);
+      expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+    });
   });
 
   it("fills the main area with the flow surface and puts every control in one floating panel", async () => {
@@ -129,7 +235,7 @@ describe("canvas catalogue and editing", () => {
     await openSections(user, "Step settings");
     expect(within(inspector()).getByText(/Select a step to edit its settings/)).toBeInTheDocument();
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
-    expect(within(inspector()).getByRole("heading", { name: /Node dense/ })).toBeInTheDocument();
+    expect(within(inspector()).getByRole("heading", { name: "Dense retrieval" })).toBeInTheDocument();
     expect(window.location.hash).toBe("#/studio/search-copy/ingest");
   });
 
@@ -139,7 +245,27 @@ describe("canvas catalogue and editing", () => {
     expect(screen.getByRole("button", { name: "Step settings" })).toHaveAttribute("aria-expanded", "false");
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
     expect(screen.getByRole("button", { name: "Step settings" })).toHaveAttribute("aria-expanded", "true");
-    expect(within(inspector()).getByRole("heading", { name: /Node dense/ })).toBeInTheDocument();
+    expect(within(inspector()).getByRole("heading", { name: "Dense retrieval" })).toBeInTheDocument();
+  });
+
+  it("opens Step settings with the step when its card is clicked, or when Enter is pressed on the focused card", async () => {
+    const { user, view } = setup({}, "p1");
+    await waitFor(() => expect(view.container.querySelectorAll("[data-slot='op-node']")).toHaveLength(4));
+    const wrapper = (id: string) => view.container.querySelector<HTMLElement>(`.react-flow__node[data-id="${id}"]`)!;
+    const header = screen.getByRole("button", { name: "Step settings" });
+    expect(header).toHaveAttribute("aria-expanded", "false");
+
+    // `fireEvent.click` sends the click alone. A `user.click` also sends a mousedown, which d3-drag cannot read in jsdom.
+    fireEvent.click(within(wrapper("select")).getByText("Threshold and top-k"));
+    expect(header).toHaveAttribute("aria-expanded", "true");
+    expect(wrapper("select").querySelector("[data-slot='op-node']")).toHaveAttribute("data-selected", "true");
+    expect(within(inspector()).queryByText(/Select a step to edit its settings/)).not.toBeInTheDocument();
+
+    wrapper("dense").focus();
+    await user.keyboard("{Enter}");
+    expect(wrapper("dense").querySelector("[data-slot='op-node']")).toHaveAttribute("data-selected", "true");
+    expect(wrapper("select").querySelector("[data-slot='op-node']")).not.toHaveAttribute("data-selected");
+    expect(within(inspector()).queryByText(/Select a step to edit its settings/)).not.toBeInTheDocument();
   });
 
   it("rewires a saved template and saves the new connections, with layout kept apart", async () => {
@@ -187,7 +313,13 @@ describe("canvas catalogue and editing", () => {
     expect(node).not.toBeNull();
     expect(node).toHaveTextContent("evidence: Score kind sparse_rank_v1 is not accepted.");
     expect(within(outline()).getByRole("button", { name: /^Node threshold.*1 issue/ })).toBeInTheDocument();
-    expect(within(inspector()).getByText(/Score kind sparse_rank_v1 is not accepted/)).toBeInTheDocument();
+    // The message shows in Step settings outside Details. The code shows only inside Details.
+    const details = within(inspector()).getByText("Details").closest("details")!;
+    expect(details).toHaveTextContent("incompatible_ports");
+    const messages = within(inspector()).getAllByText(/Score kind sparse_rank_v1 is not accepted/);
+    expect(messages.some((element) => !details.contains(element))).toBe(true);
+    const codeOutside = [...inspector().querySelectorAll("*")].some((el) => !details.contains(el) && el.children.length === 0 && (el.textContent ?? "").includes("incompatible_ports"));
+    expect(codeOutside).toBe(false);
     expect(screen.getByRole("alert")).toHaveTextContent("The graph has 1 issue.");
   });
 

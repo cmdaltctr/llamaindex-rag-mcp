@@ -17,6 +17,14 @@ describe("initial draft of an opened pipeline", () => {
     expect(new Set(slots.map((slot) => `${slot.x},${slot.y}`)).size).toBe(4);
   });
 
+  it("puts the second row of unplaced nodes 280 pixels below the first", () => {
+    const nodes = Array.from({ length: 5 }, (_, index) => ({ id: `n${index}`, operation: "retrieve.dense", version: 1 }));
+    const revision = { ...TEMPLATE_REVISION, document: { ...TEMPLATE_REVISION.document, nodes, edges: [], inputs: [], outputs: [] } };
+    const draft = initialDraft({ ...TEMPLATE_PIPELINE, layout: {} }, revision);
+    expect(draft.layout.positions.n0).toEqual({ x: 40, y: 40 });
+    expect(draft.layout.positions.n4).toEqual({ x: 40, y: 320 });
+  });
+
   it("opens an empty graph for a pipeline without a revision", () => {
     const pipeline: PipelineRecord = { ...TEMPLATE_PIPELINE, current_revision_id: null, layout: { title: "Fresh" } };
     const draft = initialDraft(pipeline, null);

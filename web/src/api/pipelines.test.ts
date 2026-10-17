@@ -85,6 +85,17 @@ describe("pipeline API client", () => {
     expect(JSON.parse(String(init?.body))).toEqual({ document: DOC, inputs: { query: "q" } });
   });
 
+  it("keeps the effective controls that a refused draft check carries", async () => {
+    const nodes = [{ node_id: "dense", controls: [{ lever: "retrieval.top_k", value: 10, source: "profile", detail: "profile" }] }];
+    const issues = [{ code: "unknown_node", message: "No such node." }];
+    const refused = createApiClient(fetchReturning(json({ status: "error", message: "Invalid graph.", issues, nodes }, 422)));
+    const failure = await validatePipeline(refused, DOC, {}).catch((e: unknown) => e);
+    expect((failure as PipelineIssuesError).nodes).toEqual(nodes);
+    const bare = createApiClient(fetchReturning(json({ status: "error", message: "Invalid graph.", issues }, 422)));
+    const noNodes = await validatePipeline(bare, DOC, {}).catch((e: unknown) => e);
+    expect((noNodes as PipelineIssuesError).nodes).toBeUndefined();
+  });
+
   it("omits inputs from a draft validation", async () => {
     const fetchImpl = fetchReturning(json({ status: "ok", valid: true, admitted: false, order: ["dense"] }));
     const api = createApiClient(fetchImpl);

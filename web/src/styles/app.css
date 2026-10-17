@@ -186,13 +186,28 @@
     outline-offset: 2px;
   }
 
-  /* Set by FlowSurface: a connection the server refused, and the edge into a running node. */
+  /* Set by FlowSurface: a connection the server refused, the edge into a running node, and the edge into a node that just finished. */
   .flow-edge--invalid .react-flow__edge-path {
     stroke: var(--status-error);
   }
 
   .flow-edge--active .react-flow__edge-path {
     stroke: var(--status-info);
+    stroke-width: 2;
+  }
+
+  /*
+   * A step card grows when the user expands its summary or its settings, and it can
+   * grow past its grid row. React Flow sets the stacking order inline, so the rule needs
+   * !important. The expanded card then covers its neighbours instead of hiding behind them.
+   */
+  .react-flow__node:has([aria-expanded="true"]) {
+    z-index: 10 !important;
+  }
+
+  /* The edge into a step that finished a moment ago in a live run. */
+  .flow-edge--done .react-flow__edge-path {
+    stroke: var(--status-success);
     stroke-width: 2;
   }
 }

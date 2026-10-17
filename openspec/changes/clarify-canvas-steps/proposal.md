@@ -13,6 +13,7 @@ This change is web only. It depends on `studio-canvas-layout`, which merges firs
   - Shows up to three main settings, each with its value and where the value comes from. Examples: "Chunk size: 1024 (from profile)", "Reranker: Off (set here)".
   - Shows "No settings" for a step with no parameters.
   - Shows port names without type kinds.
+  - Shows the handle of a connected port in green.
   - Keeps the run status and the Bypassed, Unavailable and issue badges.
   - No longer shows the node id, the operation id or the port type kinds. The node id shows only when two steps have the same name.
   - Shows a settings icon and a hover and focus state, so the user can see that the card opens its settings. The card has an accessible name, for example "Discover sources step".
@@ -24,7 +25,12 @@ This change is web only. It depends on `studio-canvas-layout`, which merges firs
   - The value note says which value is in use and where it comes from.
   - A collapsed "Details" area holds the node id, the operation id and version, the full description, the setting paths (for example `chunking.chunk_size`), the port types and the issue codes.
 - **Values without Validate**: the canvas runs the draft check by itself when a pipeline opens and after each graph edit, with a short delay. Cards and Step settings show each value as soon as the check returns. A value shows only while the draft still matches the graph that was checked. The automatic check does not change the issue list; the user's Validate still does.
-- **Canvas intro line**: the slim bar under the page heading shows "Build your own profile. Click a step to change it in Step settings. Drag from one port to another to connect steps, or use Connect ports." It shows for an empty graph and for a graph with steps.
+- **Canvas intro line**: one visible line, with a little vertical padding, above the pipeline tabs: "Build your own profile. Click a step to change it in Step settings. Drag from one port to another to connect steps, or use Connect ports." Each pipeline tab (Ingest, Search, Answer) also has an "i" info button with no chevron. A click opens a popover with the description of that pipeline and, for a built-in profile, the read-only note. For a built-in profile, "Duplicate to edit" sits beside "All profiles".
+- **Edge animation**: while a run is live, the edge into a step that just finished animates in the success colour for 1.5 seconds. The edge into a running step keeps its animation. A run that had finished before the canvas began to watch it shows no animation. Reduced motion shows a static highlight.
+- **Smooth-step connections**: the canvas draws each connection as a smooth-step line (right-angle bends with rounded corners) instead of the default diagonal curve. The shape is presentation only and is not saved.
+- **Hideable header**: a "Hide header" toggle at the right end of the title row slides the intro line and the pipeline tabs up. The title row stays, with "Duplicate to edit" and "All profiles", so the canvas has more room. The toggle then reads "Show header". It starts shown on every visit.
+- **Settings mini card**: the settings on a step card sit in a mini card inside the card. A button "+N more settings" shows the other settings in place, and "Show fewer settings" folds them. It does not select the card.
+- **Expanding summary**: the one-line summary on a step card is a button. A click shows the whole sentence on the card and a second click folds it again. It does not select the card.
 - **Profile sentence**: the `pipeline-canvas` requirement no longer says that a pipeline selects `documents`, `codebase` or collection inheritance. Each pipeline inherits settings from its profile's base profile, and a step setting overrides the inherited value.
 
 This change makes no API, Python, stored-data or graph-model change. Saved revisions and parameter values stay byte-for-byte the same.

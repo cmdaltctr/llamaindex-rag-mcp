@@ -9,10 +9,11 @@ import {
   type NodeChange,
 } from "@xyflow/react";
 import { useCallback, useMemo, useState, type KeyboardEvent } from "react";
-import type { OperationDescriptor, PortRef, ValidationIssue } from "../api/pipelines";
+import type { EffectiveControl, OperationDescriptor, PortRef, ValidationIssue } from "../api/pipelines";
 import { checkConnection, connectionGuard, findOperation } from "./connections";
 import { edgeKey, moveNode, removeEdge, removeNode, removeSelection, setSelection, setViewport, type Draft } from "./graph";
 import { OperationNode, type OperationFlowNode } from "./OperationNode";
+import { cardLines } from "./stepSummary";
 import { edgeRunStyle, type NodeRunState } from "../runs/runState";
 
 const NODE_TYPES = { operation: OperationNode };
@@ -21,12 +22,18 @@ interface FlowSurfaceProps {
   draft: Draft;
   catalogue: readonly OperationDescriptor[];
   issues: readonly ValidationIssue[];
+  /** Effective control values from the latest check that still matches the draft, keyed by node id. */
+  controls?: Record<string, EffectiveControl[]>;
+  /** The embedding model the Embed chunks card names, or `null` when it is not known. */
+  embeddingModel?: string | null;
   onChange: (change: (draft: Draft) => Draft) => void;
   onConnect: (source: PortRef, target: PortRef) => void;
   onRefused: (reason: string) => void;
   /** Node states from the events of the shown run, keyed by the run's own node ids. Absent: no run is shown. */
   runNodes?: { ids: ReadonlySet<string>; states: Readonly<Record<string, NodeRunState>> } | null;
   reducedMotion?: boolean;
+  /** Steps that finished a moment ago in a live run. The edge into each one animates for a short time. */
+  finishedNodes?: ReadonlySet<string>;
   /** A read-only graph can be panned, zoomed and selected, never changed. */
   readOnly?: boolean;
 }
@@ -34,6 +41,10 @@ interface FlowSurfaceProps {
 type Size = { width: number; height: number };
 
 const refuseAll = () => false;
+const NO_CONTROLS: Record<string, EffectiveControl[]> = {};
+const NO_LINES = { summary: "", settings: [], extraSettings: [], moreSettings: 0 };
+const NO_PORTS: string[] = [];
+const NO_FINISHED: ReadonlySet<string> = new Set();
 
 function isTextField(target: EventTarget): boolean {
   return target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName));
@@ -49,38 +60,78 @@ function applySelection(selection: string[], changes: { id: string; selected: bo
 }
 
 /** The visual graph editor. Node and edge state live in the draft; this component only translates changes. */
-export function FlowSurface({ draft, catalogue, issues, onChange, onConnect, onRefused, runNodes = null, reducedMotion = false, readOnly = false }: FlowSurfaceProps) {
+export function FlowSurface({
+  draft,
+  catalogue,
+  issues,
+  controls = NO_CONTROLS,
+  embeddingModel = null,
+  onChange,
+  onConnect,
+  onRefused,
+  runNodes = null,
+  reducedMotion = false,
+  finishedNodes = NO_FINISHED,
+  readOnly = false,
+}: FlowSurfaceProps) {
   const [measured, setMeasured] = useState<Record<string, Size>>({});
   const selected = useMemo(() => new Set(draft.layout.selection), [draft.layout.selection]);
 
-  const nodes = useMemo<OperationFlowNode[]>(
-    () =>
-      draft.graph.nodes.map((node) => ({
+  const { collection, overrides } = draft.graph;
+  const { edges: graphEdges } = draft.graph;
+
+  // The ports that have an edge, per node. An input and an output of one name are two ports.
+  const connectedPorts = useMemo(() => {
+    const byNode = new Map<string, string[]>();
+    const add = (node: string, key: string) => byNode.set(node, [...(byNode.get(node) ?? []), key]);
+    for (const edge of graphEdges) {
+      add(edge.source.node, `out:${edge.source.port}`);
+      add(edge.target.node, `in:${edge.target.port}`);
+    }
+    return byNode;
+  }, [graphEdges]);
+
+  const nodes = useMemo<OperationFlowNode[]>(() => {
+    const operations = draft.graph.nodes.map((node) => findOperation(catalogue, node.operation, node.version));
+    const titles = operations.map((operation) => operation?.title ?? "Unknown operation");
+    return draft.graph.nodes.map((node, index) => {
+      const operation = operations[index];
+      const title = titles[index]!;
+      const showNodeId = titles.filter((other) => other === title).length > 1;
+      const lines = operation ? cardLines(operation, node, controls[node.id], { collection, overrides }) : NO_LINES;
+      return {
         id: node.id,
         type: "operation",
         position: draft.layout.positions[node.id] ?? { x: 0, y: 0 },
         selected: selected.has(node.id),
         measured: measured[node.id],
-        ariaLabel: `Node ${node.id}, ${node.operation}`,
+        ariaLabel: showNodeId ? `${title} step, ${node.id}` : `${title} step`,
         data: {
           nodeId: node.id,
           operationId: node.operation,
-          operation: findOperation(catalogue, node.operation, node.version),
+          operation,
+          title,
+          showNodeId,
+          ...lines,
+          connected: connectedPorts.get(node.id) ?? NO_PORTS,
+          model: node.operation === "embed.chunks" ? { name: embeddingModel } : undefined,
           enabled: node.enabled !== false,
           issues: issues.filter((issue) => issue.node_id === node.id),
           run: runNodes?.ids.has(node.id) ? { state: runNodes.states[node.id] } : undefined,
         },
-      })),
-    [draft.graph.nodes, draft.layout.positions, selected, measured, catalogue, issues, runNodes],
-  );
+      };
+    });
+  }, [draft.graph.nodes, overrides, collection, draft.layout.positions, selected, measured, catalogue, issues, runNodes, controls, embeddingModel, connectedPorts]);
 
   const edges = useMemo<Edge[]>(
     () =>
       draft.graph.edges.map((edge) => {
         const id = edgeKey(edge);
-        const live = edgeRunStyle(runNodes?.ids.has(edge.target.node) ? runNodes.states[edge.target.node]?.status : undefined, reducedMotion);
+        const live = edgeRunStyle(runNodes?.ids.has(edge.target.node) ? runNodes.states[edge.target.node]?.status : undefined, reducedMotion, finishedNodes.has(edge.target.node));
         return {
           id,
+          // Presentation only: the draft and the saved document hold no line type.
+          type: "smoothstep",
           source: edge.source.node,
           sourceHandle: edge.source.port,
           target: edge.target.node,
@@ -91,7 +142,7 @@ export function FlowSurface({ draft, catalogue, issues, onChange, onConnect, onR
           className: issues.some((issue) => issue.edge === id) ? "flow-edge--invalid" : live.className,
         };
       }),
-    [draft.graph.edges, selected, issues, runNodes, reducedMotion],
+    [draft.graph.edges, selected, issues, runNodes, reducedMotion, finishedNodes],
   );
 
   const onNodesChange = useCallback(

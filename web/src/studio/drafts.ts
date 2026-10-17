@@ -2,7 +2,7 @@
 import type { GraphLayout, PipelineRecord, RevisionRecord } from "../api/pipelines";
 import { fromDocument, type Draft } from "./graph";
 
-const gridSlot = (index: number) => ({ x: 40 + 260 * (index % 4), y: 40 + 180 * Math.floor(index / 4) });
+const gridSlot = (index: number) => ({ x: 40 + 260 * (index % 4), y: 40 + 280 * Math.floor(index / 4) });
 
 /**
  * The draft of an opened pipeline when the browser holds none: its saved

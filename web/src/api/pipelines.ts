@@ -157,21 +157,31 @@ export interface EffectiveControl {
   detail: string;
 }
 
+/** The effective controls the server reports for one node. */
+export interface NodeControls {
+  node_id: string;
+  controls: EffectiveControl[];
+}
+
 export interface ValidationReport {
   valid: true;
   admitted: boolean;
   order: string[];
-  nodes?: { node_id: string; controls: EffectiveControl[] }[];
+  /** On a draft check: the controls of each usable node. */
+  nodes?: NodeControls[];
 }
 
 /** A refused graph or run with structured issues (HTTP 422). */
 export class PipelineIssuesError extends ApiError {
   readonly issues: ValidationIssue[];
+  /** A refused draft check still reports the controls of the nodes it could resolve. */
+  readonly nodes: NodeControls[] | undefined;
 
-  constructor(message: string, path: string, status: number, issues: ValidationIssue[]) {
+  constructor(message: string, path: string, status: number, issues: ValidationIssue[], nodes?: NodeControls[]) {
     super("http", message, path, status);
     this.name = "PipelineIssuesError";
     this.issues = issues;
+    this.nodes = nodes;
   }
 }
 
@@ -191,6 +201,11 @@ function issuesOf(body: unknown): ValidationIssue[] | null {
   return Array.isArray(issues) ? (issues as ValidationIssue[]) : null;
 }
 
+function nodesOf(body: unknown): NodeControls[] | undefined {
+  const nodes = (body as { nodes?: unknown }).nodes;
+  return Array.isArray(nodes) ? (nodes as NodeControls[]) : undefined;
+}
+
 /** One request through the client. A refusal that carries `issues` becomes `PipelineIssuesError`. */
 async function call<T>(api: ApiClient, method: "GET" | "POST" | "PUT", path: string, input: RequestInput): Promise<T> {
   try {
@@ -198,7 +213,7 @@ async function call<T>(api: ApiClient, method: "GET" | "POST" | "PUT", path: str
   } catch (error) {
     if (error instanceof ApiError && error.kind === "http") {
       const issues = issuesOf(error.body);
-      if (issues !== null) throw new PipelineIssuesError(error.message, error.path, error.status ?? 0, issues);
+      if (issues !== null) throw new PipelineIssuesError(error.message, error.path, error.status ?? 0, issues, nodesOf(error.body));
     }
     throw error;
   }
