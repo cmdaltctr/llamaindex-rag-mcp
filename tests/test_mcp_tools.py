@@ -153,7 +153,7 @@ def _root_logging_leak_guard() -> Iterator[None]:
 # ── Tool discovery ─────────────────────────────────────────────────────────
 
 
-async def test_list_tools_discovers_all_eight(mcp_server) -> None:
+async def test_list_tools_discovers_all_nine(mcp_server) -> None:
     """The server must expose all expected tools."""
     async with connected_client(mcp_server) as client:
         result = await client.list_tools()
@@ -167,6 +167,7 @@ async def test_list_tools_discovers_all_eight(mcp_server) -> None:
             "delete_documents",
             "get_codebase_map",
             "change_collection_profile",
+            "list_profiles",
         }
 
 
@@ -180,6 +181,56 @@ async def test_search_documents_annotations_remain_read_only(mcp_server) -> None
     annotations = tool.annotations.model_dump(by_alias=True)
     assert annotations["readOnlyHint"] is True
     assert annotations["destructiveHint"] is False
+
+
+# ── list_profiles ──────────────────────────────────────────────────────────
+
+
+async def test_list_profiles_carries_read_only_annotations(mcp_server) -> None:
+    """The profile list changes nothing, so it is marked read-only."""
+    async with connected_client(mcp_server) as client:
+        result = await client.list_tools()
+
+    tool = next(item for item in result.tools if item.name == "list_profiles")
+    assert tool.annotations is not None
+    annotations = tool.annotations.model_dump(by_alias=True)
+    assert annotations["readOnlyHint"] is True
+    assert annotations["destructiveHint"] is False
+
+
+async def test_list_profiles_returns_the_built_ins_without_a_catalogue(mcp_server) -> None:
+    """A process with no workspace catalogue lists the built-in profiles only."""
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool("list_profiles", {})
+
+    items = _extract_result(result)
+    assert [item["profile_id"] for item in items] == ["documents", "codebase"]
+    for item in items:
+        assert item["kind"] == "builtin" and item["ready"] is True
+        assert item["not_ready_reasons"] == []
+        assert item["slots"] == {"ingest": None, "search": None, "answer": None}
+        assert item["used_by"] == []
+
+
+async def test_list_profiles_adds_the_user_profiles_of_the_catalogue(
+    tmp_path: Path, effective_settings: Any
+) -> None:
+    """With a catalogue the list holds the built-ins, then each user profile."""
+    from tests.unit.test_mcp_stdio_profiles_support import PROFILE, engine_builder, make_env
+
+    env = make_env(tmp_path / "seed", effective_settings)
+    env.service.create_profile("Empty", source=None)
+    engine = engine_builder(effective_settings(), [], "documents")(env.catalogue)
+    from conftest import build_mcp_server
+
+    async with connected_client(build_mcp_server(engine)) as client:
+        items = _extract_result(await client.call_tool("list_profiles", {}))
+
+    assert [item["profile_id"] for item in items] == ["documents", "codebase", PROFILE, "empty"]
+    mine, empty = items[2], items[3]
+    assert mine["kind"] == "user" and mine["base_profile"] == "documents"
+    assert mine["ready"] is True and set(mine["slots"]) == {"ingest", "search", "answer"}
+    assert empty["ready"] is False and len(empty["not_ready_reasons"]) == 3
 
 
 # ── ingest_documents ───────────────────────────────────────────────────────
@@ -269,7 +320,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
         top_k=3,
         similarity_threshold=0.25,
         rerank=True,
-        hybrid=False,
+        hybrid=None,
         expand_window=0,
         collection_name="mcp_shape_coll",
         metadata_filter=None,
@@ -278,9 +329,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
 
 
 async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> None:
-    """MCP omitted rerank should pass None so retrieval resolves policy."""
-    from omrg.config import get_settings as _gs
-
+    """Omitted values reach the Engine as None, so it resolves them from the profile (D14)."""
     expected = [
         {
             "score": 0.9,
@@ -304,10 +353,10 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
     assert data == expected
     mock_search.assert_called_once_with(
         "fixture",
-        top_k=_gs().retrieval.top_k,
-        similarity_threshold=_gs().retrieval.similarity_threshold,
+        top_k=None,
+        similarity_threshold=None,
         rerank=None,
-        hybrid=_gs().retrieval.hybrid_enabled,
+        hybrid=None,
         expand_window=0,
         collection_name="documents",
         metadata_filter=None,
@@ -777,7 +826,9 @@ async def test_delete_documents_path_dry_run_nonexistent_coll(
 def test_main_calls_mcp_run() -> None:
     """main() builds one Engine and runs the factory-built server on stdio."""
     server = MagicMock()
+    catalogue = object()
     with (
+        patch("omrg.compose_profile_setup.workspace_profile_catalogue", return_value=catalogue),
         patch("omrg.transports.mcp.compose.ensure_runtime_setup") as mock_setup,
         patch("omrg.transports.mcp.compose.build_engine") as mock_build,
         patch("omrg.transports.mcp.create_mcp_server", return_value=server) as mock_factory,
@@ -787,7 +838,7 @@ def test_main_calls_mcp_run() -> None:
         main()
 
     mock_setup.assert_not_called()
-    mock_build.assert_called_once_with()
+    mock_build.assert_called_once_with(catalogue=catalogue)
     mock_factory.assert_called_once()
     server.run.assert_called_once_with(transport="stdio")
 
@@ -1304,7 +1355,7 @@ def test_main_settings_failure_prints_reason(
     """
     from omrg.transports import mcp as mcp_mod
 
-    def _settings_failure() -> None:
+    def _settings_failure(**_kwargs: object) -> None:
         raise ValueError("EMBED_PROVIDER='bogus' is not an accepted value")
 
     monkeypatch.setattr(mcp_mod.logging, "basicConfig", lambda **_kwargs: None)
@@ -1342,6 +1393,7 @@ def test_all_handlers_importable_from_package_root() -> None:
         "delete_documents",
         "get_codebase_map",
         "change_collection_profile",
+        "list_profiles",
         "answer_documents",
     ]
     registered = {handler.__name__: handler for handler, _d, _a in server_module._TOOLS}

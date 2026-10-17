@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-Eight tools are exposed over the MCP protocol. All parameters are optional except where marked _(required)_.
+Nine tools are exposed over the MCP protocol. All parameters are optional except where marked _(required)_.
 
 ## Connect a client
 
@@ -14,7 +14,7 @@ Each client starts its own `omrg` process:
 
 ### HTTP
 
-`omrg web` can serve the same eight tools at `/mcp`, so a client shares the running server and its Engine. The endpoint is off until you turn it on.
+`omrg web` can serve the same nine tools at `/mcp`, so a client shares the running server and its Engine. The endpoint is off until you turn it on.
 
 1. Start the server: `omrg web --root ~/papers`.
 2. In the browser, open Settings > MCP. Turn on MCP over HTTP. Create a token. The token is shown once.
@@ -60,6 +60,9 @@ Semantic similarity search over indexed documents.
 | `collection`           | string | `"documents"` | Vector-store collection to search                                                                                                                                                                        |
 | `metadata_filter`      | dict   | `null`        | ChromaDB-compatible `where` clause, e.g. `{"category": "AI"}`. It constrains both dense and sparse candidates before fusion.                                                                             |
 | `diagnostics`          | bool   | `false`       | Include core-produced ranking, policy, threshold, reranker, and sparse-backend diagnostics. Keep disabled for lean responses.                                                                            |
+
+A collection that follows a user profile runs the Search pipeline of that
+profile. See [User profiles](#user-profiles).
 
 When `diagnostics` is `true`, results also preserve every diagnostic field
 produced by core retrieval. The transport does not define or rename these
@@ -201,6 +204,14 @@ Citations and evidence rows carry `ordinal`, `chunk_id`, `chunk_ids`,
 With evidence but no model available from either side, the tool returns an
 actionable error. The error names `ANSWER__PROVIDER` and `ANSWER__MODEL`,
 and the client-sampling alternative.
+
+**User-profile collections always use the server model.** When the collection
+follows a user profile (see [User profiles](#user-profiles)), the tool runs the
+Answer pipeline of that profile. A client sampling request cannot enter a
+pipeline run. The tool checks the profile of the collection first and sends no
+sampling request to the client, even when the client offers sampling.
+`completion_source` is `server`. The server needs a configured answer model
+(`ANSWER__PROVIDER` / `ANSWER__MODEL`).
 
 ### Citation verifiability
 
@@ -354,14 +365,16 @@ Reuse is reduced in these cases:
 
 ## `change_collection_profile`
 
-Switch a collection between the `documents` and `codebase` profiles. This
-changes retrieval behaviour only — no chunks are re-chunked or re-embedded.
+Change the profile of a collection. The built-in profiles are `documents` and
+`codebase`. A ready user profile also works on the MCP endpoint of `omrg web`
+(see [User profiles](#user-profiles)). The change affects retrieval behaviour
+only. No chunk is re-chunked or re-embedded.
 
-| Parameter    | Type   | Default      | Description                                               |
-| ------------ | ------ | ------------ | --------------------------------------------------------- |
-| `collection` | string | _(required)_ | Collection to change                                      |
-| `profile`    | string | _(required)_ | `documents` or `codebase`                                 |
-| `confirm`    | bool   | `false`      | Apply the change. When `false`, returns a preview instead |
+| Parameter    | Type   | Default      | Description                                                                                  |
+| ------------ | ------ | ------------ | -------------------------------------------------------------------------------------------- |
+| `collection` | string | _(required)_ | Collection to change                                                                         |
+| `profile`    | string | _(required)_ | `documents`, `codebase`, or on the web endpoint the `profile_id` of a ready user profile    |
+| `confirm`    | bool   | `false`      | Apply the change. When `false`, returns a preview instead                                    |
 
 Called without `confirm`, it returns a preview describing what would change:
 which levers move, whether each applies immediately or only to future ingests,
@@ -379,6 +392,78 @@ then on. The preview makes that distinction visible before you commit to it.
 
 A collection cannot be set to `hybrid` — that is a server mode, not a
 collection profile. See [Configuration](configuration.md#profiles).
+
+For a user profile, the preview adds a `pipelines` list (the three pipelines
+with their current revision numbers) and `notes`. The tool refuses a profile
+that is not ready. The error carries `not_ready_reasons`, a list of plain
+English lines that say what to fix.
+
+**The stdio server cannot bind a user profile.** It refuses a user profile id
+with this message and changes nothing:
+
+```text
+Bind user profiles in Knowledge Base > Profile, or through the MCP endpoint of `omrg web`.
+```
+
+---
+
+## `list_profiles`
+
+List the profiles that a collection can use. The tool has no parameters and
+changes nothing (read-only). Built-in profiles come first, then the user
+profiles of the web workspace.
+
+Each item has these fields:
+
+| Field              | Meaning                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| `profile_id`       | The id to pass to `change_collection_profile`                                                  |
+| `kind`             | `builtin` or `user`                                                                           |
+| `title`            | Display name                                                                                  |
+| `description`      | Short description                                                                             |
+| `base_profile`     | `documents` or `codebase`: the built-in profile whose settings apply                          |
+| `slots`            | Pipeline ids for `ingest`, `search` and `answer`. All `null` for a built-in profile            |
+| `ready`            | `true` when the profile can be bound to a collection                                          |
+| `not_ready_reasons`| Plain English lines that say what to fix when `ready` is `false`                              |
+| `used_by`          | Names of the collections whose stored profile tag is this id                                  |
+
+On the web endpoint (`/mcp`) the items are the same as `GET /v1/profiles`.
+On the stdio server the items come from the read-only catalogue of the
+default workspace (`~/.omrg/workspace/workspace.db`). Readiness and `used_by`
+use the same checks as the web server. When that file does not exist, the
+list holds the two built-in profiles.
+
+On error the tool returns a list with one `{"status": "error", "message": "..."}` item.
+
+---
+
+## User profiles
+
+A user profile owns three pipelines (Ingest, Search and Answer). You create and
+edit user profiles in the web workspace (Knowledge Base > Profile). A
+collection that follows a user profile searches, answers and ingests through
+those pipelines.
+
+| Server                | `search_documents`, `answer_documents`                                    | Bind a user profile (`change_collection_profile`)       |
+| --------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `omrg web` at `/mcp`  | Runs the user profile pipelines                                           | Yes, when the profile is ready                          |
+| stdio (`omrg`)        | Runs the user profile pipelines, when the default workspace file exists   | No. The tool refuses with the message above             |
+
+The stdio server opens the default workspace database read-only. It never
+creates, migrates or writes the file. A workspace that `omrg web --workspace`
+placed in another folder is not found.
+
+When the default workspace file does not exist and a collection follows a user
+profile, `search_documents` and `answer_documents` return an error. The error
+names the profile and the path `~/.omrg/workspace/workspace.db`. It tells you
+to start `omrg web` once with the default workspace, or to change the
+collection's profile to `documents` or `codebase`.
+
+Values that you pass to `search_documents` (`top_k`, `similarity_threshold`,
+`rerank`, `metadata_filter`, `expand_window`) replace the matching pipeline
+step settings. Omitted values stay `null`, so the profile decides. For a user
+profile, `hybrid` has no effect: the steps of the Search pipeline decide
+whether sparse retrieval runs.
 
 ---
 

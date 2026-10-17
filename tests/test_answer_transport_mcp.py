@@ -475,3 +475,95 @@ async def test_verification_judges_through_the_injected_seam(
     assert result["evidence"], "evidence is retained"
     assert result["diagnostics"]["verification_calls"] >= 1
     assert _JudgeLLM.calls >= 1
+
+
+# ── User-profile collections use the server model (D17, task 8.9) ─────────
+
+
+def _user_profile_engine(
+    tmp_path: Path, effective_settings: Any, *, allow_legacy: bool = False
+) -> tuple[Any, Any, Any]:
+    """Return an Engine on a collection that follows ``my-notes``, its model seam and a run log."""
+    from tests.fixtures.pipeline_parity.answer.harness import (
+        case_by_name,
+        case_rows,
+        case_settings,
+        make_seam,
+    )
+    from tests.unit.test_answer_graph_adapters_support import FakeLLM
+    from tests.unit.test_engine_pipelines_support import Factory
+    from tests.unit.test_engine_profiles_support import count_graph_runs
+    from tests.unit.test_mcp_stdio_profiles_support import engine_builder, make_env
+    from tests.unit.test_pipeline_templates_parity import _store_rows
+
+    from omrg.core.settings import AnswerBlock
+
+    case = case_by_name("ok_single_citation")
+    settings = case_settings(effective_settings(), case)
+    if allow_legacy:
+        settings = settings.model_copy(update={"answer": AnswerBlock(allow_legacy_sampling=True)})
+    env = make_env(tmp_path / "seed", effective_settings)
+    complete = make_seam(case.get("complete"))
+    engine = engine_builder(
+        settings,
+        _store_rows(case_rows(case)),
+        "my-notes",
+        env_overrides={"RETRIEVAL__RERANK_ENABLED": "false"},
+        answer_llm_factory=Factory(FakeLLM(complete)),
+        verify_llm_factory=Factory(None),
+    )(env.catalogue)
+    return engine, complete, count_graph_runs(engine)
+
+
+async def test_a_user_profile_collection_never_sends_a_sampling_request(
+    tmp_path: Path, effective_settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Scenario: a client that offers sampling gets no request; the server model answers."""
+    from tests.fixtures.pipeline_parity.answer.harness import QUERY
+
+    for name in ("RETRIEVAL__HYBRID_ENABLED", "RETRIEVAL__RERANK_ENABLED", "RETRIEVAL__TOP_K"):
+        monkeypatch.delenv(name, raising=False)
+    engine, complete, runs = _user_profile_engine(tmp_path, effective_settings)
+    seen: list[Any] = []
+
+    async def _sampling_callback(context: Any, params: Any) -> CreateMessageResult:
+        seen.append(params)
+        raise AssertionError("a sampling request reached the client")
+
+    async with Client(
+        build_mcp_server(engine),
+        sampling_callback=_sampling_callback,
+        sampling_capabilities=SamplingCapability(),
+    ) as client:
+        result = await client.call_tool(
+            "answer_documents", {"query": QUERY, "collection": "parity"}
+        )
+
+    data = _extract_result(result)
+    assert data["status"] == "ok", data
+    assert data["completion_source"] == "server"
+    assert seen == []
+    assert runs == ["run_pipeline"]
+    assert len(complete.prompts) >= 1, "the server model must write the answer"
+
+
+async def test_a_user_profile_collection_skips_the_legacy_sampling_seam(
+    tmp_path: Path, effective_settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An older session that allows legacy sampling still gets the server model."""
+    from tests.fixtures.pipeline_parity.answer.harness import QUERY
+
+    for name in ("RETRIEVAL__HYBRID_ENABLED", "RETRIEVAL__RERANK_ENABLED", "RETRIEVAL__TOP_K"):
+        monkeypatch.delenv(name, raising=False)
+    engine, _, runs = _user_profile_engine(tmp_path, effective_settings, allow_legacy=True)
+    session = _RecordingSession("client text")
+    ctx = direct_ctx(build_mcp_server(engine), session=session)
+    ctx.protocol_version = _LEGACY
+    ctx.client_capabilities = SimpleNamespace(sampling=_CAPABILITY)
+
+    result = await answer_documents(query=QUERY, collection="parity", ctx=ctx)
+
+    assert result["status"] == "ok", result
+    assert result["completion_source"] == "server"
+    assert session.prompts == []
+    assert runs == ["run_pipeline"]

@@ -72,23 +72,8 @@ async def search_documents(
     mcp = mcp_context(ctx)
     engine = mcp.engine
     try:
-        try:
-            effective = engine.resolve_settings(collection)
-        except ValueError as exc:
-            return [
-                {
-                    "status": "error",
-                    "error_type": "validation",
-                    "message": error_detail(mcp, exc),
-                }
-            ]
-
-        if top_k is None:
-            top_k = effective.top_k
-        if similarity_threshold is None:
-            similarity_threshold = effective.retrieval.similarity_threshold
-        if hybrid is None:
-            hybrid = effective.hybrid_enabled
+        # None values go to the Engine unchanged. It resolves them from the
+        # profile of the collection, or from the graph of a user profile (D14).
         async with mcp.admit():
             return await asyncio.to_thread(
                 engine.search,

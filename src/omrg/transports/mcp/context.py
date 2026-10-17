@@ -89,11 +89,16 @@ class McpContext:
         engine: The Engine tools run on (an ``omrg.Engine``).
         paths: File-path policy of this transport.
         admit: Admission hook held around each tool call.
+        profiles: The web server's profile service, or ``None`` on stdio. The
+            service lists user profiles with their readiness and binds them to
+            collections. Stdio has no service: it lists from the read-only
+            catalogue of the Engine and cannot bind a user profile.
     """
 
     engine: Any
     paths: PathPolicy
     admit: Admit
+    profiles: Any | None = None
 
 
 def mcp_context(ctx: Any) -> McpContext:

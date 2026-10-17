@@ -13,6 +13,7 @@ Tools
 - delete_documents       – remove documents by path, metadata filter, or drop collection
 - get_codebase_map       – generate a compact codebase map
 - change_collection_profile – change the profile bound to a collection
+- list_profiles          – list built-in and user profiles
 
 This module is the MCP transport. It validates input, delegates to the
 Engine in the lifespan context, and formats output. No business logic
@@ -40,7 +41,7 @@ from .context import McpContext, PathPolicy, no_admission
 from .delete import delete_documents
 from .ingest import ingest_documents
 from .list import list_collections, list_indexed_documents
-from .profile import change_collection_profile
+from .profile import change_collection_profile, list_profiles
 from .search import search_documents
 from .server import create_mcp_server
 
@@ -53,6 +54,7 @@ __all__ = [
     "ingest_documents",
     "list_collections",
     "list_indexed_documents",
+    "list_profiles",
     "main",
     "search_documents",
 ]
@@ -118,7 +120,11 @@ def main() -> None:
     )
     engine = None
     try:
-        engine = compose.build_engine()
+        # The stdio server reads user profiles from the default workspace
+        # (D11): read-only, and ``None`` when the database file is missing.
+        from ...compose_profile_setup import workspace_profile_catalogue
+
+        engine = compose.build_engine(catalogue=workspace_profile_catalogue())
         # The profile resolver builds lazily; touch it so an invalid
         # profile configuration still stops startup.
         engine.profile_resolver  # noqa: B018

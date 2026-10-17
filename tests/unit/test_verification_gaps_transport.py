@@ -23,15 +23,15 @@ from typer.testing import CliRunner
 from conftest import connected_client
 from omrg.transports.cli import app as cli_app
 
-#: Modules that only ``omrg web`` or the notebook editor may load.
+#: Modules that only ``omrg web`` or the notebook editor may load. The workspace
+#: modules (``omrg.core.workspace``, ``omrg.integrations.workspace_sqlite``) are
+#: not listed: the stdio server reads the default workspace catalogue (D11).
 _WEB_ONLY_MODULES = (
     "fastapi",
     "marimo",
     "omrg.transports.api",
     "omrg.core.plugins",
-    "omrg.core.workspace",
     "omrg.integrations.process_launcher",
-    "omrg.integrations.workspace_sqlite",
 )
 
 _REQUIRED = "<required>"
@@ -79,6 +79,8 @@ _V3_TOOLS: dict[str, tuple[dict[str, Any], list[str], dict[str, bool]]] = {
         [],
         {"destructiveHint": False, "readOnlyHint": True},
     ),
+    # Added after v3 (unify-profiles-and-pipelines, task 8.4).
+    "list_profiles": ({}, [], {"destructiveHint": False, "readOnlyHint": True}),
     "search_documents": (
         {
             "collection": "documents",

@@ -38,6 +38,7 @@ _TOOLS: tuple[tuple[Callable[..., Any], str, ToolAnnotations], ...] = (
     (delete.delete_documents, delete.DESCRIPTION, delete.ANNOTATIONS),
     (codebase.get_codebase_map, codebase.DESCRIPTION, codebase.ANNOTATIONS),
     (profile.change_collection_profile, profile.DESCRIPTION, profile.ANNOTATIONS),
+    (profile.list_profiles, profile.LIST_DESCRIPTION, profile.LIST_ANNOTATIONS),
 )
 
 Lifespan = Callable[[MCPServer[McpContext]], AbstractAsyncContextManager[McpContext]]

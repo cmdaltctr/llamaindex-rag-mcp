@@ -142,7 +142,9 @@ def test_no_argument_start_still_runs_mcp_server() -> None:
     # MCP main() calls logging.basicConfig(force=True) on the captured
     # stream; keep the root logger untouched for later tests.
     server = MagicMock()
+    catalogue = object()
     with (
+        patch("omrg.compose_profile_setup.workspace_profile_catalogue", return_value=catalogue),
         patch("omrg.transports.cli.compose.ensure_runtime_setup") as setup,
         patch("omrg.transports.mcp.compose.build_engine") as build_engine,
         patch("omrg.transports.mcp.create_mcp_server", return_value=server) as factory,
@@ -151,7 +153,7 @@ def test_no_argument_start_still_runs_mcp_server() -> None:
         result = runner.invoke(cli_app, [])
     assert result.exit_code == 0, result.output
     setup.assert_not_called()
-    build_engine.assert_called_once_with()
+    build_engine.assert_called_once_with(catalogue=catalogue)
     factory.assert_called_once()
     server.run.assert_called_once_with(transport="stdio")
 

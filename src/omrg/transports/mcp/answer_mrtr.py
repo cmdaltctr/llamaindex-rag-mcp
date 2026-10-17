@@ -233,6 +233,21 @@ def consume_preflight(
     )
 
 
+def follows_user_profile(engine: Any, collection: str) -> bool:
+    """Return whether the collection follows a user profile (D17).
+
+    A user-profile answer runs its Answer pipeline with the server model:
+    MCP client sampling and pre-fetched rows cannot enter a pipeline run.
+    An Engine with no profile resolver serves built-in profiles only.
+
+    Raises:
+        ValueError: If the collection's profile tag cannot be resolved, for
+            example a user profile this process cannot read (D11).
+    """
+    resolver = engine.profile_resolver
+    return resolver is not None and resolver.binding(collection).user
+
+
 def _client_round_cap(block: Any) -> int:
     """Effective rounds on the client path: settings or chain depth (F5)."""
     return min(int(block.max_rounds), _MAX_MRTR_ROUNDS)
@@ -252,7 +267,14 @@ async def _ask_round(
     exception would surface as a raw tool error instead of the
     structured-result contract.
     """
-    block = mcp_context(ctx).engine.resolve_settings(collection).answer
+    engine = mcp_context(ctx).engine
+    try:
+        if follows_user_profile(engine, collection):
+            return None  # D17: the server model answers; no Sample goes out.
+    except Exception:
+        # An unresolvable profile ends the chain; the tool body reports it.
+        return None
+    block = engine.resolve_settings(collection).answer
     if not block.enabled:
         # Master switch (F4): no Sample issued when answering is off.
         return None

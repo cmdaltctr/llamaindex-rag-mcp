@@ -192,9 +192,10 @@ class TestMcpProfileResolutionErrors:
         assert "hybrid" in result.content[0].text
 
     async def test_search_reports_invalid_profile_tag(self, mcp_server) -> None:
+        # The handler passes the caller's values on; the Engine resolves the tag (D14).
         with patch.object(
             mcp_server.test_context.engine,
-            "resolve_settings",
+            "search",
             side_effect=ValueError("tagged 'hybrid'"),
         ):
             async with connected_client(mcp_server) as client:

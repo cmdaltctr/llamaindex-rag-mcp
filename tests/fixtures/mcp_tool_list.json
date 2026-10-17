@@ -263,6 +263,19 @@
       "destructive_hint": false,
       "read_only_hint": true
     },
+    "description": "List the profiles a collection can use: the built-in profiles 'documents' and 'codebase', then the user profiles from the web workspace. Each item has profile_id, kind ('builtin' or 'user'), title, description, base_profile, slots (the ingest, search and answer pipeline ids), ready, not_ready_reasons and used_by (the collections that use the profile). Pass a profile_id to change_collection_profile. Without a web workspace the list holds the built-in profiles only.",
+    "inputSchema": {
+      "properties": {},
+      "title": "list_profilesArguments",
+      "type": "object"
+    },
+    "name": "list_profiles"
+  },
+  {
+    "annotations": {
+      "destructive_hint": false,
+      "read_only_hint": true
+    },
     "description": "Search the indexed documents using semantic similarity. Returns the most relevant text chunks with their source file and relevance score. Optionally re-score results with a cross-encoder reranker for better precision, or filter by a minimum similarity threshold. Accepts an optional collection name to scope the search and an optional metadata_filter to restrict results by metadata fields. Adjacent chunks of one document are merged so splitter overlap is not returned twice; expand_window adds each chunk's neighbours to the merged context when requested.",
     "inputSchema": {
       "properties": {

@@ -52,6 +52,7 @@ from .answer_mrtr import (
     _result_text,
     _session_facts,
     consume_preflight,
+    follows_user_profile,
 )
 from .context import McpContext, mcp_context
 from .errors import error_message, log_tool_error
@@ -192,6 +193,10 @@ async def answer_documents(
     """
     mcp = mcp_context(ctx)
     try:
+        # D17: a user-profile collection answers through its Answer
+        # pipeline with the server model. The binding is checked first, so
+        # no client completion or pre-fetched row can reach the pipeline.
+        server_model_only = follows_user_profile(mcp.engine, collection)
         effective = mcp.engine.resolve_settings(collection)
         # The resolved answer block already carries the profile/env
         # overlay of the three ADR-059 ``verify_*`` fields.
@@ -208,13 +213,21 @@ async def answer_documents(
         if payload is not None and payload.failure is not None:
             return _payload_failure_result(mcp, query, payload)
 
-        replies = _resolved_replies(client_round_1, client_round_2, client_round_3, client_round_4)
+        replies = (
+            []
+            if server_model_only
+            else _resolved_replies(client_round_1, client_round_2, client_round_3, client_round_4)
+        )
         version, capability = _session_facts(ctx)
-        source = select_completion_source(
-            protocol_version=version,
-            sampling_capability=capability,
-            prefer_client=answer_block.prefer_client_sampling,
-            allow_legacy=answer_block.allow_legacy_sampling,
+        source = (
+            "server"
+            if server_model_only
+            else select_completion_source(
+                protocol_version=version,
+                sampling_capability=capability,
+                prefer_client=answer_block.prefer_client_sampling,
+                allow_legacy=answer_block.allow_legacy_sampling,
+            )
         )
 
         client_completion: ClientCompletion | None = None
