@@ -1,10 +1,10 @@
-import { ArrowLeft, Workflow } from "lucide-react";
+import { Workflow } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { OperationDescriptor, PipelineRecord, PortRef, RevisionRecord } from "../api/pipelines";
+import type { OperationDescriptor, PortRef } from "../api/pipelines";
+import type { ProfileRecord } from "../api/profiles";
 import { ACTIVE_RUN_STATUSES } from "../api/runs";
 import { EmptyState } from "../components/EmptyState";
-import { Button } from "../components/ui/button";
-import { formatRoute } from "../lib/routes";
+import type { Purpose } from "../lib/routes";
 import { useReducedMotion } from "../runs/useReducedMotion";
 import { useRunMonitor } from "../runs/useRunMonitor";
 import { checkConnection } from "./connections";
@@ -17,23 +17,29 @@ import { NodeInspector } from "./NodeInspector";
 import { Notices } from "./Notices";
 import { Palette } from "./Palette";
 import { PipelineBar } from "./PipelineBar";
+import { ProfileHeader } from "./ProfileHeader";
 import { RunPanel } from "./RunPanel";
+import { SaveRevisionDialog } from "./SaveRevisionDialog";
 import { RunProgress } from "./RunProgress";
-import { useCanvasSession } from "./useCanvasSession";
+import { useCanvasSession, type CanvasSource } from "./useCanvasSession";
 
 interface CanvasEditorProps {
-  pipeline: PipelineRecord;
-  revision: RevisionRecord | null;
+  profile: ProfileRecord;
+  purpose: Purpose;
+  /** A saved pipeline (editable), or the standard graph of a built-in profile (read-only). */
+  source: CanvasSource;
+  /** Opens the duplicate dialog for a built-in profile. */
+  onDuplicate: () => void;
 }
 
 /**
  * The canvas sub-page of one pipeline: a slim bar, the flow surface filling the
  * main area, and one floating panel on the right that holds every other
- * control. Mount with `key={pipelineId}`.
+ * control. Mount with `key={pipelineId}` (or a key for the standard graph).
  */
-export function CanvasEditor({ pipeline, revision }: CanvasEditorProps) {
-  const session = useCanvasSession(pipeline, revision);
-  const { draft, update, setNotice, run } = session;
+export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEditorProps) {
+  const session = useCanvasSession(source);
+  const { draft, update, setNotice, run, revision, readOnly } = session;
   const catalogue = session.operations.data ?? [];
   const monitor = useRunMonitor(run?.run_id ?? null);
   const reducedMotion = useReducedMotion();
@@ -46,7 +52,14 @@ export function CanvasEditor({ pipeline, revision }: CanvasEditorProps) {
 
   // Counts runs started from the panel, so the panel opens Revision and run for them and not for a run that existed at load.
   const [runStarts, setRunStarts] = useState(0);
-  const actions = { ...session.actions, run: () => { setRunStarts((count) => count + 1); return session.actions.run(); } };
+  // A profile in use asks first: the save changes how its collections work.
+  const [confirmingSave, setConfirmingSave] = useState(false);
+  const inUse = readOnly ? [] : profile.used_by;
+  const actions = {
+    ...session.actions,
+    run: () => { setRunStarts((count) => count + 1); return session.actions.run(); },
+    saveRevision: () => (inUse.length > 0 ? setConfirmingSave(true) : void session.actions.saveRevision()),
+  };
 
   const announce = (text: string) => setNotice({ kind: "status", text });
   const refuse = (text: string) => setNotice({ kind: "refused", text });
@@ -90,24 +103,15 @@ export function CanvasEditor({ pipeline, revision }: CanvasEditorProps) {
         onRefused={refuse}
         runNodes={runNodes}
         reducedMotion={reducedMotion}
+        readOnly={readOnly}
       />
     );
 
   return (
     <section className="flex min-h-0 flex-1 flex-col">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-card px-4 py-2">
-        <div className="min-w-0">
-          <h1 tabIndex={-1} className="text-page-title font-semibold outline-none [overflow-wrap:anywhere]">
-            {draft.layout.title || pipeline.title}
-          </h1>
-          <Notices notice={session.notice} />
-        </div>
-        <Button asChild variant="outline">
-          <a href={formatRoute({ area: "studio", pipelineId: null })}>
-            <ArrowLeft aria-hidden="true" />
-            All pipelines
-          </a>
-        </Button>
+      <div className="flex flex-col gap-1 border-b border-border bg-card px-4 py-2">
+        <ProfileHeader profile={profile} purpose={purpose} onDuplicate={onDuplicate} />
+        <Notices notice={session.notice} />
       </div>
       <div className="relative flex min-h-0 flex-1 flex-col">
         <div className="h-[50vh] min-h-64 lg:absolute lg:inset-0 lg:h-auto">{surface}</div>
@@ -115,10 +119,10 @@ export function CanvasEditor({ pipeline, revision }: CanvasEditorProps) {
           selectedNode={selectedNode}
           runStarts={runStarts}
           sections={{
-            "pipeline-settings": <PipelineBar draft={draft} onChange={update} />,
-            operations: <Palette operations={session.operations.data} error={session.operations.error} onRetry={() => void session.operations.refetch()} onAdd={add} />,
-            nodes: <GraphOutline draft={draft} issues={session.issues} onChange={update} onAnnounce={announce} />,
-            connect: <ConnectionMenu draft={draft} catalogue={catalogue} onConnect={connect} />,
+            "pipeline-settings": <PipelineBar draft={draft} onChange={update} readOnly={readOnly} />,
+            operations: <Palette operations={session.operations.data} error={session.operations.error} onRetry={() => void session.operations.refetch()} onAdd={add} readOnly={readOnly} />,
+            nodes: <GraphOutline draft={draft} issues={session.issues} onChange={update} onAnnounce={announce} readOnly={readOnly} />,
+            connect: <ConnectionMenu draft={draft} catalogue={catalogue} onConnect={connect} readOnly={readOnly} />,
             run: (
               <RunPanel
                 revision={revision}
@@ -132,6 +136,7 @@ export function CanvasEditor({ pipeline, revision }: CanvasEditorProps) {
                 runActive={runStatus !== null && ACTIVE_RUN_STATUSES.has(runStatus)}
                 onSelectNode={(id) => update((current) => setSelection(current, [id]))}
                 actions={actions}
+                readOnly={readOnly}
                 live={
                   run && runStatus ? (
                     <RunProgress runId={run.run_id} status={runStatus} view={monitor.view} mode={monitor.mode} live={monitor.live} error={monitor.error} />
@@ -139,10 +144,20 @@ export function CanvasEditor({ pipeline, revision }: CanvasEditorProps) {
                 }
               />
             ),
-            "node-settings": <NodeInspector draft={draft} nodeId={selectedNode} catalogue={catalogue} issues={session.issues} controls={session.controls} onChange={update} />,
+            "node-settings": <NodeInspector draft={draft} nodeId={selectedNode} catalogue={catalogue} issues={session.issues} controls={session.controls} onChange={update} readOnly={readOnly} />,
           }}
         />
       </div>
+      <SaveRevisionDialog
+        purpose={purpose}
+        collections={inUse}
+        open={confirmingSave}
+        onCancel={() => setConfirmingSave(false)}
+        onConfirm={() => {
+          setConfirmingSave(false);
+          void session.actions.saveRevision();
+        }}
+      />
     </section>
   );
 }

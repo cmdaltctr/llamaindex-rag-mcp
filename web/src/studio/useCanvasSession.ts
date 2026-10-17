@@ -2,29 +2,60 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useApi } from "../api/ApiProvider";
 import { useCancelRun, useSaveLayout, useSaveRevision, useSubmitRun, useValidatePipeline } from "../api/mutations";
-import { PipelineIssuesError, type PipelineRecord, type RevisionRecord, type ValidationIssue, type ValidationReport } from "../api/pipelines";
+import { PipelineIssuesError, type GraphDocument, type PipelineRecord, type RevisionRecord, type ValidationIssue, type ValidationReport } from "../api/pipelines";
 import { operationsQuery, queryKeys, revisionQuery, runsQuery } from "../api/queries";
 import { initialDraft } from "./drafts";
 import { fromDocument, sameDocument, toDocument, toLayout } from "./graph";
 import type { Notice } from "./Notices";
+import { savedStatus } from "./profileCopy";
 import { useDraft } from "./useDraft";
+
+/**
+ * What the canvas opens: a saved pipeline with its current revision, or a
+ * standard graph document of a built-in profile. A standard graph has no
+ * pipeline, so it is read-only: no runs, no saves, no stored draft.
+ */
+export type CanvasSource =
+  | { kind: "pipeline"; pipeline: PipelineRecord; revision: RevisionRecord | null }
+  | { kind: "standard"; key: string; document: GraphDocument };
+
+/** Stand-in records so a standard graph gets the same grid layout as a saved one. They never reach the server. */
+function standardRecords(document: GraphDocument): { pipeline: PipelineRecord; revision: RevisionRecord } {
+  const now = "";
+  return {
+    pipeline: { pipeline_id: "", title: "", current_revision_id: null, layout: {}, created_at: now, updated_at: now },
+    revision: { revision_id: "", pipeline_id: "", revision_number: 0, content_hash: "", schema_version: document.schema_version, document, created_at: now },
+  };
+}
 
 type ActionName = "saveLayout" | "saveRevision" | "validate" | "run" | "cancel" | "refresh";
 
 /**
- * Canvas state for one opened pipeline. The pipeline and its current revision
- * come from the server (the route names the pipeline), the operation catalogue
- * and the latest run come from the query cache, and the draft lives in browser
- * storage. Mount with `key={pipelineId}`.
+ * Canvas state for one opened graph. A pipeline and its current revision
+ * come from the server (the route names the profile, the profile names the
+ * pipeline), the operation catalogue and the latest run come from the query
+ * cache, and the draft lives in browser storage. A standard graph has none of
+ * that: the draft stays in memory. Mount with `key={pipelineId}` (or the
+ * standard graph's key).
  */
-export function useCanvasSession(pipeline: PipelineRecord, revision: RevisionRecord | null) {
+export function useCanvasSession(source: CanvasSource) {
   const api = useApi();
   const queryClient = useQueryClient();
-  const pipelineId = pipeline.pipeline_id;
-  const { draft, update, markSaved } = useDraft(pipelineId, () => initialDraft(pipeline, revision));
+  const readOnly = source.kind === "standard";
+  const revision = source.kind === "pipeline" ? source.revision : null;
+  const pipelineId = source.kind === "pipeline" ? source.pipeline.pipeline_id : "";
+  const { draft, update, markSaved } = useDraft(
+    source.kind === "pipeline" ? pipelineId : source.key,
+    () => {
+      if (source.kind === "pipeline") return initialDraft(source.pipeline, source.revision);
+      const records = standardRecords(source.document);
+      return initialDraft(records.pipeline, records.revision);
+    },
+    { persist: !readOnly },
+  );
 
   const operations = useQuery(operationsQuery(api));
-  const latest = useQuery(runsQuery(api, { pipelineId, limit: 1 }));
+  const latest = useQuery({ ...runsQuery(api, { pipelineId, limit: 1 }), enabled: !readOnly });
   const run = latest.data?.[0] ?? null;
   const runUsesCurrent = run !== null && run.revision_id === revision?.revision_id;
   const fetchedRevision = useQuery({ ...revisionQuery(api, pipelineId, run?.revision_id ?? ""), enabled: run !== null && !runUsesCurrent });
@@ -42,7 +73,7 @@ export function useCanvasSession(pipeline: PipelineRecord, revision: RevisionRec
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<Notice | null>(null);
 
-  const dirty = revision ? !sameDocument(fromDocument(revision.document, {}).graph, draft.graph) : draft.graph.nodes.length > 0;
+  const dirty = readOnly ? false : revision ? !sameDocument(fromDocument(revision.document, {}).graph, draft.graph) : draft.graph.nodes.length > 0;
   const controls = useMemo(() => Object.fromEntries((report?.nodes ?? []).map((node) => [node.node_id, node.controls])), [report]);
 
   const status = (text: string) => setNotice({ kind: "status", text });
@@ -77,7 +108,9 @@ export function useCanvasSession(pipeline: PipelineRecord, revision: RevisionRec
         );
         markSaved();
         const number = saved.revision.revision_number;
-        status(saved.created ? `Saved revision ${number}.` : `Revision ${number} already holds this graph.`);
+        const affected = saved.affected_collections;
+        if (!saved.created) status(`Revision ${number} already holds this graph.`);
+        else status(affected.length > 0 ? savedStatus(number, affected) : `Saved revision ${number}.`);
       }, () => void actions.saveRevision()),
     validate: () =>
       act(async () => {
@@ -116,6 +149,7 @@ export function useCanvasSession(pipeline: PipelineRecord, revision: RevisionRec
     draft,
     update,
     revision,
+    readOnly,
     dirty,
     issues,
     controls,
