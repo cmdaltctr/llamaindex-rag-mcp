@@ -398,6 +398,76 @@ Select "Collapse panel" to shrink the panel to a narrow icon rail. Each rail but
 
 On a window narrower than 1024 px, the panel sits under the flow surface and shows its sections. The icon rail is not available.
 
+#### Page header
+
+The header shows the profile name, the pipeline tabs and, at the right, the "All profiles" link. For a built-in profile, the "Duplicate to edit" button sits to the left of "All profiles".
+
+One line above the pipeline tabs says how to edit the canvas: "Build your own profile. Click a step to change it in Step settings. Drag from one port to another to connect steps, or use Connect ports."
+
+Each pipeline tab has an "i" info button. Click it to open a popover with what that pipeline does and, for a built-in profile, why the profile is read-only. Press Escape, click elsewhere or click the button again to close it.
+
+Click the panel-top icon at the right end of the title row ("Hide header") to slide the intro line and the pipeline tabs up. The title row stays, with "Duplicate to edit" and "All profiles", and the canvas takes the room. The same icon now reads "Show header". Click it to bring the intro line and the tabs back. The hidden part does not take keyboard focus, and notices stay visible. The header is shown again each time you open the canvas.
+
+#### Step cards
+
+Each step on the canvas has a card. A card shows these items, from top to bottom:
+
+1. The step name, the family badge and a settings icon.
+2. The node ID in muted text. It shows only when two steps have the same name.
+3. A one-line summary of what the step does. Click the summary to read the whole sentence on the card, and click it again to fold it. Using the summary does not select the card.
+4. A mini card with the settings of the step. It shows up to three main settings with their values, for example "Number of results: 10 (from profile)". When the step has more settings, the mini card ends with a button "+2 more settings". Click it to show the other settings in the same mini card, and click "Show fewer settings" to fold them. The button does not select the card. An expanded card can grow taller than its grid row, so it moves above the cards around it.
+5. Inside the same mini card: "No settings" when the step has no settings. The Embed chunks card shows the embedding model instead: "Model: nomic-embed-text (fixed for collections that already hold vectors)". The model comes from the server connections. You cannot change it on the canvas.
+6. The run status, the Bypassed and Unavailable badges, the port names and the issue messages.
+
+The names at the left and right edges are ports: inputs on the left and outputs on the right. The circle beside a port name is its handle. A handle turns green when the port has a connection, and stays neutral when it has none.
+
+The text in brackets after a value tells you where the value comes from:
+
+1. "set here": the step sets the value.
+2. "from pipeline settings": the pipeline graph sets the value.
+3. "from profile": the base profile supplies the value.
+4. "from server settings": the server settings supply the value.
+5. "default": the setting has a fixed default.
+
+Values show without a press on Validate. The canvas checks the draft by itself when the pipeline opens. It checks again 500 ms after you stop editing the graph. Moving a step or changing the selection starts no check. While a check runs, a setting that the profile supplies shows "From profile" with no number. After you edit the graph, the values disappear until the new check returns. The automatic check never changes the issue list. Only "Validate" changes it.
+
+Select a card to open Step settings for that step. With the keyboard, move focus to the card and press Enter or Space. The accessible name of a card is the step name followed by "step", for example "Threshold and top-k step". The node ID is added when two steps have the same name.
+
+#### Connection lines
+
+The canvas draws each connection as a smooth-step line: right-angle bends with rounded corners. The shape is only how the line looks. It is not saved in the graph or in the layout. A connection from a step in one row back to a step in the next row still crosses the canvas, because the canvas places four steps in each row.
+
+#### Edge animation during a run
+
+While a run is live, the edge into a step that runs shows a moving blue line. When that step finishes with success, the edge into it turns green and moves for 1.5 seconds, so you see the data move one step ahead. Then the edge goes back to normal.
+
+A run that had finished before you opened the pipeline shows no animation. A step that fails shows no green edge. If your system asks for reduced motion, the edges keep their colour and do not move.
+
+#### Step settings
+
+The Step settings section shows the selected step. Its heading is the step name. These items follow:
+
+1. The family badge and the one-line summary of the step.
+2. "Bypass this step", when the step can be bypassed.
+3. One control for each setting. Each control has a plain label, for example "Number of results" or "Reranker". A choice list shows readable options, for example "File type". The saved value does not change.
+4. A note under each control that says which value is in use, for example "Value in use: 10 (from profile)". The text in brackets follows the same words as the step card.
+5. "Graph inputs and outputs" and "Remove step".
+6. A closed "Details" area.
+
+While the automatic check runs, a setting that the profile supplies shows "Comes from the profile. The value shows when the check finishes." The value disappears again each time you edit the graph. It comes back when the next check returns. Moving a step or changing the selection keeps the value.
+
+Open "Details" to see the technical information:
+
+1. The node ID.
+2. The operation ID and version.
+3. The full description.
+4. The path of each setting, for example `retrieval.top_k`.
+5. The port types.
+6. The issue codes.
+7. The detail text of each control.
+
+Issue messages show outside "Details". Only the issue codes stay inside it.
+
 ### Database and profile in the Knowledge Base
 
 Each collection lives in one vector database. The workspace shows it in four places:
