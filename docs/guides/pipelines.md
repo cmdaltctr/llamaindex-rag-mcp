@@ -140,6 +140,62 @@ Graph overrides accept these levers only:
 
 The host owns provider and model identity, secrets, storage locations and reader backends. A graph cannot change them (`host_owned_setting`). Change them in the environment and restart OMRG.
 
+## Profiles own pipelines
+
+A user profile owns three pipelines. Each pipeline has one purpose, called a **slot**. A collection that follows a user profile uses these pipelines for every request: Chat, Knowledge Base search, MCP tools, the CLI and the watcher. A collection that follows a built-in profile (`documents` or `codebase`) does not run a saved pipeline. It keeps the direct Engine path, with the same speed and results as before. See [Configuration](configuration.md#user-profiles) for the tag and for the processes that read user profiles.
+
+| Slot | Graph input | Graph output | Write steps |
+|---|---|---|---|
+| Ingest | `path` (kind `sources`) | `summary` (kind `commit_summary`) | Exactly one enabled write step (`commit.source`) |
+| Search | `query` (kind `query`) | `results` (kind `context`) | None |
+| Answer | `query` (kind `query`) | `answer` (kind `answer`) | None |
+
+Each slot graph names the base profile of the user profile as its `profile`. The code that checks this is in `src/omrg/compose_profiles.py`.
+
+### Readiness
+
+A profile is **ready** when each pipeline has a saved revision, passes the draft check (`validatePipeline` without run inputs) and meets the contract in the table. A profile that is not ready cannot be bound to a collection. Each failure gives one plain line that names the pipeline, and the step when one step causes it. The check in `src/omrg/core/profiles/readiness.py` writes these lines.
+
+When you bind a profile to a collection, the check also runs against that collection. It then includes the embedding model of the collection.
+
+### What a request does
+
+A request runs the current revision of the slot graph. It uses the same `Engine.run_pipeline` call as Studio, but it makes no run record and does not use the run queue. The code is in `src/omrg/engine_profiles.py`.
+
+- The graph names the collection of the request.
+- A value that the caller sets replaces the matching step setting. `top_k`, `similarity_threshold`, `rerank`, `fetch_k` and `metadata_filter` replace settings of `retrieve.prepare_query`. `expand_window` replaces the setting of `context.assemble`. `include_diagnostics` replaces the setting of `answer.synthesise`. `chunk_size` and `chunk_overlap` replace the settings of the steps that map to `chunking.chunk_size` and `chunking.chunk_overlap`.
+- `hybrid` and `technical_fraction` have no step setting. The wiring of the graph decides. With `include_diagnostics`, the result lists these values under `unused_request_values`.
+- `expand_window=0` means "not set". The step keeps its own value.
+
+The result has the shape of the built-in operation:
+
+| Operation | Graph output | Result |
+|---|---|---|
+| `search` | `results` | The rows of `Engine.search`. With diagnostics, the full rows. |
+| `answer` | `answer` | The result dict of `Engine.answer`. |
+| `ingest` | One `summary` for each source | The summary of `Engine.ingest`. `peak_rss_bytes` is `null`, and `progress_callback` is called once for each source after the run. |
+
+An answer from a user profile always uses the server answer model. A client completion (MCP sampling) and pre-fetched rows cannot pass into a pipeline run. `Engine.answer` refuses both for a user profile with a `ValueError`.
+
+A change to an Ingest pipeline does not start an ingestion. Each source is processed again on its next ingestion, because the ingestion fingerprint holds the operations, versions, parameters and connections.
+
+### Concurrency
+
+Graph runs that only read run at the same time on one Engine. A graph with an enabled write step waits for other graphs that write. The reranker records its last failure on the shared instance, so `run_reranker` in `src/omrg/core/retrieval/operations.py` runs the rerank call and reads the failure reason as one locked step for each reranker.
+
+### Latency
+
+A request on a user profile admits and runs the graph, so it costs more than the direct path. The test `tests/unit/test_profile_dispatch_latency.py` measures the difference. It runs the 15 recorded retrieval cases through a built-in collection and through a duplicate user profile, 20 times each, and checks that the rows are equal. Run it with `uv run pytest -m slow tests/unit/test_profile_dispatch_latency.py -s`.
+
+The test uses an in-memory store with three chunks and scripted dense scores. The numbers therefore show the cost of the graph only. Real embedding, store and reranker time is the same on both paths. Measured on one development machine (macOS, Python 3.14):
+
+| Measure | Direct path | Graph path | Difference |
+|---|---|---|---|
+| Median of the per-query medians (15 queries) | 0.02 ms | 1.38 ms | 1.36 ms |
+| Median of the per-query 95th percentiles (15 queries) | 0.02 ms | 1.43 ms | 1.41 ms |
+
+The difference of the per-query median is 1.24 to 1.41 ms for every query. The overhead is well below the design limit of 50 ms, so definitions are not cached. The test asserts no time limit.
+
 ## Examples
 
 ### Hybrid search and answer

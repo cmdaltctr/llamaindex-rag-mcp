@@ -73,7 +73,11 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # and folder-guide (41) suites, 9 registry-string and import-detector cases, 3
 # wheel-guide cases, 1 route-scan case and 3 contract-coverage cases for the new
 # packages add 68 executed tests (5165 -> 5233). No test was removed.
-_BASE_EXECUTED = 5233
+# Re-baselined at unify-profiles-and-pipelines (2026-10-17): the profile store,
+# service, upgrade, resolver, contract, Engine dispatch, route, MCP, CLI and
+# watcher suites add 349 executed tests (5233 -> 5582). One test was removed:
+# the old "runs on one Engine are serialised" case, replaced by the locking suite.
+_BASE_EXECUTED = 5582
 # Re-baselined at add-web-allow-origin-option: the origin parser suite adds 23
 # executed tests that need no fastapi, and the policy, MCP and launch cases add
 # 10 that do (5109 -> 5142; see _WEB_EXTRA_CASES below).
@@ -310,7 +314,8 @@ if not _has_qwen_tokenizer:
 _WEB_EXTRA_CASES = 519
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
-_BASE_DESELECTED = 20  # -m "not slow": existing 14 plus four quality gates
+# -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)
+_BASE_DESELECTED = 21
 # plus the golden-answer gate (add-grounded-answer-synthesis-3 task 7.1)
 # plus the marimo-manifest wheel check (add-local-web-pipeline-workspace).
 _CHROMA_GATED_FILES = frozenset(
