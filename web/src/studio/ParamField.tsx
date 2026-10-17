@@ -1,26 +1,22 @@
 import { useId, useState } from "react";
-import type { EffectiveControl, JsonValue } from "../api/pipelines";
+import type { JsonValue } from "../api/pipelines";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { optionLabel } from "./labels";
 import { checkValue, type ParamField as Field } from "./schema";
 
 interface ParamFieldProps {
   field: Field;
   value: JsonValue | undefined;
-  effective: EffectiveControl | undefined;
+  /** Where the value in use comes from, for example "Value in use: 10 (from profile)". `null` names no source. */
+  note: string | null;
   onChange: (value: JsonValue) => void;
   /** Shows the value without allowing a change. */
   disabled?: boolean;
 }
 
 const INHERIT = "__inherit__";
-
-function display(value: JsonValue): string {
-  if (value === true) return "On";
-  if (value === false) return "Off";
-  return typeof value === "string" ? value : JSON.stringify(value);
-}
 
 function Choice({ type, name, checked, disabled, onChange, children }: { type: "radio" | "checkbox"; name?: string; checked: boolean; disabled?: boolean; onChange: (checked: boolean) => void; children: string }) {
   return (
@@ -31,15 +27,9 @@ function Choice({ type, name, checked, disabled, onChange, children }: { type: "
   );
 }
 
-function InheritNote({ field, effective }: { field: Field; effective: EffectiveControl | undefined }) {
-  const note = (text: string) => <p className="text-meta text-muted-foreground">{text}</p>;
-  if (effective) return note(`Effective value: ${display(effective.value)} (${effective.source}: ${effective.detail}), from the last validation.`);
-  if (!field.nullable) return null;
-  return note(
-    field.lever
-      ? "Inherit uses the graph override or the profile. Validate with run inputs to see the effective value."
-      : "Inherit uses the operation default.",
-  );
+function InheritNote({ field, note }: { field: Field; note: string | null }) {
+  const text = note ?? (field.nullable ? "Inherit uses the operation default." : null);
+  return text === null ? null : <p className="text-meta text-muted-foreground">{text}</p>;
 }
 
 function TriState({ value, onChange, disabled, name }: ParamFieldProps & { name: string }) {
@@ -94,7 +84,7 @@ function NumberInput({ field, value, onChange, disabled, name }: ParamFieldProps
         </div>
       )}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor={inputId}>{`${field.title} value`}</Label>
+        <Label htmlFor={inputId}>{`${field.label} value`}</Label>
         <Input
           id={inputId}
           type="text"
@@ -120,14 +110,14 @@ function EnumSelect({ field, value, onChange, disabled }: ParamFieldProps) {
   const current = value == null ? INHERIT : String(value);
   return (
     <Select value={current} disabled={disabled} onValueChange={(next) => onChange(next === INHERIT ? null : next)}>
-      <SelectTrigger aria-label={`${field.title} value`}>
+      <SelectTrigger aria-label={`${field.label} value`}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
         {field.nullable && <SelectItem value={INHERIT}>Inherit</SelectItem>}
         {field.options.map((option) => (
           <SelectItem key={String(option)} value={String(option)}>
-            {String(option)}
+            {optionLabel(field, option)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -144,7 +134,7 @@ export function ParamField(props: ParamFieldProps) {
   else if (field.kind === "boolean") {
     control = (
       <Choice type="checkbox" checked={Boolean(value ?? field.defaultValue)} disabled={props.disabled} onChange={(checked) => onChange(checked)}>
-        {field.title}
+        {field.label}
       </Choice>
     );
   } else if (field.kind === "integer" || field.kind === "number") control = <NumberInput {...props} name={name} />;
@@ -152,7 +142,7 @@ export function ParamField(props: ParamFieldProps) {
   else if (field.kind === "string") {
     control = (
       <Input
-        aria-label={`${field.title} value`}
+        aria-label={`${field.label} value`}
         value={value == null ? "" : String(value)}
         placeholder={field.nullable ? "Inherit" : undefined}
         disabled={props.disabled}
@@ -163,10 +153,9 @@ export function ParamField(props: ParamFieldProps) {
 
   return (
     <fieldset className="flex min-w-0 flex-col gap-2 rounded-control border border-border p-3">
-      <legend className="px-1 text-ui font-medium">{field.title}</legend>
-      {field.lever && <code className="font-mono text-code text-muted-foreground [overflow-wrap:anywhere]">{field.lever}</code>}
+      <legend className="px-1 text-ui font-medium">{field.label}</legend>
       {control}
-      <InheritNote field={field} effective={props.effective} />
+      <InheritNote field={field} note={props.note} />
     </fieldset>
   );
 }

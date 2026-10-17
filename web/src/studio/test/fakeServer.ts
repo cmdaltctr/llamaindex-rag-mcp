@@ -1,7 +1,8 @@
 import { vi } from "vitest";
-import type { GraphDocument, PipelineRecord, RevisionRecord } from "../../api/pipelines";
+import type { EffectiveControl, GraphDocument, JsonValue, OperationDescriptor, PipelineRecord, RevisionRecord, ValidationIssue } from "../../api/pipelines";
 import type { ProfileDetail } from "../../api/profiles";
 import type { RunDetailRecord } from "../../api/runs";
+import type { Connection } from "../../api/settings";
 import { CATALOGUE } from "./catalogueFixture";
 import { createFakeProfiles } from "./fakeProfiles";
 import { PROFILES } from "./helpers";
@@ -23,6 +24,49 @@ export interface FakeServerOptions {
   profiles?: ProfileDetail[];
   /** Routes that answer with an HTTP error, as `"METHOD /path": status`. Delete a key to let the route work again. */
   failures?: Record<string, number>;
+  /** The operation catalogue the server lists. Omitted means `CATALOGUE`. */
+  catalogue?: OperationDescriptor[];
+  /** Opt in to `GET /v1/connections`. Without it the route answers 404, as before. */
+  connections?: Connection[];
+  /** Makes a draft check (no `inputs`) answer 422 with these issues, still carrying `nodes` and their controls. */
+  draftIssues?: ValidationIssue[];
+  /** Called for each draft check (no `inputs`). Return a promise to hold that check's answer until it settles. */
+  draftGate?: () => Promise<unknown> | undefined;
+}
+
+/** Value a lever has on the fake profile, so a check can report it as "from profile". */
+const PROFILE_LEVERS: Record<string, JsonValue> = {
+  "retrieval.top_k": 10,
+  "retrieval.similarity_threshold": 0.3,
+  "retrieval.rerank_enabled": false,
+  "retrieval.hybrid_rrf_k": 60,
+  "chunking.chunk_size": 1024,
+  "chunking.chunk_overlap": 100,
+  "chunking.markdown_chunk_size": 1500,
+  "chunking.strategy_fallback": "sentence",
+  "chunking.code_chunk_lines": 60,
+  "metadata.taxonomy_mode": "category",
+  "answer.verify_claims": false,
+};
+
+/**
+ * What the draft check reports for each node with a lever parameter: the node's
+ * own value (`node`), a graph override (`graph`) or the fake profile (`profile`).
+ */
+function draftNodes(document: GraphDocument): { node_id: string; controls: EffectiveControl[] }[] {
+  return document.nodes.flatMap((node) => {
+    const operation = CATALOGUE.find((entry) => entry.operation_id === node.operation);
+    if (operation === undefined) return [];
+    const controls = Object.entries(operation.lever_params).flatMap(([param, lever]): EffectiveControl[] => {
+      const own = node.params?.[param];
+      if (own !== undefined && own !== null) return [{ lever, value: own, source: "node", detail: `set on ${node.id}` }];
+      const override = document.overrides?.[lever];
+      if (override !== undefined) return [{ lever, value: override, source: "graph", detail: "graph override" }];
+      const inherited = PROFILE_LEVERS[lever];
+      return inherited === undefined ? [] : [{ lever, value: inherited, source: "profile", detail: "profile 'documents' (collection)" }];
+    });
+    return [{ node_id: node.id, controls }];
+  });
 }
 
 export function json(body: unknown, status = 200): Response {
@@ -58,6 +102,7 @@ export function fakeServer(options: FakeServerOptions = {}) {
   const revisions = new Map((options.revisions ?? []).map((r) => [r.revision_id, r]));
   const runs = (options.runs ?? []).map(runRecord);
   const profileStore = createFakeProfiles(options.profiles ?? PROFILES, pipelines);
+  let draftChecks = 0;
 
   function pipelineRoute(method: string, id: string, rest: string, body: Record<string, unknown>): Response {
     const pipeline = pipelines.get(id);
@@ -128,16 +173,24 @@ export function fakeServer(options: FakeServerOptions = {}) {
     const failure = options.failures?.[`${method} ${path}`];
     if (failure !== undefined) return json({ status: "error", message: "Boom: /srv/private/path" }, failure);
     const url = new URL(path, "http://localhost");
-    if (path === "/v1/pipeline-operations") return json({ status: "ok", operations: CATALOGUE });
+    if (path === "/v1/pipeline-operations") return json({ status: "ok", operations: options.catalogue ?? CATALOGUE });
     if (path === "/v1/collections") return json(options.collections ?? []);
+    if (path === "/v1/connections" && options.connections !== undefined) {
+      return json({ status: "ok", config_dir: "/srv/omrg", connections: options.connections });
+    }
     const asProfile = profileStore.route(method, path, body);
     if (asProfile !== null) return json(asProfile.body, asProfile.status);
     if (path === "/v1/pipelines" && method === "GET") return json({ status: "ok", pipelines: [...pipelines.values()] });
     if (path === "/v1/pipelines/validate") {
       const custom = options.validate?.(body as { document: GraphDocument; inputs?: Record<string, unknown> });
       if (custom !== undefined) return custom;
-      const nodes = (body.document as GraphDocument).nodes.map((n) => n.id);
-      return json({ status: "ok", valid: true, admitted: body.inputs !== undefined, order: nodes, nodes: [] });
+      const document = body.document as GraphDocument;
+      const nodes = draftNodes(document);
+      if (body.inputs === undefined && options.draftIssues !== undefined) {
+        const refusal = { status: "error", message: "The graph has issues.", error_type: "validation", issues: options.draftIssues, nodes };
+        return json(refusal, 422);
+      }
+      return json({ status: "ok", valid: true, admitted: body.inputs !== undefined, order: document.nodes.map((n) => n.id), nodes });
     }
     const asRun = runRoute(method, url, body);
     if (asRun !== null) return asRun;
@@ -150,6 +203,10 @@ export function fakeServer(options: FakeServerOptions = {}) {
     const method = init?.method ?? "GET";
     const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
     calls.push({ method, path, body: init?.body ? body : undefined });
+    if (path === "/v1/pipelines/validate" && body.inputs === undefined) {
+      draftChecks += 1;
+      await options.draftGate?.();
+    }
     return route(method, path, body);
   });
 
@@ -157,5 +214,5 @@ export function fakeServer(options: FakeServerOptions = {}) {
     return [...calls].reverse().find((call) => call.method === method && call.path === path);
   }
 
-  return { fetchImpl, calls, last, pipelines, revisions, runs, profiles: profileStore.profiles, failures: options.failures ?? {} };
+  return { fetchImpl, calls, last, draftChecks: () => draftChecks, pipelines, revisions, runs, profiles: profileStore.profiles, failures: options.failures ?? {} };
 }

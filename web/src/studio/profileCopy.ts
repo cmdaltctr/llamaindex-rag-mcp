@@ -51,3 +51,7 @@ export function saveWarning(purpose: Purpose, names: readonly string[]): string 
 export function savedStatus(revisionNumber: number, names: readonly string[]): string {
   return `Saved revision ${revisionNumber}. It now applies to ${collections(names)}: ${names.join(", ")}.`;
 }
+
+/** How to edit the canvas. It names the sections "Step settings" and "Connect ports", so change it with them. */
+export const CANVAS_INTRO =
+  "Build your own profile. Click a step to change it in Step settings. Drag from one port to another to connect steps, or use Connect ports.";

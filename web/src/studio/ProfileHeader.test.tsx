@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../test/providers";
 import { ProfileHeader } from "./ProfileHeader";
-import { PURPOSE_LINES, READ_ONLY_NOTICE } from "./profileCopy";
+import { CANVAS_INTRO, PURPOSE_LABELS, PURPOSE_LINES, READ_ONLY_NOTICE } from "./profileCopy";
 import {
   addWithKeyboard,
   ANSWER_PIPELINE,
@@ -79,8 +79,10 @@ describe("the profile header on the canvas page", () => {
     ["answer", "Writes an answer from the best chunks and cites them."],
   ] as const)("describes the %s pipeline in one line", async (purpose, line) => {
     expect(PURPOSE_LINES[purpose]).toBe(line);
-    openStudio(`#/studio/search-copy/${purpose}`, FIXTURES);
+    const { user } = openStudio(`#/studio/search-copy/${purpose}`, FIXTURES);
     await screen.findByRole("heading", { level: 1, name: "Search copy" });
+    await screen.findByRole("button", { name: "Operations" });
+    await user.click(screen.getByRole("button", { name: `About the ${PURPOSE_LABELS[purpose]} pipeline` }));
     expect(screen.getByText(line)).toBeInTheDocument();
     expect(screen.getAllByText(/^(Reads files|Finds the chunks|Writes an answer)/)).toHaveLength(1);
   });
@@ -135,9 +137,80 @@ describe("the profile header on the canvas page", () => {
     const header = heading.closest("header") as HTMLElement;
     expect(within(header).getByText("Built-in")).toBeInTheDocument();
     expect(within(header).getByText("documents")).toBeInTheDocument();
-    expect(within(header).getByText(READ_ONLY_NOTICE)).toBeInTheDocument();
-    expect(within(header).getByRole("button", { name: "Duplicate to edit" })).toBeEnabled();
+    expect(screen.queryByText(READ_ONLY_NOTICE)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Duplicate to edit" })).toBeEnabled();
     expect(link("Search")).toHaveAttribute("aria-current", "page");
+  });
+
+  it("gives each pipeline tab an info button that opens that pipeline's description", async () => {
+    const { user } = openStudio("#/studio/documents/search", FIXTURES);
+    for (const [label, purpose] of [["Ingest", "ingest"], ["Search", "search"], ["Answer", "answer"]] as const) {
+      const button = await screen.findByRole("button", { name: `About the ${label} pipeline` });
+      expect(button).toHaveAttribute("aria-expanded", "false");
+      expect(screen.queryByText(PURPOSE_LINES[purpose])).not.toBeInTheDocument();
+      await user.click(button);
+      expect(screen.getByText(PURPOSE_LINES[purpose])).toBeInTheDocument();
+      await user.keyboard("{Escape}");
+    }
+  });
+
+  it("shows no description line and no accordion in the header", async () => {
+    openStudio("#/studio/documents/search", FIXTURES);
+    await screen.findByRole("heading", { level: 1, name: "Documents" });
+    expect(screen.queryByText(PURPOSE_LINES.search)).not.toBeInTheDocument();
+    expect(screen.queryByText("About this pipeline")).not.toBeInTheDocument();
+    expect(document.querySelector("header details")).toBeNull();
+  });
+
+  it("shows the intro line once, above the pipeline tabs, without a click", async () => {
+    openStudio("#/studio/documents/search", FIXTURES);
+    const intro = await screen.findByText(CANVAS_INTRO);
+    const tabs = screen.getByRole("navigation", { name: "Pipelines of this profile" });
+    expect(intro.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(intro).toHaveClass("py-1");
+    expect(screen.getAllByText(CANVAS_INTRO)).toHaveLength(1);
+  });
+
+  it("adds the read-only note to a built-in profile's popover, and not the intro line", async () => {
+    const { user } = openStudio("#/studio/documents/search", FIXTURES);
+    await user.click(await screen.findByRole("button", { name: "About the Search pipeline" }));
+    const panel = screen.getByText(PURPOSE_LINES.search).closest("[data-slot='info-popover-content']") as HTMLElement;
+    expect(within(panel).getByText(READ_ONLY_NOTICE)).toBeInTheDocument();
+    expect(within(panel).queryByText(CANVAS_INTRO)).not.toBeInTheDocument();
+    expect(screen.getAllByText(CANVAS_INTRO)).toHaveLength(1);
+  });
+
+  it("holds only the description in the popover of a profile that the user can edit", async () => {
+    const { user } = openStudio("#/studio/search-copy/search", FIXTURES);
+    await screen.findByRole("button", { name: "Operations" });
+    await user.click(screen.getByRole("button", { name: "About the Search pipeline" }));
+    const panel = screen.getByText(PURPOSE_LINES.search).closest("[data-slot='info-popover-content']") as HTMLElement;
+    expect(within(panel).queryByText(READ_ONLY_NOTICE)).not.toBeInTheDocument();
+    expect(within(panel).queryByText(CANVAS_INTRO)).not.toBeInTheDocument();
+    expect(screen.getAllByText(CANVAS_INTRO)).toHaveLength(1);
+  });
+
+  it("shows the header toggle only when it is given a handler, and names it after the state", async () => {
+    const onToggle = vi.fn();
+    const render = (props: { collapsed?: boolean; onToggle?: () => void }) => (
+      <ProfileHeader profile={USER_PROFILE} purpose="search" onDuplicate={vi.fn()} {...props} />
+    );
+    const options = { fetchImpl: fakeServer({ pipelines: FIXTURES.pipelines, revisions: FIXTURES.revisions }).fetchImpl };
+    const { rerender } = renderWithProviders(render({ onToggle }), options);
+    await userEvent.setup().click(screen.getByRole("button", { name: "Hide header" }));
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    rerender(render({ onToggle, collapsed: true }));
+    expect(screen.getByRole("button", { name: "Show header" })).toHaveAttribute("aria-expanded", "false");
+    rerender(render({}));
+    expect(screen.queryByRole("button", { name: /header$/ })).not.toBeInTheDocument();
+  });
+
+  it("puts Duplicate to edit to the left of All profiles", async () => {
+    openStudio("#/studio/documents/search", FIXTURES);
+    const duplicate = await screen.findByRole("button", { name: "Duplicate to edit" });
+    const back = screen.getByRole("link", { name: "All profiles" });
+    expect(duplicate.parentElement).toBe(back.parentElement);
+    expect(duplicate.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it.each(["#/studio/missing", "#/studio/pl_1", "#/studio/missing/search"])("shows not found with a way back for %s", async (hash) => {

@@ -6,6 +6,7 @@ import { ACTIVE_RUN_STATUSES } from "../api/runs";
 import { EmptyState } from "../components/EmptyState";
 import type { Purpose } from "../lib/routes";
 import { useReducedMotion } from "../runs/useReducedMotion";
+import { useRecentlyFinished } from "../runs/useRecentlyFinished";
 import { useRunMonitor } from "../runs/useRunMonitor";
 import { checkConnection } from "./connections";
 import { CanvasPanel } from "./CanvasPanel";
@@ -42,6 +43,9 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
   const { draft, update, setNotice, run, revision, readOnly } = session;
   const catalogue = session.operations.data ?? [];
   const monitor = useRunMonitor(run?.run_id ?? null);
+  const finishedNodes = useRecentlyFinished(monitor.view.nodes, monitor.live);
+  // Hidden state resets on every visit: the editor is keyed by pipeline, so a new mount starts shown.
+  const [headerHidden, setHeaderHidden] = useState(false);
   const reducedMotion = useReducedMotion();
   // Events are authoritative once they arrive; until then the run record is shown.
   const runStatus = monitor.refreshedStatus ?? monitor.view.runStatus ?? run?.status ?? null;
@@ -85,7 +89,7 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
   const surface =
     draft.graph.nodes.length === 0 ? (
       <div className="p-4">
-        <EmptyState icon={Workflow} message="The graph is empty. Add an operation from the catalogue to start." />
+        <EmptyState icon={Workflow} message="The graph is empty. Add a step from Operations to start." />
       </div>
     ) : session.operations.isPending ? (
       // Nodes need the catalogue for their ports, so the surface waits for it.
@@ -95,6 +99,8 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
         draft={draft}
         catalogue={catalogue}
         issues={session.issues}
+        controls={session.controls}
+        embeddingModel={session.embeddingModel}
         onChange={update}
         onConnect={(source, target) => {
           const reason = connect(source, target);
@@ -103,6 +109,7 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
         onRefused={refuse}
         runNodes={runNodes}
         reducedMotion={reducedMotion}
+        finishedNodes={finishedNodes}
         readOnly={readOnly}
       />
     );
@@ -110,7 +117,7 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
   return (
     <section className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-col gap-1 border-b border-border bg-card px-4 py-2">
-        <ProfileHeader profile={profile} purpose={purpose} onDuplicate={onDuplicate} />
+        <ProfileHeader profile={profile} purpose={purpose} onDuplicate={onDuplicate} collapsed={headerHidden} onToggle={() => setHeaderHidden((hidden) => !hidden)} />
         <Notices notice={session.notice} />
       </div>
       <div className="relative flex min-h-0 flex-1 flex-col">

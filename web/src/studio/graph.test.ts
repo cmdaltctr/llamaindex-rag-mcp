@@ -58,8 +58,15 @@ describe("graph draft", () => {
     const at = added.draft.layout.positions[added.nodeId];
     if (at === undefined) throw new Error("the added node has no position");
     for (const other of taken) {
-      expect(Math.abs(other.x - at.x) >= 260 || Math.abs(other.y - at.y) >= 180).toBe(true);
+      expect(Math.abs(other.x - at.x) >= 260 || Math.abs(other.y - at.y) >= 280).toBe(true);
     }
+  });
+
+  it("leaves 280 pixels between grid rows, so a tall step card does not cover the card below it", () => {
+    let draft = emptyDraft();
+    for (let index = 0; index < 5; index += 1) draft = addNode(draft, op("retrieve.dense")).draft;
+    const ys = Object.values(draft.layout.positions).map((at) => at.y);
+    expect(Math.max(...ys) - Math.min(...ys)).toBe(280);
   });
 
   it("serialises the execution document without layout data", () => {

@@ -3,12 +3,16 @@
  * form fields. A nullable parameter inherits its value when it is `null`.
  */
 import type { JsonSchema, JsonValue, OperationDescriptor } from "../api/pipelines";
+import { fieldLabel } from "./labels";
 
 export type FieldKind = "string" | "number" | "integer" | "boolean" | "enum" | "unsupported";
 
 export interface ParamField {
   name: string;
+  /** The schema title, for example "Top K". Shown in the Details area. */
   title: string;
+  /** The plain label shown on cards and in Step settings, for example "Number of results". */
+  label: string;
   description: string;
   kind: FieldKind;
   nullable: boolean;
@@ -20,6 +24,8 @@ export interface ParamField {
   defaultValue: JsonValue | undefined;
   /** Settings lever this parameter overrides, for example `retrieval.rerank_enabled`. */
   lever?: string;
+  /** True for the parameter that names the collection the step reads. */
+  isCollection: boolean;
 }
 
 function resolve(schema: JsonSchema, root: JsonSchema): JsonSchema {
@@ -49,9 +55,12 @@ export function paramFields(operation: OperationDescriptor): ParamField[] {
     const variants = (property.anyOf ?? [property]).map((variant) => resolve(variant, root));
     const nullable = variants.some((variant) => variant.type === "null");
     const value = variants.find((variant) => variant.type !== "null") ?? property;
+    const title = property.title ?? name;
+    const lever = operation.lever_params[name];
     return {
       name,
-      title: property.title ?? name,
+      title,
+      label: fieldLabel({ name, title, lever }),
       description: property.description ?? "",
       kind: kindOf(value),
       nullable,
@@ -61,7 +70,8 @@ export function paramFields(operation: OperationDescriptor): ParamField[] {
       exclusiveMinimum: value.exclusiveMinimum,
       exclusiveMaximum: value.exclusiveMaximum,
       defaultValue: property.default,
-      lever: operation.lever_params[name],
+      lever,
+      isCollection: operation.collection_param === name,
     };
   });
 }

@@ -8,7 +8,7 @@ import { ApiError, type ApiClient } from "./client";
 import { getChunk, getJob, getSession, listCollections, listDocuments, listRoots } from "./documents";
 import { listExperiments } from "./experiments";
 import { listIntegrations } from "./integrations";
-import { getPipeline, getRevision, listOperations } from "./pipelines";
+import { getPipeline, getRevision, listOperations, PipelineIssuesError, validatePipeline, type GraphDocument, type NodeControls } from "./pipelines";
 import { listPlugins } from "./plugins";
 import { getProfile, listProfiles } from "./profiles";
 import { getRunArtefact, getRunRecord, getRunResult, listRuns } from "./runs";
@@ -36,6 +36,7 @@ export const queryKeys = {
   profiles: () => ["profiles"] as const,
   profile: (id: string) => ["profiles", id] as const,
   operations: () => ["pipeline-operations"] as const,
+  draftCheck: (document: string) => ["pipeline-draft-checks", document] as const,
   allRuns: () => ["runs"] as const,
   runs: (filters: RunFilters) => ["runs", filters] as const,
   run: (id: string) => ["runs", id] as const,
@@ -146,6 +147,24 @@ export const healthQuery = (api: ApiClient) =>
 /** Provider endpoints, models, key state and roles. Sends no request to any provider. */
 export const connectionsQuery = (api: ApiClient) =>
   queryOptions({ queryKey: queryKeys.connections(), queryFn: ({ signal }) => getConnections(api, { signal }) });
+
+/**
+ * The draft check of one graph document, given as JSON text, read for the
+ * effective control values it reports. A refused draft is data: its 422 body
+ * still carries the controls of the nodes the server could resolve.
+ */
+export const draftCheckQuery = (api: ApiClient, document: string) =>
+  queryOptions({
+    queryKey: queryKeys.draftCheck(document),
+    queryFn: async ({ signal }): Promise<NodeControls[]> => {
+      try {
+        return (await validatePipeline(api, JSON.parse(document) as GraphDocument, {}, { signal })).nodes ?? [];
+      } catch (error) {
+        if (error instanceof PipelineIssuesError) return error.nodes ?? [];
+        throw error;
+      }
+    },
+  });
 
 export const mcpQuery = (api: ApiClient) =>
   queryOptions({ queryKey: queryKeys.mcp(), queryFn: ({ signal }) => getMcpState(api, { signal }) });

@@ -34,7 +34,7 @@ async function openBuiltIn(purpose = "search") {
 }
 
 const nodeNames = () => within(outline()).getAllByRole("button", { name: /^Node / });
-const stepElement = (id: string) => screen.getByLabelText(new RegExp(`^Node ${id}, `)).closest(".react-flow__node") as HTMLElement;
+const stepElement = (id: string) => document.querySelector<HTMLElement>(`.react-flow__node[data-id="${id}"]`)!;
 
 describe("a built-in profile on the read-only canvas", () => {
   it("draws the standard graph of the open purpose from the profile detail", async () => {
@@ -82,7 +82,7 @@ describe("a built-in profile on the read-only canvas", () => {
     await screen.findByRole("heading", { level: 1, name: "Documents" });
     await openAllSections(opened.user);
     await opened.user.click(await within(outline()).findByRole("button", { name: /^Node prepare / }));
-    const box = within(inspector()).getByRole("textbox", { name: "Top K value" });
+    const box = within(inspector()).getByRole("textbox", { name: "Number of results value" });
     expect(box).toHaveValue("5");
     expect(box).toBeDisabled();
     expect(within(inspector()).getByRole("textbox", { name: /similarity.* value/i })).toBeDisabled();
@@ -114,8 +114,10 @@ describe("a built-in profile on the read-only canvas", () => {
     expect(server.calls.filter((call) => call.method !== "GET" && !call.path.endsWith("/validate"))).toEqual([]);
   });
 
-  it("shows the notice and Duplicate to edit in the page header", async () => {
-    await openBuiltIn();
+  it("shows Duplicate to edit in the page header and the notice in the info popover", async () => {
+    const { user } = await openBuiltIn();
+    expect(screen.queryByText(READ_ONLY_NOTICE)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "About the Search pipeline" }));
     expect(screen.getByText(READ_ONLY_NOTICE)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Duplicate to edit" })).toBeEnabled();
   });
@@ -143,7 +145,7 @@ describe("a built-in profile on the read-only canvas", () => {
   it("keeps the graph when the Delete or Backspace key is pressed on a selected step", async () => {
     const { user } = await openBuiltIn();
     await user.click(within(outline()).getByRole("button", { name: /^Node rerank / }));
-    const step = screen.getByLabelText(/^Node rerank, /);
+    const step = screen.getByLabelText("Cross-encoder rerank step");
     step.focus();
     fireEvent.keyDown(step, { key: "Delete" });
     fireEvent.keyDown(step, { key: "Backspace" });
@@ -160,7 +162,7 @@ describe("a built-in profile on the read-only canvas", () => {
     const { user } = await openBuiltIn();
     expect(screen.getByRole("button", { name: /^Step settings/ })).toHaveAttribute("aria-expanded", "true");
     await user.click(within(outline()).getByRole("button", { name: /^Node dense / }));
-    expect(within(inspector()).getByRole("heading", { name: /dense/ })).toBeInTheDocument();
+    expect(within(inspector()).getByRole("heading", { name: "Dense retrieval" })).toBeInTheDocument();
     await user.click(within(outline()).getByRole("button", { name: /^Node rerank / }));
     expect(within(inspector()).getByRole("heading", { name: /rerank/ })).toBeInTheDocument();
   });
@@ -184,8 +186,10 @@ describe("a built-in profile on the read-only canvas", () => {
   });
 
   it("opens the second built-in profile read-only as well", async () => {
-    openStudio("#/studio/codebase/search", { ...FIXTURES, profiles: [CODEBASE_PROFILE] });
+    const { user } = openStudio("#/studio/codebase/search", { ...FIXTURES, profiles: [CODEBASE_PROFILE] });
     expect(await screen.findByRole("heading", { level: 1, name: "Codebase" })).toBeInTheDocument();
+    await screen.findByRole("button", { name: "Operations" });
+    await user.click(screen.getByRole("button", { name: "About the Search pipeline" }));
     expect(screen.getByText(READ_ONLY_NOTICE)).toBeInTheDocument();
   });
 });
@@ -208,7 +212,7 @@ describe("a user profile canvas stays editable", () => {
     await screen.findByRole("heading", { level: 1, name: "Search copy" });
     await openAllSections(user);
     await user.click(await within(outline()).findByRole("button", { name: /^Node rerank / }));
-    const step = screen.getByLabelText(/^Node rerank, /);
+    const step = screen.getByLabelText("Cross-encoder rerank step");
     step.focus();
     fireEvent.keyDown(step, { key: "Delete" });
     await waitFor(() => expect(within(outline()).queryByRole("button", { name: /^Node rerank / })).not.toBeInTheDocument());
