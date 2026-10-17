@@ -57,6 +57,10 @@ class RerankParams(_Params):
     enabled: bool | None = None
 
 
+class ReaderParams(_Params):
+    reader: str | None = None
+
+
 class ThresholdParams(_Params):
     threshold: float = Field(default=0.0, ge=0.0, le=1.0)
 

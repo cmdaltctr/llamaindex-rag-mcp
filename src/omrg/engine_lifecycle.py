@@ -86,13 +86,22 @@ def graph_host(engine: Engine, collection: str | None) -> Any:
         "answer_llm": answer_llm,
         "verify_llm": engine._pipelines.judge(engine._verify_llm_factory),
     }
-    return build_graph_host(
+    from dataclasses import replace
+
+    from .core.pipelines import HostOptionSet
+
+    readers = HostOptionSet(
+        inherited=engine._effective_settings.pdf_reader,
+        unavailable={n: r for n, r in engine._pipelines.reader_options().items() if r},
+    )
+    graph = build_graph_host(
         engine._effective_settings,
         resources=resources,
         resolver=engine._resolver(),
         collection=collection,
         ocr_factory=engine._pipelines.ocr_client,
     )
+    return replace(graph, host=replace(graph.host, options={"pdf_reader": readers}))
 
 
 def install_as_process_default(engine: Engine) -> None:

@@ -36,6 +36,7 @@ class IssueCode:
     CYCLE = "cycle"
     INVALID_BYPASS = "invalid_bypass"
     CAPABILITY_UNAVAILABLE = "capability_unavailable"
+    OPTION_UNAVAILABLE = "option_unavailable"
     EMBEDDING_IDENTITY_MISMATCH = "embedding_identity_mismatch"
     CONFLICTING_COMMIT = "conflicting_commit"
     MULTIPLE_COMMIT_DESTINATIONS = "multiple_commit_destinations"

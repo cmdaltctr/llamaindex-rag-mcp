@@ -14,10 +14,11 @@ Canonical order (one source unit per pass after ``source.discover``)::
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, WithJsonSchema
 
+from ...integrations.pdf import registry as pdf_registry
 from ..pipelines import (
     READER_STRUCTURED,
     READER_TEXT_FORMAT,
@@ -70,6 +71,29 @@ class CollectionParams(BaseModel):
     collection: str | None = Field(default=None, min_length=1, max_length=128)
 
 
+_PDF_READERS: tuple[str, ...] = tuple(pdf_registry.available())
+
+
+def _check_pdf_reader(name: str) -> str:
+    if name == "auto":
+        raise ValueError(
+            "'auto' is a host policy, not a reader. Choose a concrete reader or inherit "
+            "the host reader."
+        )
+    if name not in _PDF_READERS:
+        raise ValueError(f"Unknown PDF reader {name!r}. Choose one of {list(_PDF_READERS)}.")
+    return name
+
+
+#: A registered concrete reader. The schema carries the names as an ``enum`` so
+#: clients render a choice; ``auto`` is not a reader (``registry`` module docs).
+PdfReaderName = Annotated[
+    str,
+    AfterValidator(_check_pdf_reader),
+    WithJsonSchema({"type": "string", "enum": list(_PDF_READERS)}),
+]
+
+
 class ReadParams(BaseModel):
     """Node overrides for ``read.document`` (``None`` inherits).
 
@@ -79,12 +103,16 @@ class ReadParams(BaseModel):
     Attributes:
         strategy_fallback: ``chunking.strategy_fallback`` lever.
         code_chunk_lines: ``chunking.code_chunk_lines`` lever.
+        pdf_reader: Registered concrete PDF reader for this step. ``None``
+            inherits the host reader. Not a lever: the host default and a
+            graph-wide override stay host-owned.
     """
 
     model_config = _FROZEN
 
     strategy_fallback: Literal["markdown", "code", "sentence"] | None = None
     code_chunk_lines: int | None = Field(default=None, ge=1)
+    pdf_reader: PdfReaderName | None = None
 
 
 class EnrichParams(BaseModel):
@@ -168,6 +196,7 @@ READ = OperationDescriptor(
         "strategy_fallback": "chunking.strategy_fallback",
         "code_chunk_lines": "chunking.code_chunk_lines",
     },
+    option_params={"pdf_reader": "pdf_reader"},
     index_shaping=True,
 )
 

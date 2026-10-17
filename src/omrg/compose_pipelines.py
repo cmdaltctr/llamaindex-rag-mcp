@@ -324,7 +324,15 @@ class EnginePipelines:
         self._runs_lock = threading.Lock()
         self._judges: dict[Any, Any] = {}
         self._ocr: Any = None
+        self._readers: dict[str, str | None] | None = None
         self.active_runs = 0
+
+    def reader_options(self) -> dict[str, str | None]:
+        """Return the PDF reader probe, run once per Engine on first use."""
+        from .capabilities import pdf_reader_options
+
+        self._readers = self._readers or pdf_reader_options()
+        return self._readers
 
     def catalogue(self) -> OperationCatalogue:
         """Return this Engine's catalogue, built on first use."""
@@ -334,7 +342,7 @@ class EnginePipelines:
 
     def describe(self, graph_host: GraphHost) -> list[dict[str, Any]]:
         """Return the catalogue listing with availability for this host."""
-        return self.catalogue().describe(graph_host.host.capabilities)
+        return self.catalogue().describe(graph_host.host.capabilities, graph_host.host.options)
 
     def validate(
         self, definition: Any, graph_host: GraphHost, *, inputs: Mapping[str, Any] | None = None

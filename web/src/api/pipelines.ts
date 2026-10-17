@@ -58,10 +58,15 @@ export interface OperationDescriptor {
   bypass: { input_port: string; output_port: string } | null;
   collection_param: string | null;
   lever_params: Record<string, string>;
+  option_params: Record<string, string>;
   free_text_params: string[];
   index_shaping: boolean;
   available: boolean;
   unavailable_reasons: string[];
+  /** Setting name to its choices the host cannot run, each with a reason. */
+  unavailable_options: Record<string, Record<string, string>>;
+  /** Setting name to the value that `null` inherits from the host. */
+  inherited_values: Record<string, unknown>;
 }
 
 export interface PortRef {

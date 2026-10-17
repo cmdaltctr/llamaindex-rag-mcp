@@ -559,6 +559,13 @@ The packaged default `pdf_inspector` is a base dependency
 reader that is not importable logs an error and falls back to pypdf. Tests
 pin `pypdf` for determinism.
 
+`PDF_READER` is the host default. A Read document step in a pipeline can
+choose another installed reader for that step only. The step setting does
+not change the environment or the other pipelines. `auto` is a host policy
+and is not a step choice. A step that names a reader whose package is not
+installed fails validation with `option_unavailable`, and no node runs. See
+[Pipeline graphs](pipelines.md#pdf-reader-on-the-read-document-step).
+
 Each reader declares the text format it emits and whether it provides
 page-level provenance. Downstream consumers route on the declared format
 instead of the file extension, and search results carry `page_label` only

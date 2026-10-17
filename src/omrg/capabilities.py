@@ -77,6 +77,27 @@ def pdf_reader_installed(reader: str) -> bool:
     return True
 
 
+def pdf_reader_options() -> dict[str, str | None]:
+    """Probe every registered PDF reader once.
+
+    Uses the same registry probe as :func:`pdf_reader_installed`.
+
+    Returns:
+        Reader name to ``None`` (installed) or the reason it cannot run,
+        which names the missing package.
+    """
+    from .integrations.pdf import registry as pdf_registry
+
+    options: dict[str, str | None] = {}
+    for name in pdf_registry.available():
+        if pdf_reader_installed(name):
+            options[name] = None
+            continue
+        package = pdf_registry.describe(name)["probe_module"]
+        options[name] = f"The package '{package}' is not installed."
+    return options
+
+
 def magika_available(settings: Any) -> bool:
     """Whether the configured Magika binary is on ``PATH``.
 
