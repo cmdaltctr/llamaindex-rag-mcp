@@ -79,6 +79,7 @@ from .graph_adapters_values import (
     single_unit,
     stop_if_cancelled,
     target_collection,
+    with_pdf_reader,
     work_value,
 )
 from .graph_fingerprint import INGESTION_SHAPE_RESOURCE, IngestionShape
@@ -167,7 +168,7 @@ async def identify_adapter(
         return _out("sources", SourceWork(unit, collection, status=BINARY))
     ingestion = await asyncio.to_thread(
         build_ingestion_context,
-        context.settings,
+        with_pdf_reader(context.settings, shape.pdf_reader),
         embed_model=embedder,
         ocr_client=optional(context, OCR_RESOURCE),
         graph_shape=shape.identity_block(),
@@ -196,7 +197,8 @@ async def read_adapter(
     work = work_value(inputs["sources"])
     if not work.pending:
         return _out("documents", work)
-    settings, unit = context.settings, work.unit
+    unit = work.unit
+    settings = with_pdf_reader(context.settings, getattr(params, "pdf_reader", None))
     specialised = await chunk_specialised_source(
         unit.file_path,
         content_type=unit.content_type,

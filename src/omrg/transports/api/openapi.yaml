@@ -4533,10 +4533,13 @@ components:
         - bypass
         - collection_param
         - lever_params
+        - option_params
         - free_text_params
         - index_shaping
         - available
         - unavailable_reasons
+        - unavailable_options
+        - inherited_values
         - adapter_ref
       properties:
         operation_id:
@@ -4575,6 +4578,13 @@ components:
           type: object
           additionalProperties:
             type: [string, "null"]
+        option_params:
+          type: object
+          description: >-
+            Parameter name to the host option set that reports which of its
+            choices the host cannot run.
+          additionalProperties:
+            type: string
         free_text_params:
           type: array
           items:
@@ -4587,6 +4597,20 @@ components:
           type: array
           items:
             type: string
+        unavailable_options:
+          type: object
+          description: >-
+            Setting name to its choices the host cannot run, each with a reason.
+            Empty for an operation without such settings. The operation stays
+            available.
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+        inherited_values:
+          type: object
+          description: Setting name to the value that `null` inherits from the host.
+          additionalProperties: true
         adapter_ref:
           type: string
 

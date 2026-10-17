@@ -129,10 +129,16 @@ def lever_error(path: str, value: Any) -> tuple[str, str] | None:
     spec = ALLOWED_LEVERS.get(path)
     if spec is None:
         if is_host_owned(path):
+            hint = (
+                " To read PDF files differently in one pipeline, set the reader on the "
+                "Read document step instead."
+                if path == "pdf_reader"
+                else ""
+            )
             return (
                 "host_owned",
                 f"'{path}' is owned by the host configuration. Change it in the "
-                "environment and restart OMRG; a graph cannot change it.",
+                f"environment and restart OMRG; a graph cannot change it.{hint}",
             )
         allowed = ", ".join(sorted(ALLOWED_LEVERS))
         return ("invalid", f"'{path}' is not an allowed graph lever. Allowed levers: {allowed}.")

@@ -4,6 +4,9 @@ import type { OperationDescriptor } from "../../api/pipelines";
 export const CATALOGUE_PART_ONE: OperationDescriptor[] = [
  {
   "operation_id": "combine.rrf",
+  "option_params": {},
+  "unavailable_options": {},
+  "inherited_values": {},
   "version": 1,
   "title": "Reciprocal rank fusion",
   "family": "combine",
@@ -78,6 +81,9 @@ export const CATALOGUE_PART_ONE: OperationDescriptor[] = [
  },
  {
   "operation_id": "context.assemble",
+  "option_params": {},
+  "unavailable_options": {},
+  "inherited_values": {},
   "version": 1,
   "title": "Assemble context",
   "family": "context",
@@ -144,6 +150,9 @@ export const CATALOGUE_PART_ONE: OperationDescriptor[] = [
  },
  {
   "operation_id": "prepare.enrich",
+  "option_params": {},
+  "unavailable_options": {},
+  "inherited_values": {},
   "version": 1,
   "title": "Extract metadata",
   "family": "prepare",
@@ -228,6 +237,9 @@ export const CATALOGUE_PART_ONE: OperationDescriptor[] = [
  },
  {
   "operation_id": "retrieve.dense",
+  "option_params": {},
+  "unavailable_options": {},
+  "inherited_values": {},
   "version": 1,
   "title": "Dense retrieval",
   "family": "retrieve",
@@ -299,6 +311,9 @@ export const CATALOGUE_PART_ONE: OperationDescriptor[] = [
  },
  {
   "operation_id": "retrieve.prepare_query",
+  "option_params": {},
+  "unavailable_options": {},
+  "inherited_values": {},
   "version": 1,
   "title": "Prepare query",
   "family": "retrieve",

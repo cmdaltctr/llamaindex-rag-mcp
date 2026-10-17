@@ -2,6 +2,8 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it } from "vitest";
 import { json } from "./test/fakeServer";
 import { addWithKeyboard, choose, EMPTY_PIPELINE, inspector, openAllSections, outline, runPanel, savedDocument, UNUSED_PROFILES } from "./test/helpers";
+import { CATALOGUE } from "./test/catalogueFixture";
+import { CATALOGUE_INGEST } from "./test/catalogueIngest";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
 
@@ -201,5 +203,26 @@ describe("revision, run and cancellation", () => {
     const profileCalls = server.calls.filter((call) => /\/collections\/[^/]+\/profile/.test(call.path));
     expect(profileCalls).toEqual([]);
     expect(server.calls.filter((call) => call.method === "PATCH")).toEqual([]);
+  });
+
+  it("offers PDF readers: disables an uninstalled one, writes the choice and names the inherited reader", async () => {
+    const { server, user } = await setup({ catalogue: [...CATALOGUE, ...CATALOGUE_INGEST] });
+    await addWithKeyboard(user, "Read document", "read.document");
+    const reader = group("Pdf reader");
+    expect(reader).toHaveTextContent("Inherit uses the host value: pdf_inspector.");
+
+    await user.click(within(reader).getByRole("combobox", { name: "Pdf reader value" }));
+    const missing = await screen.findByRole("option", { name: /pypdfium2 \(not installed\)/ });
+    expect(missing).toHaveAttribute("aria-disabled", "true");
+    await user.click(await screen.findByRole("option", { name: "liteparse" }));
+    expect((await saveRevision(user, server)).nodes.find((n) => n.operation === "read.document")?.params).toEqual({ pdf_reader: "liteparse" });
+  });
+
+  it("shows why a PDF reader is unavailable", async () => {
+    const { user } = await setup({ catalogue: [...CATALOGUE, ...CATALOGUE_INGEST] });
+    await addWithKeyboard(user, "Read document", "read.document");
+    await user.click(within(group("Pdf reader")).getByRole("combobox", { name: "Pdf reader value" }));
+    await screen.findByRole("option", { name: /pypdfium2/ });
+    expect(screen.getByText("The package 'pypdfium2' is not installed.")).toBeInTheDocument();
   });
 });

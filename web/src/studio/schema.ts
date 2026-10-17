@@ -24,6 +24,10 @@ export interface ParamField {
   defaultValue: JsonValue | undefined;
   /** Settings lever this parameter overrides, for example `retrieval.rerank_enabled`. */
   lever?: string;
+  /** Choices the host cannot run, each with a reason. Empty for most fields. */
+  unavailableOptions: Record<string, string>;
+  /** Value the step inherits from the host when this field is empty, if the host reports one. */
+  inheritedValue: JsonValue | undefined;
   /** True for the parameter that names the collection the step reads. */
   isCollection: boolean;
 }
@@ -71,6 +75,8 @@ export function paramFields(operation: OperationDescriptor): ParamField[] {
       exclusiveMaximum: value.exclusiveMaximum,
       defaultValue: property.default,
       lever,
+      unavailableOptions: operation.unavailable_options[name] ?? {},
+      inheritedValue: operation.inherited_values[name] as JsonValue | undefined,
       isCollection: operation.collection_param === name,
     };
   });

@@ -4,6 +4,9 @@ import type { OperationDescriptor } from "../../api/pipelines";
 export const CATALOGUE_PART_TWO: OperationDescriptor[] = [
  {
   "operation_id": "retrieve.sparse",
+  "option_params": {},
+  "unavailable_options": {},
+  "inherited_values": {},
   "version": 1,
   "title": "Sparse retrieval",
   "family": "retrieve",
@@ -74,6 +77,9 @@ export const CATALOGUE_PART_TWO: OperationDescriptor[] = [
  },
  {
   "operation_id": "select.rerank",
+  "option_params": {},
+  "unavailable_options": {},
+  "inherited_values": {},
   "version": 1,
   "title": "Cross-encoder rerank",
   "family": "select",
@@ -158,6 +164,9 @@ export const CATALOGUE_PART_TWO: OperationDescriptor[] = [
  },
  {
   "operation_id": "select.threshold",
+  "option_params": {},
+  "unavailable_options": {},
+  "inherited_values": {},
   "version": 1,
   "title": "Threshold and top-k",
   "family": "select",
@@ -222,6 +231,9 @@ export const CATALOGUE_PART_TWO: OperationDescriptor[] = [
  },
  {
   "operation_id": "verify.claims",
+  "option_params": {},
+  "unavailable_options": {},
+  "inherited_values": {},
   "version": 1,
   "title": "Verify claims",
   "family": "verify",

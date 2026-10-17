@@ -14,6 +14,7 @@ from tests.unit.test_pipeline_support import (
     EMBEDDED,
     FUSED_EVIDENCE,
     NoParams,
+    ReaderParams,
     RerankParams,
     fixture_catalogue,
     fixture_descriptors,
@@ -28,6 +29,7 @@ from omrg.core.pipelines import (
     BypassSpec,
     Cardinality,
     EffectClass,
+    HostOptionSet,
     OperationCatalogue,
     OperationDescriptor,
     PortKind,
@@ -168,6 +170,55 @@ def test_lever_params_must_name_parameters_and_allowed_levers() -> None:
         _descriptor(lever_params={"missing": "retrieval.top_k"})
     with pytest.raises(ValidationError, match="lever"):
         _descriptor(parameters=RerankParams, lever_params={"enabled": "embed_model"})
+
+
+def test_option_params_must_name_parameters() -> None:
+    """An option parameter must be part of the parameter model."""
+    with pytest.raises(ValidationError, match="option"):
+        _descriptor(option_params={"missing": "reader"})
+
+
+def test_option_params_appear_in_the_schema() -> None:
+    """Clients read the option-set name for each host-dependent parameter."""
+    descriptor = _descriptor(parameters=ReaderParams, option_params={"reader": "reader"})
+    assert descriptor.to_schema()["option_params"] == {"reader": "reader"}
+    assert _descriptor().to_schema()["option_params"] == {}
+
+
+def _reader_catalogue() -> OperationCatalogue:
+    catalogue = OperationCatalogue()
+    catalogue.register(
+        _descriptor(
+            operation_id="read.example",
+            parameters=ReaderParams,
+            option_params={"reader": "reader"},
+        ),
+        noop_adapter,
+    )
+    catalogue.register(_descriptor(operation_id="select.plain"), noop_adapter)
+    return catalogue
+
+
+def test_describe_reports_unavailable_and_inherited_options() -> None:
+    """Host option sets become per-parameter maps; availability stays per operation."""
+    options = {"reader": HostOptionSet(inherited="alpha", unavailable={"beta": "beta is missing"})}
+    listing = _reader_catalogue().describe({}, options)
+    by_id = {entry["operation_id"]: entry for entry in listing}
+    entry = by_id["read.example"]
+    assert entry["available"] is True
+    assert entry["unavailable_options"] == {"reader": {"beta": "beta is missing"}}
+    assert entry["inherited_values"] == {"reader": "alpha"}
+
+
+def test_describe_without_option_parameters_reports_empty_maps() -> None:
+    """Operations with no option parameters report two empty maps."""
+    options = {"reader": HostOptionSet(inherited="alpha", unavailable={"beta": "missing"})}
+    plain = {e["operation_id"]: e for e in _reader_catalogue().describe({}, options)}
+    assert plain["select.plain"]["unavailable_options"] == {}
+    assert plain["select.plain"]["inherited_values"] == {}
+    no_host = {e["operation_id"]: e for e in _reader_catalogue().describe({})}
+    assert no_host["read.example"]["unavailable_options"] == {}
+    assert no_host["read.example"]["inherited_values"] == {}
 
 
 def test_collection_param_must_exist() -> None:

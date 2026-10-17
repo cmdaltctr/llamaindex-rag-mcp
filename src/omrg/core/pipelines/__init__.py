@@ -31,6 +31,7 @@ from .cancellation import PipelineCancelledError, RunCancellation
 from .catalogue import (
     BypassSpec,
     EffectClass,
+    HostOptionSet,
     OperationCatalogue,
     OperationDescriptor,
     RegisteredOperation,
@@ -119,6 +120,7 @@ __all__ = [
     "GraphLayout",
     "GraphOutput",
     "HostContext",
+    "HostOptionSet",
     "IssueCode",
     "LeverSpec",
     "NodeContext",

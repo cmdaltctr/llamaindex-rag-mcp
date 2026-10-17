@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Any, TypeVar
 
 from ..pipelines import NodeContext, PipelineCancelledError
+from ..settings import EffectiveSettings
 from .backends.orchestrator import BackendRead
 from .commit import PreparedSource
 from .sources import SourceIdentity, SourceUnit
@@ -135,6 +136,17 @@ def required(context: NodeContext, name: str) -> Any:
 def optional(context: NodeContext, name: str) -> Any:
     """Return a host resource, or ``None`` when the host did not supply it."""
     return context.resources.get(name)
+
+
+def with_pdf_reader(settings: EffectiveSettings, reader: str | None) -> EffectiveSettings:
+    """Return *settings* that read PDF files with *reader*.
+
+    ``None`` inherits the host reader, so *settings* is returned unchanged.
+    The copy leaves the frozen host settings alone. The read and identify
+    adapters both use this helper, so the read and the stored identity name
+    the same reader.
+    """
+    return settings if reader is None else settings.model_copy(update={"pdf_reader": reader})
 
 
 def target_collection(context: NodeContext, params: Any) -> str:

@@ -15,7 +15,13 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, ValidationError
 
-from .catalogue import EffectClass, OperationCatalogue, RegisteredOperation, capability_reasons
+from .catalogue import (
+    EffectClass,
+    HostOptionSet,
+    OperationCatalogue,
+    RegisteredOperation,
+    capability_reasons,
+)
 from .errors import IssueCode, PipelineIssue, PipelineValidationError
 from .executable import executable_reason, iter_strings
 from .levers import lever_error
@@ -43,12 +49,16 @@ class HostContext:
         embedding: Embedding identity the host's embedder produces.
         collections: View of stored collection identities.
         default_collection: Collection for bound nodes that name none.
+        options: Option-set name to the choices the host cannot run and the
+            value a node inherits. Preflight refuses a node that selects an
+            unavailable choice.
     """
 
     capabilities: Mapping[str, str | None] = field(default_factory=dict)
     embedding: EmbeddingRef | None = None
     collections: CollectionView | None = None
     default_collection: str = "documents"
+    options: Mapping[str, HostOptionSet] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -225,7 +235,25 @@ class _Checker:
                 continue
             for reason in capability_reasons(entry.descriptor, self.host.capabilities):
                 self.add(IssueCode.CAPABILITY_UNAVAILABLE, reason, node_id=node.id)
+            self._check_options(node.id, entry)
             self._check_identity(node.id, entry)
+
+    def _check_options(self, node_id: str, entry: RegisteredOperation) -> None:
+        host, params = self.host, self.params.get(node_id)
+        if host is None or params is None:
+            return
+        for param, set_name in entry.descriptor.option_params.items():
+            option_set = host.options.get(set_name)
+            value = getattr(params, param, None)
+            if option_set is None or value is None or value not in option_set.unavailable:
+                continue
+            self.add(
+                IssueCode.OPTION_UNAVAILABLE,
+                f"Setting '{param}' selects '{value}', which this host cannot use: "
+                f"{option_set.unavailable[value]} Install the package and restart OMRG, "
+                "or choose another value or Inherit.",
+                node_id=node_id,
+            )
 
     def _check_identity(self, node_id: str, entry: RegisteredOperation) -> None:
         host, collection = self.host, self.collections.get(node_id)

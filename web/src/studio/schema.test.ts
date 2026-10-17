@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mappedFieldLabel, optionLabel } from "./labels";
 import { checkValue, paramFields } from "./schema";
 import { CATALOGUE } from "./test/catalogueFixture";
+import { CATALOGUE_INGEST } from "./test/catalogueIngest";
 
 function fields(id: string) {
   const found = CATALOGUE.find((entry) => entry.operation_id === id);
@@ -26,6 +27,24 @@ describe("parameter schema", () => {
       nullable: true,
       lever: "metadata.taxonomy_mode",
     });
+  });
+
+  it("reads the PDF reader as a nullable enum with unavailable choices and the inherited value", () => {
+    const read = CATALOGUE_INGEST.find((entry) => entry.operation_id === "read.document");
+    if (read === undefined) throw new Error("read.document");
+    const field = paramFields(read).find((entry) => entry.name === "pdf_reader");
+    expect(field).toMatchObject({
+      kind: "enum",
+      nullable: true,
+      options: ["liteparse", "pdf_inspector", "pypdf", "pypdfium2"],
+      unavailableOptions: { pypdfium2: "The package 'pypdfium2' is not installed." },
+      inheritedValue: "pdf_inspector",
+    });
+  });
+
+  it("gives other fields no unavailable choices and no inherited value", () => {
+    const prepare = fields("retrieve.prepare_query");
+    expect(prepare.top_k).toMatchObject({ unavailableOptions: {}, inheritedValue: undefined });
   });
 
   it("resolves local $ref definitions", () => {
