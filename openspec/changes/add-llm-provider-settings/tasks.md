@@ -17,43 +17,43 @@ Line ceiling: `src/omrg/engine.py` has 498 lines and `src/omrg/compose.py` has 4
 
 ## 2. Provider descriptors in the registry
 
-- [ ] 2.1 Write `tests/unit/test_llm_connection_descriptors.py`. Assert that `registry.describe_all()` returns `ollama`, `llamacpp`, `openrouter` in registration order, each with display name, locality, fields, `test_targets`, `models_target` and `parse_models`. Assert that a fake provider registered in the test appears with no other change. Run it and see it fail.
-- [ ] 2.2 Add a `CONNECTION` descriptor to `src/omrg/core/providers/llm/ollama.py`, `llamacpp.py` and `openrouter.py` (design D5). Use `GET /api/v1/key` as the OpenRouter test target.
-- [ ] 2.3 Add `describe_all()` to `src/omrg/core/providers/llm/registry.py`. Verify that test 2.1 passes and `uv run lint-imports` passes.
-- [ ] 2.4 Add `parse_models` tests with recorded payloads: Ollama `models[].name`, OpenAI-style `data[].id`, and a malformed payload that returns an empty list. Verify that they pass.
+- [x] 2.1 Write `tests/unit/test_llm_connection_descriptors.py`. Assert that `registry.describe_all()` returns `ollama`, `llamacpp`, `openrouter` in registration order, each with display name, locality, fields, `test_targets`, `models_target` and `parse_models`. Assert that a fake provider registered in the test appears with no other change. Run it and see it fail.
+- [x] 2.2 Add a `CONNECTION` descriptor to `src/omrg/core/providers/llm/ollama.py`, `llamacpp.py` and `openrouter.py` (design D5). Use `GET /api/v1/key` as the OpenRouter test target.
+- [x] 2.3 Add `describe_all()` to `src/omrg/core/providers/llm/registry.py`. Verify that test 2.1 passes and `uv run lint-imports` passes.
+- [x] 2.4 Add `parse_models` tests with recorded payloads: Ollama `models[].name`, OpenAI-style `data[].id`, and a malformed payload that returns an empty list. Verify that they pass.
 
 ## 3. Value sources and precedence
 
-- [ ] 3.1 Write `tests/unit/test_provider_value_sources.py`. For each editable field, assert the source is `env` when set in the environment, `env` when set in `.env`, and `default` when set only in profile YAML or `defaults.yaml`. Cover the nested `ANSWER__PROVIDER` form. Run it and see it fail.
-- [ ] 3.2 Record the explicit sources of the five editable fields in `src/omrg/config/__init__.py`, beside `_explicit_vector_store_sources`. Verify with test 3.1 and `uv run pytest tests/test_config.py -q`.
-- [ ] 3.3 Write `tests/unit/test_compose_providers.py`. Assert that `apply_provider_values` keeps a locked field, applies an unlocked saved field, falls back to the default when cleared, applies the Chat choice to `answer.provider` and `answer.model`, and refuses the Ollama address while embeddings use Ollama. Run it and see it fail.
-- [ ] 3.4 Create `src/omrg/compose_providers.py` with `ProviderValues`, `apply_provider_values` and `provider_effective_settings`. Re-export from `src/omrg/compose.py`. Verify with test 3.3 and the file size test.
-- [ ] 3.5 Write tests in `tests/unit/test_connection_summary.py` for the new entry shape: fields with source, lock, `set`, `last4` (only for keys of 16 or more characters), `state`, plus `read_only`, `installed`, `install_hint`, roles and the top-level `keychain`. Run them and see them fail.
-- [ ] 3.6 Rewrite `src/omrg/compose_connections.py` to loop over `describe_all()` with no branch on a provider name. Verify with test 3.5 and `grep -n '== "ollama"\|== "llamacpp"\|== "openrouter"' src/omrg/compose_connections.py` printing nothing.
-- [ ] 3.7 Comment out `LLAMACPP_CHAT_URL` in `.env.example` and add one line that says Settings can set it. Verify that the default value in `src/omrg/config/__init__.py` equals the old line.
+- [x] 3.1 Write `tests/unit/test_provider_value_sources.py`. For each editable field, assert the source is `env` when set in the environment, `env` when set in `.env`, and `default` when set only in profile YAML or `defaults.yaml`. Cover the nested `ANSWER__PROVIDER` form. Run it and see it fail.
+- [x] 3.2 Record the explicit sources of the five editable fields in `src/omrg/config/__init__.py`, beside `_explicit_vector_store_sources`. Verify with test 3.1 and `uv run pytest tests/test_config.py -q`.
+- [x] 3.3 Write `tests/unit/test_compose_providers.py`. Assert that `apply_provider_values` keeps a locked field, applies an unlocked saved field, falls back to the default when cleared, applies the Chat choice to `answer.provider` and `answer.model`, and refuses the Ollama address while embeddings use Ollama. Run it and see it fail.
+- [x] 3.4 Create `src/omrg/compose_providers.py` with `ProviderValues`, `apply_provider_values` and `provider_effective_settings`. Re-export from `src/omrg/compose.py`. Verify with test 3.3 and the file size test.
+- [x] 3.5 Write tests in `tests/unit/test_connection_summary.py` for the new entry shape: fields with source, lock, `set`, `last4` (only for keys of 16 or more characters), `state`, plus `read_only`, `installed`, `install_hint`, roles and the top-level `keychain`. Run them and see them fail.
+- [x] 3.6 Rewrite `src/omrg/compose_connections.py` to loop over `describe_all()` with no branch on a provider name. Verify with test 3.5 and `grep -n '== "ollama"\|== "llamacpp"\|== "openrouter"' src/omrg/compose_connections.py` printing nothing.
+- [x] 3.7 Comment out `LLAMACPP_CHAT_URL` in `.env.example` and add one line that says Settings can set it. Verify that the default value in `src/omrg/config/__init__.py` equals the old line.
 
 ## 4. Storage of saved values and keys
 
-- [ ] 4.1 Write tests in `tests/unit/test_workspace_settings.py` for the keys `chat.provider`, `chat.model`, `provider.<name>.<field>` and `provider.<name>.key_saved_at`. Assert that an unknown key raises and that a damaged value reads as unset. Run them and see them fail.
-- [ ] 4.2 Extend `src/omrg/integrations/workspace_sqlite/settings.py` with the new keys, checked against the allowed set from the descriptors. Update the module docstring that says provider settings stay in `.env`. Verify with test 4.1.
-- [ ] 4.3 Write `tests/unit/test_keychain.py` with an in-memory fake backend of priority 5, installed through `keyring.set_keyring` in a fixture, so CI on any operating system is deterministic and never touches a real keychain. Assert save, read and delete under the service `omrg` with the provider name as user name, the `keychain-missing` state, and that `repr` of the store and of `ProviderValues` hides the key. Run it and see it fail.
-- [ ] 4.4 Add tests to `tests/unit/test_keychain.py` for "no keychain": `keyring.backends.fail.Keyring`, the null keyring, a chainer with no backends, a fake backend of priority below 1, and a fake backend class whose module is `keyrings.alt.file` (the plaintext refusal), also when `PYTHON_KEYRING_BACKEND` forces it. Assert each reports unavailable and that a save raises and writes nothing through that backend. Run them and see them fail.
-- [ ] 4.5 Create `src/omrg/integrations/keychain.py`. Import `keyring` inside functions only, so the base install and the stdio server never import it. Run each call in a worker thread with a time limit. Verify with tests 4.3 and 4.4 and `uv run lint-imports`.
-- [ ] 4.6 Write a test that saves a key through the store and then scans every row of the workspace database, every file under the workspace and the working directory `.env` for the key. Assert no match. Run it and see it pass only with the keychain store in place.
+- [x] 4.1 Write tests in `tests/unit/test_workspace_settings.py` for the keys `chat.provider`, `chat.model`, `provider.<name>.<field>` and `provider.<name>.key_saved_at`. Assert that an unknown key raises and that a damaged value reads as unset. Run them and see them fail.
+- [x] 4.2 Extend `src/omrg/integrations/workspace_sqlite/settings.py` with the new keys, checked against the allowed set from the descriptors. Update the module docstring that says provider settings stay in `.env`. Verify with test 4.1.
+- [x] 4.3 Write `tests/unit/test_keychain.py` with an in-memory fake backend of priority 5, installed through `keyring.set_keyring` in a fixture, so CI on any operating system is deterministic and never touches a real keychain. Assert save, read and delete under the service `omrg` with the provider name as user name, the `keychain-missing` state, and that `repr` of the store and of `ProviderValues` hides the key. Run it and see it fail.
+- [x] 4.4 Add tests to `tests/unit/test_keychain.py` for "no keychain": `keyring.backends.fail.Keyring`, the null keyring, a chainer with no backends, a fake backend of priority below 1, and a fake backend class whose module is `keyrings.alt.file` (the plaintext refusal), also when `PYTHON_KEYRING_BACKEND` forces it. Assert each reports unavailable and that a save raises and writes nothing through that backend. Run them and see them fail.
+- [x] 4.5 Create `src/omrg/integrations/keychain.py`. Import `keyring` inside functions only, so the base install and the stdio server never import it. Run each call in a worker thread with a time limit. Verify with tests 4.3 and 4.4 and `uv run lint-imports`.
+- [x] 4.6 Write a test that saves a key through the store and then scans every row of the workspace database, every file under the workspace and the working directory `.env` for the key. Assert no match. Run it and see it pass only with the keychain store in place.
 
 ## 5. Live provider values in the Engine
 
-- [ ] 5.1 Write `tests/unit/test_engine_provider_update.py`. Assert that after `use_provider_settings(new)` the next answer builds a new model, the next ingest resolves settings with the new key, and the graph judge cache is empty. Assert that an answer waiting on a slow fake model and a graph run already started keep the old values. Assert that a change to an embedding field raises and keeps the old settings. Assert that embedder, store and reranker stay the same objects. Run it and see it fail.
-- [ ] 5.2 Create `src/omrg/engine_providers.py` with the generation holder, the embedding-field guard and the answer-model slot. Move `_get_answer_llm` and its fields there. Add `Engine.use_provider_settings()`. Verify with test 5.1, `uv run pytest tests/test_engine.py -q` and the file size test.
-- [ ] 5.3 Write tests in `tests/test_compose.py`. Assert that `build_engine(provider_source=...)` still runs the environment safeguards, starts with the saved values, and builds the answer model, the judge and the profile resolver from the values the source returns at build time. Assert that `build_engine()` without the keyword behaves as today. Run them and see them fail.
-- [ ] 5.4 Add the `provider_source` keyword to `build_engine` in `src/omrg/compose_engine.py`. Verify with test 5.3.
+- [x] 5.1 Write `tests/unit/test_engine_provider_update.py`. Assert that after `use_provider_settings(new)` the next answer builds a new model, the next ingest resolves settings with the new key, and the graph judge cache is empty. Assert that an answer waiting on a slow fake model and a graph run already started keep the old values. Assert that a change to an embedding field raises and keeps the old settings. Assert that embedder, store and reranker stay the same objects. Run it and see it fail.
+- [x] 5.2 Create `src/omrg/engine_providers.py` with the generation holder, the embedding-field guard and the answer-model slot. Move `_get_answer_llm` and its fields there. Add `Engine.use_provider_settings()`. Verify with test 5.1, `uv run pytest tests/test_engine.py -q` and the file size test.
+- [x] 5.3 Write tests in `tests/test_compose.py`. Assert that `build_engine(provider_source=...)` still runs the environment safeguards, starts with the saved values, and builds the answer model, the judge and the profile resolver from the values the source returns at build time. Assert that `build_engine()` without the keyword behaves as today. Run them and see them fail.
+- [x] 5.4 Add the `provider_source` keyword to `build_engine` in `src/omrg/compose_engine.py`. Verify with test 5.3.
 - [ ] 5.5 Wire the web lifespan in `src/omrg/transports/api/lifespan.py`: read the saved values and the keychain keys after the database is prepared, keep them on `WebRuntime`, and pass a source to the Engine factory. Keep test fakes that take no argument working. Verify with `uv run pytest tests/unit/test_web_lifespan.py -q`.
 
 ## 6. Redaction of saved keys
 
-- [ ] 6.1 Write tests in `tests/unit/test_web_logs.py`. Save a key through the key route, log a message that holds it, and assert the buffer, `GET /v1/logs` and the stream show it removed. Repeat with a replaced key. Run them and see them fail.
-- [ ] 6.2 Add an append-only `SecretSet` to `src/omrg/transports/api/security.py`. Make `RedactingFilter` and `LogBuffer` (`log_buffer.py`) read it at filter time. Create it in `src/omrg/transports/cli/web.py` with the launch keys and the keychain keys. Verify with test 6.1 and `uv run pytest tests/unit/test_web_security.py -q`.
-- [ ] 6.3 Write a test that an answer result whose `error` text holds a saved key comes back from `answerCollection` with the key removed. Run it and see it fail, then redact the `error` field in `src/omrg/transports/api/routes/documents.py`. Verify that it passes.
+- [x] 6.1 Write tests in `tests/unit/test_web_logs.py`. Save a key through the key route, log a message that holds it, and assert the buffer, `GET /v1/logs` and the stream show it removed. Repeat with a replaced key. Run them and see them fail.
+- [x] 6.2 Add an append-only `SecretSet` to `src/omrg/transports/api/security.py`. Make `RedactingFilter` and `LogBuffer` (`log_buffer.py`) read it at filter time. Create it in `src/omrg/transports/cli/web.py` with the launch keys and the keychain keys. Verify with test 6.1 and `uv run pytest tests/unit/test_web_security.py -q`.
+- [x] 6.3 Write a test that an answer result whose `error` text holds a saved key comes back from `answerCollection` with the key removed. Run it and see it fail, then redact the `error` field in `src/omrg/transports/api/routes/documents.py`. Verify that it passes.
 
 ## 7. Provider routes
 
@@ -75,24 +75,24 @@ Line ceiling: `src/omrg/engine.py` has 498 lines and `src/omrg/compose.py` has 4
 
 ## 9. Web client and routes
 
-- [ ] 9.1 `studio-profiles-gallery` already routes `#/settings/<section>` for the old sections. Write tests in `web/src/lib/routes.test.ts` for `#/settings/providers` and `#/settings/chat`. Run them with `cd web && npx vitest run src/lib/routes.test.ts` and see them fail. Then add the two section ids to the list in `web/src/lib/routes.ts` and verify they pass.
-- [ ] 9.2 Write tests in `web/src/api/settings.test.ts` and `settingsMutations.test.tsx` for the new shapes and calls. Run them and see them fail. Then extend `web/src/api/settings.ts`, `queries.ts` and `settingsMutations.ts`, and verify they pass.
+- [x] 9.1 `studio-profiles-gallery` already routes `#/settings/<section>` for the old sections. Write tests in `web/src/lib/routes.test.ts` for `#/settings/providers` and `#/settings/chat`. Run them with `cd web && npx vitest run src/lib/routes.test.ts` and see them fail. Then add the two section ids to the list in `web/src/lib/routes.ts` and verify they pass.
+- [x] 9.2 Write tests in `web/src/api/settings.test.ts` and `settingsMutations.test.tsx` for the new shapes and calls. Run them and see them fail. Then extend `web/src/api/settings.ts`, `queries.ts` and `settingsMutations.ts`, and verify they pass.
 
 ## 10. Providers section
 
-- [ ] 10.1 Update `web/src/settings/SettingsView.test.tsx` for the seven chips and the route per section. Run it and see it fail. Then update `SettingsView.tsx` and verify it passes.
-- [ ] 10.2 Write `web/src/settings/ProvidersSection.test.tsx` with Testing Library: cards from the server list, Local and Cloud badges with text, "Set from environment (read-only here)" with the variable name, save of an address, key input emptied after save with "Key set" and the last four characters, the no-keychain line with no key input, Test with a typed value, the "leaves this machine" line for cloud and for a non-loopback address, and no restart banner. Run it and see it fail.
-- [ ] 10.3 Replace `ConnectionsSection.tsx` and `ConnectionCard.tsx` with `ProvidersSection.tsx`, `ProviderCard.tsx`, `ProviderAddressField.tsx`, `ProviderKeyField.tsx` and `ProviderTest.tsx` (design D8). Remove `PROVIDER_NAMES` from `connectionWords.ts`. Verify with test 10.2 and `cd web && npm run lint && npm run typecheck`.
+- [x] 10.1 Update `web/src/settings/SettingsView.test.tsx` for the seven chips and the route per section. Run it and see it fail. Then update `SettingsView.tsx` and verify it passes.
+- [x] 10.2 Write `web/src/settings/ProvidersSection.test.tsx` with Testing Library: cards from the server list, Local and Cloud badges with text, "Set from environment (read-only here)" with the variable name, save of an address, key input emptied after save with "Key set" and the last four characters, the no-keychain line with no key input, Test with a typed value, the "leaves this machine" line for cloud and for a non-loopback address, and no restart banner. Run it and see it fail.
+- [x] 10.3 Replace `ConnectionsSection.tsx` and `ConnectionCard.tsx` with `ProvidersSection.tsx`, `ProviderCard.tsx`, `ProviderAddressField.tsx`, `ProviderKeyField.tsx` and `ProviderTest.tsx` (design D8). Remove `PROVIDER_NAMES` from `connectionWords.ts`. Verify with test 10.2 and `cd web && npm run lint && npm run typecheck`.
 
 ## 11. Chat section
 
-- [ ] 11.1 Write `web/src/settings/ChatSection.test.tsx`: provider select with not-ready reasons, free-text model, List models fills the field without saving, Test result as badge and sentence, Save and Clear, locked state with no Save, cloud statement only for a cloud provider. Query the select with `getByRole("combobox", { name })`. Run it and see it fail.
-- [ ] 11.2 Create `ChatSection.tsx` and `ChatModelForm.tsx` in `web/src/settings/`. Verify with test 11.1 and `npm run lint && npm run typecheck`.
+- [x] 11.1 Write `web/src/settings/ChatSection.test.tsx`: provider select with not-ready reasons, free-text model, List models fills the field without saving, Test result as badge and sentence, Save and Clear, locked state with no Save, cloud statement only for a cloud provider. Query the select with `getByRole("combobox", { name })`. Run it and see it fail.
+- [x] 11.2 Create `ChatSection.tsx` and `ChatModelForm.tsx` in `web/src/settings/`. Verify with test 11.1 and `npm run lint && npm run typecheck`.
 
 ## 12. Chat view notice
 
-- [ ] 12.1 Add tests to `web/src/chat/ChatView.test.tsx`: not ready shows one line with a link to `#/settings/chat` and disables Send; reason `disabled` shows the turned-off line; a `generation` failure shows the link beside Retry; no server error text in the DOM. Run them and see them fail.
-- [ ] 12.2 Update `ChatView.tsx`, `AssistantTurn.tsx` and `answerStatus.ts`. Verify with test 12.1.
+- [x] 12.1 Add tests to `web/src/chat/ChatView.test.tsx`: not ready shows one line with a link to `#/settings/chat` and disables Send; reason `disabled` shows the turned-off line; a `generation` failure shows the link beside Retry; no server error text in the DOM. Run them and see them fail.
+- [x] 12.2 Update `ChatView.tsx`, `AssistantTurn.tsx` and `answerStatus.ts`. Verify with test 12.1.
 
 ## 13. Documentation
 

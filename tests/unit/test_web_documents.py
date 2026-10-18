@@ -340,3 +340,29 @@ def test_cross_origin_search_with_session_is_rejected_before_engine(
         response = client.post(SEARCH, json={"query": "q"}, headers={"Origin": "http://evil.test"})
     assert response.status_code == 403
     assert engine.calls == []
+
+
+def test_answer_error_text_never_holds_a_saved_key(
+    tmp_path: Path, store: Any, effective_settings
+) -> None:
+    """A provider error that echoes a saved key comes back with the key removed (task 6.3)."""
+    saved = "sk-or-v1-saved-key-0123456789abcdef"
+    engine = RecordingEngine(effective_settings(), store=store, embed_model=object())
+    engine.answer_result = {
+        "status": "error",
+        "query": "q",
+        "answer": None,
+        "citations": [],
+        "evidence": [],
+        "failure_stage": "generation",
+        "error": f"AuthError: provider rejected key {saved}",
+        "completion_source": "none",
+    }
+    app, policy = build_app(tmp_path, engine)
+    app.state.secrets.add(saved)
+    with TestClient(app, base_url=BASE) as client:
+        login(client, policy)
+        response = client.post(ANSWER, json={"query": "q"}, headers=ORIGIN)
+    assert response.status_code == 200
+    assert saved not in response.text
+    assert response.json()["error"] == "AuthError: provider rejected key ***"

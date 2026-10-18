@@ -14,7 +14,7 @@ import { listPlugins } from "./plugins";
 import { getChat, listChats } from "./chats";
 import { getProfile, listProfiles } from "./profiles";
 import { getRunArtefact, getRunRecord, getRunResult, listRuns } from "./runs";
-import { getConnections, getHealth, getMcpState, getUploadLimit, getWebPort } from "./settings";
+import { getChatSettings, getConnections, getHealth, getMcpState, getUploadLimit, getWebPort } from "./settings";
 
 declare module "@tanstack/react-query" {
   interface Register {
@@ -54,6 +54,7 @@ export const queryKeys = {
   session: () => ["session"] as const,
   health: () => ["health"] as const,
   connections: () => ["connections"] as const,
+  chatSettings: () => ["settings", "chat"] as const,
   mcp: () => ["mcp"] as const,
   webPort: () => ["settings", "web-port"] as const,
   uploadLimit: () => ["settings", "upload-limit"] as const,
@@ -163,6 +164,10 @@ export const healthQuery = (api: ApiClient) =>
 /** Provider endpoints, models, key state and roles. Sends no request to any provider. */
 export const connectionsQuery = (api: ApiClient) =>
   queryOptions({ queryKey: queryKeys.connections(), queryFn: ({ signal }) => getConnections(api, { signal }) });
+
+/** The Chat provider and model, and whether Chat is ready. Sends no request to any provider. */
+export const chatSettingsQuery = (api: ApiClient) =>
+  queryOptions({ queryKey: queryKeys.chatSettings(), queryFn: ({ signal }) => getChatSettings(api, { signal }) });
 
 /**
  * The draft check of one graph document, given as JSON text, read for the

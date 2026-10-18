@@ -9,6 +9,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from .connection import (
+    ConnectionDescriptor,
+    ConnectionField,
+    ConnectionTarget,
+    ReadOnlyValue,
+    join_url,
+    models_from,
+)
+
 if TYPE_CHECKING:
     from ....config import Settings
 
@@ -45,3 +54,33 @@ def build(
         # spelling and is silently dropped, leaving the 60s default in place.
         timeout=(timeout if timeout is not None else settings.metadata.classify_timeout),
     )
+
+
+def _test_targets(settings: Any) -> ConnectionTarget:
+    urls = (
+        *join_url(settings.llamacpp_embed_url, "/models"),
+        *join_url(settings.llamacpp_chat_url, "/models"),
+    )
+    return ConnectionTarget(tuple(dict.fromkeys(urls)))
+
+
+#: Card data for the llama.cpp provider (design D5).
+CONNECTION = ConnectionDescriptor(
+    display_name="llama.cpp",
+    locality="local",
+    requires_module="llama_index.llms.openai_like",
+    extra="llamacpp",
+    fields=(
+        ConnectionField(
+            "chat_url", "Chat address", "url", "llamacpp_chat_url", "LLAMACPP_CHAT_URL"
+        ),
+    ),
+    read_only=lambda s: [
+        ReadOnlyValue("Embedding address", s.llamacpp_embed_url),
+        ReadOnlyValue("Embedding model", s.llamacpp_embed_model),
+        ReadOnlyValue("Chat model", s.llamacpp_chat_model),
+    ],
+    test_targets=_test_targets,
+    models_target=lambda s: ConnectionTarget(join_url(s.llamacpp_chat_url, "/models")),
+    parse_models=lambda payload: models_from(payload, "data", "id"),
+)

@@ -60,7 +60,7 @@ export function useCanvasSession(source: CanvasSource) {
   // The model of the provider that holds the embeddings role. `null` while the summary loads, fails or names none.
   const embeddingModel = useMemo(() => {
     const provider = connections.data?.connections.find((connection) => connection.roles.includes("embeddings"));
-    return provider?.models.find((model) => model.label === "embeddings")?.name ?? null;
+    return provider?.read_only.find((entry) => entry.label === "Embedding model")?.value ?? null;
   }, [connections.data]);
   const latest = useQuery({ ...runsQuery(api, { pipelineId, limit: 1 }), enabled: !readOnly });
   const run = latest.data?.[0] ?? null;

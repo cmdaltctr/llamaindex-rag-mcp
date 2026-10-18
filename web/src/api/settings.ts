@@ -1,7 +1,8 @@
 /**
  * Typed client for the Settings routes: health, provider connections, the
  * server log and MCP access. Shapes follow `openapi.yaml` (`getConnections`,
- * `testConnection`, `getLogs`, `streamLogs`, `getMcpState`, `setMcpEnabled`,
+ * `testConnection`, `listProviderModels`, `saveProviderFields`, `saveProviderKey`,
+ * `removeProviderKey`, `getChatSettings`, `setChatSettings`, `testChatModel`, `getLogs`, `streamLogs`, `getMcpState`, `setMcpEnabled`,
  * `rotateMcpToken`, `revokeMcpToken`, `getWebPort`, `setWebPort`,
  * `getUploadLimit`, `setUploadLimit`).
  * No response here ever holds a provider key; the MCP token appears once, in
@@ -17,18 +18,46 @@ export interface Health {
   version: string;
 }
 
-export const CONNECTION_PROVIDERS = ["ollama", "llamacpp", "openrouter"] as const;
-export type ConnectionProvider = (typeof CONNECTION_PROVIDERS)[number];
-
 export const CONNECTION_ROLES = ["embeddings", "answers", "metadata", "verification"] as const;
 export type ConnectionRole = (typeof CONNECTION_ROLES)[number];
 
+/** Where a value comes from. `env` locks it; a key comes from `env`, `keychain` or `none`. */
+export type FieldSource = "env" | "saved" | "keychain" | "default" | "none";
+
+export interface ProviderField {
+  id: string;
+  label: string;
+  kind: "url" | "secret";
+  /** The address in use. Only a `url` field has one; a key is never returned. */
+  value: string | null;
+  source: FieldSource;
+  locked: boolean;
+  /** Plain words for the lock, such as the variable to remove. */
+  lock_reason: string | null;
+  /** Whether a key is set. */
+  set: boolean;
+  /** The last four characters of a key, or `null`. */
+  last4: string | null;
+  saved_at: string | null;
+  /** `keychain-missing` or `keychain-unreadable` when the stored key cannot be used; otherwise `null`. */
+  state: string | null;
+}
+
+export interface ReadOnlyValue {
+  label: string;
+  value: string;
+}
+
 export interface Connection {
-  provider: ConnectionProvider;
-  urls: { label: string; url: string }[];
-  models: { label: string; name: string }[];
-  /** Whether a key is configured. The key itself is never returned. */
-  key_set: boolean;
+  /** The registry name, such as `ollama`. */
+  provider: string;
+  display_name: string;
+  locality: "local" | "cloud";
+  installed: boolean;
+  /** The install command when the provider is not installed. */
+  install_hint: string | null;
+  fields: ProviderField[];
+  read_only: ReadOnlyValue[];
   roles: ConnectionRole[];
 }
 
@@ -36,6 +65,7 @@ export interface ConnectionList {
   status: "ok";
   /** The server's working directory. The settings read `<config_dir>/.env`. */
   config_dir: string;
+  keychain: "available" | "unavailable";
   connections: Connection[];
 }
 
@@ -44,6 +74,44 @@ export interface ConnectionTestResult {
   reachable: boolean;
   /** `null` when reachable; otherwise `refused`, `timeout`, `unauthorised`, `not-configured` or `http-<status>`. */
   reason: string | null;
+}
+
+export interface ProviderModels {
+  status: "ok";
+  reachable: boolean;
+  reason: string | null;
+  models: string[];
+  /** True when the server cut the list at its limit. */
+  truncated: boolean;
+}
+
+/** Typed field values for a test or a model list. Nothing is saved. */
+export type FieldValues = Record<string, string>;
+
+export interface ChatChoice {
+  provider: string;
+  model: string;
+}
+
+export interface ChatSettings {
+  status: "ok";
+  provider: string | null;
+  model: string | null;
+  source: "env" | "saved" | "default";
+  locked: boolean;
+  lock_reason: string | null;
+  enabled: boolean;
+  ready: boolean;
+  /** `disabled`, `unknown-provider`, `not-installed` or `not-configured` when not ready. */
+  reason: string | null;
+}
+
+export interface ChatTestResult {
+  status: "ok";
+  ok: boolean;
+  /** `null` when ok; otherwise a fixed reason such as `timeout` or `empty-reply`. */
+  reason: string | null;
+  elapsed_ms: number;
 }
 
 export const LOG_LEVELS = ["debug", "info", "warning", "error", "critical"] as const;
@@ -121,9 +189,42 @@ export function getConnections(api: ApiClient, options: CallOptions = {}): Promi
   return api.request<ConnectionList>("GET", "/v1/connections", { signal: options.signal });
 }
 
-/** The only call that contacts a provider. OpenRouter's test is a cloud request. */
-export function testConnection(api: ApiClient, provider: ConnectionProvider, options: CallOptions = {}): Promise<ConnectionTestResult> {
-  return api.request<ConnectionTestResult>("POST", `/v1/connections/${provider}/test`, { body: {}, signal: options.signal });
+/** Contacts a provider. Typed `fields` are tested and not saved. OpenRouter's test is a cloud request. */
+export function testConnection(api: ApiClient, provider: string, fields: FieldValues = {}, options: CallOptions = {}): Promise<ConnectionTestResult> {
+  return api.request<ConnectionTestResult>("POST", `/v1/connections/${provider}/test`, { body: { fields }, signal: options.signal });
+}
+
+/** Asks the provider for its model names. Typed `fields` are used and not saved. */
+export function listProviderModels(api: ApiClient, provider: string, fields: FieldValues = {}, options: CallOptions = {}): Promise<ProviderModels> {
+  return api.request<ProviderModels>("POST", `/v1/connections/${provider}/models`, { body: { fields }, signal: options.signal });
+}
+
+/** Saves addresses, or clears one with `null`. */
+export function saveProviderFields(api: ApiClient, provider: string, fields: Record<string, string | null>, options: CallOptions = {}): Promise<unknown> {
+  return api.request<unknown>("PUT", `/v1/connections/${provider}`, { body: { fields }, signal: options.signal });
+}
+
+/** Saves a key to the system keychain. The response never holds the key. */
+export function saveProviderKey(api: ApiClient, provider: string, apiKey: string, options: CallOptions = {}): Promise<unknown> {
+  return api.request<unknown>("PUT", `/v1/connections/${provider}/key`, { body: { api_key: apiKey }, signal: options.signal });
+}
+
+export function removeProviderKey(api: ApiClient, provider: string, options: CallOptions = {}): Promise<unknown> {
+  return api.request<unknown>("DELETE", `/v1/connections/${provider}/key`, { signal: options.signal });
+}
+
+export function getChatSettings(api: ApiClient, options: CallOptions = {}): Promise<ChatSettings> {
+  return api.request<ChatSettings>("GET", "/v1/settings/chat", { signal: options.signal });
+}
+
+/** Saves the Chat provider and model, or clears the saved choice with `null`. */
+export function setChatSettings(api: ApiClient, choice: ChatChoice | null, options: CallOptions = {}): Promise<unknown> {
+  return api.request<unknown>("PUT", "/v1/settings/chat", { body: choice, signal: options.signal });
+}
+
+/** Sends one short prompt to the typed choice, or to the saved choice when none is given. Nothing is saved. */
+export function testChatModel(api: ApiClient, choice: ChatChoice | null = null, options: CallOptions = {}): Promise<ChatTestResult> {
+  return api.request<ChatTestResult>("POST", "/v1/settings/chat/test", { body: choice ?? {}, signal: options.signal });
 }
 
 export function getLogs(api: ApiClient, after = 0, options: CallOptions = {}): Promise<LogList> {

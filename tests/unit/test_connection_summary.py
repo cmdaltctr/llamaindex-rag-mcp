@@ -16,12 +16,14 @@ from typing import Any
 import pytest
 
 from omrg import compose
-from omrg.compose_connections import OPENROUTER_BASE_URL, build_connection_targets
+from omrg.compose_connections import build_connection_summary, build_connection_targets
+from omrg.compose_providers import ProviderValues
 from omrg.config import Settings
 from omrg.core.answer.settings import AnswerSettings
 from omrg.core.metadata.settings import MetadataSettings
 
 SECRET = "sk-or-v1-SECRETVALUE0123456789"  # noqa: S105 - fake key for redaction tests
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 PROVIDERS = ("ollama", "llamacpp", "openrouter")
 
 
@@ -38,6 +40,7 @@ def make_settings(
     verify_provider: str = "cloud",
     verify_model: str = "",
     openrouter_api_key: str = "",
+    explicit: frozenset[str] = frozenset(),
     **extra: Any,
 ) -> Settings:
     fields: dict[str, Any] = dict(
@@ -65,7 +68,9 @@ def make_settings(
         ),
     )
     fields.update(extra)
-    return Settings(_env_file=None, **fields)
+    settings = Settings(_env_file=None, **fields)
+    object.__setattr__(settings, "provider_explicit", explicit)
+    return settings
 
 
 def summary(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> dict[str, Any]:
@@ -77,44 +82,207 @@ def roles(result: dict[str, Any]) -> dict[str, list[str]]:
     return {entry["provider"]: entry["roles"] for entry in result["connections"]}
 
 
+def by_provider(result: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {entry["provider"]: entry for entry in result["connections"]}
+
+
+def field(entry: dict[str, Any], field_id: str) -> dict[str, Any]:
+    return next(f for f in entry["fields"] if f["id"] == field_id)
+
+
 def test_entry_shape_and_config_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.chdir(tmp_path)
     result = summary(monkeypatch, make_settings())
     assert result["config_dir"] == str(tmp_path.resolve())
+    assert result["keychain"] == "unavailable"
     assert [entry["provider"] for entry in result["connections"]] == list(PROVIDERS)
-    by_name = {entry["provider"]: entry for entry in result["connections"]}
-    assert by_name["ollama"]["urls"] == [{"label": "base", "url": "http://ollama.test:11434"}]
-    assert by_name["llamacpp"]["urls"] == [
-        {"label": "embeddings", "url": "http://llama.test:8080/v1"},
-        {"label": "chat", "url": "http://llama.test:8081/v1"},
+    entries = by_provider(result)
+    assert set(entries["ollama"]) == {
+        "provider",
+        "display_name",
+        "locality",
+        "installed",
+        "install_hint",
+        "fields",
+        "read_only",
+        "roles",
+    }
+    assert [(e["display_name"], e["locality"]) for e in entries.values()] == [
+        ("Ollama", "local"),
+        ("llama.cpp", "local"),
+        ("OpenRouter", "cloud"),
     ]
-    assert by_name["openrouter"]["urls"] == [{"label": "base", "url": OPENROUTER_BASE_URL}]
-    assert OPENROUTER_BASE_URL == "https://openrouter.ai/api/v1"
-    names = {
-        entry["provider"]: {m["label"]: m["name"] for m in entry["models"]}
-        for entry in result["connections"]
+    assert entries["ollama"]["installed"] is True and entries["ollama"]["install_hint"] is None
+    read_only = {
+        name: {row["label"]: row["value"] for row in entry["read_only"]}
+        for name, entry in entries.items()
     }
-    assert names["ollama"]["embeddings"] == "nomic-embed-text"
-    assert names["ollama"]["chat"] == "qwen-m"
-    assert names["llamacpp"] == {"embeddings": "embed-gguf", "chat": "chat-gguf"}
-    assert (
-        names["openrouter"]["embeddings"] == "or-embed" and names["openrouter"]["chat"] == "or-chat"
+    assert read_only["ollama"]["Embedding model"] == "nomic-embed-text"
+    assert read_only["ollama"]["Chat model"] == "qwen-m"
+    assert read_only["llamacpp"] == {
+        "Embedding address": "http://llama.test:8080/v1",
+        "Embedding model": "embed-gguf",
+        "Chat model": "chat-gguf",
+    }
+    assert read_only["openrouter"]["Address"] == OPENROUTER_BASE_URL
+
+
+def test_url_field_shape_and_default_source(monkeypatch: pytest.MonkeyPatch) -> None:
+    entries = by_provider(summary(monkeypatch, make_settings(local_backend="llamacpp")))
+    assert field(entries["ollama"], "base_url") == {
+        "id": "base_url",
+        "label": "Address",
+        "kind": "url",
+        "value": "http://ollama.test:11434",
+        "source": "default",
+        "locked": False,
+        "lock_reason": None,
+        "set": True,
+        "last4": None,
+        "saved_at": None,
+        "state": None,
+    }
+    assert field(entries["llamacpp"], "chat_url")["value"] == "http://llama.test:8081/v1"
+
+
+def test_environment_value_has_source_env_and_locks(monkeypatch: pytest.MonkeyPatch) -> None:
+    result = summary(monkeypatch, make_settings(explicit=frozenset({"llamacpp_chat_url"})))
+    chat = field(by_provider(result)["llamacpp"], "chat_url")
+    assert (chat["source"], chat["locked"]) == ("env", True)
+    assert "LLAMACPP_CHAT_URL" in chat["lock_reason"]
+
+
+def test_saved_value_has_source_saved(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = make_settings(ollama_base_url="http://gpu-box.local:11434", local_backend="llamacpp")
+    values = ProviderValues({"ollama_base_url": "http://gpu-box.local:11434"})
+    result = build_connection_summary(settings, Path.cwd(), values)
+    base = field(by_provider(result)["ollama"], "base_url")
+    assert (base["source"], base["locked"], base["value"]) == (
+        "saved",
+        False,
+        "http://gpu-box.local:11434",
     )
-    assert set(by_name["ollama"]) == {"provider", "urls", "models", "key_set", "roles"}
 
 
-def test_key_set_is_a_boolean_and_the_value_never_appears(monkeypatch: pytest.MonkeyPatch) -> None:
-    unset = summary(monkeypatch, make_settings())
-    assert {e["provider"]: e["key_set"] for e in unset["connections"]} == {
-        "ollama": False,
-        "llamacpp": False,
-        "openrouter": False,
-    }
-    with_key = summary(monkeypatch, make_settings(openrouter_api_key=SECRET))
-    flags = {e["provider"]: e["key_set"] for e in with_key["connections"]}
-    assert flags == {"ollama": False, "llamacpp": False, "openrouter": True}
-    assert SECRET not in json.dumps(with_key)
-    assert SECRET[:8] not in json.dumps(with_key)
+def test_ollama_address_locked_while_embeddings_use_ollama(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    result = summary(monkeypatch, make_settings(embed_provider="ollama"))
+    base = field(by_provider(result)["ollama"], "base_url")
+    assert base["locked"] is True
+    assert "embeddings" in base["lock_reason"].lower()
+    assert base["source"] == "default"
+
+
+def test_key_field_when_unset_without_a_keychain(monkeypatch: pytest.MonkeyPatch) -> None:
+    key = field(by_provider(summary(monkeypatch, make_settings()))["openrouter"], "api_key")
+    assert (key["kind"], key["set"], key["source"], key["value"]) == (
+        "secret",
+        False,
+        "none",
+        None,
+    )
+    assert key["locked"] is True
+    assert "OPENROUTER_API_KEY" in key["lock_reason"]
+
+
+def test_key_from_the_keychain_shows_last_four_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = make_settings(openrouter_api_key=SECRET)
+    values = ProviderValues(
+        {"openrouter_api_key": SECRET},
+        key_saved_at={"openrouter": "2026-10-18T09:00:00Z"},
+        keychain_available=True,
+    )
+    result = build_connection_summary(settings, Path.cwd(), values)
+    assert result["keychain"] == "available"
+    key = field(by_provider(result)["openrouter"], "api_key")
+    assert (key["set"], key["source"], key["locked"]) == (True, "keychain", False)
+    assert key["last4"] == SECRET[-4:]
+    assert key["saved_at"] == "2026-10-18T09:00:00Z"
+    assert key["value"] is None
+    dumped = json.dumps(result)
+    assert SECRET not in dumped
+    assert not any(SECRET[i : i + 5] in dumped for i in range(len(SECRET) - 4))
+    # Only the last four characters appear, and not as a longer run.
+    assert dumped.count(SECRET[-4:]) >= 1
+
+
+def test_key_from_the_environment_locks(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = make_settings(openrouter_api_key=SECRET, explicit=frozenset({"openrouter_api_key"}))
+    key = field(by_provider(summary(monkeypatch, settings))["openrouter"], "api_key")
+    assert (key["set"], key["source"], key["locked"]) == (True, "env", True)
+    assert "OPENROUTER_API_KEY" in key["lock_reason"]
+    assert key["last4"] == SECRET[-4:]
+
+
+def test_short_key_shows_no_characters(monkeypatch: pytest.MonkeyPatch) -> None:
+    short = "sk-short-key"  # fewer than 16 characters
+    settings = make_settings(openrouter_api_key=short, explicit=frozenset({"openrouter_api_key"}))
+    result = summary(monkeypatch, settings)
+    key = field(by_provider(result)["openrouter"], "api_key")
+    assert key["set"] is True and key["last4"] is None
+    assert short not in json.dumps(result)
+    assert short[-4:] not in json.dumps(result)
+
+
+@pytest.mark.parametrize("state", ["keychain-missing", "keychain-unreadable"])
+def test_a_saved_key_that_cannot_be_used_reports_its_state(
+    monkeypatch: pytest.MonkeyPatch, state: str
+) -> None:
+    values = ProviderValues(
+        key_saved_at={"openrouter": "2026-10-18T09:00:00Z"},
+        key_problems={"openrouter": state},
+        keychain_available=True,
+    )
+    result = build_connection_summary(make_settings(), Path.cwd(), values)
+    key = field(by_provider(result)["openrouter"], "api_key")
+    assert (key["set"], key["source"], key["state"]) == (False, "none", state)
+
+
+def test_installed_flag_and_install_hint(monkeypatch: pytest.MonkeyPatch) -> None:
+    import importlib.util
+
+    real = importlib.util.find_spec
+    monkeypatch.setattr(
+        importlib.util,
+        "find_spec",
+        lambda name, *a: None if name == "llama_index.llms.openai_like" else real(name, *a),
+    )
+    entries = by_provider(summary(monkeypatch, make_settings()))
+    assert entries["llamacpp"]["installed"] is False
+    assert entries["llamacpp"]["install_hint"] == "uv sync --extra llamacpp"
+    assert entries["openrouter"]["install_hint"] == "uv sync --extra openrouter"
+
+
+def test_a_registered_provider_gets_an_entry_with_no_other_change(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from omrg.core.providers.llm import registry
+    from omrg.core.providers.llm.connection import ConnectionDescriptor, ConnectionTarget
+
+    fake = ConnectionDescriptor(
+        display_name="Fake",
+        locality="local",
+        requires_module="json",
+        extra=None,
+        fields=(),
+        read_only=lambda s: [],
+        test_targets=lambda s: ConnectionTarget(()),
+        models_target=lambda s: ConnectionTarget(()),
+        parse_models=lambda p: [],
+    )
+    real = registry.describe_all()
+    monkeypatch.setattr(registry, "describe_all", lambda: {**real, "fake": fake})
+    result = summary(monkeypatch, make_settings())
+    assert [e["provider"] for e in result["connections"]] == [*PROVIDERS, "fake"]
+    assert set(build_connection_targets(make_settings())) == {*PROVIDERS, "fake"}
+
+
+def test_compose_connections_names_no_provider() -> None:
+    source = (Path(compose.__file__).parent / "compose_connections.py").read_text()
+    for name in PROVIDERS:
+        assert f'== "{name}"' not in source
+        assert f'"{name}":' not in source
 
 
 def test_documented_scenario_llamacpp_embeds_and_ollama_answers(
@@ -173,8 +341,6 @@ def test_answers_role_follows_answer_provider(
     )
     holders = [name for name, held in roles(result).items() if "answers" in held]
     assert holders == [provider]
-    entry = next(e for e in result["connections"] if e["provider"] == provider)
-    assert {"label": "answers", "name": "answer-model"} in entry["models"]
 
 
 def test_answers_role_is_absent_when_answering_is_disabled(
@@ -258,8 +424,6 @@ def test_verification_role_resolves_aliases_and_literal_names(
     )
     holders = [name for name, held in roles(result).items() if "verification" in held]
     assert holders == [expected]
-    entry = next(e for e in result["connections"] if e["provider"] == expected)
-    assert {"label": "verification", "name": "judge-1"} in entry["models"]
 
 
 def test_verification_role_needs_answering_and_the_opt_in(
@@ -314,7 +478,7 @@ def test_connection_targets_carry_the_key_server_side_only(
         "http://llama.test:8080/v1/models",
         "http://llama.test:8081/v1/models",
     )
-    assert targets["openrouter"].urls == (f"{OPENROUTER_BASE_URL}/models",)
+    assert targets["openrouter"].urls == (f"{OPENROUTER_BASE_URL}/key",)
     assert targets["openrouter"].headers == {"Authorization": f"Bearer {SECRET}"}
     assert SECRET not in repr(targets)
     assert build_connection_targets(make_settings())["openrouter"].urls == ()

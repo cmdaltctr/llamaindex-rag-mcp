@@ -5,7 +5,17 @@ import { describe, expect, it } from "vitest";
 import { MCP_OFF, settingsServer } from "../settings/test/fixtures";
 import { ApiProvider, useApi } from "./ApiProvider";
 import { createQueryClient, queryKeys, uploadLimitQuery } from "./queries";
-import { useRevokeMcpToken, useRotateMcpToken, useSetMcpEnabled, useSetUploadLimit, useSetWebPort } from "./settingsMutations";
+import {
+  useRemoveProviderKey,
+  useRevokeMcpToken,
+  useRotateMcpToken,
+  useSaveProviderFields,
+  useSaveProviderKey,
+  useSetChatSettings,
+  useSetMcpEnabled,
+  useSetUploadLimit,
+  useSetWebPort,
+} from "./settingsMutations";
 
 function setup(handlers = {}) {
   const server = settingsServer(handlers);
@@ -65,5 +75,34 @@ describe("settings mutations", () => {
     await waitFor(() => expect(limit.result.current.data?.max_bytes).toBe(200 * 1048576));
     expect(server.find("GET", "/v1/settings/upload-limit")).toHaveLength(2);
     expect(queryClient.getQueryData(queryKeys.uploadLimit())).toMatchObject({ saved_mib: 200 });
+  });
+
+  it("refreshes the connections and the Chat status after a provider write", async () => {
+    const ok = () => ({ status: "ok" });
+    const { wrapper, queryClient, server } = setup({
+      "PUT /v1/connections/ollama": ok,
+      "PUT /v1/connections/openrouter/key": ok,
+      "DELETE /v1/connections/openrouter/key": ok,
+    });
+    const fields = renderHook(() => useSaveProviderFields("ollama"), { wrapper });
+    const key = renderHook(() => useSaveProviderKey("openrouter"), { wrapper });
+    const remove = renderHook(() => useRemoveProviderKey("openrouter"), { wrapper });
+    for (const run of [() => fields.result.current.mutate({ base_url: "http://gpu:11434" }), () => key.result.current.mutate("sk-or-typed-0001"), () => remove.result.current.mutate()]) {
+      await queryClient.prefetchQuery({ queryKey: queryKeys.connections(), queryFn: () => ({}) });
+      await queryClient.prefetchQuery({ queryKey: queryKeys.chatSettings(), queryFn: () => ({}) });
+      act(run);
+      await waitFor(() => expect(queryClient.getQueryState(queryKeys.connections())?.isInvalidated).toBe(true));
+      expect(queryClient.getQueryState(queryKeys.chatSettings())?.isInvalidated).toBe(true);
+    }
+    expect(server.calls.filter((call) => call.method !== "GET")).toHaveLength(3);
+  });
+
+  it("refreshes the Chat status after a save or a clear", async () => {
+    const { wrapper, queryClient, server } = setup({ "PUT /v1/settings/chat": () => ({ status: "ok" }) });
+    await queryClient.prefetchQuery({ queryKey: queryKeys.chatSettings(), queryFn: () => ({}) });
+    const { result } = renderHook(() => useSetChatSettings(), { wrapper });
+    act(() => result.current.mutate(null));
+    await waitFor(() => expect(queryClient.getQueryState(queryKeys.chatSettings())?.isInvalidated).toBe(true));
+    expect(server.find("PUT", "/v1/settings/chat")).toHaveLength(1);
   });
 });

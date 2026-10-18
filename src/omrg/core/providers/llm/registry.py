@@ -11,6 +11,8 @@ import importlib
 from collections.abc import Callable
 from typing import Any
 
+from .connection import ConnectionDescriptor
+
 _registry: dict[str, str] = {}
 _cache: dict[str, Callable[..., Any]] = {}
 
@@ -63,6 +65,21 @@ def get(name: str) -> Callable[..., Any]:
     fn = getattr(mod, attr)
     _cache[name] = fn
     return fn
+
+
+def describe_all() -> dict[str, ConnectionDescriptor]:
+    """Return each registered provider's connection descriptor, in registration order.
+
+    Imports each provider module, which is cheap because modules import
+    LlamaIndex only inside ``build()``. A module without a ``CONNECTION``
+    descriptor has no card and is left out.
+    """
+    described: dict[str, ConnectionDescriptor] = {}
+    for name, import_path in _registry.items():
+        descriptor = getattr(importlib.import_module(import_path.split(":")[0]), "CONNECTION", None)
+        if descriptor is not None:
+            described[name] = descriptor
+    return described
 
 
 def available() -> list[str]:

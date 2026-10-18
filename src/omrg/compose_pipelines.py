@@ -5,21 +5,19 @@ The Engine delegates graph validation and execution to
 
 * It builds the :class:`~omrg.core.pipelines.OperationCatalogue` from each
   domain registrar on first use and keeps one catalogue per Engine.
-* It describes the Engine to preflight as a ``HostContext``: capabilities
-  from the composed resources, the embedding identity of the Engine's
-  embedder, and a read-only view of stored collection identities.
-* It resolves profiles through the Engine's own resolver. An Engine without
-  a resolver uses its own settings and cannot load a named profile.
+* It describes the Engine to preflight as a ``HostContext``: capabilities from the
+  composed resources, the embedding identity of its embedder, and a read-only view
+  of stored collection identities.
+* It resolves profiles through the Engine's own resolver. Without one, the Engine
+  uses its own settings and cannot load a named profile.
 * It enforces the ``answer()`` request limits on answering graphs.
-* It plans each admitted run (``compose_pipeline_runs``): the unit split,
-  the ingestion shape and the OCR client. The OCR client belongs to the
-  Engine. A run borrows it and never builds or closes one.
+* It plans each admitted run (``compose_pipeline_runs``): the unit split, the
+  ingestion shape and the OCR client. The Engine owns the client; a run borrows it.
 * It leases the Engine's resources to runs. Graphs that only read run at
   the same time. Graphs with an enabled write step (``SOURCE_COMMIT``) are
   serialised on one Engine with one ``asyncio.Lock``.
 
-Heavy imports (the pipeline package and the domain adapters) happen inside
-functions, so building an Engine imports nothing new.
+Heavy imports happen inside functions, so building an Engine imports nothing new.
 """
 
 from __future__ import annotations
@@ -400,10 +398,7 @@ class EnginePipelines:
         return self._ocr
 
     def release(self) -> None:
-        """Drop cached judges and the catalogue; close the lazy OCR client.
-
-        A close failure is logged, not raised, as for the Engine store.
-        """
+        """Drop cached judges and the catalogue; close the lazy OCR client (failures are logged)."""
         self._judges.clear()
         self._catalogue = None
         client, self._ocr = self._ocr, None
@@ -414,19 +409,24 @@ class EnginePipelines:
         except Exception as exc:
             logger.warning("OCR client close() failed during engine close: %s", exc)
 
+    def reset_judges(self) -> None:
+        """Start an empty judge cache; judges handed out earlier keep theirs."""
+        self._judges = {}
+
     def judge(self, factory: Callable[[Any], Any] | None) -> Callable[[Any], Any] | None:
         """Return a ``verify_llm`` resource that builds each judge once."""
         if factory is None:
             return None
+        judges = self._judges
 
         def build(answer_block: Any) -> Any:
             try:
                 hash(answer_block)
             except TypeError:
                 return factory(answer_block)
-            if answer_block not in self._judges:
-                self._judges[answer_block] = factory(answer_block)
-            return self._judges[answer_block]
+            if answer_block not in judges:
+                judges[answer_block] = factory(answer_block)
+            return judges[answer_block]
 
         return build
 

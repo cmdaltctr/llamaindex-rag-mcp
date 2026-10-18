@@ -21,7 +21,7 @@ export const AREAS: readonly AreaDefinition[] = [
   { id: "studio", label: "Studio", shortLabel: "Studio", icon: Workflow, summary: STUDIO_SUMMARY, route: { area: "studio", profileId: null, purpose: null } },
   { id: "experiments", label: "Experiments", shortLabel: "Labs", icon: FlaskConical, summary: "Experiment folders, notebooks and pipeline runs.", route: { area: "experiments", runId: null } },
   { id: "integrations", label: "Integrations", shortLabel: "Add-ons", icon: Plug, summary: "Optional integrations and how to install them.", route: { area: "integrations" } },
-  { id: "settings", label: "Settings", shortLabel: "Settings", icon: Settings, summary: "Appearance, connections, MCP access, server log and runtime.", route: { area: "settings", section: null } },
+  { id: "settings", label: "Settings", shortLabel: "Settings", icon: Settings, summary: "Appearance, providers, Chat model, MCP access, server log and runtime.", route: { area: "settings", section: null } },
 ];
 
 export function areaById(id: RouteArea): AreaDefinition {

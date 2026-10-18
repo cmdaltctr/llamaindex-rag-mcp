@@ -1,9 +1,12 @@
-import { useIsMutating } from "@tanstack/react-query";
+import { useIsMutating, useQuery } from "@tanstack/react-query";
 import { History, MessageCircle, Plus } from "lucide-react";
 import { useState } from "react";
+import { useApi } from "../api/ApiProvider";
 import type { ChatSummary } from "../api/chats";
 import type { AnswerResult } from "../api/documents";
 import { ANSWER_MUTATION_KEY } from "../api/mutations";
+import { chatSettingsQuery } from "../api/queries";
+import { AlertNotice } from "../components/AlertNotice";
 import { ChunkViewer } from "../components/ChunkViewer";
 import { CollectionGate } from "../components/CollectionGate";
 import { CollectionPicker } from "../components/CollectionPicker";
@@ -12,6 +15,7 @@ import { PageHeader } from "../components/PageHeader";
 import { Button } from "../components/ui/button";
 import { ChatHistory } from "./ChatHistory";
 import { useRoute } from "../lib/RouteProvider";
+import { chatReasonSentence } from "../settings/connectionWords";
 import { areaById } from "../lib/views";
 import { AssistantTurn } from "./AssistantTurn";
 import { Composer } from "./Composer";
@@ -29,6 +33,8 @@ export function ChatView() {
   const { turns, session, notice, chatId, send, newChat, openChat, onResult } = useChatSession(routeCollection, routeChatId);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [chunk, setChunk] = useState<{ collection: string; chunkId: string } | null>(null);
+  const chatStatus = useQuery(chatSettingsQuery(useApi())).data;
+  const unavailable = chatStatus !== undefined && !chatStatus.ready;
   const busy = useIsMutating({ mutationKey: ANSWER_MUTATION_KEY }) > 0;
 
   const openFromHistory = (chat: ChatSummary) => {
@@ -105,7 +111,14 @@ export function ChatView() {
                   ))}
                 </ol>
               ) : null}
-              <Composer collection={active.name} busy={busy} onSend={send(active.name)} />
+              {unavailable ? (
+                <AlertNotice message={chatReasonSentence(chatStatus.reason)}>
+                  <Button asChild variant="outline">
+                    <a href="#/settings/chat">Connect a model</a>
+                  </Button>
+                </AlertNotice>
+              ) : null}
+              <Composer collection={active.name} busy={busy} unavailable={unavailable} onSend={send(active.name)} />
             </div>
             <aside aria-label="Knowledge base panel" className="order-first flex flex-col gap-2 self-start lg:order-none">
               <h2 className="text-subsection-title font-semibold">Knowledge base</h2>

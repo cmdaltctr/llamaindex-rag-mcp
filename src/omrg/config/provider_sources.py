@@ -1,0 +1,68 @@
+"""Which editable provider values an operator set explicitly (design D2).
+
+The web workspace may save an address, a key or the Chat model. A value that
+the process environment or ``.env`` sets wins and locks its field, so this
+module records those fields at resolution time, the way ``storage`` records
+``vector_store_provenance``. YAML and ``defaults.yaml`` count as defaults.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from pydantic import model_validator
+from pydantic_settings import PydanticBaseSettingsSource
+
+if TYPE_CHECKING:
+    from . import Settings
+
+#: Editable provider fields, as ``Settings`` paths. ``answer.*`` live in the
+#: nested answer block.
+PROVIDER_FIELDS: tuple[str, ...] = (
+    "ollama_base_url",
+    "llamacpp_chat_url",
+    "openrouter_api_key",
+    "answer.provider",
+    "answer.model",
+)
+
+
+def _present(values: dict[str, Any], path: str) -> bool:
+    """Return whether *values* holds a non-blank value at the dotted *path*."""
+    node: Any = values
+    for part in path.split("."):
+        if not isinstance(node, dict):
+            return False
+        node = {str(k).lower(): v for k, v in node.items()}.get(part)
+    return node is not None and str(node).strip() != ""
+
+
+def _safe_values(source: PydanticBaseSettingsSource) -> dict[str, Any]:
+    """Return what *source* would resolve; a source that raises gives ``{}``."""
+    try:
+        return source() or {}
+    except Exception:  # noqa: BLE001 - a broken source must not break config
+        return {}
+
+
+def explicit_provider_fields(*sources: PydanticBaseSettingsSource) -> frozenset[str]:
+    """Return the editable provider fields that any of *sources* would set.
+
+    A source that raises contributes nothing, as in ``storage.source_keys``.
+    Blank values do not count, so an empty ``OPENROUTER_API_KEY=`` line in
+    ``.env`` leaves the field open to a saved value.
+    """
+    found: set[str] = set()
+    for source in sources:
+        values = _safe_values(source)
+        found.update(path for path in PROVIDER_FIELDS if _present(values, path))
+    return frozenset(found)
+
+
+class ProviderSourceMixin:
+    """Records :attr:`Settings.provider_explicit` after resolution."""
+
+    @model_validator(mode="after")
+    def _record_provider_sources(self) -> Settings:
+        object.__setattr__(self, "provider_explicit", self.__class__._explicit_provider_sources)
+        return self

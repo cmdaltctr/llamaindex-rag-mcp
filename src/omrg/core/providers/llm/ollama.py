@@ -7,6 +7,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from .connection import (
+    ConnectionDescriptor,
+    ConnectionField,
+    ConnectionTarget,
+    ReadOnlyValue,
+    join_url,
+    models_from,
+)
+
 if TYPE_CHECKING:
     from ....config import Settings
 
@@ -43,3 +52,24 @@ def build(
         # which names it ``timeout`` and silently drops this spelling.
         request_timeout=(timeout if timeout is not None else settings.metadata.classify_timeout),
     )
+
+
+def _tags(settings: Any) -> ConnectionTarget:
+    return ConnectionTarget(join_url(settings.ollama_base_url, "/api/tags"))
+
+
+#: Card data for the Ollama provider (design D5).
+CONNECTION = ConnectionDescriptor(
+    display_name="Ollama",
+    locality="local",
+    requires_module="llama_index.llms.ollama",
+    extra=None,
+    fields=(ConnectionField("base_url", "Address", "url", "ollama_base_url", "OLLAMA_BASE_URL"),),
+    read_only=lambda s: [
+        ReadOnlyValue("Embedding model", s.embed_model),
+        ReadOnlyValue("Chat model", s.metadata.ollama_classify_model),
+    ],
+    test_targets=_tags,
+    models_target=_tags,
+    parse_models=lambda payload: models_from(payload, "models", "name"),
+)

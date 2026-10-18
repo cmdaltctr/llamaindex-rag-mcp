@@ -95,22 +95,32 @@ def redaction_values() -> dict[str, str]:
     }
 
 
-def connection_summary() -> dict[str, Any]:
+def connection_summary(values: ProviderValues | None = None) -> dict[str, Any]:
     """Return the provider connection summary for ``GET /v1/connections``.
 
     Composition-root surface: the web transport may not call
     ``get_settings()``. The builder lives in ``compose_connections``.
+
+    Args:
+        values: Saved provider values and keychain facts from the web
+            runtime. ``None`` shows the environment's settings only.
     """
     from .compose_connections import build_connection_summary
 
-    return build_connection_summary(get_settings(), Path.cwd())
+    settings = get_settings()
+    if values is not None:
+        settings = apply_provider_values(settings, values)
+    return build_connection_summary(settings, Path.cwd(), values)
 
 
-def connection_targets() -> dict[str, Any]:
-    """Return the model-list requests the provider test sends (server side only)."""
+def connection_targets(values: ProviderValues | None = None) -> dict[str, Any]:
+    """Return the model-list requests a provider test sends (server side only)."""
     from .compose_connections import build_connection_targets
 
-    return build_connection_targets(get_settings())
+    settings = get_settings()
+    if values is not None:
+        settings = apply_provider_values(settings, values)
+    return build_connection_targets(settings)
 
 
 def build_reranker(settings: Settings | None = None) -> Any:
@@ -198,6 +208,11 @@ def storage_summary(settings: Settings | None = None) -> str:
 # root is the sanctioned construction surface.  build_verify_llm (ADR-059)
 # joins it for the same reason.
 from .compose_answer import build_answer_llm, build_verify_llm  # noqa: E402,F401
+from .compose_providers import (  # noqa: E402,F401
+    ProviderValues,
+    apply_provider_values,
+    provider_effective_settings,
+)
 from .compose_settings import settings_to_effective  # noqa: E402,F401
 
 # Backward-compatible import surface (existing callers/tests).

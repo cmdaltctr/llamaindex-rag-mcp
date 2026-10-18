@@ -34,6 +34,7 @@ from fastapi import HTTPException, Request
 
 from ...core.vectordb.identity import redact_secret
 from .origins import parse_extra_origin
+from .secret_set import SecretSet
 
 SESSION_COOKIE = "omrg_session"
 BOOTSTRAP_PREFIX = "omrg_bs_"
@@ -422,7 +423,12 @@ def redact(text: str, extra: Iterable[str] = ()) -> str:
     text = _BEARER.sub(r"\1***", text)
     text = _COOKIE.sub(r"\1***", text)
     text = _QUERY.sub(r"\1***", text)
-    for value in extra:
+    # Full values first: the shared prefix of two keys must not cut one
+    # of them in half before its whole value is matched.
+    values = [value for value in extra if value]
+    for value in values:
+        text = text.replace(value, "***")
+    for value in values:
         text = redact_secret(text, value)
     return text
 
@@ -440,30 +446,37 @@ class RedactingFilter(logging.Filter):
 
         Args:
             extra: Further secret values to remove (for example provider keys).
+                Pass a :class:`SecretSet` to see keys added later.
         """
         super().__init__()
-        self._extra = tuple(value for value in extra if value)
+        self.secrets = extra if isinstance(extra, SecretSet) else SecretSet(extra)
 
-    def _clean(self, value: Any) -> Any:
-        return redact(value, self._extra) if isinstance(value, str) else value
+    @property
+    def _extra(self) -> tuple[str, ...]:
+        """The secrets as they are now. Read at filter time."""
+        return tuple(self.secrets)
+
+    def _clean(self, value: Any, extra: tuple[str, ...]) -> Any:
+        return redact(value, extra) if isinstance(value, str) else value
 
     def filter(self, record: logging.LogRecord) -> bool:
         """Redact *record* in place; never drop it."""
+        extra = self._extra
         if record.exc_info or record.exc_text:
             # Format the traceback now so it can be redacted, then drop
             # the raw exception so no handler formats it again.
             text = record.getMessage()
             trace = record.exc_text or logging.Formatter().formatException(record.exc_info)  # type: ignore[arg-type]
-            record.msg = redact(f"{text}\n{trace}", self._extra)
+            record.msg = redact(f"{text}\n{trace}", extra)
             record.args = ()
             record.exc_info = None
             record.exc_text = None
             return True
-        record.msg = self._clean(record.msg)
+        record.msg = self._clean(record.msg, extra)
         if isinstance(record.args, tuple):
-            record.args = tuple(self._clean(arg) for arg in record.args)
+            record.args = tuple(self._clean(arg, extra) for arg in record.args)
         elif isinstance(record.args, dict):
-            record.args = {key: self._clean(arg) for key, arg in record.args.items()}
+            record.args = {key: self._clean(arg, extra) for key, arg in record.args.items()}
         return True
 
 

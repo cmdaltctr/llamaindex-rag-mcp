@@ -29,6 +29,7 @@ from .engine_lifecycle import (
     release_resources,
     resolve_bound,
 )
+from .engine_providers import EngineProviders
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -54,7 +55,7 @@ logger = logging.getLogger(__name__)
 _QUERY_EMBED_CACHE_MAXSIZE = 128
 
 
-class Engine:
+class Engine(EngineProviders):
     """Owns its providers, store and settings for its lifetime.
 
     Construct via ``Engine.from_environment()`` or directly with
@@ -115,18 +116,19 @@ class Engine:
                 profile names a model (ADR-081). ``None`` keeps only
                 *embed_model*.
         """
-        self._effective_settings = effective_settings
         self._store = store
         self._embed_model = embed_model
         self._embedders = embedders or EngineEmbedders(embed_model)
         self._reranker = reranker
-        self._profile_resolver = profile_resolver
-        self._profile_resolver_factory = profile_resolver_factory
-        self._answer_llm_factory = answer_llm_factory
-        self._verify_llm_factory = verify_llm_factory
+        self._init_providers(
+            effective_settings,
+            resolver=profile_resolver,
+            resolver_factory=profile_resolver_factory,
+            answer_llm_factory=answer_llm_factory,
+            verify_llm_factory=verify_llm_factory,
+        )
         self._ocr_client = ocr_client
         self._redaction = redaction or RedactionSecrets()
-        self._answer_llm: Any = None
         # Engine-owned query embedding cache: keyed by (query, model_name),
         # shared between filtered/unfiltered search within this engine,
         # never between engines, dropped on close().
@@ -462,18 +464,6 @@ class Engine:
     def _graph_host(self, collection: str | None) -> Any:
         """Describe this Engine's resources to graph validation and runs."""
         return graph_host(self, collection)
-
-    def _get_answer_llm(self) -> Any:
-        """Build the answer LLM on first use and keep it."""
-        if self._answer_llm is None and self._answer_llm_factory is not None:
-            self._answer_llm = self._answer_llm_factory()
-        return self._answer_llm
-
-    def _resolver(self) -> Any:
-        """Return the profile resolver, built from its factory on first use."""
-        if self._profile_resolver is None and self._profile_resolver_factory is not None:
-            self._profile_resolver = self._profile_resolver_factory()
-        return self._profile_resolver
 
     def _resolve_settings(self, collection_name: str) -> EffectiveSettings:
         """Resolve a collection's settings; an invalid profile tag raises."""

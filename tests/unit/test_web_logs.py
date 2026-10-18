@@ -415,3 +415,93 @@ class LiveStream:
                 await self.got_frame.wait()
 
         await asyncio.wait_for(poll(), timeout)
+
+
+# ── Keys saved while the server runs (design D7; task 6.1) ───────────────
+
+SAVED = "sk-or-v1-saved-key-0123456789abcdef"
+REPLACED = "sk-or-v1-replaced-key-fedcba9876543210"
+
+
+@pytest.fixture
+def live_secrets() -> Iterator[tuple[LogBuffer, Any]]:
+    """A buffer that starts with no keys, sharing a ``SecretSet`` with the app."""
+    from omrg.transports.api.security import SecretSet
+
+    secrets = SecretSet()
+    log_buffer = LogBuffer(secrets)
+    logger = logging.getLogger(LOGGER)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(log_buffer)
+    propagate, logger.propagate = logger.propagate, False
+    yield log_buffer, secrets
+    logger.propagate = propagate
+    logger.removeHandler(log_buffer)
+
+
+def test_a_key_added_after_launch_is_removed_from_the_buffer(
+    live_secrets: tuple[LogBuffer, Any],
+) -> None:
+    log_buffer, secrets = live_secrets
+    secrets.add(SAVED)
+    emit(logging.ERROR, "after the save %s", SAVED)
+    try:
+        raise RuntimeError(f"upstream echoed {SAVED}")
+    except RuntimeError:
+        logging.getLogger(LOGGER).exception("failure")
+    text = json.dumps(log_buffer.records())
+    assert SAVED not in text
+    assert "after the save ***" in text
+
+
+def test_a_replaced_key_stays_redacted(live_secrets: tuple[LogBuffer, Any]) -> None:
+    log_buffer, secrets = live_secrets
+    secrets.add(SAVED)
+    secrets.add(REPLACED)
+    emit(logging.ERROR, "old %s new %s", SAVED, REPLACED)
+    text = json.dumps(log_buffer.records())
+    assert SAVED not in text and REPLACED not in text
+
+
+def _leak_two_keys(app: Any) -> None:
+    # The key route adds a key to the app's set before it calls the keychain.
+    app.state.secrets.add(SAVED)
+    emit(logging.ERROR, "leak %s", SAVED)
+    app.state.secrets.add(REPLACED)
+    emit(logging.ERROR, "leak %s", REPLACED)
+
+
+def test_the_logs_route_never_shows_a_saved_key(
+    tmp_path: Path, effective_settings: Any, live_secrets: tuple[LogBuffer, Any]
+) -> None:
+    log_buffer, _ = live_secrets
+    engine = make_engine(lance_store(tmp_path), effective_settings())
+    app, policy = build_app_with_buffer(tmp_path, engine, log_buffer)
+    _leak_two_keys(app)
+    with TestClient(app, base_url=BASE) as client:
+        login(client, policy)
+        response = client.get("/v1/logs")
+    assert SAVED not in response.text and REPLACED not in response.text
+    assert "***" in response.text
+
+
+def test_the_log_stream_never_shows_a_saved_key(
+    tmp_path: Path, effective_settings: Any, live_secrets: tuple[LogBuffer, Any]
+) -> None:
+    log_buffer, _ = live_secrets
+    engine = make_engine(lance_store(tmp_path), effective_settings())
+    app, policy = build_app_with_buffer(tmp_path, engine, log_buffer)
+    _leak_two_keys(app)
+
+    async def scenario() -> None:
+        async with app.router.lifespan_context(app):
+            stream = LiveStream(app, policy, "/v1/logs/stream")
+            await stream.wait_for(lambda frames: sum("id" in f for f in frames) >= 2)
+            emit(logging.ERROR, "live %s", REPLACED)
+            await stream.wait_for(lambda frames: any("live" in str(f) for f in frames))
+            request_shutdown(app)
+            await asyncio.wait_for(stream.task, 2)
+            dumped = json.dumps(stream.frames)
+            assert SAVED not in dumped and REPLACED not in dumped
+
+    asyncio.run(scenario())

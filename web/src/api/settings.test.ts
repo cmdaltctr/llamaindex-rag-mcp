@@ -1,18 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { createApiClient } from "./client";
 import {
+  getChatSettings,
   getConnections,
   getHealth,
   getLogs,
   getMcpState,
   getUploadLimit,
   getWebPort,
+  listProviderModels,
   LOG_STREAM_PATH,
+  removeProviderKey,
   revokeMcpToken,
   rotateMcpToken,
+  saveProviderFields,
+  saveProviderKey,
+  setChatSettings,
   setMcpEnabled,
   setUploadLimit,
   setWebPort,
+  testChatModel,
   testConnection,
 } from "./settings";
 import { documentsServer } from "../test/fakeDocumentsServer";
@@ -20,12 +27,16 @@ import { documentsServer } from "../test/fakeDocumentsServer";
 const CONNECTIONS = {
   status: "ok",
   config_dir: "/srv/omrg",
+  keychain: "available",
   connections: [
     {
       provider: "ollama",
-      urls: [{ label: "base", url: "http://127.0.0.1:11434" }],
-      models: [{ label: "embeddings", name: "nomic-embed-text" }],
-      key_set: false,
+      display_name: "Ollama",
+      locality: "local",
+      installed: true,
+      install_hint: null,
+      fields: [],
+      read_only: [],
       roles: ["embeddings", "answers"],
     },
   ],
@@ -53,6 +64,48 @@ describe("settings API", () => {
     const { api, server } = setup({ "POST /v1/connections/openrouter/test": () => ({ status: "ok", reachable: false, reason: "unauthorised" }) });
     await expect(testConnection(api, "openrouter")).resolves.toMatchObject({ reachable: false, reason: "unauthorised" });
     expect(server.find("POST", "/v1/connections/openrouter/test")).toHaveLength(1);
+    expect(server.calls[0]?.body).toEqual({ fields: {} });
+  });
+
+  it("sends typed values with the test and the model list", async () => {
+    const { api, server } = setup({
+      "POST /v1/connections/ollama/test": () => ({ status: "ok", reachable: true, reason: null }),
+      "POST /v1/connections/ollama/models": () => ({ status: "ok", reachable: true, reason: null, models: ["qwen3:4b"], truncated: false }),
+    });
+    await testConnection(api, "ollama", { base_url: "http://gpu:11434" });
+    await expect(listProviderModels(api, "ollama", { base_url: "http://gpu:11434" })).resolves.toMatchObject({ models: ["qwen3:4b"] });
+    expect(server.calls.map((call) => call.body)).toEqual([{ fields: { base_url: "http://gpu:11434" } }, { fields: { base_url: "http://gpu:11434" } }]);
+  });
+
+  it("saves addresses and keys with PUT and removes a key with DELETE", async () => {
+    const ok = () => ({ status: "ok" });
+    const { api, server } = setup({
+      "PUT /v1/connections/ollama": ok,
+      "PUT /v1/connections/openrouter/key": ok,
+      "DELETE /v1/connections/openrouter/key": ok,
+    });
+    await saveProviderFields(api, "ollama", { base_url: null });
+    await saveProviderKey(api, "openrouter", "sk-or-typed-0001");
+    await removeProviderKey(api, "openrouter");
+    expect(server.calls.map((call) => [call.method, call.path, call.body])).toEqual([
+      ["PUT", "/v1/connections/ollama", { fields: { base_url: null } }],
+      ["PUT", "/v1/connections/openrouter/key", { api_key: "sk-or-typed-0001" }],
+      ["DELETE", "/v1/connections/openrouter/key", null],
+    ]);
+  });
+
+  it("reads, saves and tests the Chat choice", async () => {
+    const { api, server } = setup({
+      "GET /v1/settings/chat": () => ({ status: "ok", provider: null, model: null, source: "default", locked: false, lock_reason: null, enabled: true, ready: false, reason: "not-configured" }),
+      "PUT /v1/settings/chat": () => ({ status: "ok" }),
+      "POST /v1/settings/chat/test": () => ({ status: "ok", ok: true, reason: null, elapsed_ms: 40 }),
+    });
+    await expect(getChatSettings(api)).resolves.toMatchObject({ ready: false, reason: "not-configured" });
+    await setChatSettings(api, { provider: "ollama", model: "qwen3:4b" });
+    await setChatSettings(api, null);
+    await expect(testChatModel(api, { provider: "ollama", model: "qwen3:4b" })).resolves.toMatchObject({ ok: true, elapsed_ms: 40 });
+    await testChatModel(api);
+    expect(server.calls.slice(1).map((call) => call.body)).toEqual([{ provider: "ollama", model: "qwen3:4b" }, null, { provider: "ollama", model: "qwen3:4b" }, {}]);
   });
 
   it("reads logs after a sequence", async () => {

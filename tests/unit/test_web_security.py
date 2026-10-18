@@ -440,3 +440,30 @@ def test_policy_lists_approved_origin_for_the_mcp_sdk(tmp_path: Path) -> None:
 def test_policy_refuses_a_non_loopback_extra_origin() -> None:
     with pytest.raises(ValueError, match="loopback"):
         AccessPolicy.for_launch("127.0.0.1", 8765, extra_origins=["http://example.com"])
+
+
+# ── SecretSet (design D7; task 6.2) ──────────────────────────────────────
+
+
+def test_secret_set_is_append_only_and_hides_values_in_repr() -> None:
+    from omrg.transports.api.security import RedactingFilter, SecretSet
+
+    secrets = SecretSet(["first-secret-value", ""])
+    secrets.add("second-secret-value")
+    secrets.add("first-secret-value")
+    secrets.add("")
+    assert list(secrets) == ["first-secret-value", "second-secret-value"]
+    assert "secret-value" not in repr(secrets)
+    assert not hasattr(secrets, "remove") and not hasattr(secrets, "discard")
+    log_filter = RedactingFilter(secrets)
+    record = logging.LogRecord(
+        "x", logging.INFO, __file__, 1, "key %s", ("late-added-secret-value",), None
+    )
+    log_filter.filter(record)
+    assert "late-added-secret-value" in record.getMessage()
+    secrets.add("late-added-secret-value")
+    record = logging.LogRecord(
+        "x", logging.INFO, __file__, 1, "key %s", ("late-added-secret-value",), None
+    )
+    log_filter.filter(record)
+    assert record.getMessage() == "key ***"

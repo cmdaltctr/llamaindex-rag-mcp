@@ -20,7 +20,7 @@ from collections.abc import Iterable
 from datetime import UTC, datetime
 from typing import Any
 
-from .security import RedactingFilter
+from .security import RedactingFilter, SecretSet
 
 #: Records kept in memory.
 LOG_CAPACITY = 1000
@@ -35,7 +35,9 @@ class LogBuffer(logging.Handler):
         """Create the buffer.
 
         Args:
-            secrets: Provider keys to remove from every record.
+            secrets: Provider keys to remove from every record. A
+                :class:`~omrg.transports.api.security.SecretSet` is read at
+                filter time, so keys added later are removed too.
             capacity: Most records to keep.
         """
         super().__init__()
@@ -43,7 +45,8 @@ class LogBuffer(logging.Handler):
         self._records: deque[dict[str, Any]] = deque(maxlen=capacity)
         self._seq = 0
         self._lock = threading.Lock()
-        self.addFilter(RedactingFilter(secrets))
+        self.secrets = secrets if isinstance(secrets, SecretSet) else SecretSet(secrets)
+        self.addFilter(RedactingFilter(self.secrets))
 
     @property
     def last_seq(self) -> int:

@@ -50,6 +50,7 @@ const DEFAULTS: Record<string, Handler> = {
   "GET /v1/profiles": () => ({ status: "ok", profiles: PROFILES }),
   "GET /v1/roots": () => ({ status: "ok", roots: ROOTS }),
   "GET /v1/settings/upload-limit": () => UPLOAD_LIMIT,
+  "GET /v1/settings/chat": () => ({ status: "ok", provider: "ollama", model: "qwen3", source: "default", locked: false, lock_reason: null, enabled: true, ready: true, reason: null }),
 };
 
 /** An exact `METHOD /path` key wins; otherwise a key with `:name` segments matches any one segment. */

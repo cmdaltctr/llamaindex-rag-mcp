@@ -56,6 +56,11 @@ export function AssistantTurn({ collection, question, saved = null, onResult, on
           <Button variant="outline" onClick={retry}>
             Retry
           </Button>
+          {result.failure_stage === "generation" ? (
+            <Button asChild variant="outline">
+              <a href="#/settings/chat">Check the Chat model</a>
+            </Button>
+          ) : null}
         </AlertNotice>
       ) : null}
       {waiting ? (

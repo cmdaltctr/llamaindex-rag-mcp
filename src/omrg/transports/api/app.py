@@ -36,7 +36,7 @@ from .routes.plugins import router as plugins_router
 from .routes.profiles import router as profiles_router
 from .routes.runs import router as runs_router
 from .routes.templates import router as templates_router
-from .security import AccessPolicy, validate_bind_host
+from .security import AccessPolicy, SecretSet, validate_bind_host
 from .static import FrontendFallback
 
 #: Route groups registered on every application, in order.
@@ -86,6 +86,7 @@ def create_app(
     engine_factory: Callable[[], Any] | None = None,
     run_service_factory: RunServiceFactory | None = None,
     log_buffer: LogBuffer | None = None,
+    secrets: SecretSet | None = None,
 ) -> FastAPI:
     """Build the web application for one launch.
 
@@ -98,6 +99,8 @@ def create_app(
             the profile catalogue of ``config.workspace``).
         run_service_factory: Optional run-service hook started and drained
             by the lifespan.
+        secrets: Secret values to remove from logs and answer errors. Without
+            one the app uses the log buffer's set.
         log_buffer: The ring buffer ``omrg web`` attached to the root logger.
             Without one the log routes serve an empty log.
 
@@ -126,7 +129,10 @@ def create_app(
     )
     app.state.access_policy = policy
     app.state.runtime = None
-    app.state.log_buffer = log_buffer if log_buffer is not None else LogBuffer()
+    app.state.log_buffer = (
+        log_buffer if log_buffer is not None else LogBuffer(secrets if secrets is not None else ())
+    )
+    app.state.secrets = secrets if secrets is not None else app.state.log_buffer.secrets
     install_error_handlers(app)
     for router in API_ROUTERS:
         app.include_router(router)

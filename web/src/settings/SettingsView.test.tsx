@@ -6,7 +6,7 @@ import { json } from "../test/fakeDocumentsServer";
 import { startApp } from "../test/startApp";
 import { settingsServer } from "./test/fixtures";
 
-const SECTIONS = ["Appearance", "Connections", "MCP", "Server log", "Runtime", "Workspace"];
+const SECTIONS = ["Appearance", "Providers", "Chat", "MCP", "Server log", "Runtime", "Workspace"];
 
 async function openSettings(handlers = {}) {
   const server = settingsServer(handlers);
@@ -20,7 +20,7 @@ function chip(name: string) {
 }
 
 describe("Settings sections", () => {
-  it("offers the six sections as chips in order and shows one at a time", async () => {
+  it("offers the seven sections as chips in order and shows one at a time", async () => {
     await openSettings();
     const group = screen.getByRole("group", { name: "Sections" });
     expect(within(group).getAllByRole("button").map((button) => button.textContent)).toEqual(SECTIONS);
@@ -41,7 +41,8 @@ describe("Settings sections", () => {
 
   it.each([
     ["Appearance", "#/settings/appearance"],
-    ["Connections", "#/settings/connections"],
+    ["Providers", "#/settings/providers"],
+    ["Chat", "#/settings/chat"],
     ["MCP", "#/settings/mcp"],
     ["Server log", "#/settings/log"],
     ["Runtime", "#/settings/runtime"],
