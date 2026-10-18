@@ -299,7 +299,7 @@ Key routes need the `credentials` scope and the browser session. A bearer creden
 
 ### Provider settings
 
-Settings > Providers shows one card for each registered LLM provider. Today these are Ollama, llama.cpp and OpenRouter. A new provider in the registry gets a card with no web change. Editable fields are the Ollama address, the llama.cpp chat address and the OpenRouter key. Embedding addresses and embedding models are shown but cannot be edited here.
+Settings > Providers shows one card for each registered LLM provider. Today these are Ollama, llama.cpp, OpenRouter, OpenAI-compatible and Anthropic. The last two serve Chat answers only. A new provider in the registry gets a card with no web change. Editable fields are the Ollama address, the llama.cpp chat address, the OpenRouter key, the OpenAI-compatible address and key, and the Anthropic key. The OpenAI-compatible key is optional, because LM Studio and vLLM need none. Chat is ready without it. The Anthropic key is required. Without it Chat reports `not-configured`. A card whose package is missing shows its install command, for example `uv sync --extra anthropic`. The OpenAI-compatible address can be on this machine or remote. The key goes only to that address, and the card states that text leaves this machine when the address is not on this machine. Embedding addresses and embedding models are shown but cannot be edited here.
 
 Each value comes from one source. The server uses the first source it finds:
 

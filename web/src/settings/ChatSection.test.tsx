@@ -1,10 +1,10 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import type { ChatSettings, Connection, ConnectionList } from "../api/settings";
+import type { ChatSettings, Connection, ConnectionList, ProviderField } from "../api/settings";
 import { json } from "../test/fakeDocumentsServer";
 import { startApp } from "../test/startApp";
-import { CHAT_READY, CONNECTIONS, LLAMACPP, OLLAMA, OPENROUTER, settingsServer } from "./test/fixtures";
+import { CHAT_READY, CONNECTIONS, LLAMACPP, OLLAMA, OPENROUTER, settingsServer, urlField } from "./test/fixtures";
 
 const UNSET: ChatSettings = { ...CHAT_READY, provider: null, model: null, source: "default", ready: false, reason: "not-configured" };
 
@@ -45,6 +45,39 @@ describe("Chat section", () => {
     expect(await screen.findByRole("option", { name: /llama\.cpp.*not installed/i })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("option", { name: /OpenRouter.*no key/i })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("option", { name: "Ollama" })).not.toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("lets Chat use a provider whose optional key is empty and shows the install hint of a missing package", async () => {
+    // `required: false` is the server flag for a key that a provider can run without (LM Studio, vLLM).
+    const openAiCompatible: Connection = {
+      provider: "openai_compatible",
+      display_name: "OpenAI-compatible",
+      locality: "cloud",
+      installed: true,
+      install_hint: null,
+      fields: [
+        urlField("base_url", "Address", "http://127.0.0.1:1234/v1"),
+        { ...OPENROUTER.fields[0]!, set: false, last4: null, saved_at: null, source: "none" as const, required: false } as ProviderField,
+      ],
+      read_only: [],
+      roles: ["answers"],
+    };
+    const anthropic: Connection = {
+      provider: "anthropic",
+      display_name: "Anthropic",
+      locality: "cloud",
+      installed: false,
+      install_hint: "uv sync --extra anthropic",
+      fields: [{ ...OPENROUTER.fields[0]!, set: false, last4: null, saved_at: null, source: "none" as const }],
+      read_only: [],
+      roles: ["answers"],
+    };
+    const { user } = await openChat({ "GET /v1/connections": () => list(OLLAMA, openAiCompatible, anthropic) });
+    await user.click(within(section()).getByRole("combobox", { name: "Provider" }));
+    const optionalKey = await screen.findByRole("option", { name: /OpenAI-compatible/ });
+    expect(optionalKey).not.toHaveAttribute("aria-disabled", "true");
+    expect(optionalKey).not.toHaveTextContent(/no key/i);
+    expect(screen.getByRole("option", { name: /Anthropic.*not installed/i })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("fills the model field from List models and saves nothing", async () => {

@@ -25,6 +25,7 @@ from .capabilities import (  # noqa: F401  (re-exported for existing callers/tes
 )
 from .config import Settings, _resolve_effective_embed_provider, get_settings
 from .core.providers.embeddings import registry as embed_registry
+from .core.settings import PROVIDER_SECRET_FIELDS, provider_secret_values
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ def redaction_values() -> dict[str, str]:
         "chroma_cloud_api_key": settings.chroma_cloud_api_key,
         "chroma_cloud_tenant": settings.chroma_cloud_tenant,
         "chroma_cloud_database": settings.chroma_cloud_database,
-        "openrouter_api_key": settings.openrouter_api_key,
+        **dict(zip(PROVIDER_SECRET_FIELDS, provider_secret_values(settings), strict=True)),
     }
 
 

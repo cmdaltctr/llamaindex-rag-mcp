@@ -144,7 +144,13 @@ def test_connections_response_shape(setup: Any, configure: Any) -> None:
     body = response.json()
     assert body["status"] == "ok"
     assert body["config_dir"] == str(Path.cwd())
-    assert [c["provider"] for c in body["connections"]] == ["ollama", "llamacpp", "openrouter"]
+    assert [c["provider"] for c in body["connections"]] == [
+        "ollama",
+        "llamacpp",
+        "openrouter",
+        "openai_compatible",
+        "anthropic",
+    ]
     key = next(f for f in body["connections"][2]["fields"] if f["id"] == "api_key")
     assert key["set"] is True and key["source"] == "keychain"
     assert body["keychain"] == "unavailable"

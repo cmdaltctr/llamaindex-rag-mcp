@@ -12,18 +12,123 @@ Lets the user set language model (LLM) provider addresses, API keys and the Chat
 
 #### Scenario: Registered providers only
 
-- **WHEN** the registry holds `ollama`, `llamacpp` and `openrouter`
-- **THEN** the response MUST hold exactly three entries, for those three providers
+- **WHEN** the registry holds `ollama`, `llamacpp`, `openrouter`, `openai_compatible` and `anthropic`
+- **THEN** the response MUST hold exactly five entries, for those five providers, in that order
 
 #### Scenario: Optional package missing
 
-- **WHEN** the package that the `llamacpp` provider needs is not installed
-- **THEN** the `llamacpp` entry MUST report it as not installed and MUST give the install command `uv sync --extra llamacpp`
+- **WHEN** the package that the `anthropic` provider needs is not installed
+- **THEN** the `anthropic` entry MUST report it as not installed and MUST give the install command `uv sync --extra anthropic`
+
+#### Scenario: OpenAI-like package is in the base install
+
+- **WHEN** the base install has no extra and the response holds the `llamacpp`, `openrouter` and `openai_compatible` entries
+- **THEN** each of the three entries MUST report the provider as installed, because the LlamaIndex OpenAI-like packages are base dependencies
 
 #### Scenario: Cloud provider marked
 
-- **WHEN** the response holds the `openrouter` entry
+- **WHEN** the response holds the `openrouter`, `openai_compatible` or `anthropic` entry
 - **THEN** the entry MUST mark the provider as cloud
+
+#### Scenario: A new provider needs no other change
+
+- **WHEN** a test registers a fake provider module with a descriptor and one registry line
+- **THEN** the response MUST hold an entry for it, and no route, summary function or web file MUST need a change
+
+### Requirement: The registry lists the OpenAI-compatible and Anthropic Chat providers
+
+The LLM provider registry SHALL hold two Chat providers in addition to `ollama`, `llamacpp` and `openrouter`, each as one provider module, one `register()` line and one connection descriptor. `openai_compatible` (display name "OpenAI-compatible") SHALL serve the answers role only. It SHALL have an editable address field (`OPENAI_COMPATIBLE_BASE_URL`, default `https://api.openai.com/v1`) and an optional secret field (`OPENAI_COMPATIBLE_API_KEY`). `anthropic` (display name "Anthropic") SHALL serve the answers role only. It SHALL have one required secret field (`ANTHROPIC_API_KEY`) and the fixed address `https://api.anthropic.com`. Neither provider SHALL appear in the embeddings or metadata roles.
+
+#### Scenario: OpenAI-compatible entry
+
+- **WHEN** the response holds the `openai_compatible` entry
+- **THEN** the entry MUST list the roles as answers only, an editable address with the default `https://api.openai.com/v1`, and a secret field that is marked optional
+
+#### Scenario: Anthropic entry
+
+- **WHEN** the response holds the `anthropic` entry
+- **THEN** the entry MUST list the roles as answers only, one secret field that is marked required, and no editable address
+
+#### Scenario: Remote or loopback address
+
+- **WHEN** the user saves the `openai_compatible` address `http://localhost:1234/v1` and later saves `https://api.together.xyz/v1`
+- **THEN** the server MUST accept both, the second entry MUST be treated as not on this machine, and the card MUST state that text leaves this machine
+
+### Requirement: An optional key does not block Chat
+
+A secret field marked optional SHALL NOT make Chat not ready when it is empty. The `openai_compatible` key SHALL be optional because servers such as LM Studio and vLLM need none. The server SHALL send a bearer credential to that provider only when a key is set, and SHALL send it only to the address saved or typed for that provider.
+
+#### Scenario: Chat ready without a key
+
+- **WHEN** the Chat provider is `openai_compatible`, the address is `http://localhost:1234/v1` and no key is set
+- **THEN** `GET /v1/settings/chat` MUST report ready true
+
+#### Scenario: Key sent only to its own address
+
+- **WHEN** an `openai_compatible` key is set and the user tests the provider
+- **THEN** the request MUST go only to the `openai_compatible` address, and no request to another provider MUST carry that key
+
+### Requirement: A required key blocks Chat
+
+A secret field that is not marked optional SHALL make Chat not ready while it is empty. For `anthropic`, `GET /v1/settings/chat` SHALL report ready false with the reason `not-configured` while no Anthropic key is set. The server SHALL send no request to Anthropic while the key is missing.
+
+#### Scenario: Anthropic without a key
+
+- **WHEN** the Chat provider is `anthropic` and no Anthropic key is set
+- **THEN** `GET /v1/settings/chat` MUST report ready false with the reason `not-configured`
+
+#### Scenario: Anthropic package missing
+
+- **WHEN** the Chat provider is `anthropic` and the `anthropic` extra is not installed
+- **THEN** `GET /v1/settings/chat` MUST report ready false with the reason `not-installed`
+
+### Requirement: Provider tests send the right credentials
+
+The connection test and the model list SHALL use the descriptor of the provider. For `openai_compatible` they SHALL send `GET {base_url}/models` and SHALL add an `Authorization: Bearer` header only when a key is set. For `anthropic` they SHALL send `GET https://api.anthropic.com/v1/models` with the headers `x-api-key` and `anthropic-version: 2023-06-01`, and SHALL send no request when no key is set; the result SHALL then report the reason `not-configured`.
+
+#### Scenario: OpenAI-compatible test with a key
+
+- **WHEN** an `openai_compatible` key is set and the user tests the provider
+- **THEN** the request MUST be `GET {base_url}/models` with the bearer header
+
+#### Scenario: OpenAI-compatible test without a key
+
+- **WHEN** no `openai_compatible` key is set and the user tests the provider
+- **THEN** the request MUST be `GET {base_url}/models` with no `Authorization` header
+
+#### Scenario: Anthropic test headers
+
+- **WHEN** an Anthropic key is set and the user tests the provider
+- **THEN** the request MUST be `GET /v1/models` on `https://api.anthropic.com` with the headers `x-api-key` and `anthropic-version: 2023-06-01`
+
+#### Scenario: Anthropic test without a key
+
+- **WHEN** no Anthropic key is set and the user tests the provider
+- **THEN** the server MUST send no request and the result MUST report not reachable with the reason `not-configured`
+
+### Requirement: Secret rules apply to every secret field
+
+The rules for keychain storage, the environment lock, redaction, the last four characters and live application SHALL apply to every secret field of every registered provider, driven by the descriptors. A new provider SHALL NOT need a change to the redaction set, the editable-field set, the locking code or the readiness check beyond its own descriptor. This SHALL include `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`.
+
+#### Scenario: Anthropic key in the keychain
+
+- **WHEN** a keychain is available and the user saves an Anthropic key
+- **THEN** the keychain MUST hold it under the service `omrg` and the user name `anthropic`, and no file or database row MUST contain it
+
+#### Scenario: Anthropic key redacted
+
+- **WHEN** the user saves an Anthropic key whose text starts with `sk-ant-` and a later log message contains it
+- **THEN** the buffered record, `GET /v1/logs` and the log stream MUST show the message with the key removed
+
+#### Scenario: OpenAI-compatible key from the environment
+
+- **WHEN** `OPENAI_COMPATIBLE_API_KEY` is set in the environment
+- **THEN** the key field MUST report the source `env` and locked, and a save or delete of the key MUST return 409
+
+#### Scenario: OpenAI-compatible key applies at once
+
+- **WHEN** the Chat provider is `openai_compatible` and the user saves a new key
+- **THEN** the next answer MUST send the new key to the saved address, and an answer that started before the save MUST finish with the old key
 
 ### Requirement: Each provider value has one source
 
@@ -165,12 +270,17 @@ When any embedding use of the server names Ollama, the Ollama address SHALL be l
 
 ### Requirement: The Chat status says whether Chat is ready
 
-`GET /v1/settings/chat` SHALL return the Chat provider, the model name, their source, whether the choice is locked, and whether Chat is ready. When Chat is not ready, it SHALL give a reason from a fixed set: `disabled`, `unknown-provider`, `not-installed`, `not-configured`. The server SHALL NOT contact a provider for this route.
+`GET /v1/settings/chat` SHALL return the Chat provider, the model name, their source, whether the choice is locked, and whether Chat is ready. When Chat is not ready, it SHALL give a reason from a fixed set: `disabled`, `unknown-provider`, `not-installed`, `not-configured` (a required value, such as a key that the provider needs, is missing). The server SHALL NOT contact a provider for this route.
 
 #### Scenario: Not ready without a key
 
 - **WHEN** the Chat provider is `openrouter` and no OpenRouter key is set
 - **THEN** `GET /v1/settings/chat` MUST report ready false with the reason `not-configured`
+
+#### Scenario: Registry providers other than the first three
+
+- **WHEN** the Chat provider is `anthropic` or `openai_compatible`
+- **THEN** `GET /v1/settings/chat` MUST decide readiness from the descriptor of that provider, with no branch on the provider name
 
 #### Scenario: Answering turned off
 

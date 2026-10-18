@@ -23,6 +23,7 @@ from typing import Any
 from .config import Settings, get_settings
 from .core.norm_guard import ENABLE_SETTING, TOLERANCE_SETTING, is_within_tolerance, l2_norm
 from .core.providers.embeddings import registry as embed_registry
+from .core.settings import provider_secret_values
 from .core.vectordb.identity import (
     EmbeddingIdentity,
     RedactionSecrets,
@@ -170,7 +171,7 @@ def check_embedding_model(
             chroma_cloud_api_key=settings.chroma_cloud_api_key,
             chroma_cloud_tenant=settings.chroma_cloud_tenant,
             chroma_cloud_database=settings.chroma_cloud_database,
-            openrouter_api_key=settings.openrouter_api_key,
+            provider_keys=provider_secret_values(settings),
         ).redact
     )
     model = model.strip()

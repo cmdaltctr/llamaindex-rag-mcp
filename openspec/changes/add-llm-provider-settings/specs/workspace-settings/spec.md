@@ -40,6 +40,16 @@ The Providers section SHALL show one card for each entry of `GET /v1/connections
 - **WHEN** the user types a new OpenRouter key and presses Save key
 - **THEN** the key input MUST be emptied, the card MUST show "Key set" with the last four characters and the source keychain, and the page MUST NOT show the key again
 
+#### Scenario: Optional key
+
+- **WHEN** the `openai_compatible` entry marks its key field as optional and no key is set
+- **THEN** the card MUST show the key field as optional, MUST NOT show an error, and the Chat section MUST allow choosing `openai_compatible`
+
+#### Scenario: Provider not installed
+
+- **WHEN** the `anthropic` entry reports that its package is not installed
+- **THEN** the card MUST show the install command `uv sync --extra anthropic`, and the Chat section MUST mark `anthropic` as not ready with the reason in text
+
 #### Scenario: No keychain
 
 - **WHEN** the server reports that no keychain is available

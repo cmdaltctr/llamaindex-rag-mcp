@@ -2,15 +2,17 @@
 
 OMRG supports multiple embedding and metadata LLM providers. Providers are selected independently via a two-tier system: category (`local`|`cloud`) + sub-provider — you can mix and match (e.g., cloud embeddings with a local LLM).
 
-> **Scope:** This guide covers embedding and metadata LLM providers only. Document parsing (`DOCUMENT_BACKEND=azure`, Azure Document Intelligence) is a separate orthogonal axis — see [ADR-024](../adr/024-dual-deployment-modes.md).
+> **Scope:** This guide covers embedding and metadata LLM providers, and the two Chat-only providers (OpenAI-compatible and Anthropic). Document parsing (`DOCUMENT_BACKEND=azure`, Azure Document Intelligence) is a separate orthogonal axis — see [ADR-024](../adr/024-dual-deployment-modes.md).
 
 ## Overview
 
 | Category | Sub-provider         | Embeddings        | Metadata LLM           | Extra deps                   |
 | -------- | -------------------- | ----------------- | ---------------------- | ---------------------------- |
-| `local`  | `llamacpp` (default) | `OpenAIEmbedding` | `OpenAILike` / `httpx` | `uv sync --extra llamacpp`   |
+| `local`  | `llamacpp` (default) | `OpenAIEmbedding` | `OpenAILike` / `httpx` | None (base install)          |
 | `local`  | `ollama`             | `OllamaEmbedding` | `Ollama` / `httpx`     | None (core)                  |
-| `cloud`  | `openrouter`         | `OpenAIEmbedding` | `OpenAILike` / `httpx` | `uv sync --extra openrouter` |
+| `cloud`  | `openrouter`         | `OpenAIEmbedding` | `OpenAILike` / `httpx` | None (base install)          |
+
+The LlamaIndex OpenAI-like packages are in the base install. The `llamacpp` and `openrouter` extras stay as empty extras, so `uv sync --extra llamacpp` and `uv sync --extra openrouter` still work.
 
 `llamacpp` and `openrouter` both use the OpenAI-compatible API (`OpenAIEmbedding`, `OpenAILike`) — only `api_base` and `api_key` differ. The same pattern supports any OpenAI-compatible endpoint (vLLM, TGI, LocalAI, Azure OpenAI). See [ADR-026](../adr/026-provider-registry-and-openrouter.md) for the full rationale.
 
@@ -37,7 +39,7 @@ OMRG supports multiple embedding and metadata LLM providers. Providers are selec
 | `LLAMACPP_CHAT_URL`    | `http://localhost:8081/v1`           | llama-server chat endpoint      |
 
 ```bash
-uv sync --extra llamacpp
+# No extra needed: the OpenAI-like packages are in the base install
 
 # Start two llama-server processes
 llama-server -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 --port 8080 --embeddings
@@ -54,6 +56,24 @@ LLAMACPP_CHAT_MODEL=Qwen3-0.6B-Q8_0.gguf
 ```
 
 See [ADR-025](../adr/025-pluggable-inference-backend.md) for the full rationale.
+
+### Chat-only providers (OpenAI-compatible and Anthropic)
+
+These two providers serve the answers role only (`ANSWER__PROVIDER`, or Settings > Chat in `omrg web`). They are not valid for `EMBED_PROVIDER`, `LOCAL_BACKEND` or `CLOUD_BACKEND`.
+
+| Provider | Env var | Default | Purpose |
+|---|---|---|---|
+| `openai_compatible` | `OPENAI_COMPATIBLE_BASE_URL` | `https://api.openai.com/v1` | Address of any server that speaks the OpenAI chat API (OpenAI, Together, vLLM, LM Studio) |
+| `openai_compatible` | `OPENAI_COMPATIBLE_API_KEY` | unset | Optional. LM Studio and vLLM need none. Sent only to the address above |
+| `anthropic` | `ANTHROPIC_API_KEY` | unset | Required. The address is fixed at `https://api.anthropic.com` |
+
+`openai_compatible` uses `OpenAILike` from the base install. The address can be on this machine or remote. `anthropic` needs an extra, because it pulls boto3 and Google SDKs (about 40 MB):
+
+```bash
+uv sync --extra anthropic
+```
+
+The connection test sends `GET {base_url}/models` for `openai_compatible`, with a bearer header only when a key is set. For `anthropic` it sends `GET /v1/models` with the headers `x-api-key` and `anthropic-version: 2023-06-01`, and sends nothing when no key is set.
 
 ### Ollama (alternative local backend)
 
@@ -75,7 +95,7 @@ OpenRouter is a cloud provider that implements the OpenAI-compatible API at `htt
 | `OPENROUTER_LLM_MODEL`   | _(required for metadata LLM)_ | OpenRouter chat model (e.g., `meta-llama/llama-3.1-8b-instruct`) |
 
 ```bash
-uv sync --extra openrouter
+# No extra needed: the OpenAI-like packages are in the base install
 ```
 
 ```bash
@@ -139,7 +159,7 @@ Registered embedding providers: `ollama`, `llamacpp`, `openrouter`.
 <!-- /registry-names:embeddings -->
 
 <!-- registry-names:llm -->
-Registered LLM providers: `ollama`, `llamacpp`, `openrouter`.
+Registered LLM providers: `ollama`, `llamacpp`, `openrouter`, `openai_compatible`, `anthropic`.
 <!-- /registry-names:llm -->
 
 ### Adding a new provider

@@ -24,7 +24,10 @@ from omrg.core.metadata.settings import MetadataSettings
 
 SECRET = "sk-or-v1-SECRETVALUE0123456789"  # noqa: S105 - fake key for redaction tests
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-PROVIDERS = ("ollama", "llamacpp", "openrouter")
+PROVIDERS = ("ollama", "llamacpp", "openrouter", "openai_compatible", "anthropic")
+#: The new Chat-only providers are not embedding or metadata providers (config rejects them).
+EMBEDDING_PROVIDERS = PROVIDERS[:3]
+CHAT_ONLY = {"openai_compatible": [], "anthropic": []}
 
 
 def make_settings(
@@ -111,6 +114,8 @@ def test_entry_shape_and_config_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: P
         ("Ollama", "local"),
         ("llama.cpp", "local"),
         ("OpenRouter", "cloud"),
+        ("OpenAI-compatible", "cloud"),
+        ("Anthropic", "cloud"),
     ]
     assert entries["ollama"]["installed"] is True and entries["ollama"]["install_hint"] is None
     read_only = {
@@ -133,6 +138,7 @@ def test_url_field_shape_and_default_source(monkeypatch: pytest.MonkeyPatch) -> 
         "id": "base_url",
         "label": "Address",
         "kind": "url",
+        "required": True,
         "value": "http://ollama.test:11434",
         "source": "default",
         "locked": False,
@@ -297,7 +303,12 @@ def test_documented_scenario_llamacpp_embeds_and_ollama_answers(
             extraction_mode="disabled",
         ),
     )
-    assert roles(result) == {"ollama": ["answers"], "llamacpp": ["embeddings"], "openrouter": []}
+    assert roles(result) == {
+        "ollama": ["answers"],
+        "llamacpp": ["embeddings"],
+        "openrouter": [],
+        **CHAT_ONLY,
+    }
 
 
 def test_embedding_role_cloud_scheme_uses_the_cloud_backend(
@@ -307,10 +318,15 @@ def test_embedding_role_cloud_scheme_uses_the_cloud_backend(
         monkeypatch,
         make_settings(embed_provider="cloud", answer_enabled=False, extraction_mode="disabled"),
     )
-    assert roles(cloud) == {"ollama": [], "llamacpp": [], "openrouter": ["embeddings"]}
+    assert roles(cloud) == {
+        "ollama": [],
+        "llamacpp": [],
+        "openrouter": ["embeddings"],
+        **CHAT_ONLY,
+    }
 
 
-@pytest.mark.parametrize("provider", PROVIDERS)
+@pytest.mark.parametrize("provider", EMBEDDING_PROVIDERS)
 def test_embedding_role_follows_the_effective_provider(
     monkeypatch: pytest.MonkeyPatch, provider: str
 ) -> None:
@@ -389,7 +405,7 @@ def test_metadata_role_absent_when_extraction_calls_no_model(
     assert all("metadata" not in held for held in roles(result).values())
 
 
-@pytest.mark.parametrize("provider", PROVIDERS)
+@pytest.mark.parametrize("provider", EMBEDDING_PROVIDERS)
 def test_metadata_role_follows_a_mode_that_names_its_provider(
     monkeypatch: pytest.MonkeyPatch, provider: str
 ) -> None:
@@ -447,7 +463,7 @@ def test_an_unknown_provider_name_is_listed_nowhere(monkeypatch: pytest.MonkeyPa
 
 @pytest.mark.parametrize(
     "placement",
-    list(itertools.product(PROVIDERS, repeat=3)),
+    list(itertools.product(PROVIDERS[:3], PROVIDERS, PROVIDERS)),
 )
 def test_every_role_provider_combination(
     monkeypatch: pytest.MonkeyPatch, placement: tuple[str, str, str]

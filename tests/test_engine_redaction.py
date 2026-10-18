@@ -21,7 +21,7 @@ def _secrets() -> Any:
         chroma_cloud_api_key=_KEY,
         chroma_cloud_tenant=_TENANT,
         chroma_cloud_database=_DATABASE,
-        openrouter_api_key=_OPENROUTER,
+        provider_keys=(_OPENROUTER,),
     )
 
 
@@ -102,7 +102,7 @@ def test_build_engine_fills_redaction_from_settings() -> None:
         chroma_cloud_api_key=_KEY,
         chroma_cloud_tenant=_TENANT,
         chroma_cloud_database=_DATABASE,
-        openrouter_api_key=_OPENROUTER,
+        provider_keys=(_OPENROUTER,),
         vector_store="chroma",
         embed_provider="local",
         local_backend="ollama",

@@ -15,6 +15,7 @@ from .capabilities import (
     resolve_pdf_reader,
 )
 from .config import Settings, get_settings
+from .core.settings import PROVIDER_ADDRESS_FIELDS, PROVIDER_SECRET_FIELDS
 
 
 def settings_to_effective(settings: Settings | None = None) -> Any:
@@ -74,12 +75,13 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
         cloud_backend=settings.cloud_backend,
         llamacpp_embed_url=settings.llamacpp_embed_url,
         llamacpp_embed_model=settings.llamacpp_embed_model,
-        llamacpp_chat_url=settings.llamacpp_chat_url,
         llamacpp_chat_model=settings.llamacpp_chat_model,
-        openrouter_api_key=settings.openrouter_api_key,
         openrouter_embed_model=settings.openrouter_embed_model,
         openrouter_llm_model=settings.openrouter_llm_model,
-        ollama_base_url=settings.ollama_base_url,
+        **{
+            name: getattr(settings, name)
+            for name in PROVIDER_ADDRESS_FIELDS + PROVIDER_SECRET_FIELDS
+        },
         embed_model=settings.embed_model,
         # Bake the RESOLVED reader in: the `auto` probe runs once here.
         pdf_reader=resolve_pdf_reader(settings),

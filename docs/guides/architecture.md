@@ -628,7 +628,7 @@ Live registry contents, kept in step with the code by contract tests:
 
 <!-- registry-names:llm -->
 
-`llamacpp` `ollama` `openrouter`
+`anthropic` `llamacpp` `ollama` `openai_compatible` `openrouter`
 
 <!-- /registry-names:llm -->
 

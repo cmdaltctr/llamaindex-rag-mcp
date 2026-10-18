@@ -18,6 +18,7 @@ from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any
 
 from .core.profiles.catalogue import uses_ollama_embeddings
+from .core.settings import PROVIDER_ADDRESS_FIELDS, PROVIDER_SECRET_FIELDS, provider_secret_values
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
     from .core.settings import EffectiveSettings
 
 #: Server-default settings a provider update may change.
-_EDITABLE_TOP = ("ollama_base_url", "llamacpp_chat_url", "openrouter_api_key")
+_EDITABLE_TOP = (*PROVIDER_ADDRESS_FIELDS, *PROVIDER_SECRET_FIELDS)
 _EDITABLE_ANSWER = ("provider", "model")
 
 
@@ -185,8 +186,9 @@ class EngineProviders:
     def use_provider_settings(self, effective: EffectiveSettings) -> None:
         """Take new server-default settings that differ only in LLM provider values.
 
-        Allowed differences are the Ollama, llama.cpp chat and OpenRouter
-        values and the answer provider and model. The next answer, judge,
+        Allowed differences are the provider addresses and API keys (see
+        ``PROVIDER_ADDRESS_FIELDS`` and ``PROVIDER_SECRET_FIELDS``) and the
+        answer provider and model. The next answer, judge,
         ingest and graph run build their resources from the new values
         through the factories the composition root gave. A call that already
         started finishes with the old values. The embedder, store and
@@ -221,10 +223,11 @@ class EngineProviders:
             raw_factories=old.raw_factories,
         )
         held = self._redaction  # type: ignore[attr-defined]
-        retired = held.retired_openrouter_keys
-        if held.openrouter_api_key and held.openrouter_api_key not in retired:
-            retired = (*retired, held.openrouter_api_key)
+        retired = held.retired_provider_keys
+        for key in held.provider_keys:
+            if key and key not in retired:
+                retired = (*retired, key)
         self._redaction = replace(  # type: ignore[attr-defined]
-            held, openrouter_api_key=effective.openrouter_api_key, retired_openrouter_keys=retired
+            held, provider_keys=provider_secret_values(effective), retired_provider_keys=retired
         )
         self._pipelines.reset_judges()  # type: ignore[attr-defined]

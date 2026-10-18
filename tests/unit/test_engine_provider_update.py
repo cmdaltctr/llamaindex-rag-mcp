@@ -270,7 +270,7 @@ def test_redaction_follows_the_new_key(effective_settings) -> None:
 
     engine = build_engine(
         effective_settings(openrouter_api_key="old-key-0123456789"),
-        redaction=RedactionSecrets(openrouter_api_key="old-key-0123456789"),
+        redaction=RedactionSecrets(provider_keys=("old-key-0123456789",)),
     )
     engine.use_provider_settings(effective_settings(openrouter_api_key="new-key-0123456789"))
     assert "new-key-0123456789" not in engine.redact("fail new-key-0123456789")

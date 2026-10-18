@@ -24,6 +24,8 @@ from omrg.core.providers.llm.connection import (
 )
 
 SECRET = "sk-or-v1-SECRETVALUE0123456789"  # noqa: S105 - fake key
+PROVIDERS = ["ollama", "llamacpp", "openrouter", "openai_compatible", "anthropic"]
+DISPLAY_NAMES = ["Ollama", "llama.cpp", "OpenRouter", "OpenAI-compatible", "Anthropic"]
 
 
 def make_settings(**extra: Any) -> Settings:
@@ -32,10 +34,10 @@ def make_settings(**extra: Any) -> Settings:
 
 def test_describe_all_lists_the_built_in_providers_in_registration_order() -> None:
     described = registry.describe_all()
-    assert list(described) == ["ollama", "llamacpp", "openrouter"]
+    assert list(described) == PROVIDERS
     assert all(isinstance(d, ConnectionDescriptor) for d in described.values())
-    assert [d.display_name for d in described.values()] == ["Ollama", "llama.cpp", "OpenRouter"]
-    assert [d.locality for d in described.values()] == ["local", "local", "cloud"]
+    assert [d.display_name for d in described.values()] == DISPLAY_NAMES
+    assert [d.locality for d in described.values()] == ["local", "local", "cloud", "cloud", "cloud"]
 
 
 def test_fields_name_the_setting_and_environment_variable() -> None:
@@ -147,7 +149,7 @@ def fake_provider() -> Iterator[None]:
 @pytest.mark.usefixtures("fake_provider")
 def test_a_registered_provider_appears_with_no_other_change() -> None:
     described = registry.describe_all()
-    assert list(described) == ["ollama", "llamacpp", "openrouter", "fake"]
+    assert list(described) == [*PROVIDERS, "fake"]
     assert described["fake"].display_name == "Fake"
 
 

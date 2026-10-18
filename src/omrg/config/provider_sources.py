@@ -10,8 +10,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from pydantic import model_validator
+from pydantic import BaseModel, model_validator
 from pydantic_settings import PydanticBaseSettingsSource
+
+from ..core.settings import PROVIDER_ADDRESS_FIELDS, PROVIDER_SECRET_FIELDS
 
 if TYPE_CHECKING:
     from . import Settings
@@ -19,9 +21,8 @@ if TYPE_CHECKING:
 #: Editable provider fields, as ``Settings`` paths. ``answer.*`` live in the
 #: nested answer block.
 PROVIDER_FIELDS: tuple[str, ...] = (
-    "ollama_base_url",
-    "llamacpp_chat_url",
-    "openrouter_api_key",
+    *PROVIDER_ADDRESS_FIELDS,
+    *PROVIDER_SECRET_FIELDS,
     "answer.provider",
     "answer.model",
 )
@@ -59,8 +60,16 @@ def explicit_provider_fields(*sources: PydanticBaseSettingsSource) -> frozenset[
     return frozenset(found)
 
 
-class ProviderSourceMixin:
-    """Records :attr:`Settings.provider_explicit` after resolution."""
+class ProviderSourceMixin(BaseModel):
+    """Chat provider connection fields, and :attr:`Settings.provider_explicit`.
+
+    The fields live here, not in ``config/__init__.py``, which sits at the
+    500-line ceiling. ``Settings`` inherits them like any other field.
+    """
+
+    openai_compatible_base_url: str = "https://api.openai.com/v1"
+    openai_compatible_api_key: str = ""
+    anthropic_api_key: str = ""
 
     @model_validator(mode="after")
     def _record_provider_sources(self) -> Settings:

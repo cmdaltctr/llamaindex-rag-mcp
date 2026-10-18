@@ -183,7 +183,7 @@ def build_engine(
     # subprocesses. No process starts until a route's first dispatch.
     from .capabilities import build_ocr_routes
     from .core.providers.embeddings import registry as embed_registry
-    from .core.vectordb.identity import RedactionSecrets, embedding_identity_from_settings
+    from .core.vectordb.identity import embedding_identity_from_settings
     from .engine import Engine
     from .engine_embedders import EngineEmbedders
 
@@ -205,12 +205,7 @@ def build_engine(
         answer_llm_factory=_build_answer_llm,
         verify_llm_factory=lambda block, snap: _build_verify_llm(snap, block),
         ocr_client=build_ocr_routes(settings),
-        redaction=RedactionSecrets(
-            chroma_cloud_api_key=settings.chroma_cloud_api_key,
-            chroma_cloud_tenant=settings.chroma_cloud_tenant,
-            chroma_cloud_database=settings.chroma_cloud_database,
-            openrouter_api_key=settings.openrouter_api_key,
-        ),
+        redaction=build_redaction(settings),
     )
 
 
@@ -236,6 +231,19 @@ def experiment_base_settings() -> Settings:
     from .config import get_settings
 
     return get_settings()
+
+
+def build_redaction(settings: Any) -> Any:
+    """Return the credential values an Engine removes from error text."""
+    from .core.settings import provider_secret_values
+    from .core.vectordb.identity import RedactionSecrets
+
+    return RedactionSecrets(
+        chroma_cloud_api_key=settings.chroma_cloud_api_key,
+        chroma_cloud_tenant=settings.chroma_cloud_tenant,
+        chroma_cloud_database=settings.chroma_cloud_database,
+        provider_keys=provider_secret_values(settings),
+    )
 
 
 def _build_answer_llm(settings: Any) -> Any:

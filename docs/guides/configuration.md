@@ -375,6 +375,14 @@ so an older release cannot select Chroma and make LanceDB data appear missing.
 
 ### Providers
 
+Two Chat providers serve answering only. They are not valid for `EMBED_PROVIDER`, `LOCAL_BACKEND` or `CLOUD_BACKEND`. Set them with `ANSWER__PROVIDER=openai_compatible` or `ANSWER__PROVIDER=anthropic`, or choose them in Settings > Chat.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `OPENAI_COMPATIBLE_BASE_URL` | `https://api.openai.com/v1` | Address of any server that speaks the OpenAI chat API (OpenAI, Together, vLLM, LM Studio). It can be on this machine or remote |
+| `OPENAI_COMPATIBLE_API_KEY` | unset | Optional. LM Studio and vLLM need none. The key goes only to the address above |
+| `ANTHROPIC_API_KEY` | unset | Required for the `anthropic` provider. Address fixed at `https://api.anthropic.com`. Needs `uv sync --extra anthropic` |
+
 | Variable | Default | What it does |
 |---|---|---|
 | `EMBED_PROVIDER` | `local` | `local`, `cloud`, `ollama`, `llamacpp`, or `openrouter` |
@@ -400,21 +408,22 @@ as unset and resets to the default.
 Optional dependencies:
 
 ```bash
-uv sync --extra llamacpp     # llama.cpp backend
-uv sync --extra openrouter   # OpenRouter backend
+uv sync --extra anthropic    # Anthropic Chat provider (about 40 MB of SDKs)
 ```
+
+The LlamaIndex OpenAI-like packages are in the base install. The llama.cpp, OpenRouter and OpenAI-compatible providers need no extra. `uv sync --extra llamacpp` and `uv sync --extra openrouter` still work and install nothing more.
 
 Connection details for each: [Providers](providers.md).
 
 #### Change provider values in the web workspace
 
-In `omrg web`, Settings > Providers can save three of these values: `OLLAMA_BASE_URL`, `LLAMACPP_CHAT_URL` and `OPENROUTER_API_KEY`. The server uses the first source it finds:
+In `omrg web`, Settings > Providers can save these values: `OLLAMA_BASE_URL`, `LLAMACPP_CHAT_URL`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`. The server uses the first source it finds:
 
 1. The process environment or `.env`. This source wins and locks the field in Settings. Remove the variable to edit the field there.
 2. A value saved in Settings.
 3. The default.
 
-A saved address goes in the workspace database. A saved key goes in the system keychain (service `omrg`, user name equal to the provider name). The app never writes a key to `.env`, to the database or to a file. If no keychain exists, set `OPENROUTER_API_KEY` in the environment instead.
+A saved address goes in the workspace database. A saved key goes in the system keychain (service `omrg`, user name equal to the provider name). The app never writes a key to `.env`, to the database or to a file. If no keychain exists, set the key variable (for example `OPENROUTER_API_KEY`) in the environment instead.
 
 A saved value applies at once to new requests, with no restart. The Ollama address stays locked while embeddings use Ollama. Embedding providers and models are not editable there. Saved values reach `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts read `.env` and the environment. See [Web workspace](web-workspace.md#provider-settings).
 
@@ -523,7 +532,7 @@ query time. See [MCP tools](mcp-tools.md#answer_documents) and
 | Field | Default | What it does |
 |---|---|---|
 | `enabled` | `true` | Master switch. `false` makes the server model resolve to `None`; the answering tools then return an actionable error |
-| `provider` | `ollama` | LLM provider, resolved through the same registry as metadata extraction. Unknown names fail startup |
+| `provider` | `ollama` | LLM provider, resolved through the same registry as metadata extraction. Unknown names fail startup. Besides `ollama`, `llamacpp` and `openrouter`, the registry holds `openai_compatible` and `anthropic` for answering only |
 | `model` | `qwen3:4b` | Model tag, passed to the provider builder as an `answer_model` override so answering never reuses the small metadata-classification model |
 | `timeout` | `120.0` | Seconds to wait for one completion round |
 | `max_rounds` | `4` | Maximum COMPACT refinement rounds (1–8; the client-sampling path caps at 4). Later rounds widen the per-round budget up to a hard character ceiling (262,144); overflow evidence is dropped lowest-ranked first |
@@ -816,7 +825,7 @@ explicit algorithm selection is an operator contract. See
 
 ### Provider and Chat values
 
-`omrg web` also lets you save LLM provider addresses, an OpenRouter key and the Chat model in Settings. The order is environment or `.env`, then the saved value, then the default. An environment value locks the field. A saved key lives in the system keychain only. A saved value applies at once with no restart. Details: [Providers](#providers), [Answering](#answering--answer__) and [Web workspace](web-workspace.md#provider-settings).
+`omrg web` also lets you save LLM provider addresses, API keys and the Chat model in Settings. The order is environment or `.env`, then the saved value, then the default. An environment value locks the field. A saved key lives in the system keychain only. A saved value applies at once with no restart. Details: [Providers](#providers), [Answering](#answering--answer__) and [Web workspace](web-workspace.md#provider-settings).
 
 ---|---|---|
 | `WEB_MAX_UPLOAD_MIB` | unset | Per-file upload limit in whole MiB, 1 to 2048. Same as `--max-upload-mib`. |

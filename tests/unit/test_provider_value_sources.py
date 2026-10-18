@@ -1,6 +1,6 @@
 """Which provider values come from the environment or ``.env`` (tasks 3.1, 3.2).
 
-The five editable fields lock when an explicit operator source sets them
+The eight editable fields lock when an explicit operator source sets them
 (design D2). YAML and ``defaults.yaml`` count as defaults, like
 ``vector_store_provenance``.
 """
@@ -18,6 +18,9 @@ VARIABLES = {
     "ollama_base_url": "OLLAMA_BASE_URL",
     "llamacpp_chat_url": "LLAMACPP_CHAT_URL",
     "openrouter_api_key": "OPENROUTER_API_KEY",
+    "openai_compatible_base_url": "OPENAI_COMPATIBLE_BASE_URL",
+    "openai_compatible_api_key": "OPENAI_COMPATIBLE_API_KEY",
+    "anthropic_api_key": "ANTHROPIC_API_KEY",
     "answer.provider": "ANSWER__PROVIDER",
     "answer.model": "ANSWER__MODEL",
 }

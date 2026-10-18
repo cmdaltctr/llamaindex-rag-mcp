@@ -8,7 +8,7 @@ See proposal.md (Why). This section lists only the facts that shape the approach
 
 - Settings resolve once. `compose.py` is the only production caller of `get_settings()` (repository rule). The source order is init, environment, `.env`, profile YAML, `defaults.yaml` (`src/omrg/config/__init__.py:415-420`). `config` already records whether `vector_store` came from an explicit source (`src/omrg/config/__init__.py:154,409`).
 - The provider summary and test targets are pure functions over `Settings` (`src/omrg/compose_connections.py`). The provider list is a fixed tuple (`:28`), and the URL and model rows branch on provider names (`:89-111`). The test sends one model-list request with a 5-second limit, no redirects, and never reads a body (`src/omrg/transports/api/connection_probe.py:45-64`). OpenRouter is tested with `GET /models` (`compose_connections.py:162-164`).
-- The LLM registry maps names to `module:build` strings and keeps registration order in its dict (`src/omrg/core/providers/llm/registry.py:14-26,74-76`). `available()` sorts names (`:68-70`). `llamacpp` and `openrouter` need an optional extra (`:32-35`). Provider modules import LlamaIndex only inside `build()` (for example `llm/ollama.py:36`), so importing a module is cheap.
+- The LLM registry maps names to `module:build` strings and keeps registration order in its dict (`src/omrg/core/providers/llm/registry.py:14-26,74-76`). `available()` sorts names (`:68-70`). `llamacpp` and `openrouter` needed an optional extra for the OpenAI-like packages (`:32-35`); this change moves those packages into the base install. Provider modules import LlamaIndex only inside `build()` (for example `llm/ollama.py:36`), so importing a module is cheap.
 - `build_engine` derives the server-default `EffectiveSettings` with `settings_to_effective(settings)` and gives the Engine factories that close over the startup `Settings`: answer model, judge and profile resolver (`src/omrg/compose_engine.py:122-157`).
 - The Engine builds its answer model lazily and keeps it (`src/omrg/engine.py:112-116,459-463`). Each operation resolves per-collection settings through the profile resolver (`engine.py:471-482`). The judge factory runs at the start of every answer (`src/omrg/engine_answer.py:95-98`); graph runs cache judges per answer block (`src/omrg/compose_pipelines.py:392-406`). `engine.py` has 498 lines.
 - Metadata extraction reads provider values from the resolved `EffectiveSettings` of each ingest (`src/omrg/core/metadata/ollama.py:249`, `llamacpp.py:85`, `openrouter.py:170`). The embedder is built once at start (`compose_engine.py:122`). Ollama embeddings and the Ollama LLM share `ollama_base_url` (`src/omrg/core/providers/common.py:25`).
@@ -40,7 +40,7 @@ See proposal.md (Why). This section lists only the facts that shape the approach
 - Embedding provider, model or address editing. `add-profile-embedding-model` owns per-profile embedding models.
 - Metadata extraction mode and model choice, and the judge model. They keep their `.env` settings; only the connection values they use change.
 - Giving the stdio MCP server, the CLI or experiment contexts the saved values.
-- New providers. OpenAI, Anthropic and others come later as one file and one registry line each.
+- Providers beyond OpenAI-compatible and Anthropic. Others come later as one file and one registry line each.
 
 ## Decisions
 
@@ -83,7 +83,7 @@ The Windows and Linux rows follow the `keyring` docs (Context7, `jaraco/keyring`
 
 The order follows ADR-078. A value from the process environment or `.env` wins and locks the field. The route returns 409 and names the variable to remove. A restart can then never undo a Settings change in silence.
 
-`config` records which editable fields came from an explicit source, in the same way it records `vector_store` (`config/__init__.py:409`). The editable fields are `OLLAMA_BASE_URL`, `LLAMACPP_CHAT_URL`, `OPENROUTER_API_KEY`, `ANSWER__PROVIDER` and `ANSWER__MODEL`. Profile YAML and `defaults.yaml` count as `default`. The Chat choice locks as one unit when either answer variable is explicit.
+`config` records which editable fields came from an explicit source, in the same way it records `vector_store` (`config/__init__.py:409`). The editable fields are `OLLAMA_BASE_URL`, `LLAMACPP_CHAT_URL`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY`, `ANTHROPIC_API_KEY`, `ANSWER__PROVIDER` and `ANSWER__MODEL`. Profile YAML and `defaults.yaml` count as `default`. The Chat choice locks as one unit when either answer variable is explicit.
 
 `.env.example` sets `LLAMACPP_CHAT_URL` without a comment mark (line 89). Users who copied it would see the field locked. This change comments that line out; the default value is the same.
 
@@ -131,7 +131,7 @@ Alternatives: (a) restart for each change with a banner. Rejected by the user. (
 
 ### D4. Embeddings stay safe
 
-Only three fields are editable: the Ollama address, the llama.cpp chat address and the OpenRouter key. The llama.cpp embedding address and every embedding model stay read-only on the cards.
+The editable fields are the Ollama address, the llama.cpp chat address, the OpenRouter key, the OpenAI-compatible address and key, and the Anthropic key. The llama.cpp embedding address and every embedding model stay read-only on the cards.
 
 The Ollama address is shared by Ollama embeddings and the Ollama LLM. When the embeddings role resolves to Ollama, the address is locked with the reason "embeddings use it", and the Engine guard (D3) refuses it as well. A key change never changes embedding identity, because the stamp is provider and model. When `add-profile-embedding-model` lands, the lock must also cover profiles that choose Ollama embeddings. That change, or whichever lands second, adds the check.
 
@@ -146,6 +146,19 @@ Each LLM provider module gains a `CONNECTION` descriptor: pure data plus small p
 - `models_target(settings)` and `parse_models(payload)`: Ollama `models[].name`, llama.cpp and OpenRouter `data[].id` (Context7: Ollama API docs, OpenRouter API reference).
 
 The registry gains `describe_all()`, which imports each registered module and returns the descriptors in registration order. `compose_connections` loops over it and has no branch on a provider name. "Installed" is `importlib.util.find_spec(requires_module) is not None`.
+
+- `fields` also carry an `optional` flag (default false). A required secret field that is empty makes Chat not ready with the reason `not-configured`; an optional one does not. The set of editable fields, the redaction set, the lock and the readiness check read the descriptors, so a new provider needs no change outside its module and one register line.
+
+Two providers join in this change, both for the answers role only:
+
+| Provider | Display | Fields | Test and model list | Package |
+|---|---|---|---|---|
+| `openai_compatible` | OpenAI-compatible | `base_url` (url, `OPENAI_COMPATIBLE_BASE_URL`, default `https://api.openai.com/v1`), `api_key` (secret, `OPENAI_COMPATIBLE_API_KEY`, optional) | `GET {base_url}/models`, with `Authorization: Bearer` only when a key is set; `data[].id` | `OpenAILike`, now in the base install |
+| `anthropic` | Anthropic | `api_key` (secret, `ANTHROPIC_API_KEY`, required), fixed address `https://api.anthropic.com` | `GET /v1/models` with `x-api-key` and `anthropic-version: 2023-06-01`; no request without a key; `data[].id` | `llama-index-llms-anthropic` in the opt-in `anthropic` extra; install hint `uv sync --extra anthropic` |
+
+The OpenAI-compatible address can be loopback (LM Studio) or remote (OpenAI, Together, vLLM on another host). Locality is `cloud`, because the default address is a cloud host; the card adds the "leaves this machine" line for any non-loopback address (D7). The key goes only to the address saved or typed for this provider.
+
+The OpenAI-like packages move into the base dependencies. The `llamacpp` and `openrouter` extras stay as empty extras so `uv sync --extra llamacpp` still works.
 
 OpenRouter moves its test from `/models` to `/key`. The OpenRouter documentation says anonymous requests to `/models` get the public catalogue, so a wrong key may still pass today's test. `GET /api/v1/key` returns 401 without a valid key.
 
@@ -174,7 +187,8 @@ The model list reads at most 8 MiB of the body and returns at most 1,000 names. 
 - Every write, test and list route needs the browser session (`require_session`, `src/omrg/transports/api/engine_access.py:72-97`). Keys need the `credentials` scope, as the MCP token routes do (`routes/mcp.py:34`). A bearer credential never passes.
 - The existing middleware checks `Host`, rejects foreign `Origin` and cross-site fetch metadata on `/v1`, and refuses credentials in the query string (`src/omrg/transports/api/middleware.py:1-7`). No change is needed.
 - Address check before any save or request (spec "Provider addresses are validated"). Local network hosts are allowed because a user may run Ollama on another machine. Redirects stay off.
-- Redaction: a new append-only `SecretSet` in `security.py`. `RedactingFilter` and `LogBuffer` read it at filter time in place of the launch tuple. The key route adds a key to the set before it calls the keychain. The answer route runs the result's `error` text through the set. Replaced keys stay in the set until shutdown. A test proves a saved key never reaches a log record (task 6.1).
+- Key prefixes such as `sk-or-` (OpenRouter) and `sk-ant-` (Anthropic) are not special. Redaction matches the saved key text, and the key check (8 to 512 printable characters, no spaces) is the same for every provider.
+- Redaction: a new append-only `SecretSet` in `security.py`, filled from every secret field of every registered descriptor. `RedactingFilter` and `LogBuffer` read it at filter time in place of the launch tuple. The key route adds a key to the set before it calls the keychain. The answer route runs the result's `error` text through the set. Replaced keys stay in the set until shutdown. A test proves a saved key never reaches a log record (task 6.1).
 - Validators never put a value in an error message. The key body model uses a check whose message names only the rule.
 - Keychain calls block and may show a system prompt on macOS. They run in a worker thread with a time limit, never on the event loop.
 
@@ -190,6 +204,14 @@ The design follows `web/DESIGN.md` and the `omrg-design` skill: primitives only 
 ### D9. ADR
 
 ADR-083, "LLM provider settings in the web workspace". ADR-082 is taken by `add-chat-history-and-canvas-view-controls`, so this change uses ADR-083.
+
+### Rejected alternatives for the new providers
+
+| Option | Verdict |
+|---|---|
+| Put `llama-index-llms-anthropic` in the base install | Rejected. It pulls boto3 and Google SDKs (about 40 MB) that most users never need. It stays in the opt-in `anthropic` extra. |
+| Keep the OpenAI-like packages in the `llamacpp` and `openrouter` extras | Rejected. `openai_compatible` needs them with no local server or OpenRouter, so they move to the base install. Both extras stay empty so old commands work. |
+| A separate branch in the routes or web for each new provider | Rejected. The descriptors drive the card, the test, the readiness check and the secret rules. |
 
 ## Risks / Trade-offs
 

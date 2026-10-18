@@ -7081,7 +7081,7 @@ components:
     ProviderField:
       type: object
       additionalProperties: false
-      required: [id, label, kind, value, source, locked, lock_reason, set, last4, saved_at, state]
+      required: [id, label, kind, required, value, source, locked, lock_reason, set, last4, saved_at, state]
       properties:
         id:
           type: string
@@ -7090,6 +7090,12 @@ components:
         kind:
           type: string
           enum: [url, secret]
+        required:
+          type: boolean
+          description: >
+            Whether Chat needs a value here to be ready. A key that is not
+            required (for example a local OpenAI-compatible server) does not
+            block Chat while empty.
         value:
           type: [string, "null"]
           description: The address in use. A key field holds null.

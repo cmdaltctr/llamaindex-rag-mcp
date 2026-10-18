@@ -62,7 +62,6 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # isolation suite (tasks 4.8/4.9) with engine-level profile-isolation
 # cases (2468 -> 2508 executed, and the two new chroma-gated
 # write-contract cases add 2 base skips: 127 -> 129).
-_OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
 # Re-baselined at add-vector-store-label-to-knowledge-base: two registry label
@@ -84,7 +83,12 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # Five chat route error-branch cases (codecov patch gap) add 5 more (5784 -> 5789).
 # Re-baselined at add-llm-provider-settings (2026-10-18): descriptor, value-source, keychain,
 # engine-provider, redaction, connection and Chat settings route cases add 261 (5789 -> 6050).
-_BASE_EXECUTED = 6050
+# Re-baselined at the openai_compatible and anthropic providers (2026-10-18): 43 descriptor,
+# value-source, redaction and Engine cases, 31 route cases (they need the web extra) and 62
+# extra role-by-provider parameter cases add 136 (6050 -> 6186). The Anthropic build case uses
+# a stub module, so it runs with or without the anthropic extra.
+# 6193 = 6186 measured here + 3 tokenizer + 4 ground-truth cases that skip on a clean runner.
+_BASE_EXECUTED = 6193
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -291,11 +295,9 @@ _HISTORICAL_GT = (
 )
 if not _HISTORICAL_GT.exists():
     _BASE_EXECUTED -= 4
-# The Exp25 installed-adapter cases run when the optional OpenAI-like
-# embedding package exists. They otherwise skip, so both supported
-# dependency sets keep an exact, documented manifest.
-if find_spec("llama_index.embeddings.openai_like") is not None:
-    _BASE_EXECUTED += _OPENAI_LIKE_ADAPTER_CASES
+# The nine Exp25 installed-adapter cases always run now:
+# the OpenAI-like packages moved into the base dependencies (ADR-083), so the
+# pin below includes them and there is no conditional adjustment.
 # Three model-token chunking cases use a cached Qwen3-Embedding-4B tokenizer
 # when it is present in the HuggingFace hub cache. They skip on a clean CI
 # runner, so both supported environments keep an exact, documented manifest.
@@ -336,7 +338,8 @@ if not _has_qwen_tokenizer:
 # Re-measured at add-profile-embedding-model (2026-10-18) in two clean venvs:
 # 5731 executed with the web extra, 5081 without, so 26 more (650).
 # add-chat-history-and-canvas-view-controls: the 14 chat route cases need fastapi (664).
-_WEB_EXTRA_CASES = 669
+# Re-measured at the openai_compatible and anthropic providers: 31 route cases (700).
+_WEB_EXTRA_CASES = 700
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)

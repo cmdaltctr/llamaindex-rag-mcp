@@ -199,6 +199,22 @@ class ProviderState:
 
         self._commit(engine, restore)
 
+    def save_chat(
+        self, engine: Any, choice: tuple[str, str] | None, previous: tuple[Any, Any]
+    ) -> None:
+        """Save or clear the Chat provider and model and apply them with every saved value.
+
+        Args:
+            engine: The running Engine.
+            choice: ``(provider, model)``, or ``None`` to clear the choice.
+            previous: The ``(provider, model)`` rows to restore when the Engine refuses.
+
+        Raises:
+            EngineRefused: The Engine refused; the rows are restored.
+        """
+        self.settings.set_chat_choice(*(choice or (None, None)))
+        self._commit(engine, lambda: self.settings.set_chat_choice(*previous))
+
     def save_key(self, engine: Any, provider: str, key: str) -> None:
         """Save *key* to the keychain, record the save time and apply it.
 

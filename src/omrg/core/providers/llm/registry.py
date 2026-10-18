@@ -34,6 +34,7 @@ def register(name: str, import_path: str) -> None:
 _PROVIDER_EXTRAS: dict[str, str] = {
     "llamacpp": "llamacpp",
     "openrouter": "openrouter",
+    "anthropic": "anthropic",
 }
 
 
@@ -91,3 +92,5 @@ def available() -> list[str]:
 register("ollama", "omrg.core.providers.llm.ollama:build")
 register("llamacpp", "omrg.core.providers.llm.llamacpp:build")
 register("openrouter", "omrg.core.providers.llm.openrouter:build")
+register("openai_compatible", "omrg.core.providers.llm.openai_compatible:build")
+register("anthropic", "omrg.core.providers.llm.anthropic:build")

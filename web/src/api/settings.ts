@@ -34,6 +34,8 @@ export interface ProviderField {
   locked: boolean;
   /** Plain words for the lock, such as the variable to remove. */
   lock_reason: string | null;
+  /** False for a key the provider can run without, such as a local OpenAI-compatible server. */
+  required: boolean;
   /** Whether a key is set. */
   set: boolean;
   /** The last four characters of a key, or `null`. */

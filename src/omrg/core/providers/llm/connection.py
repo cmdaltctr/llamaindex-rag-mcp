@@ -26,6 +26,9 @@ class ConnectionField:
         kind: ``url`` for an address, ``secret`` for an API key.
         settings_field: Name of the ``Settings`` field that holds the value.
         env_var: Environment variable that sets the value.
+        required: Whether Chat needs a value here to be ready. A secret
+            field that is not required (a local server needs no key) does
+            not block Chat while empty.
     """
 
     id: str
@@ -33,6 +36,7 @@ class ConnectionField:
     kind: Literal["url", "secret"]
     settings_field: str
     env_var: str
+    required: bool = True
 
 
 @dataclass(frozen=True)

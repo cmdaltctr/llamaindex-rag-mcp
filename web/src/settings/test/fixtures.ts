@@ -4,10 +4,10 @@ import { documentsServer, type Handler } from "../../test/fakeDocumentsServer";
 /** Fixtures built from the `openapi.yaml` schemas for the Settings routes. */
 export const CONFIG_DIR = "/srv/omrg project";
 
-const NO_KEY = { value: null, set: false, last4: null, saved_at: null, state: null, locked: false, lock_reason: null } as const;
+const NO_KEY = { value: null, required: true, set: false, last4: null, saved_at: null, state: null, locked: false, lock_reason: null } as const;
 
 export function urlField(id: string, label: string, value: string, source: ProviderField["source"] = "default", lock?: string): ProviderField {
-  return { id, label, kind: "url", value, source, locked: lock !== undefined, lock_reason: lock ?? null, set: false, last4: null, saved_at: null, state: null };
+  return { id, label, kind: "url", value, source, locked: lock !== undefined, lock_reason: lock ?? null, required: true, set: false, last4: null, saved_at: null, state: null };
 }
 
 export const OLLAMA: Connection = {

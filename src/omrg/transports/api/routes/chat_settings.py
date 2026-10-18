@@ -70,13 +70,17 @@ class RuntimeProviderValues:
         return self.current
 
 
-def provider_values_of(runtime: WebRuntime) -> RuntimeProviderValues:
-    """Return the runtime's provider-value holder (``runtime.provider_values``).
+def provider_values_of(runtime: WebRuntime) -> Any:
+    """Return a callable that gives the saved provider values in use.
 
-    When the runtime has none yet, create one that holds the saved Chat
-    choice and attach it, so this module works before the lifespan wiring
-    provides the holder.
+    The launch's :class:`~omrg.transports.api.provider_state.ProviderState`
+    holds the saved addresses, keychain keys and Chat choice together, so
+    Chat readiness and a Chat save see the same keys and addresses as the
+    other routes. Without one (a runtime built by hand), a holder of the
+    saved Chat choice alone is created and attached.
     """
+    if runtime.providers is not None:
+        return runtime.providers.source
     holder = getattr(runtime, "provider_values", None)
     if holder is None:
         saved = _workspace(runtime)
@@ -109,7 +113,9 @@ def _not_ready_reason(settings: Any, provider: str, model: str) -> str | None:
     if not module_installed(descriptor.requires_module):
         return "not-installed"
     keys_missing = any(
-        field.kind == "secret" and not str(getattr(settings, field.settings_field, "")).strip()
+        field.kind == "secret"
+        and field.required
+        and not str(getattr(settings, field.settings_field, "")).strip()
         for field in descriptor.fields
     )
     if keys_missing or not model.strip() or not descriptor.test_targets(settings).urls:
@@ -176,6 +182,11 @@ async def get_chat_settings(_: ReadScope, runtime: RuntimeDep) -> Response:
 
 def _apply(runtime: WebRuntime, choice: ChatChoice | None, *, previous: tuple[Any, ...]) -> None:
     """Save the choice, then update runtime values and the Engine; roll back on refusal."""
+    if runtime.providers is not None:
+        runtime.providers.save_chat(
+            runtime.engine, None if choice is None else (choice.provider, choice.model), previous
+        )
+        return
     holder = provider_values_of(runtime)
     database = _workspace(runtime)
     old_values = holder.current

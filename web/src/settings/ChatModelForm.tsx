@@ -16,7 +16,7 @@ import { cloudHost, isKnownReason, reasonSentence } from "./connectionWords";
 function notReady(connection: Connection): string | null {
   if (!connection.installed) return "not installed";
   const key = connection.fields.find((field) => field.kind === "secret");
-  return key !== undefined && !key.set ? "no key" : null;
+  return key !== undefined && key.required && !key.set ? "no key" : null;
 }
 
 interface ChatModelFormProps {

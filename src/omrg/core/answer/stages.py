@@ -47,7 +47,8 @@ def safe_error_detail(exc: BaseException, settings: Any) -> str:
     helpers the MCP transport applies to tool errors are applied here so
     the error strings embedded in core results cannot bypass them.
     """
-    from ..vectordb.identity import redact_cloud_secrets, redact_secret
+    from ..settings import provider_secret_values
+    from ..vectordb.identity import redact_cloud_secrets, redact_secrets
 
     detail = str(exc)
     detail = redact_cloud_secrets(
@@ -56,7 +57,7 @@ def safe_error_detail(exc: BaseException, settings: Any) -> str:
         getattr(settings, "chroma_cloud_tenant", ""),
         getattr(settings, "chroma_cloud_database", ""),
     )
-    return redact_secret(detail, getattr(settings, "openrouter_api_key", ""))
+    return redact_secrets(detail, provider_secret_values(settings))
 
 
 def error_detail_for(settings: Any) -> ErrorDetail:

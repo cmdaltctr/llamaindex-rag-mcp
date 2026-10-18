@@ -74,7 +74,7 @@ You need [uv](https://docs.astral.sh/uv/) and one of
 
 ```bash
 cp .env.example .env      # then edit it — see below
-uv sync --extra llamacpp
+uv sync                   # the llama.cpp backend needs no extra
 
 # start llama-server (downloads the GGUF models automatically)
 llama-server -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 --port 8080 --embeddings &
@@ -213,11 +213,13 @@ LOCAL_BACKEND=ollama
 EMBED_MODEL=qwen3-embedding:0.6b
 ```
 
-**OpenRouter for cloud embeddings or LLM** — no local model servers.
+**OpenRouter for cloud embeddings or LLM** — no local model servers. It needs no extra.
 
 ```bash
-uv sync --extra openrouter
+uv sync
 ```
+
+Chat answers can also use any OpenAI-compatible server (OpenAI, Together, vLLM, LM Studio) with no extra, or Anthropic with `uv sync --extra anthropic`. Set them in `omrg web` under Settings > Providers, or see [Providers](docs/guides/providers.md).
 
 ```bash
 # .env

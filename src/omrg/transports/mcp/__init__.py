@@ -34,7 +34,8 @@ from mcp.server.mcpserver import MCPServer
 # after this module has been imported, keeping imports safe for discovery and
 # test collection.
 from ... import compose
-from ...core.vectordb.identity import redact_cloud_secrets, redact_secret
+from ...core.settings import PROVIDER_SECRET_FIELDS
+from ...core.vectordb.identity import redact_cloud_secrets, redact_secrets
 from .answer import answer_documents
 from .codebase import get_codebase_map
 from .context import McpContext, PathPolicy, no_admission
@@ -74,7 +75,7 @@ def _error_detail(exc: Exception) -> str:
 
     Used only by :func:`main`, before an Engine exists. Handlers redact
     through the Engine (``errors.error_detail``). Chroma Cloud connection
-    values and the OpenRouter API key are removed (full value and any
+    values and the LLM provider API keys are removed (full value and any
     prefix of six or more characters). When settings themselves cannot be
     resolved the raw text cannot be redacted, so only a placeholder is
     returned.
@@ -83,14 +84,14 @@ def _error_detail(exc: Exception) -> str:
         values = compose.redaction_values()
     except Exception:
         return _SETTINGS_UNRESOLVED
-    return redact_secret(
+    return redact_secrets(
         redact_cloud_secrets(
             str(exc),
             values["chroma_cloud_api_key"],
             values["chroma_cloud_tenant"],
             values["chroma_cloud_database"],
         ),
-        values["openrouter_api_key"],
+        [values.get(name, "") for name in PROVIDER_SECRET_FIELDS],
     )
 
 
