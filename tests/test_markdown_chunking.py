@@ -40,6 +40,22 @@ def _node_text(node) -> str:
     return ""
 
 
+def _path_budget(path: Path, text_tokens: int) -> int:
+    """Return a chunk size that leaves ``text_tokens`` beside the path metadata.
+
+    LlamaIndex's ``SentenceSplitter`` subtracts the node's metadata tokens
+    from the chunk size, and the absolute ``file_path`` is most of that
+    metadata. A small fixed size therefore failed in a deep checkout with
+    "Metadata length (N) is longer than chunk size". Adding the path's own
+    token count makes the text budget the same in every checkout location.
+    It counts with the default tokenizer, which the legacy chunking path
+    uses when the ``effective_settings`` factory pins the empty tokenizer.
+    """
+    from llama_index.core.utils import get_tokenizer
+
+    return text_tokens + len(get_tokenizer()(f"file_path: {path}"))
+
+
 def test_markdown_chunk_size_default_is_1024() -> None:
     """Markdown files use the promoted Experiment 6c chunk-size default."""
     assert _gs().chunking.chunk_size == 512
@@ -88,6 +104,7 @@ async def test_markdown_short_sections_align_with_headings(sample_md: Path) -> N
 async def test_markdown_long_section_is_split(
     fixtures_dir: Path,
     monkeypatch: pytest.MonkeyPatch,
+    effective_settings,
 ) -> None:
     """A single H2 section longer than CHUNK_SIZE must be split.
 
@@ -102,7 +119,10 @@ async def test_markdown_long_section_is_split(
     nodes = await read_and_chunk_file_async(
         long_md,
         chunk_overlap=10,
-        settings=EffectiveSettings(chunking=ChunkingBlock(markdown_chunk_size=small_chunk_size)),
+        settings=effective_settings(
+            extraction_mode="disabled",
+            markdown_chunk_size=_path_budget(long_md, small_chunk_size),
+        ),
     )
 
     assert len(nodes) > 1, (
@@ -236,13 +256,14 @@ async def test_reader_produced_markdown_honours_the_markdown_budget(
     Same acceptance as the `.md` path (``test_markdown_long_section_is_split``):
     the budget applies identically on the reader-produced path.
     """
+    pdf = fixtures_dir / "pdf_markdown_syntax.pdf"
     settings = effective_settings(
         pdf_reader="pdf_inspector",
         extraction_mode="disabled",
-        markdown_chunk_size=128,
+        markdown_chunk_size=_path_budget(pdf, 128),
     )
     nodes = await read_and_chunk_file_async(
-        fixtures_dir / "pdf_markdown_syntax.pdf",
+        pdf,
         chunk_overlap=10,
         settings=settings,
     )
@@ -311,13 +332,17 @@ async def test_markdown_without_headings_still_chunks(
 async def test_markdown_multi_chunk_nodes_keep_heading_metadata(
     fixtures_dir: Path,
     monkeypatch: pytest.MonkeyPatch,
+    effective_settings,
 ) -> None:
     """Every Markdown chunk emitted after second-stage splitting has headings."""
     long_md = fixtures_dir / "markdown_long_section.md"
     nodes = await read_and_chunk_file_async(
         long_md,
         chunk_overlap=10,
-        settings=EffectiveSettings(chunking=ChunkingBlock(markdown_chunk_size=64)),
+        settings=effective_settings(
+            extraction_mode="disabled",
+            markdown_chunk_size=_path_budget(long_md, 64),
+        ),
     )
 
     assert len(nodes) >= 2, "Fixture must force multiple Markdown chunks"
