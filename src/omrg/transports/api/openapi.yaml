@@ -808,7 +808,10 @@ paths:
         Ingest, Search and Answer pipelines for the collection. The change
         does not re-chunk or re-embed existing chunks. A profile that is not
         ready, unknown or deleted gives 400 with `not_ready_reasons` and no
-        confirmation.
+        confirmation. A profile whose embedding model differs from the model
+        that the collection's vectors were made with gives 409 with
+        `error_type` `embedding_mismatch`, in the preview and in the confirm
+        step; the message names both models and the tag stays.
         Step 1: send `confirm: false` (the default). This returns a
         `ProfilePreview` with the lever impacts and a single-use
         `confirmation`. Step 2: send `confirm: true` with the same profile
@@ -1064,6 +1067,143 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /embedding-providers:
+    get:
+      operationId: listEmbeddingProviders
+      summary: List the embedding providers and the server default model
+      description: >
+        Lists every registered embedding provider. A provider is
+        unavailable when its optional dependency is missing; `reason` then
+        names the extra to install. `server_default` is the provider and the
+        model that the `EMBED_*` settings select, which every built-in
+        profile and every user profile without a choice uses. This route
+        sends no request to any provider.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The providers and the server default.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmbeddingProviderList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /embedding-providers/{provider}/check:
+    post:
+      operationId: checkEmbeddingModel
+      summary: Check an embedding model with one probe embedding
+      description: >
+        Embeds the text `OMRG model check` with a throwaway embedder and
+        reports the vector size (`dimensions`) and length (`norm`). For
+        llama.cpp, which ignores the model name in a request, the server
+        first lists its models, and the name must match one of them. A failed
+        check is still 200: `ok` is false and `reason` says why in plain
+        English (provider not installed, model not served, provider error
+        text, or a vector length outside the norm tolerance while the norm
+        guard is on). Credentials are removed from `reason`. An unregistered
+        provider gives 404. This route contacts the provider, and only when
+        called. It needs the browser session.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmbeddingCheckRequest"
+      responses:
+        "200":
+          description: The check result, passed or failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmbeddingCheckResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /profiles/{profile_id}/embedding:
+    put:
+      operationId: setProfileEmbedding
+      summary: Choose the embedding model of a user profile
+      description: >
+        Send `provider` and `model` to choose a model, or both `null` to
+        return to the server default. The server runs the same check as
+        `checkEmbeddingModel` first; a failed check gives 422 with a top-level
+        `reason`, and the profile keeps its model. The model is locked while a
+        collection that follows the profile holds vectors (a stamp or at
+        least one row): a request for another model gives 409 with
+        `error_type` `embedding_locked` and `collections`, first blocking
+        collection first. A request for the stamped model is allowed. `model`
+        in a `collections` entry is `null` when the model that made the
+        vectors is not recorded. A built-in profile gives 400: duplicate the
+        profile first. An unregistered provider or an unknown profile gives
+        404. This route needs the browser session.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      parameters:
+        - $ref: "#/components/parameters/ProfileId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileEmbeddingRequest"
+      responses:
+        "200":
+          description: The profile with its new embedding choice.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
         "500":
           $ref: "#/components/responses/InternalError"
         "503":
@@ -2965,8 +3105,23 @@ components:
           type: string
         error_type:
           type: string
-          enum: [validation, retrieval, internal]
-          description: Optional error category.
+          enum: [validation, retrieval, internal, embedding_locked, embedding_mismatch]
+          description: >
+            Optional error category. `embedding_locked` is a 409 from
+            `setProfileEmbedding`, `embedding_mismatch` a 409 from
+            `changeCollectionProfile`.
+        reason:
+          type: string
+          description: >
+            Present on the 422 from `setProfileEmbedding`: why the model
+            check failed.
+        collections:
+          type: array
+          description: >
+            Present on a 409 `embedding_locked`: the collections that block the
+            change, first blocking collection first.
+          items:
+            $ref: "#/components/schemas/EmbeddingLockCollection"
         issues:
           type: array
           description: Present only on 422 graph validation failures.
@@ -4223,6 +4378,8 @@ components:
         - ready
         - not_ready_reasons
         - used_by
+        - embedding
+        - embedding_lock
       properties:
         profile_id:
           type: string
@@ -4250,6 +4407,10 @@ components:
           description: Names of the collections whose stored profile tag is this id.
           items:
             type: string
+        embedding:
+          $ref: "#/components/schemas/ProfileEmbedding"
+        embedding_lock:
+          $ref: "#/components/schemas/ProfileEmbeddingLock"
 
     ProfileDetail:
       type: object
@@ -4264,6 +4425,8 @@ components:
         - ready
         - not_ready_reasons
         - used_by
+        - embedding
+        - embedding_lock
         - standard_graphs
       properties:
         profile_id:
@@ -4292,6 +4455,10 @@ components:
           description: Names of the collections whose stored profile tag is this id.
           items:
             type: string
+        embedding:
+          $ref: "#/components/schemas/ProfileEmbedding"
+        embedding_lock:
+          $ref: "#/components/schemas/ProfileEmbeddingLock"
         standard_graphs:
           description: >
             Only a built-in profile has graphs: the graph documents that a
@@ -4343,6 +4510,134 @@ components:
           enum: [ok]
         profile:
           $ref: "#/components/schemas/ProfileDetail"
+
+    EmbeddingIdentity:
+      type: object
+      additionalProperties: false
+      required: [provider, model]
+      properties:
+        provider:
+          type: string
+        model:
+          type: string
+
+    EmbeddingProviderItem:
+      type: object
+      additionalProperties: false
+      required: [name, available, reason]
+      properties:
+        name:
+          type: string
+        available:
+          type: boolean
+        reason:
+          type: [string, "null"]
+          description: Null when available, else the extra to install.
+
+    EmbeddingProviderList:
+      type: object
+      additionalProperties: false
+      required: [status, providers, server_default]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmbeddingProviderItem"
+        server_default:
+          $ref: "#/components/schemas/EmbeddingIdentity"
+
+    EmbeddingCheckRequest:
+      type: object
+      additionalProperties: false
+      required: [model]
+      properties:
+        model:
+          type: string
+          minLength: 1
+          maxLength: 512
+
+    EmbeddingCheckResult:
+      type: object
+      additionalProperties: false
+      required: [status, ok, dimensions, norm, reason]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        ok:
+          type: boolean
+        dimensions:
+          type: [integer, "null"]
+          description: The vector size. Null when the provider returned no vector.
+        norm:
+          type: [number, "null"]
+          description: The L2 length of the probe vector. Null when there is none.
+        reason:
+          type: [string, "null"]
+          description: Null when the check passed, else a plain-English reason.
+
+    ProfileEmbeddingRequest:
+      type: object
+      additionalProperties: false
+      required: [provider, model]
+      description: Both set choose a model. Both null return to the server default.
+      properties:
+        provider:
+          type: [string, "null"]
+          maxLength: 64
+        model:
+          type: [string, "null"]
+          maxLength: 512
+
+    ProfileEmbedding:
+      type: object
+      additionalProperties: false
+      required: [provider, model, source, dimensions]
+      description: The effective embedding model of a profile.
+      properties:
+        provider:
+          type: string
+        model:
+          type: string
+        source:
+          type: string
+          enum: [profile, server_default]
+        dimensions:
+          type: [integer, "null"]
+          description: The vector size of the last passing check. Null for the server default.
+
+    EmbeddingLockCollection:
+      type: object
+      additionalProperties: false
+      required: [collection, provider, model, chunk_count]
+      properties:
+        collection:
+          type: string
+        provider:
+          type: [string, "null"]
+          description: Null when the model that made the vectors is not recorded.
+        model:
+          type: [string, "null"]
+          description: Null when the model that made the vectors is not recorded.
+        chunk_count:
+          type: integer
+          minimum: 0
+
+    ProfileEmbeddingLock:
+      type: object
+      additionalProperties: false
+      required: [locked, collections]
+      properties:
+        locked:
+          type: boolean
+          description: True while a collection that follows the profile holds vectors.
+        collections:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmbeddingLockCollection"
 
     ProfileCreateRequest:
       type: object

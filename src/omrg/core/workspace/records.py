@@ -56,7 +56,10 @@ class ProfileRecord(TypedDict):
     """A user profile: an id, a base built-in profile and three pipelines.
 
     The id, the base profile and the three pipeline ids never change after
-    creation. ``archived_at`` is set by a soft delete.
+    creation. ``archived_at`` is set by a soft delete. ``embed_provider`` and
+    ``embed_model`` are both set (the profile's embedding choice) or both
+    ``None`` (the server default); ``embed_dimensions`` is the vector size of
+    the last passing model check (ADR-081).
     """
 
     profile_id: str
@@ -69,6 +72,9 @@ class ProfileRecord(TypedDict):
     created_at: str
     updated_at: str
     archived_at: str | None
+    embed_provider: str | None
+    embed_model: str | None
+    embed_dimensions: int | None
 
 
 class RevisionRecord(TypedDict):

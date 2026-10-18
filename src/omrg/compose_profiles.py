@@ -24,6 +24,7 @@ import unicodedata
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any
 
+from .compose_profile_embedding import ProfileEmbedding
 from .compose_templates import profile_templates
 from .core.profiles.catalogue import BUILTIN_PROFILES, SLOT_CONTRACTS
 from .core.profiles.readiness import (
@@ -34,6 +35,7 @@ from .core.profiles.readiness import (
 
 if TYPE_CHECKING:
     from .core.profiles.catalogue import ProfileCatalogue
+    from .core.vectordb.identity import EmbeddingIdentity
     from .core.workspace import ProfileRepository, WorkspaceRepository
 
 SLOTS: tuple[str, ...] = tuple(c.slot for c in SLOT_CONTRACTS)
@@ -112,6 +114,8 @@ class ProfileService:
         profiles: The profile repository.
         catalogue: Read access to profiles, as other processes see them.
         collection_tags: Returns ``{collection: stored profile tag or None}``.
+        host_identity: Returns the server default embedding model. ``None``
+            reads it from the settings.
     """
 
     def __init__(
@@ -122,6 +126,7 @@ class ProfileService:
         catalogue: ProfileCatalogue,
         *,
         collection_tags: Callable[[], Mapping[str, str | None]],
+        host_identity: Callable[[], EmbeddingIdentity] | None = None,
     ) -> None:
         self._engine = engine
         self._workspace = workspace
@@ -129,6 +134,7 @@ class ProfileService:
         self._catalogue = catalogue
         self._collection_tags = collection_tags
         self._lock = threading.RLock()
+        self.embedding = ProfileEmbedding(self, host_identity)
 
     @property
     def lock(self) -> threading.RLock:
@@ -182,6 +188,7 @@ class ProfileService:
 
     def _builtin_item(self, name: str, tags: Mapping[str, str | None]) -> dict[str, Any]:
         title, description = _BUILTIN_TEXT[name]
+        used_by = self._used_by(name, tags)
         return {
             "profile_id": name,
             "kind": "builtin",
@@ -191,13 +198,15 @@ class ProfileService:
             "slots": dict.fromkeys(SLOTS),
             "ready": True,
             "not_ready_reasons": [],
-            "used_by": self._used_by(name, tags),
+            "used_by": used_by,
+            **self.embedding.fields(None, used_by),
         }
 
     def _user_item(
         self, record: Mapping[str, Any], tags: Mapping[str, str | None]
     ) -> dict[str, Any]:
         reasons = self.readiness_reasons(record)
+        used_by = self._used_by(record["profile_id"], tags)
         return {
             "profile_id": record["profile_id"],
             "kind": "user",
@@ -207,7 +216,8 @@ class ProfileService:
             "slots": {slot: record[f"{slot}_pipeline_id"] for slot in SLOTS},
             "ready": not reasons,
             "not_ready_reasons": reasons,
-            "used_by": self._used_by(record["profile_id"], tags),
+            "used_by": used_by,
+            **self.embedding.fields(record, used_by),
         }
 
     # ── Readiness (D9) ──────────────────────────────────────────────
@@ -271,18 +281,20 @@ class ProfileService:
     def check_binding(self, profile_id: str, collection: str) -> None:
         """Check that a profile can be bound to a collection.
 
-        A built-in profile always can. A user profile must exist, not be
-        deleted, and be ready for the target collection.
+        A user profile must exist, not be deleted, and be ready for the target
+        collection. Any profile must use the model that the collection holds
+        vectors for (ADR-081).
 
         Raises:
             UnknownProfileError: If the profile does not exist or was deleted.
             ProfileNotReadyError: With the reasons, if a pipeline is not ready.
+            EmbeddingMismatchError: If the collection holds vectors from another model.
         """
-        if profile_id in BUILTIN_PROFILES:
-            return
-        reasons = self.binding_reasons(profile_id, collection)
-        if reasons:
-            raise ProfileNotReadyError(reasons)
+        if profile_id not in BUILTIN_PROFILES:
+            reasons = self.binding_reasons(profile_id, collection)
+            if reasons:
+                raise ProfileNotReadyError(reasons)
+        self.embedding.check_binding(profile_id, collection)
 
     def fingerprint(self, profile_id: str) -> str:
         """Return a token that changes when a bound profile changes.
@@ -384,6 +396,7 @@ class ProfileService:
 
         title = _clean_title(title)
         layouts: dict[str, Mapping[str, Any]] = {}
+        embedding: tuple[str, str, int | None] | None = None
         slots: dict[str, Any]
         if source is None:
             base, slots = "documents", dict.fromkeys(SLOTS)
@@ -393,6 +406,12 @@ class ProfileService:
             record = self._user_record(source)
             base = record["base_profile"]
             slots = {slot: self.slot_document(record, slot) for slot in SLOTS}
+            if record.get("embed_provider") and record.get("embed_model"):
+                embedding = (
+                    record["embed_provider"],
+                    record["embed_model"],
+                    record.get("embed_dimensions"),
+                )
             for slot in SLOTS:
                 pipeline = self._workspace.get_pipeline(record[f"{slot}_pipeline_id"])
                 layouts[slot] = dict(pipeline["layout"])
@@ -403,8 +422,19 @@ class ProfileService:
             schema_version=SCHEMA_VERSION,
             description=description or "",
             layouts=layouts,
+            embedding=embedding,
         )
         return self._user_item(created, dict(self._collection_tags()))
+
+    def set_embedding(
+        self, profile_id: str, provider: str | None, model: str | None
+    ) -> dict[str, Any]:
+        """Check and save the embedding model of a user profile (ADR-081).
+
+        See :meth:`ProfileEmbedding.save` for the errors.
+        """
+        self.embedding.save(profile_id, provider, model)
+        return self._user_item(self._user_record(profile_id), dict(self._collection_tags()))
 
     def rename_profile(
         self, profile_id: str, *, title: str | None = None, description: str | None = None

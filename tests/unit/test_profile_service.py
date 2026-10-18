@@ -228,6 +228,8 @@ def test_the_list_holds_built_ins_then_user_profiles_without_graphs(env: Env) ->
         "ready",
         "not_ready_reasons",
         "used_by",
+        "embedding",
+        "embedding_lock",
     } == set(items[2])
 
 

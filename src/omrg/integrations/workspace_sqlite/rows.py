@@ -59,6 +59,9 @@ def profile_record(row: sqlite3.Row) -> Record:
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
         "archived_at": row["archived_at"],
+        "embed_provider": row["embed_provider"],
+        "embed_model": row["embed_model"],
+        "embed_dimensions": row["embed_dimensions"],
     }
 
 
