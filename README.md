@@ -70,7 +70,7 @@ Both collections then behave correctly in the same running engine. See
 
 You need [uv](https://docs.astral.sh/uv/) and one of
 [llama.cpp](https://github.com/ggml-org/llama.cpp) (default),
-[Ollama](https://ollama.com), or an [OpenRouter](https://openrouter.ai) key.
+[Ollama](https://ollama.com), or an [OpenRouter](https://openrouter.ai) key. `omrg web` can also start and stop its own llama.cpp chat server and set the Ollama context window (see [Configuration](docs/guides/configuration.md#local-llamacpp-server)).
 
 ```bash
 cp .env.example .env      # then edit it — see below

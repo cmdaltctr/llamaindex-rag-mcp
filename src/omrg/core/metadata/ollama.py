@@ -245,6 +245,8 @@ async def _extract_ollama_async(
         # ``_strip_markdown_fence``, which stays as the fallback for servers
         # that ignore or predate this option.
         "format": "json",
+        # Without ``num_ctx`` Ollama loads the model at its own default window.
+        "options": {"num_ctx": resolved.ollama_context_window},
     }
     url = f"{resolved.ollama_base_url}/api/generate"
 

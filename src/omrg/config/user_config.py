@@ -35,6 +35,15 @@ _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 #: ``omrg.jsonc`` keys that hold an address, as ``Settings`` field paths.
 _ADDRESS_KEYS = ("ollama_base_url", "llamacpp_chat_url", "openai_compatible_base_url")
+#: ``omrg.jsonc`` keys that hold free text (a program path, a model); the
+#: managed llama.cpp server checks them again at save and at launch.
+_TEXT_KEYS = ("llamacpp_server_binary", "llamacpp_server_model")
+#: ``omrg.jsonc`` keys that hold a whole number, with the allowed range. The
+#: same range binds the environment, the saved web value and the descriptors.
+INT_KEY_BOUNDS: dict[str, tuple[int, int]] = {
+    "ollama_context_window": (2048, 262144),
+    "llamacpp_context_window": (2048, 262144),
+}
 #: ``omrg.jsonc`` keys that hold a key reference. The provider name is the
 #: key minus ``_api_key``; it names the file ``secrets/<provider>.key``.
 _SECRET_KEYS = ("openrouter_api_key", "openai_compatible_api_key", "anthropic_api_key")
@@ -167,7 +176,7 @@ def _load_json(path: Path) -> dict[str, Any] | None:
 
 def _typed(data: dict[str, Any]) -> bool:
     """Return whether every known key in *data* has the right type."""
-    for key in (*_ADDRESS_KEYS, *_SECRET_KEYS):
+    for key in (*_ADDRESS_KEYS, *_TEXT_KEYS, *_SECRET_KEYS):
         if key in data and not isinstance(data[key], str):
             return False
     answer = data.get("answer")
@@ -260,11 +269,43 @@ def _resolve_reference(key: str, reference: str, secrets: Path, config_path: Pat
     return None
 
 
+def _int_values(data: dict[str, Any], config_path: Path) -> dict[str, str]:
+    """Return the whole-number keys of *data* that are in range, as text.
+
+    A number or a string of digits counts. Any other value, or one outside the
+    range, is ignored with one warning that names the key and not the value.
+    """
+    found: dict[str, str] = {}
+    for key, (low, high) in INT_KEY_BOUNDS.items():
+        if key not in data:
+            continue
+        raw = data[key]
+        if isinstance(raw, str) and raw.strip().isascii() and raw.strip().isdigit():
+            raw = int(raw.strip())
+        if isinstance(raw, int) and not isinstance(raw, bool) and low <= raw <= high:
+            found[key] = str(raw)
+            continue
+        _warn_once(
+            "int",
+            f"{config_path}:{key}",
+            "Ignoring %s in %s: it must be a whole number from %d to %d.",
+            key,
+            config_path,
+            low,
+            high,
+        )
+    return found
+
+
 def _jsonc_values(data: dict[str, Any], secrets: Path, config_path: Path) -> dict[str, str]:
     values: dict[str, str] = {}
     for key in _ADDRESS_KEYS:
         if str(data.get(key, "")).strip():
             values[key] = data[key].strip()
+    for key in _TEXT_KEYS:
+        if str(data.get(key, "")).strip():
+            values[key] = data[key].strip()
+    values.update(_int_values(data, config_path))
     for key in _SECRET_KEYS:
         if isinstance(data.get(key), str):
             resolved = _resolve_reference(key, data[key], secrets, config_path)

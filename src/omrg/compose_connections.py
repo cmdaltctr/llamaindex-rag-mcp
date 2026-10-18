@@ -126,9 +126,10 @@ def _lock_source(reason: str) -> str:
     return "config-file" if reason == "config-file" else "env"
 
 
-def _url_field(
+def _plain_field(
     spec: ConnectionField, settings: Settings, values: ProviderValues, locks: dict[str, str]
 ) -> dict[str, Any]:
+    """Return the entry of an address (``url``) or whole-number (``int``) field."""
     value = getattr(settings, spec.settings_field)
     saved = (values.values.get(spec.settings_field) or "").strip()
     locked, lock_reason = _locked(spec, locks, settings)
@@ -141,8 +142,10 @@ def _url_field(
     return {
         "id": spec.id,
         "label": spec.label,
-        "kind": "url",
+        "kind": spec.kind,
         "required": spec.required,
+        "min": spec.minimum,
+        "max": spec.maximum,
         "value": value,
         "source": source,
         "locked": locked,
@@ -185,6 +188,8 @@ def _secret_field(
         "label": spec.label,
         "kind": "secret",
         "required": spec.required,
+        "min": None,
+        "max": None,
         "value": None,
         "source": source,
         "locked": locked,
@@ -207,7 +212,7 @@ def _fields(
     return [
         _secret_field(spec, provider, settings, values, locks)
         if spec.kind == "secret"
-        else _url_field(spec, settings, values, locks)
+        else _plain_field(spec, settings, values, locks)
         for spec in descriptor.fields
     ]
 

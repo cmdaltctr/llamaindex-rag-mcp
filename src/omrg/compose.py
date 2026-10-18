@@ -131,6 +131,13 @@ def connection_targets(values: ProviderValues | None = None) -> dict[str, Any]:
     return build_connection_targets(settings)
 
 
+def llamacpp_server_settings(values: ProviderValues | None = None) -> dict[str, Any]:
+    """Return the managed llama.cpp server settings for ``GET /v1/llamacpp/server``."""
+    from .compose_llamacpp import build_llamacpp_server_view
+
+    return build_llamacpp_server_view(get_settings(), values)
+
+
 def build_reranker(settings: Settings | None = None) -> Any:
     """Construct the cross-encoder reranker from resolved settings.
 

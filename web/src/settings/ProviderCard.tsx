@@ -4,7 +4,9 @@ import { Badge } from "../components/ui/badge";
 import { Card, CardHeader, CardTitle } from "../components/ui/card";
 import { isLoopback, ROLE_NAMES } from "./connectionWords";
 import { ProviderAddressField } from "./ProviderAddressField";
+import { PROVIDER_EXTRAS } from "./providerExtras";
 import { ProviderKeyField } from "./ProviderKeyField";
+import { ProviderNumberField } from "./ProviderNumberField";
 import { ProviderTest } from "./ProviderTest";
 
 const CODE = "text-code font-mono [overflow-wrap:anywhere]";
@@ -16,12 +18,13 @@ interface ProviderCardProps {
 
 /** The address a field would use if the user saved the typed text now. */
 function addressInUse(field: ProviderField, typed: Record<string, string>): string | null {
-  return field.kind === "url" ? (typed[field.id] ?? field.value) : null;
+  return field.kind === "url" ? (typed[field.id] ?? String(field.value ?? "")) : null;
 }
 
 /** One provider: badges, roles, editable fields, read-only values, notices and a Test action. */
 export function ProviderCard({ connection, keychain }: ProviderCardProps) {
   const titleId = `provider-${connection.provider}`;
+  const ProviderExtra = PROVIDER_EXTRAS[connection.provider];
   const [typed, setTyped] = useState<Record<string, string>>({});
   const setValue = (id: string, value: string | null) =>
     setTyped((current) => {
@@ -58,13 +61,15 @@ export function ProviderCard({ connection, keychain }: ProviderCardProps) {
           Not installed. Run <code dir="ltr" className={CODE}>{connection.install_hint ?? "the install command"}</code> and restart the server.
         </p>
       ) : null}
-      {connection.fields.map((field) =>
-        field.kind === "url" ? (
+      {connection.fields.map((field) => {
+        if (field.kind === "int") return <ProviderNumberField key={field.id} provider={connection.provider} field={field} />;
+        return field.kind === "url" ? (
           <ProviderAddressField key={field.id} provider={connection.provider} field={field} typed={typed[field.id]} onTyped={(value) => setValue(field.id, value)} />
         ) : (
           <ProviderKeyField key={field.id} provider={connection.provider} field={field} keychain={keychain} typed={typed[field.id] ?? ""} onTyped={(value) => setValue(field.id, value === "" ? null : value)} />
-        ),
-      )}
+        );
+      })}
+      {ProviderExtra === undefined ? null : <ProviderExtra />}
       {connection.read_only.length > 0 ? (
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-ui">
           {connection.read_only.map((entry) => (

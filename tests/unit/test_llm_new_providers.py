@@ -237,7 +237,18 @@ NEW_FIELDS = {
 def test_provider_fields_match_the_descriptors() -> None:
     """The static field list the config layer uses equals what the descriptors declare."""
     declared = {f.settings_field for d in registry.describe_all().values() for f in d.fields}
-    assert set(PROVIDER_FIELDS) == declared | {"answer.provider", "answer.model"}
+    from omrg.core.providers.llm.llamacpp_rules import LLAMACPP_SERVER_FIELDS
+    from omrg.core.settings import PROVIDER_INT_FIELDS
+
+    managed_server = {f.settings_field for f in LLAMACPP_SERVER_FIELDS}  # not in any descriptor
+    assert set(PROVIDER_FIELDS) == declared | managed_server | {"answer.provider", "answer.model"}
+    ints = {
+        f.settings_field
+        for d in registry.describe_all().values()
+        for f in d.fields
+        if f.kind == "int"
+    }
+    assert set(PROVIDER_INT_FIELDS) == ints  # the fields EffectiveSettings carries
     secrets = {
         f.settings_field
         for d in registry.describe_all().values()

@@ -25,6 +25,9 @@ OCR_ROUTING_UNITS = ("document", "page")
 #: a new field adds its name here and nowhere else.
 PROVIDER_ADDRESS_FIELDS = ("ollama_base_url", "llamacpp_chat_url", "openai_compatible_base_url")
 PROVIDER_SECRET_FIELDS = ("openrouter_api_key", "openai_compatible_api_key", "anthropic_api_key")
+#: Whole-number editable fields that live in ``EffectiveSettings``: the Ollama
+#: context window (chat and metadata calls only, never embeddings).
+PROVIDER_INT_FIELDS = ("ollama_context_window",)
 
 
 class ChunkingBlock(BaseModel):
@@ -296,6 +299,7 @@ class EffectiveSettings(BaseModel):
     openrouter_embed_model: str = ""
     openrouter_llm_model: str = ""
     ollama_base_url: str = "http://localhost:11434"
+    ollama_context_window: int = 16384
     embed_model: str = ""
 
     # ── PDF reader ────────────────────────────────────────────────

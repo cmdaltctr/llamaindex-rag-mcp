@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from .config import _resolve_effective_embed_provider
-from .config.provider_sources import PROVIDER_FIELDS
+from .config.provider_sources import PROVIDER_FIELDS, coerce_field
 
 if TYPE_CHECKING:
     from .config import Settings
@@ -114,7 +114,7 @@ def apply_provider_values(
         settings.provider_explicit if explicit is None else explicit,
         profiles_ollama=profiles_ollama,
     )
-    top: dict[str, str] = {}
+    top: dict[str, str | int] = {}
     answer: dict[str, str] = {}
     for path in PROVIDER_FIELDS:
         value = (values.values.get(path) or "").strip()
@@ -122,8 +122,8 @@ def apply_provider_values(
             continue
         if path.startswith("answer."):
             answer[path.removeprefix("answer.")] = value
-        else:
-            top[path] = value
+        elif (typed := coerce_field(path, value)) is not None:
+            top[path] = typed
     if answer:
         top["answer"] = settings.answer.model_copy(update=answer)  # type: ignore[assignment]
     return settings.model_copy(update=top)

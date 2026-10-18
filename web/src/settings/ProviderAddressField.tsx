@@ -21,8 +21,9 @@ interface ProviderAddressFieldProps {
 export function ProviderAddressField({ provider, field, typed, onTyped }: ProviderAddressFieldProps) {
   const id = useId();
   const save = useSaveProviderFields(provider);
-  const value = typed ?? field.value ?? "";
-  const dirty = typed !== undefined && typed !== (field.value ?? "");
+  const current = String(field.value ?? "");
+  const value = typed ?? current;
+  const dirty = typed !== undefined && typed !== current;
 
   if (field.locked) {
     return (

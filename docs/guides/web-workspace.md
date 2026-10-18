@@ -288,6 +288,11 @@ The server can serve MCP at `/mcp`. It is off by default. Turn it on with `PUT /
 | `PUT /v1/connections/{provider}/key` | `credentials` | Body `{api_key}`, 8 to 512 printable characters with no spaces. Saves the key to the system keychain. Returns 409 when the key comes from the environment, `.env` or `omrg.jsonc`, or when no keychain exists. A key file does not cause a 409. |
 | `DELETE /v1/connections/{provider}/key` | `credentials` | Removes the key from the system keychain. |
 | `POST /v1/connections/{provider}/test` | `manage` | Optional body `{fields: {<id>: value}}`. Tests typed values and saves nothing. Returns `{reachable, reason}` after one request with a 5-second timeout. `reason` is `refused`, `timeout`, `unauthorised`, `http-<status>` or `not-configured`. No response body or error text is returned. |
+| `GET /v1/llamacpp/server` | `read` | `{state, reason, running_with, saved}`. `state` is `stopped`, `starting`, `running` or `failed`. `reason` is one of `binary-invalid`, `model-invalid`, `not-loopback`, `port-in-use`, `exited`, `timeout`, `not-configured`. `saved` holds `binary`, `model` and `context_window`, each with `source` and `locked`. No output of the server is returned. |
+| `PUT /v1/llamacpp/server` | `manage`; `credentials` when the body sets `binary` or `model` | Saves the program path, model and context window. Returns 400 for a rule failure and 409 for a locked field. |
+| `POST /v1/llamacpp/server/start` | `manage` | Starts the server that omrg owns. Waits for `GET /health` up to 180 seconds. |
+| `POST /v1/llamacpp/server/stop` | `manage` | SIGTERM to the owned process group, 10 seconds, then SIGKILL. |
+| `POST /v1/llamacpp/server/restart` | `manage` | Stop, then start with the saved values. |
 | `POST /v1/connections/{provider}/models` | `manage` | Optional body `{fields: {<id>: value}}`. Returns `{reachable, reason, models[], truncated}`. Reads at most 8 MiB and returns at most 1,000 names. |
 | `GET /v1/settings/chat` | `read` | `{provider, model, source, locked, lock_reason, enabled, ready, reason}`. |
 | `PUT /v1/settings/chat` | `manage` | Body `{provider, model}`, or `null` to clear. Saves the Chat model. Returns 400 for a bad choice and 409 when the choice is locked. |
@@ -336,6 +341,10 @@ Remove the key in Settings > Providers with Remove key. To remove an entry by ha
 #### What other processes do not see
 
 Saved addresses, saved keys and the saved Chat model apply to `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts do not read them. They read the environment, `.env` and the user config folder. To give those processes a value, put it in `.env` or in `omrg.jsonc`.
+
+### Local llama.cpp server
+
+The llama.cpp card has a Local server panel. It shows the state, the program path, the model, the context window, and the buttons Start, Stop and Restart. The panel says: "omrg starts and stops only this server. It never touches a server you started yourself." After a save the server keeps running and the panel says "Restart to apply" when the saved values differ. The program path and model need a browser session with the `credentials` scope. The window and the buttons need `manage`. A bearer token never works. The server output goes to `llamacpp-server.log` in the workspace folder and is not shown. The Ollama card has a "Context window (tokens)" number field. Guardrails and limits: [Configuration](configuration.md#local-llamacpp-server).
 
 ### Chat model
 

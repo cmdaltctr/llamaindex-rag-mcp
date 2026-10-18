@@ -30,12 +30,12 @@ from ..provider_state import (
     MIN_KEY_CHARS,
     EngineRefused,
     ProviderState,
+    check_field,
     descriptor_of,
     field_of,
     overlay,
     typed_settings,
     valid_key,
-    validate_address,
 )
 from .experiments import ManageScope
 from .graphs import ok
@@ -61,7 +61,7 @@ class SaveFieldsBody(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    fields: dict[str, str | None] = Field(min_length=1, max_length=16)
+    fields: dict[str, str | int | float | None] = Field(min_length=1, max_length=16)
 
 
 class KeyBody(BaseModel):
@@ -126,10 +126,10 @@ async def save_provider_fields(
         spec = field_of(descriptor, fid)
         if spec is None:
             return error_response(404, "Unknown field.")
-        if spec.kind != "url":
+        if spec.kind == "secret":
             return error_response(400, "A key is saved with the key route, not here.")
-        text = None if value is None else value.strip()
-        if text is not None and (rule := validate_address(text)):
+        text, rule = check_field(spec, value)
+        if rule:
             return error_response(400, rule)
         updates[fid] = text
     async with admitted(runtime), state.lock:
@@ -213,7 +213,7 @@ async def _typed_target(
         text = value.strip()
         if not text:
             continue
-        if spec.kind == "url" and (rule := validate_address(text)):
+        if spec.kind in ("url", "int") and (rule := check_field(spec, text)[1]):
             return error_response(400, rule)
         if spec.kind == "secret":
             if not valid_key(text):

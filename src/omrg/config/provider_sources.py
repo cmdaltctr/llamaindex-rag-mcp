@@ -10,23 +10,47 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import PydanticBaseSettingsSource
 
 from ..core.settings import PROVIDER_ADDRESS_FIELDS, PROVIDER_SECRET_FIELDS
-from .user_config import load_user_config, user_config_dir
+from .user_config import INT_KEY_BOUNDS, load_user_config, user_config_dir
 
 if TYPE_CHECKING:
     from . import Settings
+
+#: Whole-number editable fields (the context windows), each with its range.
+PROVIDER_INT_FIELDS: tuple[str, ...] = tuple(INT_KEY_BOUNDS)
+#: Settings of the llama.cpp server that ``omrg web`` manages (program, model).
+PROVIDER_SERVER_FIELDS: tuple[str, ...] = ("llamacpp_server_binary", "llamacpp_server_model")
 
 #: Editable provider fields, as ``Settings`` paths. ``answer.*`` live in the
 #: nested answer block.
 PROVIDER_FIELDS: tuple[str, ...] = (
     *PROVIDER_ADDRESS_FIELDS,
     *PROVIDER_SECRET_FIELDS,
+    *PROVIDER_INT_FIELDS,
+    *PROVIDER_SERVER_FIELDS,
     "answer.provider",
     "answer.model",
 )
+
+
+def coerce_field(path: str, value: str) -> str | int | None:
+    """Return *value* typed for the ``Settings`` field *path*, or ``None`` when unusable.
+
+    A whole-number field takes a string of digits inside its range. A text
+    field returns the stripped text. ``None`` means the value is damaged or out
+    of range, so the caller keeps the next source.
+    """
+    text = str(value).strip()
+    bounds = INT_KEY_BOUNDS.get(path)
+    if bounds is None:
+        return text or None
+    if not (text.isascii() and text.isdigit()):
+        return None
+    number = int(text)
+    return number if bounds[0] <= number <= bounds[1] else None
 
 
 def _present(values: dict[str, Any], path: str) -> bool:
@@ -71,6 +95,13 @@ class ProviderSourceMixin(BaseModel):
     openai_compatible_base_url: str = "https://api.openai.com/v1"
     openai_compatible_api_key: str = ""
     anthropic_api_key: str = ""
+    #: Tokens sent as ``num_ctx`` to Ollama chat and metadata calls (not embeddings).
+    ollama_context_window: int = Field(16384, ge=2048, le=262144)
+    #: Tokens passed as ``-c`` to the llama.cpp server that ``omrg web`` starts.
+    llamacpp_context_window: int = Field(16384, ge=2048, le=262144)
+    #: Program and model of the managed llama.cpp server (empty means not set).
+    llamacpp_server_binary: str = ""
+    llamacpp_server_model: str = ""
 
     #: Fields ``omrg.jsonc`` set (they also appear in ``provider_explicit``).
     config_file_fields: frozenset[str] = frozenset()
@@ -93,7 +124,7 @@ class ProviderSourceMixin(BaseModel):
         answer = {p.removeprefix("answer."): v for p, v in from_config.items() if "." in p}
         for path, value in {**from_config, **from_keys}.items():
             if "." not in path:
-                object.__setattr__(self, path, value)
+                object.__setattr__(self, path, coerce_field(path, value))
         if answer:
             object.__setattr__(self, "answer", self.answer.model_copy(update=answer))
         object.__setattr__(

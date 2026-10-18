@@ -27,9 +27,13 @@ export type FieldSource = "env" | "config-file" | "saved" | "keychain" | "key-fi
 export interface ProviderField {
   id: string;
   label: string;
-  kind: "url" | "secret";
-  /** The address in use. Only a `url` field has one; a key is never returned. */
-  value: string | null;
+  kind: "url" | "secret" | "int";
+  /** Smallest allowed value of an `int` field; `null` for other kinds. */
+  min: number | null;
+  /** Largest allowed value of an `int` field; `null` for other kinds. */
+  max: number | null;
+  /** The address of a `url` field, or the number of an `int` field. A key is never returned. */
+  value: string | number | null;
   source: FieldSource;
   locked: boolean;
   /** Plain words for the lock, such as the variable to remove. */
@@ -203,8 +207,8 @@ export function listProviderModels(api: ApiClient, provider: string, fields: Fie
   return api.request<ProviderModels>("POST", `/v1/connections/${provider}/models`, { body: { fields }, signal: options.signal });
 }
 
-/** Saves addresses, or clears one with `null`. */
-export function saveProviderFields(api: ApiClient, provider: string, fields: Record<string, string | null>, options: CallOptions = {}): Promise<unknown> {
+/** Saves addresses and whole numbers, or clears one with `null`. */
+export function saveProviderFields(api: ApiClient, provider: string, fields: Record<string, string | number | null>, options: CallOptions = {}): Promise<unknown> {
   return api.request<unknown>("PUT", `/v1/connections/${provider}`, { body: { fields }, signal: options.signal });
 }
 

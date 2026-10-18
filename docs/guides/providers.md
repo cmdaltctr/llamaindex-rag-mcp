@@ -46,6 +46,8 @@ llama-server -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 --port 8080 --embeddings
 llama-server -hf Qwen/Qwen3-0.6B-GGUF:Q8_0 --port 8081
 ```
 
+**Managed server or your own.** You can start `llama-server` yourself, as above. `omrg web` can also start, stop and restart one chat server for you (Settings > Providers > llama.cpp > Local server). omrg manages only the server it started. It never touches a server you started yourself. It does not manage the embedding server. See [Local llama.cpp server](configuration.md#local-llamacpp-server) for the settings and guardrails.
+
 ```bash
 # .env
 EMBED_PROVIDER=local
@@ -90,8 +92,11 @@ For each address and key, the server uses the first source it finds, highest fir
 | --------------------------------- | ------------------------ | ---------------------------------------- |
 | `EMBED_MODEL`                     | _(required)_             | Ollama embedding model name              |
 | `OLLAMA_BASE_URL`                 | `http://localhost:11434` | Ollama server URL                        |
+| `OLLAMA_CONTEXT_WINDOW`           | `16384`                  | Context window in tokens (2,048 to 262,144) for Chat and metadata extraction |
 | `METADATA__OLLAMA_CLASSIFY_MODEL` | `qwen3:0.6b`             | Ollama model for metadata classification |
 | `INGESTION__EMBED_BATCH_SIZE`     | `100`                    | Ollama `/api/embed` batch size           |
+
+Context window. omrg sends `OLLAMA_CONTEXT_WINDOW` on every Chat and metadata call, so Ollama never reserves memory for the model maximum (TDR-036). Embedding models are not covered. See [Context windows](configuration.md#context-windows).
 
 ### OpenRouter (cloud backend)
 

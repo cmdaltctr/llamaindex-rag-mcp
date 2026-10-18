@@ -24,6 +24,7 @@ _ALLOWED_TOP_LEVEL = {
     "compose.py": "composition root",
     "compose_answer.py": "composition root: answer models",
     "compose_connections.py": "composition root: provider connection summary and test targets",
+    "compose_llamacpp.py": "composition root: settings view of the managed llama.cpp server",
     "compose_embedding.py": "composition root: embedding providers and Check model",
     "compose_engine.py": "composition root: build_engine",
     "compose_experiments.py": "composition root: experiment contexts",

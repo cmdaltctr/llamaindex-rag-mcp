@@ -91,8 +91,10 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # The last four cases are the shared-prefix redaction and no-environment-key tests.
 # +5 (2026-10-18, TDR-036): empty-reply and refine-swallow cases in test_answer_empty_reply.py.
 # +52 (2026-10-18, user config folder): test_user_config.py and the key-route log test.
-# 6254 = 6247 measured with the web extra + 3 tokenizer + 4 ground-truth cases.
-_BASE_EXECUTED = 6254
+# +206 (2026-10-18, context windows and the managed llama.cpp server): settings, launch rules,
+# lifecycle with a fake server, routes, Ollama call payloads.
+# 6460 = 6453 measured with the web extra + 3 tokenizer + 4 ground-truth cases.
+_BASE_EXECUTED = 6460
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.

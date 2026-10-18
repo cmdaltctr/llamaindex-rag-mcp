@@ -134,6 +134,15 @@ FAMILIES: dict[str, frozenset[str]] = {
         }
     ),
     "chat_settings": frozenset({"getChatSettings", "setChatSettings", "testChatModel"}),
+    "llamacpp_server": frozenset(
+        {
+            "getLlamacppServer",
+            "saveLlamacppServer",
+            "startLlamacppServer",
+            "stopLlamacppServer",
+            "restartLlamacppServer",
+        }
+    ),
     "logs": frozenset({"getLogs", "streamLogs"}),
     "experiments": frozenset(
         {

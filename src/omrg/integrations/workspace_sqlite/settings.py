@@ -30,11 +30,21 @@ KEY_SAVED_AT = "key_saved_at"
 SETTING_KEYS: frozenset[str] = frozenset(
     {MCP_HTTP_ENABLED, WEB_PORT, UPLOAD_LIMIT_MIB, CHAT_PROVIDER, CHAT_MODEL}
 )
-#: The only fields a provider row may hold: addresses (the ``url`` fields of
-#: the provider connection descriptors) and the save time. A secret-looking
+#: The only fields a provider row may hold: addresses and whole numbers (the
+#: ``url`` and ``int`` fields of the provider connection descriptors), the
+#: managed llama.cpp server's program, model and window, and the save time. A secret-looking
 #: field such as ``api_key`` is never allowed. A test in ``tests/`` checks this
 #: list against the descriptors, because integrations may not import ``core``.
-PROVIDER_FIELD_IDS: frozenset[str] = frozenset({"base_url", "chat_url", KEY_SAVED_AT})
+PROVIDER_FIELD_IDS: frozenset[str] = frozenset(
+    {
+        "base_url",
+        "chat_url",
+        "context_window",
+        "server_binary",
+        "server_model",
+        KEY_SAVED_AT,
+    }
+)
 #: ``provider.<name>.<field>``: lower-case provider id, one allowed field id.
 PROVIDER_KEY_PATTERN = re.compile(
     r"provider\.[a-z][a-z0-9_-]{0,63}\.(?:" + "|".join(sorted(PROVIDER_FIELD_IDS)) + ")"

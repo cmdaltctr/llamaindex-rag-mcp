@@ -123,3 +123,61 @@ The Chat section SHALL state that the choice also answers MCP clients of this we
 
 - **WHEN** the user selects Ollama with an address on this machine
 - **THEN** the section MUST NOT show the cloud statement
+
+### Requirement: The Ollama card edits the context window
+
+The Ollama card SHALL show a number field "Context window (tokens)" with the minimum 2,048, the maximum 262,144 and the source line. A locked field SHALL be read-only and SHALL state its lock. A saved value SHALL apply at once. The card SHALL state that the window does not apply to embedding models.
+
+#### Scenario: Show default
+
+- **WHEN** the user opens Settings > Providers with no value set
+- **THEN** the Ollama card MUST show 16384 and the source "default"
+
+#### Scenario: Save a value
+
+- **WHEN** the user types 32768 and presses Save
+- **THEN** the card MUST show 32768 and the source "saved"
+
+#### Scenario: Out of range
+
+- **WHEN** the user types 1000
+- **THEN** the card MUST show the friendly error "Enter 2,048 to 262,144." and MUST NOT save
+
+#### Scenario: Locked by environment
+
+- **WHEN** the field reports source `env`
+- **THEN** the card MUST show "Set from environment (read-only here)" and MUST NOT offer Save
+
+### Requirement: The llama.cpp card shows a Local server panel
+
+The llama.cpp card SHALL show a "Local server" panel with: the state as text and a badge (`stopped`, `starting`, `running` or `failed`); the fixed reason when the state is `failed`; fields for program path, model and context window, each with a source line; and the buttons Start, Stop and Restart. The panel SHALL say: "omrg starts and stops only this server. It never touches a server you started yourself." The panel SHALL show "Restart to apply" when the saved values differ from the values of the running server. The panel SHALL NOT show output of the server. Start SHALL be disabled while the state is `starting` or `running`. Stop SHALL be disabled while the state is `stopped`. A locked field SHALL be read-only and SHALL state its lock. The panel SHALL state that the embedding server is not managed.
+
+#### Scenario: Stopped
+
+- **WHEN** no server is running
+- **THEN** the panel MUST show the state `stopped`, Start enabled and Stop disabled
+
+#### Scenario: Failed with a reason
+
+- **WHEN** a start ends with reason `port-in-use`
+- **THEN** the panel MUST show the state `failed` and a friendly line for the reason, and MUST NOT show any process output
+
+#### Scenario: Restart to apply
+
+- **WHEN** the server is running and the user saves a new model
+- **THEN** the server MUST keep running and the panel MUST show "Restart to apply"
+
+#### Scenario: Ownership text
+
+- **WHEN** the user opens the panel
+- **THEN** it MUST show "omrg starts and stops only this server. It never touches a server you started yourself."
+
+#### Scenario: Program and model need a credentials session
+
+- **WHEN** the session lacks the `credentials` scope
+- **THEN** the program path and model fields MUST be read-only and MUST state that the scope is needed
+
+#### Scenario: Locked field
+
+- **WHEN** `LLAMACPP_SERVER_MODEL` is in the environment
+- **THEN** the model field MUST show "Set from environment (read-only here)" and MUST NOT offer Save

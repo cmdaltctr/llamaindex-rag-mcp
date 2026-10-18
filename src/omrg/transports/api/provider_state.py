@@ -26,6 +26,7 @@ from urllib.parse import urlsplit
 from ...compose_providers import ProviderValues, provider_effective_settings
 from ...core.providers.llm import registry
 from ...core.providers.llm.connection import ConnectionDescriptor, ConnectionField
+from ...core.providers.llm.llamacpp_rules import LLAMACPP_SERVER_FIELDS
 from ...integrations.keychain import KeychainUnavailableError
 from ...integrations.workspace_sqlite.settings import WorkspaceSettings, provider_key
 
@@ -67,6 +68,48 @@ def validate_address(value: str) -> str | None:
     if parts.username is not None or parts.password is not None:
         return ADDRESS_RULE
     return None
+
+
+def int_rule(spec: ConnectionField) -> str:
+    """Return the rule text of a whole-number field. It names the range, never a value."""
+    return f"The value must be a whole number from {spec.minimum} to {spec.maximum}."
+
+
+def validate_int(spec: ConnectionField, value: object) -> tuple[str | None, str | None]:
+    """Check a whole-number *value* against the range of *spec*.
+
+    Returns:
+        ``(text, None)`` when the value is a whole number in range, else
+        ``(None, rule)``. A boolean, a fraction or other text is refused.
+    """
+    number: int | None = None
+    if isinstance(value, int) and not isinstance(value, bool):
+        number = value
+    elif isinstance(value, str) and value.strip().isascii() and value.strip().isdigit():
+        number = int(value.strip())
+    low, high = spec.minimum, spec.maximum
+    if number is None or (low is not None and number < low) or (high is not None and number > high):
+        return None, int_rule(spec)
+    return str(number), None
+
+
+def check_field(spec: ConnectionField, value: object) -> tuple[str | None, str | None]:
+    """Check a value to save for an address or whole-number field.
+
+    Returns:
+        ``(text, None)`` to save *text*, ``(None, None)`` to clear the saved
+        value (*value* is ``None``), or ``(None, rule)`` when the value breaks
+        a rule. The rule never contains the value.
+    """
+    if value is None:
+        return None, None
+    if spec.kind == "int":
+        return validate_int(spec, value)
+    if not isinstance(value, str):
+        return None, ADDRESS_RULE
+    text = value.strip()
+    rule = validate_address(text)
+    return (None, rule) if rule else (text, None)
 
 
 def valid_key(value: str) -> bool:
@@ -136,6 +179,10 @@ class ProviderState:
                 saved_at[provider] = stamp
                 if self.keychain.get(provider) is None:
                     problems[provider] = self._problem(provider)
+        for spec in LLAMACPP_SERVER_FIELDS:  # the managed llama.cpp server, not a descriptor
+            saved = self.settings.get_valid(provider_key("llamacpp", spec.id))
+            if saved:
+                values[spec.settings_field] = saved
         chat_provider = self.settings.get_chat_provider()
         chat_model = self.settings.get_chat_model()
         if chat_provider:

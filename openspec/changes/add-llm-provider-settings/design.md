@@ -247,6 +247,101 @@ The user wants operator-set values in files, as in OMMS (`~/.config/omms/omms.js
 | Put the values in `.env` | Rejected. It is the status quo. `.env` sits in the project folder and cannot be shared by several projects or mounted into a container as one folder. |
 | Several named OpenAI-compatible endpoints | Out of scope. A possible later change. |
 
+### D11. Context windows
+
+Decision made on 2026-10-18. Background: TDR-036.
+
+**Root cause.** omrg passed no context window to the Ollama client. LlamaIndex then called `/api/show`, read the model maximum (262,144 tokens for `qwen3:4b`) and sent it as `num_ctx`. Ollama reserved about 43 GB for that window, ran out of GPU memory and answered HTTP 200 with an empty reply. Chat then showed a generation failure.
+
+**Setting.** `ollama_context_window`, an integer. Default 16,384 tokens. Allowed range 2,048 to 262,144. A value outside the range is invalid: the route returns 400 and a file or environment value fails startup with a message that names the rule.
+
+**Sources.** The order of D2 applies: environment `OLLAMA_CONTEXT_WINDOW` and `.env` (lock), `omrg.jsonc` key `ollama_context_window` (lock), saved web value (workspace database key `provider.ollama.context_window`), default. The field is an integer field kind in the Ollama descriptor, so the card and the routes need no provider-name branch.
+
+**Where it applies.**
+
+| Use | How |
+|---|---|
+| Chat answer model | `context_window=<value>` on the LlamaIndex `Ollama` client. LlamaIndex then makes no `/api/show` call. |
+| Metadata extraction | `options.num_ctx=<value>` on `POST /api/generate`. |
+
+**Live apply.** A save follows D3. The next call builds its client with the new value. Ollama reloads the model at the new size on that call. Calls in progress finish with the old value.
+
+**Why embeddings are excluded.** The embedding window can change how text is cut, so it can change the vectors. D4 forbids that. Embedding models keep their current behaviour.
+
+**The llama.cpp window.** `llamacpp_context_window` has the same range, default and sources. omrg passes it as `-c` when it starts its own server (D12). A llama.cpp server that the user started keeps its own `-c`; omrg does not change it.
+
+| Option | Verdict |
+|---|---|
+| **Fixed default of 16,384, user can change it (chosen)** | Fits a small GPU. Covers a chat prompt with retrieved passages. The user raises it when memory allows. |
+| Read the maximum from `/api/show` (status quo) | Rejected. It caused TDR-036. |
+| Cap the window by free memory | Rejected. omrg cannot read GPU memory in a portable way. |
+| Apply the setting to embedding models | Rejected. It can change the vectors (D4). |
+
+### D12. A llama.cpp server omrg owns
+
+Decision made on 2026-10-18.
+
+**Ownership rule.** `omrg web` starts at most one `llama-server` for Chat and keeps its process handle. It stops, restarts and reports only that process. It never looks up a process by name or port, and it never kills one it did not start. A server the user started stays safe. If the port is in use at start, the state is `failed` with reason `port-in-use`.
+
+**Settings.** All four are settable in `omrg.jsonc` and in the llama.cpp card (the user chose both). They follow the sources and lock rules of D2.
+
+| Setting | Env | `omrg.jsonc` key | Rule |
+|---|---|---|---|
+| Program path | `LLAMACPP_SERVER_BINARY` | `llamacpp_server_binary` | Guardrails 1 and 2 |
+| Model | `LLAMACPP_SERVER_MODEL` | `llamacpp_server_model` | Guardrails 3 and 4 |
+| Context window | `LLAMACPP_CONTEXT_WINDOW` | `llamacpp_context_window` | 2,048 to 262,144, default 16,384 |
+| Port | `LLAMACPP_CHAT_URL` | `llamacpp_chat_url` | Loopback `http` URL (guardrail 5) |
+
+**Guardrails.**
+
+1. The program MUST be an absolute path to a regular file that is executable and has the file name `llama-server`, exactly. The server checks this at save and again before every launch.
+2. A path that is relative, a directory, not executable, or has another file name is refused (`binary-invalid`). The check follows a symlink to its target file, so a package-manager link named `llama-server` works.
+3. The model MUST be an existing `.gguf` file (absolute path) or a well-formed Hugging Face id `org/name[:tag]`. It MUST NOT start with `-`.
+4. A model that fails rule 3 is refused (`model-invalid`).
+5. `llamacpp_chat_url` MUST be an `http` URL with a loopback host (`127.0.0.1`, `localhost` or `::1`). Otherwise the state is `failed` with `not-loopback`. omrg binds the child to `127.0.0.1` only.
+6. The argument list comes from fixed flags only: `-m <path>` or `-hf <id>`, `--host 127.0.0.1`, `--port <n>`, `-c <n>`. The code builds it as a list. No shell runs. No free-text argument exists.
+7. The child gets a minimal environment: `PATH`, `HOME`, `LANG`, `TMPDIR`, and `LLAMA_CACHE`, `HF_HOME` or `HF_TOKEN` only when `-hf` is used and the variable is already set. No provider API key reaches it.
+8. Changing the program or the model needs the browser session with the `credentials` scope. Changing the context window and start, stop and restart need `manage`. A bearer token never works.
+
+**Lifecycle.**
+
+| State | Meaning |
+|---|---|
+| `stopped` | No owned process. |
+| `starting` | Process launched. omrg polls `GET /health` until it returns 200. Limit 180 s. |
+| `running` | `/health` returned 200. |
+| `failed` | Start did not finish. One fixed `reason`. |
+
+Fixed reasons: `binary-invalid`, `model-invalid`, `not-loopback`, `port-in-use`, `exited` (the process ended while starting or running), `timeout` (no 200 within 180 s) and `not-configured` (program or model not set). The page shows only the state and the reason. It never shows free text from the child.
+
+Stop sends SIGTERM to the owned process group, waits 10 s, then sends SIGKILL. Restart is stop, then start. The owned server stops when `omrg web` exits (shutdown hook and `atexit`). On Windows the same rules use the platform's process-group call.
+
+A save does not stop a running server. The card shows "Restart to apply" when the saved program, model or window differ from the values the running process started with.
+
+**Routes and scopes.**
+
+| Route | Scope | Result |
+|---|---|---|
+| `GET /v1/llamacpp/server` | `read` | `{state, reason, running_with, saved, locks}`. No path of the log, no child output. |
+| `PUT /v1/llamacpp/server` | `manage`; `credentials` when the body sets `binary` or `model` | Saves the four settings. 400 for a rule failure, 409 for a locked field. |
+| `POST /v1/llamacpp/server/start` | `manage` | Starts. Returns the new state. |
+| `POST /v1/llamacpp/server/stop` | `manage` | Stops. |
+| `POST /v1/llamacpp/server/restart` | `manage` | Stops then starts. |
+
+All routes need the browser session. The stdio MCP server and the CLI never start or stop the server.
+
+**Log file.** The child's standard output and error go to `llamacpp-server.log` in the workspace folder. The file is emptied at each start and never grows past 5 MiB. No route returns it and the page does not show it. It can hold prompts, so the user reads it on disk only.
+
+**Honest limits.** The user chose a program path that the GUI can edit. The guardrails limit what can run to a file named `llama-server`. Anyone with the browser session and the `credentials` scope can still point the setting at any file with that name. The llama.cpp embedding server is not managed.
+
+| Option | Verdict |
+|---|---|
+| **Own one child process, never touch others (chosen)** | A server the user started stays safe. No process lookup. |
+| Restart any server on the configured port | Rejected. It means finding and killing a process by port, which can hit the user's other servers. |
+| Program path only in `omrg.jsonc`, not in the GUI | Rejected by the user. The user chose the GUI plus `omrg.jsonc`. The cost is stated in the honest limits. |
+| Free-text extra arguments | Rejected. They allow any flag and so any behaviour. The argument list stays fixed. |
+| Stream the server's output to the page | Rejected. Output can hold prompts and file paths. The log file on disk is enough. |
+
 ### Rejected alternatives for the new providers
 
 | Option | Verdict |
@@ -271,6 +366,12 @@ The user wants operator-set values in files, as in OMMS (`~/.config/omms/omms.js
 - [A user edits `omrg.jsonc` and sees no change] → both files are read at launch. The lock text says "restart to change it".
 - [A bad file mode exposes a key to other users] → one warning with the path and mode, never the content.
 - [Experiment contexts that call `get_settings()` also read the folder] → they read the same sources as the CLI. Experiment write-ups SHOULD record when a value came from the folder.
+- [omrg starts a program, so a wrong setting could run the wrong file] → the program must be an absolute path to a regular executable named exactly `llama-server`, checked at save and before every launch. The argument list is fixed and no shell runs. Changing the program or the model needs the `credentials` scope. The limit remains: a user with that scope can point at any file with that name (D12).
+- [omrg stops a server the user needs] → omrg stops only the process it started, by handle. It never looks up a process by name or port. A busy port gives `port-in-use` and nothing is killed.
+- [A child process outlives `omrg web`] → a shutdown hook and `atexit` stop the process group. Stop sends SIGTERM, waits 10 s, then SIGKILL.
+- [The server log holds prompts] → the log stays in the workspace folder with a size cap. No route returns it and the page does not show it.
+- [The child sees API keys] → it gets a minimal environment with no provider key.
+- [The default window of 16,384 is too small for some prompts] → the user raises it. A window beyond free GPU memory can still fail; the card names the 43 GB case in its help text (D11).
 
 ## Migration Plan
 

@@ -48,6 +48,10 @@ def build(
     return Ollama(
         model=model,
         base_url=settings.ollama_base_url,
+        # An explicit window stops LlamaIndex reading the model maximum from
+        # ``/api/show`` and sending it as ``num_ctx`` (TDR-036: 262,144 tokens
+        # ran a 4B model out of GPU memory).
+        context_window=settings.ollama_context_window,
         # Ollama genuinely accepts ``request_timeout`` — unlike OpenAILike,
         # which names it ``timeout`` and silently drops this spelling.
         request_timeout=(timeout if timeout is not None else settings.metadata.classify_timeout),
@@ -64,7 +68,18 @@ CONNECTION = ConnectionDescriptor(
     locality="local",
     requires_module="llama_index.llms.ollama",
     extra=None,
-    fields=(ConnectionField("base_url", "Address", "url", "ollama_base_url", "OLLAMA_BASE_URL"),),
+    fields=(
+        ConnectionField("base_url", "Address", "url", "ollama_base_url", "OLLAMA_BASE_URL"),
+        ConnectionField(
+            "context_window",
+            "Context window (tokens)",
+            "int",
+            "ollama_context_window",
+            "OLLAMA_CONTEXT_WINDOW",
+            minimum=2048,
+            maximum=262144,
+        ),
+    ),
     read_only=lambda s: [
         ReadOnlyValue("Embedding model", s.embed_model),
         ReadOnlyValue("Metadata model", s.metadata.ollama_classify_model),

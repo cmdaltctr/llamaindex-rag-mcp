@@ -548,3 +548,90 @@ The test suite SHALL set `OMRG_CONFIG_DIR` to a temporary folder before any sett
 
 - **WHEN** an address comes from `omrg.jsonc` and a key from a key file
 - **THEN** the address `source` MUST be `config-file` and the key `source` MUST be `key-file`
+
+### Requirement: Ollama context window is a setting
+
+The server SHALL have a setting `ollama_context_window`, an integer number of tokens. The default SHALL be 16,384. The allowed range SHALL be 2,048 to 262,144. The value SHALL come from the first source that holds one, highest first: environment `OLLAMA_CONTEXT_WINDOW` and `.env`, key `ollama_context_window` in `omrg.jsonc`, a value saved in the web workspace, the default. A value from the environment, `.env` or `omrg.jsonc` SHALL lock the field. A value outside the range SHALL be rejected with a message that names the rule and not the value. The setting SHALL NOT apply to embedding models.
+
+#### Scenario: Default
+
+- **WHEN** no source sets the Ollama context window
+- **THEN** the effective value MUST be 16,384 and the source MUST be `default`
+
+#### Scenario: Range
+
+- **WHEN** the user saves 1,024 or 300,000
+- **THEN** the server MUST return 400, MUST save nothing and MUST NOT repeat the value in the message
+
+#### Scenario: Range edges
+
+- **WHEN** the user saves 2,048 and then 262,144
+- **THEN** the server MUST accept both
+
+#### Scenario: Environment locks the field
+
+- **WHEN** `OLLAMA_CONTEXT_WINDOW=8192` is in the environment and the user saves another value
+- **THEN** the server MUST return 409 and name the variable, and the effective value MUST stay 8,192
+
+#### Scenario: Config file locks the field
+
+- **WHEN** `omrg.jsonc` holds `ollama_context_window` and the user saves another value
+- **THEN** the server MUST return 409, and the source MUST be `config-file`
+
+#### Scenario: Saved value used
+
+- **WHEN** no environment or file value exists and the user saves 32,768
+- **THEN** the effective value MUST be 32,768 and the source MUST be `saved`
+
+#### Scenario: Invalid file value
+
+- **WHEN** `omrg.jsonc` holds `ollama_context_window` of 100
+- **THEN** the server MUST ignore the value, MUST log one warning that names the field and not the value, and MUST use the next source
+
+### Requirement: The Ollama context window is sent on every Ollama call
+
+The Chat answer model for Ollama SHALL pass the effective context window as `context_window` to the LlamaIndex Ollama client. The server SHALL NOT call `/api/show` to read the model maximum. Metadata extraction through Ollama SHALL send the effective context window as `options.num_ctx` on `POST /api/generate`. A saved value SHALL apply live: the next call SHALL use the new value, and a call already started SHALL finish with the old value.
+
+#### Scenario: No model-maximum lookup
+
+- **WHEN** Chat builds an Ollama answer model
+- **THEN** the client MUST receive `context_window` equal to the effective value and the server MUST send no request to `/api/show`
+
+#### Scenario: Large model maximum ignored
+
+- **WHEN** the model reports a maximum of 262,144 tokens and the effective value is 16,384
+- **THEN** the request to Ollama MUST carry `num_ctx` of 16,384
+
+#### Scenario: Metadata extraction
+
+- **WHEN** metadata extraction uses Ollama with an effective value of 8,192
+- **THEN** the `POST /api/generate` body MUST hold `options.num_ctx` of 8,192
+
+#### Scenario: Live apply
+
+- **WHEN** the user saves 32,768 while Chat is open
+- **THEN** the next answer MUST send `num_ctx` of 32,768 with no restart
+
+#### Scenario: Embeddings unchanged
+
+- **WHEN** the user saves a new Ollama context window
+- **THEN** the embedding requests and the embedding identity of every collection MUST stay unchanged
+
+### Requirement: Integer fields are a descriptor kind
+
+A provider descriptor SHALL be able to declare an integer field with a minimum, a maximum and a default. The summary, the save route, the test route and the OpenAPI contract SHALL handle the field with no provider-name branch. `GET /v1/connections` SHALL return an integer field with `kind` `int`, the `value`, `min`, `max`, `source`, `locked` and `lock_reason`.
+
+#### Scenario: Summary shape
+
+- **WHEN** the user reads `GET /v1/connections`
+- **THEN** the Ollama entry MUST hold a field `context_window` with `kind` `int`, `min` 2048, `max` 262144 and `value` 16384
+
+#### Scenario: Non-integer refused
+
+- **WHEN** the user saves `"abc"` or `16384.5` as the context window
+- **THEN** the server MUST return 400
+
+#### Scenario: Fake provider with an integer field
+
+- **WHEN** a test registers a fake provider with an integer field
+- **THEN** the card, the save route and the lock rules MUST work with no change outside the descriptor

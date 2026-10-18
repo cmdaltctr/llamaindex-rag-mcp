@@ -391,6 +391,10 @@ Two Chat providers serve answering only. They are not valid for `EMBED_PROVIDER`
 | `CLOUD_BACKEND` | `openrouter` | `openrouter` |
 | `EMBED_MODEL` | — | Model name for embeddings |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint |
+| `OLLAMA_CONTEXT_WINDOW` | `16384` | Ollama context window in tokens, 2,048 to 262,144. See [Context windows](#context-windows) |
+| `LLAMACPP_CONTEXT_WINDOW` | `16384` | Context window (`-c`) for the llama.cpp chat server that `omrg web` starts, 2,048 to 262,144 |
+| `LLAMACPP_SERVER_BINARY` | unset | Absolute path to `llama-server`, for the server that `omrg web` starts. See [Local llama.cpp server](#local-llamacpp-server) |
+| `LLAMACPP_SERVER_MODEL` | unset | Absolute `.gguf` path or Hugging Face id `org/name[:tag]` for that server |
 
 An unrecognised value for any of the four provider selections above
 (`EMBED_PROVIDER`, `METADATA_LLM_PROVIDER`, `LOCAL_BACKEND`,
@@ -417,7 +421,7 @@ Connection details for each: [Providers](providers.md).
 
 #### Change provider values in the web workspace
 
-In `omrg web`, Settings > Providers can save these values: `OLLAMA_BASE_URL`, `LLAMACPP_CHAT_URL`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`. The server uses the first source it finds, highest first:
+In `omrg web`, Settings > Providers can save these values: `OLLAMA_BASE_URL`, `OLLAMA_CONTEXT_WINDOW`, `LLAMACPP_CHAT_URL`, `LLAMACPP_SERVER_BINARY`, `LLAMACPP_SERVER_MODEL`, `LLAMACPP_CONTEXT_WINDOW`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`. The server uses the first source it finds, highest first:
 
 | Rank | Source | Shown as | Locks the field |
 |---|---|---|---|
@@ -446,7 +450,7 @@ The folder is the first of these:
 
 It can hold two things:
 
-- `omrg.jsonc`: JSON with comments and trailing commas. Optional keys: `ollama_base_url`, `llamacpp_chat_url`, `openai_compatible_base_url` and `answer` (`provider`, `model`). A secret field holds only a reference: `env://NAME` or `file://<absolute path inside secrets/>`.
+- `omrg.jsonc`: JSON with comments and trailing commas. Optional keys: `ollama_base_url`, `ollama_context_window`, `llamacpp_chat_url`, `llamacpp_server_binary`, `llamacpp_server_model`, `llamacpp_context_window`, `openai_compatible_base_url` and `answer` (`provider`, `model`). A secret field holds only a reference: `env://NAME` or `file://<absolute path inside secrets/>`.
 - `secrets/<provider>.key`: one key for each provider. The file name is the provider name (`openrouter`, `openai_compatible`, `anthropic`).
 
 Example `omrg.jsonc` (fake values):
@@ -492,6 +496,54 @@ Rules the server applies:
 `omrg.jsonc` locks its field in Settings, as the environment does. A key file does not lock. See the precedence table above.
 
 **Limit.** These files are plaintext. File permissions do not stop another process of the same user, and an AI coding agent runs as that user. The folder gives no security gain over `.env`. Use it on headless machines and in containers with a mounted folder. On a desktop, save keys in the keychain. The page cannot write this folder.
+
+### Context windows
+
+Ollama chat calls need an explicit context window. Without one, LlamaIndex read the model maximum (262,144 tokens for `qwen3:4b`) and sent it as `num_ctx`. Ollama then reserved about 43 GB, ran out of GPU memory and returned empty replies (TDR-036).
+
+- `OLLAMA_CONTEXT_WINDOW` (or `ollama_context_window` in `omrg.jsonc`) sets the window. The default is 16,384 tokens. The range is 2,048 to 262,144.
+- The first source wins, highest first: environment and `.env` (lock), `omrg.jsonc` (lock), the value saved in Settings, the default.
+- The Chat answer model and metadata extraction use it. A saved value applies to the next call. Ollama reloads the model at the new size.
+- Embedding models are not covered. A different window can change how text is cut, and so the vectors.
+- `LLAMACPP_CONTEXT_WINDOW` has the same range and default. It applies only to the llama.cpp server that `omrg web` starts.
+
+### Local llama.cpp server
+
+`omrg web` can start, stop and restart its own `llama-server` for Chat. Use the llama.cpp card in Settings > Providers, or set the values in the environment or in `omrg.jsonc`.
+
+| Setting | Env | `omrg.jsonc` key |
+|---|---|---|
+| Program path | `LLAMACPP_SERVER_BINARY` | `llamacpp_server_binary` |
+| Model | `LLAMACPP_SERVER_MODEL` | `llamacpp_server_model` |
+| Context window | `LLAMACPP_CONTEXT_WINDOW` | `llamacpp_context_window` |
+| Port | `LLAMACPP_CHAT_URL` | `llamacpp_chat_url` |
+
+The sources and locks are the same as for other provider values.
+
+Guardrails:
+
+1. The program is an absolute path to an executable file named exactly `llama-server`. The server checks it at save and before every launch.
+2. The model is an existing `.gguf` file or a Hugging Face id `org/name[:tag]`. It never starts with `-`.
+3. The port comes from `llamacpp_chat_url`. The URL must be `http` on a loopback host. The server binds to `127.0.0.1`.
+4. The arguments are fixed: `-m` or `-hf`, `--host 127.0.0.1`, `--port` and `-c`. No shell runs. You cannot add other arguments.
+5. The process gets a minimal environment with no API key.
+6. omrg starts and stops only this server. It never touches a server you started yourself. It never finds or stops a process by name or port.
+7. The output of the server goes to `llamacpp-server.log` in the workspace folder. The page and the routes never show it.
+
+States are `stopped`, `starting`, `running` and `failed`. A failed start gives one reason: `binary-invalid`, `model-invalid`, `not-loopback`, `port-in-use`, `exited`, `timeout` or `not-configured`. The start waits up to 180 seconds for `GET /health`. Stop sends SIGTERM, waits 10 seconds, then sends SIGKILL. The server stops when `omrg web` exits. A save does not restart a running server. The card then says "Restart to apply".
+
+Example `omrg.jsonc`:
+
+```jsonc
+{
+  "llamacpp_chat_url": "http://localhost:8081/v1",
+  "llamacpp_server_binary": "/opt/homebrew/bin/llama-server",
+  "llamacpp_server_model": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+  "llamacpp_context_window": 16384,
+}
+```
+
+Limits. The program path is editable in the GUI by choice. The guardrails limit what can run to a file named `llama-server`. Anyone with the browser session and the `credentials` scope can still point the setting at any file with that name. The llama.cpp embedding server is not managed. The stdio MCP server and the CLI never start or stop the server.
 
 Tests set `OMRG_CONFIG_DIR` to a temporary folder, so they never read your real folder.
 

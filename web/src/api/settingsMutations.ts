@@ -82,7 +82,7 @@ export function useSaveProviderFields(provider: string) {
   const api = useApi();
   const refresh = useRefreshProviders();
   return useMutation({
-    mutationFn: (fields: Record<string, string | null>) => saveProviderFields(api, provider, fields),
+    mutationFn: (fields: Record<string, string | number | null>) => saveProviderFields(api, provider, fields),
     onSuccess: refresh,
   });
 }

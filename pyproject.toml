@@ -475,6 +475,7 @@ forbidden_modules = [
     "omrg.compose",
     "omrg.compose_answer",
     "omrg.compose_connections",
+    "omrg.compose_llamacpp",
     "omrg.compose_embedding",
     "omrg.compose_engine",
     "omrg.compose_experiments",

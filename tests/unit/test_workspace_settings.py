@@ -137,7 +137,7 @@ def test_a_secret_looking_field_is_never_a_known_key(
 
 
 def test_stored_field_ids_match_the_provider_descriptors() -> None:
-    """Every url field a descriptor declares is storable; no secret field is."""
+    """Every url and int field a descriptor declares is storable; no secret field is."""
     from omrg.core.providers.llm.registry import describe_all
     from omrg.integrations.workspace_sqlite.settings import (
         KEY_SAVED_AT,
@@ -146,7 +146,8 @@ def test_stored_field_ids_match_the_provider_descriptors() -> None:
 
     descriptors = describe_all()
     assert descriptors
-    url_ids = {f.id for d in descriptors.values() for f in d.fields if f.kind == "url"}
+    url_ids = {f.id for d in descriptors.values() for f in d.fields if f.kind in ("url", "int")}
     secret_ids = {f.id for d in descriptors.values() for f in d.fields if f.kind == "secret"}
-    assert PROVIDER_FIELD_IDS == url_ids | {KEY_SAVED_AT}
+    managed_server_ids = {"server_binary", "server_model", "context_window"}  # not a descriptor
+    assert PROVIDER_FIELD_IDS == url_ids | managed_server_ids | {KEY_SAVED_AT}
     assert not secret_ids & PROVIDER_FIELD_IDS

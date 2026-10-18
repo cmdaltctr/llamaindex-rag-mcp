@@ -139,6 +139,8 @@ def test_url_field_shape_and_default_source(monkeypatch: pytest.MonkeyPatch) -> 
         "label": "Address",
         "kind": "url",
         "required": True,
+        "min": None,
+        "max": None,
         "value": "http://ollama.test:11434",
         "source": "default",
         "locked": False,

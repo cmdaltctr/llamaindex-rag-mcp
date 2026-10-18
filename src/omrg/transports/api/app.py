@@ -17,6 +17,7 @@ from ... import __version__
 from ...integrations.keychain import KeychainStore
 from .errors import install_error_handlers
 from .lifespan import RunServiceFactory, WebConfig, build_lifespan, default_engine_factory
+from .llamacpp_server import LlamacppServer, owning_lifespan
 from .log_buffer import LogBuffer
 from .mcp_http import build_mcp_http
 from .middleware import GuardMiddleware
@@ -32,6 +33,7 @@ from .routes.graphs import router as graphs_router
 from .routes.inspection import router as inspect_router
 from .routes.integrations import router as integrations_router
 from .routes.jobs import router as jobs_router
+from .routes.llamacpp_server import router as llamacpp_server_router
 from .routes.logs import router as logs_router
 from .routes.mcp import router as mcp_router
 from .routes.plugins import router as plugins_router
@@ -60,6 +62,7 @@ API_ROUTERS: tuple[APIRouter, ...] = (
     mcp_router,
     integrations_router,
     connections_router,
+    llamacpp_server_router,
     logs_router,
 )
 
@@ -125,10 +128,12 @@ def create_app(
     app = FastAPI(
         title="OMRG local workspace",
         version=__version__,
-        lifespan=build_lifespan(
-            config,
-            engine_factory=engine_factory,
-            run_service_factory=run_service_factory,
+        lifespan=owning_lifespan(
+            build_lifespan(
+                config,
+                engine_factory=engine_factory,
+                run_service_factory=run_service_factory,
+            )
         ),
         docs_url=None,
         redoc_url=None,
@@ -141,6 +146,7 @@ def create_app(
     )
     app.state.secrets = secrets if secrets is not None else app.state.log_buffer.secrets
     app.state.keychain = keychain if keychain is not None else KeychainStore()
+    app.state.llamacpp_server = LlamacppServer(config.workspace / "llamacpp-server.log")
     install_error_handlers(app)
     for router in API_ROUTERS:
         app.include_router(router)

@@ -23,9 +23,14 @@ class ConnectionField:
     Attributes:
         id: Stable field id within the provider, for example ``base_url``.
         label: Short label for the card.
-        kind: ``url`` for an address, ``secret`` for an API key.
+        kind: ``url`` for an address, ``secret`` for an API key, ``int`` for a
+            whole number (``minimum`` and ``maximum`` bound it). ``text`` is
+            free text; only the managed llama.cpp server uses it, outside any
+            provider descriptor.
         settings_field: Name of the ``Settings`` field that holds the value.
         env_var: Environment variable that sets the value.
+        minimum: Smallest allowed value of an ``int`` field.
+        maximum: Largest allowed value of an ``int`` field.
         required: Whether Chat needs a value here to be ready. A secret
             field that is not required (a local server needs no key) does
             not block Chat while empty.
@@ -33,10 +38,12 @@ class ConnectionField:
 
     id: str
     label: str
-    kind: Literal["url", "secret"]
+    kind: Literal["url", "secret", "int", "text"]
     settings_field: str
     env_var: str
     required: bool = True
+    minimum: int | None = None
+    maximum: int | None = None
 
 
 @dataclass(frozen=True)

@@ -3308,6 +3308,175 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
+  # ── Managed llama.cpp server (started and owned by omrg web) ────────
+  /llamacpp/server:
+    get:
+      operationId: getLlamacppServer
+      summary: Read the state of the llama.cpp server that omrg owns
+      description: >
+        Returns the `state` (`stopped`, `starting`, `running` or `failed`), a
+        `reason` from a fixed set when the state is `failed`, the `exit_code`
+        when the process ended, `running_with` (the context window and model
+        kind the process started with), `pending_restart` (the saved program,
+        model or window differ from the running process) and the `saved`
+        program, model and context window with their source and lock. The
+        route never returns the log file or any text of the process.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlamacppServerStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    put:
+      operationId: saveLlamacppServer
+      summary: Save the program, the model and the context window
+      description: >
+        Body keys `binary`, `model` and `context_window`, all optional; a key
+        that is absent stays as it is and `null` clears the saved value. No other
+        key is accepted. The program must be an absolute path to an executable
+        file named exactly `llama-server`, both as given and after links are
+        resolved. The model must be an absolute path to an existing `.gguf`
+        file or a Hugging Face id `org/name[:tag]`, and never starts with `-`.
+        The context window is a whole number from 2,048 to 262,144. 400 names
+        the rule and never the value. Changing the program or the model needs
+        the `credentials` scope of the browser session; 403 otherwise. 409 for
+        a field locked by the environment or by `omrg.jsonc`. A running server
+        keeps running.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveLlamacppServerRequest"
+      responses:
+        "200":
+          description: Saved. The body is the new state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlamacppServerStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /llamacpp/server/start:
+    post:
+      operationId: startLlamacppServer
+      summary: Start the llama.cpp server with the saved values
+      description: >
+        Checks the program, the model and the chat address again, then starts
+        one process with a fixed argument list (`-m` or `-hf`, `--host
+        127.0.0.1`, `--port`, `-c`). The port is the port of
+        `llamacpp_chat_url`, which must be a loopback `http` URL. Returns at
+        once with state `starting`; the state moves to `running` when
+        `/health` returns 200. A refusal is state `failed` with one fixed
+        reason (`not-configured`, `binary-invalid`, `model-invalid`,
+        `not-loopback` or `port-in-use`). A server that is already starting or
+        running is left alone. A server omrg did not start is never touched.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      responses:
+        "200":
+          description: The state after the start.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlamacppServerStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /llamacpp/server/stop:
+    post:
+      operationId: stopLlamacppServer
+      summary: Stop the llama.cpp server that omrg started
+      description: >
+        Sends SIGTERM to the process group of the owned process, waits up to 10
+        seconds, then sends SIGKILL. With no owned process nothing is signalled.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      responses:
+        "200":
+          description: The state after the stop.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlamacppServerStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /llamacpp/server/restart:
+    post:
+      operationId: restartLlamacppServer
+      summary: Stop the owned llama.cpp server and start it with the saved values
+      description: Stop, then start, as the two routes above do.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      responses:
+        "200":
+          description: The state after the restart.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlamacppServerStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
   # ── Chat model choice ───────────────────────────────────────────────
   /settings/chat:
     get:
@@ -7082,7 +7251,7 @@ components:
     ProviderField:
       type: object
       additionalProperties: false
-      required: [id, label, kind, required, value, source, locked, lock_reason, set, last4, saved_at, state]
+      required: [id, label, kind, required, min, max, value, source, locked, lock_reason, set, last4, saved_at, state]
       properties:
         id:
           type: string
@@ -7090,7 +7259,13 @@ components:
           type: string
         kind:
           type: string
-          enum: [url, secret]
+          enum: [url, secret, int]
+        min:
+          type: [integer, "null"]
+          description: Smallest allowed value of an `int` field; null for other kinds.
+        max:
+          type: [integer, "null"]
+          description: Largest allowed value of an `int` field; null for other kinds.
         required:
           type: boolean
           description: >
@@ -7098,8 +7273,8 @@ components:
             required (for example a local OpenAI-compatible server) does not
             block Chat while empty.
         value:
-          type: [string, "null"]
-          description: The address in use. A key field holds null.
+          type: [string, integer, "null"]
+          description: The address in use, or the number of an `int` field. A key field holds null.
         source:
           type: string
           enum: [env, config-file, saved, keychain, key-file, default, none]
@@ -7303,9 +7478,11 @@ components:
           minProperties: 1
           maxProperties: 16
           additionalProperties:
-            type: [string, "null"]
+            type: [string, integer, number, "null"]
             maxLength: 2048
-          description: Address by field id; null clears the saved address.
+          description: >
+            Value by field id: an address for a `url` field, a whole number (or
+            a string of digits) for an `int` field. Null clears the saved value.
 
     SaveProviderKeyRequest:
       type: object
@@ -7326,6 +7503,107 @@ components:
         status:
           type: string
           enum: [ok]
+
+    # ── Managed llama.cpp server ────────────────────────────────────────
+    LlamacppServerField:
+      type: object
+      additionalProperties: false
+      required: [id, label, kind, value, min, max, source, locked, lock_reason]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        kind:
+          type: string
+          enum: [text, int]
+        value:
+          type: [string, integer]
+          description: The program path or model (empty when not set), or the context window.
+        min:
+          type: [integer, "null"]
+        max:
+          type: [integer, "null"]
+        source:
+          type: string
+          enum: [env, config-file, saved, default]
+        locked:
+          type: boolean
+        lock_reason:
+          type: [string, "null"]
+
+    LlamacppServerStatus:
+      type: object
+      additionalProperties: false
+      required:
+        [status, state, reason, exit_code, pid_running, running_with, pending_restart, saved]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        state:
+          type: string
+          enum: [stopped, starting, running, failed]
+        reason:
+          type: [string, "null"]
+          enum:
+            - binary-invalid
+            - model-invalid
+            - not-loopback
+            - port-in-use
+            - exited
+            - timeout
+            - not-configured
+            - null
+          description: One fixed reason when the state is `failed`; never text from the process.
+        exit_code:
+          type: [integer, "null"]
+          description: The exit code when the reason is `exited`.
+        pid_running:
+          type: boolean
+          description: Whether the owned process is alive. The process id is never returned.
+        running_with:
+          type:
+            - object
+            - "null"
+          additionalProperties: false
+          required: [context_window, model_kind]
+          properties:
+            context_window:
+              type: integer
+            model_kind:
+              type: string
+              enum: [file, hf]
+          description: What the live process was started with, or null when none is owned.
+        pending_restart:
+          type: boolean
+          description: The saved program, model or window differ from the live process.
+        saved:
+          type: object
+          additionalProperties: false
+          required: [binary, model, context_window]
+          properties:
+            binary:
+              $ref: "#/components/schemas/LlamacppServerField"
+            model:
+              $ref: "#/components/schemas/LlamacppServerField"
+            context_window:
+              $ref: "#/components/schemas/LlamacppServerField"
+
+    SaveLlamacppServerRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        binary:
+          type: [string, "null"]
+          maxLength: 2048
+        model:
+          type: [string, "null"]
+          maxLength: 2048
+        context_window:
+          type: [integer, number, string, "null"]
+          description: A whole number from 2,048 to 262,144 (or a string of digits).
 
     # ── Server log ──────────────────────────────────────────────────────
     LogRecord:

@@ -15,7 +15,7 @@ from .capabilities import (
     resolve_pdf_reader,
 )
 from .config import Settings, get_settings
-from .core.settings import PROVIDER_ADDRESS_FIELDS, PROVIDER_SECRET_FIELDS
+from .core.settings import PROVIDER_ADDRESS_FIELDS, PROVIDER_INT_FIELDS, PROVIDER_SECRET_FIELDS
 
 
 def settings_to_effective(settings: Settings | None = None) -> Any:
@@ -80,7 +80,7 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
         openrouter_llm_model=settings.openrouter_llm_model,
         **{
             name: getattr(settings, name)
-            for name in PROVIDER_ADDRESS_FIELDS + PROVIDER_SECRET_FIELDS
+            for name in PROVIDER_ADDRESS_FIELDS + PROVIDER_SECRET_FIELDS + PROVIDER_INT_FIELDS
         },
         embed_model=settings.embed_model,
         # Bake the RESOLVED reader in: the `auto` probe runs once here.
