@@ -94,7 +94,8 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # +206 (2026-10-18, context windows and the managed llama.cpp server): settings, launch rules,
 # lifecycle with a fake server, routes, Ollama call payloads.
 # 6460 = 6453 measured with the web extra + 3 tokenizer + 4 ground-truth cases.
-_BASE_EXECUTED = 6460
+# +2 (2026-10-18): the own-group signal guard tests in test_llamacpp_server_lifecycle.py.
+_BASE_EXECUTED = 6462
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
