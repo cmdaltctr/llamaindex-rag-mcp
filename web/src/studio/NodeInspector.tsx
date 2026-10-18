@@ -1,7 +1,9 @@
 import type { EffectiveControl, OperationDescriptor, ValidationIssue } from "../api/pipelines";
+import type { ProfileRecord } from "../api/profiles";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { findOperation } from "./connections";
+import { EmbeddingModelSection } from "./EmbeddingModelSection";
 import { removeNode, setEnabled, setParam, toggleGraphInput, toggleGraphOutput, type Draft } from "./graph";
 import { NodeDetails } from "./NodeDetails";
 import { ParamField } from "./ParamField";
@@ -17,6 +19,8 @@ interface NodeInspectorProps {
   onChange: (change: (draft: Draft) => Draft) => void;
   /** A read-only graph shows the values: every field is disabled and the step cannot be removed. */
   readOnly?: boolean;
+  /** The open profile. With it, an Embed chunks step shows the profile's embedding model. */
+  profile?: ProfileRecord;
 }
 
 function Check({ checked, onChange, disabled, children }: { checked: boolean; onChange: (checked: boolean) => void; disabled: boolean; children: string }) {
@@ -29,7 +33,7 @@ function Check({ checked, onChange, disabled, children }: { checked: boolean; on
 }
 
 /** Settings for the selected node, generated from its operation's catalogue entry. */
-export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onChange, readOnly = false }: NodeInspectorProps) {
+export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onChange, readOnly = false, profile }: NodeInspectorProps) {
   const node = draft.graph.nodes.find((candidate) => candidate.id === nodeId);
   if (!node) {
     return <p className="text-meta text-muted-foreground">Select a step to edit its settings.</p>;
@@ -72,6 +76,7 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
           </p>
         </>
       )}
+      {profile !== undefined && node.operation === "embed.chunks" && <EmbeddingModelSection profile={profile} />}
       {operation &&
         paramFields(operation).map((field) => (
           <ParamField

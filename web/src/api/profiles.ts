@@ -7,6 +7,7 @@
  * shows the collections in `used_by`.
  */
 import type { ApiClient, CallOptions } from "./client";
+import type { EmbeddingProfileFields } from "./embedding";
 import type { GraphDocument } from "./pipelines";
 
 export type ProfileKind = "builtin" | "user";
@@ -17,7 +18,7 @@ export type ProfilePurpose = "ingest" | "search" | "answer";
 export type ProfileSlots = Record<ProfilePurpose, string | null>;
 
 /** One profile as the list and the write routes return it. */
-export interface ProfileRecord {
+export interface ProfileRecord extends EmbeddingProfileFields {
   profile_id: string;
   kind: ProfileKind;
   title: string;
