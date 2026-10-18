@@ -8,7 +8,7 @@ unfiltered search paths.
 
 ### Requirement: Query embedding cache reduces repeat Ollama calls
 
-The system SHALL cache recent query embeddings in engine-local state so that repeated identical **prepared query embedding inputs** do not re-issue the embedding request. The cache SHALL be keyed by `(prepared_query, embedding_model_name)` and SHALL be bounded in size. Query preparation includes any configured query-only instruction; therefore the same raw query prepared with two different instructions SHALL NOT collide.
+The system SHALL cache recent query embeddings in engine-local state so that repeated identical **prepared query embedding inputs** do not re-issue the embedding request. The cache SHALL be keyed by `(embedding_provider, embedding_model, prepared_query)`, where the provider and the model are those of the collection that the query searches, and SHALL be bounded in size. Two (provider, model) pairs SHALL NOT share an entry, also when their embedder objects report the same model name. A caller that supplies no embedding identity uses the engine's own embedder, and its key is `(embedding_model, prepared_query)` with the model name of that embedder; this cannot collide with a keyed entry, because an engine has one such embedder. One engine SHALL keep one bounded cache for all its models. Query preparation includes any configured query-only instruction; therefore the same raw query prepared with two different instructions SHALL NOT collide.
 
 Entries SHALL be shared between filtered and unfiltered searches of one engine, SHALL NEVER be shared between separate engines in one process, and SHALL be released when the owning engine is closed.
 
@@ -68,3 +68,25 @@ The cache SHALL apply uniformly across every retrieval branch in an engine's `se
 - **WHEN** an engine is closed
 - **THEN** its query-embedding cache SHALL be released
 - **AND** other engines' caches SHALL remain intact
+
+#### Scenario: Same query, two models
+
+- **GIVEN** collection `papers` uses model A and collection `notes` uses model B
+- **WHEN** the same query searches `papers` and then `notes` in one Engine
+- **THEN** model A SHALL embed the query once
+- **AND** model B SHALL embed the query once
+- **AND** the search of `notes` SHALL NOT reuse the vector of model A
+
+#### Scenario: Same model name, two providers
+
+- **GIVEN** two collections whose profiles use the same model name on two different providers
+- **WHEN** the same query searches both collections
+- **THEN** each provider's embedder SHALL embed the query
+- **AND** neither search SHALL reuse the other's vector
+
+#### Scenario: Same model, two collections
+
+- **GIVEN** collections `papers` and `notes` both use model B
+- **WHEN** the same query searches `papers` and then `notes`
+- **THEN** model B SHALL embed the query once
+- **AND** the second search SHALL reuse the cached vector
