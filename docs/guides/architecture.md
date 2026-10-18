@@ -263,7 +263,8 @@ protocol channel.
 Collection metadata records the embedding configuration that owns the
 vector space: `rag_embed_provider`, `rag_embed_model`, and
 `rag_index_identity`. Vector dimensions alone cannot prove compatibility,
-so a same-dimension model swap is rejected before any write or query.
+so a model swap, of the same or a different dimension, is rejected before any
+embedding, write or query (`check_embedding_identity` is the read-only check).
 Stamping is read-merge-write: Chroma's `modify(metadata=...)` replaces the
 complete map, so existing profile tags are read and merged first. The
 LanceDB store keeps the same triple in each table's durable Arrow schema

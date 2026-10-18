@@ -241,10 +241,13 @@ def _apply_profile(runtime: WebRuntime, store: Any, collection: str, profile: st
 
 
 def _refusal(runtime: WebRuntime, exc: Exception) -> Response:
-    """Map a profile check failure to 400 with the reasons."""
+    """Map a profile check failure to 409 (embedding model) or 400 with the reasons."""
+    from ....compose_profile_embedding import EmbeddingMismatchError
     from ....compose_profiles import ProfileNotReadyError
 
     redactor = runtime.engine.redact
+    if isinstance(exc, EmbeddingMismatchError):
+        return error_response(409, str(exc), error_type="embedding_mismatch", redactor=redactor)
     if isinstance(exc, ProfileNotReadyError):
         body = {
             "status": "error",

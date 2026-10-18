@@ -37,7 +37,11 @@ from ..pipelines import (
     OperationCatalogue,
     OperationDescriptor,
 )
-from .graph_adapters_catalogue import INGESTION_DESCRIPTORS, canonical_ingestion_definition
+from .graph_adapters_catalogue import (
+    INGESTION_DESCRIPTORS,
+    READ,
+    canonical_ingestion_definition,
+)
 
 #: Version of the ``graph_shape`` identity block and of this algorithm.
 SHAPE_SCHEMA = 1
@@ -55,10 +59,15 @@ class IngestionShape:
     Attributes:
         fingerprint: SHA-256 of the commit node's ancestor slice.
         standard: Whether the shape equals the canonical graph's shape.
+        pdf_reader: PDF reader that the Read document node in the commit
+            node's ancestor slice selects. ``None`` when the node inherits
+            the host reader. The fingerprint already covers it; the identify
+            step reads it to build the same identity as the read.
     """
 
     fingerprint: str
     standard: bool
+    pdf_reader: str | None = None
 
     def identity_block(self) -> dict[str, Any] | None:
         """Return the ``graph_shape`` identity block, or ``None`` when standard."""
@@ -140,6 +149,39 @@ class _Slice:
             )
         return self._memo[node_id]
 
+    def _ancestors(self, node_id: str) -> set[str]:
+        seen: set[str] = set()
+        pending = [node_id]
+        while pending:
+            current = pending.pop()
+            for port in self.descriptors[current].inputs:
+                for feed in self.feeds.get((current, port.name), []):
+                    if isinstance(feed, tuple) and feed[0] not in seen:
+                        seen.add(feed[0])
+                        pending.append(feed[0])
+        return seen
+
+    def step_reader(self) -> str | None:
+        """Return the reader of the one Read document node in the commit slice.
+
+        Without a commit node, the only Read document node counts. ``None``
+        when the node inherits, or when no single read node applies.
+        """
+        commits = self.commit_nodes()
+        scope = self._ancestors(commits[0]) if commits else set(self.nodes)
+        readers = [
+            node
+            for node in self.graph.nodes
+            if node.id in scope
+            and node.enabled
+            and self.descriptors[node.id].operation_id == READ.operation_id
+        ]
+        if len(readers) != 1:
+            return None
+        descriptor = self.descriptors[readers[0].id]
+        params = descriptor.parameters.model_validate(readers[0].params).model_dump(mode="json")
+        return params.get("pdf_reader")
+
     def fingerprint(self) -> str:
         commits = self.commit_nodes()
         if len(commits) > 1:
@@ -189,8 +231,13 @@ def standard_shape() -> IngestionShape:
 def _shape(
     graph: GraphDocument, lookup: _Lookup, versions: Mapping[str, int | None]
 ) -> IngestionShape:
-    fingerprint = _Slice(graph, lookup, versions).fingerprint()
-    return IngestionShape(fingerprint, standard=fingerprint == _standard_fingerprint())
+    ingestion_slice = _Slice(graph, lookup, versions)
+    fingerprint = ingestion_slice.fingerprint()
+    return IngestionShape(
+        fingerprint,
+        standard=fingerprint == _standard_fingerprint(),
+        pdf_reader=ingestion_slice.step_reader(),
+    )
 
 
 def graph_shape(graph: GraphDocument, catalogue: OperationCatalogue) -> IngestionShape:

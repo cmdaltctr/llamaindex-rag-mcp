@@ -256,6 +256,8 @@ class BM25SparseRetriever:
         query_text: str,
         top_n: int,
         metadata_filter: dict | None = None,
+        *,
+        embedding_identity: object | None = None,  # BM25 reads text only; ignored
     ) -> list[tuple[int, str, str, dict]]:
         """Return filtered BM25 matches in rank order.
 

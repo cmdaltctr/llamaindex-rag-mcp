@@ -308,12 +308,33 @@ the chunking configuration, or the vector dimension requires re-ingestion
 into a fresh collection. Same-dimension model swaps are rejected rather than
 silently mixing incompatible vector spaces.
 
-Embedding-provider selection applies to the whole server process. A single
-process assigns one LlamaIndex `Settings.embed_model`; per-collection profiles
-do not override it. If two collections require different embedding providers
-or models concurrently, run them in separate server processes. The current
-configuration must not be treated as concurrent per-collection provider
-swappability.
+#### Embedding model per profile
+
+The `EMBED_*` settings choose the server default embedding model. A user
+profile can choose another provider and model. Open the profile in Studio,
+select its Embed step and use "Check model", then "Save model". The choice
+belongs to the profile, so ingest, search, answer and graph runs on every
+collection that follows the profile use the same model. A graph cannot set the
+model. A built-in profile (`documents`, `codebase`) always uses the server
+default. To use another model with a built-in profile, duplicate the profile
+first.
+
+A collection keeps vectors from one model only. The model of a profile is
+locked while a collection that follows the profile holds rows or a model
+stamp. A stamped collection stays locked after all its rows are deleted,
+because the store keeps its vector size. A collection with rows but no stamp
+is locked too, and the message says that the model is not recorded. To use
+another model, create a new collection, bind it to the profile and ingest
+again. You can always set the model back to the stamped model.
+
+A collection cannot follow a profile whose model differs from the model that
+made the collection's vectors. The refusal names both models.
+
+A profile with no choice follows the server default. If you change `EMBED_*`
+in `.env`, collections that follow the server default and hold vectors from
+the old model fail with a mismatch message. To avoid this, choose an explicit
+model in a user profile. Connection settings (URLs and keys) stay in `.env`
+for every model.
 
 Run the opt-in smoke check before using cloud storage:
 
@@ -558,6 +579,13 @@ The packaged default `pdf_inspector` is a base dependency
 `auto` keeps the LiteParse → pypdfium2 → pypdf probe order. A configured
 reader that is not importable logs an error and falls back to pypdf. Tests
 pin `pypdf` for determinism.
+
+`PDF_READER` is the host default. A Read document step in a pipeline can
+choose another installed reader for that step only. The step setting does
+not change the environment or the other pipelines. `auto` is a host policy
+and is not a step choice. A step that names a reader whose package is not
+installed fails validation with `option_unavailable`, and no node runs. See
+[Pipeline graphs](pipelines.md#pdf-reader-on-the-read-document-step).
 
 Each reader declares the text format it emits and whether it provides
 page-level provenance. Downstream consumers route on the declared format

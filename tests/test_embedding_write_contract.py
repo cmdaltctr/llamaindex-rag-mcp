@@ -34,6 +34,7 @@ import pytest
 from llama_index.core import Settings
 from llama_index.core.embeddings import MockEmbedding
 from llama_index.core.schema import BaseNode, TextNode
+from pydantic import Field
 
 from omrg.core.vectordb.base import VectorStore
 from omrg.core.vectordb.identity import EmbeddingIdentity
@@ -584,3 +585,154 @@ class TestInjectedEmbedderNeverReadsGlobal:
         store.close()
         assert store.get_generation("close-state") == 0
         store.close()
+
+
+# ── ADR-081: a write supplies its own embedding identity ──────────────────
+
+_IDENTITY_A = EmbeddingIdentity(provider="ollama", model="model-a")
+_IDENTITY_B = EmbeddingIdentity(provider="ollama", model="model-b")
+
+
+@pytest.fixture(params=["chroma", "lancedb"])
+def identity_store(request: pytest.FixtureRequest, tmp_path) -> VectorStore:
+    """Return a store composed with identity A for each backend."""
+    if request.param == "chroma":
+        pytest.importorskip("chromadb", reason="chroma extra not installed")
+        return _store_class("chroma")(embedding_identity=_IDENTITY_A)
+    return LanceVectorStore(uri=str(tmp_path / "lancedb"), embedding_identity=_IDENTITY_A)
+
+
+def _text_nodes(prefix: str) -> list[BaseNode]:
+    return [TextNode(text="alpha", id_=f"{prefix}-1"), TextNode(text="beta", id_=f"{prefix}-2")]
+
+
+class TestWriteSuppliesEmbeddingIdentity:
+    """``write_nodes(..., embedding_identity=B)`` replaces the composed identity A."""
+
+    def test_new_collection_is_stamped_with_the_supplied_identity(
+        self, identity_store: VectorStore
+    ) -> None:
+        embed = MockEmbedding(embed_dim=8, model_name="model-b")
+        identity_store.write_nodes(
+            _text_nodes("new"), "supplied", embed_model=embed, embedding_identity=_IDENTITY_B
+        )
+        metadata = identity_store.get_collection_metadata("supplied") or {}
+        assert metadata["rag_embed_model"] == "model-b"
+        assert metadata["rag_embed_provider"] == "ollama"
+
+    def test_supplied_identity_conflicting_with_the_stamp_fails_before_mutation(
+        self, identity_store: VectorStore
+    ) -> None:
+        embed = MockEmbedding(embed_dim=8, model_name="model-a")
+        identity_store.write_nodes(_text_nodes("a"), "stamped-a", embed_model=embed)
+        generation = identity_store.get_generation("stamped-a")
+        with pytest.raises(ValueError, match="model-b"):
+            identity_store.write_nodes(
+                _text_nodes("b"), "stamped-a", embed_model=embed, embedding_identity=_IDENTITY_B
+            )
+        assert identity_store.count("stamped-a") == 2
+        assert identity_store.get_generation("stamped-a") == generation
+
+    def test_without_a_supplied_identity_the_composed_rule_still_applies(
+        self, identity_store: VectorStore
+    ) -> None:
+        embed = MockEmbedding(embed_dim=8, model_name="model-b")
+        identity_store.write_nodes(
+            _text_nodes("b"), "stamped-b", embed_model=embed, embedding_identity=_IDENTITY_B
+        )
+        with pytest.raises(ValueError, match="model-a"):
+            identity_store.write_nodes(_text_nodes("a"), "stamped-b", embed_model=embed)
+        assert identity_store.count("stamped-b") == 2
+
+    def test_malformed_vector_diagnostic_names_the_supplied_model(
+        self, identity_store: VectorStore
+    ) -> None:
+        embed = _CannedBatchEmbedding(embed_dim=8, model_name="model-b", batch_vectors=[[]])
+        with pytest.raises(_contract_error()) as excinfo:
+            identity_store.write_nodes(
+                [TextNode(text="x", id_="bad-1")],
+                "diag",
+                embed_model=embed,
+                embedding_identity=_IDENTITY_B,
+            )
+        assert "model-b" in str(excinfo.value)
+        assert "model-a" not in str(excinfo.value)
+
+
+# ── The model stamp is checked before embedding and shape validation ──────
+
+
+class _CountingEmbedding(MockEmbedding):
+    """``MockEmbedding`` that records every text batch it is asked to embed."""
+
+    seen: list[list[str]] = Field(default_factory=list)
+
+    def get_text_embedding_batch(self, texts, **kwargs):  # noqa: ANN001
+        self.seen.append(list(texts))
+        return super().get_text_embedding_batch(texts, **kwargs)
+
+
+def _stamp_collection_a(store: VectorStore, name: str) -> None:
+    """Stamp *name* with identity A using 16-dimension vectors."""
+    embed = MockEmbedding(embed_dim=16, model_name="model-a")
+    store.write_nodes(_text_nodes(f"{name}-seed"), name, embed_model=embed)
+
+
+class TestStampCheckedBeforeEmbedding:
+    """A wrong-model write names both models and costs no embedding call."""
+
+    @pytest.mark.parametrize("dim_b", [8, 16], ids=["other-size", "same-size"])
+    def test_wrong_model_is_refused_before_embedding(
+        self, identity_store: VectorStore, dim_b: int
+    ) -> None:
+        _stamp_collection_a(identity_store, "stamped")
+        generation = identity_store.get_generation("stamped")
+        embed_b = _CountingEmbedding(embed_dim=dim_b, model_name="model-b")
+        with pytest.raises(ValueError) as excinfo:
+            identity_store.write_nodes(
+                _text_nodes("b"), "stamped", embed_model=embed_b, embedding_identity=_IDENTITY_B
+            )
+        message = str(excinfo.value)
+        assert "model-a" in message
+        assert "model-b" in message
+        assert "Invalid embedding batch" not in message
+        assert embed_b.seen == []
+        assert identity_store.count("stamped") == 2
+        assert identity_store.get_generation("stamped") == generation
+
+    def test_legacy_collection_is_stamped_after_the_write(self, tmp_path) -> None:
+        legacy = LanceVectorStore(uri=str(tmp_path / "legacy"))
+        embed = MockEmbedding(embed_dim=8, model_name="model-b")
+        legacy.write_nodes(_text_nodes("old"), "legacy", embed_model=embed)
+        assert "rag_embed_model" not in (legacy.get_collection_metadata("legacy") or {})
+        legacy.write_nodes(
+            _text_nodes("new"), "legacy", embed_model=embed, embedding_identity=_IDENTITY_B
+        )
+        assert (legacy.get_collection_metadata("legacy") or {})["rag_embed_model"] == "model-b"
+
+    def test_absent_collection_is_embedded_and_not_created_by_the_check(
+        self, identity_store: VectorStore
+    ) -> None:
+        identity_store.check_embedding_identity("absent", _IDENTITY_B)
+        assert not identity_store.collection_exists("absent")
+        embed = _CountingEmbedding(embed_dim=8, model_name="model-b")
+        identity_store.write_nodes(
+            _text_nodes("n"), "absent", embed_model=embed, embedding_identity=_IDENTITY_B
+        )
+        assert ["alpha", "beta"] in embed.seen
+
+    def test_matching_stamp_writes(self, identity_store: VectorStore) -> None:
+        _stamp_collection_a(identity_store, "match")
+        embed = MockEmbedding(embed_dim=16, model_name="model-a")
+        identity_store.write_nodes(_text_nodes("again"), "match", embed_model=embed)
+        assert identity_store.count("match") == 4
+
+    def test_check_changes_nothing(self, identity_store: VectorStore) -> None:
+        _stamp_collection_a(identity_store, "readonly")
+        generation = identity_store.get_generation("readonly")
+        metadata = identity_store.get_collection_metadata("readonly")
+        with pytest.raises(ValueError, match="model-b"):
+            identity_store.check_embedding_identity("readonly", _IDENTITY_B)
+        identity_store.check_embedding_identity("readonly", _IDENTITY_A)
+        assert identity_store.get_generation("readonly") == generation
+        assert identity_store.get_collection_metadata("readonly") == metadata

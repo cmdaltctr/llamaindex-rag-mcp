@@ -86,13 +86,18 @@ def _failure(mcp: McpContext, exc: Exception) -> dict:
 
 def _preview(mcp: McpContext, collection: str, profile: str) -> dict:
     engine = mcp.engine
-    service = mcp.profiles if profile not in BUILTIN_PROFILES else None
+    service = mcp.profiles
     if service is None:
         return generate_safety_contract(
             collection, profile, store=engine.store, resolver=engine.profile_resolver
         )
+    # A built-in profile is checked too: it must use the collection's model (ADR-081).
     with service.lock:
         service.check_binding(profile, collection)
+        if profile in BUILTIN_PROFILES:
+            return generate_safety_contract(
+                collection, profile, store=engine.store, resolver=engine.profile_resolver
+            )
         return generate_safety_contract(
             collection,
             profile,
@@ -104,12 +109,14 @@ def _preview(mcp: McpContext, collection: str, profile: str) -> dict:
 
 def _apply(mcp: McpContext, collection: str, profile: str) -> dict:
     engine = mcp.engine
-    service = mcp.profiles if profile not in BUILTIN_PROFILES else None
+    service = mcp.profiles
     if service is None:
         return apply_profile_change(collection, profile, store=engine.store)
     # The lock keeps a profile delete from crossing this bind.
     with service.lock:
         service.check_binding(profile, collection)
+        if profile in BUILTIN_PROFILES:
+            return apply_profile_change(collection, profile, store=engine.store)
         return apply_profile_change(
             collection, profile, store=engine.store, catalogue=service.catalogue
         )

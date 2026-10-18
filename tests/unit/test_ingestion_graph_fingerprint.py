@@ -166,6 +166,10 @@ def test_presentation_and_query_changes_keep_the_shape(change: Any) -> None:
             lambda d: canonical_graph("documents", enrich={"taxonomy_mode": "file_type"}),
             id="enrich-parameter",
         ),
+        pytest.param(
+            lambda d: canonical_graph("documents", read={"pdf_reader": "pdf_inspector"}),
+            id="pdf-reader",
+        ),
         pytest.param(_bypass_normalise, id="connection"),
         pytest.param(
             lambda d: (
@@ -266,3 +270,41 @@ def test_canonical_definition_has_a_separate_empty_layout() -> None:
     definition = canonical_ingestion_definition(collection="x")
     assert definition.graph.collection == "x"
     assert definition.layout.positions == {}
+
+
+# ── Step reader (add-pdf-reader-step-setting, task 3.1) ──────────────────
+
+
+def test_shape_carries_the_reader_of_the_read_node_in_the_commit_slice() -> None:
+    """The reader of the node that feeds the commit is part of the shape."""
+    shape = _shape(canonical_graph("documents", read={"pdf_reader": "pdf_inspector"}))
+    assert shape.pdf_reader == "pdf_inspector"
+
+
+def test_shape_reader_is_none_when_the_read_node_inherits() -> None:
+    """``null`` inherits, so the shape names no reader."""
+    assert _shape(canonical_graph("documents")).pdf_reader is None
+    assert standard_shape().pdf_reader is None
+
+
+def test_read_node_outside_the_commit_slice_does_not_set_the_reader() -> None:
+    """A second read node that feeds nothing toward the commit is ignored."""
+    data = canonical_graph("documents")
+    data["graph"]["nodes"].append(
+        {"id": "stray", "operation": "read.document", "params": {"pdf_reader": "liteparse"}}
+    )
+    data["graph"]["edges"].append(
+        {
+            "source": {"node": "discover", "port": "sources"},
+            "target": {"node": "stray", "port": "sources"},
+        }
+    )
+    assert _shape(data).pdf_reader is None
+
+
+def test_reader_choice_does_not_depend_on_the_node_id() -> None:
+    """Renaming the read node keeps the reader and the fingerprint."""
+    data = canonical_graph("documents", read={"pdf_reader": "liteparse"})
+    renamed = _rename(data, {"read": "reader_1"})
+    assert _shape(renamed) == _shape(data)
+    assert _shape(renamed).pdf_reader == "liteparse"

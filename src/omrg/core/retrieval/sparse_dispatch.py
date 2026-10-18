@@ -33,6 +33,7 @@ import time
 from collections.abc import Callable
 
 from ..vectordb.base import VectorStore
+from ..vectordb.identity import EmbeddingIdentity
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,7 @@ def _sparse_query_rows(
     metadata_filter: dict | None = None,
     *,
     timing_report: dict | None = None,
+    embedding_identity: EmbeddingIdentity | None = None,
 ) -> list[dict]:
     """Run one registered sparse backend and normalise to pipeline rows.
 
@@ -67,6 +69,8 @@ def _sparse_query_rows(
     converts them into the row shape the fusion stage consumes.
 
     Args:
+        embedding_identity: Replaces the store identity in the native guard
+            (ADR-081). It is sent to the retriever only when set.
         timing_report: Optional dict to accumulate ``sparse_seconds``
             into. A failed query (exception before completion) does not
             record a duration, so the fallback path's successful query
@@ -77,10 +81,12 @@ def _sparse_query_rows(
 
     Retriever = _sparse_registry.get(backend)
     t0 = time.perf_counter()
+    identity_kwargs = {"embedding_identity": embedding_identity} if embedding_identity else {}
     rows = Retriever(collection_name, store=store).query(
         query,
         fetch_k,
         metadata_filter=metadata_filter,
+        **identity_kwargs,
     )
     t1 = time.perf_counter()
     if timing_report is not None:
@@ -108,6 +114,7 @@ def _sparse_bm25_query(
     report: dict | None = None,
     *,
     timing_report: dict | None = None,
+    embedding_identity: EmbeddingIdentity | None = None,
 ) -> list[dict]:
     """Run the registered BM25 backend (the fallback target)."""
     rows = _sparse_query_rows(
@@ -185,6 +192,7 @@ def _native_sparse_query(
     report: dict | None = None,
     *,
     timing_report: dict | None = None,
+    embedding_identity: EmbeddingIdentity | None = None,
 ) -> list[dict]:
     """Run the native policy: coverage warning, native attempt, fallback.
 
@@ -206,6 +214,7 @@ def _native_sparse_query(
             "native",
             metadata_filter,
             timing_report=timing_report,
+            embedding_identity=embedding_identity,
         )
     except Exception as exc:
         if collection_name not in _warned_native_fallback_collections:

@@ -140,6 +140,18 @@ same write/adapter path.
   documented embedding path for `write_nodes`; the helper performs no
   vector-store operation itself.
 
+## Amendment (2026-10-18): the model stamp is checked first
+
+`check-embedding-stamp-before-dimension` changes the order of checks in
+`write_nodes`. Each store first calls the read-only
+`VectorStore.check_embedding_identity`, then embeds and validates vector
+shape. A wrong-model write therefore fails with the identity-mismatch error
+that names both models, not with a dimension error, and no embedding request
+is sent. The check creates nothing, stamps nothing and does not advance the
+generation. The stamp step after validation stays: it stamps legacy
+collections and repeats the compare. The ingestion graph makes the same
+check before `embed.chunks`. The validator rules in this ADR do not change.
+
 ## Alternatives Considered
 
 | Option | Rejected because |

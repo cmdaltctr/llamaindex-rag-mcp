@@ -100,7 +100,7 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
         catalogue={catalogue}
         issues={session.issues}
         controls={session.controls}
-        embeddingModel={session.embeddingModel}
+        embeddingModel={profile.kind === "user" ? (profile.embedding?.model ?? session.embeddingModel) : session.embeddingModel}
         onChange={update}
         onConnect={(source, target) => {
           const reason = connect(source, target);
@@ -151,7 +151,7 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
                 }
               />
             ),
-            "node-settings": <NodeInspector draft={draft} nodeId={selectedNode} catalogue={catalogue} issues={session.issues} controls={session.controls} onChange={update} readOnly={readOnly} />,
+            "node-settings": <NodeInspector draft={draft} nodeId={selectedNode} catalogue={catalogue} issues={session.issues} controls={session.controls} onChange={update} readOnly={readOnly} profile={profile} />,
           }}
         />
       </div>

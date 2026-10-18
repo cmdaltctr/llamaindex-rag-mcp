@@ -55,6 +55,30 @@ The Engine catalogue holds these operations. Each operation is version `1`. The 
 
 `retrieve.prepare_query` resolves `top_k`, the similarity threshold, the rerank decision and the candidate pool once. Connect it before the dense and sparse nodes, as the templates do. `select.threshold` applies the score-kind-aware threshold and the `top_k` cut. After a successful rerank it divides the threshold by 30, as `search()` does.
 
+### PDF reader on the Read document step
+
+The Read document step has a `pdf_reader` setting. Use it to read the PDF files of one pipeline with a different reader from the host default.
+
+- `null` (Inherit) uses the host reader. The host reader comes from `PDF_READER`, resolved once at start-up.
+- A value must be a registered concrete reader: `pypdf`, `pypdfium2`, `liteparse` or `pdf_inspector`.
+- `auto` is not a choice. It is a host policy. Validation rejects it with `invalid_parameter`.
+- A graph-wide `overrides.pdf_reader` stays refused (`host_owned_setting`). Set the reader on the Read document step instead.
+- The step setting changes only that step. The environment, the standard ingest path and other pipelines keep the host reader.
+
+The host probes each reader once for each Engine. A reader whose package is not installed gives `option_unavailable` at validation, and no node runs. The catalogue reports this for each operation:
+
+- `unavailable_options` maps a setting to its unavailable choices and the reason for each. For `read.document` it lists the uninstalled readers and names the missing package.
+- `inherited_values` maps a setting to the value that `null` uses. For `read.document` it holds the host reader.
+
+Both fields are empty for an operation that has no such setting. The operation stays available when a choice is not.
+
+What a step reader changes:
+
+- OCR routing and the rescue for PDFs that give no text apply only to `pdf_inspector`, under the host OCR settings. A step that selects another reader reads without them. A scanned PDF that `pypdf` reads can give no text and fail with "No chunks produced".
+- A step that selects `pdf_inspector` on a host with another default turns OCR routing on for that step. It adds no OCR route and starts no worker that the host has not set up.
+- When the host uses the Azure document backend, Azure reads the PDF files. The step reader applies only when a read falls back to the local backend.
+- The stored source identity names the step reader. When you change the reader, or any other Read document setting, each affected source is processed again on its next explicit ingest. A rerun with the same settings reuses the source.
+
 ## Canonical templates
 
 `omrg.pipeline_templates` publishes three canonical graphs. Each graph reproduces one standard Engine operation:
@@ -138,7 +162,7 @@ Graph overrides accept these levers only:
 | `chunking.chunk_size`, `chunking.chunk_overlap`, `chunking.markdown_chunk_size`, `chunking.code_chunk_lines`, `chunking.strategy_fallback` | Yes |
 | `metadata.taxonomy_mode` | Yes |
 
-The host owns provider and model identity, secrets, storage locations and reader backends. A graph cannot change them (`host_owned_setting`). Change them in the environment and restart OMRG.
+The host owns provider and model identity, secrets, storage locations and reader backends. A graph cannot change them (`host_owned_setting`). Change them in the environment and restart OMRG. The one exception is the PDF reader: the Read document step can choose an installed reader for itself (see "PDF reader on the Read document step"), but the host default stays host-owned.
 
 ## Profiles own pipelines
 
@@ -321,6 +345,12 @@ A bare graph document (without `graph` and `layout`) is also accepted. It gets a
 
 ### A graph tries to change the embedding model
 
+A graph cannot set the embedding model or provider. The `Embed chunks` step
+and the dense retrieval step use the model that the collection's profile
+names (the server default when the profile names none). To change the model,
+set it on the profile's Embed step. See "Embedding model per profile" in the
+configuration guide.
+
 <!-- pipeline-example: invalid host_owned_setting -->
 ```json
 {
@@ -350,6 +380,7 @@ Validation runs before any node, model call or store change. It reports every pr
 | `cycle` | The connections form a loop. | Remove one connection in the loop. |
 | `invalid_bypass` | A node without a bypass is disabled, or the bypass forwards an incompatible value. | Enable the node, or change the downstream connection. |
 | `capability_unavailable` | The host cannot supply a resource, for example the reranker model. | Follow the reason in the message, or disable the node when it has a bypass. |
+| `option_unavailable` | A node selects a choice the host cannot run, for example a PDF reader whose package is not installed. | Install the package and restart OMRG, or choose another value, or set the step to Inherit. |
 | `embedding_identity_mismatch` | The collection uses another embedding provider or model. Equal dimensions do not make two models compatible. | Select a collection built with the host model. |
 | `conflicting_commit`, `multiple_commit_destinations` | More than one commit node writes sources. | Keep one commit node per graph. |
 | `unsupported_profile` | The profile is not `documents` or `codebase`. | Use an operational profile, or omit it. |

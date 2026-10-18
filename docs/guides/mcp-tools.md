@@ -398,6 +398,11 @@ with their current revision numbers) and `notes`. The tool refuses a profile
 that is not ready. The error carries `not_ready_reasons`, a list of plain
 English lines that say what to fix.
 
+On the web endpoint, the tool also refuses any profile, built-in or user,
+whose embedding model differs from the model that made the collection's
+vectors (ADR-081). The message names both models. The preview and the confirm
+step both run this check.
+
 **The stdio server cannot bind a user profile.** It refuses a user profile id
 with this message and changes nothing:
 

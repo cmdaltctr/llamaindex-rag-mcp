@@ -76,6 +76,27 @@ def embedding_identity_from_settings(settings: Any) -> EmbeddingIdentity:
     return EmbeddingIdentity(provider=provider, model=model, index_identity=None)
 
 
+def write_identity(
+    override: EmbeddingIdentity | None,
+    composed: EmbeddingIdentity | None,
+    embed_model: Any,
+) -> EmbeddingIdentity:
+    """Return the identity a write validates and stamps with.
+
+    A per-call *override* wins over the store's *composed* identity. Direct
+    calls with neither fall back to a diagnostic identity named after the
+    embedder, which is used for error text only.
+    """
+    return (
+        override
+        or composed
+        or EmbeddingIdentity(
+            provider=type(embed_model).__name__,
+            model=str(getattr(embed_model, "model_name", type(embed_model).__name__)),
+        )
+    )
+
+
 def redact_secret(message: str, secret: str | None) -> str:
     """Redact a full secret and each prefix of six or more characters.
 
@@ -230,36 +251,50 @@ class IdentityGuardMixin:
     # Supplied by the concrete store.
     _identity: EmbeddingIdentity | None
 
-    def _check_or_stamp_identity(self, collection: Any) -> None:
-        """Write-path rule: stamp legacy collections, reject mismatches."""
-        if self._identity is None:
+    def _check_or_stamp_identity(
+        self, collection: Any, identity: EmbeddingIdentity | None = None
+    ) -> None:
+        """Write-path rule: stamp legacy collections, reject mismatches.
+
+        ``identity`` replaces the composed identity for this call (ADR-081).
+        """
+        active = identity or self._identity
+        if active is None:
             return
         stored = read_stored_identity(collection)
         if stored[0] is None:
-            stamp_collection_identity(collection, self._identity)
+            stamp_collection_identity(collection, active)
             return
-        self._reject_identity_mismatch(collection.name, stored)
+        self._reject_identity_mismatch(collection.name, stored, active)
 
-    def _guard_query_identity(self, collection_name: str, collection: Any) -> None:
+    def _guard_query_identity(
+        self,
+        collection_name: str,
+        collection: Any,
+        identity: EmbeddingIdentity | None = None,
+    ) -> None:
         """Query-path rule: reject mismatches before the query is issued.
 
         Legacy collections without identity metadata query normally;
         stamping never happens on the read path so read-only
         evaluation workers never mutate a shared collection.
+        ``identity`` replaces the composed identity for this call.
         """
-        if self._identity is None:
+        active = identity or self._identity
+        if active is None:
             return
         stored = read_stored_identity(collection)
         if stored[0] is not None:
-            self._reject_identity_mismatch(collection_name, stored)
+            self._reject_identity_mismatch(collection_name, stored, active)
 
     def _reject_identity_mismatch(
         self,
         collection_name: str,
         stored: tuple[str | None, str | None, str | None],
+        identity: EmbeddingIdentity | None = None,
     ) -> None:
         """Raise unless the stored identity matches the active one."""
-        identity = self._identity
-        if identity is None or identities_match(stored, identity):
+        active = identity or self._identity
+        if active is None or identities_match(stored, active):
             return
-        raise build_identity_mismatch_error(collection_name, stored, identity)
+        raise build_identity_mismatch_error(collection_name, stored, active)

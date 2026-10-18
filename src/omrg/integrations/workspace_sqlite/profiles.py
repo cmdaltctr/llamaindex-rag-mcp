@@ -98,6 +98,7 @@ class SqliteProfileRepository:
         schema_version: int,
         description: str = "",
         layouts: Mapping[str, Mapping[str, Any]] | None = None,
+        embedding: tuple[str, str, int | None] | None = None,
     ) -> Record:
         """Create a profile, its pipelines and their first revisions at once.
 
@@ -114,6 +115,7 @@ class SqliteProfileRepository:
             if isinstance(value, Mapping)
         }
         layout_json = {slot: codec.dumps(dict((layouts or {}).get(slot) or {})) for slot in SLOTS}
+        provider, model, dimensions = embedding or (None, None, None)
         now = self._now()
         try:
             with write_transaction(self.path) as conn:
@@ -127,7 +129,8 @@ class SqliteProfileRepository:
                 conn.execute(
                     "INSERT INTO profiles (profile_id, title, description, base_profile, "
                     "ingest_pipeline_id, search_pipeline_id, answer_pipeline_id, "
-                    "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "created_at, updated_at, embed_provider, embed_model, embed_dimensions) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         profile_id,
                         title,
@@ -138,6 +141,9 @@ class SqliteProfileRepository:
                         pipeline_ids["answer"],
                         now,
                         now,
+                        provider,
+                        model,
+                        dimensions,
                     ),
                 )
         except sqlite3.IntegrityError as exc:
@@ -222,6 +228,33 @@ class SqliteProfileRepository:
                     profile_id,
                 ),
             )
+        return self.get_profile(profile_id)
+
+    def set_profile_embedding(
+        self,
+        profile_id: str,
+        *,
+        provider: str | None,
+        model: str | None,
+        dimensions: int | None,
+    ) -> Record:
+        """Save the embedding choice. Both names set, or both ``None`` for the default."""
+        if (provider is None) != (model is None):
+            raise ValueError("Set the provider and the model together, or neither.")
+        with write_transaction(self.path) as conn:
+            cursor = conn.execute(
+                "UPDATE profiles SET embed_provider = ?, embed_model = ?, "
+                "embed_dimensions = ?, updated_at = ? WHERE profile_id = ?",
+                (
+                    provider,
+                    model,
+                    None if provider is None else dimensions,
+                    self._now(),
+                    profile_id,
+                ),
+            )
+            if cursor.rowcount == 0:
+                raise KeyError(f"unknown profile: {profile_id}")
         return self.get_profile(profile_id)
 
     def archive_profile(self, profile_id: str) -> Record:

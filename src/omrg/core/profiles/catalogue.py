@@ -15,7 +15,10 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from ..vectordb.identity import EmbeddingIdentity
 
 
 @runtime_checkable
@@ -51,10 +54,13 @@ class ProfileBinding:
         name: The profile id: ``documents`` or ``codebase`` for a built-in, the
             user profile id otherwise.
         base_profile: The built-in profile whose settings apply.
+        embedding: The (provider, model) a user profile names for its
+            collections (ADR-081), or ``None`` for the server default.
     """
 
     name: str
     base_profile: str
+    embedding: EmbeddingIdentity | None = None
 
     @property
     def user(self) -> bool:

@@ -12,6 +12,7 @@ import pytest
 
 from omrg.integrations.workspace_sqlite import (
     SCHEMA_MIGRATIONS,
+    SqliteProfileCatalogue,
     SqliteWorkspaceRepository,
     WorkspaceSchemaError,
 )
@@ -182,7 +183,7 @@ def test_version_two_database_migrates_to_profiles_table_with_backup(tmp_path: P
     path = tmp_path / "app.sqlite3"
     _v2_database(path)
     assert _user_version(path) == 2
-    SqliteWorkspaceRepository(path)
+    SqliteWorkspaceRepository(path, migrations=SCHEMA_MIGRATIONS[:3])
     assert _user_version(path) == 3
     assert "profile_id" in _columns(path, "profiles")
     (backup,) = list(tmp_path.glob("*.bak"))
@@ -264,4 +265,91 @@ def test_profile_title_description_and_archive_may_change(tmp_path: Path) -> Non
     )
     row = conn.execute("SELECT title, archived_at FROM profiles").fetchone()
     assert row == ("New", "later")
+    conn.close()
+
+
+# --- Schema version 4: the embedding choice of a profile (add-profile-embedding-model, D1) ---
+
+
+def _v3_database_with_profile(path: Path) -> None:
+    """Create a version 3 workspace that holds one profile, as the earlier release left it."""
+    repo = SqliteWorkspaceRepository(path, migrations=SCHEMA_MIGRATIONS[:3])
+    slots = [repo.create_pipeline(f"Slot {i}")["pipeline_id"] for i in range(3)]
+    conn = _raw(path)
+    _insert_profile(conn, "old", (slots[0], slots[1], slots[2]))
+    conn.close()
+
+
+def test_version_three_database_gains_the_embedding_columns_with_backup(tmp_path: Path) -> None:
+    path = tmp_path / "app.sqlite3"
+    _v3_database_with_profile(path)
+    assert _user_version(path) == 3
+    SqliteWorkspaceRepository(path)
+    assert _user_version(path) == 4
+    columns = _columns(path, "profiles")
+    assert {"embed_provider", "embed_model", "embed_dimensions"} <= set(columns)
+    (backup,) = list(tmp_path.glob("*.bak"))
+    assert "v3-to-v4" in backup.name
+    assert _user_version(backup) == 3
+    assert "embed_model" not in _columns(backup, "profiles")
+
+
+def test_existing_profiles_read_as_the_server_default(tmp_path: Path) -> None:
+    path = tmp_path / "app.sqlite3"
+    _v3_database_with_profile(path)
+    SqliteWorkspaceRepository(path)
+    conn = _raw(path)
+    row = conn.execute(
+        "SELECT embed_provider, embed_model, embed_dimensions FROM profiles"
+    ).fetchone()
+    conn.close()
+    assert row == (None, None, None)
+
+
+def test_read_only_catalogue_reads_a_version_three_profile_as_the_server_default(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "app.sqlite3"
+    _v3_database_with_profile(path)
+    catalogue = SqliteProfileCatalogue(path)
+
+    (listed,) = catalogue.list_profiles()
+    fetched = catalogue.get_profile("old")
+
+    for record in (listed, fetched):
+        assert record is not None and record["profile_id"] == "old"
+        embed = (record["embed_provider"], record["embed_model"], record["embed_dimensions"])
+        assert embed == (None, None, None)
+    assert _user_version(path) == 3
+
+
+@pytest.mark.parametrize(
+    "assignment",
+    [
+        "embed_provider = 'ollama'",
+        "embed_model = 'nomic-embed-text'",
+        "embed_provider = 'ollama', embed_model = NULL",
+    ],
+)
+def test_a_provider_without_a_model_is_refused(tmp_path: Path, assignment: str) -> None:
+    path = tmp_path / "app.sqlite3"
+    slots = _pipeline_ids(path, 3)
+    conn = _raw(path)
+    _insert_profile(conn, "mine", (slots[0], slots[1], slots[2]))
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(f"UPDATE profiles SET {assignment} WHERE profile_id = 'mine'")  # noqa: S608 - fixed literals
+    conn.close()
+
+
+def test_a_provider_with_a_model_is_accepted(tmp_path: Path) -> None:
+    path = tmp_path / "app.sqlite3"
+    slots = _pipeline_ids(path, 3)
+    conn = _raw(path)
+    _insert_profile(conn, "mine", (slots[0], slots[1], slots[2]))
+    conn.execute(
+        "UPDATE profiles SET embed_provider = 'ollama', embed_model = 'nomic-embed-text', "
+        "embed_dimensions = 768 WHERE profile_id = 'mine'"
+    )
+    row = conn.execute("SELECT embed_provider, embed_model, embed_dimensions FROM profiles")
+    assert row.fetchone() == ("ollama", "nomic-embed-text", 768)
     conn.close()

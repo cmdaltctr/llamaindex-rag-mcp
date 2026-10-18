@@ -94,6 +94,7 @@ async def ingest_path_async(
     effective_settings: Any = None,
     store: VectorStore | None = None,
     embed_model: Any = None,
+    embedding_identity: Any = None,
     ocr_client: Any = None,
 ) -> dict:
     """Index a file or directory using bounded, failure-safe source units.
@@ -112,6 +113,10 @@ async def ingest_path_async(
         store: Optional injected vector store (defaults to the
             process-wide default the composition root installed).
         embed_model: Optional injected embedding model.
+        embedding_identity: Optional provider and model of *embed_model*
+            (ADR-081). The store checks it against the collection stamp and
+            stamps it on the first write. ``None`` keeps the store's
+            composed identity.
         ocr_client: Optional injected managed OCR worker client
             (task 2.6a). When omitted and the operator enabled the OCR
             fallback, ONE operation-owned client is composed at this
@@ -216,6 +221,7 @@ async def ingest_path_async(
         markdown_chunking=markdown_chunking,
         embed_model=embed_model,
         ocr_client=ocr_client,
+        embedding_identity=embedding_identity,
     )
     files_indexed = 0
     files_skipped_unchanged = 0

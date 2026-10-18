@@ -13,8 +13,12 @@ if TYPE_CHECKING:
     from ....config import Settings
 
 
-def build(settings: Settings) -> Any:
+def build(settings: Settings, *, model: str | None = None) -> Any:
     """Construct an ``OpenAILikeEmbedding`` for llama.cpp from *settings*.
+
+    Args:
+        settings: Resolved settings (URL and batch size).
+        model: Optional model name that replaces ``llamacpp_embed_model``.
 
     Raises:
         ImportError: If ``llama-index-embeddings-openai-like`` is absent.
@@ -28,7 +32,7 @@ def build(settings: Settings) -> Any:
         ) from None
 
     return OpenAILikeEmbedding(
-        model_name=settings.llamacpp_embed_model,
+        model_name=model or settings.llamacpp_embed_model,
         api_base=settings.llamacpp_embed_url,
         api_key="no-key",
         embed_batch_size=settings.ingestion.embed_batch_size,

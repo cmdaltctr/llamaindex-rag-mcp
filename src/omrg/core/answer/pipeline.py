@@ -152,6 +152,7 @@ async def answer(
     effective_settings: Any = None,
     embed_model: Any = None,
     query_cache: Any = None,
+    embedding_identity: Any = None,
 ) -> dict[str, Any]:
     """Answer a query from retrieved evidence with verifiable citations.
 
@@ -191,6 +192,8 @@ async def answer(
             embedder); ``None`` selects the legacy global path so
             ``engine.search()`` and ``engine.answer()`` share one model.
         query_cache: Optional engine-owned query embedding cache.
+        embedding_identity: Provider and model that embed the query
+            (ADR-081). Passed to retrieval only when set.
 
     Returns:
         The answer result dict; see the capability spec for the shape.
@@ -238,6 +241,7 @@ async def answer(
             effective_settings=settings,
             embed_model=embed_model,
             query_cache=query_cache,
+            embedding_identity=embedding_identity,
         )
         try:
             # search() is synchronous; off the event loop (review F10)

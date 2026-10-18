@@ -22,7 +22,13 @@ from . import engine_profiles
 from .compose_pipelines import EnginePipelines
 from .core.vectordb.identity import RedactionSecrets
 from .engine_answer import ClientCompletion, build_verifier, select_completion
-from .engine_lifecycle import graph_host, install_as_process_default, release_resources
+from .engine_embedders import EngineEmbedders, definition_collection, embedding_for
+from .engine_lifecycle import (
+    graph_host,
+    install_as_process_default,
+    release_resources,
+    resolve_bound,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -80,6 +86,7 @@ class Engine:
         verify_llm_factory: Callable[[Any], Any] | None = None,
         ocr_client: Any = None,
         redaction: RedactionSecrets | None = None,
+        embedders: EngineEmbedders | None = None,
     ) -> None:
         """Own already-composed dependencies; construct nothing.
 
@@ -104,10 +111,14 @@ class Engine:
                 subprocess, and :meth:`close` closes it.
             redaction: Credential values :meth:`redact` removes from error
                 text. ``None`` means the Engine has nothing to remove.
+            embedders: Embedders by (provider, model) for collections whose
+                profile names a model (ADR-081). ``None`` keeps only
+                *embed_model*.
         """
         self._effective_settings = effective_settings
         self._store = store
         self._embed_model = embed_model
+        self._embedders = embedders or EngineEmbedders(embed_model)
         self._reranker = reranker
         self._profile_resolver = profile_resolver
         self._profile_resolver_factory = profile_resolver_factory
@@ -162,6 +173,7 @@ class Engine:
                 progress_callback=progress_callback,
                 values={"chunk_size": chunk_size, "chunk_overlap": chunk_overlap},
             )
+        embed_model, identity = embedding_for(self, collection_name, binding)
         return await ingest_path_async(
             path,
             chunk_size=chunk_size,
@@ -170,7 +182,8 @@ class Engine:
             collection_name=collection_name,
             effective_settings=effective,
             store=self._store,
-            embed_model=self._embed_model,
+            embed_model=embed_model,
+            embedding_identity=identity,
             ocr_client=self._ocr_client,
         )
 
@@ -212,6 +225,7 @@ class Engine:
                     "fetch_k": fetch_k,
                 },
             )
+        embed_model, identity = embedding_for(self, collection_name, binding)
         return search(
             query,
             top_k=top_k,
@@ -227,7 +241,8 @@ class Engine:
             reranker=self._reranker,
             store=self._store,
             effective_settings=effective,
-            embed_model=self._embed_model,
+            embed_model=embed_model,
+            embedding_identity=identity,
             query_cache=self._query_cache,
         )
 
@@ -285,6 +300,7 @@ class Engine:
                     "include_diagnostics": include_diagnostics or None,
                 },
             )
+        embed_model, identity = embedding_for(self, collection_name, binding)
         complete, effective, source = select_completion(
             effective, client_completion, self._get_answer_llm
         )
@@ -310,7 +326,8 @@ class Engine:
             reranker=self._reranker,
             store=self._store,
             effective_settings=effective,
-            embed_model=self._embed_model,
+            embed_model=embed_model,
+            embedding_identity=identity,
             query_cache=self._query_cache,
         )
 
@@ -364,7 +381,8 @@ class Engine:
             PipelineValidationError: With every node, port and input issue.
         """
         self._check_open()
-        return self._pipelines.validate(definition, self._graph_host(collection), inputs=inputs)
+        host = self._graph_host(collection or definition_collection(definition))
+        return self._pipelines.validate(definition, host, inputs=inputs)
 
     async def run_pipeline(
         self,
@@ -386,7 +404,7 @@ class Engine:
             RuntimeError: When the Engine is closed.
         """
         self._check_open()
-        host = self._graph_host(None)
+        host = self._graph_host(definition_collection(definition))
         return await self._pipelines.run(
             definition,
             host,
@@ -458,30 +476,12 @@ class Engine:
         return self._profile_resolver
 
     def _resolve_settings(self, collection_name: str) -> EffectiveSettings:
-        """Resolve effective settings for a collection via the profile resolver.
-
-        The profile resolver is constructed lazily from its factory on
-        first use so ``build_engine`` does not eagerly construct it.
-        Resolution errors propagate: an invalid collection profile tag
-        is a configuration error, not an absent optional capability.
-        """
+        """Resolve a collection's settings; an invalid profile tag raises."""
         return self._resolve_bound(collection_name)[0]
 
     def _resolve_bound(self, collection_name: str) -> tuple[EffectiveSettings, Any]:
-        """Resolve the settings and the profile binding with one tag read.
-
-        The binding is ``None`` when the Engine has no resolver or the resolver
-        does not report bindings. A caller that finds a user binding runs the
-        profile's pipelines; every other caller keeps the direct path.
-        """
-        from .core.profiles.resolver import ProfileResolver
-
-        resolver = self._resolver()
-        if resolver is None:
-            return self._effective_settings, None
-        if not isinstance(resolver, ProfileResolver):
-            return resolver.resolve(collection_name), None
-        return resolver.resolve_bound(collection_name)
+        """Resolve the settings and the profile binding with one tag read."""
+        return resolve_bound(self, collection_name)
 
     def _install_as_process_default(self) -> None:
         """Install this engine's components as process defaults (legacy transports).

@@ -13,6 +13,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from .compose_pipelines import build_graph_host
+from .engine_embedders import embedding_for
 
 if TYPE_CHECKING:
     from .engine import Engine
@@ -61,6 +62,7 @@ def release_resources(engine: Engine) -> None:
     # The embedder reference must go so a closed engine never pins model resources.
     engine._store = None  # type: ignore[assignment]
     engine._embed_model = None  # type: ignore[assignment]
+    engine._embedders.release()
     engine._reranker = None
     engine._profile_resolver = None
     engine._profile_resolver_factory = None
@@ -70,29 +72,60 @@ def release_resources(engine: Engine) -> None:
     engine._ocr_client = None
 
 
+def resolve_bound(engine: Engine, collection: str) -> tuple[Any, Any]:
+    """Resolve the settings and the profile binding of a collection with one tag read.
+
+    The binding is ``None`` when the Engine has no resolver or the resolver
+    does not report bindings. A caller that finds a user binding runs the
+    profile's pipelines; every other caller keeps the direct path.
+    """
+    from .core.profiles.resolver import ProfileResolver
+
+    resolver = engine._resolver()
+    if resolver is None:
+        return engine._effective_settings, None
+    if not isinstance(resolver, ProfileResolver):
+        return resolver.resolve(collection), None
+    return resolver.resolve_bound(collection)
+
+
 def graph_host(engine: Engine, collection: str | None) -> Any:
     """Describe the Engine's resources to graph validation and runs.
+
+    The embedder is the one the collection's profile names (ADR-081), so
+    preflight and the steps use the model that made the collection's vectors.
 
     Args:
         engine: The Engine.
         collection: Default collection for nodes that name none.
     """
     answer_llm = engine._get_answer_llm if engine._answer_llm_factory is not None else None
+    embedder, choice = embedding_for(engine, collection)
     resources = {
         "store": engine._store,
-        "embedder": engine._embed_model,
+        "embedder": embedder,
+        "embedding_identity": choice or engine._embedders.host_identity,
         "reranker": engine._reranker,
         "ocr": engine._ocr_client,
         "answer_llm": answer_llm,
         "verify_llm": engine._pipelines.judge(engine._verify_llm_factory),
     }
-    return build_graph_host(
+    from dataclasses import replace
+
+    from .core.pipelines import HostOptionSet
+
+    readers = HostOptionSet(
+        inherited=engine._effective_settings.pdf_reader,
+        unavailable={n: r for n, r in engine._pipelines.reader_options().items() if r},
+    )
+    graph = build_graph_host(
         engine._effective_settings,
         resources=resources,
         resolver=engine._resolver(),
         collection=collection,
         ocr_factory=engine._pipelines.ocr_client,
     )
+    return replace(graph, host=replace(graph.host, options={"pdf_reader": readers}))
 
 
 def install_as_process_default(engine: Engine) -> None:

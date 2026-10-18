@@ -102,8 +102,11 @@ def test_capability_method_contract_shape() -> None:
         "query",
         "n_results",
         "where",
+        "embedding_identity",
     ]
     assert parameters["where"].default is None
+    assert parameters["embedding_identity"].default is None
+    assert parameters["embedding_identity"].kind is inspect.Parameter.KEYWORD_ONLY
     assert parameters["n_results"].annotation in ("int", int)
 
 

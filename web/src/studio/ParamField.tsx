@@ -28,7 +28,8 @@ function Choice({ type, name, checked, disabled, onChange, children }: { type: "
 }
 
 function InheritNote({ field, note }: { field: Field; note: string | null }) {
-  const text = note ?? (field.nullable ? "Inherit uses the operation default." : null);
+  const inherited = field.inheritedValue == null ? null : `Inherit uses the host value: ${String(field.inheritedValue)}.`;
+  const text = note ?? inherited ?? (field.nullable ? "Inherit uses the operation default." : null);
   return text === null ? null : <p className="text-meta text-muted-foreground">{text}</p>;
 }
 
@@ -116,8 +117,9 @@ function EnumSelect({ field, value, onChange, disabled }: ParamFieldProps) {
       <SelectContent>
         {field.nullable && <SelectItem value={INHERIT}>Inherit</SelectItem>}
         {field.options.map((option) => (
-          <SelectItem key={String(option)} value={String(option)}>
+          <SelectItem key={String(option)} value={String(option)} disabled={String(option) in field.unavailableOptions}>
             {optionLabel(field, option)}
+            {String(option) in field.unavailableOptions && " (not installed)"}
           </SelectItem>
         ))}
       </SelectContent>
@@ -156,6 +158,11 @@ export function ParamField(props: ParamFieldProps) {
       <legend className="px-1 text-ui font-medium">{field.label}</legend>
       {control}
       <InheritNote field={field} note={props.note} />
+      {Object.entries(field.unavailableOptions).map(([option, reason]) => (
+        <p key={option} className="text-meta text-muted-foreground">
+          {reason}
+        </p>
+      ))}
     </fieldset>
   );
 }

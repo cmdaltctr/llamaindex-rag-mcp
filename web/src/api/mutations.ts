@@ -19,6 +19,7 @@ import {
   type Profile,
   type QueryControls,
 } from "./documents";
+import { checkEmbeddingModel, saveProfileEmbedding, type EmbeddingChoice } from "./embedding";
 import {
   saveLayout,
   saveRevision,
@@ -168,6 +169,22 @@ export function useUpdateProfile(profileId: string) {
     mutationFn: (input: ProfileUpdateInput) => updateProfile(api, profileId, input),
     onSuccess: () => invalidateProfiles(queryClient),
   });
+}
+
+/** Saves the embedding choice, then refreshes the profile list and each open profile. */
+export function useSaveProfileEmbedding(profileId: string) {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (choice: EmbeddingChoice) => saveProfileEmbedding(api, profileId, choice),
+    onSuccess: () => invalidateProfiles(queryClient),
+  });
+}
+
+/** Embeds a probe text with one model. Changes nothing on the server. */
+export function useCheckEmbeddingModel() {
+  const api = useApi();
+  return useMutation({ mutationFn: (input: { provider: string; model: string }) => checkEmbeddingModel(api, input.provider, input.model) });
 }
 
 export function useDeleteProfile(profileId: string) {

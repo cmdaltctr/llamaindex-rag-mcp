@@ -3,8 +3,8 @@
 Asserts that no module under ``src/omrg/`` — core, integrations,
 transports, daemon, config and top-level — reads the resolved settings
 singleton except the sanctioned composition-root siblings:
-``compose.py``, ``compose_answer.py``, ``compose_engine.py`` and
-``compose_settings.py`` — the composition root, split across files to stay
+``compose.py``, ``compose_answer.py``, ``compose_embedding.py``,
+``compose_engine.py`` and ``compose_settings.py`` — the composition root, split across files to stay
 under the size ceiling. Every
 other module must receive its configuration as an injected
 ``EffectiveSettings`` parameter or through a composition-root surface
@@ -57,7 +57,13 @@ _COMMENT_RE = re.compile(r"#.*$")
 # exact path relative to ``src/omrg`` — basename matching would exempt
 # any file named ``compose.py`` anywhere in the tree.
 _PERMITTED_PATHS = frozenset(
-    {"compose.py", "compose_answer.py", "compose_engine.py", "compose_settings.py"}
+    {
+        "compose.py",
+        "compose_answer.py",
+        "compose_embedding.py",
+        "compose_engine.py",
+        "compose_settings.py",
+    }
 )
 
 

@@ -196,6 +196,7 @@ async def replace_source_nodes_async(
     embed_concurrency: int = 2,
     norm_guard_enabled: bool = True,
     norm_tolerance: float = 0.001,
+    embedding_identity: Any = None,
 ) -> ReplaceSourceOutcome:
     """Embed, verify, and failure-safely replace one source version.
 
@@ -230,6 +231,8 @@ async def replace_source_nodes_async(
             ``norm_tolerance`` before any write (fail-closed; design D2 of
             the guard-embedding-normalisation change).
         norm_tolerance: Maximum permitted ``|norm - 1.0|`` (inclusive).
+        embedding_identity: Optional provider and model that made the vectors
+            (ADR-081); the store writes and stamps it.
 
     Returns:
         Counts plus stage timing diagnostics for this bounded source.
@@ -276,6 +279,7 @@ async def replace_source_nodes_async(
         collection_name=collection_name,
         store=resolved_store,
         embed_model=embed_model,
+        embedding_identity=embedding_identity,
     )
     if progress_callback:
         progress_callback("embed", outcome.chunks_written, outcome.chunks_written)

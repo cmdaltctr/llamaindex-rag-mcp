@@ -5,6 +5,7 @@
  */
 import { MutationCache, QueryCache, QueryClient, queryOptions } from "@tanstack/react-query";
 import { ApiError, type ApiClient } from "./client";
+import { listEmbeddingProviders } from "./embedding";
 import { getChunk, getJob, getSession, listCollections, listDocuments, listRoots } from "./documents";
 import { listExperiments } from "./experiments";
 import { listIntegrations } from "./integrations";
@@ -35,6 +36,7 @@ export const queryKeys = {
   revision: (pipelineId: string, revisionId: string) => ["pipelines", pipelineId, "revisions", revisionId] as const,
   profiles: () => ["profiles"] as const,
   profile: (id: string) => ["profiles", id] as const,
+  embeddingProviders: () => ["embedding-providers"] as const,
   operations: () => ["pipeline-operations"] as const,
   draftCheck: (document: string) => ["pipeline-draft-checks", document] as const,
   allRuns: () => ["runs"] as const,
@@ -105,6 +107,10 @@ export const revisionQuery = (api: ApiClient, pipelineId: string, revisionId: st
 /** Built-in profiles first, then user profiles. Items carry no standard graphs; read `profileQuery` for those. */
 export const profilesQuery = (api: ApiClient) =>
   queryOptions({ queryKey: queryKeys.profiles(), queryFn: ({ signal }) => listProfiles(api, { signal }) });
+
+/** The embedding providers and the server default model. */
+export const embeddingProvidersQuery = (api: ApiClient) =>
+  queryOptions({ queryKey: queryKeys.embeddingProviders(), queryFn: ({ signal }) => listEmbeddingProviders(api, { signal }) });
 
 export const profileQuery = (api: ApiClient, id: string) =>
   queryOptions({ queryKey: queryKeys.profile(id), queryFn: ({ signal }) => getProfile(api, id, { signal }) });

@@ -104,6 +104,14 @@ _HOST_OWNED_EXACT = frozenset(
         "answer.verify_provider",
     }
 )
+_HOST_OWNED_HINTS = {
+    "pdf_reader": (
+        " To read PDF files differently in one pipeline, set the reader on the "
+        "Read document step instead."
+    ),
+    "embed_model": " Set the model on the profile's Embed step.",
+    "embed_provider": " Set the model on the profile's Embed step.",
+}
 _HOST_OWNED_PREFIXES = ("embedding.", "ingestion.")
 _HOST_OWNED_FRAGMENTS = ("api_key", "_url", "secret", "token", "password", "_model", "_uri")
 
@@ -129,10 +137,11 @@ def lever_error(path: str, value: Any) -> tuple[str, str] | None:
     spec = ALLOWED_LEVERS.get(path)
     if spec is None:
         if is_host_owned(path):
+            hint = _HOST_OWNED_HINTS.get(path, "")
             return (
                 "host_owned",
                 f"'{path}' is owned by the host configuration. Change it in the "
-                "environment and restart OMRG; a graph cannot change it.",
+                f"environment and restart OMRG; a graph cannot change it.{hint}",
             )
         allowed = ", ".join(sorted(ALLOWED_LEVERS))
         return ("invalid", f"'{path}' is not an allowed graph lever. Allowed levers: {allowed}.")

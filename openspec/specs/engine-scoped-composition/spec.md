@@ -136,8 +136,9 @@ model. The engine SHALL NOT depend on that global for its own operations.
 - **GIVEN** two collections requiring different embedding providers
 - **WHEN** the caller constructs one explicitly configured Engine for each
 - **THEN** both SHALL operate concurrently in one process
-- **AND** profile-driven provider routing inside one Engine SHALL remain out of
-  scope
+- **AND** one Engine MAY also serve both collections when their profiles name
+  the two providers (see "One Engine routes embedding models by collection
+  profile")
 
 ### Requirement: The server startup path is one caller of the engine
 
@@ -236,3 +237,27 @@ Every engine SHALL carry the credential values it was composed with (the Chroma 
 
 - **WHEN** a web ingest job fails with an exception whose text holds the first eight characters of the OpenRouter key
 - **THEN** the job's error body MUST NOT contain them
+
+### Requirement: One Engine routes embedding models by collection profile
+
+One Engine SHALL be able to serve collections whose profiles use different embedding models at the same time. The Engine SHALL choose the embedder for each operation from the collection's profile. The provider connection settings (URLs and keys) SHALL stay host configuration. A profile SHALL choose only the provider and the model name.
+
+#### Scenario: Two collections with two models in one Engine
+
+- **GIVEN** collection `papers` uses model A and collection `notes` uses model B
+- **WHEN** one Engine ingests into both collections and searches both
+- **THEN** each collection's vectors and queries SHALL come from its own model
+- **AND** no operation SHALL use the other collection's model
+
+#### Scenario: Interleaved operations keep their models
+
+- **GIVEN** collection `papers` uses model A and collection `notes` uses model B
+- **WHEN** a search of `papers` and an ingest into `notes` run at the same time in one Engine
+- **THEN** the search SHALL use model A
+- **AND** the ingest SHALL use model B
+
+#### Scenario: A profile cannot change the provider URL
+
+- **GIVEN** a user profile that chooses provider `ollama`
+- **WHEN** the Engine builds the embedder for that profile
+- **THEN** the embedder SHALL use the host's `OLLAMA_BASE_URL`

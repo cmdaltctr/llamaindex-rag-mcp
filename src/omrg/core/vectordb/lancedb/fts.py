@@ -42,6 +42,7 @@ from typing import Any
 
 from lancedb.index import FTS
 
+from ..identity import EmbeddingIdentity
 from ..score import NATIVE_SPARSE_SCORE_KIND
 from .filter import translate_where
 from .meta import metadata_field_names
@@ -132,7 +133,7 @@ class LanceFTSMixin:
 
     # Supplied by the concrete store.
     _open_table: Callable[[str], Any]
-    _guard_query_identity: Callable[[str], None]
+    _guard_query_identity: Callable[..., None]
 
     def query_native_sparse(
         self,
@@ -140,6 +141,8 @@ class LanceFTSMixin:
         query: str,
         n_results: int,
         where: dict | None = None,
+        *,
+        embedding_identity: EmbeddingIdentity | None = None,
     ) -> list[dict]:
         """Return canonical higher-is-better native FTS result rows.
 
@@ -156,6 +159,7 @@ class LanceFTSMixin:
             n_results: Maximum rows to return.
             where: Optional ChromaDB-style metadata filter, composed
                 with the FTS ranking by the engine.
+            embedding_identity: Replaces the composed identity for the guard.
 
         Returns:
             Result rows with canonical ``score``/``score_kind``
@@ -172,7 +176,7 @@ class LanceFTSMixin:
         table = self._open_table(collection_name)
         if table is None:
             return []
-        self._guard_query_identity(collection_name)
+        self._guard_query_identity(collection_name, embedding_identity)
         ensure_fts_index(table)
         stats = fts_index_stats(table)
         if stats is not None and stats[1] > 0:

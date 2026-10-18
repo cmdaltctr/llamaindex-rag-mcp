@@ -474,3 +474,90 @@ def test_a_missing_file_is_an_error_that_names_the_path_and_is_not_created(
     assert str(path) in str(excinfo.value)
     assert not path.exists()
     assert not path.parent.exists()
+
+
+# ── Embedding choice (add-profile-embedding-model, task 7.4) ─────────────
+
+
+def test_a_new_profile_has_no_embedding_choice(
+    stores: tuple[SqliteWorkspaceRepository, SqliteProfileRepository],
+) -> None:
+    record = stores[1].create_profile(
+        "Plain", base_profile="documents", slots=_slots(), schema_version=1
+    )
+    assert (record["embed_provider"], record["embed_model"], record["embed_dimensions"]) == (
+        None,
+        None,
+        None,
+    )
+
+
+def test_the_embedding_choice_is_saved_read_and_cleared(
+    stores: tuple[SqliteWorkspaceRepository, SqliteProfileRepository],
+) -> None:
+    profiles = stores[1]
+    record = profiles.create_profile(
+        "Mine", base_profile="documents", slots=_slots(), schema_version=1
+    )
+    saved = profiles.set_profile_embedding(
+        record["profile_id"], provider="ollama", model="nomic-embed-text", dimensions=768
+    )
+    assert (saved["embed_provider"], saved["embed_model"], saved["embed_dimensions"]) == (
+        "ollama",
+        "nomic-embed-text",
+        768,
+    )
+    assert profiles.get_profile(record["profile_id"])["embed_model"] == "nomic-embed-text"
+    cleared = profiles.set_profile_embedding(
+        record["profile_id"], provider=None, model=None, dimensions=None
+    )
+    assert (cleared["embed_provider"], cleared["embed_model"]) == (None, None)
+
+
+def test_a_provider_without_a_model_is_refused_by_the_repository(
+    stores: tuple[SqliteWorkspaceRepository, SqliteProfileRepository],
+) -> None:
+    profiles = stores[1]
+    record = profiles.create_profile(
+        "Mine", base_profile="documents", slots=_slots(), schema_version=1
+    )
+    with pytest.raises(ValueError):
+        profiles.set_profile_embedding(
+            record["profile_id"], provider="ollama", model=None, dimensions=None
+        )
+    with pytest.raises(KeyError):
+        profiles.set_profile_embedding("nope", provider=None, model=None, dimensions=None)
+
+
+def test_create_can_carry_an_embedding_choice(
+    stores: tuple[SqliteWorkspaceRepository, SqliteProfileRepository],
+) -> None:
+    record = stores[1].create_profile(
+        "Copy",
+        base_profile="documents",
+        slots=_slots(),
+        schema_version=1,
+        embedding=("llamacpp", "model-b", 1024),
+    )
+    assert (record["embed_provider"], record["embed_model"], record["embed_dimensions"]) == (
+        "llamacpp",
+        "model-b",
+        1024,
+    )
+
+
+def test_the_catalogue_exposes_the_embedding_keys(
+    stores: tuple[SqliteWorkspaceRepository, SqliteProfileRepository],
+) -> None:
+    from omrg.integrations.workspace_sqlite import SqliteProfileCatalogue
+
+    profiles = stores[1]
+    record = profiles.create_profile(
+        "Mine", base_profile="documents", slots=_slots(), schema_version=1
+    )
+    profiles.set_profile_embedding(
+        record["profile_id"], provider="ollama", model="m", dimensions=None
+    )
+    seen = SqliteProfileCatalogue(profiles.path).get_profile(record["profile_id"])
+    assert seen is not None
+    assert (seen["embed_provider"], seen["embed_model"]) == ("ollama", "m")

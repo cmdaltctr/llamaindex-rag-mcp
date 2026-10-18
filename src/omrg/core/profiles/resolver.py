@@ -41,6 +41,7 @@ from ..ingestion.settings import parse_extension_set
 from ..settings import EffectiveSettings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
+from ..vectordb.identity import EmbeddingIdentity
 from .catalogue import (
     ProfileBinding,
     ProfileCatalogue,
@@ -301,6 +302,19 @@ class ProfileResolver:
             effective = effective.model_copy(update={"profile_name": binding.name})
         return effective, binding
 
+    def embedding_choice(self, collection_name: str) -> EmbeddingIdentity | None:
+        """Return the embedding model the collection's profile names (ADR-081).
+
+        Returns:
+            The (provider, model) of a user profile that chose one. A built-in
+            profile, an untagged collection and an empty choice return ``None``,
+            which means the server default.
+
+        Raises:
+            ValueError: As :meth:`binding`.
+        """
+        return self.binding(collection_name).embedding
+
     def resolve_profile_name(self, collection_name: str) -> str:
         """Resolve just the profile name for a collection.
 
@@ -345,7 +359,9 @@ class ProfileResolver:
             raise ValueError(unknown_message(collection_name, tag, ready))
         if record.get("archived_at"):
             raise ValueError(deleted_message(collection_name, tag))
-        return ProfileBinding(tag, str(record["base_profile"]))
+        provider, model = record.get("embed_provider"), record.get("embed_model")
+        choice = EmbeddingIdentity(str(provider), str(model)) if provider and model else None
+        return ProfileBinding(tag, str(record["base_profile"]), choice)
 
     # ── Internal helpers ────────────────────────────────────────────
 

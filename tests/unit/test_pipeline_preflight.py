@@ -7,15 +7,22 @@ from typing import Any
 import pytest
 from tests.unit.test_pipeline_support import (
     HOST_EMBEDDING,
+    ReaderParams,
     fixture_catalogue,
     fixture_host,
     ingest_graph,
+    noop_adapter,
     search_graph,
 )
 
 from omrg.core.pipelines import (
+    EffectClass,
     EmbeddingRef,
+    HostContext,
+    HostOptionSet,
     IssueCode,
+    OperationCatalogue,
+    OperationDescriptor,
     PipelineValidationError,
     parse_definition,
     preflight,
@@ -279,6 +286,7 @@ def test_multiple_commit_destinations_rejected_initially() -> None:
         ("openrouter_api_key", "sk-x", IssueCode.HOST_OWNED_SETTING),
         ("lancedb_uri", "/tmp/x", IssueCode.HOST_OWNED_SETTING),
         ("retrieval.rerank_model", "x", IssueCode.HOST_OWNED_SETTING),
+        ("pdf_reader", "pypdf", IssueCode.HOST_OWNED_SETTING),
         ("retrieval.top_k", "ten", IssueCode.INVALID_OVERRIDE),
         ("retrieval.top_k", 0, IssueCode.INVALID_OVERRIDE),
         ("retrieval.made_up", 1, IssueCode.INVALID_OVERRIDE),
@@ -290,6 +298,26 @@ def test_graph_overrides_outside_allowed_levers(lever: str, value: Any, code: st
     data["overrides"] = {lever: value}
     issues = [i for i in _issues(data) if i.code == code]
     assert issues and issues[0].lever == lever
+
+
+def test_pdf_reader_override_points_to_the_read_document_step() -> None:
+    """A graph-wide reader override is refused with the step to use instead."""
+    data = search_graph()
+    data["overrides"] = {"pdf_reader": "pypdf"}
+    issues = [i for i in _issues(data) if i.code == IssueCode.HOST_OWNED_SETTING]
+    assert issues and "Read document step" in issues[0].message
+    other = search_graph()
+    other["overrides"] = {"embed_model": "x"}
+    assert "Read document step" not in _issues(other)[0].message
+
+
+@pytest.mark.parametrize("lever", ["embed_model", "embed_provider"])
+def test_embedding_model_override_points_to_the_profile_embed_step(lever: str) -> None:
+    """A graph cannot set the embedding model; the message names the profile's Embed step."""
+    data = search_graph()
+    data["overrides"] = {lever: "x"}
+    issues = [i for i in _issues(data) if i.code == IssueCode.HOST_OWNED_SETTING]
+    assert issues and "Set the model on the profile's Embed step." in issues[0].message
 
 
 @pytest.mark.parametrize("profile", ["hybrid", "research"])
@@ -345,3 +373,69 @@ def test_structural_validation_without_host() -> None:
     data["edges"].pop()
     report = preflight(parse_definition(data), fixture_catalogue())
     assert [i.code for i in report.issues] == [IssueCode.MISSING_INPUT]
+
+
+# ── Option availability ──────────────────────────────────────────────
+
+
+def _reader_catalogue() -> OperationCatalogue:
+    catalogue = OperationCatalogue()
+    catalogue.register(
+        OperationDescriptor(
+            operation_id="read.example",
+            version=1,
+            title="Read",
+            family="read",
+            parameters=ReaderParams,
+            effect=EffectClass.PURE,
+            option_params={"reader": "reader"},
+        ),
+        noop_adapter,
+    )
+    return catalogue
+
+
+def _reader_graph(reader: str | None, *, enabled: bool = True) -> Any:
+    node: dict[str, Any] = {"id": "read", "operation": "read.example", "enabled": enabled}
+    if reader is not None:
+        node["params"] = {"reader": reader}
+    return parse_definition({"schema_version": 1, "nodes": [node], "edges": []})
+
+
+def _reader_host() -> HostContext:
+    return HostContext(
+        options={
+            "reader": HostOptionSet(inherited="alpha", unavailable={"beta": "beta is missing"})
+        }
+    )
+
+
+def test_unavailable_option_value_is_refused() -> None:
+    """A node that selects a choice the host cannot run gets a named issue."""
+    report = preflight(_reader_graph("beta"), _reader_catalogue(), host=_reader_host())
+    issues = [i for i in report.issues if i.code == IssueCode.OPTION_UNAVAILABLE]
+    assert [i.node_id for i in issues] == ["read"]
+    assert "beta" in issues[0].message
+    assert "beta is missing" in issues[0].message
+
+
+def test_null_option_value_gives_no_issue() -> None:
+    """``None`` inherits the host value, so nothing can be unavailable."""
+    report = preflight(_reader_graph(None), _reader_catalogue(), host=_reader_host())
+    assert IssueCode.OPTION_UNAVAILABLE not in [i.code for i in report.issues]
+
+
+def test_available_option_value_and_disabled_node_give_no_issue() -> None:
+    """Available choices pass, and a disabled node is not checked."""
+    available = preflight(_reader_graph("alpha"), _reader_catalogue(), host=_reader_host())
+    assert IssueCode.OPTION_UNAVAILABLE not in [i.code for i in available.issues]
+    disabled = preflight(
+        _reader_graph("beta", enabled=False), _reader_catalogue(), host=_reader_host()
+    )
+    assert IssueCode.OPTION_UNAVAILABLE not in [i.code for i in disabled.issues]
+
+
+def test_option_check_is_skipped_without_a_host() -> None:
+    """Draft preflight has no host, so it gives structural feedback only."""
+    report = preflight(_reader_graph("beta"), _reader_catalogue(), host=None)
+    assert IssueCode.OPTION_UNAVAILABLE not in [i.code for i in report.issues]

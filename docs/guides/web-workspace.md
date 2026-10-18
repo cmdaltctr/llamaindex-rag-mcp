@@ -292,6 +292,36 @@ The server keeps the last 1,000 log records in memory and writes no log file. Th
 
 `POST /v1/experiment-folders` (scope `manage`) creates a directory below an approved experiment root. `GET /v1/experiments` returns the folder tree of each root in `folders`.
 
+### Embedding model of a profile
+
+A user profile can choose its own embedding provider and model (ADR-081). The embedding routes follow. Both `manage` routes need the browser session.
+
+| Route | Scope | Body | Returns |
+|---|---|---|---|
+| `GET /v1/embedding-providers` | `read` | none | `providers` (`{name, available, reason}`; `reason` names the extra to install when `available` is false) and `server_default` (`{provider, model}`). No request goes to a provider. |
+| `POST /v1/embedding-providers/{provider}/check` | `manage` | `{model}` | `{ok, dimensions, norm, reason}`. The server embeds the text `OMRG model check` with a throwaway embedder. A failed check is still HTTP 200 with `ok: false` and a plain-English `reason`. An unregistered provider gives 404. |
+| `PUT /v1/profiles/{profile_id}/embedding` | `manage` | `{provider, model}`, or `{provider: null, model: null}` for the server default | `{profile}`. The server runs the same check first. |
+
+"Check model" for llama.cpp first reads `GET {LLAMACPP_EMBED_URL}/models`. The model name must match a served model, because llama.cpp ignores the name in an embedding request. The check fails when the vector length is outside `EMBEDDING__NORM_TOLERANCE` while the norm guard is on. Credentials are removed from every `reason`.
+
+`PUT /v1/profiles/{profile_id}/embedding` refuses in four cases:
+
+| Status | When | Body |
+|---|---|---|
+| 400 | The profile is built in. The message is "Duplicate the profile to choose another model." | `message` |
+| 404 | The profile or the provider is unknown. | `message` |
+| 409 | A collection that follows the profile holds vectors made with another model. | `error_type: "embedding_locked"` and `collections: [{collection, provider, model, chunk_count}]`, first blocking collection first. `provider` and `model` are `null` when the model that made the vectors is not recorded. |
+| 422 | The model check fails. The profile keeps its model. | `reason` |
+
+A request for the model that the collections already hold is allowed.
+
+Every item from `GET /v1/profiles` and `GET /v1/profiles/{profile_id}` has two more fields:
+
+- `embedding`: `{provider, model, source, dimensions}`. `source` is `profile` or `server_default`. A built-in profile always shows the server default. `dimensions` is the vector size of the last passing check, or `null`.
+- `embedding_lock`: `{locked, collections}`. `locked` is true while a collection that follows the profile holds vectors. `collections` has the same entries as the 409 body.
+
+`PATCH /v1/collections/{collection}/profile` returns 409 with `error_type: "embedding_mismatch"` when the profile's model differs from the model that the collection's vectors were made with. The message names both models. The refusal applies to the preview and to the confirm step. The profile tag does not change. A collection with rows but no model stamp binds only to a profile that uses the server default.
+
 ## Stop the server
 
 Press Ctrl+C in the terminal that runs `omrg web`. The server then:
@@ -467,6 +497,17 @@ Open "Details" to see the technical information:
 7. The detail text of each control.
 
 Issue messages show outside "Details". Only the issue codes stay inside it.
+
+#### Embedding model of a profile in Studio
+
+Select the "Embed chunks" step of a user profile. Step settings then shows an embedding model section:
+
+1. A built-in profile shows "Embedding model: <model> (server default, read-only)." To use another model, duplicate the profile first.
+2. A user profile with no lock shows a "Provider" list, a "Model" field and the buttons "Check model" and "Save model". "Check model" shows the vector size, for example "Vector size: 768". "Use server default" appears when the profile has its own choice. It clears the choice.
+3. A locked profile shows only the lock text and no controls: "Locked: papers already holds vectors made with nomic-embed-text. Create a new collection to use another model."
+4. When OMRG does not know the model that made the vectors, the text is: "Locked: papers already holds vectors, but the model that made them is not recorded. Create a new collection to use another model."
+
+A save that the server refuses with 409 shows the same lock text. A save that fails the check shows the reason from the check. The Embed chunks card shows "Model: <name>" with the model of the profile.
 
 ### Database and profile in the Knowledge Base
 

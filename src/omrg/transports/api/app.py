@@ -22,6 +22,7 @@ from .middleware import GuardMiddleware
 from .routes.admin import router as admin_router
 from .routes.connections import router as connections_router
 from .routes.documents import router as documents_router
+from .routes.embedding import router as embedding_router
 from .routes.experiments import router as experiments_router
 from .routes.foundation import router as foundation_router
 from .routes.graphs import router as graphs_router
@@ -46,6 +47,7 @@ API_ROUTERS: tuple[APIRouter, ...] = (
     admin_router,
     graphs_router,
     profiles_router,
+    embedding_router,
     runs_router,
     experiments_router,
     templates_router,

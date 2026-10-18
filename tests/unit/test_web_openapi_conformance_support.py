@@ -78,6 +78,9 @@ FAMILIES: dict[str, frozenset[str]] = {
     "profiles": frozenset(
         {"listProfiles", "createProfile", "getProfile", "updateProfile", "deleteProfile"}
     ),
+    "embedding": frozenset(
+        {"listEmbeddingProviders", "checkEmbeddingModel", "setProfileEmbedding"}
+    ),
     "runs": frozenset(
         {
             "submitRun",

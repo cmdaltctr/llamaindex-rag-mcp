@@ -36,6 +36,7 @@ class ProfileRepository(Protocol):
         schema_version: int,
         description: str = "",
         layouts: Mapping[str, Mapping[str, Any]] | None = None,
+        embedding: tuple[str, str, int | None] | None = None,
     ) -> ProfileRecord:
         """Create a profile, its pipelines and their first revisions at once.
 
@@ -46,7 +47,9 @@ class ProfileRepository(Protocol):
         of: a graph document (a new pipeline whose first revision is that
         graph), ``None`` (a new pipeline with no revision) or a pipeline id
         string (an existing pipeline that becomes the slot). ``layouts`` gives
-        the presentation layout of each new pipeline, by slot.
+        the presentation layout of each new pipeline, by slot. ``embedding`` is
+        the (provider, model, vector size) choice of the new profile; ``None``
+        means the server default.
 
         Everything is written in one transaction: when any step fails, no row
         stays.
@@ -70,6 +73,26 @@ class ProfileRepository(Protocol):
         self, profile_id: str, *, title: str | None = None, description: str | None = None
     ) -> ProfileRecord:
         """Change the title or the description. The id never changes."""
+        ...
+
+    def set_profile_embedding(
+        self,
+        profile_id: str,
+        *,
+        provider: str | None,
+        model: str | None,
+        dimensions: int | None,
+    ) -> ProfileRecord:
+        """Save the embedding choice of a profile (ADR-081).
+
+        ``provider`` and ``model`` are both set or both ``None``; ``None``
+        returns the profile to the server default. The caller decides whether
+        the lock rule allows the change.
+
+        Raises:
+            KeyError: If the profile does not exist.
+            ValueError: If only one of provider and model is set.
+        """
         ...
 
     def archive_profile(self, profile_id: str) -> ProfileRecord:

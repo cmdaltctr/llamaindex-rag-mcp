@@ -156,7 +156,7 @@ class GraphPass:
         if not waiter.done():
             watch.add(waiter)
         done, _ = await asyncio.wait(watch, return_when=asyncio.FIRST_COMPLETED)
-        finished = sorted((t for t in done if t in tasks), key=lambda t: self.nodes.index(tasks[t]))
+        finished = sorted((t for t in tasks if t in done), key=lambda t: self.nodes.index(tasks[t]))
         for task in finished:
             await self._finish(scheduler, tasks.pop(task), task.result())
         return True

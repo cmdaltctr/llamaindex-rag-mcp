@@ -145,6 +145,17 @@ SCHEMA_MIGRATIONS: tuple[Migration, ...] = (
                 BEGIN SELECT RAISE(ABORT, 'a pipeline fills one slot only'); END""",  # noqa: S608
         ),
     ),
+    (
+        4,
+        (
+            # The embedding choice of a profile (ADR-081). NULL means the server default.
+            "ALTER TABLE profiles ADD COLUMN embed_provider TEXT",
+            """ALTER TABLE profiles ADD COLUMN embed_model TEXT
+                CHECK ((embed_provider IS NULL) = (embed_model IS NULL))""",
+            """ALTER TABLE profiles ADD COLUMN embed_dimensions INTEGER
+                CHECK (embed_dimensions IS NULL OR embed_dimensions > 0)""",
+        ),
+    ),
 )
 
 
