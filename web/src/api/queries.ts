@@ -11,6 +11,7 @@ import { listExperiments } from "./experiments";
 import { listIntegrations } from "./integrations";
 import { getPipeline, getRevision, listOperations, PipelineIssuesError, validatePipeline, type GraphDocument, type NodeControls } from "./pipelines";
 import { listPlugins } from "./plugins";
+import { getChat, listChats } from "./chats";
 import { getProfile, listProfiles } from "./profiles";
 import { getRunArtefact, getRunRecord, getRunResult, listRuns } from "./runs";
 import { getConnections, getHealth, getMcpState, getUploadLimit, getWebPort } from "./settings";
@@ -34,6 +35,8 @@ export const queryKeys = {
   pipelines: () => ["pipelines"] as const,
   pipeline: (id: string) => ["pipelines", id] as const,
   revision: (pipelineId: string, revisionId: string) => ["pipelines", pipelineId, "revisions", revisionId] as const,
+  chats: () => ["chats"] as const,
+  chat: (id: string) => ["chats", id] as const,
   profiles: () => ["profiles"] as const,
   profile: (id: string) => ["profiles", id] as const,
   embeddingProviders: () => ["embedding-providers"] as const,
@@ -103,6 +106,13 @@ export const revisionQuery = (api: ApiClient, pipelineId: string, revisionId: st
     queryFn: ({ signal }) => getRevision(api, pipelineId, revisionId, { signal }),
     staleTime: Infinity, // A revision never changes.
   });
+
+/** Folders and chats for the history list. Chats carry no turns; read `chatQuery` for those. */
+export const chatsQuery = (api: ApiClient) =>
+  queryOptions({ queryKey: queryKeys.chats(), queryFn: ({ signal }) => listChats(api, { signal }) });
+
+export const chatQuery = (api: ApiClient, id: string) =>
+  queryOptions({ queryKey: queryKeys.chat(id), queryFn: ({ signal }) => getChat(api, id, { signal }), retry: false });
 
 /** Built-in profiles first, then user profiles. Items carry no standard graphs; read `profileQuery` for those. */
 export const profilesQuery = (api: ApiClient) =>

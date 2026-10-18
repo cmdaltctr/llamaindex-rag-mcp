@@ -6,47 +6,51 @@ import { AlertNotice } from "../components/AlertNotice";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { formatScore, scoreKindLabel } from "../lib/labels";
+import { AnswerText } from "./AnswerText";
 import { answerStatus, failureLine } from "./answerStatus";
+import { CitationPopover } from "./CitationPopover";
+import { scoreText, sourceName } from "./citationText";
 
 interface AssistantTurnProps {
   collection: string;
   question: string;
+  /** The stored answer of a reopened chat. With one, the turn shows it and never asks the server. */
+  saved?: AnswerResult | null;
+  /** Called once for each answer that arrives from the server, so the view can store it. */
+  onResult?: (result: AnswerResult) => void;
   onShowChunk: (collection: string, chunkId: string) => void;
-}
-
-function scoreText(item: Citation): string | null {
-  if (item.score === null || item.score === undefined || !item.score_kind) return null;
-  return `Score ${formatScore(item.score)}, ${scoreKindLabel(item.score_kind)}`;
-}
-
-/** The last path segment, so a chip stays short. The full source shows in the chunk viewer. */
-function sourceName(source: string | null): string {
-  if (source === null) return "Unknown source";
-  return source.split(/[/\\]/).filter(Boolean).at(-1) ?? source;
 }
 
 /**
  * One assistant turn. It asks the collection the turn was sent to as soon as
- * it mounts, and owns its mutation, so Retry repeats only this question.
+ * it mounts, and owns its mutation, so Retry repeats only this question. A
+ * turn with a stored answer shows it and asks nothing.
  */
-export function AssistantTurn({ collection, question, onShowChunk }: AssistantTurnProps) {
+export function AssistantTurn({ collection, question, saved = null, onResult, onShowChunk }: AssistantTurnProps) {
   const answer = useAnswer(collection);
   const { mutate } = answer;
   const started = useRef(false);
   useEffect(() => {
-    if (started.current) return;
+    if (started.current || saved !== null) return;
     started.current = true;
     mutate({ query: question });
-  }, [mutate, question]);
+  }, [mutate, question, saved]);
+
+  const reported = useRef<AnswerResult | null>(null);
+  useEffect(() => {
+    if (answer.data === undefined || reported.current === answer.data) return;
+    reported.current = answer.data;
+    onResult?.(answer.data);
+  }, [answer.data, onResult]);
 
   const retry = () => answer.mutate({ query: question });
-  const result = answer.data;
+  const result = saved ?? answer.data;
+  const waiting = saved === null && (answer.isPending || answer.isIdle);
 
   return (
     <li className="flex flex-col gap-2">
       <p className="text-meta font-medium text-muted-foreground">Answer from {collection}</p>
-      {answer.isError ? <ErrorNotice error={answer.error} onRetry={retry} /> : null}
+      {saved === null && answer.isError ? <ErrorNotice error={answer.error} onRetry={retry} /> : null}
       {result?.status === "error" ? (
         <AlertNotice message={failureLine(result)}>
           <Button variant="outline" onClick={retry}>
@@ -54,7 +58,7 @@ export function AssistantTurn({ collection, question, onShowChunk }: AssistantTu
           </Button>
         </AlertNotice>
       ) : null}
-      {answer.isPending || answer.isIdle ? (
+      {waiting ? (
         <p role="status" className="text-meta text-muted-foreground">
           Waiting for the answer.
         </p>
@@ -78,7 +82,7 @@ function AnswerBody({ result, collection, onShowChunk }: { result: AnswerResult;
           Claim verification skipped: {result.verification_skipped}. Only the citation check applies.
         </p>
       ) : null}
-      {result.answer !== null ? <p className="whitespace-pre-wrap break-words">{result.answer}</p> : null}
+      {result.answer !== null ? <AnswerText text={result.answer} citations={result.citations} evidence={result.evidence} collection={collection} onShowChunk={onShowChunk} /> : null}
       {result.unverified_claims && result.unverified_claims.length > 0 ? (
         <ul aria-label="Claims that failed verification" className="flex flex-col gap-1 text-meta">
           {result.unverified_claims.map((claim, index) => (
@@ -88,24 +92,39 @@ function AnswerBody({ result, collection, onShowChunk }: { result: AnswerResult;
           ))}
         </ul>
       ) : null}
-      <Citations citations={result.citations} onShowChunk={show} />
+      <Citations citations={result.citations} evidence={result.evidence} collection={collection} onShowChunk={onShowChunk} />
       <EvidenceSection evidence={result.evidence} onShowChunk={show} />
     </>
   );
 }
 
+interface CitationsProps {
+  citations: Citation[];
+  evidence: Evidence[];
+  collection: string;
+  onShowChunk: (collection: string, chunkId: string) => void;
+}
+
 /** Only entries in `citations` become chips: markers in the answer text stay plain text, so no citation is invented. */
-function Citations({ citations, onShowChunk }: { citations: Citation[]; onShowChunk: (chunkId: string) => void }) {
+function Citations({ citations, evidence, collection, onShowChunk }: CitationsProps) {
   if (citations.length === 0) return <p className="text-meta text-muted-foreground">The server returned no citations.</p>;
   return (
     <ul aria-label="Citations" className="flex flex-wrap gap-2">
       {citations.map((citation) => (
         <li key={citation.ordinal}>
           {citation.chunk_id !== null ? (
-            <Button variant="chip" size="sm" dir="ltr" onClick={() => onShowChunk(citation.chunk_id!)}>
-              <span>[{citation.ordinal}]</span>
-              <span className="truncate">{sourceName(citation.source)}</span>
-            </Button>
+            <CitationPopover
+              citation={citation}
+              evidence={evidence.find((e) => e.ordinal === citation.ordinal)}
+              collection={collection}
+              onShowChunk={onShowChunk}
+              trigger={(props) => (
+                <Button variant="chip" size="sm" dir="ltr" {...props}>
+                  <span>[{citation.ordinal}]</span>
+                  <span className="truncate">{sourceName(citation.source)}</span>
+                </Button>
+              )}
+            />
           ) : (
             <span className="text-meta text-muted-foreground">
               [{citation.ordinal}] {sourceName(citation.source)}: No stored chunk ID, so this citation cannot be opened.

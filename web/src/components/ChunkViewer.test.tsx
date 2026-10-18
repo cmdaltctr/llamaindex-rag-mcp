@@ -49,6 +49,21 @@ describe("ChunkViewer", () => {
     expect(within(dialog).getByRole("button", { name: "Previous chunk" })).toBeEnabled();
   });
 
+  it("shows the lineage and the stored metadata of the chunk", async () => {
+    const server = documentsServer({
+      "GET /v1/collections/documents/chunks/c-9": () => ({
+        ...inspection("c-9", 0, "Body", [], []),
+        chunk: { ...chunkView("c-9", 0, "Body"), metadata: { title: "A paper", file_name: "present.md", source_id: "sid" } },
+      }),
+    });
+    renderWithProviders(<ChunkViewer collection="documents" chunkId="c-9" onClose={() => undefined} />, { fetchImpl: server.fetchImpl });
+    const lineage = await screen.findByRole("region", { name: "Lineage" });
+    expect(within(lineage).getByText("sid")).toBeInTheDocument();
+    const metadata = screen.getByRole("region", { name: "Metadata" });
+    expect(within(metadata).getByText("A paper")).toBeInTheDocument();
+    expect(within(metadata).getByText("file_name")).toBeInTheDocument();
+  });
+
   it("closes with Escape", async () => {
     const { user, onClose } = setup();
     await screen.findByRole("dialog", { name: "Stored chunk" });

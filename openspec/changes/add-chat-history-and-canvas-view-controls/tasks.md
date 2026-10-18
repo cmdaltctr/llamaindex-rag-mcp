@@ -12,15 +12,15 @@ Work in the sibling worktree `llamaindex-rag-mcp-feat-add-chat-history-and-canva
 
 ## 2. Chat history (web)
 
-- [ ] 2.1 Add API client functions, query keys and mutations for chats and folders in `web/src/api/`. Verify: the new unit tests in `web/src/api` pass.
-- [ ] 2.2 Add the chat id to the chat route (`#/chat/<collection>/<chat-id>`) in `web/src/lib/routes.ts`. Verify: route parse and format tests pass, and an unknown chat id test shows a new empty chat.
-- [ ] 2.3 Write failing tests, then store turns: `AssistantTurn` renders a saved result without calling `useAnswer`; the view creates the chat on the first usable answer, saves each usable answer, skips error results, and ignores a 404 for a deleted chat. Verify: the reload scenario test passes, and fails when the save call is removed.
-- [ ] 2.4 Add the history list (left column from `lg`, History sheet below `lg`) with folders: create, rename, drag a chat onto a folder or onto "No folder", and a "Move to" menu. Verify: tests for drop, keyboard move and folder rename pass.
-- [ ] 2.5 Add Select mode, bulk delete, single delete and folder delete, each with a count confirmation. Verify: tests for the delete scenarios, delete of the open chat, and cancel pass.
-- [ ] 2.6 Move the popover positioning and dismissal from `studio/InfoPopover.tsx` into `components/ui/popover.tsx`, and make `InfoPopover` use it. Verify: `InfoPopover.test.tsx` passes unchanged, and new primitive tests cover Escape, outside click and focus return.
-- [ ] 2.7 Write failing tests, then add `ChunkMetadata.tsx` (Lineage and Metadata sections, cut values with "Show all") and use it in `ChunkViewer`. Verify: `ChunkViewer.test.tsx` shows the metadata keys and the cut, and fails when the section is removed.
-- [ ] 2.8 Write failing tests, then add `CitationPopover.tsx` and open it from the chips and from `[n]` markers that match a citation ordinal. Verify: tests cover the popover content, a merged citation listing both chunk ids, a marker with no citation staying plain text, Escape closing with focus return, and a 404 chunk keeping the saved evidence text.
-- [ ] 2.9 Update the chat section of `docs/guides/` to describe stored chats, folders and delete. Verify: `grep -rni "not stored\|transcript.*lost" docs/guides` finds no stale statement.
+- [x] 2.1 Add API client functions, query keys and mutations for chats and folders in `web/src/api/`. Verify: the new unit tests in `web/src/api` pass.
+- [x] 2.2 Add the chat id to the chat route (`#/chat/<collection>/<chat-id>`) in `web/src/lib/routes.ts`. Verify: route parse and format tests pass, and an unknown chat id test shows a new empty chat.
+- [x] 2.3 Write failing tests, then store turns: `AssistantTurn` renders a saved result without calling `useAnswer`; the view creates the chat on the first usable answer, saves each usable answer, skips error results, and ignores a 404 for a deleted chat. Verify: the reload scenario test passes, and fails when the save call is removed.
+- [x] 2.4 Add the history list (left column from `lg`, History sheet below `lg`) with folders: create, rename, drag a chat onto a folder or onto "No folder", and a "Move to" menu. Verify: tests for drop, keyboard move and folder rename pass.
+- [x] 2.5 Add Select mode, bulk delete, single delete and folder delete, each with a count confirmation. Verify: tests for the delete scenarios, delete of the open chat, and cancel pass.
+- [x] 2.6 Move the popover positioning and dismissal from `studio/InfoPopover.tsx` into `components/ui/popover.tsx`, and make `InfoPopover` use it. Verify: `InfoPopover.test.tsx` passes unchanged, and new primitive tests cover Escape, outside click and focus return.
+- [x] 2.7 Write failing tests, then add `ChunkMetadata.tsx` (Lineage and Metadata sections, cut values with "Show all") and use it in `ChunkViewer`. Verify: `ChunkViewer.test.tsx` shows the metadata keys and the cut, and fails when the section is removed.
+- [x] 2.8 Write failing tests, then add `CitationPopover.tsx` and open it from the chips and from `[n]` markers that match a citation ordinal. Verify: tests cover the popover content, a merged citation listing both chunk ids, a marker with no citation staying plain text, Escape closing with focus return, and a 404 chunk keeping the saved evidence text.
+- [x] 2.9 Update the chat section of `docs/guides/` to describe stored chats, folders and delete. Verify: `grep -rni "not stored\|transcript.*lost" docs/guides` finds no stale statement.
 
 ## 3. Canvas view controls (web)
 

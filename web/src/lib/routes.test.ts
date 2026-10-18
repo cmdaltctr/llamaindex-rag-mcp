@@ -5,8 +5,9 @@ const ROUTES: { route: Route; hash: string }[] = [
   { route: { area: "home" }, hash: "#/home" },
   { route: { area: "knowledge-base", collection: null }, hash: "#/knowledge-base" },
   { route: { area: "knowledge-base", collection: "papers" }, hash: "#/knowledge-base/papers" },
-  { route: { area: "chat", collection: null }, hash: "#/chat" },
-  { route: { area: "chat", collection: "papers" }, hash: "#/chat/papers" },
+  { route: { area: "chat", collection: null, chatId: null }, hash: "#/chat" },
+  { route: { area: "chat", collection: "papers", chatId: null }, hash: "#/chat/papers" },
+  { route: { area: "chat", collection: "papers", chatId: "c1" }, hash: "#/chat/papers/c1" },
   { route: { area: "studio", profileId: null, purpose: null }, hash: "#/studio" },
   { route: { area: "studio", profileId: "papers-search", purpose: null }, hash: "#/studio/papers-search" },
   { route: { area: "studio", profileId: "papers-search", purpose: "ingest" }, hash: "#/studio/papers-search/ingest" },
@@ -33,7 +34,7 @@ describe("routes", () => {
   });
 
   it.each(["my notes", "a/b", "100% sure", "é ü", "a#b", "a?b", ".."])("encodes the collection name %j", (name) => {
-    const route: Route = { area: "chat", collection: name };
+    const route: Route = { area: "chat", collection: name, chatId: null };
     const hash = formatRoute(route);
     expect(hash.slice("#/chat/".length)).toBe(encodeURIComponent(name));
     expect(hash.slice("#/chat/".length)).not.toContain("/");
@@ -65,7 +66,9 @@ describe("routes", () => {
     "#/canvas",
     "#/search",
     "#/chat//x",
-    "#/chat/a/b",
+    "#/chat/a/b/c",
+    "#/chat/a//",
+    "#/chat/a/%E0%A4%A",
     "#/home/extra",
     "#/experiments/runs",
     "#/experiments/other/x",
@@ -82,5 +85,17 @@ describe("routes", () => {
     "chat",
   ])("resolves the unknown hash %j to Home", (hash) => {
     expect(parseRoute(hash)).toEqual({ area: "home" });
+  });
+});
+
+describe("chat id in the route", () => {
+  it("encodes the chat id and keeps it out of the collection segment", () => {
+    const hash = formatRoute({ area: "chat", collection: "my docs", chatId: "a/b" });
+    expect(hash).toBe("#/chat/my%20docs/a%2Fb");
+    expect(parseRoute(hash)).toEqual({ area: "chat", collection: "my docs", chatId: "a/b" });
+  });
+
+  it("drops the chat id when no collection is named", () => {
+    expect(formatRoute({ area: "chat", collection: null, chatId: "c1" })).toBe("#/chat");
   });
 });

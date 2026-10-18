@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { useApi } from "../api/ApiProvider";
 import type { ChunkView } from "../api/documents";
 import { chunkQuery } from "../api/queries";
-import { chunkPosition } from "../lib/labels";
+import { ChunkMetadata } from "./ChunkMetadata";
 import { ErrorNotice } from "./ErrorNotice";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
@@ -61,16 +61,12 @@ function ChunkBody({ chunk }: { chunk: ChunkView }) {
         <dd dir="ltr" className="font-mono text-code break-all">
           {chunk.source ?? "Unknown source"}
         </dd>
-        <dt className="text-muted-foreground">Position</dt>
-        <dd>
-          {chunkPosition(chunk.source_chunk_index, chunk.source_chunk_count)}
-          {chunk.page_label !== null ? `, Page ${chunk.page_label}` : ""}
-        </dd>
         <dt className="text-muted-foreground">Chunk ID</dt>
         <dd dir="ltr" className="font-mono text-code break-all">
           {chunk.chunk_id ?? "None"}
         </dd>
       </dl>
+      <ChunkMetadata chunk={chunk} />
       <pre className="max-h-[50dvh] overflow-auto rounded-small border border-border bg-muted p-3 font-mono text-code whitespace-pre-wrap break-words">
         {chunk.text}
       </pre>

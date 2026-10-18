@@ -345,7 +345,7 @@ Every area has its own address. Back and forward move between them. An address t
 | Area | Address | What you can do |
 |---|---|---|
 | Home | `#/home` | See every project as a card with its title, profile, counts and database. Open a project. |
-| Chat | `#/chat/<collection>` | Pick a knowledge base by its title and ask it a question. Read the answer, its citations and the evidence. Each question answers on its own. |
+| Chat | `#/chat/<collection>` | Pick a knowledge base by its title and ask it a question. Read the answer, its citations and the evidence. Each question answers on its own. Chats are stored: see Chat history. |
 | Knowledge Base | `#/knowledge-base/<collection>` | Rename the project title with the pencil. See the database that holds the project (logo and name in the header, name in the project list and in the Sources table). List sources, upload and ingest files, ingest from an approved folder, search, preview and confirm a deletion or a profile change. The upload panel shows the server's per-file limit and refuses a larger file before it is sent. Change the limit in Settings › Workspace. |
 | Studio | `#/studio`, `#/studio/<profile-id>`, `#/studio/<profile-id>/<purpose>` | Open a gallery of profiles. Duplicate a profile, start an empty one, rename it or delete it. Open the Ingest, Search or Answer pipeline of a profile. Add operations, connect ports, save a revision, validate, run and cancel. |
 | Experiments | `#/experiments`, `#/experiments/runs/<run-id>` | Create experiment folders and sub-experiments, issue a bound credential, register and open the notebook editor, and read pipeline runs. A preview that is cut offers Open full output, which shows the redacted value as text and downloads it. |
@@ -406,6 +406,33 @@ The "Delete" button is off while a collection uses the profile. Pick another pro
 The canvas of a built-in profile is read-only. The header shows "Built-in profiles are read-only. Duplicate this profile to change it." You cannot save a revision or run the pipeline.
 
 When a collection uses the profile that you edit, "Save revision" first opens the "Save this revision?" dialog. The dialog names the collections that the save changes. Select "Save revision" in the dialog to save. Select "Cancel" to save nothing. When no collection uses the profile, the save starts with no dialog. After a save, the status line names the collections that now use the new revision.
+
+### Chat history
+
+Chat stores every finished answer in the workspace database, so a reload shows the chat again. Opening a stored chat does not call the model.
+
+1. Ask a question. The first usable answer creates the chat. The title is the first question, cut to 60 characters. The address changes to `#/chat/<collection>/<chat-id>`.
+2. Chat skips an answer with an error status. A Retry that works is saved.
+3. Choose New chat to start an empty chat. The old chat stays in the history list.
+4. On a screen 1024 px wide or more, the history list sits at the left of the transcript. On a narrow screen, choose History to open it.
+
+Group chats in folders. A folder holds chats and no other folder.
+
+1. Choose New folder, type a name and press Enter.
+2. Drag a chat onto a folder to move it. Drag it onto No folder to take it out.
+3. Open Move to on a chat to do the same move with the keyboard or by touch.
+4. Choose Rename on a folder to change its name.
+
+Delete chats and folders. Each delete asks first and says how many chats it removes. A delete is permanent: there is no trash.
+
+1. Choose the bin on a chat to delete one chat.
+2. Choose Select, tick the chats, then choose Delete selected. All the chats go, or none.
+3. Choose the bin on a folder to delete the folder and every chat inside it.
+4. If you delete the open chat, Chat shows a new empty chat.
+
+Only the browser session of `omrg web` reads, changes or deletes chats. A bearer token gets 403. Saved answers hold evidence text from your documents, so keep `workspace.db` private. Deleting a source does not change a saved chat.
+
+Press a citation chip or a `[n]` marker in an answer to open a popover. It shows the evidence text, the lineage of the chunk (source ID, source version, position, page and every chunk ID of a merged citation) and the stored metadata. Choose Open full chunk to read the chunk in the chunk viewer. The index does not record which keys a chunk got from its document, so the popover lists the stored keys without labels. If the source was deleted, the popover keeps the saved evidence text and says the stored chunk is not available.
 
 ### Studio canvas layout
 

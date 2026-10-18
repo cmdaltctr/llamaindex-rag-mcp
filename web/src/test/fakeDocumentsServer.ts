@@ -46,10 +46,25 @@ const DEFAULTS: Record<string, Handler> = {
   "GET /v1/collections": () => COLLECTIONS,
   "GET /v1/collections/documents/documents": () => SOURCES,
   "GET /v1/collections/notes/documents": () => [],
+  "GET /v1/chats": () => ({ status: "ok", folders: [], chats: [] }),
   "GET /v1/profiles": () => ({ status: "ok", profiles: PROFILES }),
   "GET /v1/roots": () => ({ status: "ok", roots: ROOTS }),
   "GET /v1/settings/upload-limit": () => UPLOAD_LIMIT,
 };
+
+/** An exact `METHOD /path` key wins; otherwise a key with `:name` segments matches any one segment. */
+function findHandler(routes: Record<string, Handler>, method: string, path: string): Handler | undefined {
+  const exact = routes[`${method} ${path}`];
+  if (exact !== undefined) return exact;
+  for (const [key, handler] of Object.entries(routes)) {
+    if (!key.includes(":")) continue;
+    const [keyMethod, template] = key.split(" ") as [string, string];
+    if (keyMethod !== method) continue;
+    const pattern = new RegExp(`^${template.replace(/:[A-Za-z]+/g, "[^/]+")}$`);
+    if (pattern.test(path)) return handler;
+  }
+  return undefined;
+}
 
 /**
  * In-memory stand-in for the document routes. Keys are `METHOD /path` without
@@ -64,7 +79,7 @@ export function documentsServer(handlers: Record<string, Handler> = {}) {
     const body = typeof raw === "string" ? (JSON.parse(raw) as Record<string, unknown>) : raw ?? null;
     const call: Call = { method, path, body, headers: new Headers(init?.headers) };
     calls.push(call);
-    const handler = routes[`${method} ${path.split("?")[0]}`];
+    const handler = findHandler(routes, method, path.split("?")[0]!);
     if (handler === undefined) return json({ status: "error", message: `No fake route for ${method} ${path}` }, 404);
     const result = await handler((body ?? {}) as Record<string, unknown>, call);
     return result instanceof Response ? result : json(result);

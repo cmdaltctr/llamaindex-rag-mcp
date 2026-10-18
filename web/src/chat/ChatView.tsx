@@ -1,6 +1,8 @@
 import { useIsMutating } from "@tanstack/react-query";
-import { MessageCircle, Plus } from "lucide-react";
+import { History, MessageCircle, Plus } from "lucide-react";
 import { useState } from "react";
+import type { ChatSummary } from "../api/chats";
+import type { AnswerResult } from "../api/documents";
 import { ANSWER_MUTATION_KEY } from "../api/mutations";
 import { ChunkViewer } from "../components/ChunkViewer";
 import { CollectionGate } from "../components/CollectionGate";
@@ -8,16 +10,12 @@ import { CollectionPicker } from "../components/CollectionPicker";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import { Button } from "../components/ui/button";
+import { ChatHistory } from "./ChatHistory";
 import { useRoute } from "../lib/RouteProvider";
 import { areaById } from "../lib/views";
 import { AssistantTurn } from "./AssistantTurn";
 import { Composer } from "./Composer";
-
-interface Turn {
-  id: number;
-  collection: string;
-  question: string;
-}
+import { useChatSession, type Turn } from "./useChatSession";
 
 /**
  * `#/chat` and `#/chat/<collection>`: sequential question and answer. The
@@ -27,13 +25,17 @@ interface Turn {
 export function ChatView() {
   const { route, navigate } = useRoute();
   const routeCollection = route.area === "chat" ? route.collection : null;
-  const [turns, setTurns] = useState<Turn[]>([]);
+  const routeChatId = route.area === "chat" ? route.chatId : null;
+  const { turns, session, notice, chatId, send, newChat, openChat, onResult } = useChatSession(routeCollection, routeChatId);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [chunk, setChunk] = useState<{ collection: string; chunkId: string } | null>(null);
   const busy = useIsMutating({ mutationKey: ANSWER_MUTATION_KEY }) > 0;
 
-  const select = (name: string) => navigate({ area: "chat", collection: name });
-  const send = (collection: string) => (question: string) =>
-    setTurns((current) => [...current, { id: (current.at(-1)?.id ?? 0) + 1, collection, question }]);
+  const openFromHistory = (chat: ChatSummary) => {
+    void openChat(chat);
+    setHistoryOpen(false);
+  };
+  const select = (name: string) => navigate({ area: "chat", collection: name, chatId });
 
   return (
     <section className="flex flex-1 flex-col">
@@ -41,7 +43,7 @@ export function ChatView() {
         title="Chat"
         summary={areaById("chat").summary}
         actions={
-          <Button variant="outline" onClick={() => setTurns([])}>
+          <Button variant="outline" onClick={newChat}>
             <Plus aria-hidden="true" />
             New chat
           </Button>
@@ -72,15 +74,34 @@ export function ChatView() {
       >
         {(active, collections) => (
           // The column fills the remaining height so the composer can dock at its bottom.
-          <div className="grid flex-1 grid-cols-1 grid-rows-[auto_1fr] gap-6 lg:grid-cols-[minmax(0,1fr)_16rem] lg:grid-rows-[1fr]">
+          <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-[16rem_minmax(0,1fr)_16rem] lg:grid-rows-[1fr]">
+            <aside aria-label="Chat history" className={`flex-col self-start lg:order-none lg:flex ${historyOpen ? "order-first flex" : "hidden"}`}>
+              <ChatHistory activeChatId={chatId} onOpen={openFromHistory} onRemoved={(ids) => (chatId !== null && ids.includes(chatId) ? newChat() : undefined)} />
+            </aside>
             <div data-testid="chat-column" className="mx-auto flex w-full max-w-[48rem] flex-1 flex-col gap-4">
+              <div className="lg:hidden">
+                <Button variant="outline" size="sm" aria-expanded={historyOpen} onClick={() => setHistoryOpen(!historyOpen)}>
+                  <History aria-hidden="true" />
+                  History
+                </Button>
+              </div>
               <p className="text-meta text-muted-foreground">
                 Each question answers from the knowledge base on its own. Earlier turns are not sent with the next question.
               </p>
+              {notice !== null ? (
+                <p role="status" className="text-meta text-muted-foreground">
+                  {notice}
+                </p>
+              ) : null}
               {turns.length > 0 ? (
                 <ol aria-label="Transcript" className="flex flex-col gap-5">
                   {turns.map((turn) => (
-                    <TurnRows key={turn.id} turn={turn} onShowChunk={(collection, chunkId) => setChunk({ collection, chunkId })} />
+                    <TurnRows
+                      key={`${session}-${turn.id}`}
+                      turn={turn}
+                      onResult={(result) => void onResult(turn, result)}
+                      onShowChunk={(collection, chunkId) => setChunk({ collection, chunkId })}
+                    />
                   ))}
                 </ol>
               ) : null}
@@ -98,14 +119,20 @@ export function ChatView() {
   );
 }
 
-function TurnRows({ turn, onShowChunk }: { turn: Turn; onShowChunk: (collection: string, chunkId: string) => void }) {
+interface TurnRowsProps {
+  turn: Turn;
+  onResult: (result: AnswerResult) => void;
+  onShowChunk: (collection: string, chunkId: string) => void;
+}
+
+function TurnRows({ turn, onResult, onShowChunk }: TurnRowsProps) {
   return (
     <>
       <li className="flex flex-col gap-1">
         <p className="text-meta font-medium text-muted-foreground">You</p>
         <p className="whitespace-pre-wrap break-words">{turn.question}</p>
       </li>
-      <AssistantTurn collection={turn.collection} question={turn.question} onShowChunk={onShowChunk} />
+      <AssistantTurn collection={turn.collection} question={turn.question} saved={turn.saved} onResult={onResult} onShowChunk={onShowChunk} />
     </>
   );
 }
