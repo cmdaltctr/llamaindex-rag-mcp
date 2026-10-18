@@ -348,7 +348,10 @@ if not _has_qwen_tokenizer:
 # 5731 executed with the web extra, 5081 without, so 26 more (650).
 # add-chat-history-and-canvas-view-controls: the 14 chat route cases need fastapi (664).
 # Re-measured at the openai_compatible and anthropic providers: 31 route cases (700).
-_WEB_EXTRA_CASES = 700
+# Re-measured 2026-10-18 on a base install with no web extra (floors, Python 3.12): the provider
+# settings routes, Chat settings, llama.cpp server, config folder and key-route cases all need
+# fastapi, so 5771 expected vs 5488 run gave 283 more (983).
+_WEB_EXTRA_CASES = 983
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)
