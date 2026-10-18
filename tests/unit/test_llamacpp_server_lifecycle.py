@@ -7,12 +7,14 @@ own port is never contacted. Fake keys are named constants.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import signal
 import socket
 import subprocess
 import sys
+import time
 from collections.abc import AsyncIterator
 from pathlib import Path
 from types import SimpleNamespace
@@ -503,3 +505,39 @@ def test_a_child_that_leads_its_group_gets_a_group_signal(
     monkeypatch.setattr(lifecycle.os, "kill", lambda pid, sig: pytest.fail("single kill used"))
     LlamacppServer._signal(child, signal.SIGTERM)
     assert group_kills == [(424242, signal.SIGTERM)]
+
+
+async def test_a_status_read_while_a_timed_out_start_is_stopping_never_says_exited(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The page polls the status. Our own SIGTERM must not read as the server exiting.
+
+    After the health timeout the manager signals the hung child and waits for it.
+    The child dies at once, but the wait goes on, so a status read in that window
+    saw a dead process and reported ``exited`` in place of ``timeout``.
+    """
+    rig.program.set_mode("hang")
+    real_terminate = LlamacppServer._terminate
+
+    def slow_terminate(self: LlamacppServer, proc: Any) -> None:
+        real_terminate(self, proc)  # the child is dead from here on
+        time.sleep(0.6)  # the manager is still "stopping" for a while
+
+    monkeypatch.setattr(LlamacppServer, "_terminate", slow_terminate)
+    quick = LlamacppServer(
+        rig.log, health_timeout=0.5, stop_grace=2.0, poll_interval=0.05, popen=subprocess.Popen
+    )
+    await quick.start(rig.config())
+    seen: set[tuple[str, str | None]] = set()
+    deadline = time.monotonic() + 15.0
+    while time.monotonic() < deadline:
+        status = quick.status()
+        seen.add((status.state, status.reason))
+        if status.state == "failed":
+            break
+        await asyncio.sleep(0.01)
+    await asyncio.sleep(0.8)  # let the slow terminate finish and the watcher end
+    seen.add((quick.status().state, quick.status().reason))
+    assert ("failed", "exited") not in seen, seen
+    assert quick.status().reason == "timeout"
+    await quick.shutdown()

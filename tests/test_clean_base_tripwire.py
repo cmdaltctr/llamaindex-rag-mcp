@@ -96,7 +96,8 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # 6460 = 6453 measured with the web extra + 3 tokenizer + 4 ground-truth cases.
 # +2 (2026-10-18): the own-group signal guard tests in test_llamacpp_server_lifecycle.py.
 # +15 (2026-10-18, task 17.9): llama.cpp idle sleep rule, route, settings and lock cases.
-_BASE_EXECUTED = 6477
+# +1 (2026-10-18): status read during a timed-out start never says exited.
+_BASE_EXECUTED = 6478
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.

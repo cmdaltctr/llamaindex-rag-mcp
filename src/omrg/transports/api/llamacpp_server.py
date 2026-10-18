@@ -280,10 +280,12 @@ class LlamacppServer:
                     self._ended(proc, code)
                     return
                 if time.monotonic() >= deadline:
+                    # Detach and report the timeout before signalling. Our own SIGTERM
+                    # kills the child at once, and a status read while we still wait
+                    # for it would otherwise read that death as the server exiting.
+                    self._proc = None
+                    self._fail("timeout")
                     await asyncio.to_thread(self._terminate, proc)
-                    if proc is self._proc:
-                        self._proc = None
-                        self._fail("timeout")
                     return
                 with contextlib.suppress(httpx.HTTPError):
                     if (await client.get(url)).status_code == 200:
