@@ -79,4 +79,4 @@ Line ceiling: `src/omrg/engine.py` has 498 lines and `src/omrg/core/vectordb/lan
 - [x] 10.2 Run `./scripts/local_ci.sh` (parallel fast suite, then the tripwire) and confirm that it passes, including `tests/test_file_size_ceiling.py` and the import-linter contracts.
 - [x] 10.3 Run `cd web && npm test && npx tsc --noEmit && npx eslint .` and confirm that all pass.
 - [x] 10.4 Run `openspec validate add-profile-embedding-model --strict`. Verify that it passes, and that the MODIFIED blocks for `engine-scoped-composition` and `query-embedding-cache` still match the baseline requirement names in `openspec/specs/`.
-- [ ] 10.5 Change the ADR from task 1.1 to Accepted after the user reviews the result. Verify that `docs/adr/ADR_README.md` shows the new status.
+- [x] 10.5 Change the ADR from task 1.1 to Accepted after the user reviews the result. Verify that `docs/adr/ADR_README.md` shows the new status.

@@ -1,7 +1,7 @@
 # ADR-081: Per-Profile Embedding Models
 
 - **Date:** 2026-10-17
-- **Status:** Proposed (set to Accepted after the user reviews the verified change; see task 10.5)
+- **Status:** Accepted (2026-10-18, after review)
 - **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 - **Related:** [ADR-051](051-fail-closed-embedding-write-contract.md) (write contract), [ADR-053](053-embedding-norm-guard.md) (norm guard), [ADR-061](061-engine-scoped-embedding-provider.md) (engine-scoped embedder), [ADR-080](080-profiles-own-pipelines.md) (profiles own pipelines)
 - **Change:** `openspec/changes/add-profile-embedding-model/` (design D1 to D13)
@@ -68,6 +68,10 @@ and the lock, binding refusal and check enforce that in code.
 - Extra keyword plumbing through ingestion and retrieval (default `None`
   keeps current callers unchanged).
 - Changing a model needs a new collection and a new ingest.
+- The stores check vector shape before the model stamp. A write with another
+  model of a different size gets a dimension error, not a model-mismatch
+  error, after the batch is embedded. No row is written. Follow-up: check the
+  stamp first, or check it at the start of ingest.
 
 ### Neutral
 
