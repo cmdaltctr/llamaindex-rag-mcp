@@ -142,16 +142,22 @@ def build_engine(
     base = settings
     if provider_source is not None:
         from .compose_providers import apply_provider_values
+        from .core.profiles.catalogue import uses_ollama_embeddings
 
-        settings = apply_provider_values(base, provider_source())
+        settings = apply_provider_values(
+            base, provider_source(), profiles_ollama=uses_ollama_embeddings(catalogue)
+        )
 
     def current() -> Any:
-        """Return the settings a lazily built resource uses (design D3)."""
+        """Return the settings a new generation freezes (design D3)."""
         if provider_source is None:
             return settings
         from .compose_providers import apply_provider_values
+        from .core.profiles.catalogue import uses_ollama_embeddings
 
-        return apply_provider_values(base, provider_source())
+        return apply_provider_values(
+            base, provider_source(), profiles_ollama=uses_ollama_embeddings(catalogue)
+        )
 
     embed_model = build_embed_model(settings)
     store = build_vector_store(settings)
@@ -191,11 +197,13 @@ def build_engine(
             lambda provider, model: embed_registry.get(provider)(settings, model=model),
         ),
         reranker=reranker,
-        profile_resolver_factory=lambda: build_profile_resolver(
-            current(), store=store, env_overrides=profile_env, catalogue=catalogue
+        # Each factory receives the generation's frozen settings (design D3).
+        snapshot_source=current,
+        profile_resolver_factory=lambda snap: build_profile_resolver(
+            snap, store=store, env_overrides=profile_env, catalogue=catalogue
         ),
-        answer_llm_factory=lambda: _build_answer_llm(current()),
-        verify_llm_factory=lambda block: _build_verify_llm(current(), block),
+        answer_llm_factory=_build_answer_llm,
+        verify_llm_factory=lambda block, snap: _build_verify_llm(snap, block),
         ocr_client=build_ocr_routes(settings),
         redaction=RedactionSecrets(
             chroma_cloud_api_key=settings.chroma_cloud_api_key,

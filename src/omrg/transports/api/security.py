@@ -32,7 +32,7 @@ from typing import Any
 
 from fastapi import HTTPException, Request
 
-from ...core.vectordb.identity import redact_secret
+from ...core.vectordb.identity import _MIN_REDACTED_PREFIX_LEN
 from .origins import parse_extra_origin
 from .secret_set import SecretSet
 
@@ -423,13 +423,15 @@ def redact(text: str, extra: Iterable[str] = ()) -> str:
     text = _BEARER.sub(r"\1***", text)
     text = _COOKIE.sub(r"\1***", text)
     text = _QUERY.sub(r"\1***", text)
-    # Full values first: the shared prefix of two keys must not cut one
-    # of them in half before its whole value is matched.
-    values = [value for value in extra if value]
+    # One combined list, longest first: the prefix shared by two keys must
+    # not cut one of them in half before its longer fragment is matched.
+    values = {value for value in extra if value}
+    pieces = set(values)
     for value in values:
-        text = text.replace(value, "***")
-    for value in values:
-        text = redact_secret(text, value)
+        for length in range(_MIN_REDACTED_PREFIX_LEN, len(value)):
+            pieces.add(value[:length])
+    for piece in sorted(pieces, key=len, reverse=True):
+        text = text.replace(piece, "***")
     return text
 
 

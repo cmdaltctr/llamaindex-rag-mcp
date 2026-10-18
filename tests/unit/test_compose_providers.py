@@ -65,7 +65,7 @@ def test_explicit_defaults_to_the_settings_record() -> None:
     values = ProviderValues({"answer.model": "saved", "answer.provider": "openrouter"})
     result = apply_provider_values(base, values)
     assert result.answer.model == base.answer.model
-    assert result.answer.provider == "openrouter"
+    assert result.answer.provider == base.answer.provider
 
 
 def test_blank_saved_value_is_ignored() -> None:
@@ -117,3 +117,53 @@ def test_provider_effective_settings_applies_the_source_to_the_resolved_settings
     )
     assert effective.answer.model == "saved-model"
     assert effective.ollama_base_url == base.ollama_base_url
+
+
+def test_chat_choice_locks_as_one_unit_when_only_the_model_is_explicit() -> None:
+    base = make_settings(embed_provider="openrouter")
+    explicit = frozenset({"answer.model"})
+    assert locked_fields(base, explicit) == {
+        "answer.model": "environment",
+        "answer.provider": "environment",
+    }
+    values = ProviderValues({"answer.provider": "openrouter", "answer.model": "saved"})
+    result = apply_provider_values(base, values, explicit)
+    assert (result.answer.provider, result.answer.model) == (
+        base.answer.provider,
+        base.answer.model,
+    )
+
+
+def test_chat_choice_locks_as_one_unit_when_only_the_provider_is_explicit() -> None:
+    base = make_settings(embed_provider="openrouter")
+    explicit = frozenset({"answer.provider"})
+    assert set(locked_fields(base, explicit)) == {"answer.provider", "answer.model"}
+
+
+class _Catalogue:
+    def __init__(self, *records: dict[str, Any]) -> None:
+        self.records = list(records)
+
+    def list_profiles(self) -> list[dict[str, Any]]:
+        return self.records
+
+
+def test_profiles_use_ollama_reads_the_catalogue() -> None:
+    from omrg.core.profiles.catalogue import uses_ollama_embeddings as profiles_use_ollama
+
+    assert profiles_use_ollama(None) is False
+    assert profiles_use_ollama(_Catalogue({"profile_id": "a"})) is False
+    other = {"embed_provider": "openrouter", "embed_model": "m"}
+    assert profiles_use_ollama(_Catalogue(other)) is False
+    mine = {"embed_provider": "ollama", "embed_model": "nomic"}
+    assert profiles_use_ollama(_Catalogue(other, mine)) is True
+
+
+def test_ollama_address_locks_when_a_profile_uses_ollama_embeddings() -> None:
+    base = make_settings(embed_provider="openrouter")
+    assert locked_fields(base, frozenset(), profiles_ollama=True) == {
+        "ollama_base_url": "embeddings"
+    }
+    values = ProviderValues({"ollama_base_url": "http://other:11434"})
+    result = apply_provider_values(base, values, frozenset(), profiles_ollama=True)
+    assert result.ollama_base_url == base.ollama_base_url

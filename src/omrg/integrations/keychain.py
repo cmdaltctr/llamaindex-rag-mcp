@@ -33,6 +33,9 @@ STATE_UNREADABLE = "keychain-unreadable"
 
 _T = TypeVar("_T")
 
+#: Set once the keyring backend was chosen with the ``recommended`` limit.
+_BACKEND_READY = False
+
 
 class KeychainUnavailableError(RuntimeError):
     """No usable system keychain, or a keychain call failed or timed out."""
@@ -86,7 +89,7 @@ def is_usable_backend(backend: Any) -> bool:
             members = list(backend.backends)
         except Exception:
             return False
-        return any(is_usable_backend(member) for member in members)
+        return bool(members) and all(is_usable_backend(member) for member in members)
     try:
         return float(backend.priority) >= 1
     except Exception:
@@ -118,6 +121,21 @@ def _run_with_limit(call: Callable[[], _T], timeout: float) -> _T:
     return box["value"]  # type: ignore[no-any-return]
 
 
+def _current_backend() -> Any:
+    """Choose the backend once (priority 1 or higher), then return it.
+
+    Runs inside the worker thread: backend detection can block on a prompt.
+    """
+    global _BACKEND_READY
+    import keyring
+    import keyring.core
+
+    if not _BACKEND_READY:
+        keyring.core.init_backend(limit=keyring.core.recommended)
+        _BACKEND_READY = True
+    return keyring.get_keyring()
+
+
 class KeychainStore:
     """Saves, reads and deletes provider keys in the system keychain.
 
@@ -141,9 +159,7 @@ class KeychainStore:
     def available(self) -> bool:
         """Whether a usable system keychain exists."""
         try:
-            import keyring
-
-            return is_usable_backend(keyring.get_keyring())
+            return _run_with_limit(lambda: is_usable_backend(_current_backend()), self.timeout)
         except Exception:
             return False
 

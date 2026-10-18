@@ -82,7 +82,9 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # the 14 route cases need the web extra.
 # Two layout direction cases (GraphLayout model) add 2 more (5775 -> 5777 with the web extra).
 # Five chat route error-branch cases (codecov patch gap) add 5 more (5784 -> 5789).
-_BASE_EXECUTED = 5789
+# Re-baselined at add-llm-provider-settings (2026-10-18): descriptor, value-source, keychain,
+# engine-provider, redaction, connection and Chat settings route cases add 261 (5789 -> 6050).
+_BASE_EXECUTED = 6050
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.

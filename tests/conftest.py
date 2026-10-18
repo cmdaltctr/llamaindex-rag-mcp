@@ -399,6 +399,11 @@ def _no_real_keychain(monkeypatch: pytest.MonkeyPatch) -> None:
     except ImportError:
         return
     monkeypatch.setattr(keyring.core, "_keyring_backend", fail.Keyring())
+    # The adapter detects a backend once per process; that would replace the
+    # fail backend with the real keychain.
+    from omrg.integrations import keychain
+
+    monkeypatch.setattr(keychain, "_BACKEND_READY", True)
 
 
 @pytest.fixture(autouse=True)

@@ -119,3 +119,34 @@ def test_provider_key_builds_the_allowed_key() -> None:
     from omrg.integrations.workspace_sqlite.settings import provider_key
 
     assert provider_key("openrouter", "key_saved_at") == "provider.openrouter.key_saved_at"
+
+
+@pytest.mark.parametrize(
+    "field", ["api_key", "token", "password", "secret", "authorization", "key"]
+)
+def test_a_secret_looking_field_is_never_a_known_key(
+    settings: WorkspaceSettings, field: str
+) -> None:
+    from omrg.integrations.workspace_sqlite.settings import is_known_key
+
+    assert is_known_key(f"provider.openrouter.{field}") is False
+    with pytest.raises(UnknownSettingError):
+        provider_key("openrouter", field)
+    with pytest.raises(UnknownSettingError):
+        settings.set(f"provider.openrouter.{field}", "sk-or-v1-FAKE")
+
+
+def test_stored_field_ids_match_the_provider_descriptors() -> None:
+    """Every url field a descriptor declares is storable; no secret field is."""
+    from omrg.core.providers.llm.registry import describe_all
+    from omrg.integrations.workspace_sqlite.settings import (
+        KEY_SAVED_AT,
+        PROVIDER_FIELD_IDS,
+    )
+
+    descriptors = describe_all()
+    assert descriptors
+    url_ids = {f.id for d in descriptors.values() for f in d.fields if f.kind == "url"}
+    secret_ids = {f.id for d in descriptors.values() for f in d.fields if f.kind == "secret"}
+    assert PROVIDER_FIELD_IDS == url_ids | {KEY_SAVED_AT}
+    assert not secret_ids & PROVIDER_FIELD_IDS

@@ -17,6 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any
 
+from .core.profiles.catalogue import uses_ollama_embeddings
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -39,6 +41,9 @@ class Generation:
         answer_llm: The answer model, built on first use and then kept.
         answer_llm_factory: Builds the answer model, or ``None``.
         verify_llm_factory: Builds the claim-verification judge, or ``None``.
+        snapshot_source: Returns the provider settings a new generation
+            freezes, or ``None`` when factories take no snapshot.
+        raw_factories: The factories as given, before binding to a snapshot.
     """
 
     effective: EffectiveSettings
@@ -47,6 +52,39 @@ class Generation:
     answer_llm: Any = None
     answer_llm_factory: Callable[[], Any] | None = None
     verify_llm_factory: Callable[[Any], Any] | None = None
+    snapshot_source: Callable[[], Any] | None = None
+    raw_factories: tuple[Any, Any, Any] = (None, None, None)
+
+    @classmethod
+    def start(
+        cls,
+        effective: EffectiveSettings,
+        *,
+        snapshot_source: Callable[[], Any] | None = None,
+        resolver: ProfileResolver | None = None,
+        raw_factories: tuple[Any, Any, Any] = (None, None, None),
+    ) -> Generation:
+        """Create a generation; with a *snapshot_source*, freeze one snapshot now.
+
+        Each factory then receives the snapshot as its last argument, so a
+        generation that builds late (after a newer one took over) still uses
+        the values it was created with.
+        """
+        resolver_factory, answer_factory, verify_factory = raw_factories
+        if snapshot_source is not None:
+            snapshot = snapshot_source()
+            resolver_factory = _bind(resolver_factory, snapshot)
+            answer_factory = _bind(answer_factory, snapshot)
+            verify_factory = _bind(verify_factory, snapshot)
+        return cls(
+            effective,
+            resolver=resolver,
+            resolver_factory=resolver_factory,
+            answer_llm_factory=answer_factory,
+            verify_llm_factory=verify_factory,
+            snapshot_source=snapshot_source,
+            raw_factories=raw_factories,
+        )
 
     def get_answer_llm(self) -> Any:
         """Build the answer LLM on first use and keep it."""
@@ -61,6 +99,13 @@ class Generation:
         return self.resolver
 
 
+def _bind(factory: Callable[..., Any] | None, snapshot: Any) -> Callable[..., Any] | None:
+    """Return *factory* with *snapshot* appended to its arguments, or ``None``."""
+    if factory is None:
+        return None
+    return lambda *args: factory(*args, snapshot)
+
+
 def _delegate(name: str) -> property:
     """Return a property that reads and writes *name* on the current generation."""
     return property(
@@ -69,11 +114,14 @@ def _delegate(name: str) -> property:
     )
 
 
-def changed_settings(old: EffectiveSettings, new: EffectiveSettings) -> list[str]:
+def changed_settings(
+    old: EffectiveSettings, new: EffectiveSettings, *, profiles_ollama: bool = False
+) -> list[str]:
     """Return the names of settings that differ beyond the editable provider values.
 
     The Ollama address counts as different while embeddings use Ollama,
-    because the running embedder keeps the address it was built with.
+    because the running embedder keeps the address it was built with. The
+    same holds when any profile selects Ollama embeddings (*profiles_ollama*).
     Names only; no value leaves this function.
     """
     from .config import _resolve_effective_embed_provider
@@ -84,7 +132,7 @@ def changed_settings(old: EffectiveSettings, new: EffectiveSettings) -> list[str
     for key in _EDITABLE_ANSWER:
         old_values["answer"].pop(key), new_values["answer"].pop(key)
     names = [key for key in old_values if old_values[key] != new_values[key]]
-    uses_ollama = "ollama" in (
+    uses_ollama = profiles_ollama or "ollama" in (
         _resolve_effective_embed_provider(old),
         _resolve_effective_embed_provider(new),
     )
@@ -104,9 +152,27 @@ class EngineProviders:
     _answer_llm_factory = _delegate("answer_llm_factory")
     _verify_llm_factory = _delegate("verify_llm_factory")
 
-    def _init_providers(self, effective: EffectiveSettings, **resources: Any) -> None:
+    def _init_providers(
+        self,
+        effective: EffectiveSettings,
+        *,
+        resolver: Any = None,
+        resolver_factory: Any = None,
+        answer_llm_factory: Any = None,
+        verify_llm_factory: Any = None,
+        snapshot_source: Callable[[], Any] | None = None,
+    ) -> None:
         """Start the first generation from the constructor arguments."""
-        self._gen = Generation(effective, **resources)
+        self._gen = Generation.start(
+            effective,
+            snapshot_source=snapshot_source,
+            resolver=resolver,
+            raw_factories=(resolver_factory, answer_llm_factory, verify_llm_factory),
+        )
+
+    def profile_catalogue(self) -> Any:
+        """Return the user-profile catalogue, or ``None`` when there is none."""
+        return getattr(self._resolver(), "catalogue", None)
 
     def _get_answer_llm(self) -> Any:
         """Build the answer LLM on first use and keep it."""
@@ -136,7 +202,11 @@ class EngineProviders:
             RuntimeError: The Engine is closed.
         """
         self._check_open()  # type: ignore[attr-defined]
-        names = changed_settings(self._gen.effective, effective)
+        names = changed_settings(
+            self._gen.effective,
+            effective,
+            profiles_ollama=uses_ollama_embeddings(self.profile_catalogue()),
+        )
         if names:
             raise ValueError(
                 "Only LLM provider addresses, keys and the answer provider and model can "
@@ -144,15 +214,17 @@ class EngineProviders:
                 f"These differ: {', '.join(names)}."
             )
         old = self._gen
-        self._gen = Generation(
+        self._gen = Generation.start(
             effective,
+            snapshot_source=old.snapshot_source,
             resolver=None if old.resolver_factory else old.resolver,
-            resolver_factory=old.resolver_factory,
-            answer_llm_factory=old.answer_llm_factory,
-            verify_llm_factory=old.verify_llm_factory,
+            raw_factories=old.raw_factories,
         )
+        held = self._redaction  # type: ignore[attr-defined]
+        retired = held.retired_openrouter_keys
+        if held.openrouter_api_key and held.openrouter_api_key not in retired:
+            retired = (*retired, held.openrouter_api_key)
         self._redaction = replace(  # type: ignore[attr-defined]
-            self._redaction,  # type: ignore[attr-defined]
-            openrouter_api_key=effective.openrouter_api_key,
+            held, openrouter_api_key=effective.openrouter_api_key, retired_openrouter_keys=retired
         )
         self._pipelines.reset_judges()  # type: ignore[attr-defined]

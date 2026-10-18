@@ -76,3 +76,28 @@ def test_env_example_leaves_the_chat_address_open_and_the_default_unchanged() ->
     assert "# LLAMACPP_CHAT_URL=http://localhost:8081/v1" in lines
     assert not any(line.startswith("LLAMACPP_CHAT_URL=") for line in lines)
     assert Settings.model_fields["llamacpp_chat_url"].default == "http://localhost:8081/v1"
+
+
+def test_a_value_only_in_defaults_yaml_or_a_profile_is_a_default(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Task 3.1: YAML layers never lock a field; only env and ``.env`` do."""
+    from omrg.config import sources
+
+    monkeypatch.setattr(
+        sources._YamlDefaultsSource,
+        "_load_yaml",
+        lambda self: {
+            "ollama_base_url": "http://yaml-defaults:1",
+            "answer": {"provider": "ollama", "model": "yaml-model"},
+        },
+    )
+    monkeypatch.setattr(
+        sources._ProfileYamlSettingsSource,
+        "_load_profile",
+        lambda self: {"llamacpp_chat_url": "http://profile:2/v1"},
+    )
+    settings = Settings(_env_file=tmp_path / "absent.env")
+    assert settings.ollama_base_url == "http://yaml-defaults:1"
+    assert settings.llamacpp_chat_url == "http://profile:2/v1"
+    assert settings.provider_explicit == frozenset()

@@ -108,37 +108,102 @@ def test_graph_judge_cache_starts_empty_after_the_change(effective_settings) -> 
     assert judge.calls == 2
 
 
+class _Box:
+    """Stands for the saved provider values: the source the composition root reads."""
+
+    def __init__(self, value: str) -> None:
+        self.value = value
+
+    def snapshot(self) -> str:
+        return self.value
+
+
+class _ModelNamed(FakeLLM):
+    def __init__(self, name: str) -> None:
+        super().__init__()
+        self.name = name
+
+
+class _SlowNamed(SlowLLM):
+    def __init__(self, name: str) -> None:
+        super().__init__()
+        self.name = name
+
+
 def test_answer_in_flight_keeps_the_old_model_and_the_next_uses_the_new(
     effective_settings,
 ) -> None:
-    old, new = SlowLLM(), FakeLLM()
-    models = iter([old, new])
-    engine = build_engine(effective_settings(), answer_llm_factory=lambda: next(models))
+    box = _Box("old")
+    built: dict[str, Any] = {}
+
+    def make(snapshot: str) -> Any:
+        built[snapshot] = _SlowNamed(snapshot) if snapshot == "old" else _ModelNamed(snapshot)
+        return built[snapshot]
+
+    engine = build_engine(
+        effective_settings(), answer_llm_factory=make, snapshot_source=box.snapshot
+    )
 
     async def run() -> tuple[Any, Any]:
         running = asyncio.create_task(engine.run_pipeline(answer_graph(), inputs={"query": "text"}))
-        await asyncio.wait_for(old.started.wait(), timeout=10)
+        while "old" not in built:
+            await asyncio.sleep(0)
+        await asyncio.wait_for(built["old"].started.wait(), timeout=10)
+        box.value = "new"
         engine.use_provider_settings(effective_settings(openrouter_api_key="new-key"))
-        old.release.set()
+        built["old"].release.set()
         finished = await running
         later = await engine.run_pipeline(answer_graph(), inputs={"query": "text"})
         return finished, later
 
     finished, later = asyncio.run(run())
     assert finished.status == RunStatus.SUCCEEDED and later.status == RunStatus.SUCCEEDED
-    assert len(old.prompts) == 1
-    assert len(new.prompts) == 1
+    assert len(built["old"].prompts) == 1
+    assert len(built["new"].prompts) == 1
 
 
-def test_graph_host_captured_before_the_change_keeps_its_model(effective_settings) -> None:
-    old, new = FakeLLM(), FakeLLM()
-    models = iter([old, new])
-    engine = build_engine(effective_settings(), answer_llm_factory=lambda: next(models))
+def test_generation_that_builds_after_the_swap_still_uses_its_own_snapshot(
+    effective_settings,
+) -> None:
+    box = _Box("old")
+    engine = build_engine(
+        effective_settings(),
+        answer_llm_factory=lambda snapshot: _ModelNamed(snapshot),
+        snapshot_source=box.snapshot,
+    )
     host = engine._graph_host(None)
-    assert host.resources["answer_llm"]() is old
+    box.value = "new"
     engine.use_provider_settings(effective_settings(openrouter_api_key="new-key"))
-    assert host.resources["answer_llm"]() is old
-    assert engine._graph_host(None).resources["answer_llm"]() is new
+    # The old generation builds its model only now, after the swap.
+    assert host.resources["answer_llm"]().name == "old"
+    assert engine._graph_host(None).resources["answer_llm"]().name == "new"
+
+
+def test_judge_and_resolver_of_an_old_generation_use_its_snapshot(effective_settings) -> None:
+    box = _Box("old")
+    seen: list[tuple[str, str]] = []
+
+    def judge(block: Any, snapshot: str) -> Any:
+        seen.append(("judge", snapshot))
+        return object()
+
+    def resolver(snapshot: str) -> Any:
+        seen.append(("resolver", snapshot))
+        return FakeResolver({"documents": effective_settings()})
+
+    engine = build_engine(
+        effective_settings(),
+        verify_llm_factory=judge,
+        profile_resolver_factory=resolver,
+        snapshot_source=box.snapshot,
+    )
+    old_gen = engine._gen
+    host = engine._graph_host(None)
+    box.value = "new"
+    engine.use_provider_settings(effective_settings(openrouter_api_key="new-key"))
+    host.resources["verify_llm"](effective_settings().answer)
+    old_gen.get_resolver()
+    assert sorted(seen) == [("judge", "old"), ("resolver", "old")]
 
 
 @pytest.mark.parametrize(
@@ -209,6 +274,13 @@ def test_redaction_follows_the_new_key(effective_settings) -> None:
     )
     engine.use_provider_settings(effective_settings(openrouter_api_key="new-key-0123456789"))
     assert "new-key-0123456789" not in engine.redact("fail new-key-0123456789")
+    # A call in flight with the old key can still fail with it in the text.
+    assert "old-key-0123456789" not in engine.redact("fail old-key-0123456789")
+    third_key = "third-key-0123456789"  # gitleaks:allow
+    engine.use_provider_settings(effective_settings(openrouter_api_key=third_key))
+    assert "old-key-0123456789" not in engine.redact("fail old-key-0123456789")
+    assert "new-key-0123456789" not in engine.redact("fail new-key-0123456789")
+    assert "third-key-0123456789" not in engine.redact("fail third-key-0123456789")
 
 
 def test_closed_engine_refuses_the_change(effective_settings) -> None:
@@ -216,3 +288,43 @@ def test_closed_engine_refuses_the_change(effective_settings) -> None:
     engine.close()
     with pytest.raises(RuntimeError, match="closed"):
         engine.use_provider_settings(effective_settings())
+
+
+class _ProfileCatalogue:
+    def __init__(self, provider: str) -> None:
+        self.provider = provider
+
+    def list_profiles(self) -> list[dict[str, Any]]:
+        return [{"profile_id": "p", "embed_provider": self.provider, "embed_model": "m"}]
+
+
+class _ResolverWithCatalogue(FakeResolver):
+    def __init__(self, provider: str) -> None:
+        super().__init__({})
+        self.catalogue = _ProfileCatalogue(provider)
+
+
+def test_ollama_address_change_raises_when_a_profile_uses_ollama_embeddings(
+    effective_settings,
+) -> None:
+    engine = build_engine(
+        effective_settings(embed_provider="openrouter"),
+        profile_resolver=_ResolverWithCatalogue("ollama"),
+    )
+    before = engine._gen.effective
+    with pytest.raises(ValueError, match="ollama_base_url"):
+        engine.use_provider_settings(
+            effective_settings(embed_provider="openrouter", ollama_base_url="http://other:11434")
+        )
+    assert engine._gen.effective is before
+
+
+def test_ollama_address_change_is_allowed_when_no_profile_uses_ollama(effective_settings) -> None:
+    engine = build_engine(
+        effective_settings(embed_provider="openrouter"),
+        profile_resolver=_ResolverWithCatalogue("openrouter"),
+    )
+    engine.use_provider_settings(
+        effective_settings(embed_provider="openrouter", ollama_base_url="http://other:11434")
+    )
+    assert engine._gen.effective.ollama_base_url == "http://other:11434"

@@ -46,6 +46,17 @@ class ProfileCatalogue(Protocol):
         ...
 
 
+def uses_ollama_embeddings(catalogue: ProfileCatalogue | None) -> bool:
+    """Return whether any usable profile in *catalogue* selects Ollama embeddings.
+
+    Args:
+        catalogue: The catalogue, or ``None`` when the process has no workspace.
+    """
+    if catalogue is None:
+        return False
+    return any(record.get("embed_provider") == "ollama" for record in catalogue.list_profiles())
+
+
 @dataclass(frozen=True)
 class ProfileBinding:
     """The profile a collection follows.

@@ -484,3 +484,32 @@ def test_connection_targets_carry_the_key_server_side_only(
     assert build_connection_targets(make_settings())["openrouter"].urls == ()
     blank = build_connection_targets(make_settings(ollama_base_url="  "))
     assert blank["ollama"].urls == ()
+
+
+class _OllamaProfileCatalogue:
+    def list_profiles(self) -> list[dict[str, Any]]:
+        return [{"profile_id": "p", "embed_provider": "ollama", "embed_model": "nomic"}]
+
+
+def test_ollama_address_is_locked_when_a_profile_uses_ollama_embeddings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = make_settings(embed_provider="openrouter")
+    monkeypatch.setattr(compose, "get_settings", lambda: settings)
+    open_field = field(by_provider(compose.connection_summary())["ollama"], "base_url")
+    assert open_field["locked"] is False
+    result = compose.connection_summary(catalogue=_OllamaProfileCatalogue())
+    locked = field(by_provider(result)["ollama"], "base_url")
+    assert locked["locked"] is True
+    assert "Embeddings use this address" in locked["lock_reason"]
+
+
+def test_a_saved_ollama_address_does_not_show_while_a_profile_uses_ollama_embeddings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = make_settings(embed_provider="openrouter")
+    monkeypatch.setattr(compose, "get_settings", lambda: settings)
+    values = ProviderValues({"ollama_base_url": "http://saved:11434"})
+    result = compose.connection_summary(values, _OllamaProfileCatalogue())
+    shown = field(by_provider(result)["ollama"], "base_url")
+    assert shown["value"] == settings.ollama_base_url

@@ -54,24 +54,40 @@ class ProviderValues:
         return f"ProviderValues(fields={sorted(self.values)})"
 
 
-def locked_fields(settings: Settings, explicit: frozenset[str]) -> dict[str, str]:
+#: The Chat choice locks as one unit (design D2).
+_CHAT_FIELDS = ("answer.provider", "answer.model")
+
+
+def locked_fields(
+    settings: Settings, explicit: frozenset[str], *, profiles_ollama: bool = False
+) -> dict[str, str]:
     """Return the locked editable fields and why each is locked.
 
     Args:
         settings: Settings as the environment and ``.env`` resolved them.
-        explicit: Fields that the environment or ``.env`` set.
+        explicit: Fields that the environment or ``.env`` set. The Chat
+            provider and model lock together when either is set.
+        profiles_ollama: Whether any profile selects Ollama embeddings
+            (see ``uses_ollama_embeddings``).
 
     Returns:
         Field path to reason: ``environment`` or ``embeddings``.
     """
+    if any(path in explicit for path in _CHAT_FIELDS):
+        explicit = explicit | frozenset(_CHAT_FIELDS)
     locked = {path: "environment" for path in PROVIDER_FIELDS if path in explicit}
-    if "ollama_base_url" not in locked and _resolve_effective_embed_provider(settings) == "ollama":
+    uses_ollama = profiles_ollama or _resolve_effective_embed_provider(settings) == "ollama"
+    if "ollama_base_url" not in locked and uses_ollama:
         locked["ollama_base_url"] = "embeddings"
     return locked
 
 
 def apply_provider_values(
-    settings: Settings, values: ProviderValues, explicit: frozenset[str] | None = None
+    settings: Settings,
+    values: ProviderValues,
+    explicit: frozenset[str] | None = None,
+    *,
+    profiles_ollama: bool = False,
 ) -> Settings:
     """Return a copy of *settings* with each unlocked saved value in place.
 
@@ -80,11 +96,16 @@ def apply_provider_values(
         values: Saved values.
         explicit: Fields that the environment or ``.env`` set. ``None``
             reads ``settings.provider_explicit``.
+        profiles_ollama: Whether any profile selects Ollama embeddings.
 
     Returns:
         A new ``Settings``. The input is not changed.
     """
-    locked = locked_fields(settings, settings.provider_explicit if explicit is None else explicit)
+    locked = locked_fields(
+        settings,
+        settings.provider_explicit if explicit is None else explicit,
+        profiles_ollama=profiles_ollama,
+    )
     top: dict[str, str] = {}
     answer: dict[str, str] = {}
     for path in PROVIDER_FIELDS:

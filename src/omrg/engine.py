@@ -88,6 +88,7 @@ class Engine(EngineProviders):
         ocr_client: Any = None,
         redaction: RedactionSecrets | None = None,
         embedders: EngineEmbedders | None = None,
+        snapshot_source: Callable[[], Any] | None = None,
     ) -> None:
         """Own already-composed dependencies; construct nothing.
 
@@ -115,6 +116,10 @@ class Engine(EngineProviders):
             embedders: Embedders by (provider, model) for collections whose
                 profile names a model (ADR-081). ``None`` keeps only
                 *embed_model*.
+            snapshot_source: Optional callable returning the provider
+                settings a generation freezes when it is created. With it,
+                each factory above receives that snapshot as its last
+                argument (the verify factory gets ``(block, snapshot)``).
         """
         self._store = store
         self._embed_model = embed_model
@@ -126,6 +131,7 @@ class Engine(EngineProviders):
             resolver_factory=profile_resolver_factory,
             answer_llm_factory=answer_llm_factory,
             verify_llm_factory=verify_llm_factory,
+            snapshot_source=snapshot_source,
         )
         self._ocr_client = ocr_client
         self._redaction = redaction or RedactionSecrets()

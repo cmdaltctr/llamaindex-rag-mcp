@@ -51,6 +51,12 @@ class MemoryBackend(KeyringBackend):
         self.data.pop((service, username), None)
 
 
+@pytest.fixture(autouse=True)
+def backend_already_chosen(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Skip the one-time backend detection, which would replace the fake."""
+    monkeypatch.setattr(keychain, "_BACKEND_READY", True)
+
+
 @pytest.fixture
 def backend() -> Iterator[MemoryBackend]:
     previous = keyring.get_keyring()
@@ -182,19 +188,85 @@ def test_an_unusable_backend_reports_unavailable_and_saves_nothing(
 def test_a_forced_plaintext_backend_is_refused(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """``PYTHON_KEYRING_BACKEND`` can force a backend; it is still refused."""
+    """``PYTHON_KEYRING_BACKEND`` really selects the backend; it is still refused."""
+    import types
+
+    module = types.ModuleType("keyrings.alt.fakefile")
+    module.PlaintextKeyring = PlaintextFile  # type: ignore[attr-defined]
+    for name in ("keyrings", "keyrings.alt"):
+        monkeypatch.setitem(sys.modules, name, types.ModuleType(name))
+    monkeypatch.setitem(sys.modules, "keyrings.alt.fakefile", module)
+    monkeypatch.setattr(PlaintextFile, "__module__", "keyrings.alt.fakefile")
+    monkeypatch.setenv("PYTHON_KEYRING_BACKEND", "keyrings.alt.fakefile.PlaintextKeyring")
+    monkeypatch.setattr(keychain, "_BACKEND_READY", False)
     previous = keyring.get_keyring()
-    fake = PlaintextFile()
-    monkeypatch.setenv("PYTHON_KEYRING_BACKEND", "keyrings.alt.file.PlaintextKeyring")
-    keyring.set_keyring(fake)
     try:
         store = KeychainStore(timeout=2.0)
         assert store.available is False
+        assert type(keyring.get_keyring()) is PlaintextFile  # the variable chose it
         with pytest.raises(KeychainUnavailableError):
             store.save("openrouter", KEY)
-        assert fake.data == {}
+        assert keyring.get_keyring().data == {}  # type: ignore[attr-defined]
     finally:
         keyring.set_keyring(previous)
+
+
+def test_the_backend_is_chosen_once_with_the_recommended_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import keyring.core
+
+    calls: list[object] = []
+    fake = MemoryBackend()
+
+    def record(limit: object = None) -> None:
+        calls.append(limit)
+        keyring.set_keyring(fake)
+
+    previous = keyring.get_keyring()
+    monkeypatch.setattr(keyring.core, "init_backend", record)
+    monkeypatch.setattr(keychain, "_BACKEND_READY", False)
+    try:
+        store = KeychainStore(timeout=2.0)
+        assert store.available is True
+        assert store.available is True
+    finally:
+        keyring.set_keyring(previous)
+    assert calls == [keyring.core.recommended]
+
+
+class _Chain(ChainerBackend):
+    members: tuple[KeyringBackend, ...] = ()
+
+    @property  # type: ignore[override]
+    def backends(self) -> tuple[KeyringBackend, ...]:  # type: ignore[override]
+        return self.members
+
+
+@pytest.mark.parametrize("weak", [LowPriority, PlaintextFile])
+def test_a_chainer_is_usable_only_when_every_member_is(weak: type[KeyringBackend]) -> None:
+    mixed = _Chain()
+    mixed.members = (MemoryBackend(), weak())
+    assert keychain.is_usable_backend(mixed) is False
+    good = _Chain()
+    good.members = (MemoryBackend(), MemoryBackend())
+    assert keychain.is_usable_backend(good) is True
+
+
+def test_a_hanging_backend_lookup_does_not_block_the_caller(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def hang() -> KeyringBackend:
+        time.sleep(1.5)
+        return MemoryBackend()
+
+    monkeypatch.setattr(keyring, "get_keyring", hang)
+    store = KeychainStore(timeout=0.05)
+    started = time.monotonic()
+    assert store.available is False
+    assert store.read("openrouter") is None
+    assert store.state("openrouter", saved=True) == "keychain-unreadable"
+    assert time.monotonic() - started < 1.0
 
 
 def test_a_module_under_keyrings_alt_counts_as_plaintext() -> None:

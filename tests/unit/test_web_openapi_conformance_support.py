@@ -131,11 +131,9 @@ FAMILIES: dict[str, frozenset[str]] = {
             "saveProviderKey",
             "removeProviderKey",
             "listProviderModels",
-            "getChatSettings",
-            "setChatSettings",
-            "testChatModel",
         }
     ),
+    "chat_settings": frozenset({"getChatSettings", "setChatSettings", "testChatModel"}),
     "logs": frozenset({"getLogs", "streamLogs"}),
     "experiments": frozenset(
         {

@@ -22,6 +22,7 @@ from typing import Any
 
 from .compose_providers import ProviderValues, locked_fields
 from .config import Settings, _resolve_effective_embed_provider
+from .core.profiles.catalogue import uses_ollama_embeddings
 from .core.providers.llm import registry
 from .core.providers.llm.connection import ConnectionDescriptor, ConnectionField, ConnectionTarget
 
@@ -175,9 +176,13 @@ def _secret_field(
 
 
 def _fields(
-    provider: str, descriptor: ConnectionDescriptor, settings: Settings, values: ProviderValues
+    provider: str,
+    descriptor: ConnectionDescriptor,
+    settings: Settings,
+    values: ProviderValues,
+    profiles_ollama: bool = False,
 ) -> list[dict[str, Any]]:
-    locks = locked_fields(settings, settings.provider_explicit)
+    locks = locked_fields(settings, settings.provider_explicit, profiles_ollama=profiles_ollama)
     return [
         _secret_field(spec, provider, settings, values, locks)
         if spec.kind == "secret"
@@ -187,7 +192,10 @@ def _fields(
 
 
 def build_connection_summary(
-    settings: Settings, config_dir: Path, values: ProviderValues | None = None
+    settings: Settings,
+    config_dir: Path,
+    values: ProviderValues | None = None,
+    catalogue: Any = None,
 ) -> dict[str, Any]:
     """Return the provider summary for ``GET /v1/connections``.
 
@@ -196,6 +204,8 @@ def build_connection_summary(
         config_dir: The working directory whose ``.env`` the settings read.
         values: Saved values and keychain facts. ``None`` means none saved
             and no keychain.
+        catalogue: The profile catalogue, or ``None``. The Ollama address
+            locks while any profile in it selects Ollama embeddings.
 
     Returns:
         ``{"config_dir": str, "keychain": "available" | "unavailable",
@@ -205,6 +215,7 @@ def build_connection_summary(
         ``roles``. No key value is included.
     """
     values = values or ProviderValues()
+    profiles_ollama = uses_ollama_embeddings(catalogue)
     by_role = _role_providers(settings)
     entries = []
     for provider, descriptor in registry.describe_all().items():
@@ -220,7 +231,7 @@ def build_connection_summary(
                     if installed or descriptor.extra is None
                     else f"uv sync --extra {descriptor.extra}"
                 ),
-                "fields": _fields(provider, descriptor, settings, values),
+                "fields": _fields(provider, descriptor, settings, values, profiles_ollama),
                 "read_only": [
                     {"label": row.label, "value": row.value}
                     for row in descriptor.read_only(settings)

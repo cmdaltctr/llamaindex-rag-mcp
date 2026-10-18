@@ -95,7 +95,9 @@ def redaction_values() -> dict[str, str]:
     }
 
 
-def connection_summary(values: ProviderValues | None = None) -> dict[str, Any]:
+def connection_summary(
+    values: ProviderValues | None = None, catalogue: Any = None
+) -> dict[str, Any]:
     """Return the provider connection summary for ``GET /v1/connections``.
 
     Composition-root surface: the web transport may not call
@@ -104,13 +106,18 @@ def connection_summary(values: ProviderValues | None = None) -> dict[str, Any]:
     Args:
         values: Saved provider values and keychain facts from the web
             runtime. ``None`` shows the environment's settings only.
+        catalogue: The profile catalogue. The Ollama address is locked while
+            any profile in it selects Ollama embeddings (design D4).
     """
     from .compose_connections import build_connection_summary
+    from .core.profiles.catalogue import uses_ollama_embeddings
 
     settings = get_settings()
     if values is not None:
-        settings = apply_provider_values(settings, values)
-    return build_connection_summary(settings, Path.cwd(), values)
+        settings = apply_provider_values(
+            settings, values, profiles_ollama=uses_ollama_embeddings(catalogue)
+        )
+    return build_connection_summary(settings, Path.cwd(), values, catalogue)
 
 
 def connection_targets(values: ProviderValues | None = None) -> dict[str, Any]:

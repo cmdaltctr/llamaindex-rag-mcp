@@ -29,6 +29,7 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
     login,
     make_engine,
 )
+from tests.unit.test_web_openapi_conformance_support import FAMILIES, ContractChecker  # noqa: E402
 
 from omrg import compose  # noqa: E402
 from omrg.core.providers.llm import registry as llm_registry  # noqa: E402
@@ -363,3 +364,25 @@ def test_test_needs_session(setup: Any, fake_llm: Any) -> None:
     assert setup.post("/v1/settings/chat/test", headers=headers).status_code == 403
     setup.cookies.clear()
     assert setup.post("/v1/settings/chat/test", headers=ORIGIN).status_code == 401
+
+
+def test_chat_settings_responses_conform(setup: Any, configure: Any) -> None:
+    configure(openrouter_api_key=SECRET)
+    check = ContractChecker()
+    check.check(setup.get("/v1/settings/chat"), 200)
+    check.check(put(setup, {"provider": "ollama", "model": "qwen3:4b"}), 200)
+    check.check(put(setup, {"provider": "gemini", "model": "m"}), 400)
+    check.check(put(setup, None), 200)
+    check.check(
+        setup.post(
+            "/v1/settings/chat/test", json={"provider": "gemini", "model": "m"}, headers=ORIGIN
+        ),
+        400,
+    )
+    check.check(
+        setup.post(
+            "/v1/settings/chat/test", json={"provider": "ollama", "model": "m"}, headers=ORIGIN
+        ),
+        200,
+    )
+    assert check.operations >= FAMILIES["chat_settings"]

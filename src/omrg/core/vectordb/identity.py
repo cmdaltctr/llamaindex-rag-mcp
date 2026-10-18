@@ -143,12 +143,16 @@ class RedactionSecrets:
         chroma_cloud_tenant: Chroma Cloud tenant identifier.
         chroma_cloud_database: Chroma Cloud database name.
         openrouter_api_key: OpenRouter API key.
+        retired_openrouter_keys: Earlier OpenRouter keys. A call that began
+            with an old key can still fail with it in the error text, so
+            the Engine keeps every key it has held (append-only).
     """
 
     chroma_cloud_api_key: str = ""
     chroma_cloud_tenant: str = ""
     chroma_cloud_database: str = ""
     openrouter_api_key: str = ""
+    retired_openrouter_keys: tuple[str, ...] = ()
 
     def redact(self, text: str) -> str:
         """Remove each value and each prefix of six or more characters."""
@@ -158,7 +162,9 @@ class RedactionSecrets:
             self.chroma_cloud_tenant,
             self.chroma_cloud_database,
         )
-        return redact_secret(text, self.openrouter_api_key)
+        for key in (*self.retired_openrouter_keys, self.openrouter_api_key):
+            text = redact_secret(text, key)
+        return text
 
 
 def read_stored_identity(collection: Any) -> tuple[str | None, str | None, str | None]:

@@ -87,9 +87,11 @@ def _unknown() -> Response:
     return error_response(404, "Unknown provider.")
 
 
-async def _entry(state: ProviderState, provider: str) -> dict[str, Any]:
+async def _entry(state: ProviderState, runtime: Any, provider: str) -> dict[str, Any]:
     """Return the summary entry of *provider* (locks, sources) for the saved values."""
-    summary = await run_in_threadpool(compose.connection_summary, state.values)
+    summary = await run_in_threadpool(
+        compose.connection_summary, state.values, runtime.engine.profile_catalogue()
+    )
     return next(e for e in summary["connections"] if e["provider"] == provider)
 
 
@@ -103,7 +105,9 @@ async def get_connections(_: ReadScope, runtime: RuntimeDep) -> Response:
     state = _state(runtime)
     async with admitted(runtime):
         summary = await run_in_threadpool(
-            compose.connection_summary, state.values if state else None
+            compose.connection_summary,
+            state.values if state else None,
+            runtime.engine.profile_catalogue(),
         )
     return ok(summary)
 
@@ -129,7 +133,7 @@ async def save_provider_fields(
             return error_response(400, rule)
         updates[fid] = text
     async with admitted(runtime), state.lock:
-        entry = await _entry(state, provider)
+        entry = await _entry(state, runtime, provider)
         for field in entry["fields"]:
             if field["id"] in updates and field["locked"]:
                 return error_response(409, field["lock_reason"] or "This field is locked.")
@@ -159,7 +163,7 @@ async def save_provider_key(
         return _unknown()
     state.secrets.add(body.api_key)
     async with admitted(runtime), state.lock:
-        entry = await _entry(state, provider)
+        entry = await _entry(state, runtime, provider)
         field = next(f for f in entry["fields"] if f["kind"] == "secret")
         if field["locked"]:
             return error_response(409, field["lock_reason"] or "This key is locked.")
@@ -180,7 +184,7 @@ async def remove_provider_key(_: CredentialsScope, provider: str, runtime: Runti
     if descriptor is None or state is None or _key_field(descriptor) is None:
         return _unknown()
     async with admitted(runtime), state.lock:
-        entry = await _entry(state, provider)
+        entry = await _entry(state, runtime, provider)
         field = next(f for f in entry["fields"] if f["kind"] == "secret")
         if field["locked"]:
             return error_response(409, field["lock_reason"] or "This key is locked.")

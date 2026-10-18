@@ -25,6 +25,7 @@ from omrg.transports.api.security import (  # noqa: E402
     BEARER_SCOPES,
     AccessPolicy,
     RedactingFilter,
+    redact,
     require_scope,
     validate_bind_host,
 )
@@ -323,6 +324,19 @@ def test_redacting_filter_removes_every_credential_form() -> None:
     assert token not in text
     assert "omrg_ss_abcdef123456" not in text
     assert "omrg_bt_***" in text
+
+
+def test_two_keys_sharing_a_prefix_leave_no_fragment_of_either() -> None:
+    old = "sk-or-v1-" + "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8"
+    new = "sk-or-v1-" + "z9y8x7w6v5u4t3s2r1q0p9o8n7m6l5k4j3i2"
+    for secret in (old, new):
+        for cut in (12, 20, 30, len(secret) - 1):
+            fragment = secret[:cut]
+            text = redact(f"upstream echoed {fragment} here", [old, new])
+            tail = fragment[9:]
+            assert tail[:4] not in text, (cut, text)
+            assert text == "upstream echoed *** here", (cut, text)
+        assert secret not in redact(f"key={secret}", [old, new])
 
 
 def test_redacting_filter_scrubs_tracebacks() -> None:

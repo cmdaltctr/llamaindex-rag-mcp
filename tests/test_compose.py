@@ -1242,7 +1242,7 @@ def test_build_engine_starts_with_the_saved_values(tmp_path: Path) -> None:
     engine.close()
 
 
-def test_factories_build_from_the_values_the_source_returns_at_build_time(
+def test_each_generation_freezes_the_values_the_source_returns_when_it_starts(
     tmp_path: Path,
 ) -> None:
     from omrg.compose import ProviderValues
@@ -1270,14 +1270,29 @@ def test_factories_build_from_the_values_the_source_returns_at_build_time(
         patch("omrg.compose.build_profile_resolver", side_effect=resolver),
     ):
         engine = build_engine(provider_source=lambda: current["v"])
-        assert engine._answer_llm_factory() == "answer-llm"
+        first = engine._gen
         current["v"] = ProviderValues({"answer.model": "second", "openrouter_api_key": "new"})
+        # The first generation builds late and still sees the values it started with.
+        assert first.answer_llm_factory() == "answer-llm"
+        assert first.verify_llm_factory(object()) == "judge"
+        assert first.resolver_factory() == "resolver"
+        effective = engine._gen.effective
+        engine.use_provider_settings(
+            effective.model_copy(
+                update={
+                    "openrouter_api_key": "new",
+                    "answer": effective.answer.model_copy(update={"model": "second"}),
+                }
+            )
+        )
         assert engine._answer_llm_factory() == "answer-llm"
         assert engine._verify_llm_factory(object()) == "judge"
         assert engine._profile_resolver_factory() == "resolver"
     assert [s.answer.model for s in seen["answer"]] == ["first", "second"]
-    assert seen["verify"][0].openrouter_api_key == "new"
-    assert seen["resolver"][0].answer.model == "second"
+    # The first generation also builds its resolver for the Ollama guard.
+    assert [s.answer.model for s in seen["resolver"]] == ["first", "first", "second"]
+    assert seen["verify"][0].openrouter_api_key != "new"
+    assert seen["verify"][1].openrouter_api_key == "new"
     engine.close()
 
 
