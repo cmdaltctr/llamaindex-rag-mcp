@@ -13,6 +13,7 @@ import type { EffectiveControl, OperationDescriptor, PortRef, ValidationIssue } 
 import { checkConnection, connectionGuard, findOperation } from "./connections";
 import { edgeKey, moveNode, removeEdge, removeNode, removeSelection, setSelection, setViewport, type Draft } from "./graph";
 import { OperationNode, type OperationFlowNode } from "./OperationNode";
+import { ViewToolbar } from "./ViewToolbar";
 import { cardLines } from "./stepSummary";
 import { edgeRunStyle, type NodeRunState } from "../runs/runState";
 
@@ -46,7 +47,7 @@ const NO_LINES = { summary: "", settings: [], extraSettings: [], moreSettings: 0
 const NO_PORTS: string[] = [];
 const NO_FINISHED: ReadonlySet<string> = new Set();
 
-function isTextField(target: EventTarget): boolean {
+export function isTextField(target: EventTarget): boolean {
   return target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName));
 }
 
@@ -116,12 +117,13 @@ export function FlowSurface({
           connected: connectedPorts.get(node.id) ?? NO_PORTS,
           model: node.operation === "embed.chunks" ? { name: embeddingModel } : undefined,
           enabled: node.enabled !== false,
+          direction: draft.layout.direction,
           issues: issues.filter((issue) => issue.node_id === node.id),
           run: runNodes?.ids.has(node.id) ? { state: runNodes.states[node.id] } : undefined,
         },
       };
     });
-  }, [draft.graph.nodes, overrides, collection, draft.layout.positions, selected, measured, catalogue, issues, runNodes, controls, embeddingModel, connectedPorts]);
+  }, [draft.graph.nodes, overrides, collection, draft.layout.positions, draft.layout.direction, selected, measured, catalogue, issues, runNodes, controls, embeddingModel, connectedPorts]);
 
   const edges = useMemo<Edge[]>(
     () =>
@@ -225,6 +227,7 @@ export function FlowSurface({
       >
         <Background gap={20} />
         <Controls showInteractive={false} />
+        <ViewToolbar draft={draft} sizes={measured} onChange={onChange} reducedMotion={reducedMotion} />
       </ReactFlow>
     </div>
   );

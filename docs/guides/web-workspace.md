@@ -432,6 +432,10 @@ Delete chats and folders. Each delete asks first and says how many chats it remo
 
 Only the browser session of `omrg web` reads, changes or deletes chats. A bearer token gets 403. Saved answers hold evidence text from your documents, so keep `workspace.db` private. Deleting a source does not change a saved chat.
 
+![Chat with history list](images/web-workspace/chat-history-dark-390.png)
+
+On a phone, History opens the list above the transcript: [open list at 390 px](images/web-workspace/chat-history-open-dark-390.png).
+
 Press a citation chip or a `[n]` marker in an answer to open a popover. It shows the evidence text, the lineage of the chunk (source ID, source version, position, page and every chunk ID of a merged citation) and the stored metadata. Choose Open full chunk to read the chunk in the chunk viewer. The index does not record which keys a chunk got from its document, so the popover lists the stored keys without labels. If the source was deleted, the popover keeps the saved evidence text and says the stored chunk is not available.
 
 ### Studio canvas layout
@@ -454,6 +458,17 @@ Select "Collapse panel" to shrink the panel to a narrow icon rail. Each rail but
 ![Studio canvas with the panel collapsed to the icon rail](images/web-workspace/studio-canvas-rail-light-1280.png)
 
 On a window narrower than 1024 px, the panel sits under the flow surface and shows its sections. The icon rail is not available.
+
+#### View controls
+
+A toolbar at the top left of the canvas holds two buttons. The zoom controls stay at the bottom left.
+
+1. **Arrange vertically** or **Arrange horizontally**. The button names the arrangement it will apply. It places each step in a layer by its connections, moves the steps, turns the connection points (left and right when horizontal, top and bottom when vertical) and fits the view to the graph. Arrange changes the layout only. It does not create a revision. Choose **Save layout** in the Revision and run section to keep it; a saved layout reopens in the same arrangement, and a layout saved before this feature opens as horizontal. On the read-only canvas of a built-in profile the button moves the steps for this visit only, and nothing is sent to the server.
+2. **Full screen**. The canvas, the toolbar and an X button fill the window. The navigation, the top bar, the profile header, the notices and the panel are hidden. Focus moves to the X button. Press the X button or Escape to leave; Escape does nothing while focus is in a text field. You return to the same page with the same selected step and view, and focus returns to the Full screen button. Full screen also ends when you leave the canvas. It is not saved.
+
+![Canvas toolbar, horizontal](images/web-workspace/canvas-toolbar-horizontal-dark-1280.png)
+![Canvas toolbar, vertical](images/web-workspace/canvas-toolbar-vertical-dark-1280.png)
+![Canvas full screen](images/web-workspace/canvas-full-screen-dark-1280.png)
 
 #### Page header
 

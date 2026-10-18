@@ -12,6 +12,8 @@ interface CanvasPanelProps {
   /** Counts runs started from the panel. A change opens Revision and run. A run that exists at load does not. */
   runStarts: number;
   sections: Record<SectionId, ReactNode>;
+  /** Hides the panel without unmounting it, so its open sections survive canvas full screen. */
+  hidden?: boolean;
 }
 
 const add = (open: string[], id: SectionId) => (open.includes(id) ? open : [...open, id]);
@@ -24,7 +26,7 @@ const add = (open: string[], id: SectionId) => (open.includes(id) ? open : [...o
  * content stays mounted state-wise and no effect resets it. Mount with the
  * canvas, so state starts fresh for each pipeline.
  */
-export function CanvasPanel({ selectedNode, runStarts, sections }: CanvasPanelProps) {
+export function CanvasPanel({ selectedNode, runStarts, sections, hidden = false }: CanvasPanelProps) {
   const [open, setOpen] = useState<string[]>(() => (selectedNode === null ? ["operations"] : ["operations", "node-settings"]));
   const [collapsed, setCollapsed] = useState(false);
   const [seenSelection, setSeenSelection] = useState(selectedNode);
@@ -62,7 +64,12 @@ export function CanvasPanel({ selectedNode, runStarts, sections }: CanvasPanelPr
   }
 
   return (
-    <aside ref={layer} aria-label="Canvas panel" className="pointer-events-none lg:absolute lg:inset-0 lg:flex lg:items-start lg:justify-end lg:gap-2 lg:p-3">
+    <aside
+      ref={layer}
+      aria-label="Canvas panel"
+      hidden={hidden}
+      className={cn("pointer-events-none lg:absolute lg:inset-0 lg:flex lg:items-start lg:justify-end lg:gap-2 lg:p-3", hidden && "hidden lg:hidden")}
+    >
       <div
         className={cn(
           "pointer-events-auto flex w-full flex-col overflow-y-auto border-t border-border bg-card lg:max-h-full lg:w-[22rem] lg:rounded-panel lg:border lg:shadow-floating",

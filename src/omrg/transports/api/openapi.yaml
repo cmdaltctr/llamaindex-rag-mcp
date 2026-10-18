@@ -5453,8 +5453,7 @@ components:
         current_revision_id:
           type: [string, "null"]
         layout:
-          type: object
-          description: Presentation layout. It never changes execution.
+          $ref: "#/components/schemas/GraphLayout"
         created_at:
           type: string
           format: date-time
@@ -5492,13 +5491,43 @@ components:
           type: string
           format: date-time
 
+    GraphLayout:
+      type: object
+      description: >
+        Presentation layout. It never changes execution. Other keys are kept as
+        sent. `direction` is the way the Studio Arrange action lays the graph
+        out; absent means `horizontal`.
+      additionalProperties: true
+      properties:
+        title: {type: string, maxLength: 200}
+        positions:
+          type: object
+          additionalProperties:
+            type: object
+            required: [x, y]
+            properties:
+              x: {type: number}
+              y: {type: number}
+        viewport:
+          type: object
+          properties:
+            x: {type: number}
+            y: {type: number}
+            zoom: {type: number, exclusiveMinimum: 0}
+        selection:
+          type: array
+          items: {type: string}
+        direction:
+          type: string
+          enum: [horizontal, vertical]
+
     LayoutRequest:
       type: object
       additionalProperties: false
       required: [layout]
       properties:
         layout:
-          type: object
+          $ref: "#/components/schemas/GraphLayout"
 
     RevisionRequest:
       type: object

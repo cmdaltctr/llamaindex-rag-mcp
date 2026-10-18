@@ -80,7 +80,8 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # Re-baselined at add-chat-history-and-canvas-view-controls (2026-10-18): migration 5 (4),
 # chat repository (16) and chat route (14) cases add 34 executed tests (5741 -> 5775);
 # the 14 route cases need the web extra.
-_BASE_EXECUTED = 5782
+# Two layout direction cases (GraphLayout model) add 2 more (5775 -> 5777 with the web extra).
+_BASE_EXECUTED = 5784
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.

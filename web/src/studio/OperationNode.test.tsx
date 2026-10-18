@@ -14,7 +14,7 @@ beforeAll(mockReactFlow);
 const FULL_CATALOGUE = [...CATALOGUE, ...CATALOGUE_INGEST];
 const FIXED = "(fixed for collections that already hold vectors)";
 
-function mount(isConnectable: boolean) {
+function mount(isConnectable: boolean, direction?: "horizontal" | "vertical") {
   const operation = CATALOGUE.find((entry) => entry.operation_id === "retrieve.dense");
   const props = {
     id: "dense",
@@ -32,6 +32,7 @@ function mount(isConnectable: boolean) {
       model: undefined,
       enabled: true,
       issues: [],
+      direction,
     },
     selected: false,
     isConnectable,
@@ -55,6 +56,28 @@ describe("OperationNode handles", () => {
     const handles = mount(true);
     expect(handles.length).toBeGreaterThan(0);
     for (const handle of handles) expect(handle).toHaveClass("connectable");
+  });
+});
+
+describe("OperationNode handle sides", () => {
+  const sides = (handles: Element[], type: "target" | "source") =>
+    new Set(handles.filter((h) => h.classList.contains(type === "target" ? "target" : "source")).map((h) => [...h.classList].find((c) => /^react-flow__handle-(left|right|top|bottom)$/.test(c))));
+
+  it("sit left and right on a horizontal graph", () => {
+    const handles = mount(true, "horizontal");
+    expect(sides(handles, "target")).toEqual(new Set(["react-flow__handle-left"]));
+    expect(sides(handles, "source")).toEqual(new Set(["react-flow__handle-right"]));
+  });
+
+  it("sit left and right when the graph has no direction", () => {
+    const handles = mount(true);
+    expect(sides(handles, "target")).toEqual(new Set(["react-flow__handle-left"]));
+  });
+
+  it("sit top and bottom on a vertical graph", () => {
+    const handles = mount(true, "vertical");
+    expect(sides(handles, "target")).toEqual(new Set(["react-flow__handle-top"]));
+    expect(sides(handles, "source")).toEqual(new Set(["react-flow__handle-bottom"]));
   });
 });
 

@@ -12,7 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError, field_validator
 
@@ -173,6 +173,8 @@ class GraphLayout(BaseModel):
     positions: dict[str, NodePosition] = Field(default_factory=dict)
     viewport: Viewport = Field(default_factory=Viewport)
     selection: tuple[str, ...] = ()
+    # Which way the Studio arrange action lays the graph out. Absent means horizontal.
+    direction: Literal["horizontal", "vertical"] = "horizontal"
 
 
 class PipelineDefinition(BaseModel):

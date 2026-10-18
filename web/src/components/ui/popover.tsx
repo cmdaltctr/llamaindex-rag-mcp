@@ -23,10 +23,12 @@ interface PopoverProps {
 const EDGE = 8;
 
 /** Where the panel goes: under the trigger, moved left when it would run off the right edge of the screen. */
-function placeUnder(button: HTMLElement, width: number): { top: number; left: number } {
+function placeUnder(button: HTMLElement, width: number): { top: number; left: number; maxHeight: number } {
   const rect = button.getBoundingClientRect();
   const left = Math.max(EDGE, Math.min(rect.left, window.innerWidth - width - EDGE));
-  return { top: rect.bottom + 4, left };
+  const top = rect.bottom + 4;
+  // Keep the whole panel on screen: a tall panel scrolls inside the space below the trigger.
+  return { top, left, maxHeight: Math.max(160, window.innerHeight - top - EDGE) };
 }
 
 /**
@@ -37,7 +39,7 @@ function placeUnder(button: HTMLElement, width: number): { top: number; left: nu
  * body, so a clipping ancestor cannot cut it off.
  */
 export function Popover({ trigger, children, slot = "popover-content", width = 288, className }: PopoverProps) {
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const [position, setPosition] = useState<{ top: number; left: number; maxHeight: number } | null>(null);
   const button = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const panelId = useId();
@@ -86,7 +88,7 @@ export function Popover({ trigger, children, slot = "popover-content", width = 2
             ref={panel}
             id={panelId}
             data-slot={slot}
-            style={{ top: position.top, left: position.left, width }}
+            style={{ top: position.top, left: position.left, width, maxHeight: position.maxHeight }}
             className={cn("fixed z-50 flex flex-col gap-2 rounded-control border border-border bg-popover p-3 text-meta text-popover-foreground shadow-floating", className)}
           >
             {typeof children === "function" ? children({ close: () => setPosition(null) }) : children}

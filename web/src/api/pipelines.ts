@@ -117,7 +117,11 @@ export interface GraphLayout {
   positions?: Record<string, { x: number; y: number }>;
   viewport?: { x: number; y: number; zoom: number };
   selection?: string[];
+  /** Which way Arrange lays the graph out. Absent means horizontal. */
+  direction?: LayoutDirection;
 }
+
+export type LayoutDirection = "horizontal" | "vertical";
 
 export interface PipelineRecord {
   pipeline_id: string;

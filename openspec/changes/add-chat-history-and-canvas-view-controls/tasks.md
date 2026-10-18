@@ -24,13 +24,13 @@ Work in the sibling worktree `llamaindex-rag-mcp-feat-add-chat-history-and-canva
 
 ## 3. Canvas view controls (web)
 
-- [ ] 3.1 Add the optional `direction` field to the layout in all four places (TS types, `fromDocument`/`toLayout`, Python `GraphLayout`, `openapi.yaml`). Verify: a round-trip test keeps `direction` through `toLayout(fromDocument(...))`, a Python test accepts it, and a layout without it reads as horizontal.
-- [ ] 3.2 Write failing tests, then add `web/src/studio/arrange.ts`: layering by longest path, both directions, and the cycle fallback. Verify: the unit tests pass, and fail when the layering is replaced by input order.
-- [ ] 3.3 Make `OperationNode` handles follow the direction. Verify: a node test checks Left/Right for horizontal and Top/Bottom for vertical.
-- [ ] 3.4 Add `ViewToolbar.tsx` (top-left `Panel`) with the arrange button. Verify: tests show positions change, no revision call is made, and a read-only canvas sends no layout call.
-- [ ] 3.5 Add full screen: the context flag in `App.tsx`, the overlay in `CanvasEditor`, the "X" button, Escape, focus moves, and reset on leaving the canvas. Verify: tests for enter, "X", Escape, Escape in a text field, and kept selection pass.
-- [ ] 3.6 Update the Studio section of `docs/guides/` for the toolbar. Verify: the guide names both buttons.
-- [ ] 3.7 Check chat and canvas in a browser at 1280 px and 390 px with Chrome DevTools. Verify: no sideways scroll; screenshots saved under `docs/guides/images/web-workspace/`.
+- [x] 3.1 Add the optional `direction` field to the layout in all four places (TS types, `fromDocument`/`toLayout`, Python `GraphLayout`, `openapi.yaml`). Verify: a round-trip test keeps `direction` through `toLayout(fromDocument(...))`, a Python test accepts it, and a layout without it reads as horizontal.
+- [x] 3.2 Write failing tests, then add `web/src/studio/arrange.ts`: layering by longest path, both directions, and the cycle fallback. Verify: the unit tests pass, and fail when the layering is replaced by input order.
+- [x] 3.3 Make `OperationNode` handles follow the direction. Verify: a node test checks Left/Right for horizontal and Top/Bottom for vertical.
+- [x] 3.4 Add `ViewToolbar.tsx` (top-left `Panel`) with the arrange button. Verify: tests show positions change, no revision call is made, and a read-only canvas sends no layout call.
+- [x] 3.5 Add full screen: the context flag in `App.tsx`, the overlay in `CanvasEditor`, the "X" button, Escape, focus moves, and reset on leaving the canvas. Verify: tests for enter, "X", Escape, Escape in a text field, and kept selection pass.
+- [x] 3.6 Update the Studio section of `docs/guides/` for the toolbar. Verify: the guide names both buttons.
+- [x] 3.7 Check chat and canvas in a browser at 1280 px and 390 px with Chrome DevTools. Verify: no sideways scroll; screenshots saved under `docs/guides/images/web-workspace/`.
 
 ## 4. Close
 

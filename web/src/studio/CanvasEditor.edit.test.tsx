@@ -293,7 +293,7 @@ describe("canvas catalogue and editing", () => {
     await user.click(within(runPanel()).getByRole("button", { name: "Save layout" }));
     await waitFor(() => expect(server.last("PUT", "/v1/pipelines/p1/layout")).toBeDefined());
     const layout = (server.last("PUT", "/v1/pipelines/p1/layout")!.body as { layout: Record<string, unknown> }).layout;
-    expect(Object.keys(layout).sort()).toEqual(["positions", "selection", "viewport"]);
+    expect(Object.keys(layout).sort()).toEqual(["direction", "positions", "selection", "viewport"]);
     expect(layout.positions).toHaveProperty("dense", { x: 240, y: 0 });
     expect(server.calls.filter((c) => c.path.endsWith("/revisions") && c.method === "POST")).toHaveLength(1);
   });

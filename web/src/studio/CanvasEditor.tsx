@@ -1,9 +1,11 @@
-import { Workflow } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Workflow, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import type { OperationDescriptor, PortRef } from "../api/pipelines";
 import type { ProfileRecord } from "../api/profiles";
 import { ACTIVE_RUN_STATUSES } from "../api/runs";
 import { EmptyState } from "../components/EmptyState";
+import { Button } from "../components/ui/button";
+import { useCanvasFullScreen } from "../lib/CanvasFullScreen";
 import type { Purpose } from "../lib/routes";
 import { useReducedMotion } from "../runs/useReducedMotion";
 import { useRecentlyFinished } from "../runs/useRecentlyFinished";
@@ -23,6 +25,7 @@ import { RunPanel } from "./RunPanel";
 import { SaveRevisionDialog } from "./SaveRevisionDialog";
 import { RunProgress } from "./RunProgress";
 import { useCanvasSession, type CanvasSource } from "./useCanvasSession";
+import { useFullScreenKeys } from "./useFullScreenKeys";
 
 interface CanvasEditorProps {
   profile: ProfileRecord;
@@ -47,6 +50,9 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
   // Hidden state resets on every visit: the editor is keyed by pipeline, so a new mount starts shown.
   const [headerHidden, setHeaderHidden] = useState(false);
   const reducedMotion = useReducedMotion();
+  const { fullScreen, setFullScreen } = useCanvasFullScreen();
+  const exitRef = useRef<HTMLButtonElement>(null);
+  useFullScreenKeys(exitRef);
   // Events are authoritative once they arrive; until then the run record is shown.
   const runStatus = monitor.refreshedStatus ?? monitor.view.runStatus ?? run?.status ?? null;
   const runNodes = useMemo(
@@ -116,13 +122,21 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
 
   return (
     <section className="flex min-h-0 flex-1 flex-col">
-      <div className="flex flex-col gap-1 border-b border-border bg-card px-4 py-2">
+      <div hidden={fullScreen} className={fullScreen ? "hidden" : "flex flex-col gap-1 border-b border-border bg-card px-4 py-2"}>
         <ProfileHeader profile={profile} purpose={purpose} onDuplicate={onDuplicate} collapsed={headerHidden} onToggle={() => setHeaderHidden((hidden) => !hidden)} />
         <Notices notice={session.notice} />
       </div>
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <div className="h-[50vh] min-h-64 lg:absolute lg:inset-0 lg:h-auto">{surface}</div>
+        <div className={fullScreen ? "fixed inset-0 z-50 bg-background" : "h-[50vh] min-h-64 lg:absolute lg:inset-0 lg:h-auto"}>
+          {surface}
+          {fullScreen ? (
+            <Button ref={exitRef} variant="outline" size="icon" aria-label="Exit full screen" className="absolute end-3 top-3 z-10 bg-card" onClick={() => setFullScreen(false)}>
+              <X aria-hidden="true" />
+            </Button>
+          ) : null}
+        </div>
         <CanvasPanel
+          hidden={fullScreen}
           selectedNode={selectedNode}
           runStarts={runStarts}
           sections={{
