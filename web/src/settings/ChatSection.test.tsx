@@ -177,6 +177,16 @@ describe("Chat section", () => {
     expect(within(chat).queryByRole("textbox")).toBeNull();
   });
 
+  it("names the config file when it locks the choice", async () => {
+    await openChat({
+      "GET /v1/settings/chat": () => ({ ...CHAT_READY, source: "config-file", locked: true, lock_reason: "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it." }),
+    });
+    const chat = section();
+    expect(chat).toHaveTextContent("Set from config file (read-only here)");
+    expect(chat).toHaveTextContent("omrg.jsonc");
+    expect(within(chat).queryByRole("button", { name: "Save" })).toBeNull();
+  });
+
   it("states where the choice applies", async () => {
     await openChat();
     expect(section()).toHaveTextContent(/MCP clients of this web server/i);

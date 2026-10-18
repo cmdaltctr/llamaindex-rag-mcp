@@ -417,15 +417,83 @@ Connection details for each: [Providers](providers.md).
 
 #### Change provider values in the web workspace
 
-In `omrg web`, Settings > Providers can save these values: `OLLAMA_BASE_URL`, `LLAMACPP_CHAT_URL`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`. The server uses the first source it finds:
+In `omrg web`, Settings > Providers can save these values: `OLLAMA_BASE_URL`, `LLAMACPP_CHAT_URL`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`. The server uses the first source it finds, highest first:
 
-1. The process environment or `.env`. This source wins and locks the field in Settings. Remove the variable to edit the field there.
-2. A value saved in Settings.
-3. The default.
+| Rank | Source | Shown as | Locks the field |
+|---|---|---|---|
+| 1 | Process environment | `env` | yes |
+| 2 | `.env` | `env` | yes |
+| 3 | `omrg.jsonc` in the [user config folder](#user-config-folder) | `config-file` | yes |
+| 4 | A value saved in Settings (database address or keychain key) | `saved`, `keychain` | no |
+| 5 | A key file `secrets/<provider>.key` (keys only) | `key-file` | no |
+| 6 | The default | `default` | no |
+
+A locked field shows "Set from environment (read-only here)" or "Set from config file (read-only here)". Remove the variable or edit the file to change it. A key file does not lock: a key saved in the keychain overrides it, and removing the saved key falls back to the file.
 
 A saved address goes in the workspace database. A saved key goes in the system keychain (service `omrg`, user name equal to the provider name). The app never writes a key to `.env`, to the database or to a file. If no keychain exists, set the key variable (for example `OPENROUTER_API_KEY`) in the environment instead.
 
-A saved value applies at once to new requests, with no restart. The Ollama address stays locked while embeddings use Ollama. Embedding providers and models are not editable there. Saved values reach `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts read `.env` and the environment. See [Web workspace](web-workspace.md#provider-settings).
+A saved value applies at once to new requests, with no restart. The Ollama address stays locked while embeddings use Ollama. Embedding providers and models are not editable there. Saved values reach `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts do not see saved values. They read the environment, `.env` and the user config folder. See [Web workspace](web-workspace.md#provider-settings).
+
+#### User config folder
+
+Operators can set provider values in files, without the web page. The folder is read-only for the app. The app never writes, creates or changes the permissions of anything in it. The CLI, the stdio MCP server and `omrg web` all read it. This mirrors the OMMS layout (`~/.config/omms/omms.jsonc`).
+
+The folder is the first of these:
+
+1. `$OMRG_CONFIG_DIR`.
+2. `$XDG_CONFIG_HOME/omrg`.
+3. `~/.config/omrg`.
+
+It can hold two things:
+
+- `omrg.jsonc`: JSON with comments and trailing commas. Optional keys: `ollama_base_url`, `llamacpp_chat_url`, `openai_compatible_base_url` and `answer` (`provider`, `model`). A secret field holds only a reference: `env://NAME` or `file://<absolute path inside secrets/>`.
+- `secrets/<provider>.key`: one key for each provider. The file name is the provider name (`openrouter`, `openai_compatible`, `anthropic`).
+
+Example `omrg.jsonc` (fake values):
+
+```jsonc
+{
+  // Non-secret values
+  "ollama_base_url": "http://gpu-box.local:11434",
+  "openai_compatible_base_url": "https://api.together.xyz/v1",
+  "answer": { "provider": "openrouter", "model": "openai/gpt-4o-mini" },
+
+  // Secret fields hold references only
+  "openrouter_api_key": "env://MY_OPENROUTER_KEY",
+  "anthropic_api_key": "file:///home/me/.config/omrg/secrets/anthropic.key",
+}
+```
+
+Example layout and permissions:
+
+```text
+~/.config/omrg/
+  omrg.jsonc
+  secrets/
+    openrouter.key      one line: the key
+    anthropic.key
+```
+
+```bash
+chmod 700 ~/.config/omrg/secrets
+chmod 600 ~/.config/omrg/secrets/*.key
+```
+
+Rules the server applies:
+
+- A literal key in `omrg.jsonc` is ignored. The log names the field and never shows the value.
+- A `file://` path must resolve inside `secrets/`. Any other path is refused.
+- A key file holds at most 4 KiB. The server strips surrounding whitespace.
+- The server refuses a symlink that leaves the folder and any file that is not a regular file.
+- A key file looser than 0600, or a `secrets/` folder looser than 0700, is still read. The log shows one warning with the path and the mode, never the content. Windows skips this check.
+- A broken `omrg.jsonc` gives no values and one warning.
+- The server reads both files at launch. Edit the file, then restart.
+
+`omrg.jsonc` locks its field in Settings, as the environment does. A key file does not lock. See the precedence table above.
+
+**Limit.** These files are plaintext. File permissions do not stop another process of the same user, and an AI coding agent runs as that user. The folder gives no security gain over `.env`. Use it on headless machines and in containers with a mounted folder. On a desktop, save keys in the keychain. The page cannot write this folder.
+
+Tests set `OMRG_CONFIG_DIR` to a temporary folder, so they never read your real folder.
 
 ### Chunking — `CHUNKING__*`
 
@@ -821,13 +889,7 @@ explicit algorithm selection is an operator contract. See
 `omrg web` has one setting of its own in `.env`, `WEB_MAX_UPLOAD_MIB`. It also reads the engine settings that other commands read. Its other options are command-line flags only: `--workspace`, `--port`, `--host`, `--root` and `--experiment-root`. The server builds its Engine from the same settings sources as the other commands. See [Web workspace](web-workspace.md).
 
 | Variable | Default | Use |
-|
-
-### Provider and Chat values
-
-`omrg web` also lets you save LLM provider addresses, API keys and the Chat model in Settings. The order is environment or `.env`, then the saved value, then the default. An environment value locks the field. A saved key lives in the system keychain only. A saved value applies at once with no restart. Details: [Providers](#providers), [Answering](#answering--answer__) and [Web workspace](web-workspace.md#provider-settings).
-
----|---|---|
+|---|---|---|
 | `WEB_MAX_UPLOAD_MIB` | unset | Per-file upload limit in whole MiB, 1 to 2048. Same as `--max-upload-mib`. |
 
 The server uses the first upload limit it finds in this order:
@@ -838,6 +900,10 @@ The server uses the first upload limit it finds in this order:
 4. 50 MiB.
 
 A launch value (step 1 or 2) locks the limit for that run. Settings then shows the limit and cannot change it. Any other value stops `omrg web` with exit code 2 before it binds a port. The name is flat, because `omrg web` options are not engine settings.
+
+### Provider and Chat values
+
+`omrg web` also lets you save LLM provider addresses, API keys and the Chat model in Settings. The order is environment, `.env`, the config file, the saved value, the key file, then the default. The environment, `.env` and the config file lock the field (see [User config folder](#user-config-folder)). A saved key lives in the system keychain only. A saved value applies at once with no restart. Details: [Providers](#providers), [Answering](#answering--answer__) and [Web workspace](web-workspace.md#provider-settings).
 
 ---
 

@@ -22,6 +22,7 @@ from typing import Any
 
 from .compose_providers import ProviderValues, locked_fields
 from .config import Settings, _resolve_effective_embed_provider
+from .config.user_config import config_file_reason, display_path
 from .core.profiles.catalogue import uses_ollama_embeddings
 from .core.providers.llm import registry
 from .core.providers.llm.connection import ConnectionDescriptor, ConnectionField, ConnectionTarget
@@ -99,8 +100,17 @@ def _dotted(spec: ConnectionField) -> str:
     return spec.settings_field
 
 
-def _locked(spec: ConnectionField, locks: dict[str, str]) -> tuple[bool, str | None]:
+_KEY_FILE_REASON = (
+    "Set from the key file (read-only here). Saving a key in the keychain overrides it."
+)
+
+
+def _locked(
+    spec: ConnectionField, locks: dict[str, str], settings: Settings
+) -> tuple[bool, str | None]:
     reason = locks.get(_dotted(spec))
+    if reason == "config-file":
+        return True, config_file_reason(settings.user_config_dir)
     if reason == "environment":
         return (
             True,
@@ -111,14 +121,19 @@ def _locked(spec: ConnectionField, locks: dict[str, str]) -> tuple[bool, str | N
     return False, None
 
 
+def _lock_source(reason: str) -> str:
+    """Return the field ``source`` of a lock reason."""
+    return "config-file" if reason == "config-file" else "env"
+
+
 def _url_field(
     spec: ConnectionField, settings: Settings, values: ProviderValues, locks: dict[str, str]
 ) -> dict[str, Any]:
     value = getattr(settings, spec.settings_field)
     saved = (values.values.get(spec.settings_field) or "").strip()
-    locked, lock_reason = _locked(spec, locks)
-    if locks.get(spec.settings_field) == "environment":
-        source = "env"
+    locked, lock_reason = _locked(spec, locks, settings)
+    if locks.get(spec.settings_field) in ("environment", "config-file"):
+        source = _lock_source(locks[spec.settings_field])
     elif saved and not locked:
         source = "saved"
     else:
@@ -147,11 +162,15 @@ def _secret_field(
     locks: dict[str, str],
 ) -> dict[str, Any]:
     key = str(getattr(settings, spec.settings_field) or "").strip()
-    locked, lock_reason = _locked(spec, locks)
-    from_environment = locks.get(spec.settings_field) == "environment"
+    locked, lock_reason = _locked(spec, locks, settings)
+    lock = locks.get(spec.settings_field)
+    from_environment = lock in ("environment", "config-file")
     state = None if from_environment else values.key_problems.get(provider)
+    saved = bool((values.values.get(spec.settings_field) or "").strip())
     if from_environment:
-        source = "env"
+        source = _lock_source(str(lock))
+    elif key and not saved and spec.settings_field in settings.key_file_fields:
+        source, lock_reason = "key-file", _KEY_FILE_REASON
     elif key:
         source = "keychain"
     else:
@@ -210,7 +229,7 @@ def build_connection_summary(
             locks while any profile in it selects Ollama embeddings.
 
     Returns:
-        ``{"config_dir": str, "keychain": "available" | "unavailable",
+        ``{"config_dir": str, "user_config_dir": str, "keychain": "available" | "unavailable",
         "connections": [entry, ...]}``, one entry per registered provider.
         An entry has ``provider``, ``display_name``, ``locality``,
         ``installed``, ``install_hint``, ``fields``, ``read_only`` and
@@ -243,6 +262,7 @@ def build_connection_summary(
         )
     return {
         "config_dir": str(config_dir),
+        "user_config_dir": display_path(settings.user_config_dir),
         "keychain": "available" if values.keychain_available else "unavailable",
         "connections": entries,
     }

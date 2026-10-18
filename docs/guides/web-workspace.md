@@ -283,9 +283,9 @@ The server can serve MCP at `/mcp`. It is off by default. Turn it on with `PUT /
 | Route | Scope | What it does |
 |---|---|---|
 | `GET /v1/integrations` | `read` | One entry for each installable extra and for Magika. `availability` is `available`, `not-installed` or `unknown` (a probe failed). Each entry has copy-ready `install_command` and `pip_command` values. |
-| `GET /v1/connections` | `read` | `config_dir`, `keychain` (`available` or `unavailable`) and one entry for each registered LLM provider. Each entry has `fields[]` (`id`, `label`, `kind`, `value` for addresses, `source`, `locked`, `lock_reason`, `required` (false for a key the provider can run without), `set`, `last4`, `saved_at`, `state`), `read_only[]`, `roles`, `installed` and `install_hint`. A key is never returned. `last4` is set only when the key has 16 or more characters. |
-| `PUT /v1/connections/{provider}` | `manage` | Body `{fields: {<id>: url or null}}`. Saves or clears addresses. Returns 400 for a bad address, 404 for an unknown provider or field, and 409 for a locked field. |
-| `PUT /v1/connections/{provider}/key` | `credentials` | Body `{api_key}`, 8 to 512 printable characters with no spaces. Saves the key to the system keychain. Returns 409 when the key comes from the environment or when no keychain exists. |
+| `GET /v1/connections` | `read` | `config_dir`, `user_config_dir` (the user config folder, with `~` for home), `keychain` (`available` or `unavailable`) and one entry for each registered LLM provider. Each entry has `fields[]` (`id`, `label`, `kind`, `value` for addresses, `source` (`env`, `config-file`, `saved`, `keychain`, `key-file`, `default` or `none`), `locked`, `lock_reason`, `required` (false for a key the provider can run without), `set`, `last4`, `saved_at`, `state`), `read_only[]`, `roles`, `installed` and `install_hint`. A key is never returned. `last4` is set only when the key has 16 or more characters. |
+| `PUT /v1/connections/{provider}` | `manage` | Body `{fields: {<id>: url or null}}`. Saves or clears addresses. Returns 400 for a bad address, 404 for an unknown provider or field, and 409 for a locked field (from the environment, `.env` or `omrg.jsonc`). |
+| `PUT /v1/connections/{provider}/key` | `credentials` | Body `{api_key}`, 8 to 512 printable characters with no spaces. Saves the key to the system keychain. Returns 409 when the key comes from the environment, `.env` or `omrg.jsonc`, or when no keychain exists. A key file does not cause a 409. |
 | `DELETE /v1/connections/{provider}/key` | `credentials` | Removes the key from the system keychain. |
 | `POST /v1/connections/{provider}/test` | `manage` | Optional body `{fields: {<id>: value}}`. Tests typed values and saves nothing. Returns `{reachable, reason}` after one request with a 5-second timeout. `reason` is `refused`, `timeout`, `unauthorised`, `http-<status>` or `not-configured`. No response body or error text is returned. |
 | `POST /v1/connections/{provider}/models` | `manage` | Optional body `{fields: {<id>: value}}`. Returns `{reachable, reason, models[], truncated}`. Reads at most 8 MiB and returns at most 1,000 names. |
@@ -303,9 +303,13 @@ Settings > Providers shows one card for each registered LLM provider. Today thes
 
 Each value comes from one source. The server uses the first source it finds:
 
-1. The process environment or `.env`. The field shows "Set from environment (read-only here)" and is locked. A save returns 409 and names the variable to remove.
-2. A value saved in Settings. Addresses are stored in the workspace database. Keys are stored in the system keychain.
-3. The default.
+1. The process environment, then `.env`. The field shows "Set from environment (read-only here)" and is locked. A save returns 409 and names the variable to remove.
+2. `omrg.jsonc` in the user config folder. The field shows "Set from config file (read-only here)" and is locked. A save returns 409. The lock text reads "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it." (the path comes from `user_config_dir`).
+3. A value saved in Settings. Addresses are stored in the workspace database. Keys are stored in the system keychain.
+4. A key file `secrets/<provider>.key` (keys only). The field shows "Set from key file (read-only here). Saving a key in the keychain overrides it." It is not locked: a saved key overrides it, and removing the saved key falls back to the file.
+5. The default.
+
+The user config folder is read-only. The app never writes to it, and the page cannot edit it. The CLI and the stdio MCP server read it too, but they do not see saved web values. The files are plaintext, so on a desktop the keychain stays the advice. Both files are read at launch, so a change needs a restart. Details and examples: [Configuration](configuration.md#user-config-folder).
 
 A saved value applies at once to new requests in the running `omrg web` process. You do not restart the server. A call that already started finishes with the old value. The Engine refuses a change that would alter an embedding field. The Ollama address is locked while embeddings use Ollama ("embeddings use it").
 
@@ -331,7 +335,7 @@ Remove the key in Settings > Providers with Remove key. To remove an entry by ha
 
 #### What other processes do not see
 
-Saved addresses, saved keys and the saved Chat model apply to `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts do not read them. They read `.env` and the environment. To give those processes a value, put it in `.env`.
+Saved addresses, saved keys and the saved Chat model apply to `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts do not read them. They read the environment, `.env` and the user config folder. To give those processes a value, put it in `.env` or in `omrg.jsonc`.
 
 ### Chat model
 

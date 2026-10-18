@@ -48,7 +48,7 @@ export const OPENROUTER: Connection = {
   roles: ["verification"],
 };
 
-export const CONNECTIONS: ConnectionList = { status: "ok", config_dir: CONFIG_DIR, keychain: "available", connections: [OLLAMA, LLAMACPP, OPENROUTER] };
+export const CONNECTIONS: ConnectionList = { status: "ok", config_dir: CONFIG_DIR, user_config_dir: "~/.config/omrg", keychain: "available", connections: [OLLAMA, LLAMACPP, OPENROUTER] };
 
 export const CHAT_READY: ChatSettings = {
   status: "ok",

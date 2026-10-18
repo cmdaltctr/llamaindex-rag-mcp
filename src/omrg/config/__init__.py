@@ -397,8 +397,7 @@ class Settings(StorageValidationMixin, OcrRouteSettingsMixin, ProviderSourceMixi
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         """Layer sources: field defaults < YAML < profile < .env < env < explicit.
 
-        The profile source (Phase 4) sits between defaults.yaml and the
-        environment sources so env vars still win over profile bundles.
+        The profile source (Phase 4) sits between defaults.yaml and env, so env wins.
 
         Also records which explicit (operator) sources set ``vector_store``
         (task 2.4, design D6) and the editable provider fields (design D2).
@@ -412,6 +411,7 @@ class Settings(StorageValidationMixin, OcrRouteSettingsMixin, ProviderSourceMixi
             if key.lower() == "vector_store"
         }
         cls._explicit_provider_sources = explicit_provider_fields(env_settings, dotenv_settings)
+        cls._init_provider_fields = explicit_provider_fields(init_settings)
         return (
             init_settings,  # explicit args (highest)
             env_settings,  # env vars

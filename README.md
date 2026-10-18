@@ -219,7 +219,7 @@ EMBED_MODEL=qwen3-embedding:0.6b
 uv sync
 ```
 
-Chat answers can also use any OpenAI-compatible server (OpenAI, Together, vLLM, LM Studio) with no extra, or Anthropic with `uv sync --extra anthropic`. Set them in `omrg web` under Settings > Providers, or see [Providers](docs/guides/providers.md).
+Chat answers can also use any OpenAI-compatible server (OpenAI, Together, vLLM, LM Studio) with no extra, or Anthropic with `uv sync --extra anthropic`. Set them in `omrg web` under Settings > Providers, or in the read-only user config folder (`~/.config/omrg/omrg.jsonc` and `secrets/<provider>.key`, also read by the CLI and the stdio server; see [Configuration](docs/guides/configuration.md#user-config-folder)). See also [Providers](docs/guides/providers.md).
 
 ```bash
 # .env

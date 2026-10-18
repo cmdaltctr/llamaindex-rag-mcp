@@ -14,6 +14,7 @@ from pydantic import BaseModel, model_validator
 from pydantic_settings import PydanticBaseSettingsSource
 
 from ..core.settings import PROVIDER_ADDRESS_FIELDS, PROVIDER_SECRET_FIELDS
+from .user_config import load_user_config, user_config_dir
 
 if TYPE_CHECKING:
     from . import Settings
@@ -71,7 +72,34 @@ class ProviderSourceMixin(BaseModel):
     openai_compatible_api_key: str = ""
     anthropic_api_key: str = ""
 
+    #: Fields ``omrg.jsonc`` set (they also appear in ``provider_explicit``).
+    config_file_fields: frozenset[str] = frozenset()
+    #: Secret fields that only a key file set (a saved keychain key overrides them).
+    key_file_fields: frozenset[str] = frozenset()
+    #: The user config folder in use, as a full path.
+    user_config_dir: str = ""
+
     @model_validator(mode="after")
     def _record_provider_sources(self) -> Settings:
-        object.__setattr__(self, "provider_explicit", self.__class__._explicit_provider_sources)
+        cls = self.__class__
+        taken = cls._explicit_provider_sources | cls._init_provider_fields
+        config = load_user_config()
+        from_config = {p: v for p, v in config.values.items() if p not in taken}
+        from_keys = {
+            p: v
+            for p, v in config.key_file.items()
+            if p not in taken and p not in from_config and not str(getattr(self, p, "")).strip()
+        }
+        answer = {p.removeprefix("answer."): v for p, v in from_config.items() if "." in p}
+        for path, value in {**from_config, **from_keys}.items():
+            if "." not in path:
+                object.__setattr__(self, path, value)
+        if answer:
+            object.__setattr__(self, "answer", self.answer.model_copy(update=answer))
+        object.__setattr__(
+            self, "provider_explicit", cls._explicit_provider_sources | frozenset(from_config)
+        )
+        object.__setattr__(self, "config_file_fields", frozenset(from_config))
+        object.__setattr__(self, "key_file_fields", frozenset(from_keys))
+        object.__setattr__(self, "user_config_dir", str(user_config_dir()))
         return self

@@ -4,6 +4,7 @@ import { chatSettingsQuery, connectionsQuery } from "../api/queries";
 import type { ChatSettings, Connection } from "../api/settings";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { ChatModelForm } from "./ChatModelForm";
+import { lockedSourceLine } from "./connectionWords";
 
 function LockedChoice({ settings, connections }: { settings: ChatSettings; connections: Connection[] }) {
   const name = connections.find((connection) => connection.provider === settings.provider)?.display_name ?? settings.provider ?? "No provider";
@@ -14,7 +15,7 @@ function LockedChoice({ settings, connections }: { settings: ChatSettings; conne
         {settings.model !== null ? <> · <code dir="ltr" className="font-mono text-code [overflow-wrap:anywhere]">{settings.model}</code></> : null}
       </p>
       <p className="text-meta text-muted-foreground">
-        Set from environment (read-only here){settings.lock_reason !== null ? `. ${settings.lock_reason}` : ""}
+        {lockedSourceLine(settings.source)}{settings.lock_reason !== null ? `. ${settings.lock_reason}` : ""}
       </p>
     </div>
   );

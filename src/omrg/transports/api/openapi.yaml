@@ -3044,14 +3044,15 @@ paths:
       summary: Read the provider cards from the server settings
       description: >
         Returns `config_dir`, the working directory whose `.env` the
-        settings read, `keychain` (`available` or `unavailable`) and one
+        settings read, `user_config_dir` (the read-only user config folder), `keychain` (`available` or `unavailable`) and one
         entry for each provider in the LLM provider registry, in
         registration order. An entry has the display name, `locality`,
         `installed` with an `install_hint`, the editable `fields`, the
         `read_only` values and the `roles` that use the provider. Roles
         follow the startup rules: `embeddings`, `answers` (when answering
         is enabled), `metadata` and `verification`. A field holds its
-        `source` (`env`, `saved`, `keychain`, `default` or `none`), whether
+        `source` (`env`, `config-file`, `saved`, `keychain`, `key-file`, `default` or
+        `none`), whether
         it is `locked` and why. A key field holds `set`, `saved_at`,
         `state` and the last four characters only when the key has 16 or
         more characters. The key value is never returned. This route sends
@@ -7101,7 +7102,7 @@ components:
           description: The address in use. A key field holds null.
         source:
           type: string
-          enum: [env, saved, keychain, default, none]
+          enum: [env, config-file, saved, keychain, key-file, default, none]
         locked:
           type: boolean
         lock_reason:
@@ -7163,7 +7164,7 @@ components:
     ConnectionList:
       type: object
       additionalProperties: false
-      required: [status, config_dir, keychain, connections]
+      required: [status, config_dir, user_config_dir, keychain, connections]
       properties:
         status:
           type: string
@@ -7171,6 +7172,11 @@ components:
         config_dir:
           type: string
           description: The server's working directory. The settings read `<config_dir>/.env`.
+        user_config_dir:
+          type: string
+          description: >
+            The read-only user config folder, with `~` for the home folder.
+            It holds `omrg.jsonc` and `secrets/<provider>.key`.
         keychain:
           type: string
           enum: [available, unavailable]
@@ -7222,7 +7228,7 @@ components:
           type: string
         source:
           type: string
-          enum: [env, saved, default]
+          enum: [env, config-file, saved, default]
         locked:
           type: boolean
         lock_reason:

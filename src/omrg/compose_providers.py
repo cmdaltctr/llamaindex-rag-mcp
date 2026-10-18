@@ -71,11 +71,19 @@ def locked_fields(
             (see ``uses_ollama_embeddings``).
 
     Returns:
-        Field path to reason: ``environment`` or ``embeddings``.
+        Field path to reason: ``environment``, ``config-file`` (``omrg.jsonc``
+        set it) or ``embeddings``.
     """
     if any(path in explicit for path in _CHAT_FIELDS):
         explicit = explicit | frozenset(_CHAT_FIELDS)
-    locked = {path: "environment" for path in PROVIDER_FIELDS if path in explicit}
+    from_file = settings.config_file_fields
+    if any(path in from_file for path in _CHAT_FIELDS):
+        from_file = from_file | frozenset(_CHAT_FIELDS)
+    locked = {
+        path: "config-file" if path in from_file else "environment"
+        for path in PROVIDER_FIELDS
+        if path in explicit
+    }
     uses_ollama = profiles_ollama or _resolve_effective_embed_provider(settings) == "ollama"
     if "ollama_base_url" not in locked and uses_ollama:
         locked["ollama_base_url"] = "embeddings"

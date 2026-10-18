@@ -407,6 +407,16 @@ def _no_real_keychain(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
+def _isolated_user_config_dir(monkeypatch: pytest.MonkeyPatch, tmp_path_factory) -> None:
+    """Point the user config folder at an empty temporary folder.
+
+    No test may read the real ``~/.config/omrg``. Tests of the folder itself
+    set ``OMRG_CONFIG_DIR`` again.
+    """
+    monkeypatch.setenv("OMRG_CONFIG_DIR", str(tmp_path_factory.mktemp("omrg-config") / "omrg"))
+
+
+@pytest.fixture(autouse=True)
 def _isolate_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Set deterministic environment variables for every test.
 

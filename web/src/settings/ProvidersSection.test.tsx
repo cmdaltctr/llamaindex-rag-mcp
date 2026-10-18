@@ -160,6 +160,37 @@ describe("Providers", () => {
     expect(server.find("DELETE", "/v1/connections/openrouter/key")).toHaveLength(1);
   });
 
+  it("shows a config-file address as read-only with the server's reason", async () => {
+    const locked = { ...OLLAMA, fields: [urlField("base_url", "Address", "http://cfg-host:11434", "config-file", "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it.")] };
+    await openProviders({ "GET /v1/connections": () => list(locked, LLAMACPP, OPENROUTER) });
+    const ollama = card("Ollama");
+    expect(within(ollama).getByText("Set from config file (read-only here)")).toBeInTheDocument();
+    expect(ollama).toHaveTextContent("Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it.");
+    expect(within(ollama).queryByRole("button", { name: "Save address" })).toBeNull();
+  });
+
+  it("shows a config-file key as read-only with no key input", async () => {
+    const fileRef = { ...OPENROUTER.fields[0]!, source: "config-file" as const, locked: true, lock_reason: "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it." };
+    await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, { ...OPENROUTER, fields: [fileRef] }) });
+    const openrouter = card("OpenRouter");
+    expect(within(openrouter).getByText("Set from config file (read-only here)")).toBeInTheDocument();
+    expect(openrouter).toHaveTextContent("omrg.jsonc");
+    expect(within(openrouter).queryByLabelText("API key")).toBeNull();
+  });
+
+  it("shows a key-file key as read-only but still lets the keychain override it", async () => {
+    const reason = "Set from the key file (read-only here). Saving a key in the keychain overrides it.";
+    const keyFile = { ...OPENROUTER.fields[0]!, source: "key-file" as const, lock_reason: reason };
+    const { server, user } = await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, { ...OPENROUTER, fields: [keyFile] }) });
+    const openrouter = card("OpenRouter");
+    expect(within(openrouter).getByText("Set from key file (read-only here)")).toBeInTheDocument();
+    expect(openrouter).toHaveTextContent("Saving a key in the keychain overrides it.");
+    expect(within(openrouter).queryByRole("button", { name: "Remove key" })).toBeNull();
+    await user.type(within(openrouter).getByLabelText("API key"), KEY);
+    await user.click(within(openrouter).getByRole("button", { name: "Save key" }));
+    expect(server.find("PUT", "/v1/connections/openrouter/key")).toHaveLength(1);
+  });
+
   it("shows an environment key as read-only with no key input", async () => {
     const envKey = { ...OPENROUTER.fields[0]!, source: "env" as const, locked: true, lock_reason: "Remove OPENROUTER_API_KEY from .env to edit it." };
     await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, { ...OPENROUTER, fields: [envKey] }) });

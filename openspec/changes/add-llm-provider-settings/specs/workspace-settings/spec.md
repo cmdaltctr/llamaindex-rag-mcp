@@ -18,7 +18,7 @@ The Settings view SHALL offer the sections Appearance, Providers, Chat, MCP, Ser
 
 ### Requirement: Connections show provider configuration without secrets
 
-The Providers section SHALL show one card for each entry of `GET /v1/connections`. Each card SHALL show the provider name, a Local or Cloud badge with text, the roles that use it, each editable field with its source, the read-only values (embedding address and models) marked as read-only, and the install command when the provider is not installed. A field from `env` SHALL show "Set from environment (read-only here)" with the variable name. A key field SHALL show at most "Key set" and the last four characters. A Cloud card, and a card whose address is not on this machine, SHALL state that text leaves this machine. The section SHALL state that saved values apply at once to this web server only.
+The Providers section SHALL show one card for each entry of `GET /v1/connections`. Each card SHALL show the provider name, a Local or Cloud badge with text, the roles that use it, each editable field with its source, the read-only values (embedding address and models) marked as read-only, and the install command when the provider is not installed. A field from `env` SHALL show "Set from environment (read-only here)" with the variable name. A field from `config-file` SHALL show "Set from config file (read-only here)" with the lock text "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it.", using `user_config_dir` from the response. A key from `key-file` SHALL show "Set from key file (read-only here). Saving a key in the keychain overrides it." and SHALL keep the key input available. The field source SHALL be one of `env`, `config-file`, `saved`, `keychain`, `key-file`, `default` and `none`. A key field SHALL show at most "Key set" and the last four characters. A Cloud card, and a card whose address is not on this machine, SHALL state that text leaves this machine. The section SHALL state that saved values apply at once to this web server only.
 
 #### Scenario: Roles follow the configuration
 
@@ -29,6 +29,16 @@ The Providers section SHALL show one card for each entry of `GET /v1/connections
 
 - **WHEN** `OPENROUTER_API_KEY` is set in `.env`
 - **THEN** the OpenRouter card MUST show "Set from environment (read-only here)", and no five consecutive characters of the key MUST appear in the response or the page
+
+#### Scenario: Address from the config file
+
+- **WHEN** the Ollama entry reports the source `config-file`
+- **THEN** the card MUST show "Set from config file (read-only here)" and the lock text with the config file path, and MUST offer no Save action for that address
+
+#### Scenario: Key from a key file
+
+- **WHEN** the OpenRouter key field reports the source `key-file`
+- **THEN** the card MUST show "Set from key file (read-only here). Saving a key in the keychain overrides it.", MUST show at most "Key set" and the last four characters, and MUST offer the key input
 
 #### Scenario: Save an address
 
@@ -102,7 +112,7 @@ The Chat section SHALL show the Chat provider and model from `GET /v1/settings/c
 
 ### Requirement: The Chat section says where the choice applies
 
-The Chat section SHALL state that the choice also answers MCP clients of this web server that cannot supply their own model, that metadata extraction keeps its own model, and that `omrg` over stdio and the CLI read `.env` only. When the selected provider is cloud, the section SHALL state that questions and retrieved passages leave this machine.
+The Chat section SHALL state that the choice also answers MCP clients of this web server that cannot supply their own model, that metadata extraction keeps its own model, and that `omrg` over stdio and the CLI read the environment, `.env` and the user config folder, and do not see saved values. When the selected provider is cloud, the section SHALL state that questions and retrieved passages leave this machine.
 
 #### Scenario: Cloud choice warns
 

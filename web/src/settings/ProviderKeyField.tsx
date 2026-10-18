@@ -5,6 +5,7 @@ import { ErrorNotice } from "../components/ErrorNotice";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { lockedSourceLine } from "./connectionWords";
 
 const STATE_LINES: Record<string, string> = {
   "keychain-missing": "The saved key was removed from the keychain, maybe by another workspace. Save it again to use it.",
@@ -44,13 +45,13 @@ export function ProviderKeyField({ provider, field, keychain, typed, onTyped }: 
     </p>
   );
 
-  if (field.source === "env") {
+  if (field.source === "env" || field.source === "config-file") {
     return (
       <div className="flex flex-col gap-1">
         <p className="text-meta text-muted-foreground">{field.label}</p>
         {status}
         <p className="text-meta text-muted-foreground">
-          <span>Set from environment (read-only here)</span>
+          <span>{lockedSourceLine(field.source)}</span>
           {field.lock_reason !== null ? ` ${field.lock_reason}` : ""}
         </p>
       </div>
@@ -76,6 +77,12 @@ export function ProviderKeyField({ provider, field, keychain, typed, onTyped }: 
     <form onSubmit={submit} className="flex flex-col gap-1.5">
       <Label htmlFor={id}>{field.label}</Label>
       {status}
+      {field.source === "key-file" ? (
+        <p className="text-meta text-muted-foreground">
+          <span>Set from key file (read-only here)</span>
+          {field.lock_reason !== null ? ` ${field.lock_reason}` : ""}
+        </p>
+      ) : null}
       {stateLine !== undefined ? <p className="text-meta text-muted-foreground">{stateLine}</p> : null}
       <Input id={id} type="password" dir="ltr" autoComplete="off" spellCheck={false} value={typed} onChange={(event) => onTyped(event.target.value)} />
       <div className="flex flex-wrap items-center gap-2">

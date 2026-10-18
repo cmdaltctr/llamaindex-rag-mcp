@@ -5,6 +5,7 @@ import { ErrorNotice } from "../components/ErrorNotice";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { lockedSourceLine } from "./connectionWords";
 
 const CODE = "text-code font-mono [overflow-wrap:anywhere]";
 
@@ -31,7 +32,7 @@ export function ProviderAddressField({ provider, field, typed, onTyped }: Provid
           {field.value}
         </code>
         <p className="text-meta text-muted-foreground">
-          <span>{field.source === "env" ? "Set from environment (read-only here)" : "Read-only"}</span>
+          <span>{field.source === "env" || field.source === "config-file" ? lockedSourceLine(field.source) : "Read-only"}</span>
           {field.lock_reason !== null ? ` ${field.lock_reason}` : ""}
         </p>
       </div>

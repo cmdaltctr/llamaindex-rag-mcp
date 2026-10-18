@@ -39,7 +39,8 @@ See proposal.md (Why). This section lists only the facts that shape the approach
 
 - Embedding provider, model or address editing. `add-profile-embedding-model` owns per-profile embedding models.
 - Metadata extraction mode and model choice, and the judge model. They keep their `.env` settings; only the connection values they use change.
-- Giving the stdio MCP server, the CLI or experiment contexts the saved values.
+- Giving the stdio MCP server, the CLI or experiment contexts the saved web values. They read the user config folder (D10), not the database or the keychain.
+- Writing to the user config folder from the page, and several named OpenAI-compatible endpoints.
 - Providers beyond OpenAI-compatible and Anthropic. Others come later as one file and one registry line each.
 
 ## Decisions
@@ -79,15 +80,28 @@ The Windows and Linux rows follow the `keyring` docs (Context7, `jaraco/keyring`
 
 **Dependency.** `keyring` is MIT-licensed. Only `omrg web` reads keys, so the plan puts `keyring` in the `web` extra beside FastAPI and Uvicorn (`pyproject.toml:135-138`). The floor follows `tests/test_dependency_floors.py`: at most one minor below the locked version. Task 1.5 asks the user to approve the dependency and its place before any install.
 
-### D2. Precedence: environment, then saved, then default, with a lock
+### D2. Precedence: a fixed order, with locks
 
-The order follows ADR-078. A value from the process environment or `.env` wins and locks the field. The route returns 409 and names the variable to remove. A restart can then never undo a Settings change in silence.
+The order follows ADR-078, extended by D10. For each field, the first source that holds a value wins. From highest to lowest:
 
-`config` records which editable fields came from an explicit source, in the same way it records `vector_store` (`config/__init__.py:409`). The editable fields are `OLLAMA_BASE_URL`, `LLAMACPP_CHAT_URL`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY`, `ANTHROPIC_API_KEY`, `ANSWER__PROVIDER` and `ANSWER__MODEL`. Profile YAML and `defaults.yaml` count as `default`. The Chat choice locks as one unit when either answer variable is explicit.
+| Rank | Source | `source` value | Locks the field |
+|---|---|---|---|
+| 1 | Process environment | `env` | yes |
+| 2 | `.env` | `env` | yes |
+| 3 | `omrg.jsonc` in the user config folder (D10) | `config-file` | yes |
+| 4 | Saved web value (database address, keychain key) | `saved` or `keychain` | no |
+| 5 | Key file `secrets/<provider>.key` (secret fields only, D10) | `key-file` | no |
+| 6 | Default | `default` | no |
+
+A field with no value in any source reports `none` (secret fields) or its default (address fields).
+
+A value from rank 1 to 3 wins and locks the field. The route returns 409 and names the variable or the file to change. A restart can then never undo a Settings change in silence. A key file does not lock: a key saved in the keychain overrides it, and removing the saved key falls back to the file.
+
+`config` records which editable fields came from an explicit source, in the same way it records `vector_store` (`config/__init__.py:409`). The editable fields are `OLLAMA_BASE_URL`, `LLAMACPP_CHAT_URL`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY`, `ANTHROPIC_API_KEY`, `ANSWER__PROVIDER` and `ANSWER__MODEL`. Profile YAML and `defaults.yaml` count as `default`. The Chat choice locks as one unit when either answer variable is explicit, or when `omrg.jsonc` holds an `answer` block.
 
 `.env.example` sets `LLAMACPP_CHAT_URL` without a comment mark (line 89). Users who copied it would see the field locked. This change comments that line out; the default value is the same.
 
-Alternative: the saved value wins over `.env`. Rejected, because a user who edits `.env` would see no effect and not know why.
+Alternative: the saved value wins over `.env`. Rejected, because a user who edits `.env` would see no effect and not know why. The same reasoning puts `omrg.jsonc` above the saved value.
 
 ### D3. Live application inside the running Engine
 
@@ -122,8 +136,8 @@ Values that do not apply live, and why:
 |---|---|
 | Embedding address, provider and model | The embedder is built once and every collection is stamped with its identity. Not editable here; see `add-profile-embedding-model`. |
 | Ollama address while embeddings use Ollama | The running embedder keeps the address it was built with; a live change would split the two roles. Locked (D4). |
-| A value from the environment or `.env` | Read once when the process starts. The field is locked and says so. |
-| Values for `omrg` over stdio, the CLI and experiment contexts | Separate processes or contexts that read `.env` by design. Experiment contexts stay reproducible. |
+| A value from the environment, `.env` or the config file | Read once when the process starts. The field is locked and says so. |
+| Saved web values for `omrg` over stdio, the CLI and experiment contexts | Separate processes or contexts that read the environment, `.env` and the user config folder (D10) by design. Experiment contexts stay reproducible. |
 
 Alternatives: (a) restart for each change with a banner. Rejected by the user. (b) Rebuild the whole Engine. Rejected: it closes the store and the embedder while requests run. (c) Pass the Chat model per request as a client completion (`engine_answer.py:65-71`). Rejected: that path caps rounds, labels the source as an MCP client, and does not reach metadata extraction.
 
@@ -166,7 +180,7 @@ OpenRouter moves its test from `/models` to `/key`. The OpenRouter documentation
 
 | Route | Scope | Body | Result |
 |---|---|---|---|
-| `GET /v1/connections` (changed) | `read` | none | `config_dir`, `keychain` (`available` or `unavailable`), one entry per registered provider (D5): `fields[]` of `{id, label, kind, value (url only), source, locked, lock_reason, set, last4, saved_at, state}`, `read_only[]`, `roles`, `installed`, `install_hint` |
+| `GET /v1/connections` (changed) | `read` | none | `config_dir`, `user_config_dir` (D10, `~` for home), `keychain` (`available` or `unavailable`), one entry per registered provider (D5): `fields[]` of `{id, label, kind, value (url only), source (`env`, `config-file`, `saved`, `keychain`, `key-file`, `default` or `none`), locked, lock_reason, set, last4, saved_at, state}`, `read_only[]`, `roles`, `installed`, `install_hint` |
 | `PUT /v1/connections/{provider}` | `manage`, session | `{fields: {<id>: url or null}}` | Saves or clears addresses. 400 bad address, 404 unknown provider or field, 409 locked |
 | `PUT /v1/connections/{provider}/key` | `credentials`, session | `{api_key}` (8 to 512 printable characters, no spaces) | Saves to the keychain. 409 from `env` or with no keychain |
 | `DELETE /v1/connections/{provider}/key` | `credentials`, session | none | Removes from the keychain and clears the flag |
@@ -205,6 +219,34 @@ The design follows `web/DESIGN.md` and the `omrg-design` skill: primitives only 
 
 ADR-083, "LLM provider settings in the web workspace". ADR-082 is taken by `add-chat-history-and-canvas-view-controls`, so this change uses ADR-083.
 
+### D10. User config folder (read-only)
+
+The user wants operator-set values in files, as in OMMS (`~/.config/omms/omms.jsonc` and `secrets/<name>.key`). The web page cannot write them. Decision made on 2026-10-18.
+
+**Location.** `$OMRG_CONFIG_DIR`, else `$XDG_CONFIG_HOME/omrg`, else `~/.config/omrg`. The folder holds `omrg.jsonc` and `secrets/<provider>.key`. The app never writes, creates or changes the permissions of anything there. A missing folder or file is normal and gives no value and no warning.
+
+**`omrg.jsonc`.** JSON with comments and trailing commas. Optional non-secret keys: `ollama_base_url`, `llamacpp_chat_url`, `openai_compatible_base_url`, and `answer: {provider, model}`. Secret fields hold only a reference: `env://NAME` (read the named environment variable) or `file://<absolute path>` (the path MUST resolve inside `secrets/`). A literal key in the file is ignored, with one warning that names the field and never the value. A broken file gives no values and one warning.
+
+**Key files.** One key per provider; the file name is the registry provider name (`secrets/openrouter.key`). At most 4 KiB; surrounding whitespace is stripped. A symlink that leaves the folder, or a file that is not a regular file, is refused. A file looser than 0600, or a folder looser than 0700, is still read, and logs one warning with the path and the mode (never the content). The permission check is skipped on Windows.
+
+**Where it lives in the code.** The sources are read by the `config/` package (a new module), so the CLI and the stdio MCP server read the same folder. Saved web values stay web-only. Both files are read at launch. A change needs a restart, as for `.env`.
+
+**Redaction.** Keys that come from the folder (a key file, or an `env://` or `file://` reference) join the redaction set exactly like environment keys.
+
+**API.** `GET /v1/connections`: the field `source` gains `config-file` and `key-file`. The response gains a top-level `user_config_dir`, with `~` for the home folder. The lock text for a config-file field reads "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it." The card text for a locked field reads "Set from config file (read-only here)". For a key file it reads "Set from key file (read-only here). Saving a key in the keychain overrides it."
+
+**Tests.** Tests set `OMRG_CONFIG_DIR` to a temporary folder, so they never read the real one.
+
+**Honest limits.** The files are plaintext on disk. Permissions do not stop another process of the same user, and an AI coding agent runs as that user. The folder gives no security gain over `.env`. It suits headless machines and containers that mount a folder. On a desktop the keychain stays the advice.
+
+| Option | Verdict |
+|---|---|
+| **Read-only folder with `omrg.jsonc` and `secrets/` (chosen, confirmed by the user)** | Mirrors OMMS. Operator edits the files, the app reads them. No write path to secure. Cost: plaintext, and a restart for each change. |
+| Write key files from the page | Rejected. It reverses the rule "no keychain means no saved key" and makes the app a writer of plaintext secrets. |
+| Allow a literal key in `omrg.jsonc` | Rejected. One config file would mix settings and secrets, and would be shared or committed by accident. References keep the file safe to share. |
+| Put the values in `.env` | Rejected. It is the status quo. `.env` sits in the project folder and cannot be shared by several projects or mounted into a container as one folder. |
+| Several named OpenAI-compatible endpoints | Out of scope. A possible later change. |
+
 ### Rejected alternatives for the new providers
 
 | Option | Verdict |
@@ -224,6 +266,11 @@ ADR-083, "LLM provider settings in the web workspace". ADR-082 is taken by `add-
 - [The model list from OpenRouter is large] → 8 MiB read limit, 1,000 names, sorted; free text still works.
 - [`add-profile-embedding-model` adds per-profile Ollama embeddings] → D4: the Ollama lock and the Engine guard must cover profiles.
 - [The route `#/settings/<section>` is needed by this change] → Resolved: `studio-profiles-gallery` carries the route and its scenario in its `workspace-presentation` delta, so only one change modifies that requirement. This change lands after it. Task 1.2 checks this.
+
+- [Key files are plaintext, and an AI coding agent can read them] → docs and ADR-083 say so. The keychain stays the advice on a desktop. The folder is for headless machines and containers.
+- [A user edits `omrg.jsonc` and sees no change] → both files are read at launch. The lock text says "restart to change it".
+- [A bad file mode exposes a key to other users] → one warning with the path and mode, never the content.
+- [Experiment contexts that call `get_settings()` also read the folder] → they read the same sources as the CLI. Experiment write-ups SHOULD record when a value came from the folder.
 
 ## Migration Plan
 

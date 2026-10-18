@@ -25,6 +25,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ....compose_providers import ProviderValues, locked_fields, provider_effective_settings
 from ....compose_providers import provider_settings as _provider_settings
+from ....config.user_config import config_file_reason
 from ....core.providers.llm import registry as llm_registry
 from ....core.workspace import WorkspaceLayout
 from ....integrations.workspace_sqlite.settings import WorkspaceSettings
@@ -129,6 +130,7 @@ def _status(runtime: WebRuntime) -> dict[str, Any]:
     settings = _provider_settings(provider_values_of(runtime))
     explicit = settings.provider_explicit
     env_vars = [_VARIABLES[p] for p in _VARIABLES if p in explicit]
+    from_file = any(p in settings.config_file_fields for p in _VARIABLES)
     saved = any(values.values.get(p) for p in _VARIABLES)
     provider, model = settings.answer.provider.strip(), settings.answer.model
     reason = "disabled" if not settings.answer.enabled else None
@@ -137,18 +139,26 @@ def _status(runtime: WebRuntime) -> dict[str, Any]:
     return {
         "provider": provider,
         "model": model,
-        "source": "env" if env_vars else "saved" if saved else "default",
+        "source": "config-file"
+        if from_file
+        else "env"
+        if env_vars
+        else "saved"
+        if saved
+        else "default",
         "locked": bool(env_vars),
-        "lock_reason": _lock_reason(env_vars),
+        "lock_reason": _lock_reason(env_vars, settings if from_file else None),
         "enabled": settings.answer.enabled,
         "ready": reason is None,
         "reason": reason,
     }
 
 
-def _lock_reason(env_vars: list[str]) -> str | None:
+def _lock_reason(env_vars: list[str], file_settings: Any = None) -> str | None:
     if not env_vars:
         return None
+    if file_settings is not None:
+        return config_file_reason(file_settings.user_config_dir)
     return f"Set by {' and '.join(env_vars)} in the environment or .env. Remove it to edit here."
 
 
@@ -166,7 +176,8 @@ def _locked_response(settings: Any) -> Response | None:
     names = [_VARIABLES[p] for p in _VARIABLES if p in locked]
     if not names:
         return None
-    return error_response(409, _lock_reason(names) or "The Chat choice is locked.")
+    from_file = settings if locked.get(_PROVIDER_PATH) == "config-file" else None
+    return error_response(409, _lock_reason(names, from_file) or "The Chat choice is locked.")
 
 
 @router.get("/settings/chat", operation_id="getChatSettings")

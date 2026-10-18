@@ -67,3 +67,8 @@ const CLOUD_HOSTS: Record<string, string> = { openrouter: "openrouter.ai" };
 export function cloudHost(connection: Connection): string {
   return CLOUD_HOSTS[connection.provider] ?? connection.display_name;
 }
+
+/** The read-only line for a value that the server environment, `.env` or the user config file sets. */
+export function lockedSourceLine(source: string): string {
+  return source === "config-file" ? "Set from config file (read-only here)" : "Set from environment (read-only here)";
+}

@@ -132,7 +132,7 @@ The rules for keychain storage, the environment lock, redaction, the last four c
 
 ### Requirement: Each provider value has one source
 
-Each editable address and the Chat choice SHALL come from the first of: the process environment or `.env` (source `env`), the value saved in the workspace (`saved`), the default (`default`). An API key SHALL come from the environment or `.env` (`env`), then the system keychain (`keychain`), else none (`none`). A value from `env` SHALL lock its field: a write SHALL return 409 naming the variable to remove, and SHALL change nothing.
+Each editable address and the Chat choice SHALL come from the first of these sources, highest first: the process environment or `.env` (source `env`), `omrg.jsonc` in the user config folder (`config-file`), the value saved in the workspace (`saved`), the default (`default`). An API key SHALL come from the first of: the environment or `.env` (`env`), `omrg.jsonc` through an `env://` or `file://` reference (`config-file`), the system keychain (`keychain`), the key file `secrets/<provider>.key` (`key-file`), else none (`none`). A value from `env` or `config-file` SHALL lock its field: a write SHALL return 409 naming the variable to remove or the file to edit, and SHALL change nothing. A value from `keychain` or `key-file` SHALL NOT lock its field.
 
 #### Scenario: Environment wins and locks
 
@@ -242,7 +242,7 @@ A provider address SHALL be an absolute `http` or `https` URL with a host, at mo
 
 ### Requirement: Saved values apply at once in the web server
 
-A saved address, key or Chat choice SHALL apply in the `omrg web` process with no restart: to the answer model, the claim-verification judge and metadata extraction, including for MCP clients served over HTTP. Calls that already started SHALL finish with the old client; later calls SHALL use the new one. Embedding identity SHALL NOT change. `omrg` over stdio, the CLI and experiment contexts SHALL read `.env` only.
+A saved address, key or Chat choice SHALL apply in the `omrg web` process with no restart: to the answer model, the claim-verification judge and metadata extraction, including for MCP clients served over HTTP. Calls that already started SHALL finish with the old client; later calls SHALL use the new one. Embedding identity SHALL NOT change. `omrg` over stdio, the CLI and experiment contexts SHALL NOT see saved values; they SHALL read the environment, `.env` and the user config folder only.
 
 #### Scenario: Answer uses the new address at once
 
@@ -256,7 +256,7 @@ A saved address, key or Chat choice SHALL apply in the `omrg web` process with n
 
 #### Scenario: Stdio server unchanged
 
-- **WHEN** the user saves an OpenRouter key in the web workspace and starts `omrg` over stdio with no key in `.env`
+- **WHEN** the user saves an OpenRouter key in the web workspace and starts `omrg` over stdio with no key in `.env` or the user config folder
 - **THEN** the stdio server MUST report no OpenRouter key
 
 ### Requirement: The Ollama address is locked while Ollama makes embeddings
@@ -338,3 +338,213 @@ When any embedding use of the server names Ollama, the Ollama address SHALL be l
 
 - **WHEN** the user asks for the llama.cpp models and nothing listens at the chat address
 - **THEN** the result MUST report not reachable with the reason `refused`
+
+### Requirement: The user config folder is read-only
+
+The server, the CLI and the stdio MCP server SHALL read the user config folder: `$OMRG_CONFIG_DIR` when set, else `$XDG_CONFIG_HOME/omrg` when set, else `~/.config/omrg`. The folder MAY hold `omrg.jsonc` and `secrets/<provider>.key`. The code SHALL NOT write, create, move, delete or change the permissions of the folder or any file in it. A missing folder or file SHALL give no value and no warning. Both files SHALL be read at launch; a change SHALL need a restart.
+
+#### Scenario: Folder from OMRG_CONFIG_DIR
+
+- **WHEN** `OMRG_CONFIG_DIR` names a folder that holds `omrg.jsonc` and `XDG_CONFIG_HOME` is also set
+- **THEN** the server MUST read `omrg.jsonc` from the `OMRG_CONFIG_DIR` folder
+
+#### Scenario: Folder from XDG_CONFIG_HOME
+
+- **WHEN** `OMRG_CONFIG_DIR` is not set and `XDG_CONFIG_HOME` names a folder
+- **THEN** the server MUST read the `omrg` subfolder of it
+
+#### Scenario: Default folder
+
+- **WHEN** neither variable is set
+- **THEN** the server MUST read `~/.config/omrg`
+
+#### Scenario: Missing folder
+
+- **WHEN** the folder does not exist
+- **THEN** the server MUST start, MUST log no warning, and MUST NOT create the folder
+
+#### Scenario: Nothing is written
+
+- **WHEN** the server starts and a user saves addresses and keys in the web page
+- **THEN** no file or folder under the user config folder MUST be created, changed or have its mode changed
+
+#### Scenario: Restart needed
+
+- **WHEN** the user edits `omrg.jsonc` while the server runs
+- **THEN** the server MUST keep the values it read at launch
+
+### Requirement: omrg.jsonc holds non-secret values and key references
+
+`omrg.jsonc` SHALL accept JSON with comments and trailing commas. It MAY hold the keys `ollama_base_url`, `llamacpp_chat_url`, `openai_compatible_base_url` and `answer` with the members `provider` and `model`. It MAY hold a reference for each secret field, and a reference SHALL be `env://NAME` or `file://<absolute path>`. `env://NAME` SHALL read the environment variable `NAME`. A value in `omrg.jsonc` SHALL be validated by the same rules as a saved value (provider addresses are validated). A file that cannot be parsed SHALL give no values and one warning.
+
+#### Scenario: Address from the config file
+
+- **WHEN** `omrg.jsonc` sets `ollama_base_url` and neither the environment nor `.env` sets `OLLAMA_BASE_URL`
+- **THEN** the Ollama address field MUST report the source `config-file`, MUST be locked, and a save MUST return 409
+
+#### Scenario: Chat choice from the config file
+
+- **WHEN** `omrg.jsonc` holds `answer` with a provider and a model
+- **THEN** `GET /v1/settings/chat` MUST report the source `config-file` and locked, and `PUT /v1/settings/chat` MUST return 409
+
+#### Scenario: Comments and trailing commas
+
+- **WHEN** `omrg.jsonc` holds comments and a trailing comma and is otherwise valid
+- **THEN** the server MUST read the values
+
+#### Scenario: env reference
+
+- **WHEN** `omrg.jsonc` sets the OpenRouter key to `env://MY_ROUTER_KEY` and that variable holds a key
+- **THEN** the OpenRouter key field MUST report the source `config-file` and set, and the key MUST be used
+
+#### Scenario: env reference to an empty variable
+
+- **WHEN** the reference names a variable that is not set
+- **THEN** the field MUST give no value from the config file and the server MUST log no key text
+
+#### Scenario: Broken file
+
+- **WHEN** `omrg.jsonc` is not valid JSONC
+- **THEN** the server MUST read no value from it, MUST log one warning, and MUST start
+
+#### Scenario: Invalid address
+
+- **WHEN** `omrg.jsonc` sets `ollama_base_url` to `file:///etc/passwd`
+- **THEN** the server MUST ignore that value and MUST log one warning that names the field and not the value
+
+### Requirement: A literal key in omrg.jsonc is ignored
+
+A secret field in `omrg.jsonc` that holds a value which is not an `env://` or `file://` reference SHALL be ignored. The server SHALL log one warning that names the field and SHALL NOT log the value. The server SHALL NOT use the value.
+
+#### Scenario: Literal key ignored
+
+- **WHEN** `omrg.jsonc` sets the OpenRouter key to a literal string
+- **THEN** the OpenRouter key field MUST NOT report the source `config-file`, the key MUST NOT be used, and the log MUST name the field and MUST NOT hold any part of the string
+
+### Requirement: A file reference stays inside secrets
+
+A `file://` reference SHALL resolve, after symlinks are followed, to a path inside the `secrets/` folder of the user config folder. A reference that resolves elsewhere SHALL be refused: the field SHALL give no value from the config file and the server SHALL log one warning that names the field.
+
+#### Scenario: Reference inside secrets
+
+- **WHEN** `omrg.jsonc` sets a key to `file://` followed by the absolute path of `secrets/router.key`
+- **THEN** the server MUST read the key from that file
+
+#### Scenario: Reference outside secrets
+
+- **WHEN** the reference is `file:///etc/passwd` or uses `..` to leave `secrets/`
+- **THEN** the server MUST NOT read the file and MUST log one warning that names the field
+
+#### Scenario: Symlink leaves the folder
+
+- **WHEN** the referenced file is a symlink to a path outside `secrets/`
+- **THEN** the server MUST NOT read the file
+
+### Requirement: Key files follow safety rules
+
+`secrets/<provider>.key` SHALL hold one key for the provider whose registry name is the file name. The server SHALL read at most 4 KiB and SHALL strip surrounding whitespace. The server SHALL refuse a symlink that resolves outside the user config folder and SHALL refuse a path that is not a regular file. When a key file has a mode looser than 0600, or the `secrets/` folder has a mode looser than 0700, the server SHALL still read the key and SHALL log one warning with the path and the mode, and SHALL NOT log the content. The permission check SHALL be skipped on Windows. A key file SHALL apply to secret fields only.
+
+#### Scenario: Key file read
+
+- **WHEN** `secrets/openrouter.key` holds a key with a trailing newline and no other source sets the OpenRouter key
+- **THEN** the OpenRouter key field MUST report set with the source `key-file`, and the key MUST be used without the newline
+
+#### Scenario: File too large
+
+- **WHEN** a key file holds more than 4 KiB
+- **THEN** the server MUST NOT use it and MUST log one warning that names the path
+
+#### Scenario: Symlink out of the folder
+
+- **WHEN** `secrets/openrouter.key` is a symlink to a file outside the user config folder
+- **THEN** the server MUST refuse it and MUST log one warning
+
+#### Scenario: Not a regular file
+
+- **WHEN** `secrets/openrouter.key` is a folder or a device
+- **THEN** the server MUST refuse it
+
+#### Scenario: Loose permissions
+
+- **WHEN** a key file has mode 0644 on macOS or Linux
+- **THEN** the server MUST use the key, and MUST log one warning that holds the path and the mode and no part of the key
+
+#### Scenario: Unknown file name
+
+- **WHEN** `secrets/` holds a file whose name is not a registered provider
+- **THEN** the server MUST ignore it
+
+### Requirement: The key file does not lock the key field
+
+A key from a key file SHALL rank below the system keychain. A key saved in the keychain SHALL override it. Removing the saved key SHALL make the key file apply again. `PUT` and `DELETE /v1/connections/{provider}/key` SHALL NOT return 409 only because a key file exists. A value from `omrg.jsonc` SHALL lock its field in the same way as the environment.
+
+#### Scenario: Keychain overrides the key file
+
+- **WHEN** `secrets/openrouter.key` holds a key and the user saves a different key in the keychain
+- **THEN** the OpenRouter key field MUST report the source `keychain` and the saved key MUST be used
+
+#### Scenario: Removing the saved key falls back
+
+- **WHEN** the user removes the saved OpenRouter key and `secrets/openrouter.key` exists
+- **THEN** the OpenRouter key field MUST report the source `key-file`
+
+#### Scenario: Config file locks
+
+- **WHEN** `omrg.jsonc` references an OpenRouter key
+- **THEN** `PUT /v1/connections/openrouter/key` MUST return 409 and the lock text MUST read "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it."
+
+### Requirement: The CLI and the stdio server read the user config folder
+
+The `config/` package SHALL read the user config folder, so the CLI, the stdio MCP server and the web server SHALL use the same values from it. Saved web values (database addresses and keychain keys) SHALL stay visible to the web server only.
+
+#### Scenario: Stdio uses the config folder
+
+- **WHEN** `omrg.jsonc` sets `ollama_base_url` and the user starts `omrg` over stdio
+- **THEN** the stdio server MUST use that address
+
+#### Scenario: CLI uses a key file
+
+- **WHEN** `secrets/openrouter.key` exists and the user runs a CLI command that needs the OpenRouter key
+- **THEN** the CLI MUST use that key
+
+#### Scenario: Saved web value stays web-only
+
+- **WHEN** the user saves an address in the web workspace and starts the CLI
+- **THEN** the CLI MUST NOT use the saved address
+
+### Requirement: Keys from the user config folder are redacted
+
+A key that comes from the user config folder (a key file, or an `env://` or `file://` reference) SHALL join the redaction set exactly like a key from the environment. From the moment the server reads it, the server log, log panel, log stream and error text of answer results SHALL NOT contain it. A response SHALL hold at most the last four characters of it, and only when it has 16 or more characters.
+
+#### Scenario: Key file key in a log line
+
+- **WHEN** the server reads a key from `secrets/openrouter.key` and a later log message contains it
+- **THEN** the buffered record, `GET /v1/logs` and the log stream MUST show the message with the key removed
+
+#### Scenario: Only the last four characters
+
+- **WHEN** a 64-character key comes from a key file and the user reads `GET /v1/connections`
+- **THEN** no response body MUST contain any five consecutive characters of the key
+
+### Requirement: Tests never read the real config folder
+
+The test suite SHALL set `OMRG_CONFIG_DIR` to a temporary folder before any settings are resolved, so no test reads or depends on the real user config folder.
+
+#### Scenario: Suite isolates the folder
+
+- **WHEN** a test resolves settings while `~/.config/omrg/omrg.jsonc` exists on the machine
+- **THEN** the test MUST NOT see any value from it
+
+### Requirement: The connections summary names the config folder
+
+`GET /v1/connections` SHALL return a top-level `user_config_dir` that names the user config folder with `~` for the home folder. The field `source` SHALL take one of `env`, `config-file`, `saved`, `keychain`, `key-file`, `default` and `none`. The response SHALL NOT contain a key from the folder beyond the last four characters.
+
+#### Scenario: Folder named
+
+- **WHEN** the user reads `GET /v1/connections` with the default folder
+- **THEN** `user_config_dir` MUST read `~/.config/omrg`
+
+#### Scenario: Source values
+
+- **WHEN** an address comes from `omrg.jsonc` and a key from a key file
+- **THEN** the address `source` MUST be `config-file` and the key `source` MUST be `key-file`

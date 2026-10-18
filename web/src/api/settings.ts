@@ -21,8 +21,8 @@ export interface Health {
 export const CONNECTION_ROLES = ["embeddings", "answers", "metadata", "verification"] as const;
 export type ConnectionRole = (typeof CONNECTION_ROLES)[number];
 
-/** Where a value comes from. `env` locks it; a key comes from `env`, `keychain` or `none`. */
-export type FieldSource = "env" | "saved" | "keychain" | "default" | "none";
+/** Where a value comes from. `env` and `config-file` lock it; a key comes from one of those, `keychain`, `key-file` or `none`. */
+export type FieldSource = "env" | "config-file" | "saved" | "keychain" | "key-file" | "default" | "none";
 
 export interface ProviderField {
   id: string;
@@ -67,6 +67,8 @@ export interface ConnectionList {
   status: "ok";
   /** The server's working directory. The settings read `<config_dir>/.env`. */
   config_dir: string;
+  /** The read-only user config folder, with `~` for the home folder. */
+  user_config_dir: string;
   keychain: "available" | "unavailable";
   connections: Connection[];
 }
@@ -99,7 +101,7 @@ export interface ChatSettings {
   status: "ok";
   provider: string | null;
   model: string | null;
-  source: "env" | "saved" | "default";
+  source: "env" | "config-file" | "saved" | "default";
   locked: boolean;
   lock_reason: string | null;
   enabled: boolean;
