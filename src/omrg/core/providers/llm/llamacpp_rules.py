@@ -75,6 +75,15 @@ LLAMACPP_SERVER_FIELDS: tuple[ConnectionField, ...] = (
         minimum=2048,
         maximum=262144,
     ),
+    ConnectionField(
+        "idle_sleep",
+        "Idle sleep (seconds)",
+        "int",
+        "llamacpp_idle_sleep_seconds",
+        "LLAMACPP_IDLE_SLEEP_SECONDS",
+        minimum=0,
+        maximum=86400,
+    ),
 )
 
 
@@ -149,10 +158,20 @@ def chat_port(url: str) -> int | None:
     return number if 1 <= number <= 65535 else None
 
 
-def build_argv(binary: str, model: str, kind: ModelKind, port: int, window: int) -> list[str]:
-    """Return the argument list: fixed flags and the checked values, nothing else."""
+def build_argv(
+    binary: str, model: str, kind: ModelKind, port: int, window: int, *, idle_sleep: int = 0
+) -> list[str]:
+    """Return the argument list: fixed flags and the checked values, nothing else.
+
+    ``--sleep-idle-seconds`` is added only when *idle_sleep* is above 0. The
+    server then frees its model after that many idle seconds and reloads it on
+    the next request.
+    """
     flag = "-m" if kind == "file" else "-hf"
-    return [binary, flag, model, "--host", "127.0.0.1", "--port", str(port), "-c", str(window)]
+    argv = [binary, flag, model, "--host", "127.0.0.1", "--port", str(port)]
+    if idle_sleep > 0:
+        argv += ["--sleep-idle-seconds", str(idle_sleep)]
+    return [*argv, "-c", str(window)]
 
 
 def child_environment(environ: Mapping[str, str], kind: ModelKind) -> dict[str, str]:

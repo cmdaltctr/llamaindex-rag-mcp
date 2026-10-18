@@ -298,3 +298,33 @@ def test_the_real_environment_function_reads_os_environ(monkeypatch: pytest.Monk
 def test_make_program_helper_is_executable(tmp_path: Path) -> None:
     program = make_program(tmp_path)
     assert program.stat().st_mode & stat.S_IXUSR
+
+
+# ── Idle sleep (task 17.9) ───────────────────────────────────────────────
+
+
+def test_argv_adds_the_idle_sleep_flag_when_above_zero() -> None:
+    argv = rules.build_argv("/b/llama-server", "/m/q.gguf", "file", 8081, 16384, idle_sleep=300)
+    assert argv[-4:] == ["--sleep-idle-seconds", "300", "-c", "16384"]
+    assert [item for item in argv if item.startswith("-")] == [
+        "-m",
+        "--host",
+        "--port",
+        "--sleep-idle-seconds",
+        "-c",
+    ]
+
+
+def test_argv_has_no_idle_sleep_flag_at_zero() -> None:
+    argv = rules.build_argv("/b/llama-server", "/m/q.gguf", "file", 8081, 16384, idle_sleep=0)
+    assert "--sleep-idle-seconds" not in argv
+
+
+def test_the_idle_sleep_field_is_a_whole_number_from_zero_to_a_day() -> None:
+    field = next(f for f in rules.LLAMACPP_SERVER_FIELDS if f.id == "idle_sleep")
+    assert (field.kind, field.settings_field, field.env_var) == (
+        "int",
+        "llamacpp_idle_sleep_seconds",
+        "LLAMACPP_IDLE_SLEEP_SECONDS",
+    )
+    assert (field.minimum, field.maximum) == (0, 86400)

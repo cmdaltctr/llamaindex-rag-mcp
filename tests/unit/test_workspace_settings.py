@@ -148,6 +148,8 @@ def test_stored_field_ids_match_the_provider_descriptors() -> None:
     assert descriptors
     url_ids = {f.id for d in descriptors.values() for f in d.fields if f.kind in ("url", "int")}
     secret_ids = {f.id for d in descriptors.values() for f in d.fields if f.kind == "secret"}
-    managed_server_ids = {"server_binary", "server_model", "context_window"}  # not a descriptor
+    from omrg.core.providers.llm.llamacpp_rules import LLAMACPP_SERVER_FIELDS
+
+    managed_server_ids = {f.id for f in LLAMACPP_SERVER_FIELDS}  # not a provider descriptor
     assert PROVIDER_FIELD_IDS == url_ids | managed_server_ids | {KEY_SAVED_AT}
     assert not secret_ids & PROVIDER_FIELD_IDS

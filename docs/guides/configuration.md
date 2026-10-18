@@ -393,6 +393,7 @@ Two Chat providers serve answering only. They are not valid for `EMBED_PROVIDER`
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint |
 | `OLLAMA_CONTEXT_WINDOW` | `16384` | Ollama context window in tokens, 2,048 to 262,144. See [Context windows](#context-windows) |
 | `LLAMACPP_CONTEXT_WINDOW` | `16384` | Context window (`-c`) for the llama.cpp chat server that `omrg web` starts, 2,048 to 262,144 |
+| `LLAMACPP_IDLE_SLEEP_SECONDS` | `300` | Idle seconds before that server frees its model (`--sleep-idle-seconds`), 0 to 86,400. 0 turns sleep off |
 | `LLAMACPP_SERVER_BINARY` | unset | Absolute path to `llama-server`, for the server that `omrg web` starts. See [Local llama.cpp server](#local-llamacpp-server) |
 | `LLAMACPP_SERVER_MODEL` | unset | Absolute `.gguf` path or Hugging Face id `org/name[:tag]` for that server |
 
@@ -421,7 +422,7 @@ Connection details for each: [Providers](providers.md).
 
 #### Change provider values in the web workspace
 
-In `omrg web`, Settings > Providers can save these values: `OLLAMA_BASE_URL`, `OLLAMA_CONTEXT_WINDOW`, `LLAMACPP_CHAT_URL`, `LLAMACPP_SERVER_BINARY`, `LLAMACPP_SERVER_MODEL`, `LLAMACPP_CONTEXT_WINDOW`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`. The server uses the first source it finds, highest first:
+In `omrg web`, Settings > Providers can save these values: `OLLAMA_BASE_URL`, `OLLAMA_CONTEXT_WINDOW`, `LLAMACPP_CHAT_URL`, `LLAMACPP_SERVER_BINARY`, `LLAMACPP_SERVER_MODEL`, `LLAMACPP_CONTEXT_WINDOW`, `LLAMACPP_IDLE_SLEEP_SECONDS`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`. The server uses the first source it finds, highest first:
 
 | Rank | Source | Shown as | Locks the field |
 |---|---|---|---|
@@ -450,7 +451,7 @@ The folder is the first of these:
 
 It can hold two things:
 
-- `omrg.jsonc`: JSON with comments and trailing commas. Optional keys: `ollama_base_url`, `ollama_context_window`, `llamacpp_chat_url`, `llamacpp_server_binary`, `llamacpp_server_model`, `llamacpp_context_window`, `openai_compatible_base_url` and `answer` (`provider`, `model`). A secret field holds only a reference: `env://NAME` or `file://<absolute path inside secrets/>`.
+- `omrg.jsonc`: JSON with comments and trailing commas. Optional keys: `ollama_base_url`, `ollama_context_window`, `llamacpp_chat_url`, `llamacpp_server_binary`, `llamacpp_server_model`, `llamacpp_context_window`, `llamacpp_idle_sleep_seconds`, `openai_compatible_base_url` and `answer` (`provider`, `model`). A secret field holds only a reference: `env://NAME` or `file://<absolute path inside secrets/>`.
 - `secrets/<provider>.key`: one key for each provider. The file name is the provider name (`openrouter`, `openai_compatible`, `anthropic`).
 
 Example `omrg.jsonc` (fake values):
@@ -516,6 +517,7 @@ Ollama chat calls need an explicit context window. Without one, LlamaIndex read 
 | Program path | `LLAMACPP_SERVER_BINARY` | `llamacpp_server_binary` |
 | Model | `LLAMACPP_SERVER_MODEL` | `llamacpp_server_model` |
 | Context window | `LLAMACPP_CONTEXT_WINDOW` | `llamacpp_context_window` |
+| Idle sleep | `LLAMACPP_IDLE_SLEEP_SECONDS` | `llamacpp_idle_sleep_seconds` |
 | Port | `LLAMACPP_CHAT_URL` | `llamacpp_chat_url` |
 
 The sources and locks are the same as for other provider values.
@@ -540,8 +542,11 @@ Example `omrg.jsonc`:
   "llamacpp_server_binary": "/opt/homebrew/bin/llama-server",
   "llamacpp_server_model": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
   "llamacpp_context_window": 16384,
+  "llamacpp_idle_sleep_seconds": 300,
 }
 ```
+
+Idle sleep. With the default of 300, the server frees the model after five idle minutes and reloads it on the next request, so that answer is slower. The process keeps running. Set 0 to keep the model loaded, or to run a `llama-server` build that has no sleep mode.
 
 Limits. The program path is editable in the GUI by choice. The guardrails limit what can run to a file named `llama-server`. Anyone with the browser session and the `credentials` scope can still point the setting at any file with that name. The llama.cpp embedding server is not managed. The stdio MCP server and the CLI never start or stop the server.
 

@@ -99,6 +99,9 @@ class ProviderSourceMixin(BaseModel):
     ollama_context_window: int = Field(16384, ge=2048, le=262144)
     #: Tokens passed as ``-c`` to the llama.cpp server that ``omrg web`` starts.
     llamacpp_context_window: int = Field(16384, ge=2048, le=262144)
+    #: Idle seconds before the managed llama.cpp server frees its model
+    #: (``--sleep-idle-seconds``). 0 turns sleep off.
+    llamacpp_idle_sleep_seconds: int = Field(300, ge=0, le=86400)
     #: Program and model of the managed llama.cpp server (empty means not set).
     llamacpp_server_binary: str = ""
     llamacpp_server_model: str = ""

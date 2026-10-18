@@ -46,7 +46,7 @@ llama-server -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 --port 8080 --embeddings
 llama-server -hf Qwen/Qwen3-0.6B-GGUF:Q8_0 --port 8081
 ```
 
-**Managed server or your own.** You can start `llama-server` yourself, as above. `omrg web` can also start, stop and restart one chat server for you (Settings > Providers > llama.cpp > Local server). omrg manages only the server it started. It never touches a server you started yourself. It does not manage the embedding server. See [Local llama.cpp server](configuration.md#local-llamacpp-server) for the settings and guardrails.
+**Managed server or your own.** You can start `llama-server` yourself, as above. `omrg web` can also start, stop and restart one chat server for you (Settings > Providers > llama.cpp > Local server). omrg manages only the server it started. It never touches a server you started yourself. It does not manage the embedding server. By default omrg passes `--sleep-idle-seconds 300`, so its server frees the model after five idle minutes, as Ollama does. See [Local llama.cpp server](configuration.md#local-llamacpp-server) for the settings and guardrails.
 
 ```bash
 # .env

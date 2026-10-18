@@ -113,7 +113,7 @@ def test_the_default_status(rig: Any) -> None:
             False,
         )
         saved = body["saved"]
-        assert set(saved) == {"binary", "model", "context_window"}
+        assert set(saved) == {"binary", "model", "context_window", "idle_sleep"}
         assert (saved["binary"]["value"], saved["binary"]["source"]) == ("", "default")
         window = saved["context_window"]
         assert (window["value"], window["source"], window["locked"]) == (16384, "default", False)
@@ -138,7 +138,7 @@ def test_save_all_three_then_read_them_with_source_saved(rig: Any) -> None:
         assert saved["binary"]["value"] == str(r.program.path)
         assert saved["model"]["value"] == str(r.model)
         assert saved["context_window"]["value"] == 4096
-        assert {saved[k]["source"] for k in saved} == {"saved"}
+        assert {saved[k]["source"] for k in ("binary", "model", "context_window")} == {"saved"}
 
 
 def test_a_null_clears_a_saved_value(rig: Any) -> None:
@@ -412,3 +412,44 @@ def test_the_routes_start_no_process_themselves() -> None:
     ).read_text(encoding="utf-8")
     assert "subprocess" not in source
     assert "os.kill" not in source
+
+
+# ── Idle sleep (task 17.9) ───────────────────────────────────────────────
+
+
+def test_idle_sleep_defaults_to_300_and_is_passed_at_start(rig: Any) -> None:
+    with rig() as r:
+        sleep = r.get()["saved"]["idle_sleep"]
+        assert (sleep["value"], sleep["source"], sleep["min"], sleep["max"]) == (
+            300,
+            "default",
+            0,
+            86400,
+        )
+        r.save_all()
+        assert r.post("start").status_code == 200
+        r.wait_state("running")
+        argv = r.program.argv()
+        assert argv[argv.index("--sleep-idle-seconds") + 1] == "300"
+
+
+def test_idle_sleep_zero_sends_no_flag_and_a_change_needs_a_restart(rig: Any) -> None:
+    with rig() as r:
+        r.save_all(idle_sleep=0)
+        assert r.post("start").status_code == 200
+        body = r.wait_state("running")
+        assert "--sleep-idle-seconds" not in r.program.argv()
+        assert body["pending_restart"] is False
+        assert r.put({"idle_sleep": 120}).status_code == 200
+        assert r.get()["pending_restart"] is True
+        assert r.post("restart").status_code == 200
+        r.wait_state("running")
+        argv = r.program.argv()
+        assert argv[argv.index("--sleep-idle-seconds") + 1] == "120"
+
+
+@pytest.mark.parametrize("bad", [-1, 86401, "soon", 1.5])
+def test_an_idle_sleep_out_of_range_is_400(rig: Any, bad: object) -> None:
+    with rig() as r:
+        assert r.put({"idle_sleep": bad}).status_code == 400
+        assert r.get()["saved"]["idle_sleep"]["source"] == "default"

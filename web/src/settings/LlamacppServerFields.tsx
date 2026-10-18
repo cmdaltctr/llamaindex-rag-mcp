@@ -2,7 +2,7 @@ import type { ServerField } from "../api/llamacppServer";
 import { useSaveLlamacppServer } from "../api/llamacppServerHooks";
 import { EditableValue } from "./EditableValue";
 
-type Key = "binary" | "model" | "context_window";
+type Key = "binary" | "model" | "context_window" | "idle_sleep";
 
 interface FieldRow {
   key: Key;
@@ -15,13 +15,14 @@ const ROWS: FieldRow[] = [
   { key: "binary", noun: "program path", inputType: "text" },
   { key: "model", noun: "model", inputType: "text" },
   { key: "context_window", noun: "context window", inputType: "number" },
+  { key: "idle_sleep", noun: "idle sleep", inputType: "number" },
 ];
 
 function sourceLine(field: ServerField): string {
-  return `${field.label.replace(/ \(tokens\)$/, "")} source: ${field.source}`;
+  return `${field.label.replace(/ \((tokens|seconds)\)$/, "")} source: ${field.source}`;
 }
 
-/** The program path, the model and the context window of the managed server, each saved on its own. */
+/** The program path, model, context window and idle sleep of the managed server, each saved on its own. */
 export function LlamacppServerFields({ saved }: { saved: Record<Key, ServerField> }) {
   const save = useSaveLlamacppServer();
   return (
@@ -51,6 +52,9 @@ export function LlamacppServerFields({ saved }: { saved: Record<Key, ServerField
           />
         );
       })}
+      <p className="text-meta text-muted-foreground">
+        Idle sleep: the server frees the model after this many idle seconds and loads it again on the next request, so that answer is slower. 0 turns sleep off.
+      </p>
     </>
   );
 }

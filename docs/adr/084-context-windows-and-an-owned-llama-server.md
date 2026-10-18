@@ -19,17 +19,18 @@ Without a decision, Ollama keeps reserving the model maximum, and a llama.cpp wi
 1. **A context window setting for Ollama** (D11). `ollama_context_window`, default 16,384 tokens, range 2,048 to 262,144. Sources follow ADR-083: environment and `.env` (lock), `omrg.jsonc` (lock), saved web value, default. It applies live. It is passed as `context_window` to the LlamaIndex Ollama client, so no `/api/show` call happens, and as `options.num_ctx` on `/api/generate` for metadata extraction.
 2. **Embedding models are excluded.** An embedding window can change how text is cut, and so the vectors. ADR-083 decision 4 keeps embeddings fixed.
 3. **omrg owns at most one `llama-server`** (D12). `omrg web` starts it for Chat, keeps the process handle, and stops, restarts and reports only that process. It never looks up a process by name or port and never signals one it did not start. A server the user started stays safe. If the port is busy at start, the state is `failed` with `port-in-use`.
-4. **Four settings, in `omrg.jsonc` and the GUI.** The program path, the model (`.gguf` file or Hugging Face id), the context window (`llamacpp_context_window`, same range and default) and the port, which comes from `llamacpp_chat_url`. The user chose GUI editing of the program path and model on 2026-10-18, against the recommendation to keep them in `omrg.jsonc` only.
+4. **Four settings, in `omrg.jsonc` and the GUI.** The program path, the model (`.gguf` file or Hugging Face id), the context window (`llamacpp_context_window`, same range and default), the idle sleep (`llamacpp_idle_sleep_seconds`, default 300 seconds, 0 turns it off) and the port, which comes from `llamacpp_chat_url`. The user chose GUI editing of the program path and model on 2026-10-18, against the recommendation to keep them in `omrg.jsonc` only.
 5. **Guardrails on what can run.**
    - The program is an absolute path to an executable regular file named exactly `llama-server`, both as given and after links are resolved. It is checked at save and before every launch.
    - The model is an existing `.gguf` file or `org/name[:tag]`, and never starts with `-`.
    - The chat URL is a loopback `http` URL. The child binds `127.0.0.1` only.
-   - The argument list is built from fixed flags only (`-m` or `-hf`, `--host`, `--port`, `-c`). No shell runs and no free-text argument exists.
+   - The argument list is built from fixed flags only (`-m` or `-hf`, `--host`, `--port`, `--sleep-idle-seconds` when the idle sleep is above 0, `-c`). No shell runs and no free-text argument exists.
    - The child gets `PATH`, `HOME`, `LANG` and `TMPDIR`, plus `LLAMA_CACHE`, `HF_HOME` and `HF_TOKEN` only for a Hugging Face model. No provider API key reaches it.
    - Changing the program or model needs the browser session with the `credentials` scope. The window and start, stop and restart need `manage`. A bearer token never works.
 6. **A fixed lifecycle.** States `stopped`, `starting`, `running`, `failed`, with fixed reasons `binary-invalid`, `model-invalid`, `not-loopback`, `port-in-use`, `exited`, `timeout` and `not-configured`. Start waits for `GET /health` 200 for up to 180 s. Stop sends SIGTERM to the owned process group, waits 10 s, then SIGKILL. If the child does not lead its own group, omrg signals the child alone, never a shared group. The owned server stops when `omrg web` exits.
-7. **A save never stops a running server.** The card shows "Restart to apply" when the saved values differ from the values the process started with.
-8. **The child's output stays on disk.** It goes to `llamacpp-server.log` in the workspace folder, emptied at each start, capped at 5 MiB, mode 0600. No route returns it and the page never shows it, because it can hold prompts.
+7. **Idle sleep is on by default.** The managed server gets `--sleep-idle-seconds 300`, so it frees the model's GPU and RAM after five idle minutes and reloads it on the next request. This matches Ollama's default keep-alive. 0 turns it off.
+8. **A save never stops a running server.** The card shows "Restart to apply" when the saved values differ from the values the process started with.
+9. **The child's output stays on disk.** It goes to `llamacpp-server.log` in the workspace folder, emptied at each start, capped at 5 MiB, mode 0600. No route returns it and the page never shows it, because it can hold prompts.
 
 ## Consequences
 
@@ -48,6 +49,8 @@ Without a decision, Ollama keeps reserving the model maximum, and a llama.cpp wi
 - The change is larger. It adds a lifecycle module, five routes and a new card panel.
 
 ### Neutral
+
+- The first answer after an idle sleep is slower, because the server reloads the model. A `llama-server` build without sleep mode exits on the flag; 0 avoids that.
 
 - A llama.cpp server the user started keeps its own `-c`. omrg does not change it.
 - The llama.cpp embedding server is not managed.

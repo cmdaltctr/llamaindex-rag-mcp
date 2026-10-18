@@ -64,6 +64,24 @@ describe("Local server block on the llama.cpp card", () => {
     expect(put).toEqual([{ model: "Qwen/Qwen3-0.6B-GGUF:Q8_0" }, { context_window: 8192 }]);
   });
 
+  it("saves the idle sleep in seconds and says what sleep does", async () => {
+    const put: unknown[] = [];
+    const { user, panel } = await open({
+      "PUT /v1/llamacpp/server": (body: unknown) => {
+        put.push(body);
+        return serverStatus({});
+      },
+    });
+    const sleep = within(panel()).getByRole("spinbutton", { name: "Idle sleep (seconds)" });
+    expect(sleep).toHaveValue(300);
+    expect(panel()).toHaveTextContent(/frees the model after this many idle seconds/i);
+    expect(panel()).toHaveTextContent(/0 turns sleep off/i);
+    await user.clear(sleep);
+    await user.type(sleep, "0");
+    await user.click(within(panel()).getByRole("button", { name: "Save idle sleep" }));
+    expect(put).toEqual([{ idle_sleep: 0 }]);
+  });
+
   it("resets a saved value with null", async () => {
     const put: unknown[] = [];
     const { user, panel } = await open({

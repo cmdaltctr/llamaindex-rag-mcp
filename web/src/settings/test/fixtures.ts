@@ -33,13 +33,14 @@ export const SERVER_STOPPED: LlamacppServerStatus = {
     binary: serverField("server_binary", "Program path", "text", ""),
     model: serverField("server_model", "Model", "text", ""),
     context_window: serverField("context_window", "Context window (tokens)", "int", 16384),
+    idle_sleep: { ...serverField("idle_sleep", "Idle sleep (seconds)", "int", 300), min: 0, max: 86400 },
   },
 };
 
 /** A server status built from the stopped one with changed parts. */
-export function serverStatus(change: Partial<LlamacppServerStatus>, saved: Partial<Record<"binary" | "model" | "context_window", Partial<ServerField>>> = {}): LlamacppServerStatus {
+export function serverStatus(change: Partial<LlamacppServerStatus>, saved: Partial<Record<"binary" | "model" | "context_window" | "idle_sleep", Partial<ServerField>>> = {}): LlamacppServerStatus {
   const merged = { ...SERVER_STOPPED.saved };
-  for (const key of ["binary", "model", "context_window"] as const) merged[key] = { ...merged[key], ...saved[key] };
+  for (const key of ["binary", "model", "context_window", "idle_sleep"] as const) merged[key] = { ...merged[key], ...saved[key] };
   return { ...SERVER_STOPPED, ...change, saved: merged };
 }
 

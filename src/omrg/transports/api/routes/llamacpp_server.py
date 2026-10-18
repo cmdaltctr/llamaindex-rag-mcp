@@ -41,11 +41,13 @@ MODEL_RULE = (
 CREDENTIALS_RULE = "Changing the program or the model needs the credentials scope."
 _REFUSED = "The running engine cannot take this change. Restart the server to apply it."
 _WINDOW = next(spec for spec in rules.LLAMACPP_SERVER_FIELDS if spec.id == "context_window")
+_IDLE = next(spec for spec in rules.LLAMACPP_SERVER_FIELDS if spec.id == "idle_sleep")
 #: Request key to the field id of the workspace settings.
 _FIELD_IDS = {
     "binary": "server_binary",
     "model": "server_model",
     "context_window": "context_window",
+    "idle_sleep": "idle_sleep",
 }
 
 
@@ -57,6 +59,7 @@ class ServerBody(BaseModel):
     binary: str | None = Field(None, max_length=2048)
     model: str | None = Field(None, max_length=2048)
     context_window: int | float | str | None = None
+    idle_sleep: int | float | str | None = None
 
 
 def _manager(request: Request) -> LlamacppServer:
@@ -73,6 +76,7 @@ def _launch_config(view: dict[str, Any]) -> LaunchConfig:
         model=str(view["model"]["value"] or ""),
         context_window=int(view["context_window"]["value"]),
         chat_url=str(view["chat_url"]),
+        idle_sleep=int(view["idle_sleep"]["value"]),
     )
 
 
@@ -81,8 +85,8 @@ def _body(view: dict[str, Any], status: ServerStatus) -> dict[str, Any]:
     started = status.started_with
     saved = _launch_config(view)
     pending = started is not None and (
-        (started.binary, started.model, started.context_window)
-        != (saved.binary, saved.model, saved.context_window)
+        (started.binary, started.model, started.context_window, started.idle_sleep)
+        != (saved.binary, saved.model, saved.context_window, saved.idle_sleep)
     )
     return {
         "state": status.state,
@@ -93,7 +97,7 @@ def _body(view: dict[str, Any], status: ServerStatus) -> dict[str, Any]:
         if started is None
         else {"context_window": started.context_window, "model_kind": started.model_kind},
         "pending_restart": pending,
-        "saved": {key: view[key] for key in ("binary", "model", "context_window")},
+        "saved": {key: view[key] for key in ("binary", "model", "context_window", "idle_sleep")},
     }
 
 
@@ -115,6 +119,8 @@ def _check(key: str, value: object) -> tuple[str | None, str | None]:
         return None, None
     if key == "context_window":
         return validate_int(_WINDOW, value)
+    if key == "idle_sleep":
+        return validate_int(_IDLE, value)
     text = str(value).strip()
     if key == "binary":
         return (text, None) if rules.check_binary(text) else (None, BINARY_RULE)
@@ -133,7 +139,9 @@ async def save_server(
     """
     keys = [k for k in _FIELD_IDS if k in body.model_fields_set]
     if not keys:
-        return error_response(400, "Send at least one of binary, model or context_window.")
+        return error_response(
+            400, "Send at least one of binary, model, context_window or idle_sleep."
+        )
     if {"binary", "model"} & set(keys) and "credentials" not in principal.scopes:
         return error_response(403, CREDENTIALS_RULE)
     updates: dict[str, str | None] = {}

@@ -290,6 +290,7 @@ Decision made on 2026-10-18.
 | Program path | `LLAMACPP_SERVER_BINARY` | `llamacpp_server_binary` | Guardrails 1 and 2 |
 | Model | `LLAMACPP_SERVER_MODEL` | `llamacpp_server_model` | Guardrails 3 and 4 |
 | Context window | `LLAMACPP_CONTEXT_WINDOW` | `llamacpp_context_window` | 2,048 to 262,144, default 16,384 |
+| Idle sleep | `LLAMACPP_IDLE_SLEEP_SECONDS` | `llamacpp_idle_sleep_seconds` | 0 to 86,400 seconds, default 300; 0 turns sleep off |
 | Port | `LLAMACPP_CHAT_URL` | `llamacpp_chat_url` | Loopback `http` URL (guardrail 5) |
 
 **Guardrails.**
@@ -299,7 +300,7 @@ Decision made on 2026-10-18.
 3. The model MUST be an existing `.gguf` file (absolute path) or a well-formed Hugging Face id `org/name[:tag]`. It MUST NOT start with `-`.
 4. A model that fails rule 3 is refused (`model-invalid`).
 5. `llamacpp_chat_url` MUST be an `http` URL with a loopback host (`127.0.0.1`, `localhost` or `::1`). Otherwise the state is `failed` with `not-loopback`. omrg binds the child to `127.0.0.1` only.
-6. The argument list comes from fixed flags only: `-m <path>` or `-hf <id>`, `--host 127.0.0.1`, `--port <n>`, `-c <n>`. The code builds it as a list. No shell runs. No free-text argument exists.
+6. The argument list comes from fixed flags only: `-m <path>` or `-hf <id>`, `--host 127.0.0.1`, `--port <n>`, `--sleep-idle-seconds <n>` (only when the idle sleep is above 0), `-c <n>`. The code builds it as a list. No shell runs. No free-text argument exists.
 7. The child gets a minimal environment: `PATH`, `HOME`, `LANG`, `TMPDIR`, and `LLAMA_CACHE`, `HF_HOME` or `HF_TOKEN` only when `-hf` is used and the variable is already set. No provider API key reaches it.
 8. Changing the program or the model needs the browser session with the `credentials` scope. Changing the context window and start, stop and restart need `manage`. A bearer token never works.
 
@@ -329,6 +330,8 @@ A save does not stop a running server. The card shows "Restart to apply" when th
 | `POST /v1/llamacpp/server/restart` | `manage` | Stops then starts. |
 
 All routes need the browser session. The stdio MCP server and the CLI never start or stop the server.
+
+**Idle sleep.** Added on 2026-10-18 at the user's request (task 17.9). With `--sleep-idle-seconds N`, `llama-server` frees the model from GPU and RAM after N idle seconds and reloads it on the next inference request. The process keeps running, and `/health`, `/props` and `/models` still answer without resetting the timer, so the health check does not keep the model loaded (llama.cpp server docs, PR #18228). The default of 300 seconds matches Ollama's keep-alive. The first answer after sleep is slower. A `llama-server` build older than sleep mode exits on the unknown flag, which shows as `exited`; set 0 to run such a build.
 
 **Log file.** The child's standard output and error go to `llamacpp-server.log` in the workspace folder. The file is emptied at each start and never grows past 5 MiB. No route returns it and the page does not show it. It can hold prompts, so the user reads it on disk only.
 

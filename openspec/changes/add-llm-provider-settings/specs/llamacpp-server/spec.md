@@ -32,7 +32,7 @@ Lets `omrg web` start, stop and restart one `llama-server` for Chat. Covers owne
 
 ### Requirement: Server settings and sources
 
-The server SHALL have the settings `llamacpp_server_binary` (env `LLAMACPP_SERVER_BINARY`), `llamacpp_server_model` (env `LLAMACPP_SERVER_MODEL`) and `llamacpp_context_window` (env `LLAMACPP_CONTEXT_WINDOW`, default 16,384, range 2,048 to 262,144). Each SHALL be settable in `omrg.jsonc` under the same key name and in the llama.cpp card. The sources and lock rules of the provider settings SHALL apply: environment and `.env`, then `omrg.jsonc` (both lock), then a saved web value, then the default. The port SHALL come from `llamacpp_chat_url`.
+The server SHALL have the settings `llamacpp_server_binary` (env `LLAMACPP_SERVER_BINARY`), `llamacpp_server_model` (env `LLAMACPP_SERVER_MODEL`) and `llamacpp_context_window` (env `LLAMACPP_CONTEXT_WINDOW`, default 16,384, range 2,048 to 262,144) and `llamacpp_idle_sleep_seconds` (env `LLAMACPP_IDLE_SLEEP_SECONDS`, default 300, range 0 to 86,400, 0 turns sleep off). Each SHALL be settable in `omrg.jsonc` under the same key name and in the llama.cpp card. The sources and lock rules of the provider settings SHALL apply: environment and `.env`, then `omrg.jsonc` (both lock), then a saved web value, then the default. The port SHALL come from `llamacpp_chat_url`.
 
 #### Scenario: Config file sets all three
 
@@ -128,12 +128,12 @@ The port SHALL come from `llamacpp_chat_url`. The URL MUST use `http` and a loop
 
 ### Requirement: The argument list is fixed
 
-The server SHALL build the argument list as a list from fixed flags only: `-m <path>` or `-hf <id>`, `--host 127.0.0.1`, `--port <n>` and `-c <n>`. The code SHALL start the process with no shell. The API and the settings SHALL NOT accept any other argument. The child SHALL receive a minimal environment that holds no provider API key.
+The server SHALL build the argument list as a list from fixed flags only: `-m <path>` or `-hf <id>`, `--host 127.0.0.1`, `--port <n>`, `--sleep-idle-seconds <n>` only when the idle sleep is above 0, and `-c <n>`. The code SHALL start the process with no shell. The API and the settings SHALL NOT accept any other argument. The child SHALL receive a minimal environment that holds no provider API key.
 
 #### Scenario: Exact arguments
 
 - **WHEN** the server starts with the model `/m/q.gguf`, port 8081 and window 16,384
-- **THEN** the argument list MUST equal `[binary, "-m", "/m/q.gguf", "--host", "127.0.0.1", "--port", "8081", "-c", "16384"]`
+- **THEN** the argument list MUST equal `[binary, "-m", "/m/q.gguf", "--host", "127.0.0.1", "--port", "8081", "-c", "16384"]` when the idle sleep is 0
 
 #### Scenario: No shell
 
@@ -279,3 +279,28 @@ The server SHALL expose `GET /v1/llamacpp/server`, `PUT /v1/llamacpp/server`, `P
 
 - **WHEN** the OpenAPI contract test runs
 - **THEN** all five routes MUST be present and match the responses
+
+### Requirement: Idle sleep frees the model of the managed server
+
+The managed server SHALL receive `--sleep-idle-seconds <n>` when the idle sleep setting is above 0, and SHALL NOT receive the flag when it is 0. A value outside 0 to 86,400 SHALL be refused with 400 at save and SHALL fail startup when it comes from the environment. A change while the server runs SHALL NOT stop the server and SHALL set "Restart to apply". The card SHALL say that the server frees the model after the idle seconds and reloads it on the next request, and that 0 turns sleep off.
+
+#### Scenario: Default idle sleep
+
+- **WHEN** no source sets the idle sleep and the user starts the server
+- **THEN** the argument list MUST hold `--sleep-idle-seconds 300`
+
+#### Scenario: Sleep turned off
+
+- **WHEN** the idle sleep is 0 and the user starts the server
+- **THEN** the argument list MUST NOT hold `--sleep-idle-seconds`
+
+#### Scenario: Change while running
+
+- **WHEN** the server runs with idle sleep 0 and the user saves 120
+- **THEN** the server MUST keep running and `pending_restart` MUST be true
+- **AND** after Restart the argument list MUST hold `--sleep-idle-seconds 120`
+
+#### Scenario: Out of range
+
+- **WHEN** the user saves -1 or 86,401
+- **THEN** the route MUST return 400 and nothing is saved

@@ -40,6 +40,7 @@ PROVIDER_FIELD_IDS: frozenset[str] = frozenset(
         "base_url",
         "chat_url",
         "context_window",
+        "idle_sleep",
         "server_binary",
         "server_model",
         KEY_SAVED_AT,

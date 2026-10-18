@@ -33,9 +33,9 @@ export interface LlamacppServerStatus {
   pid_running: boolean;
   /** What the live process was started with, or `null` when none is owned. */
   running_with: { context_window: number; model_kind: "file" | "hf" } | null;
-  /** The saved program, model or window differ from the live process. */
+  /** The saved program, model, window or idle sleep differ from the live process. */
   pending_restart: boolean;
-  saved: { binary: ServerField; model: ServerField; context_window: ServerField };
+  saved: { binary: ServerField; model: ServerField; context_window: ServerField; idle_sleep: ServerField };
 }
 
 /** Keys to save. An absent key stays as it is; `null` clears the saved value. */
@@ -43,6 +43,8 @@ export interface LlamacppServerChange {
   binary?: string | null;
   model?: string | null;
   context_window?: number | null;
+  /** Seconds before the server frees its model; 0 turns sleep off. */
+  idle_sleep?: number | null;
 }
 
 const PATH = "/v1/llamacpp/server";

@@ -17,18 +17,19 @@ from .compose_providers import ProviderValues, apply_provider_values, locked_fie
 from .config import Settings
 from .core.providers.llm.llamacpp_rules import LLAMACPP_SERVER_FIELDS
 
-#: Key of each field in the view (``binary``, ``model``, ``context_window``).
+#: Key of each field in the view (``binary``, ``model``, ``context_window``, ``idle_sleep``).
 VIEW_KEYS = {
     "server_binary": "binary",
     "server_model": "model",
     "context_window": "context_window",
+    "idle_sleep": "idle_sleep",
 }
 
 
 def build_llamacpp_server_view(
     settings: Settings, values: ProviderValues | None = None
 ) -> dict[str, Any]:
-    """Return the three server settings, each with value, source and lock.
+    """Return the four server settings, each with value, source and lock.
 
     Args:
         settings: Settings as the environment and ``.env`` resolved them.
@@ -36,7 +37,7 @@ def build_llamacpp_server_view(
 
     Returns:
         ``{"chat_url": str, "binary": field, "model": field, "context_window":
-        field}``. A field holds ``id``, ``label``, ``kind``, ``value``,
+        field, "idle_sleep": field}``. A field holds ``id``, ``label``, ``kind``, ``value``,
         ``min``, ``max``, ``source`` (``env``, ``config-file``, ``saved`` or
         ``default``), ``locked`` and ``lock_reason``.
     """

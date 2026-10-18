@@ -43,6 +43,7 @@ _TEXT_KEYS = ("llamacpp_server_binary", "llamacpp_server_model")
 INT_KEY_BOUNDS: dict[str, tuple[int, int]] = {
     "ollama_context_window": (2048, 262144),
     "llamacpp_context_window": (2048, 262144),
+    "llamacpp_idle_sleep_seconds": (0, 86400),
 }
 #: ``omrg.jsonc`` keys that hold a key reference. The provider name is the
 #: key minus ``_api_key``; it names the file ``secrets/<provider>.key``.

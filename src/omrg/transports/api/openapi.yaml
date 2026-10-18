@@ -3346,13 +3346,15 @@ paths:
       operationId: saveLlamacppServer
       summary: Save the program, the model and the context window
       description: >
-        Body keys `binary`, `model` and `context_window`, all optional; a key
+        Body keys `binary`, `model`, `context_window` and `idle_sleep`, all optional; a key
         that is absent stays as it is and `null` clears the saved value. No other
         key is accepted. The program must be an absolute path to an executable
         file named exactly `llama-server`, both as given and after links are
         resolved. The model must be an absolute path to an existing `.gguf`
         file or a Hugging Face id `org/name[:tag]`, and never starts with `-`.
-        The context window is a whole number from 2,048 to 262,144. 400 names
+        The context window is a whole number from 2,048 to 262,144. The idle
+        sleep is a whole number of seconds from 0 to 86,400; 0 sends no
+        `--sleep-idle-seconds` flag. 400 names
         the rule and never the value. Changing the program or the model needs
         the `credentials` scope of the browser session; 403 otherwise. 409 for
         a field locked by the environment or by `omrg.jsonc`. A running server
@@ -7577,17 +7579,19 @@ components:
           description: What the live process was started with, or null when none is owned.
         pending_restart:
           type: boolean
-          description: The saved program, model or window differ from the live process.
+          description: The saved program, model, window or idle sleep differ from the live process.
         saved:
           type: object
           additionalProperties: false
-          required: [binary, model, context_window]
+          required: [binary, model, context_window, idle_sleep]
           properties:
             binary:
               $ref: "#/components/schemas/LlamacppServerField"
             model:
               $ref: "#/components/schemas/LlamacppServerField"
             context_window:
+              $ref: "#/components/schemas/LlamacppServerField"
+            idle_sleep:
               $ref: "#/components/schemas/LlamacppServerField"
 
     SaveLlamacppServerRequest:
@@ -7604,6 +7608,9 @@ components:
         context_window:
           type: [integer, number, string, "null"]
           description: A whole number from 2,048 to 262,144 (or a string of digits).
+        idle_sleep:
+          type: [integer, number, string, "null"]
+          description: Seconds from 0 to 86,400 (or a string of digits). 0 turns sleep off.
 
     # ── Server log ──────────────────────────────────────────────────────
     LogRecord:
