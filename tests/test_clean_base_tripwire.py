@@ -89,7 +89,10 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # a stub module, so it runs with or without the anthropic extra.
 # 6197 = 6190 measured here + 3 tokenizer + 4 ground-truth cases that skip on a clean runner.
 # The last four cases are the shared-prefix redaction and no-environment-key tests.
-_BASE_EXECUTED = 6197
+# +5 (2026-10-18, TDR-036): empty-reply and refine-swallow cases in test_answer_empty_reply.py.
+# +52 (2026-10-18, user config folder): test_user_config.py and the key-route log test.
+# 6254 = 6247 measured with the web extra + 3 tokenizer + 4 ground-truth cases.
+_BASE_EXECUTED = 6254
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
