@@ -87,8 +87,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # value-source, redaction and Engine cases, 31 route cases (they need the web extra) and 62
 # extra role-by-provider parameter cases add 136 (6050 -> 6186). The Anthropic build case uses
 # a stub module, so it runs with or without the anthropic extra.
-# 6193 = 6186 measured here + 3 tokenizer + 4 ground-truth cases that skip on a clean runner.
-_BASE_EXECUTED = 6193
+# 6197 = 6190 measured here + 3 tokenizer + 4 ground-truth cases that skip on a clean runner.
+# The last four cases are the shared-prefix redaction and no-environment-key tests.
+_BASE_EXECUTED = 6197
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.

@@ -1,8 +1,8 @@
 """llama.cpp LLM provider (for metadata classification).
 
 Constructs ``OpenAILike`` LLM pointed at a llama.cpp server's OpenAI-
-compatible ``/v1`` endpoint.  Requires the optional dependency
-``llama-index-llms-openai-like`` (``uv sync --extra llamacpp``).
+compatible ``/v1`` endpoint.  Requires
+``llama-index-llms-openai-like``, which is part of the base install (ADR-083).
 """
 
 from __future__ import annotations
