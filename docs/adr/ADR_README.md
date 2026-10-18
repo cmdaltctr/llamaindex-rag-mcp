@@ -90,6 +90,7 @@ development of OMRG — Opinionated Modular RAG.
 | [081](./081-per-profile-embedding-models.md) | Per-Profile Embedding Models | 2026-10-17 | Accepted |
 | [082](./082-chats-live-in-the-workspace-database.md) | Chats Live in the Workspace Database | 2026-10-18 | Accepted |
 | [083](./083-llm-provider-settings-in-the-web-workspace.md) | LLM Provider Settings in the Web Workspace | 2026-10-18 | Proposed |
+| [084](./084-context-windows-and-an-owned-llama-server.md) | Context Windows and a llama.cpp Server omrg Owns | 2026-10-18 | Proposed |
 
 ## Convention
 
