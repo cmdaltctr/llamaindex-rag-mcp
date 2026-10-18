@@ -423,7 +423,7 @@ Group chats in folders. A folder holds chats and no other folder.
 3. Open Move to on a chat to do the same move with the keyboard or by touch.
 4. Choose Rename on a folder to change its name.
 
-Delete chats and folders. Each delete asks first and says how many chats it removes. A delete is permanent: there is no trash.
+Delete chats and folders. Each delete asks first and says how many chats it removes. A delete is permanent and cannot be undone.
 
 1. Choose the bin on a chat to delete one chat.
 2. Choose Select, tick the chats, then choose Delete selected. All the chats go, or none.

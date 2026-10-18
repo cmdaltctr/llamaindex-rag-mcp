@@ -18,6 +18,8 @@ export interface Turn {
 
 const TITLE_LIMIT = 60;
 
+const isMissing = (error: unknown) => error instanceof ApiError && error.status === 404;
+
 function titleOf(question: string): string {
   const flat = question.replace(/\s+/g, " ").trim();
   return flat.length <= TITLE_LIMIT ? flat : `${flat.slice(0, TITLE_LIMIT - 1)}…`;
@@ -42,7 +44,17 @@ export function useChatSession(routeCollection: string | null, routeChatId: stri
   const [notice, setNotice] = useState<string | null>(null);
   const [chatId, setChatId] = useState<string | null>(null);
   const chatIdRef = useRef<string | null>(null);
-  const creating = useRef<Promise<string | null> | null>(null);
+  // Bumped whenever the screen shows another chat, so a save that finishes later can tell the screen has moved on.
+  const sessionRef = useRef(0);
+  const creating = useRef<{ session: number; promise: Promise<string | null> } | null>(null);
+  // Saves run one after another, so turns reach the server in the order the answers arrived.
+  const saving = useRef<Promise<void>>(Promise.resolve());
+
+  const advanceSession = useCallback(() => {
+    sessionRef.current += 1;
+    creating.current = null;
+    setSession(sessionRef.current);
+  }, []);
 
   const adopt = useCallback((id: string | null) => {
     chatIdRef.current = id;
@@ -59,21 +71,26 @@ export function useChatSession(routeCollection: string | null, routeChatId: stri
         if (cancelled) return;
         adopt(chat.chat_id);
         setNotice(null);
-        setSession((n) => n + 1);
+        advanceSession();
         setTurns(chat.turns.map((t, index) => ({ id: index + 1, collection: t.collection, question: t.question, saved: t.answer })));
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (cancelled) return;
+        // Only a 404 means the chat is gone. Any other failure keeps the route so the user can try again.
+        if (!isMissing(error)) {
+          setNotice("This chat could not be loaded. Reload the page to try again.");
+          return;
+        }
         adopt(null);
         setTurns([]);
-        setSession((n) => n + 1);
+        advanceSession();
         setNotice("That chat is no longer stored. You can start a new one.");
         navigate({ area: "chat", collection: routeCollection, chatId: null }, { replace: true });
       });
     return () => {
       cancelled = true;
     };
-  }, [routeChatId, routeCollection, api, queryClient, adopt, navigate]);
+  }, [routeChatId, routeCollection, api, queryClient, adopt, advanceSession, navigate]);
 
   /** Opens a stored chat in the collection of its last turn (design D7). */
   const openChat = useCallback(
@@ -83,8 +100,8 @@ export function useChatSession(routeCollection: string | null, routeChatId: stri
         const detail = await queryClient.fetchQuery(chatQuery(api, chat.chat_id));
         const collection = detail.turns.at(-1)?.collection ?? routeCollection;
         navigate({ area: "chat", collection, chatId: chat.chat_id });
-      } catch {
-        setNotice("That chat is no longer stored. You can start a new one.");
+      } catch (error) {
+        setNotice(isMissing(error) ? "That chat is no longer stored. You can start a new one." : "This chat could not be loaded. Try again.");
       }
     },
     [api, queryClient, navigate, routeCollection],
@@ -100,18 +117,22 @@ export function useChatSession(routeCollection: string | null, routeChatId: stri
     adopt(null);
     setTurns([]);
     setNotice(null);
-    setSession((n) => n + 1);
+    advanceSession();
     navigate({ area: "chat", collection: routeCollection, chatId: null }, { replace: true });
-  }, [adopt, navigate, routeCollection]);
+  }, [adopt, advanceSession, navigate, routeCollection]);
 
   const ensureChat = useCallback(
-    (turn: Turn): Promise<string | null> => {
-      if (chatIdRef.current !== null) return Promise.resolve(chatIdRef.current);
-      creating.current ??= createChat
+    (turn: Turn, expected: number): Promise<string | null> => {
+      if (expected === sessionRef.current && chatIdRef.current !== null) return Promise.resolve(chatIdRef.current);
+      if (creating.current?.session === expected) return creating.current.promise;
+      const promise = createChat
         .mutateAsync({ title: titleOf(turn.question) })
         .then((chat) => {
-          adopt(chat.chat_id);
-          navigate({ area: "chat", collection: turn.collection, chatId: chat.chat_id }, { replace: true });
+          // The answer is stored in the chat just made. The screen only follows it while it still shows that session.
+          if (expected === sessionRef.current) {
+            adopt(chat.chat_id);
+            navigate({ area: "chat", collection: turn.collection, chatId: chat.chat_id }, { replace: true });
+          }
           return chat.chat_id;
         })
         .catch(() => {
@@ -119,23 +140,29 @@ export function useChatSession(routeCollection: string | null, routeChatId: stri
           return null;
         })
         .finally(() => {
-          creating.current = null;
+          if (creating.current?.promise === promise) creating.current = null;
         });
-      return creating.current;
+      creating.current = { session: expected, promise };
+      return promise;
     },
     [adopt, createChat, navigate],
   );
 
   const onResult = useCallback(
-    async (turn: Turn, result: AnswerResult) => {
-      if (result.status === "error") return;
-      const id = await ensureChat(turn);
-      if (id === null) return;
-      try {
-        await appendTurn.mutateAsync({ chatId: id, turn: { collection: turn.collection, question: turn.question, answer: result } });
-      } catch (error) {
-        if (!(error instanceof ApiError && error.status === 404)) setNotice("This answer could not be saved to the chat history.");
-      }
+    (turn: Turn, result: AnswerResult) => {
+      if (result.status === "error") return Promise.resolve();
+      const expected = sessionRef.current;
+      const save = saving.current.then(async () => {
+        const id = await ensureChat(turn, expected);
+        if (id === null) return;
+        try {
+          await appendTurn.mutateAsync({ chatId: id, turn: { collection: turn.collection, question: turn.question, answer: result } });
+        } catch (error) {
+          if (!isMissing(error)) setNotice("This answer could not be saved to the chat history.");
+        }
+      });
+      saving.current = save.catch(() => undefined);
+      return save;
     },
     [appendTurn, ensureChat],
   );

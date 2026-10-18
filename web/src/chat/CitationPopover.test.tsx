@@ -106,3 +106,15 @@ describe("citation popover", () => {
     await waitFor(() => expect(document.querySelector("[data-slot='citation-popover-content']")).toBeNull());
   });
 });
+
+describe("citation popover load failures", () => {
+  it("shows a retry line, keeps Open full chunk and does not say the chunk is gone on a server error", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { user } = setup({ "GET /v1/collections/documents/chunks/c-1": () => json({ status: "error", message: "down" }, 503) as never });
+    await user.click(chip(1));
+    const panel = document.querySelector("[data-slot='citation-popover-content']") as HTMLElement;
+    expect(await within(panel).findByRole("alert")).toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: "Open full chunk" })).toBeInTheDocument();
+    expect(within(panel).queryByText(/stored chunk is not available/i)).not.toBeInTheDocument();
+  });
+});

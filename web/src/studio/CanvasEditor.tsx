@@ -1,5 +1,5 @@
 import { Workflow } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { OperationDescriptor, PortRef } from "../api/pipelines";
 import type { ProfileRecord } from "../api/profiles";
 import { ACTIVE_RUN_STATUSES } from "../api/runs";
@@ -50,7 +50,7 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
   // Hidden state resets on every visit: the editor is keyed by pipeline, so a new mount starts shown.
   const [headerHidden, setHeaderHidden] = useState(false);
   const reducedMotion = useReducedMotion();
-  const { fullScreen } = useCanvasFullScreen();
+  const { fullScreen, setFullScreen } = useCanvasFullScreen();
   const exitRef = useRef<HTMLButtonElement>(null);
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   // Picking a step in the panel selects it and centres the canvas on it. A click on the canvas only selects.
@@ -59,6 +59,11 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
     setFocusRequest((current) => ({ id, n: (current?.n ?? 0) + 1 }));
   };
   useFullScreenKeys(exitRef);
+  // The toolbar lives in the flow surface, which an empty graph does not show. Without it the user has no exit.
+  const emptyGraph = draft.graph.nodes.length === 0;
+  useEffect(() => {
+    if (fullScreen && emptyGraph) setFullScreen(false);
+  }, [fullScreen, emptyGraph, setFullScreen]);
   // Events are authoritative once they arrive; until then the run record is shown.
   const runStatus = monitor.refreshedStatus ?? monitor.view.runStatus ?? run?.status ?? null;
   const runNodes = useMemo(

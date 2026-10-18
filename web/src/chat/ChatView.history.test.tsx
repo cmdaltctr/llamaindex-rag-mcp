@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { documentsServer, json, type Handler } from "../test/fakeDocumentsServer";
@@ -179,5 +179,61 @@ describe("deleting the open chat", () => {
     await waitFor(() => expect(store.chats.size).toBe(0));
     await waitFor(() => expect(screen.queryByText("A saved answer.")).not.toBeInTheDocument());
     expect(window.location.hash).toBe("#/chat/notes");
+  });
+});
+
+describe("review findings: loading and saving", () => {
+  it("keeps the route and shows a retry line when a stored chat fails to load (not a 404)", async () => {
+    const { server } = setup({}, { "GET /v1/chats/:id": () => json({ status: "error", message: "down" }, 503) });
+    startApp("#/chat/documents/abc", server);
+    expect(await screen.findByText(/could not be loaded/i)).toBeInTheDocument();
+    expect(screen.queryByText(/no longer stored/i)).not.toBeInTheDocument();
+    expect(window.location.hash).toBe("#/chat/documents/abc");
+  });
+
+  it("does not reopen the old chat when New chat is pressed while the chat is still being created", async () => {
+    let release: (value: Response) => void = () => undefined;
+    const held = new Promise<Response>((resolve) => (release = resolve));
+    const store = fakeChats();
+    const { server, user } = setup({}, { "POST /v1/chats": async (body, call) => { const r = await held; void body; void call; return r; } });
+    void store;
+    startApp("#/chat/documents", server);
+    await ask(user);
+    expect(await screen.findByText(/Lineage is kept/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "New chat" }));
+    await act(async () => release(json({ status: "ok", chat: { chat_id: "late", folder_id: null, title: "t", created_at: "t", updated_at: "t" } }, 201)));
+    await waitFor(() => expect(turnPosts(server)).toHaveLength(1));
+    expect(turnPosts(server)[0]!.path).toBe("/v1/chats/late/turns");
+    expect(window.location.hash).toBe("#/chat/documents");
+    expect(screen.queryByText(/Lineage is kept/)).not.toBeInTheDocument();
+  });
+
+  it("saves answers in the order they arrived, even when the first save is slow", async () => {
+    let release: (value: Response) => void = () => undefined;
+    const held = new Promise<Response>((resolve) => (release = resolve));
+    let first = true;
+    const { store, server, user } = setup({}, {
+      "POST /v1/chats/:id/turns": async (body, call) => {
+        if (first) {
+          first = false;
+          await held;
+        }
+        const chat = store2.chats.get(call.path.split("/")[3]!)!;
+        const position = chat.turns.length + 1;
+        chat.turns.push({ position, collection: String(body.collection), question: String(body.question), answer: body.answer as never, created_at: "t" });
+        return json({ status: "ok", turn: { chat_id: chat.chat_id, position, created_at: "t" } }, 201);
+      },
+    });
+    const store2 = store;
+    startApp("#/chat/documents", server);
+    await ask(user, "First?");
+    await waitFor(() => expect(turnPosts(server)).toHaveLength(1));
+    await ask(user, "Second?");
+    await screen.findAllByText(/Lineage is kept/);
+    await new Promise((r) => setTimeout(r, 150));
+    expect(turnPosts(server)).toHaveLength(1); // the second save waits for the first
+    await act(async () => release(json({}, 200)));
+    await waitFor(() => expect(turnPosts(server)).toHaveLength(2));
+    await waitFor(() => expect([...store.chats.values()][0]?.turns.map((t) => t.question)).toEqual(["First?", "Second?"]));
   });
 });

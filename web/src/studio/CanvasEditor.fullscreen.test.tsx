@@ -79,3 +79,19 @@ describe("canvas full screen", () => {
     expect(exitButton()).not.toBeInTheDocument();
   });
 });
+
+describe("canvas full screen with an empty graph", () => {
+  it("ends when the last step is removed, so the user is not left without an exit", async () => {
+    const { user } = await openUser();
+    await openAllSections(user);
+    await user.click(enterButton());
+    await screen.findByRole("button", { name: "Exit full screen" });
+    for (const id of ["prepare", "dense", "rerank", "select"]) {
+      const button = await within(outline()).findByRole("button", { name: new RegExp(`^Node ${id} `) });
+      button.focus();
+      await user.keyboard("{Delete}");
+    }
+    await waitFor(() => expect(exitButton()).not.toBeInTheDocument());
+    expect(nav()).toBeInTheDocument();
+  });
+});

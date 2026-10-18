@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useApi } from "../api/ApiProvider";
+import { ApiError } from "../api/client";
 import type { ChunkView, Citation, Evidence } from "../api/documents";
 import { chunkQuery } from "../api/queries";
 import { ChunkMetadata } from "../components/ChunkMetadata";
+import { ErrorNotice } from "../components/ErrorNotice";
 import { Button } from "../components/ui/button";
 import { Popover, type PopoverTriggerProps } from "../components/ui/popover";
 import { scoreText, sourceName } from "./citationText";
@@ -64,7 +66,9 @@ function PopoverBody({ citation, evidence, collection, onOpenChunk }: PopoverBod
   const chunkId = citation.chunk_id;
   const query = useQuery({ ...chunkQuery(api, collection, chunkId ?? "", 1), enabled: chunkId !== null, retry: false });
   const stored = query.data?.chunk;
-  const unavailable = chunkId === null || query.isError;
+  // Only a missing id or a 404 means the chunk is gone. Other failures can be retried and keep the full chunk action.
+  const unavailable = chunkId === null || (query.error instanceof ApiError && query.error.status === 404);
+  const failed = query.isError && !unavailable;
   const score = scoreText(citation);
   return (
     <>
@@ -78,6 +82,7 @@ function PopoverBody({ citation, evidence, collection, onOpenChunk }: PopoverBod
       {evidence !== undefined ? <p className="whitespace-pre-wrap break-words">{evidence.text}</p> : null}
       <ChunkMetadata chunk={stored ?? fromCitation(citation)} chunkIds={citation.chunk_ids} showMetadata={stored !== undefined} />
       {unavailable ? <p className="text-muted-foreground">The stored chunk is not available.</p> : null}
+      {failed ? <ErrorNotice error={query.error} onRetry={() => void query.refetch()} /> : null}
       {chunkId !== null && query.isPending ? (
         <p role="status" className="text-muted-foreground">
           Loading the stored metadata.
