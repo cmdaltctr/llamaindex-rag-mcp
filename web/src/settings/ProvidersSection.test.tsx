@@ -171,10 +171,11 @@ describe("Providers", () => {
   });
 
   it("replaces the key input with one line when no keychain is available", async () => {
-    const noKey = { ...OPENROUTER.fields[0]!, set: false, last4: null, source: "none" as const, lock_reason: "Set OPENROUTER_API_KEY in .env." };
+    const noKey = { ...OPENROUTER.fields[0]!, set: false, last4: null, source: "none" as const, lock_reason: "No system keychain is available. Set OPENROUTER_API_KEY in the environment or .env." };
     await openProviders({ "GET /v1/connections": () => ({ ...list(OLLAMA, LLAMACPP, { ...OPENROUTER, fields: [noKey] }), keychain: "unavailable" }) });
     const openrouter = card("OpenRouter");
     expect(openrouter).toHaveTextContent(/no system keychain/i);
+    expect(openrouter.textContent?.match(/no system keychain/gi)).toHaveLength(1);
     expect(openrouter).toHaveTextContent("OPENROUTER_API_KEY");
     expect(within(openrouter).queryByLabelText("API key")).toBeNull();
     expect(within(openrouter).queryByRole("button", { name: "Save key" })).toBeNull();

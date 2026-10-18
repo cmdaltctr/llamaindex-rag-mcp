@@ -61,7 +61,7 @@ export function ProviderKeyField({ provider, field, keychain, typed, onTyped }: 
     return (
       <div className="flex flex-col gap-1">
         <p className="text-meta text-muted-foreground">{field.label}</p>
-        <p className="text-ui">{`No system keychain is available on this machine.${field.lock_reason !== null ? ` ${field.lock_reason}` : ""}`}</p>
+        <p className="text-ui">{field.lock_reason ?? "No system keychain is available on this machine."}</p>
       </div>
     );
   }

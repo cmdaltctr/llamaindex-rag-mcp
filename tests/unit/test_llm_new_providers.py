@@ -512,3 +512,22 @@ def test_shared_prefix_keys_leave_no_fragment_of_the_second_key(cut: int) -> Non
     fragment = _NEW_ANT[:-cut]
     assert "B" not in redact_secrets(f"error {fragment}", [_OLD_ANT, _NEW_ANT])
     assert "B" not in redact_secrets(f"error {fragment}", [_NEW_ANT, _OLD_ANT])
+
+
+_ENV_KEY = "env-openai-key-must-not-be-used"  # gitleaks:allow
+
+
+def test_openai_compatible_never_falls_back_to_the_environment_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An empty saved key must not send OPENAI_API_KEY to a typed address."""
+    pytest.importorskip("llama_index.llms.openai_like")
+    from omrg.core.providers.llm import openai_compatible
+
+    monkeypatch.setenv("OPENAI_API_KEY", _ENV_KEY)
+    settings = make_settings(
+        openai_compatible_api_key="", openai_compatible_base_url="http://x.test/v1"
+    )
+    llm = openai_compatible.build(settings, answer_model="m")
+    assert llm.api_key == "no-key"
+    assert _ENV_KEY not in repr(llm.api_key)
