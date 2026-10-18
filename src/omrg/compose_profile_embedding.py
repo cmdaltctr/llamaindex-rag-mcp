@@ -96,14 +96,25 @@ class ProfileEmbedding:
 
     # ── Reading ─────────────────────────────────────────────────────
 
-    def _store(self) -> Any | None:
+    def _store(self, *, strict: bool = False) -> Any | None:
+        """Return the Engine's store.
+
+        A listing may skip a store that is not ready (``None``). A save or a
+        binding check passes ``strict`` so that the error reaches the caller
+        and the check fails closed.
+        """
+        if strict:
+            return self._service._engine.store
         try:
             return self._service._engine.store
         except (RuntimeError, AttributeError):
             return None
 
-    def _states(self, collections: list[str]) -> list[CollectionEmbeddingState]:
-        store = self._store()
+    def _states(
+        self, collections: list[str], *, strict: bool = False
+    ) -> list[CollectionEmbeddingState]:
+        """Read the state of each collection (``strict``: see :meth:`_store`)."""
+        store = self._store(strict=strict)
         if store is None:
             return []
         return [collection_embedding_state(store, name) for name in collections]
@@ -177,7 +188,7 @@ class ProfileEmbedding:
         with service.lock, write_lock:
             record = service._user_record(profile_id)
             used_by = service._used_by(profile_id, dict(service._collection_tags()))
-            blockers = blocking_collections(self._states(used_by), requested)
+            blockers = blocking_collections(self._states(used_by, strict=True), requested)
             if blockers:
                 raise EmbeddingLockedError([_described(s) for s in blockers])
             service._profiles.set_profile_embedding(
@@ -192,9 +203,7 @@ class ProfileEmbedding:
         Raises:
             EmbeddingMismatchError: With a message that names both models.
         """
-        store = self._store()
-        if store is None:
-            return
+        store = self._store(strict=True)
         choice: EmbeddingIdentity | None = None
         if profile_id not in BUILTIN_PROFILES:
             try:

@@ -112,7 +112,7 @@ async def test_a_built_in_profile_is_refused_for_a_collection_made_with_another_
 ) -> None:
     env, server, engine = web
     # On `omrg web` the service and the endpoint share one Engine and store.
-    monkeypatch.setattr(env.service.embedding, "_store", lambda: engine.test_store)
+    monkeypatch.setattr(env.service.embedding, "_store", lambda **_: engine.test_store)
     engine.test_store.update_collection_metadata(
         COLLECTION, {IDENTITY_PROVIDER_KEY: "other-provider", IDENTITY_MODEL_KEY: "other-model"}
     )

@@ -312,9 +312,9 @@ def test_the_ingest_write_lock_is_held_while_the_row_is_saved(
 
     original = ProfileEmbedding._states
 
-    def spying(self: Any, collections: list[str]) -> Any:
+    def spying(self: Any, collections: list[str], **kwargs: Any) -> Any:
         seen.append(write_lock.locked())
-        return original(self, collections)
+        return original(self, collections, **kwargs)
 
     monkeypatch.setattr(ProfileEmbedding, "_states", spying)
     assert _put(client, pid, "ollama", "model-b").status_code == 200

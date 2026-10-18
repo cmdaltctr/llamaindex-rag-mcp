@@ -183,3 +183,59 @@ def test_web_profile_service_uses_the_engine_host_model(tmp_path: Any) -> None:
     embedding = service.embedding.fields(None, [])["embedding"]
 
     assert (embedding["provider"], embedding["model"]) == (HOST.provider, HOST.model)
+
+
+class _ClosedEngine:
+    """An Engine that has been closed: its ``store`` property raises."""
+
+    @property
+    def store(self) -> Any:
+        raise RuntimeError("Engine is closed")
+
+    def redact(self, text: str) -> str:
+        return text
+
+
+class _StubService:
+    """The parts of ``ProfileService`` that ``ProfileEmbedding`` touches."""
+
+    def __init__(self) -> None:
+        from contextlib import nullcontext
+
+        self._engine = _ClosedEngine()
+        self.lock = nullcontext()
+        self.saved: list[Any] = []
+        self._profiles = self
+
+    def _user_record(self, profile_id: str) -> dict[str, Any]:
+        return {"profile_id": profile_id}
+
+    def _used_by(self, *_: Any) -> list[str]:
+        return ["notes"]
+
+    def _collection_tags(self) -> dict[str, str]:
+        return {"notes": "mine"}
+
+    def set_profile_embedding(self, *args: Any, **kwargs: Any) -> None:
+        self.saved.append((args, kwargs))
+
+
+def test_a_closed_engine_refuses_a_model_save_and_writes_nothing() -> None:
+    from omrg.compose_profile_embedding import ProfileEmbedding
+
+    service = _StubService()
+    embedding = ProfileEmbedding(service, lambda: HOST)  # type: ignore[arg-type]
+
+    with pytest.raises(RuntimeError):
+        embedding.save("mine", None, None)
+
+    assert service.saved == []
+
+
+def test_a_closed_engine_refuses_a_binding_check() -> None:
+    from omrg.compose_profile_embedding import ProfileEmbedding
+
+    embedding = ProfileEmbedding(_StubService(), lambda: HOST)  # type: ignore[arg-type]
+
+    with pytest.raises(RuntimeError):
+        embedding.check_binding("mine", "notes")
