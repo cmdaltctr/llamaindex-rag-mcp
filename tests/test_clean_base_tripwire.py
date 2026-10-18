@@ -81,7 +81,8 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # chat repository (16) and chat route (14) cases add 34 executed tests (5741 -> 5775);
 # the 14 route cases need the web extra.
 # Two layout direction cases (GraphLayout model) add 2 more (5775 -> 5777 with the web extra).
-_BASE_EXECUTED = 5784
+# Five chat route error-branch cases (codecov patch gap) add 5 more (5784 -> 5789).
+_BASE_EXECUTED = 5789
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -333,7 +334,7 @@ if not _has_qwen_tokenizer:
 # Re-measured at add-profile-embedding-model (2026-10-18) in two clean venvs:
 # 5731 executed with the web extra, 5081 without, so 26 more (650).
 # add-chat-history-and-canvas-view-controls: the 14 chat route cases need fastapi (664).
-_WEB_EXTRA_CASES = 664
+_WEB_EXTRA_CASES = 669
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)

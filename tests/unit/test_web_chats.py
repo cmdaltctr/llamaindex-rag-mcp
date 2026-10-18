@@ -157,3 +157,56 @@ def test_chat_responses_conform_to_the_contract(web: Any) -> None:
     check.check(client.delete(f"/v1/chats/{chat}", headers=ORIGIN), 200)
     check.check(client.delete(f"/v1/chat-folders/{folder}", headers=ORIGIN), 200)
     assert check.operations >= FAMILIES["chats"]
+
+
+def test_unknown_ids_are_404_on_every_route_that_takes_one(web: Any) -> None:
+    client = web[0]
+    missing = [
+        client.patch("/v1/chats/nope", json={"folder_id": None}, headers=ORIGIN),
+        client.delete("/v1/chats/nope", headers=ORIGIN),
+        client.patch("/v1/chat-folders/nope", json={"name": "x"}, headers=ORIGIN),
+        client.delete("/v1/chat-folders/nope", headers=ORIGIN),
+    ]
+    assert [r.status_code for r in missing] == [404, 404, 404, 404]
+    assert all(r.json()["status"] == "error" for r in missing)
+
+
+def test_creating_a_chat_in_an_unknown_folder_is_404(web: Any) -> None:
+    client = web[0]
+    response = client.post("/v1/chats", json={"title": "Q", "folder_id": "nope"}, headers=ORIGIN)
+    assert response.status_code == 404
+
+
+def test_moving_a_chat_into_an_unknown_folder_is_404(web: Any) -> None:
+    client = web[0]
+    chat_id = _chat(client)
+    response = client.patch(f"/v1/chats/{chat_id}", json={"folder_id": "nope"}, headers=ORIGIN)
+    assert response.status_code == 404
+
+
+def test_blank_folder_and_question_values_are_400(web: Any) -> None:
+    client = web[0]
+    chat_id = _chat(client)
+    folder_id = client.post("/v1/chat-folders", json={"name": "Work"}, headers=ORIGIN).json()[
+        "folder"
+    ]["folder_id"]
+    blank = [
+        client.post("/v1/chat-folders", json={"name": "   "}, headers=ORIGIN),
+        client.patch(f"/v1/chat-folders/{folder_id}", json={"name": "   "}, headers=ORIGIN),
+        client.post(
+            f"/v1/chats/{chat_id}/turns",
+            json={"collection": "docs", "question": "   ", "answer": ANSWER},
+            headers=ORIGIN,
+        ),
+    ]
+    assert [r.status_code for r in blank] == [400, 400, 400]
+
+
+def test_chat_routes_answer_503_when_the_server_has_no_chat_store(web: Any) -> None:
+    client, _, app = web
+    runtime = app.state.runtime
+    saved, runtime.chats = runtime.chats, None
+    try:
+        assert client.get("/v1/chats").status_code == 503
+    finally:
+        runtime.chats = saved
