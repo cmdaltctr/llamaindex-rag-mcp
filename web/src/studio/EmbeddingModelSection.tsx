@@ -31,8 +31,10 @@ function Controls({ profile, onLocked }: { profile: ProfileRecord; onLocked: (co
   const api = useApi();
   const providers = useQuery(embeddingProvidersQuery(api));
   const current = profile.embedding;
-  const [provider, setProvider] = useState(current?.provider ?? "");
-  const [model, setModel] = useState(current?.model ?? "");
+  // A profile on the server default starts empty, so a save is always a choice.
+  const chosen = current?.source === "profile" ? current : null;
+  const [provider, setProvider] = useState(chosen?.provider ?? "");
+  const [model, setModel] = useState(chosen?.model ?? "");
   const [check, setCheck] = useState<EmbeddingCheck | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const checker = useCheckEmbeddingModel();
@@ -91,7 +93,12 @@ function Controls({ profile, onLocked }: { profile: ProfileRecord; onLocked: (co
       </div>
       <div className="flex flex-col gap-1">
         <Label htmlFor={modelId}>Model</Label>
-        <Input id={modelId} value={model} onChange={(event) => change(() => setModel(event.target.value))} />
+        <Input
+          id={modelId}
+          value={model}
+          placeholder={providers.data?.server_default.model ?? current?.model ?? ""}
+          onChange={(event) => change(() => setModel(event.target.value))}
+        />
       </div>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" disabled={!ready || checker.isPending} onClick={() => void runCheck()}>
@@ -135,6 +142,18 @@ export function EmbeddingModelSection({ profile }: EmbeddingModelSectionProps) {
       </p>
     );
   }
-  if (blocking !== null) return <p className="text-meta text-muted-foreground">{lockText(blocking)}</p>;
+  if (blocking !== null) {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-meta text-muted-foreground">{lockText(blocking)}</p>
+        {/* A refusal can be stale: the blocking collection may have been deleted since. */}
+        {refused !== null && (
+          <Button variant="ghost" className="self-start" onClick={() => setRefused(null)}>
+            Try again
+          </Button>
+        )}
+      </div>
+    );
+  }
   return <Controls profile={profile} onLocked={setRefused} />;
 }

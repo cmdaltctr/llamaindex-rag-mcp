@@ -68,9 +68,23 @@ describe("EmbeddingModelSection", () => {
   it("shows the controls for an unlocked user profile", async () => {
     setup(profile("user"));
     expect(await screen.findByRole("combobox", { name: "Provider" })).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Model" })).toHaveValue("nomic-embed-text");
     expect(screen.getByRole("button", { name: "Check model" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save model" })).toBeInTheDocument();
+  });
+
+  it("starts empty for a profile on the server default, so a save is a choice", async () => {
+    setup(profile("user"));
+    const field = await screen.findByRole("textbox", { name: "Model" });
+    expect(field).toHaveValue("");
+    expect(field).toHaveAttribute("placeholder", "nomic-embed-text");
+    expect(screen.getByRole("button", { name: "Save model" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Check model" })).toBeDisabled();
+  });
+
+  it("starts with the saved model for a profile that chose one", async () => {
+    setup(profile("user", { embedding: { provider: "onnx", model: "bge-small", source: "profile", dimensions: 384 } }));
+    expect(await screen.findByRole("textbox", { name: "Model" })).toHaveValue("bge-small");
+    expect(screen.getByRole("button", { name: "Save model" })).toBeEnabled();
   });
 
   it("checks the typed model and shows the vector size", async () => {
@@ -89,7 +103,8 @@ describe("EmbeddingModelSection", () => {
     const { user } = setup(profile("user"), (method) =>
       method === "POST" ? json({ status: "ok", ok: false, dimensions: null, norm: null, reason: "Model not found." }) : undefined,
     );
-    await user.click(await screen.findByRole("button", { name: "Check model" }));
+    await user.type(await screen.findByRole("textbox", { name: "Model" }), "ghost-model");
+    await user.click(screen.getByRole("button", { name: "Check model" }));
     expect(await screen.findByText("Model not found.")).toBeInTheDocument();
   });
 
@@ -151,14 +166,38 @@ describe("EmbeddingModelSection", () => {
       collections: [{ collection: "papers", provider: "ollama", model: "nomic-embed-text", chunk_count: 3 }],
     };
     const { user } = setup(profile("user"), (method) => (method === "PUT" ? json(body, 409) : undefined));
-    await user.click(await screen.findByRole("button", { name: "Save model" }));
+    await user.type(await screen.findByRole("textbox", { name: "Model" }), "other-model");
+    await user.click(screen.getByRole("button", { name: "Save model" }));
     expect(await screen.findByText("Locked: papers already holds vectors made with nomic-embed-text. Create a new collection to use another model.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Save model" })).not.toBeInTheDocument();
   });
 
+  it("lets the user try again after a 409, because the collection may have changed", async () => {
+    const body = {
+      status: "error",
+      message: "Locked.",
+      error_type: "embedding_locked",
+      collections: [{ collection: "papers", provider: "ollama", model: "nomic-embed-text", chunk_count: 3 }],
+    };
+    const { user } = setup(profile("user"), (method) => (method === "PUT" ? json(body, 409) : undefined));
+    await user.type(await screen.findByRole("textbox", { name: "Model" }), "other-model");
+    await user.click(screen.getByRole("button", { name: "Save model" }));
+    await user.click(await screen.findByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("button", { name: "Save model" })).toBeInTheDocument();
+    expect(screen.queryByText(/^Locked:/)).not.toBeInTheDocument();
+  });
+
+  it("offers no retry for a lock that the server reports", async () => {
+    const lock = { locked: true, collections: [{ collection: "papers", provider: "ollama", model: "nomic-embed-text", chunk_count: 12 }] };
+    setup(profile("user", { embedding_lock: lock }));
+    await screen.findByText(/^Locked:/);
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+  });
+
   it("shows the reason when a save gets a 422", async () => {
     const { user } = setup(profile("user"), (method) => (method === "PUT" ? json({ status: "error", message: "Check failed.", reason: "Model not found." }, 422) : undefined));
-    await user.click(await screen.findByRole("button", { name: "Save model" }));
+    await user.type(await screen.findByRole("textbox", { name: "Model" }), "ghost-model");
+    await user.click(screen.getByRole("button", { name: "Save model" }));
     expect(await screen.findByText("Model not found.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save model" })).toBeInTheDocument();
   });
