@@ -2038,6 +2038,339 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
+  # ── Stored chats (session only, ADR-082) ─────────────────────────────
+  /chats:
+    get:
+      operationId: listChats
+      summary: List folders and chats
+      description: >
+        Folders and chats of the workspace. Chats come newest first and carry no turns.
+        Browser session only; a bearer token is refused.
+      security:
+        - sessionCookie: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The folders and chats.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+    post:
+      operationId: createChat
+      summary: Create an empty chat
+      description: >
+        The title is 1 to 200 characters. `folder_id` is optional.
+      security:
+        - sessionCookie: [read]
+      x-omrg-scopes: [read]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatCreateRequest"
+      responses:
+        "201":
+          description: Chat created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /chats/delete:
+    post:
+      operationId: deleteChats
+      summary: Delete many chats
+      description: >
+        Deletes 1 to 500 chats in one transaction. An unknown id fails the request
+        with 404 and deletes nothing. The delete is permanent.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatBulkDeleteRequest"
+      responses:
+        "200":
+          description: Chats deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatDeleteCounts"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /chats/{chat_id}:
+    get:
+      operationId: getChat
+      summary: Return one chat with its turns
+      description: >
+        Turns come in order. Each turn holds the finished answer as saved.
+      security:
+        - sessionCookie: [read]
+      x-omrg-scopes: [read]
+      parameters:
+        - $ref: "#/components/parameters/ChatId"
+      responses:
+        "200":
+          description: The chat.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatDetailEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    patch:
+      operationId: moveChat
+      summary: Move a chat into a folder
+      description: >
+        `folder_id` null moves the chat out of any folder.
+      security:
+        - sessionCookie: [read]
+      x-omrg-scopes: [read]
+      parameters:
+        - $ref: "#/components/parameters/ChatId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatMoveRequest"
+      responses:
+        "200":
+          description: Chat moved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    delete:
+      operationId: deleteChat
+      summary: Delete one chat
+      description: >
+        Deletes the chat and its turns. The delete is permanent.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      parameters:
+        - $ref: "#/components/parameters/ChatId"
+      responses:
+        "200":
+          description: Chat deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatDeleteCounts"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /chats/{chat_id}/turns:
+    post:
+      operationId: appendChatTurn
+      summary: Save one finished answer
+      description: >
+        The server picks the turn position. The answer JSON may be at most 2 MiB;
+        a larger answer gives 413.
+      security:
+        - sessionCookie: [read]
+      x-omrg-scopes: [read]
+      parameters:
+        - $ref: "#/components/parameters/ChatId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatTurnRequest"
+      responses:
+        "201":
+          description: Turn saved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatTurnEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /chat-folders:
+    post:
+      operationId: createChatFolder
+      summary: Create a chat folder
+      description: >
+        The name is 1 to 100 characters. Folders have one level.
+      security:
+        - sessionCookie: [read]
+      x-omrg-scopes: [read]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatFolderRequest"
+      responses:
+        "201":
+          description: Folder created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatFolderEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /chat-folders/{folder_id}:
+    patch:
+      operationId: renameChatFolder
+      summary: Rename a chat folder
+      description: >
+        The name is 1 to 100 characters.
+      security:
+        - sessionCookie: [read]
+      x-omrg-scopes: [read]
+      parameters:
+        - $ref: "#/components/parameters/ChatFolderId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatFolderRequest"
+      responses:
+        "200":
+          description: Folder renamed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatFolderEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    delete:
+      operationId: deleteChatFolder
+      summary: Delete a folder and its chats
+      description: >
+        Deletes the folder and every chat inside it. The delete is permanent.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      parameters:
+        - $ref: "#/components/parameters/ChatFolderId"
+      responses:
+        "200":
+          description: Folder deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatDeleteCounts"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
   # ── Experiment contexts (session only) ──────────────────────────────
   /experiments:
     post:
@@ -2923,6 +3256,24 @@ components:
       required: true
       schema:
         type: string
+    ChatId:
+      name: chat_id
+      in: path
+      required: true
+      description: The id of a stored chat.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    ChatFolderId:
+      name: folder_id
+      in: path
+      required: true
+      description: The id of a chat folder.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
     ProfileId:
       name: profile_id
       in: path
@@ -4488,6 +4839,160 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProfileItem"
+
+    ChatItem:
+      type: object
+      additionalProperties: false
+      required: [chat_id, folder_id, title, created_at, updated_at]
+      properties:
+        chat_id: {type: string}
+        folder_id: {type: [string, "null"]}
+        title: {type: string, minLength: 1, maxLength: 200}
+        created_at: {type: string}
+        updated_at: {type: string}
+
+    ChatFolderItem:
+      type: object
+      additionalProperties: false
+      required: [folder_id, name, created_at]
+      properties:
+        folder_id: {type: string}
+        name: {type: string, minLength: 1, maxLength: 100}
+        created_at: {type: string}
+
+    ChatTurnItem:
+      type: object
+      additionalProperties: false
+      required: [position, collection, question, answer, created_at]
+      properties:
+        position: {type: integer, minimum: 1}
+        collection: {type: string}
+        question: {type: string, minLength: 1, maxLength: 10000}
+        answer:
+          type: object
+          description: The finished answer exactly as the answer route returned it.
+          additionalProperties: true
+        created_at: {type: string}
+
+    ChatDetail:
+      type: object
+      additionalProperties: false
+      required: [chat_id, folder_id, title, created_at, updated_at, turns]
+      properties:
+        chat_id: {type: string}
+        folder_id: {type: [string, "null"]}
+        title: {type: string, minLength: 1, maxLength: 200}
+        created_at: {type: string}
+        updated_at: {type: string}
+        turns:
+          type: array
+          items: {$ref: "#/components/schemas/ChatTurnItem"}
+
+    ChatList:
+      type: object
+      additionalProperties: false
+      required: [status, folders, chats]
+      properties:
+        status: {type: string, enum: [ok]}
+        folders:
+          type: array
+          items: {$ref: "#/components/schemas/ChatFolderItem"}
+        chats:
+          type: array
+          items: {$ref: "#/components/schemas/ChatItem"}
+
+    ChatEnvelope:
+      type: object
+      additionalProperties: false
+      required: [status, chat]
+      properties:
+        status: {type: string, enum: [ok]}
+        chat: {$ref: "#/components/schemas/ChatItem"}
+
+    ChatDetailEnvelope:
+      type: object
+      additionalProperties: false
+      required: [status, chat]
+      properties:
+        status: {type: string, enum: [ok]}
+        chat: {$ref: "#/components/schemas/ChatDetail"}
+
+    ChatTurnEnvelope:
+      type: object
+      additionalProperties: false
+      required: [status, turn]
+      properties:
+        status: {type: string, enum: [ok]}
+        turn:
+          type: object
+          additionalProperties: false
+          required: [chat_id, position, created_at]
+          properties:
+            chat_id: {type: string}
+            position: {type: integer, minimum: 1}
+            created_at: {type: string}
+
+    ChatFolderEnvelope:
+      type: object
+      additionalProperties: false
+      required: [status, folder]
+      properties:
+        status: {type: string, enum: [ok]}
+        folder: {$ref: "#/components/schemas/ChatFolderItem"}
+
+    ChatDeleteCounts:
+      type: object
+      additionalProperties: false
+      required: [status, chats, folders]
+      properties:
+        status: {type: string, enum: [ok]}
+        chats: {type: integer, minimum: 0}
+        folders: {type: integer, minimum: 0}
+
+    ChatCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [title]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 200}
+        folder_id: {type: [string, "null"], maxLength: 128}
+
+    ChatMoveRequest:
+      type: object
+      additionalProperties: false
+      required: [folder_id]
+      properties:
+        folder_id: {type: [string, "null"], maxLength: 128}
+
+    ChatTurnRequest:
+      type: object
+      additionalProperties: false
+      required: [collection, question, answer]
+      properties:
+        collection: {type: string, minLength: 1, maxLength: 512}
+        question: {type: string, minLength: 1, maxLength: 10000}
+        answer:
+          type: object
+          description: The finished answer. The encoded JSON may be at most 2 MiB.
+          additionalProperties: true
+
+    ChatBulkDeleteRequest:
+      type: object
+      additionalProperties: false
+      required: [chat_ids]
+      properties:
+        chat_ids:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items: {type: string}
+
+    ChatFolderRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 100}
 
     ProfileEnvelope:
       type: object

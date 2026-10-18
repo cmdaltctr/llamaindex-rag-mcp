@@ -257,6 +257,7 @@ class WebRuntime:
     experiments: Any | None = None
     plugins: PluginHost | None = None
     profiles: Any | None = None
+    chats: Any | None = None
     upload_limit_source: str = "default"
     _shut_down: bool = False
 
@@ -422,6 +423,7 @@ async def _owned_runtime(
         runtime.experiments = (config.experiments_factory or default_experiments_factory)(config)
         runtime.plugins = (config.plugins_factory or default_plugins_factory)(config)
         runtime.profiles = await _start_profiles(config, runtime.engine)
+        runtime.chats = _build_chats(config)
         if run_service_factory is not None:
             runtime.run_service = run_service_factory(runtime)
             await runtime.run_service.start()
@@ -433,6 +435,13 @@ async def _owned_runtime(
     finally:
         app.state.runtime = None
         await shutdown_runtime(runtime)
+
+
+def _build_chats(config: WebConfig) -> Any:
+    """Build the chat store. It runs after the profile service has migrated the file."""
+    from ...compose_profile_setup import build_chat_repository
+
+    return build_chat_repository(config.workspace)
 
 
 async def _start_profiles(config: WebConfig, engine: Any) -> Any:

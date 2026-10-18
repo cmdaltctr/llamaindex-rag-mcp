@@ -4,11 +4,11 @@ Work in the sibling worktree `llamaindex-rag-mcp-feat-add-chat-history-and-canva
 
 ## 1. Chat storage (backend)
 
-- [ ] 1.1 Write failing tests for migration 5: a v4 file with profiles migrates, a backup file appears, the three tables and two indexes exist, and a folder delete cascades to chats and turns. Then add migration 5 in `integrations/workspace_sqlite/schema.py`. Verify: the new tests pass, and the cascade test fails with `ON DELETE CASCADE` removed.
-- [ ] 1.2 Write failing tests, then add the `ChatRepository` protocol in `core/workspace/` and its SQLite implementation in `integrations/workspace_sqlite/chats.py`: create, append turn (server-assigned position), list, get, move, delete one, delete many (all or nothing), folder create, rename and delete. Verify: the new repository tests pass; the all-or-nothing test fails when the transaction is removed.
-- [ ] 1.3 Wire the repository in `compose`, then add `transports/api/routes/chats.py` with the D4 routes, body limits, `require_session("read")` and `require_session("manage")` for deletes. Verify: route tests cover each route, the 413 limit, the count in delete responses, and a bearer token refused on `GET /v1/chats`.
-- [ ] 1.4 Add the chat routes to `openapi.yaml`. Verify: `uv run pytest tests/test_openapi_conformance.py tests/test_contract_coverage.py` passes.
-- [ ] 1.5 Run the backend gate. Verify: `uv run lint-imports` and `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q` pass, including the 500-line ceiling.
+- [x] 1.1 Write failing tests for migration 5: a v4 file with profiles migrates, a backup file appears, the three tables and two indexes exist, and a folder delete cascades to chats and turns. Then add migration 5 in `integrations/workspace_sqlite/schema.py`. Verify: the new tests pass, and the cascade test fails with `ON DELETE CASCADE` removed.
+- [x] 1.2 Write failing tests, then add the `ChatRepository` protocol in `core/workspace/` and its SQLite implementation in `integrations/workspace_sqlite/chats.py`: create, append turn (server-assigned position), list, get, move, delete one, delete many (all or nothing), folder create, rename and delete. Verify: the new repository tests pass; the all-or-nothing test fails when the transaction is removed.
+- [x] 1.3 Wire the repository in `compose`, then add `transports/api/routes/chats.py` with the D4 routes, body limits, `require_session("read")` and `require_session("manage")` for deletes. Verify: route tests cover each route, the 413 limit, the count in delete responses, and a bearer token refused on `GET /v1/chats`.
+- [x] 1.4 Add the chat routes to `openapi.yaml`. Verify: `uv run pytest tests/test_openapi_conformance.py tests/test_contract_coverage.py` passes.
+- [x] 1.5 Run the backend gate. Verify: `uv run lint-imports` and `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q` pass, including the 500-line ceiling.
 
 ## 2. Chat history (web)
 

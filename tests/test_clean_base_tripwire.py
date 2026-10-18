@@ -77,7 +77,10 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # service, upgrade, resolver, contract, Engine dispatch, route, MCP, CLI and
 # watcher suites add 349 executed tests (5233 -> 5582). One test was removed:
 # the old "runs on one Engine are serialised" case, replaced by the locking suite.
-_BASE_EXECUTED = 5748
+# Re-baselined at add-chat-history-and-canvas-view-controls (2026-10-18): migration 5 (4),
+# chat repository (16) and chat route (14) cases add 34 executed tests (5741 -> 5775);
+# the 14 route cases need the web extra.
+_BASE_EXECUTED = 5782
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -328,7 +331,8 @@ if not _has_qwen_tokenizer:
 # pinned, so the fastapi-dependent cases are 105 more (624 with the extra).
 # Re-measured at add-profile-embedding-model (2026-10-18) in two clean venvs:
 # 5731 executed with the web extra, 5081 without, so 26 more (650).
-_WEB_EXTRA_CASES = 650
+# add-chat-history-and-canvas-view-controls: the 14 chat route cases need fastapi (664).
+_WEB_EXTRA_CASES = 664
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)
