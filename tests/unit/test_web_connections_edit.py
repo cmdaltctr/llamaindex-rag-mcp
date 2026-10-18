@@ -614,3 +614,33 @@ def test_the_models_route_is_session_only(harness: Any, mock_http: Any) -> None:
         assert h.client.post("/v1/connections/ollama/models", headers=header).status_code == 403
         assert mock_http.seen == []
         assert models(h, "mystery").status_code in (401, 404)
+
+
+_ROUTE_KEY = "sk-or-v1-" + "r0uTeK3y" * 7  # gitleaks:allow
+_ROUTE_KEY_2 = "sk-or-v1-" + "s3c0nDkY" * 7  # gitleaks:allow
+
+
+def test_a_key_saved_through_the_route_is_removed_from_the_log_buffer_and_logs_route(
+    harness: Any,
+) -> None:
+    """Task 6.1: save through the key route, log the key, read it back redacted."""
+    with harness() as h:
+        buffer = h.app.state.log_buffer
+        logger = logging.getLogger("omrg.test.key-route")
+        logger.setLevel(logging.INFO)
+        logger.addHandler(buffer)
+        try:
+            for key in (_ROUTE_KEY, _ROUTE_KEY_2):  # the second save replaces the first
+                saved = h.client.put(
+                    "/v1/connections/openrouter/key", json={"api_key": key}, headers=ORIGIN
+                )
+                assert saved.status_code == 200, saved.text
+                logger.error("upstream echoed %s and a cut piece %s", key, key[:-6])
+            logs = h.client.get("/v1/logs", headers=ORIGIN)
+        finally:
+            logger.removeHandler(buffer)
+        assert logs.status_code == 200, logs.text
+        for key in (_ROUTE_KEY, _ROUTE_KEY_2):
+            assert key[9:30] not in logs.text
+            assert key[9:30] not in json.dumps(buffer.records())
+        assert "upstream echoed ***" in logs.text
