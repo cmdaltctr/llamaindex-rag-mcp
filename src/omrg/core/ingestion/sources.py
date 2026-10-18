@@ -71,6 +71,8 @@ class IngestionContext:
         ocr_fallback_fingerprint: Fingerprint of the OCR fallback route.
         graph_shape: Identity block of a non-standard ingestion graph, or
             ``None`` for the standard shape.
+        embedding_identity: Provider and model that made the vectors, or
+            ``None`` for the store's composed identity (ADR-081).
     """
 
     settings: Any
@@ -82,6 +84,7 @@ class IngestionContext:
     ocr_worker_fingerprint: Any
     ocr_fallback_fingerprint: Any
     graph_shape: dict[str, Any] | None = None
+    embedding_identity: Any = None
 
 
 @dataclass(frozen=True)
@@ -153,6 +156,7 @@ def build_ingestion_context(
     embed_model: Any = None,
     ocr_client: Any = None,
     graph_shape: dict[str, Any] | None = None,
+    embedding_identity: Any = None,
 ) -> IngestionContext:
     """Resolve the operation-wide index-shaping inputs once.
 
@@ -167,6 +171,7 @@ def build_ingestion_context(
             are read once here, never per file; ``None`` resolves to the
             stable unavailable fingerprint.
         graph_shape: Identity block of a non-standard ingestion graph.
+        embedding_identity: Provider and model that made the vectors.
     """
     if markdown_chunking is None:
         from ..chunking.model_token import resolve_markdown_chunking
@@ -185,6 +190,7 @@ def build_ingestion_context(
         ocr_worker_fingerprint=worker_fingerprint,
         ocr_fallback_fingerprint=fallback_fingerprint,
         graph_shape=graph_shape,
+        embedding_identity=embedding_identity,
     )
 
 
@@ -338,6 +344,9 @@ async def commit_source(
             own module binding so its existing test seams stay valid.
     """
     settings = context.settings
+    identity_kwargs = (
+        {"embedding_identity": context.embedding_identity} if context.embedding_identity else {}
+    )
     return await replacer(
         nodes,
         file_path=identity.canonical_file_path,
@@ -352,4 +361,5 @@ async def commit_source(
         embed_concurrency=settings.ingestion.embed_concurrency,
         norm_guard_enabled=settings.embedding.norm_guard_enabled,
         norm_tolerance=settings.embedding.norm_tolerance,
+        **identity_kwargs,
     )

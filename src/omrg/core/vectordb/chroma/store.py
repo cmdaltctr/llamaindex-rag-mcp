@@ -29,6 +29,7 @@ from ..identity import (
     EmbeddingIdentity,
     IdentityGuardMixin,
     embedding_identity_from_settings,
+    write_identity,
 )
 from ..score import DENSE_SCORE_KIND, canonical_score_from_l2, require_l2_metric
 from ..validation import materialise_and_validate_node_embeddings, validate_embedding_batch
@@ -175,7 +176,12 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
     # ── Document write (upsert via LlamaIndex) ─────────────────────
 
     def write_nodes(
-        self, nodes: list[Any], collection_name: str, *, embed_model: Any = None
+        self,
+        nodes: list[Any],
+        collection_name: str,
+        *,
+        embed_model: Any = None,
+        embedding_identity: EmbeddingIdentity | None = None,
     ) -> None:
         """Embed and write nodes via LlamaIndex's ChromaVectorStore adapter.
 
@@ -183,15 +189,13 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         only the direct-call path without one falls back to the LlamaIndex
         global. When an embedding identity is attached, the collection's
         stored identity is stamped (legacy collections) or verified first.
+        *embedding_identity* replaces the composed identity for this call.
         """
         if embed_model is None:
             from llama_index.core import Settings
 
             embed_model = Settings.embed_model
-        identity = self._identity or EmbeddingIdentity(
-            provider=type(embed_model).__name__,
-            model=str(getattr(embed_model, "model_name", type(embed_model).__name__)),
-        )
+        identity = write_identity(embedding_identity, self._identity, embed_model)
         materialise_and_validate_node_embeddings(
             nodes,
             collection_name=collection_name,
@@ -201,7 +205,7 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         )
         client = self._get_client()
         collection = client.get_or_create_collection(collection_name)
-        self._check_or_stamp_identity(collection)
+        self._check_or_stamp_identity(collection, embedding_identity)
         from llama_index.vector_stores.chroma import (
             ChromaVectorStore as _LlamaChromaVectorStore,
         )
@@ -269,12 +273,14 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         query_embedding: list[float],
         n_results: int,
         where: dict | None = None,
+        *,
+        embedding_identity: EmbeddingIdentity | None = None,
     ) -> list[dict]:
         """Query L2 and convert it to canonical higher-is-better scores."""
         collection = self._get_collection(collection_name)
         if collection is None:
             return []
-        self._guard_query_identity(collection_name, collection)
+        self._guard_query_identity(collection_name, collection, embedding_identity)
         metadata = dict(getattr(collection, "metadata", None) or {})
         require_l2_metric(
             metadata.get("hnsw:space"),

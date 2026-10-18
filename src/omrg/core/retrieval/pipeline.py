@@ -17,6 +17,7 @@ from typing import Any
 from ..settings import resolve_effective_settings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
+from ..vectordb.identity import EmbeddingIdentity
 from . import operations as ops
 from .assembly import ASSEMBLY_INTERNAL_FIELDS, assemble, promote_assembly_diagnostics
 from .operations import RERANK_SCORE_KIND  # noqa: F401 (re-exported for callers/tests)
@@ -62,8 +63,10 @@ def _hybrid_query_rows(
     timing_report: dict | None = None,
     embed_model: Any = None,
     cache: Any = None,
+    embedding_identity: EmbeddingIdentity | None = None,
 ) -> list[dict]:
     backend = _selected_sparse_backend(settings)
+    identity_kwargs = {"embedding_identity": embedding_identity} if embedding_identity else {}
     _dense_query_rows = _retrieval_get("dense")
     # Registry-routed sparse dispatch (task 3.3): both runners execute
     # through the sparse-backend registry; only the native policy adds
@@ -86,6 +89,7 @@ def _hybrid_query_rows(
             embed_model=embed_model,
             cache=cache,
             query_instruction=settings.embedding.query_instruction,
+            **identity_kwargs,
         )
         sparse_future = executor.submit(
             sparse_runner,
@@ -96,6 +100,7 @@ def _hybrid_query_rows(
             metadata_filter,
             sparse_report,
             timing_report=timing_report,
+            **identity_kwargs,
         )
         dense_rows = dense_future.result()
         sparse_rows = sparse_future.result()
@@ -148,6 +153,7 @@ def search(
     effective_settings: Any = None,
     embed_model: Any = None,
     query_cache: Any | None = None,
+    embedding_identity: EmbeddingIdentity | None = None,
 ) -> list[dict]:
     """Run a semantic similarity search over every indexed document.
 
@@ -204,6 +210,9 @@ def search(
             created.
         store: Optional injected :class:`VectorStore` (defaults to the
             process-wide store constructed by ``compose``).
+        embedding_identity: Provider and model that embed this query
+            (ADR-081). The stores check it against the collection stamp.
+            ``None`` keeps the composed store identity.
         effective_settings: Optional :class:`EffectiveSettings` resolved
             by :class:`ProfileResolver` for this collection (Phase 4).
             When provided, its Tier 2 levers (``top_k``, ``reranker_enabled``,
@@ -284,6 +293,7 @@ def search(
     timing_report: dict = {}
 
     _dense_query_rows = _retrieval_get("dense")
+    identity_kwargs = {"embedding_identity": embedding_identity} if embedding_identity else {}
     sparse_report: dict = {}
     if hybrid:
         dense_threshold = ops.first_stage_dense_threshold(
@@ -303,6 +313,7 @@ def search(
             timing_report=timing_report,
             embed_model=embed_model,
             cache=query_cache,
+            **identity_kwargs,
         )
     else:
         results = _dense_query_rows(
@@ -318,6 +329,7 @@ def search(
             embed_model=embed_model,
             cache=query_cache,
             query_instruction=resolved_settings.embedding.query_instruction,
+            **identity_kwargs,
         )
 
     # Optional: re-score with cross-encoder reranker.
@@ -374,6 +386,7 @@ def search(
             timing_report=timing_report,
             embed_model=embed_model,
             cache=query_cache,
+            **identity_kwargs,
         )
 
     results, threshold_score_kind = ops.apply_score_threshold(

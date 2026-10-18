@@ -8,11 +8,10 @@ Writes go through a throwaway LlamaIndex ``LanceDBVectorStore``
 adapter per table with ``mode="create"`` so a fresh adapter can never
 overwrite a populated table (the default mode is ``"overwrite"``).
 
-Table creation is lazy: LanceDB cannot create a table without data
-or a schema, so the vector dimension is fixed on first write exactly
-as the ChromaDB dimension lock behaves.  ``create_collection``
-records intent (a process-local set) so existence checks and
-listings match ChromaDB's create-on-demand semantics.
+Table creation is lazy: LanceDB cannot create a table without data or a
+schema, so the vector dimension is fixed on first write, as the ChromaDB
+dimension lock behaves.  ``create_collection`` records intent (a
+process-local set) so existence checks and listings match ChromaDB.
 Collection metadata (profile tags and the embedding-identity triple)
 lives in the table's durable Arrow schema metadata, written through
 pylance's ``update_schema_metadata`` (read-merge-write); that seam
@@ -20,9 +19,8 @@ and the identity guards live in :mod:`.meta`.  Schema metadata
 is the durable key-value bag that survives reconnection and adapter
 writes (verified against lancedb 0.37.1 / pylance 10.0.0).
 
-This is one of the few modules that imports ``lancedb`` directly
-(alongside ``filter.py`` and ``fts.py``); all pipeline
-code goes through the ABC.
+One of the few modules that imports ``lancedb`` directly (with ``filter.py``
+and ``fts.py``); all pipeline code goes through the ABC.
 """
 
 from __future__ import annotations
@@ -41,7 +39,7 @@ from llama_index.vector_stores.lancedb import (
 )
 
 from ..base import VectorStore
-from ..identity import EmbeddingIdentity, embedding_identity_from_settings
+from ..identity import EmbeddingIdentity, embedding_identity_from_settings, write_identity
 from ..score import DENSE_SCORE_KIND, canonical_score_from_l2
 from ..validation import materialise_and_validate_node_embeddings, validate_embedding_batch
 from .epoch import LanceDatasetEpochMixin
@@ -67,9 +65,8 @@ class LanceVectorStore(
 
     The vector dimension is fixed by the table schema on first write;
     a mismatched subsequent write raises LanceDB's cast error.
-    When an :class:`EmbeddingIdentity` is attached, embedding-space
-    identity is additionally stamped into / enforced from the table's
-    schema metadata before any write or query.
+    An attached :class:`EmbeddingIdentity` is stamped into and enforced from
+    the table's schema metadata before any write or query.
     """
 
     def __init__(
@@ -197,7 +194,12 @@ class LanceVectorStore(
     # ── Document write ──────────────────────────────────────────────
 
     def write_nodes(
-        self, nodes: list[Any], collection_name: str, *, embed_model: Any = None
+        self,
+        nodes: list[Any],
+        collection_name: str,
+        *,
+        embed_model: Any = None,
+        embedding_identity: EmbeddingIdentity | None = None,
     ) -> None:
         """Embed and write nodes via LlamaIndex's LanceDB adapter.
 
@@ -205,16 +207,13 @@ class LanceVectorStore(
         one falls back to the LlamaIndex global. stdout is redirected
         because the adapter prints on lazy table creation (stdout is the
         MCP channel). New metadata keys widen the struct first; old rows
-        gain nulls.
+        gain nulls. *embedding_identity* replaces the composed identity.
         """
         if embed_model is None:
             from llama_index.core import Settings
 
             embed_model = Settings.embed_model
-        identity = self._identity or EmbeddingIdentity(
-            provider=type(embed_model).__name__,
-            model=str(getattr(embed_model, "model_name", type(embed_model).__name__)),
-        )
+        identity = write_identity(embedding_identity, self._identity, embed_model)
         materialise_and_validate_node_embeddings(
             nodes,
             collection_name=collection_name,
@@ -222,7 +221,7 @@ class LanceVectorStore(
             existing_dimension=self.get_collection_dimension(collection_name),
             embed_model=embed_model,
         )
-        self._check_or_stamp_identity(collection_name)
+        self._check_or_stamp_identity(collection_name, embedding_identity)
         self._widen_null_adapter_columns(collection_name)
         # Grow the metadata struct to cover the batch's keys before the
         # adapter write (old rows gain nulls for the new keys).
@@ -241,7 +240,7 @@ class LanceVectorStore(
                 embed_model=embed_model,
             )
         self._intents.discard(collection_name)
-        self._flush_after_write(collection_name)
+        self._flush_after_write(collection_name, embedding_identity)
         self.bump_generation(collection_name)
 
     def upsert_precomputed(
@@ -320,19 +319,20 @@ class LanceVectorStore(
         query_embedding: list[float],
         n_results: int,
         where: dict | None = None,
+        *,
+        embedding_identity: EmbeddingIdentity | None = None,
     ) -> list[dict]:
         """Dense vector query returning store-neutral result rows.
 
-        Guard order: the absent-table check runs first (an absent
-        collection reads as empty, matching the ABC), and the identity
-        guard runs only when the table exists — the reverse of
-        ``write_nodes``, which guards identity before writing.
+        An absent table reads as empty (ABC); the identity guard runs only
+        when the table exists, the reverse of ``write_nodes``.
 
         Args:
             collection_name: Collection (table) to query.
             query_embedding: The query vector.
             n_results: Maximum rows to return.
             where: Optional ChromaDB-style metadata filter.
+            embedding_identity: Replaces the composed identity for this call.
 
         Returns:
             Result rows with canonical ``score``/``score_kind`` plus the
@@ -343,7 +343,7 @@ class LanceVectorStore(
         table = self._open_table(collection_name)
         if table is None:
             return []
-        self._guard_query_identity(collection_name)
+        self._guard_query_identity(collection_name, embedding_identity)
         # Pin L2 explicitly instead of relying on LanceDB's current default;
         # the adapter's canonical transform is defined only for L2 distance.
         builder = table.search(query_embedding).distance_type("l2").limit(n_results)

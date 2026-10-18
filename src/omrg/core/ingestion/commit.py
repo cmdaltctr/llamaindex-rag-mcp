@@ -162,6 +162,7 @@ def commit_prepared_source(
     collection_name: str,
     store: VectorStore,
     embed_model: Any = None,
+    embedding_identity: Any = None,
 ) -> ReplaceSourceOutcome:
     """Write, verify, and clean stale rows as one indivisible locked operation.
 
@@ -177,6 +178,8 @@ def commit_prepared_source(
         collection_name: Target vector-store collection.
         store: The owning vector store (required; no process default).
         embed_model: Optional injected embedding model for the store write.
+        embedding_identity: Optional provider and model that made the vectors
+            (ADR-081). The store checks and stamps it; sent only when set.
 
     Returns:
         Counts plus stage timing diagnostics for this bounded source.
@@ -206,8 +209,9 @@ def commit_prepared_source(
             )
 
         write_started = time.perf_counter()
+        identity_kwargs = {"embedding_identity": embedding_identity} if embedding_identity else {}
         try:
-            store.write_nodes(nodes, collection_name, embed_model=embed_model)
+            store.write_nodes(nodes, collection_name, embed_model=embed_model, **identity_kwargs)
         except ConnectionError:
             raise
         except Exception as exc:

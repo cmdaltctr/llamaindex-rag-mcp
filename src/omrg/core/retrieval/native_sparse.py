@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..vectordb.base import VectorStore
+    from ..vectordb.identity import EmbeddingIdentity
 
 
 class NativeSparseRetriever:
@@ -39,6 +40,8 @@ class NativeSparseRetriever:
         query_text: str,
         top_n: int,
         metadata_filter: dict | None = None,
+        *,
+        embedding_identity: EmbeddingIdentity | None = None,
     ) -> list[tuple[int, str, str, dict]]:
         """Return filtered native sparse matches in rank order.
 
@@ -47,6 +50,8 @@ class NativeSparseRetriever:
             top_n: Maximum number of matches.
             metadata_filter: Store-neutral query constraint composed
                 with the full-text ranking by the engine.
+            embedding_identity: Replaces the store identity in its guard
+                (ADR-081). Sent only when set.
 
         Raises:
             NotImplementedError: When the selected store cannot issue
@@ -57,11 +62,13 @@ class NativeSparseRetriever:
         if top_n <= 0:
             return []
         store = self._get_store()
+        identity_kwargs = {"embedding_identity": embedding_identity} if embedding_identity else {}
         rows = store.query_native_sparse(
             self.collection_name,
             query_text,
             top_n,
             where=metadata_filter,
+            **identity_kwargs,
         )
         return [
             (rank, str(row["id"]), row["document"], dict(row["metadata"]))

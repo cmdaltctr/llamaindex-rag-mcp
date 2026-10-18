@@ -584,3 +584,75 @@ class TestInjectedEmbedderNeverReadsGlobal:
         store.close()
         assert store.get_generation("close-state") == 0
         store.close()
+
+
+# ── ADR-081: a write supplies its own embedding identity ──────────────────
+
+_IDENTITY_A = EmbeddingIdentity(provider="ollama", model="model-a")
+_IDENTITY_B = EmbeddingIdentity(provider="ollama", model="model-b")
+
+
+@pytest.fixture(params=["chroma", "lancedb"])
+def identity_store(request: pytest.FixtureRequest, tmp_path) -> VectorStore:
+    """Return a store composed with identity A for each backend."""
+    if request.param == "chroma":
+        pytest.importorskip("chromadb", reason="chroma extra not installed")
+        return _store_class("chroma")(embedding_identity=_IDENTITY_A)
+    return LanceVectorStore(uri=str(tmp_path / "lancedb"), embedding_identity=_IDENTITY_A)
+
+
+def _text_nodes(prefix: str) -> list[BaseNode]:
+    return [TextNode(text="alpha", id_=f"{prefix}-1"), TextNode(text="beta", id_=f"{prefix}-2")]
+
+
+class TestWriteSuppliesEmbeddingIdentity:
+    """``write_nodes(..., embedding_identity=B)`` replaces the composed identity A."""
+
+    def test_new_collection_is_stamped_with_the_supplied_identity(
+        self, identity_store: VectorStore
+    ) -> None:
+        embed = MockEmbedding(embed_dim=8, model_name="model-b")
+        identity_store.write_nodes(
+            _text_nodes("new"), "supplied", embed_model=embed, embedding_identity=_IDENTITY_B
+        )
+        metadata = identity_store.get_collection_metadata("supplied") or {}
+        assert metadata["rag_embed_model"] == "model-b"
+        assert metadata["rag_embed_provider"] == "ollama"
+
+    def test_supplied_identity_conflicting_with_the_stamp_fails_before_mutation(
+        self, identity_store: VectorStore
+    ) -> None:
+        embed = MockEmbedding(embed_dim=8, model_name="model-a")
+        identity_store.write_nodes(_text_nodes("a"), "stamped-a", embed_model=embed)
+        generation = identity_store.get_generation("stamped-a")
+        with pytest.raises(ValueError, match="model-b"):
+            identity_store.write_nodes(
+                _text_nodes("b"), "stamped-a", embed_model=embed, embedding_identity=_IDENTITY_B
+            )
+        assert identity_store.count("stamped-a") == 2
+        assert identity_store.get_generation("stamped-a") == generation
+
+    def test_without_a_supplied_identity_the_composed_rule_still_applies(
+        self, identity_store: VectorStore
+    ) -> None:
+        embed = MockEmbedding(embed_dim=8, model_name="model-b")
+        identity_store.write_nodes(
+            _text_nodes("b"), "stamped-b", embed_model=embed, embedding_identity=_IDENTITY_B
+        )
+        with pytest.raises(ValueError, match="model-a"):
+            identity_store.write_nodes(_text_nodes("a"), "stamped-b", embed_model=embed)
+        assert identity_store.count("stamped-b") == 2
+
+    def test_malformed_vector_diagnostic_names_the_supplied_model(
+        self, identity_store: VectorStore
+    ) -> None:
+        embed = _CannedBatchEmbedding(embed_dim=8, model_name="model-b", batch_vectors=[[]])
+        with pytest.raises(_contract_error()) as excinfo:
+            identity_store.write_nodes(
+                [TextNode(text="x", id_="bad-1")],
+                "diag",
+                embed_model=embed,
+                embedding_identity=_IDENTITY_B,
+            )
+        assert "model-b" in str(excinfo.value)
+        assert "model-a" not in str(excinfo.value)

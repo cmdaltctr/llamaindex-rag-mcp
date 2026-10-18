@@ -43,6 +43,7 @@ from ..identity import (
     IDENTITY_INDEX_KEY,
     IDENTITY_MODEL_KEY,
     IDENTITY_PROVIDER_KEY,
+    EmbeddingIdentity,
     build_identity_mismatch_error,
     identities_match,
 )
@@ -208,30 +209,36 @@ class LanceTableMetadataMixin:
         self,
         collection_name: str,
         stored: tuple[str | None, str | None, str | None],
+        identity: EmbeddingIdentity | None = None,
     ) -> None:
         """Raise unless the stored identity matches the active one."""
-        identity = self._identity
+        identity = identity or self._identity
         if identity is None or identities_match(stored, identity):
             return
         raise build_identity_mismatch_error(collection_name, stored, identity)
 
-    def _reject_conflicting_identity(self, collection_name: str) -> None:
+    def _reject_conflicting_identity(
+        self, collection_name: str, identity: EmbeddingIdentity | None = None
+    ) -> None:
         """Shared guard body: reject a conflicting stored identity.
 
         Both write and query paths apply the same rule — no active
         identity, absent table, and legacy unstamped table pass; a
         stored identity that conflicts with the active one raises.
+        *identity* replaces the composed identity for this call (ADR-081).
         """
-        if self._identity is None:
+        if identity is None and self._identity is None:
             return
         table = self._open_table(collection_name)
         if table is None:
             return
         stored = self._stored_identity(table)
         if stored[0] is not None:
-            self._reject_identity_mismatch(collection_name, stored)
+            self._reject_identity_mismatch(collection_name, stored, identity)
 
-    def _check_or_stamp_identity(self, collection_name: str) -> None:
+    def _check_or_stamp_identity(
+        self, collection_name: str, identity: EmbeddingIdentity | None = None
+    ) -> None:
         """Write-path rule: reject mismatches; stamping happens post-write.
 
         Legacy tables without a stored identity are stamped after the
@@ -240,18 +247,22 @@ class LanceTableMetadataMixin:
         on an existing unmarked table, so the next OMRG-controlled
         mutation marks it *before* its rows change.
         """
-        self._reject_conflicting_identity(collection_name)
+        self._reject_conflicting_identity(collection_name, identity)
         self.ensure_dataset_epoch(collection_name)
 
-    def _guard_query_identity(self, collection_name: str) -> None:
+    def _guard_query_identity(
+        self, collection_name: str, identity: EmbeddingIdentity | None = None
+    ) -> None:
         """Query-path rule: reject mismatches before the query is issued.
 
         Legacy tables without a stored identity query normally;
         stamping never happens on the read path.
         """
-        self._reject_conflicting_identity(collection_name)
+        self._reject_conflicting_identity(collection_name, identity)
 
-    def _flush_after_write(self, collection_name: str) -> None:
+    def _flush_after_write(
+        self, collection_name: str, identity: EmbeddingIdentity | None = None
+    ) -> None:
         """Stamp identity and flush pending profile tags after a write.
 
         Applies the identity.py read-merge-write rule: existing keys
@@ -267,7 +278,7 @@ class LanceTableMetadataMixin:
         pending = self._pending_metadata.pop(collection_name, None)
         if pending:
             updates.update(pending)
-        identity = self._identity
+        identity = identity or self._identity
         if identity is not None:
             updates[IDENTITY_PROVIDER_KEY] = json.dumps(identity.provider)
             updates[IDENTITY_MODEL_KEY] = json.dumps(identity.model)
