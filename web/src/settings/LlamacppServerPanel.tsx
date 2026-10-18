@@ -20,7 +20,7 @@ export function LlamacppServerPanel() {
   const failure = [start, stop, restart].find((mutation) => mutation.isError);
 
   return (
-    <div role="group" aria-labelledby="llamacpp-server-title" className="flex flex-col gap-2 border-t border-border pt-3">
+    <div role="group" aria-labelledby="llamacpp-server-title" className="flex flex-col gap-2 border-t border-border pt-3 md:border-t-0 md:pt-0">
       <h4 id="llamacpp-server-title" className="text-ui font-semibold">
         Local server
       </h4>

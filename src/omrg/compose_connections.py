@@ -114,7 +114,7 @@ def _locked(
     if reason == "environment":
         return (
             True,
-            f"Set from the environment or .env. Remove {spec.env_var} there to edit it here.",
+            f"Remove {spec.env_var} from the environment or .env to edit it here.",
         )
     if reason == "embeddings":
         return True, "Embeddings use this address, so it cannot change while the server runs."

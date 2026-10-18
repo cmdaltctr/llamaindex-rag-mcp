@@ -39,23 +39,8 @@ export function ProviderCard({ connection, keychain }: ProviderCardProps) {
       return address !== null && address !== "" && !isLoopback(address);
     });
 
-  return (
-    <Card role="region" aria-labelledby={titleId}>
-      <CardHeader>
-        <CardTitle id={titleId}>{connection.display_name}</CardTitle>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={connection.locality === "cloud" ? "warning" : "success"}>{connection.locality === "cloud" ? "Cloud" : "Local"}</Badge>
-          {connection.roles.length > 0 ? (
-            connection.roles.map((role) => (
-              <Badge key={role} variant="hue">
-                {ROLE_NAMES[role]}
-              </Badge>
-            ))
-          ) : (
-            <span className="text-meta text-muted-foreground">No role uses this provider.</span>
-          )}
-        </div>
-      </CardHeader>
+  const body = (
+    <>
       {!connection.installed ? (
         <p className="text-ui">
           Not installed. Run <code dir="ltr" className={CODE}>{connection.install_hint ?? "the install command"}</code> and restart the server.
@@ -69,7 +54,6 @@ export function ProviderCard({ connection, keychain }: ProviderCardProps) {
           <ProviderKeyField key={field.id} provider={connection.provider} field={field} keychain={keychain} typed={typed[field.id] ?? ""} onTyped={(value) => setValue(field.id, value === "" ? null : value)} />
         );
       })}
-      {ProviderExtra === undefined ? null : <ProviderExtra />}
       {connection.read_only.length > 0 ? (
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-ui">
           {connection.read_only.map((entry) => (
@@ -92,6 +76,47 @@ export function ProviderCard({ connection, keychain }: ProviderCardProps) {
         </p>
       ) : null}
       <ProviderTest provider={connection.provider} typed={typed} cloud={connection.locality === "cloud"} />
+    </>
+  );
+
+  const header = (
+    <CardHeader>
+      <CardTitle id={titleId}>{connection.display_name}</CardTitle>
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant={connection.locality === "cloud" ? "warning" : "success"}>{connection.locality === "cloud" ? "Cloud" : "Local"}</Badge>
+        {connection.roles.length > 0 ? (
+          connection.roles.map((role) => (
+            <Badge key={role} variant="hue">
+              {ROLE_NAMES[role]}
+            </Badge>
+          ))
+        ) : (
+          <span className="text-meta text-muted-foreground">No role uses this provider.</span>
+        )}
+      </div>
+    </CardHeader>
+  );
+
+  // A card with an extra panel spans two grid columns from md up, with the
+  // provider fields on the left and the panel on the right, so it stays as
+  // short as the other cards. Below md everything stacks in one column.
+  if (ProviderExtra !== undefined) {
+    return (
+      <Card role="region" aria-labelledby={titleId} className="md:col-span-2">
+        {header}
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6">
+          <div className="flex min-w-0 flex-col gap-3">{body}</div>
+          <div data-slot="provider-extra" className="min-w-0 md:border-l md:border-border md:pl-6">
+            <ProviderExtra />
+          </div>
+        </div>
+      </Card>
+    );
+  }
+  return (
+    <Card role="region" aria-labelledby={titleId}>
+      {header}
+      {body}
     </Card>
   );
 }

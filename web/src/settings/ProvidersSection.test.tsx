@@ -34,6 +34,17 @@ describe("Providers", () => {
     expect(within(card("llama.cpp")).getByText("Embeddings")).toBeInTheDocument();
   });
 
+  it("lets a card with an extra panel span two columns and puts the panel in its own column", async () => {
+    await openProviders();
+    const llamacpp = card("llama.cpp");
+    expect(llamacpp.className).toMatch(/\bmd:col-span-2\b/);
+    expect(card("Ollama").className).not.toMatch(/col-span-2/);
+    const panel = await within(llamacpp).findByRole("heading", { level: 4, name: "Local server" });
+    const extraColumn = panel.closest("[data-slot='provider-extra']");
+    expect(extraColumn).not.toBeNull();
+    expect(within(extraColumn as HTMLElement).queryByRole("button", { name: "Test" })).toBeNull();
+  });
+
   it("shows read-only values as read-only and the install command when not installed", async () => {
     await openProviders({
       "GET /v1/connections": () => list(OLLAMA, { ...LLAMACPP, installed: false, install_hint: "uv sync --extra llamacpp" }, OPENROUTER),
@@ -183,8 +194,9 @@ describe("Providers", () => {
     const keyFile = { ...OPENROUTER.fields[0]!, source: "key-file" as const, lock_reason: reason };
     const { server, user } = await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, { ...OPENROUTER, fields: [keyFile] }) });
     const openrouter = card("OpenRouter");
-    expect(within(openrouter).getByText("Set from key file (read-only here)")).toBeInTheDocument();
+    expect(openrouter).toHaveTextContent("Set from the key file (read-only here).");
     expect(openrouter).toHaveTextContent("Saving a key in the keychain overrides it.");
+    expect(openrouter.textContent?.match(/\(read-only here\)/g)).toHaveLength(1);
     expect(within(openrouter).queryByRole("button", { name: "Remove key" })).toBeNull();
     await user.type(within(openrouter).getByLabelText("API key"), KEY);
     await user.click(within(openrouter).getByRole("button", { name: "Save key" }));

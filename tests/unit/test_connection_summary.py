@@ -158,6 +158,10 @@ def test_environment_value_has_source_env_and_locks(monkeypatch: pytest.MonkeyPa
     chat = field(by_provider(result)["llamacpp"], "chat_url")
     assert (chat["source"], chat["locked"]) == ("env", True)
     assert "LLAMACPP_CHAT_URL" in chat["lock_reason"]
+    # The card prints its own "Set from environment" label, so the reason must not repeat it.
+    assert chat["lock_reason"] == (
+        "Remove LLAMACPP_CHAT_URL from the environment or .env to edit it here."
+    )
 
 
 def test_saved_value_has_source_saved(monkeypatch: pytest.MonkeyPatch) -> None:

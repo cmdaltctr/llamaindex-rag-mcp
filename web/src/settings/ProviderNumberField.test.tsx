@@ -82,7 +82,7 @@ describe("Integer field (Ollama context window)", () => {
   });
 
   it("shows a locked value as read-only with the source and the reason", async () => {
-    const locked = intField("context_window", "Context window (tokens)", 8192, "env", "Set from the environment or .env. Remove OLLAMA_CONTEXT_WINDOW there to edit it here.");
+    const locked = intField("context_window", "Context window (tokens)", 8192, "env", "Remove OLLAMA_CONTEXT_WINDOW from the environment or .env to edit it here.");
     const { card } = await open({ "GET /v1/connections": () => list(withWindow(locked), LLAMACPP, OPENROUTER) });
     expect(within(card()).queryByRole("spinbutton")).toBeNull();
     expect(card()).toHaveTextContent("Set from environment (read-only here)");

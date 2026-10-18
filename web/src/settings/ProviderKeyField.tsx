@@ -78,10 +78,7 @@ export function ProviderKeyField({ provider, field, keychain, typed, onTyped }: 
       <Label htmlFor={id}>{field.label}</Label>
       {status}
       {field.source === "key-file" ? (
-        <p className="text-meta text-muted-foreground">
-          <span>Set from key file (read-only here)</span>
-          {field.lock_reason !== null ? ` ${field.lock_reason}` : ""}
-        </p>
+        <p className="text-meta text-muted-foreground">{field.lock_reason ?? "Set from key file (read-only here)"}</p>
       ) : null}
       {stateLine !== undefined ? <p className="text-meta text-muted-foreground">{stateLine}</p> : null}
       <Input id={id} type="password" dir="ltr" autoComplete="off" spellCheck={false} value={typed} onChange={(event) => onTyped(event.target.value)} />
