@@ -48,10 +48,10 @@ def build(
         ValueError: *answer_model* is missing or blank.
         ModuleNotFoundError: The ``anthropic`` extra is not installed.
     """
-    from llama_index.llms.anthropic import Anthropic
-
     if not (answer_model or "").strip():
         raise ValueError("The Anthropic provider needs a Chat model name.")
+    from llama_index.llms.anthropic import Anthropic
+
     return Anthropic(
         model=answer_model,
         api_key=settings.anthropic_api_key,

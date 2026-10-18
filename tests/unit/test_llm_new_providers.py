@@ -220,7 +220,9 @@ def test_anthropic_build_passes_model_key_and_timeout(monkeypatch: pytest.Monkey
     assert seen == {"model": "claude-x", "api_key": ANT_KEY, "timeout": 9.0}
 
 
-def test_anthropic_build_needs_a_model() -> None:
+def test_anthropic_build_needs_a_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The model check runs before the import, so it holds without the anthropic extra."""
+    monkeypatch.setitem(sys.modules, "llama_index.llms.anthropic", None)  # import would fail
     with pytest.raises(ValueError, match="model"):
         registry.get("anthropic")(make_settings(anthropic_api_key=ANT_KEY))
 
