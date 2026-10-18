@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it } from "vitest";
 import { json } from "./test/fakeServer";
-import { addWithKeyboard, choose, EMPTY_PIPELINE, inspector, openAllSections, outline, runPanel, savedDocument, UNUSED_PROFILES } from "./test/helpers";
+import { addWithKeyboard, choose, EMPTY_PIPELINE, findPalette, inspector, openAllSections, outline, runPanel, savedDocument, UNUSED_PROFILES } from "./test/helpers";
 import { CATALOGUE } from "./test/catalogueFixture";
 import { CATALOGUE_INGEST } from "./test/catalogueIngest";
 import { mockReactFlow } from "./test/mockReactFlow";
@@ -11,7 +11,7 @@ beforeAll(mockReactFlow);
 
 async function setup(options: Parameters<typeof openStudio>[1] = {}) {
   const view = openStudio("#/studio/search-copy/ingest", { pipelines: [EMPTY_PIPELINE], profiles: UNUSED_PROFILES, ...options });
-  await screen.findByRole("region", { name: "Operations" });
+  await findPalette();
   await within(screen.getByRole("region", { name: "Operations" })).findByRole("button", { name: /retrieve\.dense/ });
   await openAllSections(view.user);
   return view;

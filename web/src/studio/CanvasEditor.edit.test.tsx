@@ -15,8 +15,7 @@ import {
   savedDocument,
   TEMPLATE_PIPELINE,
   TEMPLATE_REVISION,
-  UNUSED_PROFILES,
-} from "./test/helpers";
+  UNUSED_PROFILES, findPalette } from "./test/helpers";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
 
@@ -31,7 +30,7 @@ function setup(options: Parameters<typeof openStudio>[1] = {}, id = "pnew") {
 describe("canvas catalogue and editing", () => {
   it("lists the catalogue and disables unavailable operations with their reasons", async () => {
     setup();
-    const verify = await within(await screen.findByRole("region", { name: "Operations" })).findByRole("button", {
+    const verify = await within(await findPalette()).findByRole("button", {
       name: "Add Verify claims (verify.claims)",
     });
     expect(verify).toBeDisabled();
@@ -160,7 +159,7 @@ describe("canvas catalogue and editing", () => {
 
   it("filters the catalogue by search text", async () => {
     const { user } = setup();
-    await within(await screen.findByRole("region", { name: "Operations" })).findByRole("button", { name: /retrieve\.dense/ });
+    await within(await findPalette()).findByRole("button", { name: /retrieve\.dense/ });
     await user.type(within(palette()).getByLabelText("Search operations"), "cross-encoder");
     expect(within(palette()).getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual([
       "Add Cross-encoder rerank (select.rerank)",
@@ -169,7 +168,7 @@ describe("canvas catalogue and editing", () => {
 
   it("shows one friendly line with Retry when the catalogue cannot load", async () => {
     const { server, user } = setup({ failures: { "GET /v1/pipeline-operations": 500 } });
-    const alert = await within(await screen.findByRole("region", { name: "Operations" })).findByRole("alert");
+    const alert = await within(await findPalette()).findByRole("alert");
     expect(alert).toHaveTextContent("The local server could not complete that request.");
     expect(alert).not.toHaveTextContent("Boom");
     delete server.failures["GET /v1/pipeline-operations"];
@@ -179,7 +178,7 @@ describe("canvas catalogue and editing", () => {
 
   it("adds and connects nodes with the keyboard and saves the wiring", async () => {
     const { server, user } = setup();
-    await screen.findByRole("region", { name: "Operations" });
+    await findPalette();
     await openAllSections(user);
     await addWithKeyboard(user, "Prepare query", "retrieve.prepare_query");
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
@@ -197,7 +196,7 @@ describe("canvas catalogue and editing", () => {
 
   it("explains an incompatible connection and does not add it", async () => {
     const { user } = setup();
-    await screen.findByRole("region", { name: "Operations" });
+    await findPalette();
     await openAllSections(user);
     await addWithKeyboard(user, "Sparse retrieval", "retrieve.sparse");
     await addWithKeyboard(user, "Threshold and top-k", "select.threshold");
@@ -208,7 +207,7 @@ describe("canvas catalogue and editing", () => {
 
   it("deletes a selected node with Delete and a connection with Backspace", async () => {
     const { user } = setup();
-    await screen.findByRole("region", { name: "Operations" });
+    await findPalette();
     await openAllSections(user);
     await addWithKeyboard(user, "Prepare query", "retrieve.prepare_query");
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
@@ -231,7 +230,7 @@ describe("canvas catalogue and editing", () => {
 
   it("opens the settings of a node when it is selected, without leaving the page", async () => {
     const { user } = setup();
-    await screen.findByRole("region", { name: "Operations" });
+    await findPalette();
     await openSections(user, "Step settings");
     expect(within(inspector()).getByText(/Select a step to edit its settings/)).toBeInTheDocument();
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
@@ -241,7 +240,7 @@ describe("canvas catalogue and editing", () => {
 
   it("opens Step settings by itself when a node is added", async () => {
     const { user } = setup();
-    await screen.findByRole("region", { name: "Operations" });
+    await findPalette();
     expect(screen.getByRole("button", { name: "Step settings" })).toHaveAttribute("aria-expanded", "false");
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
     expect(screen.getByRole("button", { name: "Step settings" })).toHaveAttribute("aria-expanded", "true");
@@ -303,7 +302,7 @@ describe("canvas catalogue and editing", () => {
     const { user, view } = setup({
       validate: () => json({ status: "error", message: "Invalid graph.", error_type: "validation", issues: [issue] }, 422),
     });
-    await screen.findByRole("region", { name: "Operations" });
+    await findPalette();
     await openAllSections(user);
     await addWithKeyboard(user, "Threshold and top-k", "select.threshold");
     await user.click(within(runPanel()).getByRole("button", { name: "Validate" }));
@@ -325,7 +324,7 @@ describe("canvas catalogue and editing", () => {
 
   it("shows one friendly line when a save fails and keeps the draft", async () => {
     const { user } = setup({ failures: { "POST /v1/pipelines/pnew/revisions": 500 } });
-    await screen.findByRole("region", { name: "Operations" });
+    await findPalette();
     await openAllSections(user);
     await addWithKeyboard(user, "Dense retrieval", "retrieve.dense");
     await user.click(within(runPanel()).getByRole("button", { name: "Save revision" }));
@@ -338,7 +337,7 @@ describe("canvas catalogue and editing", () => {
   it("shows the graph profile as read-only text, with no Title field and no profile list", async () => {
     const revision = { ...TEMPLATE_REVISION, document: { ...TEMPLATE_REVISION.document, profile: "documents" } };
     const { user } = setup({ revisions: [revision] }, "p1");
-    await screen.findByRole("region", { name: "Operations" });
+    await findPalette();
     await openAllSections(user);
     expect(within(screen.getByRole("region", { name: "Pipeline settings" })).getByText("Base profile: documents")).toBeInTheDocument();
     expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
@@ -348,7 +347,7 @@ describe("canvas catalogue and editing", () => {
 
   it("shows the inherited base profile as text when the graph names none", async () => {
     const { user } = setup();
-    await screen.findByRole("region", { name: "Operations" });
+    await findPalette();
     await openAllSections(user);
     expect(screen.getByText("Base profile: inherited from each collection")).toBeInTheDocument();
     expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();

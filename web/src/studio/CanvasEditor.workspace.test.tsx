@@ -7,7 +7,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeEventSource } from "../runs/test/fakes";
 import { readDraft } from "./storage";
-import { addWithKeyboard, EMPTY_PIPELINE, inspector, latestRun, openAllSections, outline, runPanel, TEMPLATE_PIPELINE, TEMPLATE_REVISION, UNUSED_PROFILES } from "./test/helpers";
+import { addWithKeyboard, EMPTY_PIPELINE, findPalette, inspector, latestRun, openAllSections, outline, runPanel, TEMPLATE_PIPELINE, TEMPLATE_REVISION, UNUSED_PROFILES } from "./test/helpers";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
 
@@ -27,7 +27,7 @@ type User = ReturnType<typeof openStudio>["user"];
 
 /** Waits for the catalogue, then opens every panel section: the panel starts with Operations only. */
 async function ready(user: User) {
-  await within(await screen.findByRole("region", { name: "Operations" })).findByRole("button", { name: /retrieve\.dense/ });
+  await within(await findPalette()).findByRole("button", { name: /retrieve\.dense/ });
   await openAllSections(user);
 }
 
@@ -158,7 +158,7 @@ describe("latest run from the server", () => {
   it("leaves Revision and run closed when the latest run finished before the visit", async () => {
     const run = { run_id: "run1", pipeline_id: "p1", revision_id: "p1-r1", status: "succeeded" };
     openStudio("#/studio/search-copy/search", { pipelines: [TEMPLATE_PIPELINE], revisions: [TEMPLATE_REVISION], runs: [run] });
-    await within(await screen.findByRole("region", { name: "Operations" })).findByRole("button", { name: /retrieve\.dense/ });
+    await within(await findPalette()).findByRole("button", { name: /retrieve\.dense/ });
     await waitFor(() => expect(document.querySelectorAll("[data-slot='op-node']")).toHaveLength(4));
     expect(screen.getByRole("button", { name: "Revision and run" })).toHaveAttribute("aria-expanded", "false");
   });
@@ -172,7 +172,7 @@ describe("panel state at load", () => {
     first.view.unmount();
 
     openStudio("#/studio/search-copy/ingest", { pipelines: [EMPTY_PIPELINE] });
-    await within(await screen.findByRole("region", { name: "Operations" })).findByRole("button", { name: /retrieve\.dense/ });
+    await within(await findPalette()).findByRole("button", { name: /retrieve\.dense/ });
     expect(screen.getByRole("button", { name: "Step settings" })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("button", { name: "Operations" })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("button", { name: "Steps and connections" })).toHaveAttribute("aria-expanded", "false");

@@ -12,8 +12,8 @@ interface CanvasPanelProps {
   /** Counts runs started from the panel. A change opens Revision and run. A run that exists at load does not. */
   runStarts: number;
   sections: Record<SectionId, ReactNode>;
-  /** Hides the panel without unmounting it, so its open sections survive canvas full screen. */
-  hidden?: boolean;
+  /** In canvas full screen the panel floats over the whole window, above the full screen canvas. */
+  fullScreen?: boolean;
 }
 
 const add = (open: string[], id: SectionId) => (open.includes(id) ? open : [...open, id]);
@@ -26,8 +26,8 @@ const add = (open: string[], id: SectionId) => (open.includes(id) ? open : [...o
  * content stays mounted state-wise and no effect resets it. Mount with the
  * canvas, so state starts fresh for each pipeline.
  */
-export function CanvasPanel({ selectedNode, runStarts, sections, hidden = false }: CanvasPanelProps) {
-  const [open, setOpen] = useState<string[]>(() => (selectedNode === null ? ["operations"] : ["operations", "node-settings"]));
+export function CanvasPanel({ selectedNode, runStarts, sections, fullScreen = false }: CanvasPanelProps) {
+  const [open, setOpen] = useState<string[]>(() => (selectedNode === null ? ["pipeline-settings"] : ["pipeline-settings", "node-settings"]));
   const [collapsed, setCollapsed] = useState(false);
   const [seenSelection, setSeenSelection] = useState(selectedNode);
   const [seenRuns, setSeenRuns] = useState(runStarts);
@@ -67,11 +67,14 @@ export function CanvasPanel({ selectedNode, runStarts, sections, hidden = false 
     <aside
       ref={layer}
       aria-label="Canvas panel"
-      hidden={hidden}
-      className={cn("pointer-events-none lg:absolute lg:inset-0 lg:flex lg:items-start lg:justify-end lg:gap-2 lg:p-3", hidden && "hidden lg:hidden")}
+      className={cn(
+        "pointer-events-none lg:absolute lg:inset-0 lg:flex lg:items-start lg:justify-end lg:gap-2 lg:p-3",
+        fullScreen && "fixed inset-0 z-[60] flex items-end justify-end p-3 lg:absolute lg:items-start",
+      )}
     >
       <div
         className={cn(
+          fullScreen && "max-h-[45dvh] rounded-panel border shadow-floating lg:max-h-full",
           "pointer-events-auto flex w-full flex-col overflow-y-auto border-t border-border bg-card lg:max-h-full lg:w-[22rem] lg:rounded-panel lg:border lg:shadow-floating",
           collapsed && "lg:hidden",
         )}

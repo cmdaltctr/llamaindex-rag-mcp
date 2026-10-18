@@ -8,11 +8,12 @@ import {
   type FinalConnectionState,
   type NodeChange,
 } from "@xyflow/react";
-import { useCallback, useMemo, useState, type KeyboardEvent } from "react";
+import { useCallback, useMemo, useState, type KeyboardEvent, type Ref } from "react";
 import type { EffectiveControl, OperationDescriptor, PortRef, ValidationIssue } from "../api/pipelines";
 import { checkConnection, connectionGuard, findOperation } from "./connections";
 import { edgeKey, moveNode, removeEdge, removeNode, removeSelection, setSelection, setViewport, type Draft } from "./graph";
 import { OperationNode, type OperationFlowNode } from "./OperationNode";
+import { FocusStep, type FocusRequest } from "./FocusStep";
 import { ViewToolbar } from "./ViewToolbar";
 import { cardLines } from "./stepSummary";
 import { edgeRunStyle, type NodeRunState } from "../runs/runState";
@@ -37,6 +38,10 @@ interface FlowSurfaceProps {
   finishedNodes?: ReadonlySet<string>;
   /** A read-only graph can be panned, zoomed and selected, never changed. */
   readOnly?: boolean;
+  /** Set when the user picks a step in the panel: the view centres on it. */
+  focusRequest?: FocusRequest | null;
+  /** The X button of canvas full screen lives in the toolbar; this ref lets the editor focus it. */
+  exitRef?: Ref<HTMLButtonElement>;
 }
 
 type Size = { width: number; height: number };
@@ -74,6 +79,8 @@ export function FlowSurface({
   reducedMotion = false,
   finishedNodes = NO_FINISHED,
   readOnly = false,
+  focusRequest = null,
+  exitRef,
 }: FlowSurfaceProps) {
   const [measured, setMeasured] = useState<Record<string, Size>>({});
   const selected = useMemo(() => new Set(draft.layout.selection), [draft.layout.selection]);
@@ -227,7 +234,8 @@ export function FlowSurface({
       >
         <Background gap={20} />
         <Controls showInteractive={false} />
-        <ViewToolbar draft={draft} sizes={measured} onChange={onChange} reducedMotion={reducedMotion} />
+        <FocusStep request={focusRequest} reducedMotion={reducedMotion} />
+        <ViewToolbar exitRef={exitRef} draft={draft} sizes={measured} onChange={onChange} reducedMotion={reducedMotion} />
       </ReactFlow>
     </div>
   );

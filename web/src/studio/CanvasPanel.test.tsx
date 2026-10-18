@@ -40,29 +40,29 @@ describe("CanvasPanel sections", () => {
     }
   });
 
-  it("opens only Operations at load", () => {
+  it("opens only Pipeline settings at load", () => {
     render(<Harness />);
     for (const section of SECTIONS) {
-      expect(header(section.title)).toHaveAttribute("aria-expanded", String(section.id === "operations"));
+      expect(header(section.title)).toHaveAttribute("aria-expanded", String(section.id === "pipeline-settings"));
     }
   });
 
   it("also opens Step settings at load when a node is already selected", () => {
     render(<Harness selectedNode="dense" />);
     const open = SECTIONS.filter((section) => header(section.title).getAttribute("aria-expanded") === "true");
-    expect(open.map((section) => section.id)).toEqual(["operations", "node-settings"]);
+    expect(open.map((section) => section.id)).toEqual(["pipeline-settings", "node-settings"]);
   });
 
   it("names each open content region by its title", () => {
     render(<Harness />);
-    expect(screen.getByRole("region", { name: "Operations" })).toHaveTextContent("Add dense");
+    expect(screen.getByRole("region", { name: "Pipeline settings" })).toContainElement(screen.getByRole("textbox", { name: "Collection" }));
     expect(screen.queryByRole("region", { name: "Revision and run" })).not.toBeInTheDocument();
   });
 
   it("keeps two sections open", async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    await user.click(header("Pipeline settings"));
+    await user.click(header("Operations"));
     expect(header("Pipeline settings")).toHaveAttribute("aria-expanded", "true");
     expect(header("Operations")).toHaveAttribute("aria-expanded", "true");
   });
@@ -85,7 +85,6 @@ describe("CanvasPanel sections", () => {
   it("keeps an edited title when Pipeline settings is closed and opened again", async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    await user.click(header("Pipeline settings"));
     await user.type(screen.getByLabelText("Collection"), " copy");
     await user.click(header("Pipeline settings"));
     expect(screen.queryByLabelText("Collection")).not.toBeInTheDocument();
@@ -141,17 +140,17 @@ describe("CanvasPanel rail", () => {
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(screen.getByRole("button", { name: "Collapse panel" }));
-    await user.click(railButton("Operations, open"));
-    expect(header("Operations")).toHaveAttribute("aria-expanded", "true");
+    await user.click(railButton("Pipeline settings, open"));
+    expect(header("Pipeline settings")).toHaveAttribute("aria-expanded", "true");
   });
 
   it("highlights open sections and adds ', open' to their name", async () => {
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(screen.getByRole("button", { name: "Collapse panel" }));
-    const open = railButton("Operations, open");
+    const open = railButton("Pipeline settings, open");
     expect(open).toHaveClass("bg-selection");
-    for (const section of SECTIONS.filter((candidate) => candidate.id !== "operations")) {
+    for (const section of SECTIONS.filter((candidate) => candidate.id !== "pipeline-settings")) {
       const button = railButton(section.title);
       expect(button).not.toHaveClass("bg-selection");
     }
@@ -172,7 +171,7 @@ describe("CanvasPanel rail", () => {
   it("keeps the open sections and the draft over a collapse and expand round trip", async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    await user.click(header("Pipeline settings"));
+    await user.click(header("Operations"));
     await user.type(screen.getByLabelText("Collection"), "!");
     await user.click(screen.getByRole("button", { name: "Collapse panel" }));
     await user.click(screen.getByRole("button", { name: "Expand panel" }));

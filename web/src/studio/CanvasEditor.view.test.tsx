@@ -1,6 +1,6 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it } from "vitest";
-import { EMPTY_PIPELINE, openAllSections, runPanel, TEMPLATE_PIPELINE, TEMPLATE_REVISION, USER_PROFILE } from "./test/helpers";
+import { EMPTY_PIPELINE, openAllSections, outline, runPanel, TEMPLATE_PIPELINE, TEMPLATE_REVISION, USER_PROFILE } from "./test/helpers";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
 
@@ -80,5 +80,50 @@ describe("canvas arrange button", () => {
     const xs = [...document.querySelectorAll<HTMLElement>(".react-flow__node")].map((n) => n.style.transform.match(/translate\((-?[\d.]+)px/)![1]);
     expect(new Set(xs).size).toBe(1);
     expect(server.calls.filter((c) => c.method === "PUT")).toHaveLength(0);
+  });
+});
+
+describe("selecting a step in the panel", () => {
+  it("centres the canvas on that step", async () => {
+    const { user } = await openUser();
+    await openAllSections(user);
+    await user.click(within(outline()).getByRole("button", { name: /^Node select/ }));
+    await waitFor(() => expect(document.querySelector('.react-flow__node[data-id="select"]')).toHaveClass("selected"));
+    // The viewport transform changes to bring the step near the middle of the surface.
+    const before = document.querySelector<HTMLElement>(".react-flow__viewport")!.style.transform;
+    await user.click(within(outline()).getByRole("button", { name: /^Node prepare/ }));
+    await waitFor(() => expect(document.querySelector<HTMLElement>(".react-flow__viewport")!.style.transform).not.toBe(before));
+  });
+
+  it("does not move the view when a step is selected on the canvas", async () => {
+    await openUser();
+    const viewport = () => document.querySelector<HTMLElement>(".react-flow__viewport")!.style.transform;
+    const before = viewport();
+    fireEvent.click(document.querySelector('.react-flow__node[data-id="select"]')!);
+    await new Promise((r) => setTimeout(r, 400));
+    expect(viewport()).toBe(before);
+  });
+});
+
+describe("vertical card layout", () => {
+  it("puts the inputs first and the outputs last, so each handle sits by its own label", async () => {
+    const { user } = await openUser();
+    await user.click(within(toolbar()).getByRole("button", { name: "Arrange vertically" }));
+    await waitFor(() => expect(document.querySelectorAll(".react-flow__handle-left")).toHaveLength(0));
+    const card = document.querySelector<HTMLElement>('.react-flow__node[data-id="dense"] [data-slot="op-node"]')!;
+    const children = [...card.children];
+    const inputs = children.findIndex((c) => c.getAttribute("aria-label") === "Inputs");
+    const outputs = children.findIndex((c) => c.getAttribute("aria-label") === "Outputs");
+    expect(inputs).toBe(0);
+    expect(outputs).toBe(children.length - 1 - children.slice().reverse().findIndex((c) => c.getAttribute("aria-label") === "Outputs"));
+    expect(outputs).toBeGreaterThan(inputs);
+    expect(children.slice(inputs + 1, outputs).length).toBeGreaterThan(0);
+  });
+
+  it("keeps inputs left and outputs right on a horizontal graph", async () => {
+    await openUser();
+    const card = document.querySelector<HTMLElement>('.react-flow__node[data-id="dense"] [data-slot="op-node"]')!;
+    expect(card.querySelector(":scope > div.grid [aria-label='Inputs']")).not.toBeNull();
+    expect(card.querySelector(":scope > div.grid [aria-label='Outputs']")).not.toBeNull();
   });
 });

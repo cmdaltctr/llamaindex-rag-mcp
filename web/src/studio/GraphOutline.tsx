@@ -7,6 +7,8 @@ interface GraphOutlineProps {
   draft: Draft;
   issues: readonly ValidationIssue[];
   onChange: (change: (draft: Draft) => Draft) => void;
+  /** Called when the user picks a step, so the canvas can centre on it. */
+  onSelect?: (id: string) => void;
   onAnnounce: (message: string) => void;
   /** A read-only graph: items can be selected, never removed. */
   readOnly?: boolean;
@@ -18,11 +20,12 @@ const plural = (count: number, word: string) => `${count} ${word}${count === 1 ?
  * Keyboard route to every node and connection. Enter or Space selects an
  * item; Delete or Backspace removes the focused item (not on a read-only graph).
  */
-export function GraphOutline({ draft, issues, onChange, onAnnounce, readOnly = false }: GraphOutlineProps) {
+export function GraphOutline({ draft, issues, onChange, onSelect, onAnnounce, readOnly = false }: GraphOutlineProps) {
   const selected = new Set(draft.layout.selection);
 
   function select(id: string) {
-    onChange((current) => setSelection(current, [id]));
+    if (onSelect) onSelect(id);
+    else onChange((current) => setSelection(current, [id]));
   }
 
   function removeOnKey(event: KeyboardEvent<HTMLButtonElement>, remove: () => void) {

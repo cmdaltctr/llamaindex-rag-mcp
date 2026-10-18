@@ -20,14 +20,14 @@ const exitButton = () => screen.queryByRole("button", { name: "Exit full screen"
 const nav = () => screen.queryByRole("navigation", { name: "Workspace" });
 
 describe("canvas full screen", () => {
-  it("shows only the canvas, the toolbar and an X button, and moves focus to the X", async () => {
+  it("shows the canvas, the toolbar, the panel and an X button, and moves focus to the X", async () => {
     const { user } = await openUser();
     expect(nav()).toBeInTheDocument();
     await user.click(enterButton());
     expect(await screen.findByRole("button", { name: "Exit full screen" })).toHaveFocus();
     expect(nav()).not.toBeInTheDocument();
     expect(screen.queryByRole("banner")).not.toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Operations" })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Pipeline settings" })).toBeVisible();
     expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
     expect(screen.getByRole("toolbar", { name: "View controls" })).toBeInTheDocument();
     expect(document.querySelectorAll(".react-flow__node")).toHaveLength(4);

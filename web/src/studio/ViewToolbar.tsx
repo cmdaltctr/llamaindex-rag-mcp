@@ -1,5 +1,6 @@
 import { Panel, useReactFlow } from "@xyflow/react";
-import { Columns3, Maximize2, Rows3 } from "lucide-react";
+import { Columns3, Maximize2, Rows3, X } from "lucide-react";
+import type { Ref } from "react";
 import type { LayoutDirection } from "../api/pipelines";
 import { Button } from "../components/ui/button";
 import { useCanvasFullScreen } from "../lib/CanvasFullScreen";
@@ -14,6 +15,8 @@ interface ViewToolbarProps {
   sizes: Record<string, { width: number; height: number }>;
   onChange: (change: (draft: Draft) => Draft) => void;
   reducedMotion?: boolean;
+  /** Focus target on entering full screen. */
+  exitRef?: Ref<HTMLButtonElement>;
 }
 
 const OTHER: Record<LayoutDirection, LayoutDirection> = { horizontal: "vertical", vertical: "horizontal" };
@@ -24,7 +27,7 @@ const OTHER: Record<LayoutDirection, LayoutDirection> = { horizontal: "vertical"
  * points to match and fits the view. It changes the draft layout only, so it
  * never makes a revision; a read-only canvas keeps the change for the visit.
  */
-export function ViewToolbar({ draft, sizes, onChange, reducedMotion = false }: ViewToolbarProps) {
+export function ViewToolbar({ draft, sizes, onChange, reducedMotion = false, exitRef }: ViewToolbarProps) {
   const { fitView } = useReactFlow();
   const { fullScreen, setFullScreen } = useCanvasFullScreen();
   const target = OTHER[draft.layout.direction];
@@ -59,6 +62,11 @@ export function ViewToolbar({ draft, sizes, onChange, reducedMotion = false }: V
         >
           <Maximize2 aria-hidden="true" />
         </Button>
+        {fullScreen ? (
+          <Button ref={exitRef} variant="ghost" size="icon-sm" aria-label="Exit full screen" title="Exit full screen" onClick={() => setFullScreen(false)}>
+            <X aria-hidden="true" />
+          </Button>
+        ) : null}
       </div>
     </Panel>
   );

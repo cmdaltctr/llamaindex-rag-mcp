@@ -44,22 +44,20 @@ interface PortRowProps {
   connectable: boolean;
   connected: boolean;
   direction: LayoutDirection;
-  /** Place of the port among those on its side, so vertical handles spread along the card edge. */
-  index: number;
-  count: number;
 }
 
-function PortRow({ port, side, issues, connectable, connected, direction, index, count }: PortRowProps) {
+function PortRow({ port, side, issues, connectable, connected, direction }: PortRowProps) {
   const invalid = issues.some((issue) => issue.port === port.name);
   const vertical = direction === "vertical";
   const position = vertical ? (side === "in" ? Position.Top : Position.Bottom) : side === "in" ? Position.Left : Position.Right;
   return (
-    // A vertical handle sits on the card edge, so the row must not be its positioning parent.
-    <li className={cn("flex flex-col py-1", !vertical && "relative", side === "in" ? "ps-2" : "items-end pe-2")} data-invalid={invalid || undefined}>
+    // Vertical: the inputs row is the first thing in the card and the outputs row the last, so the handle
+    // (pulled out to the card edge) sits directly above or below its own label.
+    <li className={cn("relative flex flex-col py-1", vertical ? "items-center px-2" : side === "in" ? "ps-2" : "items-end pe-2")} data-invalid={invalid || undefined}>
       <Handle
         type={side === "in" ? "target" : "source"}
         position={position}
-        style={vertical ? { left: `${((index + 1) / (count + 1)) * 100}%` } : undefined}
+        style={vertical ? (side === "in" ? { top: "-0.5rem" } : { bottom: "-0.5rem" }) : undefined}
         id={port.name}
         isConnectable={connectable}
         data-connected={connected || undefined}
@@ -154,6 +152,21 @@ export function OperationNode({ data, selected, isConnectable }: NodeProps<Opera
   const { operation, issues } = data;
   const hasSettings = data.settings.length > 0 || data.moreSettings > 0;
   const direction = data.direction ?? "horizontal";
+  const vertical = direction === "vertical";
+  const portRows = (side: "in" | "out") =>
+    (side === "in" ? operation?.inputs : operation?.outputs)?.map((port) => (
+      <PortRow key={port.name} port={port} side={side} issues={issues} connectable={isConnectable} connected={data.connected.includes(`${side}:${port.name}`)} direction={direction} />
+    ));
+  const inputs = (
+    <ul aria-label="Inputs" className={cn(vertical && "flex justify-around")}>
+      {portRows("in")}
+    </ul>
+  );
+  const outputs = (
+    <ul aria-label="Outputs" className={cn(vertical && "flex justify-around")}>
+      {portRows("out")}
+    </ul>
+  );
   return (
     <div
       data-slot="op-node"
@@ -167,6 +180,7 @@ export function OperationNode({ data, selected, isConnectable }: NodeProps<Opera
         !data.enabled && "border-dashed opacity-80",
       )}
     >
+      {operation && vertical && inputs}
       <div className="flex items-start justify-between gap-2">
         <span className="font-semibold">{data.title}</span>
         <Settings2 aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
@@ -180,20 +194,8 @@ export function OperationNode({ data, selected, isConnectable }: NodeProps<Opera
       {data.run && <NodeRunStatus state={data.run.state} />}
       {!data.enabled && <Badge variant="neutral">Bypassed</Badge>}
       {operation && !operation.available && <Badge variant="warning">Unavailable</Badge>}
-      {operation && (
-        <div className="grid grid-cols-2 gap-2">
-          <ul aria-label="Inputs">
-            {operation.inputs.map((port, index) => (
-              <PortRow key={port.name} port={port} side="in" issues={issues} connectable={isConnectable} connected={data.connected.includes(`in:${port.name}`)} direction={direction} index={index} count={operation.inputs.length} />
-            ))}
-          </ul>
-          <ul aria-label="Outputs">
-            {operation.outputs.map((port, index) => (
-              <PortRow key={port.name} port={port} side="out" issues={issues} connectable={isConnectable} connected={data.connected.includes(`out:${port.name}`)} direction={direction} index={index} count={operation.outputs.length} />
-            ))}
-          </ul>
-        </div>
-      )}
+      {operation && !vertical && <div className="grid grid-cols-2 gap-2">{inputs}{outputs}</div>}
+      {operation && vertical && outputs}
       {issues.length > 0 && (
         <ul className="ps-4 text-status-error-label">
           {issues.map((issue, index) => (

@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it } from "vitest";
 import { saveWarning } from "./profileCopy";
-import { addWithKeyboard, ANSWER_PIPELINE, ANSWER_REVISION, EMPTY_PIPELINE, openAllSections, runPanel, TEMPLATE_PIPELINE, TEMPLATE_REVISION, USER_PROFILE } from "./test/helpers";
+import { addWithKeyboard, ANSWER_PIPELINE, ANSWER_REVISION, EMPTY_PIPELINE, findPalette, openAllSections, runPanel, TEMPLATE_PIPELINE, TEMPLATE_REVISION, USER_PROFILE } from "./test/helpers";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
 
@@ -13,7 +13,7 @@ const REVISIONS = [TEMPLATE_REVISION, ANSWER_REVISION];
 async function setup(purpose: "ingest" | "search" | "answer", usedBy: string[]) {
   const profile = { ...USER_PROFILE, used_by: usedBy };
   const view = openStudio(`#/studio/search-copy/${purpose}`, { pipelines: PIPELINES, revisions: REVISIONS, profiles: [profile] });
-  await screen.findByRole("region", { name: "Operations" });
+  await findPalette();
   await addWithKeyboard(view.user, "Sparse retrieval", "retrieve.sparse");
   await openAllSections(view.user);
   return view;

@@ -31,7 +31,7 @@ export function AnswerText({ text, citations, evidence, collection, onShowChunk 
             collection={collection}
             onShowChunk={onShowChunk}
             trigger={(props) => (
-              <Button variant="link" size="xs" dir="ltr" aria-label={`Citation ${citation.ordinal}`} className="inline-flex h-auto px-0.5 align-baseline" {...props}>
+              <Button variant="link" size="inline" dir="ltr" aria-label={`Citation ${citation.ordinal}`} className="align-baseline" {...props}>
                 [{part}]
               </Button>
             )}

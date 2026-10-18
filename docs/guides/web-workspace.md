@@ -451,7 +451,7 @@ One panel floats over the right side of the canvas. It holds six sections. Each 
 5. Revision and run.
 6. Step settings.
 
-You can open several sections at the same time. At first, only Operations is open. When you select a step, Step settings opens. When you start a run from the panel, Revision and run opens. Closing a section does not change the draft.
+You can open several sections at the same time. At first, only Pipeline settings is open. When you select a step, Step settings opens. When you start a run from the panel, Revision and run opens. Closing a section does not change the draft.
 
 Select "Collapse panel" to shrink the panel to a narrow icon rail. Each rail button shows a tooltip with its section name. A highlighted button means that its section is open. Select a rail button to expand the panel with that section open. Collapsing the panel does not change the draft, the selection or the open sections.
 
@@ -464,7 +464,7 @@ On a window narrower than 1024 px, the panel sits under the flow surface and sho
 A toolbar at the top left of the canvas holds two buttons. The zoom controls stay at the bottom left.
 
 1. **Arrange vertically** or **Arrange horizontally**. The button names the arrangement it will apply. It places each step in a layer by its connections, moves the steps, turns the connection points (left and right when horizontal, top and bottom when vertical) and fits the view to the graph. Arrange changes the layout only. It does not create a revision. Choose **Save layout** in the Revision and run section to keep it; a saved layout reopens in the same arrangement, and a layout saved before this feature opens as horizontal. On the read-only canvas of a built-in profile the button moves the steps for this visit only, and nothing is sent to the server.
-2. **Full screen**. The canvas, the toolbar and an X button fill the window. The navigation, the top bar, the profile header, the notices and the panel are hidden. Focus moves to the X button. Press the X button or Escape to leave; Escape does nothing while focus is in a text field. You return to the same page with the same selected step and view, and focus returns to the Full screen button. Full screen also ends when you leave the canvas. It is not saved.
+2. **Full screen**. The canvas, the toolbar, the panel and an X button fill the window. The navigation, the top bar, the profile header and the notices are hidden. The panel stays, floating over the canvas. Focus moves to the X button. Press the X button or Escape to leave; Escape does nothing while focus is in a text field. You return to the same page with the same selected step and view, and focus returns to the Full screen button. Full screen also ends when you leave the canvas. It is not saved.
 
 ![Canvas toolbar, horizontal](images/web-workspace/canvas-toolbar-horizontal-dark-1280.png)
 ![Canvas toolbar, vertical](images/web-workspace/canvas-toolbar-vertical-dark-1280.png)
