@@ -1,7 +1,7 @@
 # ADR-082: Chats Live in the Workspace Database
 
 - **Date:** 2026-10-18
-- **Status:** Proposed
+- **Status:** Accepted
 - **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 - **Related:** [ADR-080](080-profiles-own-pipelines.md) (the web server owns the workspace), [ADR-081](081-per-profile-embedding-models.md) (schema version 4)
 - **Change:** `openspec/changes/add-chat-history-and-canvas-view-controls/` (design D1 to D6)

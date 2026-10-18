@@ -35,4 +35,4 @@ Work in the sibling worktree `llamaindex-rag-mcp-feat-add-chat-history-and-canva
 ## 4. Close
 
 - [x] 4.1 Run `./scripts/local_ci.sh`, the web gate (lint, typecheck, tests, build) and `openspec validate --all --strict`. Verify: all pass.
-- [ ] 4.2 After review, set ADR-082 to Accepted in the file and in `docs/adr/ADR_README.md`, then archive the change.
+- [x] 4.2 After review, set ADR-082 to Accepted in the file and in `docs/adr/ADR_README.md`, then archive the change.
