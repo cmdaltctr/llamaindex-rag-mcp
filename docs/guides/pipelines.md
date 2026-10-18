@@ -345,6 +345,12 @@ A bare graph document (without `graph` and `layout`) is also accepted. It gets a
 
 ### A graph tries to change the embedding model
 
+A graph cannot set the embedding model or provider. The `Embed chunks` step
+and the dense retrieval step use the model that the collection's profile
+names (the server default when the profile names none). To change the model,
+set it on the profile's Embed step. See "Embedding model per profile" in the
+configuration guide.
+
 <!-- pipeline-example: invalid host_owned_setting -->
 ```json
 {

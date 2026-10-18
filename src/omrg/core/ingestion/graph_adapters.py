@@ -68,6 +68,7 @@ from .graph_adapters_catalogue import (
 from .graph_adapters_values import (
     BINARY,
     EMBEDDER_RESOURCE,
+    EMBEDDING_IDENTITY_RESOURCE,
     OCR_RESOURCE,
     PENDING,
     STORE_RESOURCE,
@@ -370,6 +371,7 @@ async def commit_adapter(
     identity, prepared = work.require_identity(), work.prepared
     if prepared is None or not work.nodes:
         raise ValueError(f"Source {work.unit.rel_path!r} was not embedded. Connect embed.chunks.")
+    chosen = optional(context, EMBEDDING_IDENTITY_RESOURCE)
     outcome = await run_protected(
         functools.partial(
             commit_prepared_source,
@@ -378,6 +380,7 @@ async def commit_adapter(
             collection_name=collection,
             store=store,
             embed_model=optional(context, EMBEDDER_RESOURCE),
+            embedding_identity=chosen,
         )
     )
     detail = make_file_detail(

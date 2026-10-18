@@ -24,6 +24,7 @@ from .sources import SourceIdentity, SourceUnit
 #: Engine resource names used by the ingestion adapters.
 STORE_RESOURCE = "store"
 EMBEDDER_RESOURCE = "embedder"
+EMBEDDING_IDENTITY_RESOURCE = "embedding_identity"
 OCR_RESOURCE = "ocr"
 
 PENDING = "pending"

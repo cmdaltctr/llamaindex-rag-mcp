@@ -267,6 +267,9 @@ ignore_imports = [
     # previously inline.  The contract forbids business logic from importing
     # concrete provider modules; the registry is the sanctioned indirection.
     "omrg.core.metadata.llamaindex -> omrg.core.providers.llm.registry",
+    # The model check (ADR-081) resolves the embedding registry in the
+    # composition root; the profile service reaches it through compose_embedding.
+    "omrg.compose_embedding -> omrg.core.providers.embeddings.registry",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -464,16 +467,19 @@ forbidden_modules = [
     "omrg.compose",
     "omrg.compose_answer",
     "omrg.compose_connections",
+    "omrg.compose_embedding",
     "omrg.compose_engine",
     "omrg.compose_experiments",
     "omrg.compose_pipeline_runs",
     "omrg.compose_pipelines",
+    "omrg.compose_profile_embedding",
     "omrg.compose_profile_setup",
     "omrg.compose_profiles",
     "omrg.compose_settings",
     "omrg.compose_templates",
     "omrg.engine",
     "omrg.engine_answer",
+    "omrg.engine_embedders",
     "omrg.engine_lifecycle",
     "omrg.engine_profiles",
     "omrg.pipeline_templates",

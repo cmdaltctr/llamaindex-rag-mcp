@@ -159,7 +159,11 @@ async def dense_adapter(context: NodeContext, inputs: Mapping[str, Any], params:
     query = await _ensure_prepared(context, inputs["query"], params.collection)
     embedder = required_resource(context, "embedder")
     model = getattr(embedder, "model_name", None) or type(embedder).__name__
-    embedding = EmbeddingRef(provider=context.settings.embed_provider, model=str(model))
+    chosen = context.resources.get("embedding_identity")
+    embedding = EmbeddingRef(
+        provider=chosen.provider if chosen else context.settings.embed_provider,
+        model=chosen.model if chosen else str(model),
+    )
     timings: dict[str, float] = {}
     rows: list[dict] = []
     if query.collection_count > 0:
@@ -178,6 +182,7 @@ async def dense_adapter(context: NodeContext, inputs: Mapping[str, Any], params:
             timing_report=timings,
             embed_model=embedder,
             query_instruction=embedding_block.query_instruction,
+            **({"embedding_identity": chosen} if chosen else {}),
         )
     evidence = new_evidence(rows, query, SCORE_KIND_DENSE, embedding=embedding)
     return NodeOutput(values={"evidence": evidence}, summary=ranked_summary(evidence, timings))

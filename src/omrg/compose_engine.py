@@ -147,13 +147,20 @@ def build_engine(settings: Settings | None = None, *, catalogue: Any = None) -> 
     # OCR, and owned by the engine — its close() releases the
     # subprocesses. No process starts until a route's first dispatch.
     from .capabilities import build_ocr_routes
-    from .core.vectordb.identity import RedactionSecrets
+    from .core.providers.embeddings import registry as embed_registry
+    from .core.vectordb.identity import RedactionSecrets, embedding_identity_from_settings
     from .engine import Engine
+    from .engine_embedders import EngineEmbedders
 
     return Engine(
         effective,
         store=store,
         embed_model=embed_model,
+        embedders=EngineEmbedders(
+            embed_model,
+            embedding_identity_from_settings(settings),
+            lambda provider, model: embed_registry.get(provider)(settings, model=model),
+        ),
         reranker=reranker,
         profile_resolver_factory=lambda: build_profile_resolver(
             settings, store=store, env_overrides=profile_env, catalogue=catalogue

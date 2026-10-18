@@ -3,9 +3,8 @@
 The Engine delegates graph validation and execution to
 :class:`EnginePipelines`. This module is part of the composition root:
 
-* It builds the :class:`~omrg.core.pipelines.OperationCatalogue` by calling
-  each domain registrar. It builds the catalogue on the first validation or
-  run, not when the Engine is built, and keeps one catalogue per Engine.
+* It builds the :class:`~omrg.core.pipelines.OperationCatalogue` from each
+  domain registrar on first use and keeps one catalogue per Engine.
 * It describes the Engine to preflight as a ``HostContext``: capabilities
   from the composed resources, the embedding identity of the Engine's
   embedder, and a read-only view of stored collection identities.
@@ -13,13 +12,11 @@ The Engine delegates graph validation and execution to
   a resolver uses its own settings and cannot load a named profile.
 * It enforces the ``answer()`` request limits on answering graphs.
 * It plans each admitted run (``compose_pipeline_runs``): the unit split,
-  the ingestion shape and the OCR client of an ingestion graph. The OCR
-  client belongs to the Engine. A run borrows it and never builds or
-  closes a client of its own.
+  the ingestion shape and the OCR client. The OCR client belongs to the
+  Engine. A run borrows it and never builds or closes one.
 * It leases the Engine's resources to runs. Graphs that only read run at
   the same time. Graphs with an enabled write step (``SOURCE_COMMIT``) are
-  serialised on one Engine with one ``asyncio.Lock``; other Engines are not
-  affected.
+  serialised on one Engine with one ``asyncio.Lock``.
 
 Heavy imports (the pipeline package and the domain adapters) happen inside
 functions, so building an Engine imports nothing new.
@@ -75,10 +72,14 @@ def build_operation_catalogue() -> OperationCatalogue:
     return catalogue
 
 
-def host_embedding(settings: EffectiveSettings, embedder: Any) -> EmbeddingRef:
-    """Return the embedding identity, with the same rule as ``retrieve.dense``."""
+def host_embedding(
+    settings: EffectiveSettings, embedder: Any, identity: Any = None
+) -> EmbeddingRef:
+    """Return the host embedding: a concrete *identity* (ADR-081), else the settings alias."""
     from .core.pipelines import EmbeddingRef
 
+    if identity is not None:
+        return EmbeddingRef(provider=identity.provider, model=identity.model)
     model = getattr(embedder, "model_name", None) or type(embedder).__name__
     return EmbeddingRef(provider=settings.embed_provider, model=str(model))
 
@@ -90,14 +91,13 @@ class StoreCollectionView:
     ``llamacpp``), and the host identity uses the settings vocabulary (for
     example ``local``). The view compares a stamp with the identity the
     store writes with. A match means the host embeds in the same space.
-    Without a store identity the store does not enforce identities, so the
-    view reports no stamp.
+    Without a store identity the view reports no stamp. A concrete host
+    identity needs no alias match.
     """
 
-    def __init__(self, store: Any, host: EmbeddingRef) -> None:
-        """Keep the store and the host identity."""
-        self._store = store
-        self._host = host
+    def __init__(self, store: Any, host: EmbeddingRef, concrete: bool = False) -> None:
+        """Keep the store, the host identity and whether it is concrete."""
+        self._store, self._host, self._concrete = store, host, concrete
 
     def embedding_identity(self, collection: str) -> EmbeddingRef | None:
         """Return the stored identity, ``None`` for a new or unstamped collection."""
@@ -111,7 +111,7 @@ class StoreCollectionView:
         provider, model = meta.get(IDENTITY_PROVIDER_KEY), meta.get(IDENTITY_MODEL_KEY)
         if not isinstance(provider, str) or not isinstance(model, str):
             return None
-        if (provider, model) == (own.provider, own.model):
+        if not self._concrete and (provider, model) == (own.provider, own.model):
             return self._host
         return EmbeddingRef(provider=provider, model=model)
 
@@ -187,11 +187,12 @@ def build_graph_host(
         name: None if resources.get(name) is not None else reason
         for name, reason in _REASONS.items()
     }
-    embedding = host_embedding(settings, resources.get("embedder"))
+    identity = resources.get("embedding_identity")
+    embedding = host_embedding(settings, resources.get("embedder"), identity)
     host = HostContext(
         capabilities=capabilities,
         embedding=embedding,
-        collections=StoreCollectionView(resources.get("store"), embedding),
+        collections=StoreCollectionView(resources.get("store"), embedding, identity is not None),
         default_collection=collection or settings.collection_name,
     )
     profiles = FixedProfileSource(settings) if resolver is None else ResolverProfileSource(resolver)

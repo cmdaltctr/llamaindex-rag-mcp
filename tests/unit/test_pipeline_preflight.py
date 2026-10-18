@@ -311,6 +311,15 @@ def test_pdf_reader_override_points_to_the_read_document_step() -> None:
     assert "Read document step" not in _issues(other)[0].message
 
 
+@pytest.mark.parametrize("lever", ["embed_model", "embed_provider"])
+def test_embedding_model_override_points_to_the_profile_embed_step(lever: str) -> None:
+    """A graph cannot set the embedding model; the message names the profile's Embed step."""
+    data = search_graph()
+    data["overrides"] = {lever: "x"}
+    issues = [i for i in _issues(data) if i.code == IssueCode.HOST_OWNED_SETTING]
+    assert issues and "Set the model on the profile's Embed step." in issues[0].message
+
+
 @pytest.mark.parametrize("profile", ["hybrid", "research"])
 def test_unsupported_graph_profile(profile: str) -> None:
     """``hybrid`` is a server selector, not an operational graph profile."""
