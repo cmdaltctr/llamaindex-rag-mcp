@@ -166,6 +166,21 @@ def build_profile_service(engine: Any, workspace: Path) -> ProfileService:
     )
 
 
+def build_chat_repository(workspace: Path) -> Any:
+    """Build the chat store of the web server over its workspace folder (ADR-082).
+
+    The workspace database must already be open through ``build_profile_service``,
+    which runs the migrations.
+
+    Args:
+        workspace: The workspace folder (``omrg web --workspace``).
+    """
+    from .core.workspace import WorkspaceLayout
+    from .integrations.workspace_sqlite.chats import SqliteChatRepository
+
+    return SqliteChatRepository(WorkspaceLayout(workspace).records)
+
+
 def _engine_host_identity(engine: Any) -> Callable[[], EmbeddingIdentity] | None:
     """Return the Engine's own server default model, so checks match its writes.
 

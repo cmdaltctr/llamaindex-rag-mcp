@@ -25,7 +25,7 @@ export function useActiveCollection(area: "knowledge-base" | "chat", routeCollec
 
   useEffect(() => {
     if (list === undefined) return;
-    if (redirecting && remembered !== null) navigate({ area, collection: remembered }, { replace: true });
+    if (redirecting && remembered !== null) navigate(area === "chat" ? { area, collection: remembered, chatId: null } : { area, collection: remembered }, { replace: true });
     else if (stored !== null && remembered === null) setLastCollection(null);
     else if (active !== null && stored !== active.name) setLastCollection(active.name);
   }, [list, redirecting, remembered, stored, active, area, navigate, setLastCollection]);

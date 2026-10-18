@@ -7,6 +7,8 @@ interface GraphOutlineProps {
   draft: Draft;
   issues: readonly ValidationIssue[];
   onChange: (change: (draft: Draft) => Draft) => void;
+  /** Called when the user picks a step, so the canvas can centre on it. */
+  onSelect?: (id: string) => void;
   onAnnounce: (message: string) => void;
   /** A read-only graph: items can be selected, never removed. */
   readOnly?: boolean;
@@ -18,11 +20,17 @@ const plural = (count: number, word: string) => `${count} ${word}${count === 1 ?
  * Keyboard route to every node and connection. Enter or Space selects an
  * item; Delete or Backspace removes the focused item (not on a read-only graph).
  */
-export function GraphOutline({ draft, issues, onChange, onAnnounce, readOnly = false }: GraphOutlineProps) {
+export function GraphOutline({ draft, issues, onChange, onSelect, onAnnounce, readOnly = false }: GraphOutlineProps) {
   const selected = new Set(draft.layout.selection);
 
-  function select(id: string) {
-    onChange((current) => setSelection(current, [id]));
+  function selectNode(id: string) {
+    if (onSelect) onSelect(id);
+    else onChange((current) => setSelection(current, [id]));
+  }
+
+  // A connection key is not a step id, so the canvas is never asked to centre on it.
+  function selectEdge(key: string) {
+    onChange((current) => setSelection(current, [key]));
   }
 
   function removeOnKey(event: KeyboardEvent<HTMLButtonElement>, remove: () => void) {
@@ -61,7 +69,7 @@ export function GraphOutline({ draft, issues, onChange, onAnnounce, readOnly = f
                   aria-pressed={selected.has(node.id)}
                   aria-label={`Node ${node.id} (${node.operation})${suffix}`}
                   data-invalid={count > 0 || undefined}
-                  onClick={() => select(node.id)}
+                  onClick={() => selectNode(node.id)}
                   onKeyDown={(event) => removeOnKey(event, () => dropNode(node.id))}
                 >
                   <code className="font-mono text-code">{node.id}</code>
@@ -89,7 +97,7 @@ export function GraphOutline({ draft, issues, onChange, onAnnounce, readOnly = f
                   className="h-auto min-h-8 min-w-0 flex-1 justify-start py-1 text-start whitespace-normal [overflow-wrap:anywhere]"
                   aria-pressed={selected.has(key)}
                   aria-label={`Connection ${label}`}
-                  onClick={() => select(key)}
+                  onClick={() => selectEdge(key)}
                   onKeyDown={(event) => removeOnKey(event, () => dropEdge(key, label))}
                 >
                   <code className="font-mono text-code">{label}</code>

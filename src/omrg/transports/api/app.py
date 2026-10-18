@@ -20,6 +20,7 @@ from .log_buffer import LogBuffer
 from .mcp_http import build_mcp_http
 from .middleware import GuardMiddleware
 from .routes.admin import router as admin_router
+from .routes.chats import router as chats_router
 from .routes.connections import router as connections_router
 from .routes.documents import router as documents_router
 from .routes.embedding import router as embedding_router
@@ -47,6 +48,7 @@ API_ROUTERS: tuple[APIRouter, ...] = (
     admin_router,
     graphs_router,
     profiles_router,
+    chats_router,
     embedding_router,
     runs_router,
     experiments_router,

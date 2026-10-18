@@ -8,11 +8,13 @@ import {
   type FinalConnectionState,
   type NodeChange,
 } from "@xyflow/react";
-import { useCallback, useMemo, useState, type KeyboardEvent } from "react";
+import { useCallback, useMemo, useState, type KeyboardEvent, type Ref } from "react";
 import type { EffectiveControl, OperationDescriptor, PortRef, ValidationIssue } from "../api/pipelines";
 import { checkConnection, connectionGuard, findOperation } from "./connections";
 import { edgeKey, moveNode, removeEdge, removeNode, removeSelection, setSelection, setViewport, type Draft } from "./graph";
 import { OperationNode, type OperationFlowNode } from "./OperationNode";
+import { FocusStep, type FocusRequest } from "./FocusStep";
+import { ViewToolbar } from "./ViewToolbar";
 import { cardLines } from "./stepSummary";
 import { edgeRunStyle, type NodeRunState } from "../runs/runState";
 
@@ -36,6 +38,10 @@ interface FlowSurfaceProps {
   finishedNodes?: ReadonlySet<string>;
   /** A read-only graph can be panned, zoomed and selected, never changed. */
   readOnly?: boolean;
+  /** Set when the user picks a step in the panel: the view centres on it. */
+  focusRequest?: FocusRequest | null;
+  /** The X button of canvas full screen lives in the toolbar; this ref lets the editor focus it. */
+  exitRef?: Ref<HTMLButtonElement>;
 }
 
 type Size = { width: number; height: number };
@@ -46,7 +52,7 @@ const NO_LINES = { summary: "", settings: [], extraSettings: [], moreSettings: 0
 const NO_PORTS: string[] = [];
 const NO_FINISHED: ReadonlySet<string> = new Set();
 
-function isTextField(target: EventTarget): boolean {
+export function isTextField(target: EventTarget): boolean {
   return target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName));
 }
 
@@ -73,6 +79,8 @@ export function FlowSurface({
   reducedMotion = false,
   finishedNodes = NO_FINISHED,
   readOnly = false,
+  focusRequest = null,
+  exitRef,
 }: FlowSurfaceProps) {
   const [measured, setMeasured] = useState<Record<string, Size>>({});
   const selected = useMemo(() => new Set(draft.layout.selection), [draft.layout.selection]);
@@ -116,12 +124,13 @@ export function FlowSurface({
           connected: connectedPorts.get(node.id) ?? NO_PORTS,
           model: node.operation === "embed.chunks" ? { name: embeddingModel } : undefined,
           enabled: node.enabled !== false,
+          direction: draft.layout.direction,
           issues: issues.filter((issue) => issue.node_id === node.id),
           run: runNodes?.ids.has(node.id) ? { state: runNodes.states[node.id] } : undefined,
         },
       };
     });
-  }, [draft.graph.nodes, overrides, collection, draft.layout.positions, selected, measured, catalogue, issues, runNodes, controls, embeddingModel, connectedPorts]);
+  }, [draft.graph.nodes, overrides, collection, draft.layout.positions, draft.layout.direction, selected, measured, catalogue, issues, runNodes, controls, embeddingModel, connectedPorts]);
 
   const edges = useMemo<Edge[]>(
     () =>
@@ -225,6 +234,8 @@ export function FlowSurface({
       >
         <Background gap={20} />
         <Controls showInteractive={false} />
+        <FocusStep request={focusRequest} reducedMotion={reducedMotion} />
+        <ViewToolbar exitRef={exitRef} draft={draft} sizes={measured} onChange={onChange} reducedMotion={reducedMotion} />
       </ReactFlow>
     </div>
   );

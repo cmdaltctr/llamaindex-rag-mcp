@@ -69,12 +69,19 @@ def test_upgrade_from_version_one_only_adds_tables_and_keeps_records(tmp_path: P
     upgraded = SqliteWorkspaceRepository(path)
 
     assert _user_version(path) == SCHEMA_MIGRATIONS[-1][0]
-    assert _tables(path) - before == {"workspace_settings", "mcp_tokens", "profiles"}
+    assert _tables(path) - before == {
+        "workspace_settings",
+        "mcp_tokens",
+        "profiles",
+        "chat_folders",
+        "chats",
+        "chat_turns",
+    }
     assert before <= _tables(path)
     for name, columns in columns_before.items():
         assert _columns(path, name) == columns, name
     assert upgraded.get_pipeline(pipeline_id)["title"] == "Kept"
-    assert len(list(tmp_path.glob("*.v1-to-v4.*.bak"))) == 1
+    assert len(list(tmp_path.glob("*.v1-to-v5.*.bak"))) == 1
 
 
 # ── 2.2 Settings repository ──────────────────────────────────────────────

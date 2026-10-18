@@ -16,7 +16,7 @@ export interface AreaDefinition {
 
 export const AREAS: readonly AreaDefinition[] = [
   { id: "home", label: "Home", shortLabel: "Home", icon: House, summary: "Your projects and their knowledge bases.", route: HOME },
-  { id: "chat", label: "Chat", shortLabel: "Chat", icon: MessageCircle, summary: "Ask a knowledge base a question and check the cited evidence.", route: { area: "chat", collection: null } },
+  { id: "chat", label: "Chat", shortLabel: "Chat", icon: MessageCircle, summary: "Ask a knowledge base a question and check the cited evidence.", route: { area: "chat", collection: null, chatId: null } },
   { id: "knowledge-base", label: "Knowledge Base", shortLabel: "Data", icon: Database, summary: "Sources, search, uploads and the profile of a project.", route: { area: "knowledge-base", collection: null } },
   { id: "studio", label: "Studio", shortLabel: "Studio", icon: Workflow, summary: STUDIO_SUMMARY, route: { area: "studio", profileId: null, purpose: null } },
   { id: "experiments", label: "Experiments", shortLabel: "Labs", icon: FlaskConical, summary: "Experiment folders, notebooks and pipeline runs.", route: { area: "experiments", runId: null } },

@@ -16,8 +16,7 @@ import {
   runPanel,
   TEMPLATE_PIPELINE,
   TEMPLATE_REVISION,
-  USER_PROFILE,
-} from "./test/helpers";
+  USER_PROFILE, findPalette } from "./test/helpers";
 import { fakeServer } from "./test/fakeServer";
 import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
@@ -99,7 +98,7 @@ describe("the profile header on the canvas page", () => {
 
   it("shows an unsaved draft again after the user visits another purpose and comes back", async () => {
     const { user } = openStudio("#/studio/search-copy/ingest", FIXTURES);
-    await screen.findByRole("region", { name: "Operations" });
+    await findPalette();
     await addWithKeyboard(user, "Sparse retrieval", "retrieve.sparse");
 
     await user.click(link("Search"));
@@ -236,7 +235,7 @@ describe("renaming from the canvas header", () => {
   it("updates the heading and the gallery card from one PATCH", async () => {
     const { server, user } = openStudio("#/studio/search-copy/search", FIXTURES);
     // The header is rebuilt when the pipeline finishes loading, so wait for the canvas first.
-    await screen.findByRole("region", { name: "Operations" });
+    await findPalette();
     await user.click(await screen.findByRole("button", { name: "Rename Search copy" }));
     const field = screen.getByRole("textbox", { name: "Profile title" });
     await user.clear(field);

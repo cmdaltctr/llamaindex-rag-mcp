@@ -37,7 +37,7 @@ describe("navigation", () => {
     expect(window.location.hash).toBe("#/home");
   });
 
-  it.each(["#/nope", "#/library", "#/canvas", "#/chat/a/b", "#"])("rewrites the unknown hash %s to Home", (hash) => {
+  it.each(["#/nope", "#/library", "#/canvas", "#/chat/a/b/c", "#"])("rewrites the unknown hash %s to Home", (hash) => {
     start(hash);
     expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
     expect(window.location.hash).toBe("#/home");

@@ -11,6 +11,7 @@ import type {
   GraphDocument,
   GraphInput,
   GraphLayout,
+  LayoutDirection,
   GraphOutput,
   JsonValue,
   NodeSpec,
@@ -34,6 +35,7 @@ export interface DraftLayout {
   positions: Record<string, { x: number; y: number }>;
   viewport: { x: number; y: number; zoom: number };
   selection: string[];
+  direction: LayoutDirection;
 }
 
 export interface Draft {
@@ -46,7 +48,7 @@ type Position = { x: number; y: number };
 export function emptyDraft(): Draft {
   return {
     graph: { nodes: [], edges: [], inputs: [], outputs: [], profile: null, collection: null, overrides: {} },
-    layout: { positions: {}, viewport: { x: 0, y: 0, zoom: 1 }, selection: [] },
+    layout: { positions: {}, viewport: { x: 0, y: 0, zoom: 1 }, selection: [], direction: "horizontal" },
   };
 }
 
@@ -92,6 +94,7 @@ export function fromDocument(document: GraphDocument | null, layout: GraphLayout
       positions: { ...(layout.positions ?? {}) },
       viewport: layout.viewport ?? base.layout.viewport,
       selection: [...(layout.selection ?? [])],
+      direction: layout.direction ?? "horizontal",
     },
   };
 }
@@ -111,8 +114,8 @@ export function toDocument(draft: Draft): GraphDocument {
 }
 
 export function toLayout(draft: Draft): GraphLayout {
-  const { positions, viewport, selection } = draft.layout;
-  return { positions, viewport, selection };
+  const { positions, viewport, selection, direction } = draft.layout;
+  return { positions, viewport, selection, direction };
 }
 
 function canonical(value: unknown): string {
@@ -243,6 +246,11 @@ export function setCollection(draft: Draft, collection: string | null): Draft {
 
 export function moveNode(draft: Draft, nodeId: string, position: Position): Draft {
   return withLayout(draft, { positions: { ...draft.layout.positions, [nodeId]: position } });
+}
+
+/** Replaces the step positions and the direction in one change. The execution graph is untouched. */
+export function setArrangement(draft: Draft, positions: Record<string, Position>, direction: LayoutDirection): Draft {
+  return withLayout(draft, { positions, direction });
 }
 
 export function setViewport(draft: Draft, viewport: DraftLayout["viewport"]): Draft {

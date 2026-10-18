@@ -16,7 +16,7 @@ export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 export type Route =
   | { area: "home" }
   | { area: "knowledge-base"; collection: string | null }
-  | { area: "chat"; collection: string | null }
+  | { area: "chat"; collection: string | null; chatId: string | null }
   | { area: "studio"; profileId: string | null; purpose: Purpose | null }
   | { area: "experiments"; runId: string | null }
   | { area: "integrations" }
@@ -51,8 +51,15 @@ export function parseRoute(hash: string): Route {
       if (first === undefined) return { area, section: null };
       return isSettingsSection(first) ? { area, section: first } : HOME;
     }
-    case "knowledge-base":
     case "chat": {
+      if (first === undefined) return { area, collection: null, chatId: null };
+      const collection = decode(first);
+      if (collection === null) return HOME;
+      if (second === undefined) return { area, collection, chatId: null };
+      const chatId = decode(second);
+      return chatId === null ? HOME : { area, collection, chatId };
+    }
+    case "knowledge-base": {
       if (second !== undefined) return HOME;
       if (first === undefined) return { area, collection: null };
       const collection = decode(first);
@@ -97,8 +104,10 @@ export function formatRoute(route: Route): string {
     case "settings":
       return route.section === null ? "#/settings" : `#/settings/${route.section}`;
     case "knowledge-base":
-    case "chat":
       return withSegment(`#/${route.area}`, route.collection);
+    case "chat":
+      if (route.collection === null) return "#/chat";
+      return withSegment(withSegment("#/chat", route.collection), route.chatId);
     case "studio":
       if (route.profileId === null) return "#/studio";
       return withSegment(withSegment("#/studio", route.profileId), route.purpose);

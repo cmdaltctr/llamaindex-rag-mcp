@@ -27,6 +27,8 @@ const buttonVariants = cva(
       size: {
         default: "h-9 gap-1.5 rounded-control px-3",
         sm: "h-8 gap-1 rounded-small px-3",
+        // Inside a line of text, such as a [n] citation marker: the line sets the height.
+        inline: "h-auto gap-0.5 px-0.5 text-[length:inherit]",
         xs: "h-6 gap-1 rounded-small px-2 text-meta [&_svg:not([class*='size-'])]:size-3",
         icon: "size-9 rounded-control",
         "icon-sm": "size-8 rounded-small",

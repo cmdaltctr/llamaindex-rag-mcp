@@ -156,6 +156,36 @@ SCHEMA_MIGRATIONS: tuple[Migration, ...] = (
                 CHECK (embed_dimensions IS NULL OR embed_dimensions > 0)""",
         ),
     ),
+    (
+        5,
+        (
+            # Stored chats and their folders (ADR-082). A folder delete removes its
+            # chats, and a chat delete removes its turns, through the foreign keys.
+            """CREATE TABLE chat_folders (
+                folder_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )""",
+            """CREATE TABLE chats (
+                chat_id TEXT PRIMARY KEY,
+                folder_id TEXT REFERENCES chat_folders(folder_id) ON DELETE CASCADE,
+                title TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )""",
+            """CREATE TABLE chat_turns (
+                chat_id TEXT NOT NULL REFERENCES chats(chat_id) ON DELETE CASCADE,
+                position INTEGER NOT NULL,
+                collection TEXT NOT NULL,
+                question TEXT NOT NULL,
+                answer_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (chat_id, position)
+            )""",
+            "CREATE INDEX chats_by_folder ON chats (folder_id)",
+            "CREATE INDEX chats_by_updated ON chats (updated_at)",
+        ),
+    ),
 )
 
 

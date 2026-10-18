@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import { expect } from "vitest";
 import type { GraphDocument, PipelineRecord, RevisionRecord } from "../../api/pipelines";
@@ -8,11 +8,18 @@ export function palette() {
   return screen.getByRole("region", { name: "Operations" });
 }
 
+/** Waits for the panel, opens Operations (the panel opens Pipeline settings at first) and returns its region. */
+export async function findPalette() {
+  const header = await screen.findByRole("button", { name: "Operations" });
+  if (header.getAttribute("aria-expanded") !== "true") fireEvent.click(header);
+  return screen.findByRole("region", { name: "Operations" });
+}
+
 export function outline() {
   return screen.getByRole("region", { name: "Steps and connections" });
 }
 
-/** Every panel section. The panel opens only Operations at first. */
+/** Every panel section. The panel opens only Pipeline settings at first. */
 export const ALL_SECTIONS = ["Pipeline settings", "Operations", "Steps and connections", "Connect ports", "Revision and run", "Step settings"];
 
 /** Opens the named panel sections that are still closed, once the canvas has loaded. */

@@ -250,3 +250,14 @@ def test_importing_omrg_does_not_load_pipelines_or_settings() -> None:
         [sys.executable, "-c", code], capture_output=True, text=True, check=False
     )
     assert proc.returncode == 0, proc.stderr
+
+
+def test_layout_direction_defaults_to_horizontal_and_accepts_vertical() -> None:
+    assert GraphLayout().direction == "horizontal"
+    assert GraphLayout.model_validate({"direction": "vertical"}).direction == "vertical"
+    assert GraphLayout.model_validate({"positions": {}}).direction == "horizontal"
+
+
+def test_layout_direction_refuses_other_values() -> None:
+    with pytest.raises(ValidationError):
+        GraphLayout.model_validate({"direction": "diagonal"})

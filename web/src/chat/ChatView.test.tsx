@@ -142,7 +142,7 @@ describe("turns", () => {
     });
     expect(items[0]).toHaveTextContent("You");
     expect(items[0]).toHaveTextContent("What is kept?");
-    expect(await within(transcript()).findByText("Lineage is kept [1].")).toBeInTheDocument();
+    expect(await within(transcript()).findByText(/Lineage is kept/)).toBeInTheDocument();
     expect(server.find("POST", "/v1/collections/documents/answer")[0]?.body).toEqual({
       query: "What is kept?", top_k: null, rerank: null, hybrid: null, metadata_filter: null,
     });
@@ -157,7 +157,7 @@ describe("turns", () => {
     expect(await screen.findByText(/waiting for the answer/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
     await act(async () => release(json(answer())));
-    expect(await screen.findByText("Lineage is kept [1].")).toBeInTheDocument();
+    expect(await screen.findByText(/Lineage is kept/)).toBeInTheDocument();
     await user.type(screen.getByRole("textbox", { name: "Question" }), "again");
     expect(screen.getByRole("button", { name: "Send" })).toBeEnabled();
   });
@@ -165,7 +165,7 @@ describe("turns", () => {
   it("shows status as text, citation chips and a collapsible evidence section", async () => {
     const { user } = setup({ "POST /v1/collections/documents/answer": () => answer({ verified: true }) });
     await ask(user);
-    const turn = (await within(transcript()).findByText("Lineage is kept [1].")).closest("li") as HTMLElement;
+    const turn = (await within(transcript()).findByText(/Lineage is kept/)).closest("li") as HTMLElement;
     expect(within(turn).getByText("Cited and verified")).toHaveAttribute("data-slot", "badge");
     const chips = within(turn).getByRole("list", { name: "Citations" });
     expect(within(chips).getAllByRole("button")).toHaveLength(2);
@@ -180,11 +180,13 @@ describe("turns", () => {
     expect(rows[1]).toHaveTextContent("Reranker sigmoid (reranker_sigmoid_v1)");
   });
 
-  it("opens a citation chip in the chunk viewer", async () => {
+  it("opens a citation chip in a popover, then the full chunk in the chunk viewer", async () => {
     const { user } = setup();
     await ask(user);
     const chips = await screen.findByRole("list", { name: "Citations" });
     await user.click(within(chips).getByRole("button", { name: /\[1\]/ }));
+    expect(await screen.findByText("Evidence one", { selector: "[data-slot='citation-popover-content'] *" })).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Open full chunk" }));
     const viewer = await screen.findByRole("dialog", { name: "Stored chunk" });
     expect(await within(viewer).findByText("Stored chunk one")).toBeInTheDocument();
     expect(within(viewer).getByText(/Page 4/)).toBeInTheDocument();
@@ -243,7 +245,7 @@ describe("failed turns", () => {
     expect(alert).not.toHaveTextContent("<html>");
     expect(console.error).toHaveBeenCalledWith(expect.stringContaining("Traceback"), expect.anything());
     await user.click(within(alert).getByRole("button", { name: "Retry" }));
-    expect(await screen.findByText("Lineage is kept [1].")).toBeInTheDocument();
+    expect(await screen.findByText(/Lineage is kept/)).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     // Retry replaces the failed turn; it does not add another question.
     expect(within(transcript()).getAllByText("What is kept?")).toHaveLength(1);
@@ -265,14 +267,14 @@ describe("knowledge base panel and New chat", () => {
       "POST /v1/collections/notes/answer": () => answer({ answer: "From notes." }),
     });
     await ask(user, "first");
-    await screen.findByText("Lineage is kept [1].");
+    await screen.findByText(/Lineage is kept/);
     await ask(user, "second");
-    await waitFor(() => expect(within(transcript()).getAllByText("Lineage is kept [1].")).toHaveLength(2));
+    await waitFor(() => expect(within(transcript()).getAllByText(/Lineage is kept/)).toHaveLength(2));
 
     await user.click(within(screen.getByRole("list", { name: "Knowledge bases" })).getByRole("button", { name: /notes/ }));
     expect(window.location.hash).toBe("#/chat/notes");
     expect(JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) ?? "{}").lastCollection).toBe("notes");
-    expect(within(transcript()).getAllByText("Lineage is kept [1].")).toHaveLength(2);
+    expect(within(transcript()).getAllByText(/Lineage is kept/)).toHaveLength(2);
 
     await ask(user, "third");
     expect(await screen.findByText("From notes.")).toBeInTheDocument();
@@ -284,10 +286,10 @@ describe("knowledge base panel and New chat", () => {
   it("clears the transcript with New chat and keeps the selected knowledge base", async () => {
     const { user } = setup();
     await ask(user);
-    await screen.findByText("Lineage is kept [1].");
+    await screen.findByText(/Lineage is kept/);
     await user.click(screen.getByRole("button", { name: "New chat" }));
     expect(screen.queryByRole("list", { name: "Transcript" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Lineage is kept [1].")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Lineage is kept/)).not.toBeInTheDocument();
     expect(window.location.hash).toBe("#/chat/documents");
     expect(screen.getByRole("textbox", { name: "Question" })).toBeInTheDocument();
   });

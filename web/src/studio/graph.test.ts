@@ -76,7 +76,7 @@ describe("graph draft", () => {
     expect(JSON.stringify(doc)).not.toContain("positions");
     expect(JSON.stringify(doc)).not.toContain("Search");
     expect(toLayout(chain())).not.toHaveProperty("title");
-    expect(Object.keys(toLayout(chain())).sort()).toEqual(["positions", "selection", "viewport"]);
+    expect(Object.keys(toLayout(chain())).sort()).toEqual(["direction", "positions", "selection", "viewport"]);
   });
 
   it("changes only the layout when a node moves, the viewport changes or the selection changes", () => {
@@ -169,5 +169,19 @@ describe("graph draft", () => {
     };
     expect(sameDocument(fromDocument(server, {}).graph, draft.graph)).toBe(true);
     expect(sameDocument(setParam(draft, "rerank", "enabled", true).graph, draft.graph)).toBe(false);
+  });
+});
+
+describe("layout direction", () => {
+  it("keeps the direction through fromDocument and toLayout", () => {
+    const draft = fromDocument(null, { direction: "vertical" });
+    expect(draft.layout.direction).toBe("vertical");
+    expect(toLayout(draft).direction).toBe("vertical");
+  });
+
+  it("reads a stored layout without a direction as horizontal", () => {
+    const draft = fromDocument(null, { positions: {} });
+    expect(draft.layout.direction).toBe("horizontal");
+    expect(toLayout(draft).direction).toBe("horizontal");
   });
 });
