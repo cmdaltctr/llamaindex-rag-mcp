@@ -67,7 +67,7 @@ CONNECTION = ConnectionDescriptor(
     fields=(ConnectionField("base_url", "Address", "url", "ollama_base_url", "OLLAMA_BASE_URL"),),
     read_only=lambda s: [
         ReadOnlyValue("Embedding model", s.embed_model),
-        ReadOnlyValue("Chat model", s.metadata.ollama_classify_model),
+        ReadOnlyValue("Metadata model", s.metadata.ollama_classify_model),
     ],
     test_targets=_tags,
     models_target=_tags,

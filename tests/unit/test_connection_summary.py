@@ -118,7 +118,7 @@ def test_entry_shape_and_config_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: P
         for name, entry in entries.items()
     }
     assert read_only["ollama"]["Embedding model"] == "nomic-embed-text"
-    assert read_only["ollama"]["Chat model"] == "qwen-m"
+    assert read_only["ollama"]["Metadata model"] == "qwen-m"
     assert read_only["llamacpp"] == {
         "Embedding address": "http://llama.test:8080/v1",
         "Embedding model": "embed-gguf",
