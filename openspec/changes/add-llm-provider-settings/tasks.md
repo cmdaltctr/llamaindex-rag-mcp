@@ -8,12 +8,12 @@ Line ceiling: `src/omrg/engine.py` has 498 lines and `src/omrg/compose.py` has 4
 
 ## 1. Preconditions, approval and decision record
 
-- [ ] 1.1 Confirm `src/omrg/transports/api/routes/connections.py` and `routes/mcp.py` exist. Verify with `git ls-files src/omrg/transports/api/routes/`.
-- [ ] 1.2 Check that `studio-profiles-gallery` is merged and its route list includes `#/settings/<section>`. If it is not merged, stop and report, because this change needs that route.
-- [ ] 1.3 Confirm that no file in `docs/adr/` or `openspec/changes/` claims ADR-082. Use the next free number if it is taken, and update design.md D9.
-- [ ] 1.4 Write `docs/adr/082-llm-provider-settings-in-the-web-workspace.md` with status Proposed. Record design D1 to D7, the rejected storage options with their reasons, the precedence rule and the list of values that do not apply live. Verify that `docs/adr/ADR_README.md` lists it.
-- [ ] 1.5 The user chose keychain plus environment override (option 1). Ask the user to approve adding `keyring` to the `web` extra (design D1) before any install. Record the approval in the ADR.
-- [ ] 1.6 After approval, run `uv add --optional web "keyring>=<locked minor>"` in the feature worktree. Confirm `git rev-parse --show-toplevel` names the worktree first. Verify with `uv run pytest tests/test_dependency_floors.py -q`, confirm the licence is MIT, and confirm that `uv.lock` lists `pywin32-ctypes` with a Windows marker and `SecretStorage` and `jeepney` with a Linux marker.
+- [x] 1.1 Confirm `src/omrg/transports/api/routes/connections.py` and `routes/mcp.py` exist. Verify with `git ls-files src/omrg/transports/api/routes/`.
+- [x] 1.2 Check that `studio-profiles-gallery` is merged and its route list includes `#/settings/<section>`. If it is not merged, stop and report, because this change needs that route.
+- [x] 1.3 Confirm that no file in `docs/adr/` or `openspec/changes/` claims ADR-083. Use the next free number if it is taken, and update design.md D9.
+- [x] 1.4 Write `docs/adr/083-llm-provider-settings-in-the-web-workspace.md` with status Proposed. Record design D1 to D7, the rejected storage options with their reasons, the precedence rule and the list of values that do not apply live. Verify that `docs/adr/ADR_README.md` lists it.
+- [x] 1.5 The user chose keychain plus environment override (option 1). Ask the user to approve adding `keyring` to the `web` extra (design D1) before any install. Record the approval in the ADR.
+- [x] 1.6 After approval, run `uv add --optional web "keyring>=<locked minor>"` in the feature worktree. Confirm `git rev-parse --show-toplevel` names the worktree first. Verify with `uv run pytest tests/test_dependency_floors.py -q`, confirm the licence is MIT, and confirm that `uv.lock` lists `pywin32-ctypes` with a Windows marker and `SecretStorage` and `jeepney` with a Linux marker.
 
 ## 2. Provider descriptors in the registry
 

@@ -189,7 +189,7 @@ The design follows `web/DESIGN.md` and the `omrg-design` skill: primitives only 
 
 ### D9. ADR
 
-ADR-082, "LLM provider settings in the web workspace". `docs/adr/` ends at ADR-079, `unify-profiles-and-pipelines` claims ADR-080 and `add-profile-embedding-model` expects ADR-081. No active change names ADR-082.
+ADR-083, "LLM provider settings in the web workspace". ADR-082 is taken by `add-chat-history-and-canvas-view-controls`, so this change uses ADR-083.
 
 ## Risks / Trade-offs
 

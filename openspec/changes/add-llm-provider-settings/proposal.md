@@ -21,7 +21,7 @@ The user wants the web app to become the GUI for the whole system. This change l
 - Chat shows one line with a link to Settings > Chat when no model is connected.
 - Settings sections get their own address, `#/settings/<section>`, so a link can open the Chat section.
 - **BREAKING (web API only):** `GET /v1/connections` entries gain fields and change shape (`key_set` becomes part of a field list). The bundled web client changes in the same change. No other client uses the route.
-- A new ADR records the decision. ADR-082 is the next free number (ADR-080 and ADR-081 are claimed by `unify-profiles-and-pipelines` and `add-profile-embedding-model`).
+- A new ADR records the decision. ADR-083 is the next free number (ADR-082 is taken by chat history).
 - This change lands after `organise-backend-folders`, which moves `routes_*.py` into `transports/api/routes/`.
 
 ## Capabilities
@@ -43,7 +43,7 @@ The user wants the web app to become the GUI for the whole system. This change l
 - **Python code:** `src/omrg/core/providers/llm/{registry,ollama,llamacpp,openrouter}.py` (connection descriptors), `src/omrg/compose_connections.py` (registry-driven), a new `src/omrg/compose_providers.py`, `src/omrg/compose.py` (re-exports only), `src/omrg/compose_engine.py`, `src/omrg/engine.py` and a new `src/omrg/engine_providers.py` (live provider values), `src/omrg/config/__init__.py` (records which provider fields came from the environment), `src/omrg/integrations/workspace_sqlite/settings.py`, a new `src/omrg/integrations/keychain.py`, `src/omrg/transports/api/{lifespan,security,log_buffer,connection_probe}.py`, `src/omrg/transports/api/routes/connections.py`, a new `src/omrg/transports/api/routes/chat_settings.py`, `src/omrg/transports/cli/web.py`.
 - **API:** `GET /v1/connections` changes shape. New: `PUT /v1/connections/{provider}`, `PUT` and `DELETE /v1/connections/{provider}/key`, `POST /v1/connections/{provider}/models`, `GET` and `PUT /v1/settings/chat`, `POST /v1/settings/chat/test`. `POST /v1/connections/{provider}/test` accepts an optional body. `src/omrg/transports/api/openapi.yaml` changes.
 - **Web:** `web/src/settings/` (Providers and Chat sections), `web/src/api/settings.ts`, `web/src/lib/routes.ts`, `web/src/chat/`.
-- **Docs:** `docs/guides/configuration.md`, `docs/guides/web-workspace.md`, `.env.example`, a new `docs/adr/082-*.md`.
+- **Docs:** `docs/guides/configuration.md`, `docs/guides/web-workspace.md`, `.env.example`, a new `docs/adr/083-*.md`.
 - **Build:** `pyproject.toml` (`web` extra) and `uv.lock`, after approval.
 - **Dependencies:** one new package, `keyring` (MIT licence), planned for the `web` extra. It needs the user's approval before any install (tasks.md 1.5).
 - **Not affected:** the stdio MCP server and the CLI keep reading `.env` only. Experiment contexts keep the `.env` values.
