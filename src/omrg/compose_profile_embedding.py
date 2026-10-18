@@ -117,7 +117,7 @@ class ProfileEmbedding:
         """
         provider = record and record.get("embed_provider")
         model = record and record.get("embed_model")
-        if provider and model:
+        if record and provider and model:
             embedding = {
                 "provider": provider,
                 "model": model,

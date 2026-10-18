@@ -293,7 +293,9 @@ def search(
     timing_report: dict = {}
 
     _dense_query_rows = _retrieval_get("dense")
-    identity_kwargs = {"embedding_identity": embedding_identity} if embedding_identity else {}
+    identity_kwargs: dict[str, Any] = (
+        {"embedding_identity": embedding_identity} if embedding_identity else {}
+    )
     sparse_report: dict = {}
     if hybrid:
         dense_threshold = ops.first_stage_dense_threshold(
