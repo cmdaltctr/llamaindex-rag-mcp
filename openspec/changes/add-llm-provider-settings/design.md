@@ -234,4 +234,4 @@ ADR-083, "LLM provider settings in the web workspace". ADR-082 is taken by `add-
 
 ## Open Questions
 
-- Does OpenRouter `GET /api/v1/models` return 401 for a wrong key? Task 14.5 checks it once against the real service. The answer does not change the design, because D5 uses `/key` either way.
+- Resolved on 2026-10-18 (task 14.5, real service): `GET /api/v1/models` returns 200 for a wrong key and for no key. `GET /api/v1/key` returns 401 for both, and 200 for a good key. D5 stays: the connection test uses `/key`, because `/models` cannot tell a wrong key from a good one.
