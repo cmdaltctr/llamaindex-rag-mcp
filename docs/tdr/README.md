@@ -60,6 +60,7 @@ architecture), see the [ADR index](../adr/).
 | 032 | [The Knowledge Base hid the database and the profile list implied a stored profile, so name the database per collection and start the list on the stored profile](032-knowledge-base-hid-the-database-and-the-profile-list-implied-a-stored-profile.md) | Accepted | 2026-10-15 |
 | 033 | [The collection name was the only project title, so add an editable display name and keep the collection name fixed](033-the-collection-name-was-the-only-project-title-so-add-an-editable-display-name.md) | Accepted | 2026-10-15 |
 | 034 | [The clean-base tripwire ran a serial suite, so run it in parallel and stop pinning the skipped count](034-the-clean-base-tripwire-ran-a-serial-suite-so-run-it-in-parallel-and-stop-pinning-skips.md) | Accepted | 2026-10-15 |
+| 035 | [Built-in profiles skipped the model check on the MCP endpoint, so route every bind through the profile service](035-built-in-profiles-skipped-the-model-check-on-the-mcp-endpoint.md) | Proposed | 2026-10-18 |
 
 ## Status values
 
