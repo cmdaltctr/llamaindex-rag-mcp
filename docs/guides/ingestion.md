@@ -74,6 +74,14 @@ mutation. The shared validator rejects a batch that contains:
 - mixed vector dimensions within one batch
 - a dimension that conflicts with the existing collection
 
+The model stamp is checked first. Before it embeds or checks vector shape,
+the store compares the collection's stamped model with the active model. A
+mismatch raises the identity-mismatch error that names both models, whatever
+the vector size. The ingestion graph makes the same read-only check before
+`embed.chunks`, so a refused source is not embedded and a paid provider is not
+billed for it. The commit step repeats the check, because another run can
+stamp the collection while a source is embedded.
+
 A rejected batch writes nothing: no rows, no collection recreation, and no
 generation change. The error names the collection, the embedding
 provider/model, and each affected node or row identifier. Vectors are

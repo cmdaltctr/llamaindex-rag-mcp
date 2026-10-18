@@ -236,6 +236,27 @@ class LanceTableMetadataMixin:
         if stored[0] is not None:
             self._reject_identity_mismatch(collection_name, stored, identity)
 
+    def get_collection_metadata(self, collection_name: str) -> dict | None:
+        """Return the table's metadata bag, or ``None`` when absent.
+
+        Intent-only collections surface their pending metadata so
+        profile tags written before the first write round-trip.
+        """
+        table = self._open_table(collection_name)
+        if table is None:
+            pending = self._pending_metadata.get(collection_name)
+            if not pending:
+                return None
+            return {key: json.loads(value) for key, value in pending.items()}
+        metadata = self._read_table_metadata(table)
+        return metadata or None
+
+    def check_embedding_identity(
+        self, collection_name: str, identity: EmbeddingIdentity | None = None
+    ) -> None:
+        """Read-only identity check: no epoch, no stamp, nothing created."""
+        self._reject_conflicting_identity(collection_name, identity)
+
     def _check_or_stamp_identity(
         self, collection_name: str, identity: EmbeddingIdentity | None = None
     ) -> None:

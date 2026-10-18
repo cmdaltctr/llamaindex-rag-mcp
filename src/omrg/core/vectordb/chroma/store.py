@@ -29,6 +29,7 @@ from ..identity import (
     EmbeddingIdentity,
     IdentityGuardMixin,
     embedding_identity_from_settings,
+    read_stored_identity,
     write_identity,
 )
 from ..score import DENSE_SCORE_KIND, canonical_score_from_l2, require_l2_metric
@@ -121,6 +122,18 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
             self._client = chromadb.PersistentClient(path=self._persist_dir)
         return self._client
 
+    def check_embedding_identity(
+        self, collection_name: str, identity: EmbeddingIdentity | None = None
+    ) -> None:
+        """Read-only identity check: no collection is created or stamped."""
+        active = identity or self._identity
+        collection = self._get_collection(collection_name) if active else None
+        if collection is None:
+            return
+        stored = read_stored_identity(collection)
+        if stored[0] is not None:
+            self._reject_identity_mismatch(collection_name, stored, active)
+
     def _get_collection(self, name: str):
         """Return the raw ChromaDB collection, or ``None`` if absent.
 
@@ -196,6 +209,7 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
 
             embed_model = Settings.embed_model
         identity = write_identity(embedding_identity, self._identity, embed_model)
+        self.check_embedding_identity(collection_name, embedding_identity)
         materialise_and_validate_node_embeddings(
             nodes,
             collection_name=collection_name,

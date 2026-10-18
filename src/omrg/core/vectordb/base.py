@@ -52,7 +52,19 @@ class VectorStore(ABC):
         """
         return None
 
-    # Writes.
+    def check_embedding_identity(
+        self, collection_name: str, identity: EmbeddingIdentity | None = None
+    ) -> None:
+        """Raise the identity-mismatch error if the collection's stamp conflicts.
+
+        Read-only: it never creates a collection, stamps a legacy one,
+        installs an epoch or advances the generation. An absent collection,
+        an unstamped one and a store with no active identity all pass.
+        *identity* replaces the composed identity for this call. Callers use
+        it to refuse a write before any embedding request. The default
+        keeps older third-party stores instantiable.
+        """
+        return None
 
     @abstractmethod
     def write_nodes(

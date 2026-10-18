@@ -311,6 +311,13 @@ async def embed_adapter(
         raise ValueError(f"Source {work.unit.rel_path!r} has no chunks. Connect prepare.chunk.")
     settings = context.settings
     context.progress("embed_start", {"chunks": len(nodes)})
+    # Refuse a wrong-model source before the embedder (maybe a paid provider)
+    # sees any text. The commit step repeats the check for a late stamp.
+    await asyncio.to_thread(
+        required(context, STORE_RESOURCE).check_embedding_identity,
+        work.collection,
+        optional(context, EMBEDDING_IDENTITY_RESOURCE),
+    )
     prepared = await asyncio.to_thread(
         prepare_source_embeddings,
         nodes,

@@ -68,10 +68,12 @@ and the lock, binding refusal and check enforce that in code.
 - Extra keyword plumbing through ingestion and retrieval (default `None`
   keeps current callers unchanged).
 - Changing a model needs a new collection and a new ingest.
-- The stores check vector shape before the model stamp. A write with another
-  model of a different size gets a dimension error, not a model-mismatch
-  error, after the batch is embedded. No row is written. Follow-up: check the
-  stamp first, or check it at the start of ingest.
+- Fixed by `check-embedding-stamp-before-dimension`: the stores now check the
+  model stamp before they embed or check vector shape, and the ingestion graph
+  checks it before `embed.chunks`. A write with another model gets the
+  model-mismatch error that names both models, whatever the vector size, and
+  the embedder receives no text. Before this change a model of a different size
+  got a dimension error after the batch was embedded. No row was written.
 
 ### Neutral
 

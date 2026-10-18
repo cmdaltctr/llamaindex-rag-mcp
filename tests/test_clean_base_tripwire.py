@@ -77,7 +77,10 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # service, upgrade, resolver, contract, Engine dispatch, route, MCP, CLI and
 # watcher suites add 349 executed tests (5233 -> 5582). One test was removed:
 # the old "runs on one Engine are serialised" case, replaced by the locking suite.
-_BASE_EXECUTED = 5738
+_BASE_EXECUTED = 5748
+# Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
+# (store stamp-first tests and graph embed-step tests). Measured in two clean
+# venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
 # Re-baselined at ci-integration-core-web: the sse-starlette shutdown-flag isolation
 # module adds 2 executed tests that need no fastapi (5582 -> 5584).
 # Re-baselined at add-pdf-reader-step-setting (2026-10-17): the step reader, option

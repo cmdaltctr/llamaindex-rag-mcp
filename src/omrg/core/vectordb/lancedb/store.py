@@ -214,6 +214,7 @@ class LanceVectorStore(
 
             embed_model = Settings.embed_model
         identity = write_identity(embedding_identity, self._identity, embed_model)
+        self.check_embedding_identity(collection_name, embedding_identity)
         materialise_and_validate_node_embeddings(
             nodes,
             collection_name=collection_name,
@@ -435,21 +436,6 @@ class LanceVectorStore(
         self.bump_generation(collection_name)
 
     # ── Collection metadata (Phase 4 profile tags) ─────────────────
-
-    def get_collection_metadata(self, collection_name: str) -> dict | None:
-        """Return the table's metadata bag, or ``None`` when absent.
-
-        Intent-only collections surface their pending metadata so
-        profile tags written before the first write round-trip.
-        """
-        table = self._open_table(collection_name)
-        if table is None:
-            pending = self._pending_metadata.get(collection_name)
-            if not pending:
-                return None
-            return {key: json.loads(value) for key, value in pending.items()}
-        metadata = self._read_table_metadata(table)
-        return metadata or None
 
     def update_collection_metadata(self, collection_name: str, metadata: dict) -> None:
         """Merge *metadata* into the table's schema metadata.
