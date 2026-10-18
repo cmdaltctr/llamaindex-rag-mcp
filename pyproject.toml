@@ -46,6 +46,11 @@ dependencies = [
     "httpx>=0.27.0",
     # LlamaIndex LLM integration for llamaindex metadata extraction mode
     "llama-index-llms-ollama>=0.9.0",
+    # OpenAI-compatible Chat providers (llama.cpp, OpenRouter and the
+    # OpenAI-compatible provider). Installed by default so these providers
+    # work in Settings without an extra. See ADR-083.
+    "llama-index-embeddings-openai-like>=0.3.0",
+    "llama-index-llms-openai-like>=0.7.0",
     "docx2txt>=0.9",
     # PDF parser fallback (Rust + PDFium, Apache-2.0). See ADR-020.
     "liteparse>=2.0.0",
@@ -109,13 +114,15 @@ community-leiden = [
 azure = [
     "azure-ai-documentintelligence>=1.0.0",
 ]
-llamacpp = [
-    "llama-index-embeddings-openai-like>=0.3.0",
-    "llama-index-llms-openai-like>=0.5.0",
-]
-openrouter = [
-    "llama-index-embeddings-openai-like>=0.3.0",
-    "llama-index-llms-openai-like>=0.5.0",
+# Kept so `uv sync --extra llamacpp` and `--extra openrouter` still work. The
+# packages now come with the base install (ADR-083), so both extras are empty.
+llamacpp = []
+openrouter = []
+# Anthropic Chat provider (opt-in). The LlamaIndex wrapper requires
+# anthropic[bedrock,vertex], which adds about 40 MB of AWS and Google SDKs,
+# so it stays out of the base install. See ADR-083.
+anthropic = [
+    "llama-index-llms-anthropic>=0.11.0",
 ]
 # PyTorch-backed reranker (opt-in). Adds ~200 MB on macOS ARM, more on
 # Linux. Default backend stays ONNX; installing this does not change
