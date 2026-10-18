@@ -46,7 +46,9 @@ export function useChatSession(routeCollection: string | null, routeChatId: stri
   const chatIdRef = useRef<string | null>(null);
   // The newest collection in the route. A save that finishes later must not undo a knowledge base the user picked meanwhile.
   const routeCollectionRef = useRef(routeCollection);
-  routeCollectionRef.current = routeCollection;
+  useEffect(() => {
+    routeCollectionRef.current = routeCollection;
+  }, [routeCollection]);
   // Bumped whenever the screen shows another chat, so a save that finishes later can tell the screen has moved on.
   const sessionRef = useRef(0);
   const creating = useRef<{ session: number; promise: Promise<string | null> } | null>(null);
