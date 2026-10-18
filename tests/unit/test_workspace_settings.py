@@ -96,3 +96,26 @@ def test_a_damaged_provider_field_reads_unset(settings: WorkspaceSettings) -> No
 def test_set_chat_choice_refuses_a_damaged_value(settings: WorkspaceSettings) -> None:
     with pytest.raises(ValueError):
         settings.set_chat_choice("open router", "m")
+
+
+@pytest.mark.parametrize(
+    ("provider", "field"),
+    [
+        ("OpenRouter", "key_saved_at"),
+        ("open router", "key_saved_at"),
+        ("openrouter", "Key"),
+        ("openrouter", ""),
+        ("../x", "key_saved_at"),
+    ],
+)
+def test_provider_key_refuses_bad_names(provider: str, field: str) -> None:
+    from omrg.integrations.workspace_sqlite.settings import provider_key
+
+    with pytest.raises(UnknownSettingError):
+        provider_key(provider, field)
+
+
+def test_provider_key_builds_the_allowed_key() -> None:
+    from omrg.integrations.workspace_sqlite.settings import provider_key
+
+    assert provider_key("openrouter", "key_saved_at") == "provider.openrouter.key_saved_at"

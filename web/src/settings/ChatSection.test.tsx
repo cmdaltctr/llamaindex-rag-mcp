@@ -68,6 +68,24 @@ describe("Chat section", () => {
     expect(within(section()).queryByRole("combobox", { name: "Models" })).toBeNull();
   });
 
+  it("tells the user when the model list was cut", async () => {
+    const { user } = await openChat({
+      "POST /v1/connections/ollama/models": () => ({ status: "ok", reachable: true, reason: null, models: ["llama3.2"], truncated: true }),
+    });
+    await pick(user, "Provider", "Ollama");
+    await user.click(within(section()).getByRole("button", { name: "List models" }));
+    expect(await within(section()).findByText(/the list was cut/i)).toBeInTheDocument();
+  });
+
+  it("disables Save and sends nothing while the model name is empty", async () => {
+    const { user, server } = await openChat();
+    await pick(user, "Provider", "Ollama");
+    const save = within(section()).getByRole("button", { name: "Save" });
+    expect(save).toBeDisabled();
+    await user.type(within(section()).getByRole("textbox", { name: "Model name" }), "{Enter}");
+    expect(server.find("PUT", "/v1/settings/chat")).toHaveLength(0);
+  });
+
   it("saves a typed model name and shows the choice and source the server returns", async () => {
     let state: ChatSettings = UNSET;
     const { user, server } = await openChat({

@@ -406,6 +406,18 @@ uv sync --extra openrouter   # OpenRouter backend
 
 Connection details for each: [Providers](providers.md).
 
+#### Change provider values in the web workspace
+
+In `omrg web`, Settings > Providers can save three of these values: `OLLAMA_BASE_URL`, `LLAMACPP_CHAT_URL` and `OPENROUTER_API_KEY`. The server uses the first source it finds:
+
+1. The process environment or `.env`. This source wins and locks the field in Settings. Remove the variable to edit the field there.
+2. A value saved in Settings.
+3. The default.
+
+A saved address goes in the workspace database. A saved key goes in the system keychain (service `omrg`, user name equal to the provider name). The app never writes a key to `.env`, to the database or to a file. If no keychain exists, set `OPENROUTER_API_KEY` in the environment instead.
+
+A saved value applies at once to new requests, with no restart. The Ollama address stays locked while embeddings use Ollama. Embedding providers and models are not editable there. Saved values reach `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts read `.env` and the environment. See [Web workspace](web-workspace.md#provider-settings).
+
 ### Chunking — `CHUNKING__*`
 
 | Field | Default | What it does |
@@ -528,6 +540,8 @@ bundle may override per collection — a `documents` collection can opt
 into the configured judge while a `codebase` collection stays
 speed-first. The default judge provider is the cloud backend (the only
 tested path); a local judge can be selected but is unmeasured.
+
+In `omrg web`, Settings > Chat can save `provider` and `model` for Chat and for MCP clients of that server that cannot supply their own model. `ANSWER__PROVIDER` or `ANSWER__MODEL` in the environment or `.env` wins and locks the choice. A saved choice applies at once, with no restart. Metadata extraction and the judge keep their own settings. The stdio MCP server and the CLI do not read the saved choice.
 Environment variables still win over the profile:
 
 ```yaml
@@ -795,10 +809,16 @@ explicit algorithm selection is an operator contract. See
 
 ## Web workspace settings
 
-`omrg web` reads one `.env` setting, `WEB_MAX_UPLOAD_MIB`. Its other options are command-line flags only: `--workspace`, `--port`, `--host`, `--root` and `--experiment-root`. The server builds its Engine from the same settings sources as the other commands. See [Web workspace](web-workspace.md).
+`omrg web` has one setting of its own in `.env`, `WEB_MAX_UPLOAD_MIB`. It also reads the engine settings that other commands read. Its other options are command-line flags only: `--workspace`, `--port`, `--host`, `--root` and `--experiment-root`. The server builds its Engine from the same settings sources as the other commands. See [Web workspace](web-workspace.md).
 
 | Variable | Default | Use |
-|---|---|---|
+|
+
+### Provider and Chat values
+
+`omrg web` also lets you save LLM provider addresses, an OpenRouter key and the Chat model in Settings. The order is environment or `.env`, then the saved value, then the default. An environment value locks the field. A saved key lives in the system keychain only. A saved value applies at once with no restart. Details: [Providers](#providers), [Answering](#answering--answer__) and [Web workspace](web-workspace.md#provider-settings).
+
+---|---|---|
 | `WEB_MAX_UPLOAD_MIB` | unset | Per-file upload limit in whole MiB, 1 to 2048. Same as `--max-upload-mib`. |
 
 The server uses the first upload limit it finds in this order:

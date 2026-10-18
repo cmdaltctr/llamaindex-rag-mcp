@@ -211,6 +211,9 @@ Copy is plain British English. Buttons say what they do ("Upload files", "Run pi
 - Controls are 36px high (32px small). Touch targets on narrow screens are at least 44px.
 - Chat's transcript is a centred column of `min(100%, 48rem)`.
 - Studio opens on a gallery of profile cards. A profile canvas takes the full main area; one floating panel holds six sections: Pipeline settings, Operations, Steps and connections, Connect ports, Revision and run, Step settings.
+- Settings has seven sections, switched by `chip` buttons: Appearance, Providers, Chat, MCP, Server log, Runtime, Workspace. Each chip writes `#/settings/<section>`.
+- The Providers section shows one card per registered LLM provider in a `grid-cols-1 md:grid-cols-2 xl:grid-cols-3` grid. A key field is write-only: `Input type="password"`, emptied after save, never filled with a saved key. A field set from the environment is locked and says so in text. Saved values apply at once, so the section shows no restart banner.
+- The Chat section holds a provider `Select`, a model `Input`, List models, Test, Save and Clear. A provider that is not ready is disabled and shows its reason. A cloud provider shows a notice that questions and passages leave this machine.
 - Card grids use `items-start` so short cards do not stretch.
 - Use logical properties only (`ms-*`, `pe-*`, `border-s`, `text-start`), so the layout mirrors for right-to-left text.
 - At 390px wide there is no horizontal page scroll.

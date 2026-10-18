@@ -47,7 +47,7 @@ Line ceiling: `src/omrg/engine.py` has 498 lines and `src/omrg/compose.py` has 4
 - [x] 5.2 Create `src/omrg/engine_providers.py` with the generation holder, the embedding-field guard and the answer-model slot. Move `_get_answer_llm` and its fields there. Add `Engine.use_provider_settings()`. Verify with test 5.1, `uv run pytest tests/test_engine.py -q` and the file size test.
 - [x] 5.3 Write tests in `tests/test_compose.py`. Assert that `build_engine(provider_source=...)` still runs the environment safeguards, starts with the saved values, and builds the answer model, the judge and the profile resolver from the values the source returns at build time. Assert that `build_engine()` without the keyword behaves as today. Run them and see them fail.
 - [x] 5.4 Add the `provider_source` keyword to `build_engine` in `src/omrg/compose_engine.py`. Verify with test 5.3.
-- [ ] 5.5 Wire the web lifespan in `src/omrg/transports/api/lifespan.py`: read the saved values and the keychain keys after the database is prepared, keep them on `WebRuntime`, and pass a source to the Engine factory. Keep test fakes that take no argument working. Verify with `uv run pytest tests/unit/test_web_lifespan.py -q`.
+- [x] 5.5 Wire the web lifespan in `src/omrg/transports/api/lifespan.py`: read the saved values and the keychain keys after the database is prepared, keep them on `WebRuntime`, and pass a source to the Engine factory. Keep test fakes that take no argument working. Verify with `uv run pytest tests/unit/test_web_lifespan.py -q`.
 
 ## 6. Redaction of saved keys
 
@@ -57,21 +57,21 @@ Line ceiling: `src/omrg/engine.py` has 498 lines and `src/omrg/compose.py` has 4
 
 ## 7. Provider routes
 
-- [ ] 7.1 Write tests in `tests/unit/test_web_connections.py` for `PUT /v1/connections/{provider}`: save, clear, 400 bad address (scheme, user info, query, fragment, length), 404 unknown provider or field, 409 locked by `env`, 409 Ollama address while embeddings use Ollama, 403 for a bearer credential, and the next answer using the new address with no restart. Run them and see them fail.
-- [ ] 7.2 Add the route to `src/omrg/transports/api/routes/connections.py`. Write the database, update the runtime values, then call `use_provider_settings()`; restore both and return 409 when the Engine refuses. Verify with test 7.1.
-- [ ] 7.3 Write tests for `PUT` and `DELETE /v1/connections/{provider}/key`: `credentials` scope, session only, 409 when the key comes from `env`, 409 with no keychain and nothing written, 400 for a bad key without the value in the message. Run them and see them fail. Then add the routes and verify they pass.
-- [ ] 7.4 Write a test that every response of the provider and Chat routes holds no five consecutive characters of a saved 64-character key, and that `last4` equals its last four characters. Run it and see it pass.
-- [ ] 7.5 Mutation check for the secret rule: patch the summary in the test to return the whole key. Confirm test 7.4 fails. Remove the patch and confirm it passes. Record the result in the PR description.
-- [ ] 7.6 Write tests for `POST /v1/connections/{provider}/test` with typed values: a typed address is tested and not saved, a typed key is sent and not saved or logged, a bad typed address gets 400 with no request sent. Use `httpx.MockTransport`. Run them and see them fail. Then extend the route and `connection_probe.py`, and verify they pass.
-- [ ] 7.7 Write tests for `POST /v1/connections/{provider}/models`: names only, sorted, at most 1,000 with `truncated`, the 8 MiB read limit, invalid names dropped, failure reasons as the test route. Run them and see them fail. Then add the route and verify they pass.
-- [ ] 7.8 Update `src/omrg/transports/api/openapi.yaml` for `getConnections` and the five new operations. Verify with `uv run pytest tests/unit/test_openapi_contract.py -q`.
+- [x] 7.1 Write tests in `tests/unit/test_web_connections.py` for `PUT /v1/connections/{provider}`: save, clear, 400 bad address (scheme, user info, query, fragment, length), 404 unknown provider or field, 409 locked by `env`, 409 Ollama address while embeddings use Ollama, 403 for a bearer credential, and the next answer using the new address with no restart. Run them and see them fail.
+- [x] 7.2 Add the route to `src/omrg/transports/api/routes/connections.py`. Write the database, update the runtime values, then call `use_provider_settings()`; restore both and return 409 when the Engine refuses. Verify with test 7.1.
+- [x] 7.3 Write tests for `PUT` and `DELETE /v1/connections/{provider}/key`: `credentials` scope, session only, 409 when the key comes from `env`, 409 with no keychain and nothing written, 400 for a bad key without the value in the message. Run them and see them fail. Then add the routes and verify they pass.
+- [x] 7.4 Write a test that every response of the provider and Chat routes holds no five consecutive characters of a saved 64-character key, and that `last4` equals its last four characters. Run it and see it pass.
+- [x] 7.5 Mutation check for the secret rule: patch the summary in the test to return the whole key. Confirm test 7.4 fails. Remove the patch and confirm it passes. Record the result in the PR description.
+- [x] 7.6 Write tests for `POST /v1/connections/{provider}/test` with typed values: a typed address is tested and not saved, a typed key is sent and not saved or logged, a bad typed address gets 400 with no request sent. Use `httpx.MockTransport`. Run them and see them fail. Then extend the route and `connection_probe.py`, and verify they pass.
+- [x] 7.7 Write tests for `POST /v1/connections/{provider}/models`: names only, sorted, at most 1,000 with `truncated`, the 8 MiB read limit, invalid names dropped, failure reasons as the test route. Run them and see them fail. Then add the route and verify they pass.
+- [x] 7.8 Update `src/omrg/transports/api/openapi.yaml` for `getConnections` and the five new operations. Verify with `uv run pytest tests/unit/test_openapi_contract.py -q`.
 
 ## 8. Chat settings routes
 
-- [ ] 8.1 Write `tests/unit/test_web_chat_settings.py` for `GET` and `PUT /v1/settings/chat`: sources, lock and 409 naming the variable, 400 unknown provider and bad model name, every `ready` reason, no provider request on `GET`, and the next answer using the saved model with no restart. Run it and see it fail.
-- [ ] 8.2 Create `src/omrg/transports/api/routes/chat_settings.py` with both routes and register it in the app. Verify with test 8.1.
-- [ ] 8.3 Write tests for `POST /v1/settings/chat/test` with fake LLMs that raise connection, time-out, 401 and 404 errors, return empty text, or return text. Assert the fixed reasons, no reply text, no exception text, and no save. Run them and see them fail. Then add the route and verify they pass.
-- [ ] 8.4 Update `openapi.yaml` for `getChatSettings`, `setChatSettings` and `testChatModel`. Verify with the OpenAPI contract test.
+- [x] 8.1 Write `tests/unit/test_web_chat_settings.py` for `GET` and `PUT /v1/settings/chat`: sources, lock and 409 naming the variable, 400 unknown provider and bad model name, every `ready` reason, no provider request on `GET`, and the next answer using the saved model with no restart. Run it and see it fail.
+- [x] 8.2 Create `src/omrg/transports/api/routes/chat_settings.py` with both routes and register it in the app. Verify with test 8.1.
+- [x] 8.3 Write tests for `POST /v1/settings/chat/test` with fake LLMs that raise connection, time-out, 401 and 404 errors, return empty text, or return text. Assert the fixed reasons, no reply text, no exception text, and no save. Run them and see them fail. Then add the route and verify they pass.
+- [x] 8.4 Update `openapi.yaml` for `getChatSettings`, `setChatSettings` and `testChatModel`. Verify with the OpenAPI contract test.
 
 ## 9. Web client and routes
 
@@ -96,9 +96,9 @@ Line ceiling: `src/omrg/engine.py` has 498 lines and `src/omrg/compose.py` has 4
 
 ## 13. Documentation
 
-- [ ] 13.1 Update `docs/guides/web-workspace.md`: the route table rows for the changed and new routes, the Settings row, the source order, the keychain, the no-keychain path, how to remove keys from the keychain, and what stdio and the CLI do not see. Verify that every route in the table exists in `openapi.yaml`.
-- [ ] 13.2 Update `docs/guides/configuration.md`: "Providers", "Answering" and "Web workspace settings" state the precedence, the lock, the keychain and that saved values apply at once. Verify with `grep -n "read-only\|restart" docs/guides/configuration.md` that no stale statement about provider settings remains.
-- [ ] 13.3 Update `web/DESIGN.md` and the screen list in the repository copy of the `omrg-design` skill (`.agents/skills/omrg-design/references/screens.md`) for the Providers and Chat sections. Copy it over the global copy and verify with `diff` that both match.
+- [x] 13.1 Update `docs/guides/web-workspace.md`: the route table rows for the changed and new routes, the Settings row, the source order, the keychain, the no-keychain path, how to remove keys from the keychain, and what stdio and the CLI do not see. Verify that every route in the table exists in `openapi.yaml`.
+- [x] 13.2 Update `docs/guides/configuration.md`: "Providers", "Answering" and "Web workspace settings" state the precedence, the lock, the keychain and that saved values apply at once. Verify with `grep -n "read-only\|restart" docs/guides/configuration.md` that no stale statement about provider settings remains.
+- [x] 13.3 Update `web/DESIGN.md` and the screen list in the repository copy of the `omrg-design` skill (`.agents/skills/omrg-design/references/screens.md`) for the Providers and Chat sections. Copy it over the global copy and verify with `diff` that both match.
 
 ## 14. Final verification
 

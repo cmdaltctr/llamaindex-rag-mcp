@@ -3037,24 +3037,25 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
-  # ── Provider connections (read-only summary, on-request test) ───────
+  # ── Provider connections (cards, saved addresses and keys, tests, model lists) ──
   /connections:
     get:
       operationId: getConnections
-      summary: Read the provider endpoints, models and roles from the server settings
+      summary: Read the provider cards from the server settings
       description: >
-        Returns `config_dir`, the working directory of the server, whose
-        `.env` the settings read, and one entry each for `ollama`,
-        `llamacpp` and `openrouter`. An entry lists the endpoint URLs, the
-        configured model names, `key_set` and the `roles` that use the
-        provider. Roles follow the startup rules: `embeddings`
-        (`EMBED_PROVIDER` with `LOCAL_BACKEND` and `CLOUD_BACKEND`),
-        `answers` (`ANSWER__PROVIDER`, when answering is enabled),
-        `metadata` (when metadata extraction calls a model) and
-        `verification` (`ANSWER__VERIFY_PROVIDER`, when claim verification
-        is on). Values are read once at startup; a change needs a server
-        restart. The key value is never returned. This route sends no
-        request to any provider.
+        Returns `config_dir`, the working directory whose `.env` the
+        settings read, `keychain` (`available` or `unavailable`) and one
+        entry for each provider in the LLM provider registry, in
+        registration order. An entry has the display name, `locality`,
+        `installed` with an `install_hint`, the editable `fields`, the
+        `read_only` values and the `roles` that use the provider. Roles
+        follow the startup rules: `embeddings`, `answers` (when answering
+        is enabled), `metadata` and `verification`. A field holds its
+        `source` (`env`, `saved`, `keychain`, `default` or `none`), whether
+        it is `locked` and why. A key field holds `set`, `saved_at`,
+        `state` and the last four characters only when the key has 16 or
+        more characters. The key value is never returned. This route sends
+        no request to any provider.
       security:
         - sessionCookie: [read]
         - bearerToken: [read]
@@ -3077,20 +3078,18 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
-  /connections/{provider}/test:
-    post:
-      operationId: testConnection
-      summary: Send one model-list request to a provider
+  /connections/{provider}:
+    put:
+      operationId: saveProviderFields
+      summary: Save or clear provider addresses
       description: >
-        Ollama `GET /api/tags`, llama.cpp `GET /models` on each configured
-        URL, OpenRouter `GET /models` with the key. Each request has a
-        5-second timeout and is not redirected. The result holds `reachable`
-        and a `reason`: `null` when reachable, else `refused`, `timeout`,
-        `unauthorised`, `http-<status>` or `not-configured` (no URL, or no
-        OpenRouter key; nothing is sent). Response bodies and exception text
-        are never returned. This is the only route that contacts a provider,
-        and the OpenRouter request is the only cloud request. An unknown
-        provider gives 404.
+        Body `{fields: {<id>: address or null}}`. An address is an absolute `http` or
+        `https` URL with a host, at most 2,048 characters, with no user name, password,
+        query or fragment; `null` clears the saved value. Order of writes: database,
+        runtime values, then the running Engine. If the Engine refuses, the previous
+        value returns and the route answers 409. 400 for a bad address (the message
+        names the rule, not the value), 404 for an unknown provider or field, 409 for a
+        field locked by the environment or by the embeddings role.
       security:
         - sessionCookie: [manage]
       x-omrg-scopes: [manage]
@@ -3100,10 +3099,151 @@ paths:
           required: true
           schema:
             type: string
-            enum: [ollama, llamacpp, openrouter]
+            pattern: "^[a-z][a-z0-9_-]{0,63}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveProviderFieldsRequest"
       responses:
         "200":
-          description: The test result.
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderSaved"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /connections/{provider}/key:
+    put:
+      operationId: saveProviderKey
+      summary: Save a provider API key to the system keychain
+      description: >
+        Body `{api_key}` of 8 to 512 printable characters with no spaces. The key joins
+        the redaction set before the keychain sees it, then goes to the system keychain
+        under the service `omrg`. The workspace database holds only the save time. 409
+        when the key comes from the environment or no usable keychain exists. A bearer
+        credential never passes. The response never holds the key.
+      security:
+        - sessionCookie: [credentials]
+      x-omrg-scopes: [credentials]
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z][a-z0-9_-]{0,63}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveProviderKeyRequest"
+      responses:
+        "200":
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderSaved"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    delete:
+      operationId: removeProviderKey
+      summary: Remove a provider API key from the system keychain
+      description: >
+        Removes the key from the system keychain and clears the save time. 409 when the
+        key comes from the environment or no usable keychain exists.
+      security:
+        - sessionCookie: [credentials]
+      x-omrg-scopes: [credentials]
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z][a-z0-9_-]{0,63}$"
+      responses:
+        "200":
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderSaved"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /connections/{provider}/test:
+    post:
+      operationId: testConnection
+      summary: Send one request to a provider
+      description: >
+        Ollama `GET /api/tags`, llama.cpp `GET /models` on each configured address,
+        OpenRouter `GET /key` with the key. Optional body `{fields: {<id>: value}}`
+        tests typed values; nothing is saved. Each request has a 5-second timeout and
+        is not redirected. The result holds `reachable` and a `reason`: `null` when
+        reachable, else `refused`, `timeout`, `unauthorised`, `http-<status>` or
+        `not-configured`. Response bodies and exception text are never returned. A typed
+        address that breaks the address rule gives 400 and sends no request.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z][a-z0-9_-]{0,63}$"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FieldValuesRequest"
+      responses:
+        "200":
+          description: Done.
           content:
             application/json:
               schema:
@@ -3116,6 +3256,161 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /connections/{provider}/models:
+    post:
+      operationId: listProviderModels
+      summary: List the model names of a provider
+      description: >
+        Sends one model-list request (5-second limit, no redirect). Optional body
+        `{fields: {<id>: value}}` uses typed values; nothing is saved. Reads at most 8
+        MiB of the body and returns only names: at most 1,000, sorted, each 1 to 200
+        printable characters. `truncated` is true when the list was cut. A failure
+        returns the reasons of the connection test with an empty list.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z][a-z0-9_-]{0,63}$"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FieldValuesRequest"
+      responses:
+        "200":
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderModels"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  # ── Chat model choice ───────────────────────────────────────────────
+  /settings/chat:
+    get:
+      operationId: getChatSettings
+      summary: Read the Chat provider and model
+      description: >
+        Returns the provider and model Chat uses, where the choice comes from
+        (`env`, `saved` or `default`), whether the environment locks it and
+        why, whether answering is `enabled`, and whether Chat is `ready`. When
+        it is not ready, `reason` is `disabled`, `unknown-provider`,
+        `not-installed` or `not-configured`. This route sends no request to
+        any provider.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The Chat choice.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    put:
+      operationId: setChatSettings
+      summary: Save or clear the Chat provider and model
+      description: >
+        Body `{provider, model}` saves the choice. A `null` or empty body clears it.
+        The Engine uses the choice from the next answer, with no restart.
+        Returns 400 for an unknown provider or a bad model name, and 409 when
+        the environment sets the choice or the Engine refuses it. Browser
+        session only.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatChoice"
+      responses:
+        "200":
+          description: The Chat choice after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /settings/chat/test:
+    post:
+      operationId: testChatModel
+      summary: Send one short prompt to a Chat model
+      description: >
+        Optional body `{provider, model}` tests that choice. With no body the
+        saved choice is tested. The call asks the model to reply "OK" and has a
+        30-second limit. The result holds `ok`, a fixed `reason` (`refused`,
+        `timeout`, `unauthorised`, `http-<status>`, `not-installed`,
+        `not-configured`, `empty-reply` or `failed`) and `elapsed_ms`. The reply and
+        the exception text are never returned. Nothing is saved.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatChoice"
+      responses:
+        "200":
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatTestResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
         "503":
@@ -6783,48 +7078,76 @@ components:
             $ref: "#/components/schemas/Integration"
 
     # ── Provider connections ────────────────────────────────────────────
-    ConnectionLabelledUrl:
+    ProviderField:
       type: object
       additionalProperties: false
-      required: [label, url]
+      required: [id, label, kind, value, source, locked, lock_reason, set, last4, saved_at, state]
       properties:
+        id:
+          type: string
         label:
           type: string
-          enum: [base, embeddings, chat]
-        url:
+        kind:
           type: string
+          enum: [url, secret]
+        value:
+          type: [string, "null"]
+          description: The address in use. A key field holds null.
+        source:
+          type: string
+          enum: [env, saved, keychain, default, none]
+        locked:
+          type: boolean
+        lock_reason:
+          type: [string, "null"]
+        set:
+          type: boolean
+          description: Whether a value is set. A key value is never returned.
+        last4:
+          type: [string, "null"]
+          maxLength: 4
+          description: The last four characters of a key of 16 or more characters.
+        saved_at:
+          type: [string, "null"]
+        state:
+          type: [string, "null"]
+          enum: [keychain-missing, keychain-unreadable, null]
 
-    ConnectionLabelledModel:
+    ProviderReadOnlyValue:
       type: object
       additionalProperties: false
-      required: [label, name]
+      required: [label, value]
       properties:
         label:
           type: string
-          enum: [embeddings, chat, answers, verification]
-        name:
+        value:
           type: string
-          description: Configured model name. Empty when none is set.
 
     Connection:
       type: object
       additionalProperties: false
-      required: [provider, urls, models, key_set, roles]
+      required:
+        [provider, display_name, locality, installed, install_hint, fields, read_only, roles]
       properties:
         provider:
           type: string
-          enum: [ollama, llamacpp, openrouter]
-        urls:
-          type: array
-          items:
-            $ref: "#/components/schemas/ConnectionLabelledUrl"
-        models:
-          type: array
-          items:
-            $ref: "#/components/schemas/ConnectionLabelledModel"
-        key_set:
+        display_name:
+          type: string
+        locality:
+          type: string
+          enum: [local, cloud]
+        installed:
           type: boolean
-          description: Whether an API key is configured. The key itself is never returned.
+        install_hint:
+          type: [string, "null"]
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProviderField"
+        read_only:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProviderReadOnlyValue"
         roles:
           type: array
           items:
@@ -6834,7 +7157,7 @@ components:
     ConnectionList:
       type: object
       additionalProperties: false
-      required: [status, config_dir, connections]
+      required: [status, config_dir, keychain, connections]
       properties:
         status:
           type: string
@@ -6842,6 +7165,9 @@ components:
         config_dir:
           type: string
           description: The server's working directory. The settings read `<config_dir>/.env`.
+        keychain:
+          type: string
+          enum: [available, unavailable]
         connections:
           type: array
           items:
@@ -6861,6 +7187,133 @@ components:
           type: [string, "null"]
           pattern: "^(refused|timeout|unauthorised|not-configured|http-[0-9]{3})$"
           description: Null when reachable.
+
+    ChatChoice:
+      type: object
+      additionalProperties: false
+      required: [provider, model]
+      properties:
+        provider:
+          type: string
+          minLength: 1
+          maxLength: 64
+        model:
+          type: string
+          minLength: 1
+          maxLength: 200
+
+    ChatSettings:
+      type: object
+      additionalProperties: false
+      required: [status, provider, model, source, locked, lock_reason, enabled, ready, reason]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        provider:
+          type: string
+        model:
+          type: string
+        source:
+          type: string
+          enum: [env, saved, default]
+        locked:
+          type: boolean
+        lock_reason:
+          type: [string, "null"]
+        enabled:
+          type: boolean
+        ready:
+          type: boolean
+        reason:
+          type: [string, "null"]
+          enum: [disabled, unknown-provider, not-installed, not-configured, null]
+
+    ChatTestResult:
+      type: object
+      additionalProperties: false
+      required: [status, ok, reason, elapsed_ms]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        ok:
+          type: boolean
+        reason:
+          type: [string, "null"]
+          pattern: "^(refused|timeout|unauthorised|not-installed|not-configured|empty-reply|failed|http-[0-9]{3})$"
+        elapsed_ms:
+          type: integer
+          minimum: 0
+
+    ProviderModels:
+      type: object
+      additionalProperties: false
+      required: [status, reachable, reason, models, truncated]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        reachable:
+          type: boolean
+        reason:
+          type: [string, "null"]
+          pattern: "^(refused|timeout|unauthorised|not-configured|http-[0-9]{3})$"
+        models:
+          type: array
+          maxItems: 1000
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+        truncated:
+          type: boolean
+
+    FieldValuesRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        fields:
+          type: object
+          maxProperties: 16
+          default: {}
+          additionalProperties:
+            type: string
+          description: Typed values by field id. Used for one request and never saved.
+
+    SaveProviderFieldsRequest:
+      type: object
+      additionalProperties: false
+      required: [fields]
+      properties:
+        fields:
+          type: object
+          minProperties: 1
+          maxProperties: 16
+          additionalProperties:
+            type: [string, "null"]
+            maxLength: 2048
+          description: Address by field id; null clears the saved address.
+
+    SaveProviderKeyRequest:
+      type: object
+      additionalProperties: false
+      required: [api_key]
+      properties:
+        api_key:
+          type: string
+          minLength: 8
+          maxLength: 512
+          description: Printable characters with no spaces. Never returned.
+
+    ProviderSaved:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
 
     # ── Server log ──────────────────────────────────────────────────────
     LogRecord:

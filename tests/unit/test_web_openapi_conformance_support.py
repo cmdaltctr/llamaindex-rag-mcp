@@ -123,7 +123,19 @@ FAMILIES: dict[str, frozenset[str]] = {
     ),
     "templates": frozenset({"listPipelineTemplates"}),
     "integrations": frozenset({"listIntegrations"}),
-    "connections": frozenset({"getConnections", "testConnection"}),
+    "connections": frozenset(
+        {
+            "getConnections",
+            "testConnection",
+            "saveProviderFields",
+            "saveProviderKey",
+            "removeProviderKey",
+            "listProviderModels",
+            "getChatSettings",
+            "setChatSettings",
+            "testChatModel",
+        }
+    ),
     "logs": frozenset({"getLogs", "streamLogs"}),
     "experiments": frozenset(
         {

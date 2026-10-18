@@ -104,6 +104,12 @@ describe("Providers", () => {
     expect(card("llama.cpp")).not.toHaveTextContent(/leaves this machine/i);
   });
 
+  it("gives the Cloud card its own sentence and a local card the address sentence", async () => {
+    await openProviders();
+    expect(card("OpenRouter")).toHaveTextContent("Text you send to this provider leaves this machine.");
+    expect(card("Ollama")).not.toHaveTextContent("Text you send to this provider leaves this machine.");
+  });
+
   it("shows no leaves-this-machine line for a loopback address", async () => {
     await openProviders();
     expect(card("Ollama")).not.toHaveTextContent(/leaves this machine/i);

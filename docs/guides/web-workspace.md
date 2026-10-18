@@ -276,17 +276,66 @@ Paths outside `/v1` belong to the application. A missing asset file gets a plain
 
 The server can serve MCP at `/mcp`. It is off by default. Turn it on with `PUT /v1/mcp` (Settings > MCP). `POST /v1/mcp/token` creates or rotates the one token. `DELETE /v1/mcp/token` revokes it. `PUT /v1/settings/web-port` saves the port for the next launch. These changes need the browser session. Client set-up and the request checks: [MCP tools](mcp-tools.md#connect-a-client).
 
-## Integrations, connections and the server log
+## Integrations, provider settings and the server log
 
-These routes show the state of the running server. They change no setting and install no package.
+`GET /v1/integrations`, `GET /v1/logs` and `GET /v1/logs/stream` show the state of the running server. They change no setting and install no package. The provider and Chat routes below can change settings. Each change needs the browser session.
 
-| Route | Scope | Returns |
+| Route | Scope | What it does |
 |---|---|---|
 | `GET /v1/integrations` | `read` | One entry for each installable extra and for Magika. `availability` is `available`, `not-installed` or `unknown` (a probe failed). Each entry has copy-ready `install_command` and `pip_command` values. |
-| `GET /v1/connections` | `read` | `config_dir` (the server working directory, where the settings read `.env`) and one entry each for `ollama`, `llamacpp` and `openrouter`: endpoint URLs, model names, `key_set` and the roles that use the provider. The key value is never returned. A change to `.env` needs a server restart. |
-| `POST /v1/connections/{provider}/test` | `manage` | `{reachable, reason}` after one model-list request with a 5-second timeout. `reason` is `refused`, `timeout`, `unauthorised`, `http-<status>` or `not-configured`. No response body or error text is returned. |
+| `GET /v1/connections` | `read` | `config_dir`, `keychain` (`available` or `unavailable`) and one entry for each registered LLM provider. Each entry has `fields[]` (`id`, `label`, `kind`, `value` for addresses, `source`, `locked`, `lock_reason`, `set`, `last4`, `saved_at`, `state`), `read_only[]`, `roles`, `installed` and `install_hint`. A key is never returned. `last4` is set only when the key has 16 or more characters. |
+| `PUT /v1/connections/{provider}` | `manage` | Body `{fields: {<id>: url or null}}`. Saves or clears addresses. Returns 400 for a bad address, 404 for an unknown provider or field, and 409 for a locked field. |
+| `PUT /v1/connections/{provider}/key` | `credentials` | Body `{api_key}`, 8 to 512 printable characters with no spaces. Saves the key to the system keychain. Returns 409 when the key comes from the environment or when no keychain exists. |
+| `DELETE /v1/connections/{provider}/key` | `credentials` | Removes the key from the system keychain. |
+| `POST /v1/connections/{provider}/test` | `manage` | Optional body `{fields: {<id>: value}}`. Tests typed values and saves nothing. Returns `{reachable, reason}` after one request with a 5-second timeout. `reason` is `refused`, `timeout`, `unauthorised`, `http-<status>` or `not-configured`. No response body or error text is returned. |
+| `POST /v1/connections/{provider}/models` | `manage` | Optional body `{fields: {<id>: value}}`. Returns `{reachable, reason, models[], truncated}`. Reads at most 8 MiB and returns at most 1,000 names. |
+| `GET /v1/settings/chat` | `read` | `{provider, model, source, locked, lock_reason, enabled, ready, reason}`. |
+| `PUT /v1/settings/chat` | `manage` | Body `{provider, model}`, or `null` to clear. Saves the Chat model. Returns 400 for a bad choice and 409 when the choice is locked. |
+| `POST /v1/settings/chat/test` | `manage` | Optional body `{provider, model}`. Sends one short prompt and returns `{ok, reason, elapsed_ms}`. No model text is returned. |
 | `GET /v1/logs?after=<seq>` | `manage` | The buffered log records after a sequence. |
 | `GET /v1/logs/stream` | `manage` | The same records as server-sent events, with replay after `Last-Event-ID` or `?after=`. The stream ends with `server.closing`. |
+
+Key routes need the `credentials` scope and the browser session. A bearer credential never passes. The `manage` provider routes need the browser session as well.
+
+### Provider settings
+
+Settings > Providers shows one card for each registered LLM provider. Today these are Ollama, llama.cpp and OpenRouter. A new provider in the registry gets a card with no web change. Editable fields are the Ollama address, the llama.cpp chat address and the OpenRouter key. Embedding addresses and embedding models are shown but cannot be edited here.
+
+Each value comes from one source. The server uses the first source it finds:
+
+1. The process environment or `.env`. The field shows "Set from environment (read-only here)" and is locked. A save returns 409 and names the variable to remove.
+2. A value saved in Settings. Addresses are stored in the workspace database. Keys are stored in the system keychain.
+3. The default.
+
+A saved value applies at once to new requests in the running `omrg web` process. You do not restart the server. A call that already started finishes with the old value. The Engine refuses a change that would alter an embedding field. The Ollama address is locked while embeddings use Ollama ("embeddings use it").
+
+#### Keychain
+
+The server saves a key with the `keyring` package. The service name is `omrg` and the user name is the provider name, for example `openrouter`. All workspaces of one login share that entry. The database stores only the time of the save. The app never writes a key to `.env`, to the database or to a file. No response contains more than the last four characters of a key, and no log line contains a key.
+
+The server uses the macOS Keychain, Windows Credential Manager or the Secret Service on a Linux desktop (GNOME Keyring, or KWallet through Secret Service). It does not use a plaintext backend.
+
+If the database records a saved key and the keychain entry is gone, the card shows that the saved key is missing. If the keychain cannot be read, the card shows that the keychain is unreadable. In both cases the provider has no key.
+
+#### No keychain
+
+In a container, in WSL without a keyring or on a headless server, no usable keychain exists. A key save returns 409 and the server stores nothing. The card says that no system keychain was found and names the variable to set, for example `OPENROUTER_API_KEY`. Set the variable in the environment or in `.env`, then start `omrg web`. Addresses still save in the workspace database.
+
+#### Remove keys from the keychain
+
+Remove the key in Settings > Providers with Remove key. To remove an entry by hand, for example after you uninstall OMRG, use the steps for your system. Use the service name `omrg` and the provider name as the account.
+
+1. macOS: open Keychain Access, search for `omrg`, select the entry and delete it. The command line also works: `security delete-generic-password -s omrg -a openrouter`.
+2. Windows: open Credential Manager, choose Windows Credentials, find the entry for `omrg`, expand it and select Remove.
+3. Linux: run `secret-tool clear service omrg username openrouter`.
+
+#### What other processes do not see
+
+Saved addresses, saved keys and the saved Chat model apply to `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts do not read them. They read `.env` and the environment. To give those processes a value, put it in `.env`.
+
+### Chat model
+
+Settings > Chat sets the provider and model that Chat uses. The same choice answers MCP clients of this web server that cannot supply their own model. Metadata extraction keeps its own model. The choice locks when `ANSWER__PROVIDER` or `ANSWER__MODEL` is set in the environment or `.env`. A cloud provider sends questions and retrieved passages off this machine. The Chat section says so. List models and Test run only when you press them. When no model is ready, Chat shows one line with a link to Settings > Chat and disables Send.
 
 The server keeps the last 1,000 log records in memory and writes no log file. The filter that removes provider keys and credentials runs before a record is stored.
 
@@ -350,7 +399,7 @@ Every area has its own address. Back and forward move between them. An address t
 | Studio | `#/studio`, `#/studio/<profile-id>`, `#/studio/<profile-id>/<purpose>` | Open a gallery of profiles. Duplicate a profile, start an empty one, rename it or delete it. Open the Ingest, Search or Answer pipeline of a profile. Add operations, connect ports, save a revision, validate, run and cancel. |
 | Experiments | `#/experiments`, `#/experiments/runs/<run-id>` | Create experiment folders and sub-experiments, issue a bound credential, register and open the notebook editor, and read pipeline runs. A preview that is cut offers Open full output, which shows the redacted value as text and downloads it. |
 | Integrations | `#/integrations` | See which optional parts are installed and copy the command that installs the rest. The page never installs anything. |
-| Settings | `#/settings` | Read the provider connections and test them, read the server log, copy the MCP client configuration, manage MCP access over HTTP, and set the per-file upload limit. |
+| Settings | `#/settings`, `#/settings/<section>` | Seven sections: Appearance, Providers, Chat, MCP, Server log, Runtime and Workspace. Set provider addresses and keys and test them, choose the Chat model, read the server log, copy the MCP client configuration, manage MCP access over HTTP, and set the per-file upload limit. |
 
 The screenshots show a local server with small Markdown sources. The run output screenshot shows a search result passage that is longer than the 4 KiB preview.
 

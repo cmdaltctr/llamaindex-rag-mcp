@@ -14,12 +14,14 @@ from typing import Any
 from fastapi import APIRouter, FastAPI
 
 from ... import __version__
+from ...integrations.keychain import KeychainStore
 from .errors import install_error_handlers
 from .lifespan import RunServiceFactory, WebConfig, build_lifespan, default_engine_factory
 from .log_buffer import LogBuffer
 from .mcp_http import build_mcp_http
 from .middleware import GuardMiddleware
 from .routes.admin import router as admin_router
+from .routes.chat_settings import router as chat_settings_router
 from .routes.chats import router as chats_router
 from .routes.connections import router as connections_router
 from .routes.documents import router as documents_router
@@ -49,6 +51,7 @@ API_ROUTERS: tuple[APIRouter, ...] = (
     graphs_router,
     profiles_router,
     chats_router,
+    chat_settings_router,
     embedding_router,
     runs_router,
     experiments_router,
@@ -61,19 +64,20 @@ API_ROUTERS: tuple[APIRouter, ...] = (
 )
 
 
-def _default_factory(config: WebConfig) -> Callable[[], Any]:
+def _default_factory(config: WebConfig) -> Callable[..., Any]:
     """Return the factory that builds the Engine with the catalogue of this workspace.
 
     The catalogue reads user profiles from the workspace database of the server,
     so a collection tagged with a user profile resolves in this process.
     """
 
-    def factory() -> Any:
+    def factory(provider_source: Any = None) -> Any:
         from ...core.workspace import WorkspaceLayout
         from ...integrations.workspace_sqlite import SqliteProfileCatalogue
 
         return default_engine_factory(
-            SqliteProfileCatalogue(WorkspaceLayout(config.workspace).records)
+            SqliteProfileCatalogue(WorkspaceLayout(config.workspace).records),
+            provider_source=provider_source,
         )
 
     return factory
@@ -83,10 +87,11 @@ def create_app(
     config: WebConfig,
     *,
     policy: AccessPolicy | None = None,
-    engine_factory: Callable[[], Any] | None = None,
+    engine_factory: Callable[..., Any] | None = None,
     run_service_factory: RunServiceFactory | None = None,
     log_buffer: LogBuffer | None = None,
     secrets: SecretSet | None = None,
+    keychain: Any | None = None,
 ) -> FastAPI:
     """Build the web application for one launch.
 
@@ -101,6 +106,8 @@ def create_app(
             by the lifespan.
         secrets: Secret values to remove from logs and answer errors. Without
             one the app uses the log buffer's set.
+        keychain: Stores provider keys (default: the system keychain). Tests
+            pass a fake so no real keychain is read.
         log_buffer: The ring buffer ``omrg web`` attached to the root logger.
             Without one the log routes serve an empty log.
 
@@ -133,6 +140,7 @@ def create_app(
         log_buffer if log_buffer is not None else LogBuffer(secrets if secrets is not None else ())
     )
     app.state.secrets = secrets if secrets is not None else app.state.log_buffer.secrets
+    app.state.keychain = keychain if keychain is not None else KeychainStore()
     install_error_handlers(app)
     for router in API_ROUTERS:
         app.include_router(router)
