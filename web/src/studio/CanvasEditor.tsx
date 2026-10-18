@@ -61,6 +61,8 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
   useFullScreenKeys(exitRef);
   // The toolbar lives in the flow surface, which an empty graph does not show. Without it the user has no exit.
   const emptyGraph = draft.graph.nodes.length === 0;
+  // The editor owns the exit button. When it goes away (a profile that fails to load, another route), full screen ends with it.
+  useEffect(() => () => setFullScreen(false), [setFullScreen]);
   useEffect(() => {
     if (fullScreen && emptyGraph) setFullScreen(false);
   }, [fullScreen, emptyGraph, setFullScreen]);

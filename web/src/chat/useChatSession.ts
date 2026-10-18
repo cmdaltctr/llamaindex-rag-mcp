@@ -44,6 +44,9 @@ export function useChatSession(routeCollection: string | null, routeChatId: stri
   const [notice, setNotice] = useState<string | null>(null);
   const [chatId, setChatId] = useState<string | null>(null);
   const chatIdRef = useRef<string | null>(null);
+  // The newest collection in the route. A save that finishes later must not undo a knowledge base the user picked meanwhile.
+  const routeCollectionRef = useRef(routeCollection);
+  routeCollectionRef.current = routeCollection;
   // Bumped whenever the screen shows another chat, so a save that finishes later can tell the screen has moved on.
   const sessionRef = useRef(0);
   const creating = useRef<{ session: number; promise: Promise<string | null> } | null>(null);
@@ -131,7 +134,7 @@ export function useChatSession(routeCollection: string | null, routeChatId: stri
           // The answer is stored in the chat just made. The screen only follows it while it still shows that session.
           if (expected === sessionRef.current) {
             adopt(chat.chat_id);
-            navigate({ area: "chat", collection: turn.collection, chatId: chat.chat_id }, { replace: true });
+            navigate({ area: "chat", collection: routeCollectionRef.current ?? turn.collection, chatId: chat.chat_id }, { replace: true });
           }
           return chat.chat_id;
         })

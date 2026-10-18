@@ -237,3 +237,19 @@ describe("review findings: loading and saving", () => {
     await waitFor(() => expect([...store.chats.values()][0]?.turns.map((t) => t.question)).toEqual(["First?", "Second?"]));
   });
 });
+
+describe("review findings: knowledge base choice", () => {
+  it("keeps a knowledge base picked while the first chat is being created", async () => {
+    let release: (value: Response) => void = () => undefined;
+    const held = new Promise<Response>((resolve) => (release = resolve));
+    const { server, user } = setup({}, { "POST /v1/chats": async () => held });
+    startApp("#/chat/documents", server);
+    await ask(user);
+    expect(await screen.findByText(/Lineage is kept/)).toBeInTheDocument();
+    const panel = screen.getByRole("list", { name: "Knowledge bases" });
+    await user.click(within(panel).getByRole("button", { name: /notes/ }));
+    await waitFor(() => expect(window.location.hash).toBe("#/chat/notes"));
+    await act(async () => release(json({ status: "ok", chat: { chat_id: "made", folder_id: null, title: "t", created_at: "t", updated_at: "t" } }, 201)));
+    await waitFor(() => expect(window.location.hash).toBe("#/chat/notes/made"));
+  });
+});

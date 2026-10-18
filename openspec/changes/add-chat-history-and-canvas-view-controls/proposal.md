@@ -10,7 +10,7 @@ Chat transcripts live in React state. A reload or a tab close loses every conver
 - Add chat folders. A chat sits in no folder or in one folder. Dragging a chat onto a folder moves it. Folders have one level only.
 - Add delete for one chat and for many chats (select, then delete). Deleting a folder deletes the chats inside it. Every delete asks first and names the count.
 - Add a citation popover. Pressing a citation chip, or a `[n]` marker in the answer text, opens a popover with the evidence text, the lineage (source, version, chunk position, page, merged chunk ids) and the chunk's stored metadata. The chunk viewer shows the same metadata. No API change.
-- Add two buttons at the top left of the Studio canvas: arrange the pipeline horizontally or vertically, and full screen. Full screen shows only the canvas with an "X" to leave it.
+- Add two buttons at the top left of the Studio canvas: arrange the pipeline horizontally or vertically, and full screen. Full screen shows the canvas, its toolbar and the canvas panel, with an "X" in the toolbar to leave it.
 - Add ADR-082 (Accepted on approval) for the storage and delete decisions.
 - **BREAKING (spec only):** the rule "Transcripts SHALL NOT be stored server-side" is removed from `workspace-chat`.
 

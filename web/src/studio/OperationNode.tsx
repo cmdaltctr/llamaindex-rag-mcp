@@ -1,6 +1,6 @@
-import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/react";
 import { Settings2 } from "lucide-react";
-import { useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useState, type KeyboardEvent, type MouseEvent } from "react";
 import type { LayoutDirection, OperationDescriptor, PortDescriptor, ValidationIssue } from "../api/pipelines";
 import { Badge } from "../components/ui/badge";
 import { cn } from "../lib/utils";
@@ -153,6 +153,12 @@ export function OperationNode({ data, selected, isConnectable }: NodeProps<Opera
   const hasSettings = data.settings.length > 0 || data.moreSettings > 0;
   const direction = data.direction ?? "horizontal";
   const vertical = direction === "vertical";
+  // React Flow caches handle bounds. It measures them again only when told, and a card can keep its size
+  // when the handles move, so Arrange would leave the edges on the old sides.
+  const updateNodeInternals = useUpdateNodeInternals();
+  useEffect(() => {
+    updateNodeInternals(data.nodeId);
+  }, [direction, data.nodeId, updateNodeInternals]);
   const portRows = (side: "in" | "out") =>
     (side === "in" ? operation?.inputs : operation?.outputs)?.map((port) => (
       <PortRow key={port.name} port={port} side={side} issues={issues} connectable={isConnectable} connected={data.connected.includes(`${side}:${port.name}`)} direction={direction} />

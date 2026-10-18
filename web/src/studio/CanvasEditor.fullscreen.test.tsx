@@ -95,3 +95,15 @@ describe("canvas full screen with an empty graph", () => {
     expect(nav()).toBeInTheDocument();
   });
 });
+
+describe("canvas full screen when the editor goes away", () => {
+  it("ends when the route changes to a profile that has no canvas, so the page chrome comes back", async () => {
+    const { user } = await openUser();
+    await user.click(enterButton());
+    await screen.findByRole("button", { name: "Exit full screen" });
+    act(() => {
+      window.location.hash = "#/studio/does-not-exist/search";
+    });
+    expect(await screen.findByRole("navigation", { name: "Workspace" })).toBeInTheDocument();
+  });
+});
