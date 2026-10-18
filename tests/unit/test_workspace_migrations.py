@@ -12,6 +12,7 @@ import pytest
 
 from omrg.integrations.workspace_sqlite import (
     SCHEMA_MIGRATIONS,
+    SqliteProfileCatalogue,
     SqliteWorkspaceRepository,
     WorkspaceSchemaError,
 )
@@ -303,6 +304,23 @@ def test_existing_profiles_read_as_the_server_default(tmp_path: Path) -> None:
     ).fetchone()
     conn.close()
     assert row == (None, None, None)
+
+
+def test_read_only_catalogue_reads_a_version_three_profile_as_the_server_default(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "app.sqlite3"
+    _v3_database_with_profile(path)
+    catalogue = SqliteProfileCatalogue(path)
+
+    (listed,) = catalogue.list_profiles()
+    fetched = catalogue.get_profile("old")
+
+    for record in (listed, fetched):
+        assert record is not None and record["profile_id"] == "old"
+        embed = (record["embed_provider"], record["embed_model"], record["embed_dimensions"])
+        assert embed == (None, None, None)
+    assert _user_version(path) == 3
 
 
 @pytest.mark.parametrize(

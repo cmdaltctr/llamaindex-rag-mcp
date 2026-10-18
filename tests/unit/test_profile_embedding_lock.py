@@ -165,3 +165,21 @@ def test_rows_without_a_stamp_bind_only_to_the_server_default(store: Any) -> Non
 def test_a_stamped_collection_with_no_rows_refuses_another_model(store: Any) -> None:
     state = _state(store, "emptied", stamp=A, rows=0)
     assert binding_refusal(state, B, HOST) is not None
+
+
+def test_web_profile_service_uses_the_engine_host_model(tmp_path: Any) -> None:
+    """The server default comes from the Engine, not from the process settings."""
+    from types import SimpleNamespace
+
+    from omrg.compose_profile_setup import build_profile_service
+
+    engine = SimpleNamespace(
+        _embedders=SimpleNamespace(host_identity=HOST),
+        store=None,
+        list_collections=list,
+    )
+    service = build_profile_service(engine, tmp_path)
+
+    embedding = service.embedding.fields(None, [])["embedding"]
+
+    assert (embedding["provider"], embedding["model"]) == (HOST.provider, HOST.model)

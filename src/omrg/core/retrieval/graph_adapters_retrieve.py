@@ -199,6 +199,7 @@ async def sparse_adapter(
     rows: list[dict] = []
     if query.collection_count > 0:
         store = required_resource(context, "store")
+        chosen = context.resources.get("embedding_identity")
         raise_if_cancelled(context)
         rows = await asyncio.to_thread(
             sparse_policy_runner(requested),
@@ -209,6 +210,7 @@ async def sparse_adapter(
             query.filter_copy(),
             report,
             timing_report=timings,
+            **({"embedding_identity": chosen} if chosen else {}),
         )
     ran = report.get("sparse_backend", requested)
     fallback = None

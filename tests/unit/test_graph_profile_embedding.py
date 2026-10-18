@@ -128,6 +128,47 @@ def test_dense_step_embeds_with_the_profile_model_and_sends_its_identity(
     assert store.query_identities == [CHOICE_B]
 
 
+def test_sparse_step_sends_the_profile_identity_to_the_native_backend(
+    effective_settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from omrg.core.retrieval import sparse_dispatch
+
+    seen: list[EmbeddingIdentity | None] = []
+
+    def native(*args: Any, embedding_identity: Any = None, **kwargs: Any) -> list[dict]:
+        seen.append(embedding_identity)
+        return []
+
+    monkeypatch.setattr(sparse_dispatch, "_native_sparse_query", native)
+    meta = {"papers": identity_metadata("llamacpp", "model-b")}
+    store = _RecordingStore(chunks(), metadata=meta, identity=HOST)
+    settings = effective_settings(
+        hybrid_enabled=False, rerank_enabled=False, hybrid_sparse_backend="native"
+    )
+    resolver = _ChoiceResolver({"papers": settings})
+    engine = build_engine(settings, store, embedders=_embedders([]), profile_resolver=resolver)
+    graph = retrieval_graph()
+    graph["collection"] = "papers"
+    graph["nodes"] = [
+        {"id": "prepare", "operation": "retrieve.prepare_query", "params": {}},
+        {"id": "sparse", "operation": "retrieve.sparse"},
+        {"id": "fuse", "operation": "combine.rrf"},
+        {"id": "context", "operation": "context.assemble"},
+    ]
+    graph["edges"] = [
+        {"source": {"node": a, "port": b}, "target": {"node": c, "port": d}}
+        for a, b, c, d in [
+            ("prepare", "query", "sparse", "query"),
+            ("sparse", "evidence", "fuse", "ranked"),
+            ("fuse", "evidence", "context", "evidence"),
+        ]
+    ]
+
+    asyncio.run(engine.run_pipeline(graph, inputs={"query": "what proves it"}))
+
+    assert seen == [CHOICE_B]
+
+
 def test_commit_step_writes_and_stamps_the_profile_identity(
     effective_settings, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

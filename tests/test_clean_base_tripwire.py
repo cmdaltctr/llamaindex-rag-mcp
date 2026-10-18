@@ -77,12 +77,15 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # service, upgrade, resolver, contract, Engine dispatch, route, MCP, CLI and
 # watcher suites add 349 executed tests (5233 -> 5582). One test was removed:
 # the old "runs on one Engine are serialised" case, replaced by the locking suite.
-_BASE_EXECUTED = 5620
+_BASE_EXECUTED = 5738
 # Re-baselined at ci-integration-core-web: the sse-starlette shutdown-flag isolation
 # module adds 2 executed tests that need no fastapi (5582 -> 5584).
 # Re-baselined at add-pdf-reader-step-setting (2026-10-17): the step reader, option
 # availability, fingerprint, identity and Engine probe suites add 36 executed tests
 # (5584 -> 5620).
+# Re-baselined at add-profile-embedding-model (2026-10-18): the provider model
+# override, store and retrieval identity, Engine embedder, workspace v4, lock,
+# check-model, route and review-fix suites add 118 executed tests (5620 -> 5738).
 # Re-baselined at add-web-allow-origin-option: the origin parser suite adds 23
 # executed tests that need no fastapi, and the policy, MCP and launch cases add
 # 10 that do (5109 -> 5142; see _WEB_EXTRA_CASES below).
@@ -320,7 +323,9 @@ if not _has_qwen_tokenizer:
 # so the count drifted unseen while the profiles, pipelines and Studio changes
 # landed. The floors job (no web extra) ran 4951 executed tests against 5056
 # pinned, so the fastapi-dependent cases are 105 more (624 with the extra).
-_WEB_EXTRA_CASES = 624
+# Re-measured at add-profile-embedding-model (2026-10-18) in two clean venvs:
+# 5731 executed with the web extra, 5081 without, so 26 more (650).
+_WEB_EXTRA_CASES = 650
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)
@@ -332,6 +337,7 @@ _CHROMA_GATED_FILES = frozenset(
         "test_chroma_cloud.py",
         "test_chunk_lineage_navigation.py",
         "test_compose.py",
+        "test_embedding_write_contract.py",
         "test_experiment_storage.py",
         "test_hybrid_retrieval.py",
         "test_lancedb_store.py",

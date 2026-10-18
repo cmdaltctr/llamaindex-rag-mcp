@@ -24,6 +24,7 @@ from .core.profiles.catalogue import BUILTIN_PROFILES, SLOT_CONTRACTS
 from .core.workspace import TASK_LAYOUT_KEY
 
 if TYPE_CHECKING:
+    from .core.vectordb.identity import EmbeddingIdentity
     from .core.workspace import ProfileRepository, WorkspaceRepository
 
 
@@ -161,7 +162,18 @@ def build_profile_service(engine: Any, workspace: Path) -> ProfileService:
         cast("ProfileRepository", SqliteProfileRepository(records)),
         SqliteProfileCatalogue(records),
         collection_tags=engine_collection_tags(engine),
+        host_identity=_engine_host_identity(engine),
     )
+
+
+def _engine_host_identity(engine: Any) -> Callable[[], EmbeddingIdentity] | None:
+    """Return the Engine's own server default model, so checks match its writes.
+
+    ``None`` (an Engine with no host identity) keeps the settings fallback.
+    """
+    embedders = getattr(engine, "_embedders", None)
+    host = getattr(embedders, "host_identity", None)
+    return (lambda: host) if host is not None else None
 
 
 def workspace_profile_catalogue(root: Path | None = None) -> Any:

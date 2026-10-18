@@ -47,7 +47,16 @@ def pipeline_record(row: sqlite3.Row) -> Record:
 
 
 def profile_record(row: sqlite3.Row) -> Record:
-    """Convert a ``profile`` row to a plain record."""
+    """Convert a ``profile`` row to a plain record.
+
+    The read-only catalogue never migrates, so a version 3 row has no
+    ``embed_*`` columns. Those fields then read as ``None`` (server default).
+    """
+    keys = row.keys()
+
+    def embed(name: str) -> Any:
+        return row[name] if name in keys else None
+
     return {
         "profile_id": row["profile_id"],
         "title": row["title"],
@@ -59,9 +68,9 @@ def profile_record(row: sqlite3.Row) -> Record:
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
         "archived_at": row["archived_at"],
-        "embed_provider": row["embed_provider"],
-        "embed_model": row["embed_model"],
-        "embed_dimensions": row["embed_dimensions"],
+        "embed_provider": embed("embed_provider"),
+        "embed_model": embed("embed_model"),
+        "embed_dimensions": embed("embed_dimensions"),
     }
 
 
