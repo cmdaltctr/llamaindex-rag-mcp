@@ -41,7 +41,7 @@ These tasks change the user's machine. Ask before each one.
 - [x] 5.4 Run `omrg web open`, sign in, save a provider key in Settings > Providers, then run `omrg web restart` and `omrg web open` again. Confirm that the provider card still shows the key as set. This proves the keychain read under launchd. If it fails, update design D7 and the CLI reference before you go on.
 - [x] 5.5 Run `omrg web uninstall --yes` and then `omrg web install` again. Confirm that `~/.omrg/workspace` kept its data and that the app answers.
 - [ ] 5.6 Ask the user to log out and in, or reboot, and then run `omrg web status`. Record the result in the group's commit message. This task is for the user to do.
-- [ ] 5.7 Run `openspec validate add-web-login-item --strict` and `openspec validate --all --strict` and confirm that both pass. With approval, run `./scripts/local_ci.sh` and confirm that it passes. When the user approves, commit any remaining change as `docs(web): record the login item checks on macOS`. Run this after groups 6 and 7.
+- [x] 5.7 Run `openspec validate add-web-login-item --strict` and `openspec validate --all --strict` and confirm that both pass. With approval, run `./scripts/local_ci.sh` and confirm that it passes. When the user approves, commit any remaining change as `docs(web): record the login item checks on macOS`. Run this after groups 6 and 7.
 
 ## 6. Fix the two bugs found on the real Mac
 
@@ -53,7 +53,7 @@ Uvicorn re-raises SIGTERM after its clean shutdown, so launchd sees a death by s
 - [x] 6.4 Add an `on_stop` hook to `_serve` in `cli/web.py` that runs inside `Server.shutdown`, and pass the policy's `retire` for the login item. Run `tests/unit/test_launch_link.py` and confirm that it passes.
 - [x] 6.5 Correct `docs/guides/cli-reference.md`, `docs/guides/web-workspace.md` and `docs/adr/085-web-login-item.md`. Run `uv run pytest tests/test_docs_references.py -q` and confirm that it passes.
 - [x] 6.6 Re-measure the clean-base tripwire pins in `tests/test_clean_base_tripwire.py`. Then run `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q`, the tripwire, `uv run lint-imports` and `uv run ruff check src tests`. Confirm that all pass. When the user approves, commit as `fix(cli): restart waits for launchd and the link file is removed at shutdown`.
-- [ ] 6.7 With approval, reinstall the tool (`uv tool install --reinstall` from the checkout). Run `omrg web restart` and confirm exit code 0 and a new process id. Then run `omrg web uninstall --yes` and `omrg web install`, and confirm that `~/.omrg/workspace/launch-link` is gone after a restart and written again after the start.
+- [x] 6.7 With approval, reinstall the tool (`uv tool install --reinstall` from the checkout). Run `omrg web restart` and confirm exit code 0 and a new process id. Then run `omrg web uninstall --yes` and `omrg web install`, and confirm that `~/.omrg/workspace/launch-link` is gone after a restart and written again after the start.
 
 ## 7. Add the navigation foot
 
