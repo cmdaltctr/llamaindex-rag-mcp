@@ -99,7 +99,7 @@ A login item has no terminal, so it signs you in in a different way:
 - **The link file.** The server writes the sign-in link to `<workspace>/launch-link`, as one line. It writes the link to no terminal and no log. `omrg web open` reads the file and opens the link in your browser.
 - **Who can read it.** Only your macOS user can read the file (mode `0600`). Any program that runs as you can read it and sign in, including AI agents on your Mac. This is the same trust level as `workspace.db`, which these programs can already read.
 - **The link renews.** The server writes a new link after each sign-in and after 20 wrong guesses. It removes the file when it stops, also after a stop signal.
-- **A stop signal restarts the app.** The login item starts again after a stop signal, because launchd treats it as a crash. Run `omrg web uninstall` to stop it for good.
+- **A stop signal restarts the app.** The login item starts again after a stop signal, because launchd treats it as a crash. Turn off in the power panel unloads it until the next login or `omrg web start`. Run `omrg web uninstall` to remove it for good.
 - **A restart signs the browser out.** Browser sessions live in memory only. Run `omrg web open` to sign in again.
 - **The access log is off.** The log files of the login item have no rotation, so the server writes only start-up and error lines.
 - **Settings come from `~/.omrg/.env`.** The login item runs in `~/.omrg` and reads the `.env` file in that folder. A hand-run `omrg web` reads the `.env` file of the folder where you run it. Shell variables do not reach the login item. Copy your settings to `~/.omrg/.env` yourself. The install command never copies or reads a `.env` file.
@@ -456,10 +456,23 @@ The side navigation ends with four icon buttons. In the collapsed navigation the
 
 1. **Theme.** One click switches between Light and Dark. It saves the same choice as the top bar and the Settings select.
 2. **Settings.** It opens the Settings view.
-3. **Power.** The icon is green while the server answers `GET /v1/health`. It is grey when the server does not answer. The panel states "Running" with the version, or "Not answering". It also shows the commands `omrg web restart` and `omrg web open`, each with a copy button.
+3. **Power.** The icon is green while the server answers `GET /v1/health`. It is grey when the server does not answer. The panel states "Running" with the version, or "Not answering". It has two buttons, **Turn off** and **Restart**. It also shows the commands `omrg web restart` and `omrg web open`, each with a copy button.
 4. **GitHub.** It opens the OMRG repository in a new tab.
 
-Restart and Stop are not on the page. A restart ends your browser session, because sessions live in server memory. Under the login item, a stop signal makes launchd start the server again. Run `omrg web restart` or `omrg web open` in a terminal instead.
+#### Power panel buttons
+
+Each button opens a confirmation dialog first. Nothing happens until you confirm.
+
+- **Restart.** The app shuts down and launchd starts it again. The page then shows "Restarting. Run `omrg web open` to sign in."
+- **Turn off.** The app shuts down and stays off. The plist stays in place, so the app starts again at the next login. The page then shows "Turned off. Run `omrg web start` to turn it on."
+
+Both actions end your browser session, because sessions live in server memory. To sign in again, run `omrg web open` in a terminal. The page cannot sign itself in again, because the sign-in link is private to the Mac.
+
+The buttons work only when the app runs as the login item. For a foreground `omrg web` server, both buttons stay disabled and the panel states the reason. Press Ctrl+C in its terminal to stop it.
+
+While a run, an ingestion or a map call is in progress, the server answers `409` and the app keeps running. The page shows the reason in one line. Wait for the work to end, then try again.
+
+The page calls `GET /v1/server/power` to learn whether the buttons can work. It calls `POST /v1/server/power` with the body `{"action": "restart"}` or `{"action": "off"}` to act. Both routes need the browser session with the `manage` scope. A bearer credential receives `403`.
 
 ### Profiles in Studio
 

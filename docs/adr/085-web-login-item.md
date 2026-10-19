@@ -115,3 +115,5 @@ The checks on the real Mac, tasks 5.1 to 5.5 of the change, passed on 2026-10-19
 Added consequence: a stop signal always restarts the app.
 
 Added alternative: **wait for health to stop, then kickstart.** Rejected. launchd restarts the app by itself after the signal, so the command waited for a stop that never lasted.
+
+Addendum (2026-10-19, [ADR-086](086-web-power-menu.md)): Turn off in the power panel is a second way to stop the app. It unloads the agent and keeps the plist, so decision 2 holds and `uninstall` is no longer the only way to stop the app. `omrg web start` loads the agent again.

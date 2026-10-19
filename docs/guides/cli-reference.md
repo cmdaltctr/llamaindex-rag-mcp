@@ -22,6 +22,7 @@ The `omrg` command doubles as an MCP server and a CLI tool. With no arguments it
 | `omrg web uninstall`         | Stop the login item and remove its LaunchAgent file                              |
 | `omrg web status`            | Show whether the login item is installed, running and answering                  |
 | `omrg web restart`           | Restart the login item, for example after you install a newer copy               |
+| `omrg web start`             | Load the login item again after Turn off in the power panel                      |
 | `omrg web open`              | Open the app in your browser with a fresh sign-in link                           |
 | `omrg --version`             | Show version                                                                     |
 | `omrg --help`                | Show help                                                                        |
@@ -386,9 +387,9 @@ The upload limit is the first value in this order: `--max-upload-mib`, then `WEB
 
 The port is `--port` if you give it, else the port saved in Settings > MCP, else 8765. `--port 0` picks a free port. If the port is taken, the command exits with code 1 and prints `Port <n> is in use. Start with --port <n> to choose another port, then save it in Settings > MCP.` The command writes the one-time sign-in link to stderr. It does not run the legacy process-default installer. It refuses a non-loopback `--host`. Every option, sign-in, file grants, jobs and shutdown: [Web workspace](web-workspace.md).
 
-### web install, uninstall, status, restart, open
+### web install, uninstall, status, restart, start, open
 
-Keep the web app running on a Mac. `omrg web` stops when you close its terminal window. The login item is a per-user LaunchAgent with the label `com.omrg.web`. It starts at every login. It starts again after a crash and after a stop signal. Only `omrg web uninstall` stops it for good. The guide [Web workspace](web-workspace.md#keep-the-app-running) explains the sign-in link file.
+Keep the web app running on a Mac. `omrg web` stops when you close its terminal window. The login item is a per-user LaunchAgent with the label `com.omrg.web`. It starts at every login. It starts again after a crash and after a stop signal. Two actions stop it: `omrg web uninstall` removes the login item for good, and Turn off in the power panel unloads it until the next login or `omrg web start`. The guide [Web workspace](web-workspace.md#keep-the-app-running) explains the sign-in link file.
 
 ```bash
 # Show the plan and write nothing (works on any platform)
@@ -406,6 +407,9 @@ omrg web status --json
 
 # Start the installed version, for example after you installed a newer copy
 omrg web restart
+
+# Load the login item again after Turn off in the power panel
+omrg web start
 
 # Stop the app and remove the login item. The workspace and the logs stay
 omrg web uninstall
@@ -432,9 +436,10 @@ Other options: `omrg web open --print` prints the full sign-in link to stderr an
 | `uninstall` | 0 when it removed the login item, and also when nothing was installed. 1 when you refuse the confirmation or the agent stays loaded. |
 | `status` | 0 when the app answers `GET /v1/health`. 1 when it does not answer, or no login item is installed. |
 | `restart` | Sends `SIGTERM` and waits up to 15 seconds until the old process has ended. Then it waits up to 5 seconds for launchd to start a new process. It runs `launchctl kickstart` (never `-k`) only if none starts. Then it waits up to 60 seconds for the app to answer. 0 when the new app answers. 1 when no login item is installed, the old process does not end within 15 seconds, or the new app does not answer within 60 seconds. |
+| `start` | Loads the agent with `launchctl bootstrap`, unless it is already loaded. Then it waits up to 60 seconds for the app to answer. When the app already answers, it says so and changes nothing. 0 when the app answers. 1 when no login item is installed (the message names `omrg web install`), the platform is not macOS, `launchctl` fails, or the app does not answer within 60 seconds. |
 | `open` | 0 when it opened the link or printed it. 1 when the login item is not running. The command never starts a server. |
 
-The login item is a copy of your `omrg` that launchd starts. A stop signal does not stop it, because launchd starts the app again about one second later. `kill` and Activity Monitor do not stop it. Use `omrg web uninstall`. Four rules follow from that:
+The login item is a copy of your `omrg` that launchd starts. A stop signal does not stop it, because launchd starts the app again about one second later. `kill` and Activity Monitor do not stop it. Use Turn off in the power panel, or `omrg web uninstall`. Turn off keeps the login item file, so the app starts again at the next login or when you run `omrg web start`. Four rules follow from that:
 
 1. **Install `omrg` outside the checkout.** The login item runs the absolute path of the executable. A path inside a `.venv` of a source checkout stops working when you delete the checkout or its worktree. `install` shows a warning for such a path, and asks you to confirm or to pass `--yes`. Build the web front end first (`cd web && npm run build`), because the wheel ships the built files. Then install a copy from the checkout that holds the version you want. Run this from the checkout folder:
 
