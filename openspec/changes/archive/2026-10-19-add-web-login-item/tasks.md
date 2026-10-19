@@ -40,7 +40,7 @@ These tasks change the user's machine. Ask before each one.
 - [x] 5.3 Ask the user to copy their settings to `~/.omrg/.env` themselves (never copy `.env` for them). Run `omrg web install --dry-run` and read the plan. With approval, run `omrg web install`. Confirm that `omrg web status` exits 0, shows the installed version as running, and that Settings shows the embedding model from `~/.omrg/.env`.
 - [x] 5.4 Run `omrg web open`, sign in, save a provider key in Settings > Providers, then run `omrg web restart` and `omrg web open` again. Confirm that the provider card still shows the key as set. This proves the keychain read under launchd. If it fails, update design D7 and the CLI reference before you go on.
 - [x] 5.5 Run `omrg web uninstall --yes` and then `omrg web install` again. Confirm that `~/.omrg/workspace` kept its data and that the app answers.
-- [ ] 5.6 Ask the user to log out and in, or reboot, and then run `omrg web status`. Record the result in the group's commit message. This task is for the user to do.
+- [x] 5.6 Ask the user to log out and in, or reboot, and then run `omrg web status`. Record the result in the group's commit message. This task is for the user to do.
 - [x] 5.7 Run `openspec validate add-web-login-item --strict` and `openspec validate --all --strict` and confirm that both pass. With approval, run `./scripts/local_ci.sh` and confirm that it passes. When the user approves, commit any remaining change as `docs(web): record the login item checks on macOS`. Run this after groups 6 and 7.
 
 ## 6. Fix the two bugs found on the real Mac
