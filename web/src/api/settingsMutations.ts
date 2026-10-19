@@ -6,6 +6,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "./ApiProvider";
 import { queryKeys } from "./queries";
+import { currentRevision, settingsWritten } from "./settingsRevision";
 import {
   removeProviderKey,
   revokeMcpToken,
@@ -19,12 +20,26 @@ import {
   type ChatChoice,
 } from "./settings";
 
+/**
+ * The options every Settings write sends (the revision last seen) and what it
+ * does with the response (keeps the new revision). Read at call time, so a write
+ * sent right after another uses the revision the first one returned.
+ */
+function useRevision() {
+  const queryClient = useQueryClient();
+  return {
+    options: () => ({ revision: currentRevision(queryClient) }),
+    remember: <T,>(response: T) => settingsWritten(queryClient, response),
+  };
+}
+
 export function useSetMcpEnabled() {
   const api = useApi();
   const queryClient = useQueryClient();
+  const { options, remember } = useRevision();
   return useMutation({
-    mutationFn: (enabled: boolean) => setMcpEnabled(api, enabled),
-    onSuccess: (state) => queryClient.setQueryData(queryKeys.mcp(), state),
+    mutationFn: (enabled: boolean) => setMcpEnabled(api, enabled, options()),
+    onSuccess: (state) => queryClient.setQueryData(queryKeys.mcp(), remember(state)),
   });
 }
 
@@ -51,9 +66,10 @@ export function useRevokeMcpToken() {
 export function useSetWebPort() {
   const api = useApi();
   const queryClient = useQueryClient();
+  const { options, remember } = useRevision();
   return useMutation({
-    mutationFn: (port: number | null) => setWebPort(api, port),
-    onSuccess: (state) => queryClient.setQueryData(queryKeys.webPort(), state),
+    mutationFn: (port: number | null) => setWebPort(api, port, options()),
+    onSuccess: (state) => queryClient.setQueryData(queryKeys.webPort(), remember(state)),
   });
 }
 
@@ -61,28 +77,36 @@ export function useSetWebPort() {
 export function useSetUploadLimit() {
   const api = useApi();
   const queryClient = useQueryClient();
+  const { options, remember } = useRevision();
   return useMutation({
-    mutationFn: (maxMib: number | null) => setUploadLimit(api, maxMib),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.uploadLimit() }),
+    mutationFn: (maxMib: number | null) => setUploadLimit(api, maxMib, options()),
+    onSuccess: (state) => {
+      remember(state);
+      return queryClient.invalidateQueries({ queryKey: queryKeys.uploadLimit() });
+    },
   });
 }
 
 /** A provider write changes the cards and can change whether Chat is ready, so both reads refresh. */
 function useRefreshProviders() {
   const queryClient = useQueryClient();
-  return () =>
-    Promise.all([
+  const { remember } = useRevision();
+  return (response: unknown) => {
+    remember(response);
+    return Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.connections() }),
       queryClient.invalidateQueries({ queryKey: queryKeys.chatSettings() }),
     ]);
+  };
 }
 
 /** Saves addresses (a `null` clears one). The card shows what the server holds after the refresh. */
 export function useSaveProviderFields(provider: string) {
   const api = useApi();
   const refresh = useRefreshProviders();
+  const { options } = useRevision();
   return useMutation({
-    mutationFn: (fields: Record<string, string | number | null>) => saveProviderFields(api, provider, fields),
+    mutationFn: (fields: Record<string, string | number | null>) => saveProviderFields(api, provider, fields, options()),
     onSuccess: refresh,
   });
 }
@@ -91,8 +115,9 @@ export function useSaveProviderFields(provider: string) {
 export function useSaveProviderKey(provider: string) {
   const api = useApi();
   const refresh = useRefreshProviders();
+  const { options } = useRevision();
   return useMutation({
-    mutationFn: (apiKey: string) => saveProviderKey(api, provider, apiKey),
+    mutationFn: (apiKey: string) => saveProviderKey(api, provider, apiKey, options()),
     gcTime: 0,
     onSuccess: refresh,
   });
@@ -101,15 +126,20 @@ export function useSaveProviderKey(provider: string) {
 export function useRemoveProviderKey(provider: string) {
   const api = useApi();
   const refresh = useRefreshProviders();
-  return useMutation({ mutationFn: () => removeProviderKey(api, provider), onSuccess: refresh });
+  const { options } = useRevision();
+  return useMutation({ mutationFn: () => removeProviderKey(api, provider, options()), onSuccess: refresh });
 }
 
 /** Saves the Chat choice, or clears it with `null`. */
 export function useSetChatSettings() {
   const api = useApi();
   const queryClient = useQueryClient();
+  const { options, remember } = useRevision();
   return useMutation({
-    mutationFn: (choice: ChatChoice | null) => setChatSettings(api, choice),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.chatSettings() }),
+    mutationFn: (choice: ChatChoice | null) => setChatSettings(api, choice, options()),
+    onSuccess: (response) => {
+      remember(response);
+      return queryClient.invalidateQueries({ queryKey: queryKeys.chatSettings() });
+    },
   });
 }

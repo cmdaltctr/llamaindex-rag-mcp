@@ -7,8 +7,7 @@ export const STATE_NAMES: Record<ServerState, string> = {
   failed: "Failed",
 };
 
-const REASON_SENTENCES: Record<Exclude<ServerReason, "exited">, string> = {
-  "not-configured": "Set the program path and the model first.",
+const REASON_SENTENCES: Record<Exclude<ServerReason, "exited" | "not-configured">, string> = {
   "binary-invalid": "The program path is not a runnable file named llama-server.",
   "model-invalid": "The model is not an existing .gguf file or a Hugging Face id.",
   "not-loopback": "The chat address is not on this machine, so omrg will not start a server for it.",
@@ -25,6 +24,7 @@ export function reasonSentence(status: LlamacppServerStatus): string {
   if (reason === "exited") {
     return status.exit_code === null ? `The server stopped by itself. ${LOG_HINT}` : `The server stopped by itself with exit code ${status.exit_code}. ${LOG_HINT}`;
   }
+  if (reason === "not-configured") return status.saved.binary.value === "" ? "Set the program path first." : "Set the model first.";
   return REASON_SENTENCES[reason] ?? "The server could not start.";
 }
 

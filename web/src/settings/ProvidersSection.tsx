@@ -4,7 +4,7 @@ import { connectionsQuery } from "../api/queries";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { ProviderCard } from "./ProviderCard";
 
-/** The provider cards. Addresses and keys can be saved here and apply at once to this web server. */
+/** The provider cards. Addresses and keys are saved to `omrg.jsonc` (keys to the keychain) and apply at once to this web server. */
 export function ProvidersSection() {
   const query = useQuery(connectionsQuery(useApi()));
   const list = query.data;
@@ -25,15 +25,20 @@ export function ProvidersSection() {
       ) : (
         <>
           <p className="text-meta text-muted-foreground">
-            Saved values apply at once to this web server only. <code className="font-mono text-code">omrg</code> over stdio and the CLI read{" "}
+            Saves are written to{" "}
+            <code dir="ltr" className="font-mono text-code [overflow-wrap:anywhere]">
+              {`${list.user_config_dir}/omrg.jsonc`}
+            </code>{" "}
+            and apply at once to this web server. <code className="font-mono text-code">omrg</code> over stdio and the CLI read the same file at their next launch. A value set in the
+            environment or in{" "}
             <code dir="ltr" className="font-mono text-code [overflow-wrap:anywhere]">
               {`${list.config_dir}/.env`}
-            </code>
-            . A key is never shown again after you save it.
+            </code>{" "}
+            wins and cannot be changed here. A key is never shown again after you save it.
           </p>
           <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
             {list.connections.map((connection) => (
-              <ProviderCard key={connection.provider} connection={connection} keychain={list.keychain} />
+              <ProviderCard key={connection.provider} connection={connection} keychain={list.keychain} configDir={list.config_dir} />
             ))}
           </div>
         </>

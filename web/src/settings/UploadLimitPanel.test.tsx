@@ -27,12 +27,20 @@ describe("upload limit panel", () => {
     expect(await within(panel).findByText("The limit in force is 50 MiB per file.")).toBeInTheDocument();
     expect(panel).toHaveTextContent("No limit is saved, so the default of 50 MiB applies.");
     expect(panel).toHaveTextContent("A change applies to new uploads straight away.");
-    expect(within(panel).queryByRole("button", { name: /Use the default/ })).toBeNull();
+    expect(within(panel).getByText("default")).toBeInTheDocument();
+    expect(within(panel).queryByRole("spinbutton")).toBeNull();
   });
 
-  it("saves a new limit as a whole number of MiB and shows what the server returned", async () => {
+  it("opens the input filled with the limit in force and names the allowed range", async () => {
+    const { user, panel } = await openPanel();
+    await user.click(await within(panel).findByRole("button", { name: "Edit Limit per file, in MiB" }));
+    expect(within(panel).getByRole("spinbutton", { name: "Limit per file, in MiB" })).toHaveValue(50);
+    expect(panel).toHaveTextContent("Allowed: 1 to 2048 MiB.");
+  });
+
+  it("saves a new limit as a whole number of MiB with the revision and shows what the server returned", async () => {
     let saved: number | null = null;
-    const state = () => limit({ max_bytes: (saved ?? 50) * MIB, source: saved === null ? "default" : "saved", saved_mib: saved });
+    const state = () => limit({ max_bytes: (saved ?? 50) * MIB, source: saved === null ? "default" : "config-file", saved_mib: saved });
     const { server, user, panel } = await openPanel({
       "GET /v1/settings/upload-limit": state,
       "PUT /v1/settings/upload-limit": (body: Record<string, unknown>) => {
@@ -40,33 +48,55 @@ describe("upload limit panel", () => {
         return state();
       },
     });
-    await user.type(within(panel).getByLabelText("Limit per file, in MiB"), "200");
-    await user.click(within(panel).getByRole("button", { name: "Save limit" }));
+    await user.click(await within(panel).findByRole("button", { name: "Edit Limit per file, in MiB" }));
+    const input = within(panel).getByRole("spinbutton", { name: "Limit per file, in MiB" });
+    await user.clear(input);
+    await user.type(input, "200");
+    await user.click(within(panel).getByRole("button", { name: "Save" }));
     expect(await within(panel).findByText("The limit in force is 200 MiB per file.")).toBeInTheDocument();
-    expect(panel).toHaveTextContent("Saved limit: 200 MiB.");
-    expect(server.find("PUT", "/v1/settings/upload-limit").map((call) => call.body)).toEqual([{ max_mib: 200 }]);
+    expect(within(panel).getByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(server.find("PUT", "/v1/settings/upload-limit").map((call) => call.body)).toEqual([{ max_mib: 200, revision: "r1" }]);
   });
 
-  it("returns to the default with the default the server reports", async () => {
+  it("returns to the default and says the default applies", async () => {
+    let saved: number | null = 200;
+    const state = () => limit({ max_bytes: (saved ?? 64) * MIB, source: saved === null ? "default" : "config-file", saved_mib: saved, default_mib: 64 });
     const { server, user, panel } = await openPanel({
-      "GET /v1/settings/upload-limit": () => limit({ max_bytes: 200 * MIB, source: "saved", saved_mib: 200, default_mib: 64 }),
-      "PUT /v1/settings/upload-limit": () => limit({ default_mib: 64, max_bytes: 64 * MIB }),
+      "GET /v1/settings/upload-limit": state,
+      "PUT /v1/settings/upload-limit": () => {
+        saved = null;
+        return state();
+      },
     });
-    await user.click(await within(panel).findByRole("button", { name: "Use the default (64 MiB)" }));
-    await waitFor(() => expect(server.find("PUT", "/v1/settings/upload-limit").map((call) => call.body)).toEqual([{ max_mib: null }]));
+    await user.click(await within(panel).findByRole("button", { name: "Edit Limit per file, in MiB" }));
+    await user.click(within(panel).getByRole("button", { name: "Use default" }));
+    await waitFor(() => expect(server.find("PUT", "/v1/settings/upload-limit").map((call) => call.body)).toEqual([{ max_mib: null, revision: "r1" }]));
+    expect(await within(panel).findByText("No limit is saved, so the default of 64 MiB applies.")).toBeInTheDocument();
   });
 
   it("refuses a value outside the reported range, or not a whole number, before any request", async () => {
     const { server, user, panel } = await openPanel({ "GET /v1/settings/upload-limit": () => limit({ min_mib: 2, max_mib: 300 }) });
-    const field = await within(panel).findByLabelText("Limit per file, in MiB");
+    await user.click(await within(panel).findByRole("button", { name: "Edit Limit per file, in MiB" }));
+    const field = within(panel).getByLabelText("Limit per file, in MiB");
     for (const value of ["1", "301", "1.5"]) {
       await user.clear(field);
       await user.type(field, value);
-      await user.click(within(panel).getByRole("button", { name: "Save limit" }));
+      await user.click(within(panel).getByRole("button", { name: "Save" }));
       expect(within(panel).getByText("Enter a whole number from 2 to 300.")).toBeInTheDocument();
     }
     expect(field).toHaveAttribute("aria-invalid", "true");
     expect(server.find("PUT", "/v1/settings/upload-limit")).toHaveLength(0);
+  });
+
+  it("shows the rule message of the server when a save is refused", async () => {
+    const message = "The limit must be a whole number from 1 to 2048 MiB.";
+    const { user, panel } = await openPanel({ "PUT /v1/settings/upload-limit": () => json({ status: "error", message }, 400) });
+    await user.click(await within(panel).findByRole("button", { name: "Edit Limit per file, in MiB" }));
+    const field = within(panel).getByLabelText("Limit per file, in MiB");
+    await user.clear(field);
+    await user.type(field, "200");
+    await user.click(within(panel).getByRole("button", { name: "Save" }));
+    expect(await within(panel).findByRole("alert")).toHaveTextContent(message);
   });
 
   it("shows a limit set at launch with no form, naming the flag and the variable", async () => {

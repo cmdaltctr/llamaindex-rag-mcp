@@ -16,7 +16,7 @@ function mcpRoutes(initial: McpState = MCP_OFF) {
   const handlers: Record<string, Handler> = {
     "GET /v1/mcp": () => state,
     "PUT /v1/mcp": (body) => {
-      state = { ...state, enabled: body.enabled as boolean };
+      state = { ...state, enabled: body.enabled as boolean, source: "config-file" };
       return state;
     },
     "POST /v1/mcp/token": () => {
@@ -90,9 +90,36 @@ describe("MCP over HTTP switch", () => {
     const { user, server } = await openMcp(stuck);
     const toggle = await screen.findByRole("switch", { name: "MCP over HTTP" });
     await user.click(toggle);
-    expect(server.find("PUT", "/v1/mcp")[0]?.body).toEqual({ enabled: true });
+    expect(server.find("PUT", "/v1/mcp")[0]?.body).toEqual({ enabled: true, revision: "r1" });
     expect(await screen.findByRole("switch", { name: "MCP over HTTP" })).toHaveAttribute("aria-checked", "false");
     expect(screen.getByRole("switch", { name: "MCP over HTTP" })).toHaveTextContent("Off");
+  });
+
+  it("shows where the on/off state comes from, in words", async () => {
+    const { user } = await openMcp();
+    const http = await screen.findByRole("region", { name: "MCP over HTTP" });
+    expect(await within(http).findByText("default")).toBeInTheDocument();
+    await user.click(await screen.findByRole("switch", { name: "MCP over HTTP" }));
+    expect(await screen.findByRole("switch", { name: "MCP over HTTP", checked: true })).toBeInTheDocument();
+    expect(within(http).getByText("from omrg.jsonc")).toBeInTheDocument();
+  });
+
+  it.each([
+    ["env", "Set in the environment. Change it there."],
+    ["dotenv", "Set in .env. Change it there."],
+  ])("locks the switch and says where it is set when the source is %s", async (source, words) => {
+    await openMcp(mcpRoutes({ ...MCP_ON, source }));
+    const http = await screen.findByRole("region", { name: "MCP over HTTP" });
+    expect(await within(http).findByText(words)).toBeInTheDocument();
+    expect(within(http).getByRole("switch", { name: "MCP over HTTP" })).toBeDisabled();
+  });
+
+  it("shows the conflict with a Reload action when omrg.jsonc changed on disk", async () => {
+    const message = "omrg.jsonc changed on disk. Reload to see the new values.";
+    const { user } = await openMcp({ ...mcpRoutes(), "PUT /v1/mcp": () => json({ status: "error", message }, 409) });
+    await user.click(await screen.findByRole("switch", { name: "MCP over HTTP" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(screen.getByRole("button", { name: "Reload" })).toBeInTheDocument();
   });
 
   it("turns on when the server says on", async () => {
@@ -201,25 +228,41 @@ describe("Saved web port", () => {
     expect(await within(port).findByText(/This server listens on port 8765/)).toBeInTheDocument();
     expect(within(port).getByText(/No port is saved/)).toBeInTheDocument();
     expect(within(port).getByText(/applies on the next launch/i)).toBeInTheDocument();
+    expect(within(port).getByText("default")).toBeInTheDocument();
   });
 
-  it("saves a port and keeps the next-launch notice", async () => {
+  it("shows no input until Edit, then opens it filled with the port in force", async () => {
+    const { user } = await openMcp();
+    const port = panel("Web port");
+    expect(within(port).queryByRole("spinbutton")).toBeNull();
+    await user.click(await within(port).findByRole("button", { name: "Edit Port for the next launch" }));
+    expect(within(port).getByRole("spinbutton", { name: "Port for the next launch" })).toHaveValue(8765);
+  });
+
+  it("saves a port with the revision and keeps the next-launch notice", async () => {
     const { user, server } = await openMcp();
     const port = panel("Web port");
-    await user.type(await within(port).findByRole("spinbutton", { name: "Port for the next launch" }), "9000");
-    await user.click(within(port).getByRole("button", { name: "Save port" }));
-    expect(await within(port).findByText(/Saved port: 9000/)).toBeInTheDocument();
+    await user.click(await within(port).findByRole("button", { name: "Edit Port for the next launch" }));
+    const input = within(port).getByRole("spinbutton", { name: "Port for the next launch" });
+    await user.clear(input);
+    await user.type(input, "9000");
+    await user.click(within(port).getByRole("button", { name: "Save" }));
+    expect(await within(port).findByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(within(port).getByText("9000")).toBeInTheDocument();
+    expect(within(port).getByText("Restart to apply")).toBeInTheDocument();
     expect(within(port).getByText(/applies on the next launch/i)).toBeInTheDocument();
     expect(within(port).getByText(/still listens on port 8765/i)).toBeInTheDocument();
-    expect(server.find("PUT", "/v1/settings/web-port")[0]?.body).toEqual({ port: 9000 });
+    expect(server.find("PUT", "/v1/settings/web-port")[0]?.body).toEqual({ port: 9000, revision: "r1" });
   });
 
   it("refuses a port outside 1024 to 65535 without calling the server", async () => {
     const { user, server } = await openMcp();
     const port = panel("Web port");
-    const input = await within(port).findByRole("spinbutton", { name: "Port for the next launch" });
+    await user.click(await within(port).findByRole("button", { name: "Edit Port for the next launch" }));
+    const input = within(port).getByRole("spinbutton", { name: "Port for the next launch" });
+    await user.clear(input);
     await user.type(input, "80");
-    await user.click(within(port).getByRole("button", { name: "Save port" }));
+    await user.click(within(port).getByRole("button", { name: "Save" }));
     expect(within(port).getByText("Enter a whole number from 1024 to 65535.")).toBeInTheDocument();
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(input).toHaveAccessibleDescription(/Enter a whole number/);
@@ -227,14 +270,77 @@ describe("Saved web port", () => {
   });
 
   it("clears the saved port with null", async () => {
-    const routes = mcpRoutes();
-    const { user, server } = await openMcp(routes);
+    const { user, server } = await openMcp(mcpRoutes());
     const port = panel("Web port");
-    await user.type(await within(port).findByRole("spinbutton", { name: "Port for the next launch" }), "9000");
-    await user.click(within(port).getByRole("button", { name: "Save port" }));
-    await within(port).findByText(/Saved port: 9000/);
-    await user.click(within(port).getByRole("button", { name: "Clear saved port" }));
+    await user.click(await within(port).findByRole("button", { name: "Edit Port for the next launch" }));
+    const input = within(port).getByRole("spinbutton", { name: "Port for the next launch" });
+    await user.clear(input);
+    await user.type(input, "9000");
+    await user.click(within(port).getByRole("button", { name: "Save" }));
+    await user.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Later" }));
+    await user.click(await within(port).findByRole("button", { name: "Edit Port for the next launch" }));
+    await user.click(within(port).getByRole("button", { name: "Use default" }));
     expect(await within(port).findByText(/No port is saved/)).toBeInTheDocument();
-    expect(server.find("PUT", "/v1/settings/web-port").at(-1)?.body).toEqual({ port: null });
+    expect(server.find("PUT", "/v1/settings/web-port").at(-1)?.body).toEqual({ port: null, revision: "r1" });
+  });
+
+  it("shows the conflict with a Reload action when omrg.jsonc changed on disk", async () => {
+    const message = "omrg.jsonc changed on disk. Reload to see the new values.";
+    const { user } = await openMcp({ ...mcpRoutes(), "PUT /v1/settings/web-port": () => json({ status: "error", message }, 409) });
+    const port = panel("Web port");
+    await user.click(await within(port).findByRole("button", { name: "Edit Port for the next launch" }));
+    const input = within(port).getByRole("spinbutton", { name: "Port for the next launch" });
+    await user.clear(input);
+    await user.type(input, "9000");
+    await user.click(within(port).getByRole("button", { name: "Save" }));
+    expect(await within(port).findByRole("alert")).toHaveTextContent(message);
+    expect(within(port).getByRole("button", { name: "Reload" })).toBeInTheDocument();
+  });
+});
+
+describe("Restart dialog after a port save", () => {
+  async function savePort(power: Record<string, Handler>) {
+    const opened = await openMcp({ ...mcpRoutes(), ...power });
+    const port = panel("Web port");
+    await opened.user.click(await within(port).findByRole("button", { name: "Edit Port for the next launch" }));
+    const input = within(port).getByRole("spinbutton", { name: "Port for the next launch" });
+    await opened.user.clear(input);
+    await opened.user.type(input, "9100");
+    await opened.user.click(within(port).getByRole("button", { name: "Save" }));
+    return opened;
+  }
+
+  it("opens a dialog that names the port and offers Restart now and Later when the app runs as the login item", async () => {
+    await savePort({ "GET /v1/server/power": () => ({ status: "ok", managed: true }) });
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("Port 9100 applies after a restart.");
+    expect(await within(dialog).findByRole("button", { name: "Restart now" })).toBeEnabled();
+    expect(within(dialog).getByRole("button", { name: "Later" })).toBeInTheDocument();
+  });
+
+  it("sends the power menu restart on Restart now and tells the user to sign in again", async () => {
+    const { user, server } = await savePort({
+      "GET /v1/server/power": () => ({ status: "ok", managed: true }),
+      "POST /v1/server/power": () => ({ status: "ok", accepted: "restart" }),
+    });
+    const dialog = await screen.findByRole("dialog");
+    await user.click(await within(dialog).findByRole("button", { name: "Restart now" }));
+    expect(await within(dialog).findByText("omrg web open")).toBeInTheDocument();
+    expect(server.find("POST", "/v1/server/power")[0]?.body).toEqual({ action: "restart" });
+  });
+
+  it("shows the restart command and no Restart now when the app runs in a terminal", async () => {
+    await savePort({ "GET /v1/server/power": () => ({ status: "ok", managed: false }) });
+    const dialog = await screen.findByRole("dialog");
+    expect(await within(dialog).findByText("omrg web")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "Restart now" })).toBeNull();
+  });
+
+  it("leaves the row marked Restart to apply after Later", async () => {
+    const { user } = await savePort({ "GET /v1/server/power": () => ({ status: "ok", managed: true }) });
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Later" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(within(panel("Web port")).getByText("Restart to apply")).toBeInTheDocument();
   });
 });

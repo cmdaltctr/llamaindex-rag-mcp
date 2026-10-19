@@ -18,8 +18,8 @@ describe("llama.cpp server API", () => {
   it("saves only the keys it is given", async () => {
     const { api, server } = setup({ "PUT /v1/llamacpp/server": () => SERVER_STOPPED });
     await saveLlamacppServer(api, { context_window: 8192 });
-    await saveLlamacppServer(api, { model: null });
-    expect(server.find("PUT", "/v1/llamacpp/server").map((call) => call.body)).toEqual([{ context_window: 8192 }, { model: null }]);
+    await saveLlamacppServer(api, { model: null }, { revision: "r1" });
+    expect(server.find("PUT", "/v1/llamacpp/server").map((call) => call.body)).toEqual([{ context_window: 8192 }, { model: null, revision: "r1" }]);
   });
 
   it("starts, stops and restarts with POST and no body", async () => {

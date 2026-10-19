@@ -16,6 +16,7 @@ import { getChat, listChats } from "./chats";
 import { getProfile, listProfiles } from "./profiles";
 import { getRunArtefact, getRunRecord, getRunResult, listRuns } from "./runs";
 import { getChatSettings, getConnections, getHealth, getMcpState, getUploadLimit, getWebPort } from "./settings";
+import { rememberRevision } from "./settingsRevision";
 
 declare module "@tanstack/react-query" {
   interface Register {
@@ -169,11 +170,11 @@ export const powerQuery = (api: ApiClient) =>
 
 /** Provider endpoints, models, key state and roles. Sends no request to any provider. */
 export const connectionsQuery = (api: ApiClient) =>
-  queryOptions({ queryKey: queryKeys.connections(), queryFn: ({ signal }) => getConnections(api, { signal }) });
+  queryOptions({ queryKey: queryKeys.connections(), queryFn: ({ client, signal }) => getConnections(api, { signal }).then((data) => rememberRevision(client, data)) });
 
 /** The Chat provider and model, and whether Chat is ready. Sends no request to any provider. */
 export const chatSettingsQuery = (api: ApiClient) =>
-  queryOptions({ queryKey: queryKeys.chatSettings(), queryFn: ({ signal }) => getChatSettings(api, { signal }) });
+  queryOptions({ queryKey: queryKeys.chatSettings(), queryFn: ({ client, signal }) => getChatSettings(api, { signal }).then((data) => rememberRevision(client, data)) });
 
 /**
  * The draft check of one graph document, given as JSON text, read for the
@@ -194,14 +195,14 @@ export const draftCheckQuery = (api: ApiClient, document: string) =>
   });
 
 export const mcpQuery = (api: ApiClient) =>
-  queryOptions({ queryKey: queryKeys.mcp(), queryFn: ({ signal }) => getMcpState(api, { signal }) });
+  queryOptions({ queryKey: queryKeys.mcp(), queryFn: ({ client, signal }) => getMcpState(api, { signal }).then((data) => rememberRevision(client, data)) });
 
 export const webPortQuery = (api: ApiClient) =>
-  queryOptions({ queryKey: queryKeys.webPort(), queryFn: ({ signal }) => getWebPort(api, { signal }) });
+  queryOptions({ queryKey: queryKeys.webPort(), queryFn: ({ client, signal }) => getWebPort(api, { signal }).then((data) => rememberRevision(client, data)) });
 
 /** The per-file upload limit in force. Settings and the Knowledge Base read the same entry. */
 export const uploadLimitQuery = (api: ApiClient) =>
-  queryOptions({ queryKey: queryKeys.uploadLimit(), queryFn: ({ signal }) => getUploadLimit(api, { signal }) });
+  queryOptions({ queryKey: queryKeys.uploadLimit(), queryFn: ({ client, signal }) => getUploadLimit(api, { signal }).then((data) => rememberRevision(client, data)) });
 
 export const integrationsQuery = (api: ApiClient) =>
   queryOptions({ queryKey: queryKeys.integrations(), queryFn: ({ signal }) => listIntegrations(api, { signal }) });

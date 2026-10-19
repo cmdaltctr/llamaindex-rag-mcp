@@ -68,11 +68,6 @@ export function cloudHost(connection: Connection): string {
   return CLOUD_HOSTS[connection.provider] ?? connection.display_name;
 }
 
-/** The read-only line for a value that the server environment, `.env` or the user config file sets. */
-export function lockedSourceLine(source: string): string {
-  return source === "config-file" ? "Set from config file (read-only here)" : "Set from environment (read-only here)";
-}
-
 /**
  * The plain words for where a setting value comes from. One map for every
  * Settings row. `env` and `dotenv` are locked: the page cannot change them.
@@ -85,6 +80,7 @@ export const SOURCE_WORDS: Record<string, string> = {
   "key-file": "from key file",
   default: "default",
   none: "not set",
+  init: "set when the server started",
 };
 
 /** The words for a source, followed by `detail` (a variable name or a path) when given. An unknown source shows as it is. */

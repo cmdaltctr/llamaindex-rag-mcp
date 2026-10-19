@@ -14,6 +14,7 @@ import {
   type LlamacppServerChange,
   type LlamacppServerStatus,
 } from "./llamacppServer";
+import { currentRevision, rememberRevision, settingsWritten } from "./settingsRevision";
 
 export const llamacppServerKey = ["llamacpp-server"] as const;
 
@@ -23,7 +24,7 @@ export const STARTING_POLL_MS = 1000;
 export const llamacppServerQuery = (api: ApiClient) =>
   queryOptions({
     queryKey: llamacppServerKey,
-    queryFn: ({ signal }) => getLlamacppServer(api, { signal }),
+    queryFn: ({ client, signal }) => getLlamacppServer(api, { signal }).then((status) => rememberRevision(client, status)),
     // Poll only while the server starts: the state moves to running or failed on its own.
     refetchInterval: (query) => (query.state.data?.state === "starting" ? STARTING_POLL_MS : false),
   });
@@ -37,11 +38,14 @@ function useStatusMutation<V>(call: (api: ApiClient, variables: V) => Promise<Ll
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (variables: V) => call(api, variables),
-    onSuccess: (status) => queryClient.setQueryData(llamacppServerKey, status),
+    onSuccess: (status) => queryClient.setQueryData(llamacppServerKey, settingsWritten(queryClient, status)),
   });
 }
 
-export const useSaveLlamacppServer = () => useStatusMutation<LlamacppServerChange>((api, change) => saveLlamacppServer(api, change));
+export function useSaveLlamacppServer() {
+  const queryClient = useQueryClient();
+  return useStatusMutation<LlamacppServerChange>((api, change) => saveLlamacppServer(api, change, { revision: currentRevision(queryClient) }));
+}
 export const useStartLlamacppServer = () => useStatusMutation<void>((api) => startLlamacppServer(api));
 export const useStopLlamacppServer = () => useStatusMutation<void>((api) => stopLlamacppServer(api));
 export const useRestartLlamacppServer = () => useStatusMutation<void>((api) => restartLlamacppServer(api));

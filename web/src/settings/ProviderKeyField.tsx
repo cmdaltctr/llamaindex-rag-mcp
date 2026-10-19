@@ -1,11 +1,6 @@
-import { useId, type FormEvent } from "react";
 import { useRemoveProviderKey, useSaveProviderKey } from "../api/settingsMutations";
 import type { ProviderField } from "../api/settings";
-import { ErrorNotice } from "../components/ErrorNotice";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { lockedSourceLine } from "./connectionWords";
+import { KeySettingRow } from "./SettingRow";
 
 const STATE_LINES: Record<string, string> = {
   "keychain-missing": "The saved key was removed from the keychain, maybe by another workspace. Save it again to use it.",
@@ -16,84 +11,45 @@ interface ProviderKeyFieldProps {
   provider: string;
   field: ProviderField;
   keychain: "available" | "unavailable";
-  typed: string;
-  onTyped: (value: string) => void;
+  /** The key being typed, or `null` when the input closes. The card uses it for Test. */
+  onTyped: (text: string | null) => void;
 }
 
 /**
- * The key of one provider. The input is a password field that empties after
- * a save. The page shows at most "Key set" and the last four characters.
+ * The key of one provider as a summary row. The page shows at most "Key set"
+ * and the last four characters. Where the key can be put by hand follows the
+ * naming rule `secrets/<provider>.key` and `<PROVIDER>_API_KEY`.
  */
-export function ProviderKeyField({ provider, field, keychain, typed, onTyped }: ProviderKeyFieldProps) {
-  const id = useId();
+export function ProviderKeyField({ provider, field, keychain, onTyped }: ProviderKeyFieldProps) {
   const save = useSaveProviderKey(provider);
   const remove = useRemoveProviderKey(provider);
-  const busy = save.isPending || remove.isPending;
+  const keyFile = `secrets/${provider}.key`;
   const stateLine = field.state !== null ? STATE_LINES[field.state] : undefined;
-
-  const status = (
-    <p className="text-ui">
-      {field.set ? (
-        <>
-          <span className="font-medium">Key set</span>
-          {field.last4 !== null ? <span>{`, ending ${field.last4}`}</span> : null}
-          <span className="text-meta text-muted-foreground">{field.source === "keychain" ? ` (kept in the system keychain as omrg / ${provider})` : ""}</span>
-        </>
-      ) : (
-        <span>No key</span>
-      )}
-    </p>
-  );
-
-  if (field.source === "env" || field.source === "config-file") {
-    return (
-      <div className="flex flex-col gap-1">
-        <p className="text-meta text-muted-foreground">{field.label}</p>
-        {status}
-        <p className="text-meta text-muted-foreground">
-          <span>{lockedSourceLine(field.source)}</span>
-          {field.lock_reason !== null ? ` ${field.lock_reason}` : ""}
-        </p>
-      </div>
-    );
-  }
-
-  if (keychain === "unavailable") {
-    return (
-      <div className="flex flex-col gap-1">
-        <p className="text-meta text-muted-foreground">{field.label}</p>
-        <p className="text-ui">{field.lock_reason ?? "No system keychain is available on this machine."}</p>
-      </div>
-    );
-  }
-
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    if (typed.trim() === "") return;
-    save.mutate(typed.trim(), { onSuccess: () => onTyped("") });
-  }
+  const error = save.isError ? save.error : remove.isError ? remove.error : null;
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>{field.label}</Label>
-      {status}
-      {field.source === "key-file" ? (
-        <p className="text-meta text-muted-foreground">{field.lock_reason ?? "Set from key file (read-only here)"}</p>
-      ) : null}
+    <div className="flex flex-col gap-1.5">
       {stateLine !== undefined ? <p className="text-meta text-muted-foreground">{stateLine}</p> : null}
-      <Input id={id} type="password" dir="ltr" autoComplete="off" spellCheck={false} value={typed} onChange={(event) => onTyped(event.target.value)} />
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" size="sm" disabled={busy || typed.trim() === ""}>
-          Save key
-        </Button>
-        {field.source === "keychain" && field.set ? (
-          <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => remove.mutate()}>
-            Remove key
-          </Button>
-        ) : null}
-      </div>
-      {save.isError ? <ErrorNotice error={save.error} onRetry={() => save.reset()} /> : null}
-      {remove.isError ? <ErrorNotice error={remove.error} onRetry={() => remove.reset()} /> : null}
-    </form>
+      <KeySettingRow
+        label={field.label}
+        set={field.set}
+        last4={field.last4}
+        source={field.source}
+        detail={field.source === "key-file" ? keyFile : null}
+        keychain={keychain}
+        keyFile={keyFile}
+        envVar={`${provider.toUpperCase()}_API_KEY`}
+        required={field.required}
+        pending={save.isPending || remove.isPending}
+        error={error}
+        onTyped={onTyped}
+        onSave={(key, done) => save.mutate(key, { onSuccess: done })}
+        onRemove={() => remove.mutate()}
+        onRetry={() => {
+          save.reset();
+          remove.reset();
+        }}
+      />
+    </div>
   );
 }

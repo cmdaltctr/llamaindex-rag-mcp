@@ -20,6 +20,10 @@ function section() {
   return screen.getByRole("region", { name: "Chat" });
 }
 
+async function edit(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(within(section()).getByRole("button", { name: "Edit Chat model" }));
+}
+
 async function pick(user: ReturnType<typeof userEvent.setup>, name: string, option: string | RegExp) {
   await user.click(within(section()).getByRole("combobox", { name }));
   await user.click(await screen.findByRole("option", { name: option }));
@@ -30,17 +34,38 @@ function list(...connections: Connection[]): ConnectionList {
 }
 
 describe("Chat section", () => {
-  it("shows the saved choice with its source and the form", async () => {
-    await openChat({ "GET /v1/settings/chat": () => CHAT_READY });
+  it("shows the provider and the model as rows with their source, and no form until Edit", async () => {
+    const { user } = await openChat({ "GET /v1/settings/chat": () => CHAT_READY });
     const chat = section();
+    expect(within(chat).getByText("Ollama")).toBeInTheDocument();
+    expect(within(chat).getByText("qwen3:4b")).toBeInTheDocument();
+    expect(within(chat).getAllByText("from omrg.jsonc")).toHaveLength(2);
+    expect(within(chat).queryByRole("combobox")).toBeNull();
+    await edit(user);
     expect(within(chat).getByRole("combobox", { name: "Provider" })).toHaveTextContent("Ollama");
     expect(within(chat).getByRole("textbox", { name: "Model name" })).toHaveValue("qwen3:4b");
-    expect(chat).toHaveTextContent("Source: saved");
+  });
+
+  it("shows the default words and no Clear when nothing is saved", async () => {
+    const { user } = await openChat();
+    expect(section()).toHaveTextContent("default");
+    await edit(user);
+    expect(within(section()).queryByRole("button", { name: "Clear" })).toBeNull();
+  });
+
+  it("closes the form on Cancel and saves nothing", async () => {
+    const { user, server } = await openChat({ "GET /v1/settings/chat": () => CHAT_READY });
+    await edit(user);
+    await user.type(within(section()).getByRole("textbox", { name: "Model name" }), "x");
+    await user.click(within(section()).getByRole("button", { name: "Cancel" }));
+    expect(within(section()).queryByRole("textbox")).toBeNull();
+    expect(server.find("PUT", "/v1/settings/chat")).toHaveLength(0);
   });
 
   it("marks a provider that is not ready with its reason in text and disables it", async () => {
     const noKey = { ...OPENROUTER, fields: [{ ...OPENROUTER.fields[0]!, set: false, last4: null, source: "none" as const }] };
     const { user } = await openChat({ "GET /v1/connections": () => list(OLLAMA, { ...LLAMACPP, installed: false, install_hint: "uv sync --extra llamacpp" }, noKey) });
+    await edit(user);
     await user.click(within(section()).getByRole("combobox", { name: "Provider" }));
     expect(await screen.findByRole("option", { name: /llama\.cpp.*not installed/i })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("option", { name: /OpenRouter.*no key/i })).toHaveAttribute("aria-disabled", "true");
@@ -57,7 +82,7 @@ describe("Chat section", () => {
       install_hint: null,
       fields: [
         urlField("base_url", "Address", "http://127.0.0.1:1234/v1"),
-        { ...OPENROUTER.fields[0]!, set: false, last4: null, saved_at: null, source: "none" as const, required: false } as ProviderField,
+        { ...OPENROUTER.fields[0]!, set: false, last4: null, source: "none" as const, required: false } as ProviderField,
       ],
       read_only: [],
       roles: ["answers"],
@@ -68,11 +93,12 @@ describe("Chat section", () => {
       locality: "cloud",
       installed: false,
       install_hint: "uv sync --extra anthropic",
-      fields: [{ ...OPENROUTER.fields[0]!, set: false, last4: null, saved_at: null, source: "none" as const }],
+      fields: [{ ...OPENROUTER.fields[0]!, set: false, last4: null, source: "none" as const }],
       read_only: [],
       roles: ["answers"],
     };
     const { user } = await openChat({ "GET /v1/connections": () => list(OLLAMA, openAiCompatible, anthropic) });
+    await edit(user);
     await user.click(within(section()).getByRole("combobox", { name: "Provider" }));
     const optionalKey = await screen.findByRole("option", { name: /OpenAI-compatible/ });
     expect(optionalKey).not.toHaveAttribute("aria-disabled", "true");
@@ -84,6 +110,7 @@ describe("Chat section", () => {
     const { user, server } = await openChat({
       "POST /v1/connections/ollama/models": () => ({ status: "ok", reachable: true, reason: null, models: ["llama3.2", "qwen3:4b"], truncated: false }),
     });
+    await edit(user);
     await pick(user, "Provider", "Ollama");
     await user.click(within(section()).getByRole("button", { name: "List models" }));
     await pick(user, "Models", "qwen3:4b");
@@ -95,6 +122,7 @@ describe("Chat section", () => {
     const { user } = await openChat({
       "POST /v1/connections/ollama/models": () => ({ status: "ok", reachable: false, reason: "refused", models: [], truncated: false }),
     });
+    await edit(user);
     await pick(user, "Provider", "Ollama");
     await user.click(within(section()).getByRole("button", { name: "List models" }));
     expect(await within(section()).findByText(/connection was refused/i)).toBeInTheDocument();
@@ -105,6 +133,7 @@ describe("Chat section", () => {
     const { user } = await openChat({
       "POST /v1/connections/ollama/models": () => ({ status: "ok", reachable: true, reason: null, models: ["llama3.2"], truncated: true }),
     });
+    await edit(user);
     await pick(user, "Provider", "Ollama");
     await user.click(within(section()).getByRole("button", { name: "List models" }));
     expect(await within(section()).findByText(/the list was cut/i)).toBeInTheDocument();
@@ -112,6 +141,7 @@ describe("Chat section", () => {
 
   it("disables Save and sends nothing while the model name is empty", async () => {
     const { user, server } = await openChat();
+    await edit(user);
     await pick(user, "Provider", "Ollama");
     const save = within(section()).getByRole("button", { name: "Save" });
     expect(save).toBeDisabled();
@@ -119,27 +149,30 @@ describe("Chat section", () => {
     expect(server.find("PUT", "/v1/settings/chat")).toHaveLength(0);
   });
 
-  it("saves a typed model name and shows the choice and source the server returns", async () => {
+  it("saves a typed model name, closes the form and shows the choice and source the server returns", async () => {
     let state: ChatSettings = UNSET;
     const { user, server } = await openChat({
       "GET /v1/settings/chat": () => state,
       "PUT /v1/settings/chat": (body: Record<string, unknown>) => {
         state = { ...CHAT_READY, provider: body.provider as string, model: body.model as string };
-        return { status: "ok" };
+        return { status: "ok", revision: "r2" };
       },
     });
+    await edit(user);
     await pick(user, "Provider", "OpenRouter");
     await user.type(within(section()).getByRole("textbox", { name: "Model name" }), "openai/gpt-4o-mini");
     await user.click(within(section()).getByRole("button", { name: "Save" }));
-    expect(await within(section()).findByText("Source: saved")).toBeInTheDocument();
-    expect(within(section()).getByRole("textbox", { name: "Model name" })).toHaveValue("openai/gpt-4o-mini");
-    expect(server.find("PUT", "/v1/settings/chat")[0]?.body).toEqual({ provider: "openrouter", model: "openai/gpt-4o-mini" });
+    expect(await within(section()).findAllByText("from omrg.jsonc")).toHaveLength(2);
+    expect(within(section()).getByText("openai/gpt-4o-mini")).toBeInTheDocument();
+    expect(within(section()).queryByRole("textbox")).toBeNull();
+    expect(server.find("PUT", "/v1/settings/chat")[0]?.body).toEqual({ provider: "openrouter", model: "openai/gpt-4o-mini", revision: "r1" });
   });
 
-  it("clears the saved choice", async () => {
-    const { user, server } = await openChat({ "GET /v1/settings/chat": () => CHAT_READY, "PUT /v1/settings/chat": () => ({ status: "ok" }) });
+  it("clears the saved choice with only the revision in the body", async () => {
+    const { user, server } = await openChat({ "GET /v1/settings/chat": () => CHAT_READY, "PUT /v1/settings/chat": () => ({ status: "ok", revision: "r2" }) });
+    await edit(user);
     await user.click(within(section()).getByRole("button", { name: "Clear" }));
-    expect(server.find("PUT", "/v1/settings/chat")[0]?.body).toBeNull();
+    expect(server.find("PUT", "/v1/settings/chat")[0]?.body).toEqual({ revision: "r1" });
   });
 
   it("shows the Test result as a badge and one sentence, with no provider text", async () => {
@@ -147,6 +180,7 @@ describe("Chat section", () => {
       "GET /v1/settings/chat": () => CHAT_READY,
       "POST /v1/settings/chat/test": () => ({ status: "ok", ok: false, reason: "timeout", elapsed_ms: 30000, detail: "Traceback: boom" }),
     });
+    await edit(user);
     await user.click(within(section()).getByRole("button", { name: "Test" }));
     const result = await within(section()).findByRole("status");
     expect(within(result).getByText("Not working")).toHaveAttribute("data-slot", "badge");
@@ -161,41 +195,58 @@ describe("Chat section", () => {
       "GET /v1/settings/chat": () => CHAT_READY,
       "POST /v1/settings/chat/test": () => ({ status: "ok", ok: true, reason: null, elapsed_ms: 420 }),
     });
+    await edit(user);
     await user.click(within(section()).getByRole("button", { name: "Test" }));
     expect(await within(section()).findByText("Working")).toHaveAttribute("data-slot", "badge");
   });
 
-  it("shows a locked choice with the reason and no Save", async () => {
+  it.each([
+    ["env", "Set in the environment. Change it there."],
+    ["dotenv", "Set in .env. Change it there."],
+  ] as const)("shows a choice set by %s as locked with the variable named and offers no Edit", async (source, words) => {
     await openChat({
-      "GET /v1/settings/chat": () => ({ ...CHAT_READY, source: "env", locked: true, lock_reason: "Remove ANSWER__PROVIDER from .env to edit it." }),
+      "GET /v1/settings/chat": () => ({ ...CHAT_READY, source, locked: true, lock_reason: "Set by ANSWER__PROVIDER and ANSWER__MODEL in the environment or .env. Remove it to edit here." }),
     });
     const chat = section();
     expect(chat).toHaveTextContent("ANSWER__PROVIDER");
+    expect(chat).toHaveTextContent(words);
     expect(chat).toHaveTextContent("Ollama");
     expect(chat).toHaveTextContent("qwen3:4b");
-    expect(within(chat).queryByRole("button", { name: "Save" })).toBeNull();
+    expect(within(chat).queryByRole("button", { name: "Edit Chat model" })).toBeNull();
     expect(within(chat).queryByRole("textbox")).toBeNull();
   });
 
-  it("names the config file when it locks the choice", async () => {
-    await openChat({
-      "GET /v1/settings/chat": () => ({ ...CHAT_READY, source: "config-file", locked: true, lock_reason: "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it." }),
-    });
-    const chat = section();
-    expect(chat).toHaveTextContent("Set from config file (read-only here)");
-    expect(chat).toHaveTextContent("omrg.jsonc");
-    expect(within(chat).queryByRole("button", { name: "Save" })).toBeNull();
+  it("shows the rule message when a save is refused with 400", async () => {
+    const message = "The model name is not valid.";
+    const { user } = await openChat({ "GET /v1/settings/chat": () => CHAT_READY, "PUT /v1/settings/chat": () => json({ status: "error", message }, 400) });
+    await edit(user);
+    await user.type(within(section()).getByRole("textbox", { name: "Model name" }), "x");
+    await user.click(within(section()).getByRole("button", { name: "Save" }));
+    expect(await within(section()).findByRole("alert")).toHaveTextContent(message);
+  });
+
+  it("shows the conflict with Reload when omrg.jsonc changed on disk, and reads the choice again on Reload", async () => {
+    const message = "omrg.jsonc changed on disk. Reload to see the new values.";
+    const { user, server } = await openChat({ "GET /v1/settings/chat": () => CHAT_READY, "PUT /v1/settings/chat": () => json({ status: "error", message }, 409) });
+    await edit(user);
+    await user.type(within(section()).getByRole("textbox", { name: "Model name" }), "x");
+    await user.click(within(section()).getByRole("button", { name: "Save" }));
+    expect(await within(section()).findByRole("alert")).toHaveTextContent(message);
+    const reads = server.find("GET", "/v1/settings/chat").length;
+    await user.click(within(section()).getByRole("button", { name: "Reload" }));
+    await waitFor(() => expect(server.find("GET", "/v1/settings/chat").length).toBe(reads + 1));
   });
 
   it("states where the choice applies", async () => {
     await openChat();
     expect(section()).toHaveTextContent(/MCP clients of this web server/i);
     expect(section()).toHaveTextContent(/metadata extraction keeps its own model/i);
-    expect(section()).toHaveTextContent(/stdio and the CLI read \.env only/i);
+    expect(section()).toHaveTextContent(/stdio and the CLI read the same omrg\.jsonc at their next launch/i);
   });
 
   it("states that text leaves this machine only for a cloud provider", async () => {
     const { user } = await openChat();
+    await edit(user);
     await pick(user, "Provider", "Ollama");
     expect(section()).not.toHaveTextContent(/openrouter\.ai/i);
     await pick(user, "Provider", "OpenRouter");

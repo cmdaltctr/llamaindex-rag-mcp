@@ -97,7 +97,7 @@ describe("uploads", () => {
 });
 
 const MIB = 1024 * 1024;
-const limitOf = (mib: number) => ({ ...UPLOAD_LIMIT, max_bytes: mib * MIB, source: "saved", saved_mib: mib });
+const limitOf = (mib: number) => ({ ...UPLOAD_LIMIT, max_bytes: mib * MIB, source: "config-file", saved_mib: mib });
 const ACCEPT_UPLOAD: Record<string, Handler> = {
   "POST /v1/uploads/preflight": () => ({ status: "ok" }),
   "POST /v1/uploads": () => json({ status: "ok", upload: { id: "u1", name: "mid.pdf", size: 1, sha256: "x" } }, 201),
@@ -144,8 +144,11 @@ describe("the server's upload limit", () => {
     await user.click(within(nav).getByRole("link", { name: "Settings" }));
     await user.click(await screen.findByRole("button", { name: "Workspace" }));
     const panel = await screen.findByRole("region", { name: "Upload limit" });
-    await user.type(await within(panel).findByLabelText("Limit per file, in MiB"), "200");
-    await user.click(within(panel).getByRole("button", { name: "Save limit" }));
+    await user.click(await within(panel).findByRole("button", { name: "Edit Limit per file, in MiB" }));
+    const input = within(panel).getByLabelText("Limit per file, in MiB");
+    await user.clear(input);
+    await user.type(input, "200");
+    await user.click(within(panel).getByRole("button", { name: "Save" }));
     await within(panel).findByText("The limit in force is 200 MiB per file.");
     await user.click(within(nav).getByRole("link", { name: "Knowledge Base" }));
     await screen.findByRole("table", { name: "Sources in documents" });

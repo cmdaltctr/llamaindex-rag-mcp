@@ -6,6 +6,7 @@
  * reason.
  */
 import type { ApiClient, CallOptions } from "./client";
+import type { SaveOptions } from "./settings";
 
 export type ServerState = "stopped" | "starting" | "running" | "failed";
 
@@ -20,13 +21,15 @@ export interface ServerField {
   value: string | number;
   min: number | null;
   max: number | null;
-  source: "env" | "config-file" | "saved" | "default";
+  source: "env" | "dotenv" | "config-file" | "default";
   locked: boolean;
   lock_reason: string | null;
 }
 
 export interface LlamacppServerStatus {
   status: "ok";
+  /** Stamp of `omrg.jsonc` at this read. A save sends it back. */
+  revision: string;
   state: ServerState;
   reason: ServerReason | null;
   exit_code: number | null;
@@ -54,8 +57,8 @@ export function getLlamacppServer(api: ApiClient, options: CallOptions = {}): Pr
 }
 
 /** Saves the program, the model or the window. A running server keeps running. */
-export function saveLlamacppServer(api: ApiClient, change: LlamacppServerChange, options: CallOptions = {}): Promise<LlamacppServerStatus> {
-  return api.request<LlamacppServerStatus>("PUT", PATH, { body: change, signal: options.signal });
+export function saveLlamacppServer(api: ApiClient, change: LlamacppServerChange, options: SaveOptions = {}): Promise<LlamacppServerStatus> {
+  return api.request<LlamacppServerStatus>("PUT", PATH, { body: { ...change, revision: options.revision }, signal: options.signal });
 }
 
 export function startLlamacppServer(api: ApiClient, options: CallOptions = {}): Promise<LlamacppServerStatus> {

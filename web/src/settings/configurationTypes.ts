@@ -15,7 +15,7 @@ export interface ConfigurationSetting {
   applies: "live" | "restart";
   /** True when the file holds a different value from the one the server started with. */
   restart_pending: boolean;
-  /** Present only on a secret: the last four characters of the key, or `null` when no key is set. */
+  /** Present only on a set key: its last four characters, or an empty string for a short key. A key field with no key has no `last4`. */
   last4?: string | null;
 }
 

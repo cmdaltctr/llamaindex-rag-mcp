@@ -5,7 +5,9 @@ import { useSetMcpEnabled } from "../api/settingsMutations";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardTitle } from "../components/ui/card";
+import { isEnvironmentSource, sourceText } from "./connectionWords";
 import { CopyButton } from "./CopyButton";
+import { SaveErrorNotice } from "./SaveErrorNotice";
 
 /** The configuration of an HTTP client. The token placeholder is replaced by the token shown once. */
 export function httpConfiguration(url: string): string {
@@ -41,13 +43,14 @@ export function McpHttpPanel() {
               role="switch"
               aria-checked={state.enabled}
               aria-label="MCP over HTTP"
-              disabled={change.isPending}
+              disabled={change.isPending || isEnvironmentSource(state.source)}
               onClick={() => change.mutate(!state.enabled)}
             >
               {change.isPending ? "Saving" : state.enabled ? "On" : "Off"}
             </Button>
           </div>
-          {change.isError ? <ErrorNotice error={change.error} onRetry={() => change.mutate(!state.enabled)} /> : null}
+          <p className="text-meta text-muted-foreground">{sourceText(state.source)}</p>
+          {change.isError ? <SaveErrorNotice error={change.error} onRetry={() => change.reset()} /> : null}
           <p className="text-ui">
             URL:{" "}
             <code dir="ltr" className="text-code font-mono [overflow-wrap:anywhere]">

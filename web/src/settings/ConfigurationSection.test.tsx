@@ -73,6 +73,13 @@ describe("ConfigurationView", () => {
     expect(screen.getByRole("row", { name: /openrouter\.api_key/ })).toHaveTextContent("No key");
   });
 
+  it("shows a short key as set without an ending, because the server sends an empty last four", () => {
+    view({ ...STATE, settings: [{ key: "openrouter.api_key", value: null, last4: "", source: "keychain", applies: "live", restart_pending: false }] });
+    const row = screen.getByRole("row", { name: /openrouter\.api_key/ });
+    expect(row).toHaveTextContent("Key set");
+    expect(row).not.toHaveTextContent("ending");
+  });
+
   it("shows a setting with no value as not set", () => {
     view({ ...STATE, settings: [{ key: "answer.model", value: null, source: "default", applies: "live", restart_pending: false }] });
     expect(screen.getByRole("row", { name: /answer\.model/ })).toHaveTextContent("Not set");

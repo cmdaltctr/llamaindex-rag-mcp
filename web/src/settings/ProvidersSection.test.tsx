@@ -1,16 +1,22 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import type { Connection, ConnectionList } from "../api/settings";
+import type { Connection, ConnectionList, ProviderField } from "../api/settings";
 import { json } from "../test/fakeDocumentsServer";
 import { startApp } from "../test/startApp";
-import { CONNECTIONS, LLAMACPP, OLLAMA, OPENROUTER, settingsServer, urlField } from "./test/fixtures";
+import { CONFIG_DIR, CONNECTIONS, LLAMACPP, OLLAMA, OPENROUTER, settingsServer, urlField } from "./test/fixtures";
 
 const KEY = "sk-or-secret-1234567890-wxyz"; // gitleaks:allow
 
 function list(...connections: Connection[]): ConnectionList {
   return { ...CONNECTIONS, connections };
 }
+
+function openrouter(change: Partial<ProviderField>): Connection {
+  return { ...OPENROUTER, fields: [{ ...OPENROUTER.fields[0]!, ...change }] };
+}
+
+const NO_KEY: Partial<ProviderField> = { set: false, last4: null, source: "none" };
 
 async function openProviders(handlers = {}) {
   const server = settingsServer(handlers);
@@ -57,58 +63,93 @@ describe("Providers", () => {
     expect(within(card("Ollama")).queryByText(/uv sync/)).toBeNull();
   });
 
-  it("says that saved values apply at once to this web server only, and shows no restart banner", async () => {
+  it("names the omrg.jsonc path, says saves are written there, and shows no restart banner", async () => {
     await openProviders();
     const section = screen.getByRole("region", { name: "Providers" });
-    expect(section).toHaveTextContent(/apply at once to this web server only/i);
-    expect(screen.queryByText(/restart/i)).toBeNull();
+    expect(section).toHaveTextContent("~/.config/omrg/omrg.jsonc");
+    expect(section).toHaveTextContent(/saves are written to .*omrg\.jsonc/i);
+    expect(section).toHaveTextContent(/apply at once to this web server/i);
+    expect(screen.queryByText(/restart to apply/i)).toBeNull();
+  });
+
+  it("shows an address with the default word and an Edit button, and no input until Edit", async () => {
+    await openProviders();
+    const ollama = card("Ollama");
+    expect(within(ollama).getByText("http://127.0.0.1:11434")).toBeInTheDocument();
+    expect(within(ollama).getByText("default")).toBeInTheDocument();
+    expect(within(ollama).queryByRole("textbox")).toBeNull();
+    expect(within(ollama).getByRole("button", { name: "Edit Address" })).toBeInTheDocument();
   });
 
   it("shows an environment address as read-only with the variable named", async () => {
-    const locked = { ...OLLAMA, fields: [urlField("base_url", "Address", "http://env-host:11434", "env", "Remove OLLAMA_BASE_URL from .env to edit it.")] };
+    const locked = { ...OLLAMA, fields: [urlField("base_url", "Address", "http://env-host:11434", "env", "Remove OLLAMA_BASE_URL from the environment or .env to edit it here.")] };
     await openProviders({ "GET /v1/connections": () => list(locked, LLAMACPP, OPENROUTER) });
     const ollama = card("Ollama");
-    expect(within(ollama).getByText("Set from environment (read-only here)")).toBeInTheDocument();
+    expect(within(ollama).getByText("Set in the environment. Change it there.")).toBeInTheDocument();
     expect(ollama).toHaveTextContent("OLLAMA_BASE_URL");
     expect(within(ollama).getByText("http://env-host:11434")).toBeInTheDocument();
     expect(within(ollama).queryByRole("textbox")).toBeNull();
-    expect(within(ollama).queryByRole("button", { name: "Save address" })).toBeNull();
+    expect(within(ollama).queryByRole("button", { name: /^Edit/ })).toBeNull();
   });
 
-  it("saves an address and shows the address and source the server returns", async () => {
+  it("shows a .env address as read-only with the variable and the .env path", async () => {
+    const locked = { ...OLLAMA, fields: [urlField("base_url", "Address", "http://env-host:11434", "dotenv", "Remove OLLAMA_BASE_URL from the environment or .env to edit it here.")] };
+    await openProviders({ "GET /v1/connections": () => list(locked, LLAMACPP, OPENROUTER) });
+    const ollama = card("Ollama");
+    expect(ollama).toHaveTextContent("Set in .env. Change it there.");
+    expect(ollama).toHaveTextContent("OLLAMA_BASE_URL");
+    expect(ollama).toHaveTextContent(`${CONFIG_DIR}/.env`);
+    expect(within(ollama).queryByRole("button", { name: /^Edit/ })).toBeNull();
+  });
+
+  it("shows an address from the config file with its words and keeps it editable", async () => {
+    await openProviders({
+      "GET /v1/connections": () => list({ ...OLLAMA, fields: [urlField("base_url", "Address", "http://cfg-host:11434", "config-file")] }, LLAMACPP, OPENROUTER),
+    });
+    const ollama = card("Ollama");
+    expect(within(ollama).getByText("http://cfg-host:11434")).toBeInTheDocument();
+    expect(within(ollama).getByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(within(ollama).getByRole("button", { name: "Edit Address" })).toBeInTheDocument();
+  });
+
+  it("opens the input filled with the address, saves it and shows the address and source the server returns", async () => {
     let value = "http://127.0.0.1:11434";
-    let source: "default" | "saved" = "default";
+    let source: "default" | "config-file" = "default";
     const { user, server } = await openProviders({
       "GET /v1/connections": () => list({ ...OLLAMA, fields: [urlField("base_url", "Address", value, source)] }, LLAMACPP, OPENROUTER),
       "PUT /v1/connections/ollama": (body: Record<string, unknown>) => {
         value = (body.fields as Record<string, string>).base_url!;
-        source = "saved";
-        return { status: "ok" };
+        source = "config-file";
+        return { status: "ok", revision: "r2" };
       },
     });
     const ollama = card("Ollama");
+    await user.click(within(ollama).getByRole("button", { name: "Edit Address" }));
     const input = within(ollama).getByRole("textbox", { name: "Address" });
-    expect(within(ollama).getByRole("button", { name: "Save address" })).toBeDisabled();
+    expect(input).toHaveValue("http://127.0.0.1:11434");
+    expect(within(ollama).getByRole("button", { name: "Save" })).toBeDisabled();
     await user.clear(input);
     await user.type(input, "http://gpu-box.local:11434");
-    await user.click(within(ollama).getByRole("button", { name: "Save address" }));
-    expect(await within(ollama).findByText("Source: saved")).toBeInTheDocument();
-    expect(within(ollama).getByRole("textbox", { name: "Address" })).toHaveValue("http://gpu-box.local:11434");
-    expect(server.find("PUT", "/v1/connections/ollama")[0]?.body).toEqual({ fields: { base_url: "http://gpu-box.local:11434" } });
+    await user.click(within(ollama).getByRole("button", { name: "Save" }));
+    expect(await within(ollama).findByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(within(ollama).getByText("http://gpu-box.local:11434")).toBeInTheDocument();
+    expect(within(ollama).queryByRole("textbox")).toBeNull();
+    expect(server.find("PUT", "/v1/connections/ollama")[0]?.body).toEqual({ fields: { base_url: "http://gpu-box.local:11434" }, revision: "r1" });
   });
 
-  it("resets a saved address to the default", async () => {
+  it("returns a file address to the default with null", async () => {
     const { user, server } = await openProviders({
-      "GET /v1/connections": () => list({ ...OLLAMA, fields: [urlField("base_url", "Address", "http://gpu:11434", "saved")] }, LLAMACPP, OPENROUTER),
-      "PUT /v1/connections/ollama": () => ({ status: "ok" }),
+      "GET /v1/connections": () => list({ ...OLLAMA, fields: [urlField("base_url", "Address", "http://gpu:11434", "config-file")] }, LLAMACPP, OPENROUTER),
+      "PUT /v1/connections/ollama": () => ({ status: "ok", revision: "r2" }),
     });
-    await user.click(within(card("Ollama")).getByRole("button", { name: "Reset to default" }));
-    expect(server.find("PUT", "/v1/connections/ollama")[0]?.body).toEqual({ fields: { base_url: null } });
+    await user.click(within(card("Ollama")).getByRole("button", { name: "Edit Address" }));
+    await user.click(within(card("Ollama")).getByRole("button", { name: "Use default" }));
+    expect(server.find("PUT", "/v1/connections/ollama")[0]?.body).toEqual({ fields: { base_url: null }, revision: "r1" });
   });
 
   it("states that text leaves this machine for a Cloud card and for a non-loopback address", async () => {
     await openProviders({
-      "GET /v1/connections": () => list({ ...OLLAMA, fields: [urlField("base_url", "Address", "http://gpu-box.local:11434", "saved")] }, LLAMACPP, OPENROUTER),
+      "GET /v1/connections": () => list({ ...OLLAMA, fields: [urlField("base_url", "Address", "http://gpu-box.local:11434", "config-file")] }, LLAMACPP, OPENROUTER),
     });
     expect(card("OpenRouter")).toHaveTextContent(/leaves this machine/i);
     expect(card("Ollama")).toHaveTextContent(/leaves this machine/i);
@@ -126,110 +167,104 @@ describe("Providers", () => {
     expect(card("Ollama")).not.toHaveTextContent(/leaves this machine/i);
   });
 
-  it("shows the key as set with the last four characters and never a full key", async () => {
+  it("shows a keychain key as a summary row with Replace and Remove, and never a full key", async () => {
     await openProviders({
       "GET /v1/connections": () => list(OLLAMA, LLAMACPP, { ...OPENROUTER, fields: [{ ...OPENROUTER.fields[0]!, api_key: KEY } as never] }),
     });
     const openrouter = card("OpenRouter");
-    expect(within(openrouter).getByText("Key set")).toBeInTheDocument();
-    expect(openrouter).toHaveTextContent("wxyz");
+    expect(within(openrouter).getByText("Key set · ending wxyz · in system keychain")).toBeInTheDocument();
+    expect(within(openrouter).getByRole("button", { name: "Replace API key" })).toBeInTheDocument();
+    expect(within(openrouter).getByRole("button", { name: "Remove API key" })).toBeInTheDocument();
+    expect(within(openrouter).queryByLabelText("API key")).toBeNull();
     expect(document.body.textContent).not.toContain(KEY);
     expect(document.body.textContent).not.toContain("secret-1234");
   });
 
-  it("saves a key, empties the input and shows Key set with the last four characters", async () => {
+  it("shows a key from .env with its words and no button", async () => {
+    await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, openrouter({ source: "dotenv", locked: true, lock_reason: "Remove OPENROUTER_API_KEY from the environment or .env to edit it here." })) });
+    const card_ = card("OpenRouter");
+    expect(within(card_).getByText("Key set · ending wxyz · Set in .env. Change it there.")).toBeInTheDocument();
+    expect(within(card_).queryByRole("button", { name: /Replace|Remove/ })).toBeNull();
+    expect(within(card_).queryByLabelText("API key")).toBeNull();
+  });
+
+  it("shows a key from the environment with its words and no button", async () => {
+    await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, openrouter({ source: "env", locked: true, lock_reason: "Remove OPENROUTER_API_KEY from the environment or .env to edit it here." })) });
+    const card_ = card("OpenRouter");
+    expect(within(card_).getByText("Key set · ending wxyz · Set in the environment. Change it there.")).toBeInTheDocument();
+    expect(within(card_).queryByRole("button", { name: /Replace|Remove/ })).toBeNull();
+  });
+
+  it("shows a key from a key file with the file, offers Replace and no Remove", async () => {
+    await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, openrouter({ source: "key-file" })) });
+    const card_ = card("OpenRouter");
+    expect(within(card_).getByText("Key set · ending wxyz · from key file secrets/openrouter.key")).toBeInTheDocument();
+    expect(within(card_).getByRole("button", { name: "Replace API key" })).toBeInTheDocument();
+    expect(within(card_).queryByRole("button", { name: /^Remove/ })).toBeNull();
+  });
+
+  it("replaces a key: the input closes, the summary shows the new ending and the key is never shown again", async () => {
     let saved = false;
-    const keyField = OPENROUTER.fields[0]!;
     const { user, server } = await openProviders({
-      "GET /v1/connections": () =>
-        list(OLLAMA, LLAMACPP, {
-          ...OPENROUTER,
-          fields: [saved ? keyField : { ...keyField, set: false, last4: null, source: "none", saved_at: null }],
-        }),
+      "GET /v1/connections": () => list(OLLAMA, LLAMACPP, saved ? openrouter({ last4: "9999" }) : openrouter({ last4: "wxyz" })),
       "PUT /v1/connections/openrouter/key": () => {
         saved = true;
-        return { status: "ok" };
+        return { status: "ok", revision: "r2" };
       },
     });
-    const openrouter = card("OpenRouter");
-    expect(within(openrouter).getByText("No key")).toBeInTheDocument();
-    const input = within(openrouter).getByLabelText("API key");
+    const card_ = card("OpenRouter");
+    await user.click(within(card_).getByRole("button", { name: "Replace API key" }));
+    const input = within(card_).getByLabelText("API key");
+    expect(input).toHaveValue("");
     expect(input).toHaveAttribute("type", "password");
     expect(input).toHaveAttribute("autocomplete", "off");
     await user.type(input, KEY);
-    await user.click(within(openrouter).getByRole("button", { name: "Save key" }));
-    expect(await within(openrouter).findByText("Key set")).toBeInTheDocument();
-    expect(openrouter).toHaveTextContent("wxyz");
-    expect(within(openrouter).getByLabelText("API key")).toHaveValue("");
-    expect(server.find("PUT", "/v1/connections/openrouter/key")[0]?.body).toEqual({ api_key: KEY });
+    await user.click(within(card_).getByRole("button", { name: "Save key" }));
+    expect(await within(card_).findByText("Key set · ending 9999 · in system keychain")).toBeInTheDocument();
+    expect(within(card_).queryByLabelText("API key")).toBeNull();
+    expect(server.find("PUT", "/v1/connections/openrouter/key")[0]?.body).toEqual({ api_key: KEY, revision: "r1" });
     expect(document.body.textContent).not.toContain(KEY);
   });
 
   it("removes a key kept in the keychain", async () => {
-    const { user, server } = await openProviders({ "DELETE /v1/connections/openrouter/key": () => ({ status: "ok" }) });
-    await user.click(within(card("OpenRouter")).getByRole("button", { name: "Remove key" }));
+    const { user, server } = await openProviders({ "DELETE /v1/connections/openrouter/key": () => ({ status: "ok", revision: "r2" }) });
+    await user.click(within(card("OpenRouter")).getByRole("button", { name: "Remove API key" }));
     expect(server.find("DELETE", "/v1/connections/openrouter/key")).toHaveLength(1);
+    expect(server.find("DELETE", "/v1/connections/openrouter/key")[0]?.body).toEqual({ revision: "r1" });
   });
 
-  it("shows a config-file address as read-only with the server's reason", async () => {
-    const locked = { ...OLLAMA, fields: [urlField("base_url", "Address", "http://cfg-host:11434", "config-file", "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it.")] };
-    await openProviders({ "GET /v1/connections": () => list(locked, LLAMACPP, OPENROUTER) });
-    const ollama = card("Ollama");
-    expect(within(ollama).getByText("Set from config file (read-only here)")).toBeInTheDocument();
-    expect(ollama).toHaveTextContent("Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it.");
-    expect(within(ollama).queryByRole("button", { name: "Save address" })).toBeNull();
+  it("shows a key input with the placeholder and the key file hint when no key is set", async () => {
+    await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, openrouter(NO_KEY)) });
+    const card_ = card("OpenRouter");
+    expect(within(card_).getByLabelText("API key")).toHaveAttribute("placeholder", "Paste key (saved to the system keychain)");
+    expect(within(card_).getByText("Or put it in secrets/openrouter.key")).toBeInTheDocument();
+    expect(within(card_).queryByText(/Key set/)).toBeNull();
   });
 
-  it("shows a config-file key as read-only with no key input", async () => {
-    const fileRef = { ...OPENROUTER.fields[0]!, source: "config-file" as const, locked: true, lock_reason: "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it." };
-    await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, { ...OPENROUTER, fields: [fileRef] }) });
-    const openrouter = card("OpenRouter");
-    expect(within(openrouter).getByText("Set from config file (read-only here)")).toBeInTheDocument();
-    expect(openrouter).toHaveTextContent("omrg.jsonc");
-    expect(within(openrouter).queryByLabelText("API key")).toBeNull();
-  });
-
-  it("shows a key-file key as read-only but still lets the keychain override it", async () => {
-    const reason = "Set from the key file (read-only here). Saving a key in the keychain overrides it.";
-    const keyFile = { ...OPENROUTER.fields[0]!, source: "key-file" as const, lock_reason: reason };
-    const { server, user } = await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, { ...OPENROUTER, fields: [keyFile] }) });
-    const openrouter = card("OpenRouter");
-    expect(openrouter).toHaveTextContent("Set from the key file (read-only here).");
-    expect(openrouter).toHaveTextContent("Saving a key in the keychain overrides it.");
-    expect(openrouter.textContent?.match(/\(read-only here\)/g)).toHaveLength(1);
-    expect(within(openrouter).queryByRole("button", { name: "Remove key" })).toBeNull();
-    await user.type(within(openrouter).getByLabelText("API key"), KEY);
-    await user.click(within(openrouter).getByRole("button", { name: "Save key" }));
-    expect(server.find("PUT", "/v1/connections/openrouter/key")).toHaveLength(1);
-  });
-
-  it("shows an environment key as read-only with no key input", async () => {
-    const envKey = { ...OPENROUTER.fields[0]!, source: "env" as const, locked: true, lock_reason: "Remove OPENROUTER_API_KEY from .env to edit it." };
-    await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, { ...OPENROUTER, fields: [envKey] }) });
-    const openrouter = card("OpenRouter");
-    expect(within(openrouter).getByText("Set from environment (read-only here)")).toBeInTheDocument();
-    expect(openrouter).toHaveTextContent("OPENROUTER_API_KEY");
-    expect(within(openrouter).queryByLabelText("API key")).toBeNull();
-    expect(within(openrouter).queryByRole("button", { name: "Remove key" })).toBeNull();
+  it("shows an optional key as optional with no error", async () => {
+    const optional: Connection = { ...OPENROUTER, provider: "openai_compatible", display_name: "OpenAI-compatible", fields: [{ ...OPENROUTER.fields[0]!, ...NO_KEY, required: false }] };
+    await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, optional) });
+    const card_ = card("OpenAI-compatible");
+    expect(within(card_).getByText("Optional")).toBeInTheDocument();
+    expect(within(card_).queryByRole("alert")).toBeNull();
   });
 
   it("replaces the key input with one line when no keychain is available", async () => {
-    const noKey = { ...OPENROUTER.fields[0]!, set: false, last4: null, source: "none" as const, lock_reason: "No system keychain is available. Set OPENROUTER_API_KEY in the environment or .env." };
-    await openProviders({ "GET /v1/connections": () => ({ ...list(OLLAMA, LLAMACPP, { ...OPENROUTER, fields: [noKey] }), keychain: "unavailable" }) });
-    const openrouter = card("OpenRouter");
-    expect(openrouter).toHaveTextContent(/no system keychain/i);
-    expect(openrouter.textContent?.match(/no system keychain/gi)).toHaveLength(1);
-    expect(openrouter).toHaveTextContent("OPENROUTER_API_KEY");
-    expect(within(openrouter).queryByLabelText("API key")).toBeNull();
-    expect(within(openrouter).queryByRole("button", { name: "Save key" })).toBeNull();
+    await openProviders({ "GET /v1/connections": () => ({ ...list(OLLAMA, LLAMACPP, openrouter(NO_KEY)), keychain: "unavailable" }) });
+    const card_ = card("OpenRouter");
+    expect(card_).toHaveTextContent(/no system keychain/i);
+    expect(card_.textContent?.match(/no system keychain/gi)).toHaveLength(1);
+    expect(card_).toHaveTextContent("secrets/openrouter.key");
+    expect(card_).toHaveTextContent("OPENROUTER_API_KEY");
+    expect(within(card_).queryByLabelText("API key")).toBeNull();
+    expect(within(card_).queryByRole("button", { name: "Save key" })).toBeNull();
   });
 
   it.each([
     ["keychain-missing", /removed from the keychain/i],
     ["keychain-unreadable", /could not be read/i],
   ])("explains the key state %s", async (state, words) => {
-    const field = { ...OPENROUTER.fields[0]!, set: false, last4: null, source: "none" as const, state };
-    await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, { ...OPENROUTER, fields: [field] }) });
+    await openProviders({ "GET /v1/connections": () => list(OLLAMA, LLAMACPP, openrouter({ ...NO_KEY, state })) });
     expect(card("OpenRouter")).toHaveTextContent(words);
   });
 
@@ -243,6 +278,7 @@ describe("Providers", () => {
       "POST /v1/connections/ollama/test": () => ({ status: "ok", reachable: false, reason: "refused" }),
     });
     const ollama = card("Ollama");
+    await user.click(within(ollama).getByRole("button", { name: "Edit Address" }));
     const input = within(ollama).getByRole("textbox", { name: "Address" });
     await user.clear(input);
     await user.type(input, "http://gpu:11434");
@@ -259,10 +295,11 @@ describe("Providers", () => {
     const { user, server } = await openProviders({
       "POST /v1/connections/openrouter/test": () => ({ status: "ok", reachable: false, reason: "unauthorised" }),
     });
-    const openrouter = card("OpenRouter");
-    await user.type(within(openrouter).getByLabelText("API key"), KEY);
-    await user.click(within(openrouter).getByRole("button", { name: "Test" }));
-    expect(await within(openrouter).findByText("unauthorised")).toBeInTheDocument();
+    const card_ = card("OpenRouter");
+    await user.click(within(card_).getByRole("button", { name: "Replace API key" }));
+    await user.type(within(card_).getByLabelText("API key"), KEY);
+    await user.click(within(card_).getByRole("button", { name: "Test" }));
+    expect(await within(card_).findByText("unauthorised")).toBeInTheDocument();
     expect(server.find("POST", "/v1/connections/openrouter/test")[0]?.body).toEqual({ fields: { api_key: KEY } });
     expect(document.body.textContent).not.toContain(KEY);
   });
@@ -271,6 +308,17 @@ describe("Providers", () => {
     const { user, server } = await openProviders({ "POST /v1/connections/ollama/test": () => ({ status: "ok", reachable: true, reason: null }) });
     await user.click(within(card("Ollama")).getByRole("button", { name: "Test" }));
     expect(await within(card("Ollama")).findByText("Reachable")).toHaveAttribute("data-slot", "badge");
+    expect(server.find("POST", "/v1/connections/ollama/test")[0]?.body).toEqual({ fields: {} });
+  });
+
+  it("stops testing a typed address after Cancel", async () => {
+    const { user, server } = await openProviders({ "POST /v1/connections/ollama/test": () => ({ status: "ok", reachable: true, reason: null }) });
+    const ollama = card("Ollama");
+    await user.click(within(ollama).getByRole("button", { name: "Edit Address" }));
+    await user.type(within(ollama).getByRole("textbox", { name: "Address" }), "x");
+    await user.click(within(ollama).getByRole("button", { name: "Cancel" }));
+    await user.click(within(ollama).getByRole("button", { name: "Test" }));
+    expect(await within(ollama).findByText("Reachable")).toBeInTheDocument();
     expect(server.find("POST", "/v1/connections/ollama/test")[0]?.body).toEqual({ fields: {} });
   });
 
@@ -283,13 +331,37 @@ describe("Providers", () => {
     expect(document.body.textContent).not.toContain("Traceback");
   });
 
-  it("shows one friendly line when a save fails and no server text", async () => {
-    const { user } = await openProviders({
-      "PUT /v1/connections/ollama": () => json({ status: "error", message: "locked by OLLAMA_BASE_URL at /srv/x" }, 409),
-    });
+  it("shows the rule message when a save is refused with 400, in place of the generic line", async () => {
+    const message = "The address must start with http:// or https://.";
+    const { user } = await openProviders({ "PUT /v1/connections/ollama": () => json({ status: "error", message }, 400) });
     const ollama = card("Ollama");
+    await user.click(within(ollama).getByRole("button", { name: "Edit Address" }));
     await user.type(within(ollama).getByRole("textbox", { name: "Address" }), "x");
-    await user.click(within(ollama).getByRole("button", { name: "Save address" }));
+    await user.click(within(ollama).getByRole("button", { name: "Save" }));
+    expect(await within(ollama).findByRole("alert")).toHaveTextContent(message);
+    expect(screen.queryByText(/could not complete/i)).toBeNull();
+  });
+
+  it("shows the conflict with a Reload action when omrg.jsonc changed on disk, and reads the cards again on Reload", async () => {
+    const message = "omrg.jsonc changed on disk. Reload to see the new values.";
+    const { user, server } = await openProviders({ "PUT /v1/connections/ollama": () => json({ status: "error", message }, 409) });
+    const ollama = card("Ollama");
+    await user.click(within(ollama).getByRole("button", { name: "Edit Address" }));
+    await user.type(within(ollama).getByRole("textbox", { name: "Address" }), "x");
+    await user.click(within(ollama).getByRole("button", { name: "Save" }));
+    expect(await within(ollama).findByRole("alert")).toHaveTextContent(message);
+    const reads = server.find("GET", "/v1/connections").length;
+    await user.click(within(ollama).getByRole("button", { name: "Reload" }));
+    await waitFor(() => expect(server.find("GET", "/v1/connections").length).toBe(reads + 1));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("shows the generic line for a failure that is not a refused value", async () => {
+    const { user } = await openProviders({ "PUT /v1/connections/ollama": () => json({ status: "error", message: "boom at /srv/x" }, 500) });
+    const ollama = card("Ollama");
+    await user.click(within(ollama).getByRole("button", { name: "Edit Address" }));
+    await user.type(within(ollama).getByRole("textbox", { name: "Address" }), "x");
+    await user.click(within(ollama).getByRole("button", { name: "Save" }));
     expect(await within(ollama).findByRole("alert")).toHaveTextContent(/could not complete/i);
     expect(screen.queryByText(/\/srv\/x/)).toBeNull();
   });

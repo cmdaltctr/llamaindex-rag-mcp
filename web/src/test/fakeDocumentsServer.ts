@@ -40,7 +40,7 @@ export const PROFILES = [
 ];
 
 /** `GET /v1/settings/upload-limit` with no saved value: the 50 MiB default. */
-export const UPLOAD_LIMIT: UploadLimitState = { status: "ok", max_bytes: 50 * 1024 * 1024, source: "default", saved_mib: null, default_mib: 50, min_mib: 1, max_mib: 2048 };
+export const UPLOAD_LIMIT: UploadLimitState = { status: "ok", revision: "r1", max_bytes: 50 * 1024 * 1024, source: "default", saved_mib: null, default_mib: 50, min_mib: 1, max_mib: 2048 };
 
 const DEFAULTS: Record<string, Handler> = {
   "GET /v1/collections": () => COLLECTIONS,

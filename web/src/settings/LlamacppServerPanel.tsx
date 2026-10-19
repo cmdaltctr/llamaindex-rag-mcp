@@ -29,23 +29,18 @@ export function LlamacppServerPanel() {
       <div role="status" className="text-ui">
         {statusLine(status)}
       </div>
-      {live && status.pending_restart ? <p className="text-meta text-muted-foreground">Restart to apply the saved values.</p> : null}
+      {live && status.pending_restart ? <p className="text-meta text-muted-foreground">Restart to apply</p> : null}
+      <p className="text-meta text-muted-foreground">The embedding server is not managed here.</p>
       <div className="flex flex-wrap items-center gap-2">
-        {live ? null : (
-          <Button size="sm" disabled={busy} onClick={() => start.mutate()}>
-            Start
-          </Button>
-        )}
-        {live ? (
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => stop.mutate()}>
-            Stop
-          </Button>
-        ) : null}
-        {status.state === "running" ? (
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => restart.mutate()}>
-            Restart
-          </Button>
-        ) : null}
+        <Button size="sm" disabled={busy || live} onClick={() => start.mutate()}>
+          Start
+        </Button>
+        <Button size="sm" variant="outline" disabled={busy || !live} onClick={() => stop.mutate()}>
+          Stop
+        </Button>
+        <Button size="sm" variant="outline" disabled={busy || status.state !== "running"} onClick={() => restart.mutate()}>
+          Restart
+        </Button>
       </div>
       {failure !== undefined ? <ErrorNotice error={failure.error} onRetry={() => failure.reset()} /> : null}
     </div>

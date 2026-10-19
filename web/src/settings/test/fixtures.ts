@@ -5,14 +5,14 @@ import { documentsServer, type Handler } from "../../test/fakeDocumentsServer";
 /** Fixtures built from the `openapi.yaml` schemas for the Settings routes. */
 export const CONFIG_DIR = "/srv/omrg project";
 
-const NO_KEY = { min: null, max: null, value: null, required: true, set: false, last4: null, saved_at: null, state: null, locked: false, lock_reason: null } as const;
+const NO_KEY = { min: null, max: null, value: null, required: true, set: false, last4: null, state: null, locked: false, lock_reason: null } as const;
 
 export function urlField(id: string, label: string, value: string, source: ProviderField["source"] = "default", lock?: string): ProviderField {
-  return { id, label, kind: "url", min: null, max: null, value, source, locked: lock !== undefined, lock_reason: lock ?? null, required: true, set: false, last4: null, saved_at: null, state: null };
+  return { id, label, kind: "url", min: null, max: null, value, source, locked: lock !== undefined, lock_reason: lock ?? null, required: true, set: false, last4: null, state: null };
 }
 
 export function intField(id: string, label: string, value: number, source: ProviderField["source"] = "default", lock?: string): ProviderField {
-  return { id, label, kind: "int", min: 2048, max: 262144, value, source, locked: lock !== undefined, lock_reason: lock ?? null, required: true, set: true, last4: null, saved_at: null, state: null };
+  return { id, label, kind: "int", min: 2048, max: 262144, value, source, locked: lock !== undefined, lock_reason: lock ?? null, required: true, set: true, last4: null, state: null };
 }
 
 function serverField(id: string, label: string, kind: ServerField["kind"], value: string | number, source: ServerField["source"] = "default", lock?: string): ServerField {
@@ -23,6 +23,7 @@ function serverField(id: string, label: string, kind: ServerField["kind"], value
 /** The llama.cpp server status with nothing set and nothing running. */
 export const SERVER_STOPPED: LlamacppServerStatus = {
   status: "ok",
+  revision: "r1",
   state: "stopped",
   reason: null,
   exit_code: null,
@@ -76,19 +77,20 @@ export const OPENROUTER: Connection = {
   installed: true,
   install_hint: null,
   fields: [
-    { id: "api_key", label: "API key", kind: "secret", source: "keychain", ...NO_KEY, set: true, last4: "wxyz", saved_at: "2026-10-14T10:00:00Z" },
+    { id: "api_key", label: "API key", kind: "secret", source: "keychain", ...NO_KEY, set: true, last4: "wxyz" },
   ],
   read_only: [{ label: "Verification model", value: "openai/gpt-5-mini" }],
   roles: ["verification"],
 };
 
-export const CONNECTIONS: ConnectionList = { status: "ok", config_dir: CONFIG_DIR, user_config_dir: "~/.config/omrg", keychain: "available", connections: [OLLAMA, LLAMACPP, OPENROUTER] };
+export const CONNECTIONS: ConnectionList = { status: "ok", revision: "r1", config_dir: CONFIG_DIR, user_config_dir: "~/.config/omrg", keychain: "available", connections: [OLLAMA, LLAMACPP, OPENROUTER] };
 
 export const CHAT_READY: ChatSettings = {
   status: "ok",
+  revision: "r1",
   provider: "ollama",
   model: "qwen3:4b",
-  source: "saved",
+  source: "config-file",
   locked: false,
   lock_reason: null,
   enabled: true,
@@ -98,12 +100,14 @@ export const CHAT_READY: ChatSettings = {
 
 export const MCP_OFF: McpState = {
   status: "ok",
+  revision: "r1",
   enabled: false,
+  source: "default",
   url: "http://127.0.0.1:8765/mcp",
   token: { exists: false, created_at: null },
 };
 
-export const WEB_PORT: WebPortState = { status: "ok", saved: null, bound: 8765 };
+export const WEB_PORT: WebPortState = { status: "ok", revision: "r1", saved: null, bound: 8765 };
 
 export function logRecord(seq: number, level: LogRecord["level"], message: string, logger = "omrg.server"): LogRecord {
   return { seq, time: `2026-10-14T09:30:${String(seq).padStart(2, "0")}Z`, level, logger, message };

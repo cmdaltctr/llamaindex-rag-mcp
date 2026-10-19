@@ -10,6 +10,11 @@
  */
 import type { ApiClient, CallOptions } from "./client";
 
+/** Options of a Settings write. `revision` is the stamp of `omrg.jsonc` last read; a file changed on disk since gives 409. */
+export interface SaveOptions extends CallOptions {
+  revision?: string;
+}
+
 export interface Health {
   status: "ok";
   /** False while the server starts or shuts down. */
@@ -21,8 +26,8 @@ export interface Health {
 export const CONNECTION_ROLES = ["embeddings", "answers", "metadata", "verification"] as const;
 export type ConnectionRole = (typeof CONNECTION_ROLES)[number];
 
-/** Where a value comes from. `env` and `config-file` lock it; a key comes from one of those, `keychain`, `key-file` or `none`. */
-export type FieldSource = "env" | "config-file" | "saved" | "keychain" | "key-file" | "default" | "none";
+/** Where a value comes from. `env` and `dotenv` lock it. A key also comes from `config-file`, `keychain`, `key-file` or `none`. */
+export type FieldSource = "env" | "dotenv" | "config-file" | "keychain" | "key-file" | "default" | "none";
 
 export interface ProviderField {
   id: string;
@@ -44,7 +49,6 @@ export interface ProviderField {
   set: boolean;
   /** The last four characters of a key, or `null`. */
   last4: string | null;
-  saved_at: string | null;
   /** `keychain-missing` or `keychain-unreadable` when the stored key cannot be used; otherwise `null`. */
   state: string | null;
 }
@@ -74,6 +78,8 @@ export interface ConnectionList {
   /** The read-only user config folder, with `~` for the home folder. */
   user_config_dir: string;
   keychain: "available" | "unavailable";
+  /** Stamp of `omrg.jsonc` at this read. A save sends it back, so a file changed on disk gives 409. */
+  revision: string;
   connections: Connection[];
 }
 
@@ -103,9 +109,10 @@ export interface ChatChoice {
 
 export interface ChatSettings {
   status: "ok";
+  revision: string;
   provider: string | null;
   model: string | null;
-  source: "env" | "config-file" | "saved" | "default";
+  source: "env" | "dotenv" | "config-file" | "default";
   locked: boolean;
   lock_reason: string | null;
   enabled: boolean;
@@ -143,7 +150,10 @@ export interface LogList {
 
 export interface McpState {
   status: "ok";
+  revision: string;
   enabled: boolean;
+  /** Where the on/off state comes from: `env`, `dotenv`, `config-file` or `default`. */
+  source: string;
   /** The full `/mcp` address on the bound host and port. */
   url: string;
   token: { exists: boolean; created_at: string | null };
@@ -164,6 +174,7 @@ export interface McpTokenRevoked {
 
 export interface WebPortState {
   status: "ok";
+  revision: string;
   /** Used at the next launch when `--port` is not given, or `null`. */
   saved: number | null;
   /** The port this server listens on now. */
@@ -171,10 +182,11 @@ export interface WebPortState {
 }
 
 /** Where the upload limit in force came from. `launch` locks it for this server run. */
-export type UploadLimitSource = "launch" | "saved" | "default";
+export type UploadLimitSource = "launch" | "config-file" | "default";
 
 export interface UploadLimitState {
   status: "ok";
+  revision: string;
   /** The per-file limit in force now. */
   max_bytes: number;
   source: UploadLimitSource;
@@ -208,26 +220,32 @@ export function listProviderModels(api: ApiClient, provider: string, fields: Fie
 }
 
 /** Saves addresses and whole numbers, or clears one with `null`. */
-export function saveProviderFields(api: ApiClient, provider: string, fields: Record<string, string | number | null>, options: CallOptions = {}): Promise<unknown> {
-  return api.request<unknown>("PUT", `/v1/connections/${provider}`, { body: { fields }, signal: options.signal });
+export function saveProviderFields(api: ApiClient, provider: string, fields: Record<string, string | number | null>, options: SaveOptions = {}): Promise<unknown> {
+  return api.request<unknown>("PUT", `/v1/connections/${provider}`, { body: { fields, revision: options.revision }, signal: options.signal });
 }
 
 /** Saves a key to the system keychain. The response never holds the key. */
-export function saveProviderKey(api: ApiClient, provider: string, apiKey: string, options: CallOptions = {}): Promise<unknown> {
-  return api.request<unknown>("PUT", `/v1/connections/${provider}/key`, { body: { api_key: apiKey }, signal: options.signal });
+export function saveProviderKey(api: ApiClient, provider: string, apiKey: string, options: SaveOptions = {}): Promise<unknown> {
+  return api.request<unknown>("PUT", `/v1/connections/${provider}/key`, { body: { api_key: apiKey, revision: options.revision }, signal: options.signal });
 }
 
-export function removeProviderKey(api: ApiClient, provider: string, options: CallOptions = {}): Promise<unknown> {
-  return api.request<unknown>("DELETE", `/v1/connections/${provider}/key`, { signal: options.signal });
+export function removeProviderKey(api: ApiClient, provider: string, options: SaveOptions = {}): Promise<unknown> {
+  return api.request<unknown>("DELETE", `/v1/connections/${provider}/key`, { body: options.revision === undefined ? undefined : { revision: options.revision }, signal: options.signal });
 }
 
 export function getChatSettings(api: ApiClient, options: CallOptions = {}): Promise<ChatSettings> {
   return api.request<ChatSettings>("GET", "/v1/settings/chat", { signal: options.signal });
 }
 
+/** A clear sends only the revision, so the server can tell it from a choice. With no revision a clear sends `null`. */
+function chatBody(choice: ChatChoice | null, revision: string | undefined): unknown {
+  if (choice === null && revision === undefined) return null;
+  return { ...choice, revision };
+}
+
 /** Saves the Chat provider and model, or clears the saved choice with `null`. */
-export function setChatSettings(api: ApiClient, choice: ChatChoice | null, options: CallOptions = {}): Promise<unknown> {
-  return api.request<unknown>("PUT", "/v1/settings/chat", { body: choice, signal: options.signal });
+export function setChatSettings(api: ApiClient, choice: ChatChoice | null, options: SaveOptions = {}): Promise<unknown> {
+  return api.request<unknown>("PUT", "/v1/settings/chat", { body: chatBody(choice, options.revision), signal: options.signal });
 }
 
 /** Sends one short prompt to the typed choice, or to the saved choice when none is given. Nothing is saved. */
@@ -243,8 +261,8 @@ export function getMcpState(api: ApiClient, options: CallOptions = {}): Promise<
   return api.request<McpState>("GET", "/v1/mcp", { signal: options.signal });
 }
 
-export function setMcpEnabled(api: ApiClient, enabled: boolean, options: CallOptions = {}): Promise<McpState> {
-  return api.request<McpState>("PUT", "/v1/mcp", { body: { enabled }, signal: options.signal });
+export function setMcpEnabled(api: ApiClient, enabled: boolean, options: SaveOptions = {}): Promise<McpState> {
+  return api.request<McpState>("PUT", "/v1/mcp", { body: { enabled, revision: options.revision }, signal: options.signal });
 }
 
 /** Creates the token, or replaces the existing one. Clients that hold the old token stop working. */
@@ -261,8 +279,8 @@ export function getWebPort(api: ApiClient, options: CallOptions = {}): Promise<W
 }
 
 /** Saves the port for the next launch, or clears it with `null`. The running server does not rebind. */
-export function setWebPort(api: ApiClient, port: number | null, options: CallOptions = {}): Promise<WebPortState> {
-  return api.request<WebPortState>("PUT", "/v1/settings/web-port", { body: { port }, signal: options.signal });
+export function setWebPort(api: ApiClient, port: number | null, options: SaveOptions = {}): Promise<WebPortState> {
+  return api.request<WebPortState>("PUT", "/v1/settings/web-port", { body: { port, revision: options.revision }, signal: options.signal });
 }
 
 export function getUploadLimit(api: ApiClient, options: CallOptions = {}): Promise<UploadLimitState> {
@@ -270,6 +288,6 @@ export function getUploadLimit(api: ApiClient, options: CallOptions = {}): Promi
 }
 
 /** Saves the per-file limit in whole MiB, or returns to the default with `null`. It applies to new uploads at once. */
-export function setUploadLimit(api: ApiClient, maxMib: number | null, options: CallOptions = {}): Promise<UploadLimitState> {
-  return api.request<UploadLimitState>("PUT", "/v1/settings/upload-limit", { body: { max_mib: maxMib }, signal: options.signal });
+export function setUploadLimit(api: ApiClient, maxMib: number | null, options: SaveOptions = {}): Promise<UploadLimitState> {
+  return api.request<UploadLimitState>("PUT", "/v1/settings/upload-limit", { body: { max_mib: maxMib, revision: options.revision }, signal: options.signal });
 }

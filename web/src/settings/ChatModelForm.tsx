@@ -11,6 +11,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { cloudHost, isKnownReason, reasonSentence } from "./connectionWords";
+import { SaveErrorNotice } from "./SaveErrorNotice";
 
 /** Why a provider cannot answer yet, from the cards, or `null` when it can. */
 function notReady(connection: Connection): string | null {
@@ -22,10 +23,12 @@ function notReady(connection: Connection): string | null {
 interface ChatModelFormProps {
   settings: ChatSettings;
   connections: Connection[];
+  /** Called after a good Save or Clear, and on Cancel. */
+  onClose: () => void;
 }
 
-/** The provider select, the model name, List models, Test, Save and Clear. Only Save and Clear write. */
-export function ChatModelForm({ settings, connections }: ChatModelFormProps) {
+/** The provider select, the model name, List models, Test, Save, Cancel and Clear. Only Save and Clear write. */
+export function ChatModelForm({ settings, connections, onClose }: ChatModelFormProps) {
   const api = useApi();
   const modelId = useId();
   const [provider, setProvider] = useState(settings.provider ?? "");
@@ -50,7 +53,7 @@ export function ChatModelForm({ settings, connections }: ChatModelFormProps) {
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (ready) save.mutate(choice);
+    if (ready) save.mutate(choice, { onSuccess: onClose });
   }
 
   return (
@@ -78,7 +81,6 @@ export function ChatModelForm({ settings, connections }: ChatModelFormProps) {
         <Input id={modelId} dir="ltr" autoComplete="off" spellCheck={false} className="max-w-md" value={model} onChange={(event) => setModel(event.target.value)} />
         <p className="text-meta text-muted-foreground">Type the model name exactly as the provider spells it, or use List models.</p>
       </div>
-      <p className="text-meta text-muted-foreground">{`Source: ${settings.source}`}</p>
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" size="sm" disabled={provider === "" || list.isPending} onClick={() => list.mutate()}>
           <List aria-hidden="true" />
@@ -91,8 +93,11 @@ export function ChatModelForm({ settings, connections }: ChatModelFormProps) {
         <Button type="submit" size="sm" disabled={!ready || save.isPending}>
           Save
         </Button>
-        {settings.source === "saved" ? (
-          <Button type="button" variant="outline" size="sm" disabled={save.isPending} onClick={() => save.mutate(null)}>
+        <Button type="button" variant="outline" size="sm" onClick={onClose}>
+          Cancel
+        </Button>
+        {settings.source === "config-file" ? (
+          <Button type="button" variant="outline" size="sm" disabled={save.isPending} onClick={() => save.mutate(null, { onSuccess: onClose })}>
             Clear
           </Button>
         ) : null}
@@ -137,7 +142,7 @@ export function ChatModelForm({ settings, connections }: ChatModelFormProps) {
       {selected?.locality === "cloud" ? (
         <p className="text-meta text-muted-foreground">{`Questions and retrieved passages are sent to ${cloudHost(selected)}.`}</p>
       ) : null}
-      {save.isError ? <ErrorNotice error={save.error} onRetry={() => save.reset()} /> : null}
+      {save.isError ? <SaveErrorNotice error={save.error} onRetry={() => save.reset()} /> : null}
       {list.isError ? <ErrorNotice error={list.error} onRetry={() => list.mutate()} /> : null}
       {test.isError ? <ErrorNotice error={test.error} onRetry={() => test.mutate()} /> : null}
     </form>

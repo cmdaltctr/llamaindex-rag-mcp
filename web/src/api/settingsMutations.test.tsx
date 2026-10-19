@@ -60,7 +60,7 @@ describe("settings mutations", () => {
 
   it("refreshes the upload limit after a save, so every view reads the new limit", async () => {
     let saved: number | null = null;
-    const state = () => ({ status: "ok", max_bytes: (saved ?? 50) * 1048576, source: saved === null ? "default" : "saved", saved_mib: saved, default_mib: 50, min_mib: 1, max_mib: 2048 });
+    const state = () => ({ status: "ok", max_bytes: (saved ?? 50) * 1048576, source: saved === null ? "default" : "config-file", saved_mib: saved, default_mib: 50, min_mib: 1, max_mib: 2048 });
     const { wrapper, queryClient, server } = setup({
       "GET /v1/settings/upload-limit": state,
       "PUT /v1/settings/upload-limit": (body: Record<string, unknown>) => {

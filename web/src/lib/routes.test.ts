@@ -48,9 +48,9 @@ describe("routes", () => {
     expect(parseRoute(formatRoute({ area: "experiments", runId: "a/b" }))).toEqual({ area: "experiments", runId: "a/b" });
   });
 
-  it("knows the three purposes and the seven Settings sections", () => {
+  it("knows the three purposes and the eight Settings sections", () => {
     expect(PURPOSES).toEqual(["ingest", "search", "answer"]);
-    expect(SETTINGS_SECTIONS).toEqual(["appearance", "providers", "chat", "mcp", "log", "runtime", "workspace"]);
+    expect(SETTINGS_SECTIONS).toEqual(["appearance", "providers", "chat", "mcp", "log", "runtime", "workspace", "configuration"]);
   });
 
   it("parses the Providers and Chat sections", () => {

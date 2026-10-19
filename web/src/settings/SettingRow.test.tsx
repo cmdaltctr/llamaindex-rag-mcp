@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "../api/client";
+import { renderWithProviders } from "../test/providers";
 import { SOURCE_WORDS, sourceText } from "./connectionWords";
 import { KeySettingRow, SettingRow, type KeySettingRowProps, type SettingRowProps } from "./SettingRow";
 
@@ -18,7 +19,7 @@ function row(overrides: Partial<SettingRowProps> = {}) {
     onRetry: vi.fn(),
     ...overrides,
   };
-  render(<SettingRow {...props} />);
+  renderWithProviders(<SettingRow {...props} />);
   return props;
 }
 
@@ -38,7 +39,7 @@ function keyRow(overrides: Partial<KeySettingRowProps> = {}) {
     onRetry: vi.fn(),
     ...overrides,
   };
-  render(<KeySettingRow {...props} />);
+  renderWithProviders(<KeySettingRow {...props} />);
   return props;
 }
 
@@ -51,6 +52,7 @@ describe("source words", () => {
     ["key-file", "from key file"],
     ["default", "default"],
     ["none", "not set"],
+    ["init", "set when the server started"],
   ];
 
   it.each(words)("words %s as %s", (source, text) => {
@@ -90,6 +92,13 @@ describe("SettingRow", () => {
     row({ label: "Ollama address", value: "http://localhost:11434", source: "default" });
     expect(screen.getByText("http://localhost:11434")).toBeInTheDocument();
     expect(screen.getByText("default")).toBeInTheDocument();
+  });
+
+  it("shows Not set for an empty value and opens an empty input on Edit", async () => {
+    row({ value: "", source: "default" });
+    expect(screen.getByText("Not set")).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Edit Program path" }));
+    expect(screen.getByRole("textbox", { name: "Program path" })).toHaveValue("");
   });
 
   it.each(["env", "dotenv"])("offers no Edit when the source is %s and names the variable", (source) => {
@@ -155,6 +164,36 @@ describe("SettingRow", () => {
     expect(screen.queryByRole("button", { name: "Use default" })).not.toBeInTheDocument();
   });
 
+  it("refuses a value that fails the check, names the rule and does not call onSave", async () => {
+    const user = userEvent.setup();
+    const validate = (text: string) => (Number(text) < 2048 ? "Enter 2,048 to 262,144." : null);
+    const props = row({ label: "Context window (tokens)", value: "16384", inputType: "number", validate });
+    await user.click(screen.getByRole("button", { name: "Edit Context window (tokens)" }));
+    const input = screen.getByRole("spinbutton", { name: "Context window (tokens)" });
+    await user.clear(input);
+    await user.type(input, "1000");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByText("Enter 2,048 to 262,144.")).toBeInTheDocument();
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(props.onSave).not.toHaveBeenCalled();
+    await user.clear(input);
+    await user.type(input, "4096");
+    expect(screen.queryByText("Enter 2,048 to 262,144.")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(props.onSave).toHaveBeenCalledWith("4096", expect.any(Function));
+  });
+
+  it("tells the parent the typed text while the input is open and null when it closes", async () => {
+    const user = userEvent.setup();
+    const onTyped = vi.fn();
+    row({ onTyped });
+    await user.click(screen.getByRole("button", { name: "Edit Program path" }));
+    await user.type(screen.getByRole("textbox", { name: "Program path" }), "x");
+    expect(onTyped).toHaveBeenLastCalledWith(`${BINARY}x`);
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onTyped).toHaveBeenLastCalledWith(null);
+  });
+
   it("shows the server message of a refused save and a Reload action for a conflict", async () => {
     const user = userEvent.setup();
     const message = "omrg.jsonc changed on disk. Reload to see the new values.";
@@ -210,6 +249,17 @@ describe("KeySettingRow", () => {
     expect(props.onSave).toHaveBeenCalledWith("sk-new-key", expect.any(Function));
     expect(screen.queryByLabelText("OpenRouter key")).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue("sk-new-key")).not.toBeInTheDocument();
+  });
+
+  it("tells the parent the typed key while the input is open and null when it closes", async () => {
+    const user = userEvent.setup();
+    const onTyped = vi.fn();
+    keyRow({ onTyped });
+    await user.click(screen.getByRole("button", { name: "Replace OpenRouter key" }));
+    await user.type(screen.getByLabelText("OpenRouter key"), "ab");
+    expect(onTyped).toHaveBeenLastCalledWith("ab");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onTyped).toHaveBeenLastCalledWith(null);
   });
 
   it("cancels a Replace without saving", async () => {

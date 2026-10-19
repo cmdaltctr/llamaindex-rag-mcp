@@ -45,7 +45,7 @@ describe("settings queries", () => {
 
   it("reads the upload limit from GET /v1/settings/upload-limit", async () => {
     const server = documentsServer({
-      "GET /v1/settings/upload-limit": () => ({ status: "ok", max_bytes: 104857600, source: "saved", saved_mib: 100, default_mib: 50, min_mib: 1, max_mib: 2048 }),
+      "GET /v1/settings/upload-limit": () => ({ status: "ok", max_bytes: 104857600, source: "config-file", saved_mib: 100, default_mib: 50, min_mib: 1, max_mib: 2048 }),
     });
     const { result } = renderHookWithProviders(() => useQuery(uploadLimitQuery(useApi())), { fetchImpl: server.fetchImpl });
     await waitFor(() => expect(result.current.data?.saved_mib).toBe(100));

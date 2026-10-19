@@ -41,7 +41,8 @@ function valueText(value: ConfigurationValue): string {
 /** A key shows at most "Key set" and its last four characters; the server never sends more. */
 function shown(setting: ConfigurationSetting): string {
   if (setting.last4 === undefined) return valueText(setting.value);
-  return setting.last4 === null ? "No key" : `Key set · ending ${setting.last4}`;
+  if (setting.last4 === null) return "No key";
+  return setting.last4 === "" ? "Key set" : `Key set · ending ${setting.last4}`;
 }
 
 export interface RestartRequest {

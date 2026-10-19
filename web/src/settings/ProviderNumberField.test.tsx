@@ -20,86 +20,114 @@ async function open(handlers = {}) {
   return { user: userEvent.setup(), card: () => screen.getByRole("region", { name: "Ollama" }) };
 }
 
+async function type(user: ReturnType<typeof userEvent.setup>, card: () => HTMLElement, text: string) {
+  await user.click(within(card()).getByRole("button", { name: "Edit Context window (tokens)" }));
+  const input = within(card()).getByRole("spinbutton", { name: "Context window (tokens)" });
+  await user.clear(input);
+  await user.type(input, text);
+  return input;
+}
+
 describe("Integer field (Ollama context window)", () => {
-  it("renders a number input with its label, bounds and source", async () => {
+  it("shows the value and the default source, with no input until Edit", async () => {
     const { card } = await open({ "GET /v1/connections": () => list(withWindow(), LLAMACPP, OPENROUTER) });
+    expect(within(card()).getByText("16384")).toBeInTheDocument();
+    expect(within(card()).getAllByText("default")).toHaveLength(2);
+    expect(within(card()).queryByRole("spinbutton")).toBeNull();
+  });
+
+  it("opens a number input filled with the value, with its bounds", async () => {
+    const { user, card } = await open({ "GET /v1/connections": () => list(withWindow(), LLAMACPP, OPENROUTER) });
+    await user.click(within(card()).getByRole("button", { name: "Edit Context window (tokens)" }));
     const input = within(card()).getByRole("spinbutton", { name: "Context window (tokens)" });
     expect(input).toHaveValue(16384);
     expect(input).toHaveAttribute("min", "2048");
     expect(input).toHaveAttribute("max", "262144");
-    expect(card()).toHaveTextContent("Source: default");
-    expect(within(card()).queryByRole("button", { name: "Reset to default" })).toBeNull();
+    expect(within(card()).queryByRole("button", { name: "Use default" })).toBeNull();
+    expect(within(card()).getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
   it("saves a whole number and shows the value and source the server returns", async () => {
     let value = 16384;
-    let source: "default" | "saved" = "default";
+    let source: "default" | "config-file" = "default";
     const { user, card } = await open({
       "GET /v1/connections": () => list(withWindow(intField("context_window", "Context window (tokens)", value, source)), LLAMACPP, OPENROUTER),
       "PUT /v1/connections/ollama": (body: Record<string, unknown>) => {
         value = (body.fields as Record<string, number>).context_window!;
-        source = "saved";
-        return { status: "ok" };
+        source = "config-file";
+        return { status: "ok", revision: "r2" };
       },
     });
-    const save = within(card()).getByRole("button", { name: "Save value" });
-    expect(save).toBeDisabled();
-    const input = within(card()).getByRole("spinbutton", { name: "Context window (tokens)" });
-    await user.clear(input);
-    await user.type(input, "8192");
-    await user.click(save);
-    expect(await within(card()).findByText("Source: saved")).toBeInTheDocument();
-    expect(within(card()).getByRole("spinbutton", { name: "Context window (tokens)" })).toHaveValue(8192);
+    await type(user, card, "32768");
+    await user.click(within(card()).getByRole("button", { name: "Save" }));
+    expect(await within(card()).findByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(within(card()).getByText("32768")).toBeInTheDocument();
+    expect(within(card()).queryByRole("spinbutton")).toBeNull();
   });
 
-  it("sends a number, not text", async () => {
+  it("sends a number, not text, with the revision", async () => {
     const put: unknown[] = [];
     const { user, card } = await open({
       "GET /v1/connections": () => list(withWindow(), LLAMACPP, OPENROUTER),
       "PUT /v1/connections/ollama": (body: unknown) => {
         put.push(body);
-        return { status: "ok" };
+        return { status: "ok", revision: "r2" };
       },
     });
-    const input = within(card()).getByRole("spinbutton", { name: "Context window (tokens)" });
-    await user.clear(input);
-    await user.type(input, "32768");
-    await user.click(within(card()).getByRole("button", { name: "Save value" }));
-    expect(put).toEqual([{ fields: { context_window: 32768 } }]);
+    await type(user, card, "32768");
+    await user.click(within(card()).getByRole("button", { name: "Save" }));
+    expect(put).toEqual([{ fields: { context_window: 32768 }, revision: "r1" }]);
   });
 
-  it("resets a saved value to the default with null", async () => {
+  it("shows the friendly range line and saves nothing when the value is out of range", async () => {
     const put: unknown[] = [];
     const { user, card } = await open({
-      "GET /v1/connections": () => list(withWindow(intField("context_window", "Context window (tokens)", 8192, "saved")), LLAMACPP, OPENROUTER),
+      "GET /v1/connections": () => list(withWindow(), LLAMACPP, OPENROUTER),
       "PUT /v1/connections/ollama": (body: unknown) => {
         put.push(body);
-        return { status: "ok" };
+        return { status: "ok", revision: "r2" };
       },
     });
-    await user.click(within(card()).getByRole("button", { name: "Reset to default" }));
-    expect(put).toEqual([{ fields: { context_window: null } }]);
+    await type(user, card, "1000");
+    await user.click(within(card()).getByRole("button", { name: "Save" }));
+    expect(within(card()).getByText("Enter 2,048 to 262,144.")).toBeInTheDocument();
+    expect(put).toEqual([]);
   });
 
-  it("shows a locked value as read-only with the source and the reason", async () => {
-    const locked = intField("context_window", "Context window (tokens)", 8192, "env", "Remove OLLAMA_CONTEXT_WINDOW from the environment or .env to edit it here.");
+  it("returns a file value to the default with null", async () => {
+    const put: unknown[] = [];
+    const { user, card } = await open({
+      "GET /v1/connections": () => list(withWindow(intField("context_window", "Context window (tokens)", 8192, "config-file")), LLAMACPP, OPENROUTER),
+      "PUT /v1/connections/ollama": (body: unknown) => {
+        put.push(body);
+        return { status: "ok", revision: "r2" };
+      },
+    });
+    await user.click(within(card()).getByRole("button", { name: "Edit Context window (tokens)" }));
+    await user.click(within(card()).getByRole("button", { name: "Use default" }));
+    expect(put).toEqual([{ fields: { context_window: null }, revision: "r1" }]);
+  });
+
+  it.each(["env", "dotenv"] as const)("shows a value set by %s with where it is set and offers no Edit", async (source) => {
+    const locked = intField("context_window", "Context window (tokens)", 8192, source, "Remove OLLAMA_CONTEXT_WINDOW from the environment or .env to edit it here.");
     const { card } = await open({ "GET /v1/connections": () => list(withWindow(locked), LLAMACPP, OPENROUTER) });
     expect(within(card()).queryByRole("spinbutton")).toBeNull();
-    expect(card()).toHaveTextContent("Set from environment (read-only here)");
+    expect(within(card()).queryByRole("button", { name: "Edit Context window (tokens)" })).toBeNull();
+    expect(card()).toHaveTextContent(source === "env" ? "Set in the environment. Change it there." : "Set in .env. Change it there.");
     expect(card()).toHaveTextContent("OLLAMA_CONTEXT_WINDOW");
     expect(within(card()).getByText("8192")).toBeInTheDocument();
   });
 
-  it("shows one friendly line when the server refuses the value", async () => {
+  it("shows the rule message when the server refuses the value", async () => {
+    const message = "The value must be a whole number from 2048 to 262144.";
     const { user, card } = await open({
       "GET /v1/connections": () => list(withWindow(), LLAMACPP, OPENROUTER),
-      "PUT /v1/connections/ollama": () => json({ status: "error", message: "The value must be a whole number from 2048 to 262144." }, 400),
+      "PUT /v1/connections/ollama": () => json({ status: "error", message }, 400),
     });
-    const input = within(card()).getByRole("spinbutton", { name: "Context window (tokens)" });
-    await user.clear(input);
-    await user.type(input, "5");
-    await user.click(within(card()).getByRole("button", { name: "Save value" }));
+    await type(user, card, "5000");
+    await user.click(within(card()).getByRole("button", { name: "Save" }));
     const alert = await within(card()).findByRole("alert");
+    expect(alert).toHaveTextContent(message);
     expect(alert.textContent).not.toMatch(/\bHTTP\b|Traceback/);
   });
 });

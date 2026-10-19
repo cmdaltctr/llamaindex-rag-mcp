@@ -6,7 +6,7 @@ import { json } from "../test/fakeDocumentsServer";
 import { startApp } from "../test/startApp";
 import { settingsServer } from "./test/fixtures";
 
-const SECTIONS = ["Appearance", "Providers", "Chat", "MCP", "Server log", "Runtime", "Workspace"];
+const SECTIONS = ["Appearance", "Providers", "Chat", "MCP", "Server log", "Runtime", "Workspace", "Configuration"];
 
 async function openSettings(handlers = {}) {
   const server = settingsServer(handlers);
@@ -20,7 +20,7 @@ function chip(name: string) {
 }
 
 describe("Settings sections", () => {
-  it("offers the seven sections as chips in order and shows one at a time", async () => {
+  it("offers the eight sections as chips in order and shows one at a time", async () => {
     await openSettings();
     const group = screen.getByRole("group", { name: "Sections" });
     expect(within(group).getAllByRole("button").map((button) => button.textContent)).toEqual(SECTIONS);
@@ -47,10 +47,30 @@ describe("Settings sections", () => {
     ["Server log", "#/settings/log"],
     ["Runtime", "#/settings/runtime"],
     ["Workspace", "#/settings/workspace"],
+    ["Configuration", "#/settings/configuration"],
   ])("writes %s to the address bar", async (name, hash) => {
     const { user } = await openSettings();
     await user.click(chip(name));
     expect(window.location.hash).toBe(hash);
+  });
+
+  it("opens Configuration from its address and lists the settings from the server", async () => {
+    startApp(
+      "#/settings/configuration",
+      settingsServer({
+        "GET /v1/settings/configuration": () => ({
+          path: "/home/u/.config/omrg/omrg.jsonc",
+          revision: "r1",
+          settings: [{ key: "retrieval.top_k", value: 10, source: "default", applies: "restart", restart_pending: false }],
+          problems: [],
+          handover: { pending: false, folder: null },
+        }),
+      }),
+    );
+    expect(await screen.findByRole("region", { name: "Configuration" })).toBeInTheDocument();
+    expect(chip("Configuration")).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByText("retrieval.top_k")).toBeInTheDocument();
+    expect(screen.getByText("/home/u/.config/omrg/omrg.jsonc")).toBeInTheDocument();
   });
 
   it("opens the section the address names", async () => {

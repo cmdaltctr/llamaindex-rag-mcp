@@ -27,6 +27,10 @@ export interface SettingRowProps {
   /** Returns the setting to its default. The row offers it only for a value from `omrg.jsonc`. */
   onClear?: (done: () => void) => void;
   onRetry: () => void;
+  /** Checked before Save sends anything. A returned message shows under the input and nothing is saved. */
+  validate?: (text: string) => string | null;
+  /** Called with the typed text as it changes, and with `null` when the input closes. */
+  onTyped?: (text: string | null) => void;
 }
 
 /**
@@ -36,17 +40,30 @@ export interface SettingRowProps {
  * `.env` has no Edit; the source words say where to change it.
  */
 export function SettingRow(props: SettingRowProps) {
-  const { label, value, source, detail, inputType = "text", min, max, readOnlyReason, pending, error, onSave, onClear, onRetry } = props;
+  const { label, value, source, detail, inputType = "text", min, max, readOnlyReason, pending, error, onSave, onClear, onRetry, validate, onTyped } = props;
   const id = useId();
   const [typed, setTyped] = useState<string | null>(null);
   const editing = typed !== null;
-  const close = () => setTyped(null);
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const change = (text: string) => {
+    setTyped(text);
+    setRefusal(null);
+    onTyped?.(text);
+  };
+  const close = () => {
+    setTyped(null);
+    setRefusal(null);
+    onTyped?.(null);
+  };
   const locked = isEnvironmentSource(source) || (readOnlyReason ?? null) !== null;
   const dirty = typed !== null && typed !== value && typed.trim() !== "";
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (dirty && typed !== null) onSave(typed, close);
+    if (!dirty || typed === null) return;
+    const message = validate?.(typed) ?? null;
+    if (message !== null) return setRefusal(message);
+    onSave(typed, close);
   }
 
   return (
@@ -62,8 +79,15 @@ export function SettingRow(props: SettingRowProps) {
             type={inputType}
             {...(inputType === "number" ? { inputMode: "numeric" as const, step: 1, min: min ?? undefined, max: max ?? undefined } : {})}
             value={typed}
-            onChange={(event) => setTyped(event.target.value)}
+            onChange={(event) => change(event.target.value)}
+            aria-invalid={refusal !== null}
+            aria-describedby={refusal !== null ? `${id}-refusal` : undefined}
           />
+          {refusal !== null ? (
+            <p id={`${id}-refusal`} className="text-meta text-status-error-label">
+              {refusal}
+            </p>
+          ) : null}
           <p className={SOURCE}>{sourceText(source, detail)}</p>
           <div className="flex flex-wrap items-center gap-2">
             <Button type="submit" size="sm" disabled={!dirty || pending}>
@@ -82,9 +106,13 @@ export function SettingRow(props: SettingRowProps) {
       ) : (
         <>
           <p className={SOURCE}>{label}</p>
-          <code dir="ltr" className={CODE}>
-            {value}
-          </code>
+          {value === "" ? (
+            <p className="text-ui">Not set</p>
+          ) : (
+            <code dir="ltr" className={CODE}>
+              {value}
+            </code>
+          )}
           <p className={SOURCE}>{sourceText(source, detail)}</p>
           {readOnlyReason ? <p className={SOURCE}>{readOnlyReason}</p> : null}
           {!locked ? (
@@ -121,6 +149,8 @@ export interface KeySettingRowProps {
   onSave: (key: string, done: () => void) => void;
   onRemove: () => void;
   onRetry: () => void;
+  /** Called with the typed key as it changes, and with `null` when the input closes. */
+  onTyped?: (key: string | null) => void;
 }
 
 /**
@@ -130,10 +160,17 @@ export interface KeySettingRowProps {
  * `.env` has no button.
  */
 export function KeySettingRow(props: KeySettingRowProps) {
-  const { label, set, last4, source, detail, keychain, keyFile, envVar, required = true, pending, error, onSave, onRemove, onRetry } = props;
+  const { label, set, last4, source, detail, keychain, keyFile, envVar, required = true, pending, error, onSave, onRemove, onRetry, onTyped } = props;
   const id = useId();
   const [typed, setTyped] = useState<string | null>(null);
-  const close = () => setTyped(null);
+  const change = (text: string) => {
+    setTyped(text);
+    onTyped?.(text);
+  };
+  const close = () => {
+    setTyped(null);
+    onTyped?.(null);
+  };
   const key = typed ?? "";
   const opened = typed !== null || !set;
 
@@ -166,7 +203,7 @@ export function KeySettingRow(props: KeySettingRowProps) {
             spellCheck={false}
             placeholder={set ? undefined : "Paste key (saved to the system keychain)"}
             value={key}
-            onChange={(event) => setTyped(event.target.value)}
+            onChange={(event) => change(event.target.value)}
           />
           {set ? null : <p className={SOURCE}>{`Or put it in ${keyFile}`}</p>}
           <div className="flex flex-wrap items-center gap-2">
