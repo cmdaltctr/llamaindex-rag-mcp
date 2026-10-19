@@ -33,35 +33,35 @@ function IconTab({ value, label, icon: Icon }: { value: string; label: string; i
 /** The right-hand card: the knowledge bases, and the citations and evidence of the latest answer, as icon tabs. */
 export function KnowledgePanel({ collections, activeName, onSelect, latest, onShowChunk, hide }: KnowledgePanelProps) {
   return (
-    <Tabs defaultValue="knowledge" className="flex flex-col gap-2">
-      <div className="flex items-center gap-1">
-        <TooltipProvider>
+    <TooltipProvider>
+      <Tabs defaultValue="knowledge" className="flex flex-col gap-2">
+        <div className="flex items-center gap-1">
           <TabsList aria-label="Knowledge base panel views" className="min-w-0 flex-1">
             <IconTab value="knowledge" label="Knowledge base" icon={Database} />
             <IconTab value="citations" label="Citations" icon={Quote} />
             <IconTab value="evidence" label="Evidence" icon={FileSearch} />
           </TabsList>
-        </TooltipProvider>
-        {hide}
-      </div>
-      {/* Kept mounted while hidden, so an opened file list survives a visit to another tab. */}
-      <TabsContent value="knowledge" forceMount className="data-[state=inactive]:hidden">
-        <CollectionPicker label="Knowledge bases" collections={collections} selected={activeName} onSelect={onSelect} stacked showFiles />
-      </TabsContent>
-      <TabsContent value="citations" className="max-h-[60vh] overflow-y-auto">
-        {latest === null ? (
-          <p className="text-meta text-muted-foreground">Citations of the latest answer appear here.</p>
-        ) : (
-          <CitationList citations={latest.result.citations} evidence={latest.result.evidence} collection={latest.collection} onShowChunk={onShowChunk} />
-        )}
-      </TabsContent>
-      <TabsContent value="evidence" className="max-h-[60vh] overflow-y-auto">
-        {latest === null ? (
-          <p className="text-meta text-muted-foreground">Evidence of the latest answer appears here.</p>
-        ) : (
-          <EvidenceList evidence={latest.result.evidence} onShowChunk={(chunkId) => onShowChunk(latest.collection, chunkId)} />
-        )}
-      </TabsContent>
-    </Tabs>
+          {hide}
+        </div>
+        {/* Kept mounted while hidden, so an opened file list survives a visit to another tab. */}
+        <TabsContent value="knowledge" forceMount className="data-[state=inactive]:hidden">
+          <CollectionPicker label="Knowledge bases" collections={collections} selected={activeName} onSelect={onSelect} stacked showFiles />
+        </TabsContent>
+        <TabsContent value="citations" className="max-h-[60vh] overflow-y-auto">
+          {latest === null ? (
+            <p className="text-meta text-muted-foreground">Citations of the latest answer appear here.</p>
+          ) : (
+            <CitationList citations={latest.result.citations} evidence={latest.result.evidence} collection={latest.collection} onShowChunk={onShowChunk} />
+          )}
+        </TabsContent>
+        <TabsContent value="evidence" className="max-h-[60vh] overflow-y-auto">
+          {latest === null ? (
+            <p className="text-meta text-muted-foreground">Evidence of the latest answer appears here.</p>
+          ) : (
+            <EvidenceList evidence={latest.result.evidence} collection={latest.collection} onShowChunk={onShowChunk} />
+          )}
+        </TabsContent>
+      </Tabs>
+    </TooltipProvider>
   );
 }

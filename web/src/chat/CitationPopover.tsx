@@ -10,6 +10,9 @@ import { Button } from "../components/ui/button";
 import { Popover, type PopoverTriggerProps } from "../components/ui/popover";
 import { scoreText, sourceName } from "./citationText";
 
+/** The text view shows the passage; the details view shows the lineage and the stored metadata. */
+export type CitationPopoverView = "text" | "details";
+
 interface CitationPopoverProps {
   citation: Citation;
   /** The evidence row with the same ordinal, when the answer carries one. */
@@ -18,6 +21,8 @@ interface CitationPopoverProps {
   onShowChunk: (collection: string, chunkId: string) => void;
   /** The chip or the `[n]` marker that opens the popover. */
   trigger: (props: PopoverTriggerProps) => ReactNode;
+  /** Which part of the citation to show. Defaults to the passage text. */
+  view?: CitationPopoverView;
 }
 
 /** What the citation itself knows, shown at once while the stored chunk loads. */
@@ -35,8 +40,8 @@ function fromCitation(citation: Citation): ChunkView {
   };
 }
 
-/** Opens next to a citation chip or marker: the evidence text, the lineage and the stored metadata. */
-export function CitationPopover({ citation, evidence, collection, onShowChunk, trigger }: CitationPopoverProps) {
+/** Opens next to a citation chip or marker: the evidence text, or the lineage and the stored metadata. */
+export function CitationPopover({ citation, evidence, collection, onShowChunk, trigger, view = "text" }: CitationPopoverProps) {
   return (
     <Popover slot="citation-popover-content" width={352} className="max-h-[70dvh] overflow-auto" trigger={trigger}>
       {({ close }) => (
@@ -44,6 +49,7 @@ export function CitationPopover({ citation, evidence, collection, onShowChunk, t
           citation={citation}
           evidence={evidence}
           collection={collection}
+          view={view}
           onOpenChunk={(chunkId) => {
             close();
             onShowChunk(collection, chunkId);
@@ -58,10 +64,11 @@ interface PopoverBodyProps {
   citation: Citation;
   evidence: Evidence | undefined;
   collection: string;
+  view: CitationPopoverView;
   onOpenChunk: (chunkId: string) => void;
 }
 
-function PopoverBody({ citation, evidence, collection, onOpenChunk }: PopoverBodyProps) {
+function PopoverBody({ citation, evidence, collection, view, onOpenChunk }: PopoverBodyProps) {
   const api = useApi();
   const chunkId = citation.chunk_id;
   const query = useQuery({ ...chunkQuery(api, collection, chunkId ?? "", 1), enabled: chunkId !== null, retry: false });
@@ -79,8 +86,10 @@ function PopoverBody({ citation, evidence, collection, onOpenChunk }: PopoverBod
         </span>
       </div>
       {score !== null ? <p className="text-muted-foreground">{score}</p> : null}
-      {evidence !== undefined ? <p className="whitespace-pre-wrap break-words">{evidence.text}</p> : null}
-      <ChunkMetadata chunk={stored ?? fromCitation(citation)} chunkIds={citation.chunk_ids} showMetadata={stored !== undefined} />
+      {view === "text" && evidence !== undefined ? <p className="whitespace-pre-wrap break-words">{evidence.text}</p> : null}
+      {view === "details" ? (
+        <ChunkMetadata chunk={stored ?? fromCitation(citation)} chunkIds={citation.chunk_ids} showMetadata={stored !== undefined} />
+      ) : null}
       {unavailable ? <p className="text-muted-foreground">The stored chunk is not available.</p> : null}
       {failed ? <ErrorNotice error={query.error} onRetry={() => void query.refetch()} /> : null}
       {chunkId !== null && query.isPending ? (

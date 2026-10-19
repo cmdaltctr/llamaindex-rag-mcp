@@ -175,11 +175,12 @@ describe("turns", () => {
     expect(within(turn).queryByRole("list", { name: "Citations" })).not.toBeInTheDocument();
     await openTab(user, "Citations");
     const chips = await screen.findByRole("list", { name: "Citations" });
-    expect(within(chips).getAllByRole("button")).toHaveLength(2);
+    expect(within(chips).getAllByRole("button", { name: /^\[/ })).toHaveLength(2);
     await openTab(user, "Evidence");
     const rows = within(await screen.findByRole("list", { name: "Evidence supplied to the model" })).getAllByRole("listitem");
     expect(rows).toHaveLength(2);
-    expect(rows[1]).toHaveTextContent("Evidence two");
+    expect(rows[1]).toHaveTextContent("/srv/docs/present.md");
+    expect(rows[1]).not.toHaveTextContent("Evidence two");
     expect(rows[1]).toHaveTextContent("Reranker sigmoid (reranker_sigmoid_v1)");
   });
 
@@ -197,13 +198,29 @@ describe("turns", () => {
     expect(within(viewer).getByText(/Page 4/)).toBeInTheDocument();
   });
 
-  it("opens an evidence row in the chunk viewer", async () => {
+  it("shows no passage text in an evidence row until Show passage is pressed", async () => {
     const { user } = setup();
     await ask(user);
     await screen.findByText(/Lineage is kept/);
     await openTab(user, "Evidence");
-    await user.click(await screen.findByRole("button", { name: "Show chunk for evidence 1" }));
-    expect(await within(await screen.findByRole("dialog", { name: "Stored chunk" })).findByText("Stored chunk one")).toBeInTheDocument();
+    const rows = within(await screen.findByRole("list", { name: "Evidence supplied to the model" })).getAllByRole("listitem");
+    expect(rows[0]).not.toHaveTextContent("Evidence one");
+    expect(within(rows[0]!).queryByRole("button", { name: /Show chunk/ })).toBeNull();
+    await user.click(within(rows[0]!).getByRole("button", { name: "Show passage for evidence 1" }));
+    expect(await screen.findByText("Evidence one", { selector: "[data-slot='citation-popover-content'] *" })).toBeInTheDocument();
+    expect(rows[0]).not.toHaveTextContent("Evidence one");
+  });
+
+  it("opens an evidence passage in a popover, then the full chunk in the chunk viewer", async () => {
+    const { user } = setup();
+    await ask(user);
+    await screen.findByText(/Lineage is kept/);
+    await openTab(user, "Evidence");
+    await user.click(await screen.findByRole("button", { name: "Show passage for evidence 1" }));
+    expect(await screen.findByText("Evidence one", { selector: "[data-slot='citation-popover-content'] *" })).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Open full chunk" }));
+    const viewer = await screen.findByRole("dialog", { name: "Stored chunk" });
+    expect(await within(viewer).findByText("Stored chunk one")).toBeInTheDocument();
   });
 
   it("does not offer a chunk link for a citation without a stored chunk id", async () => {

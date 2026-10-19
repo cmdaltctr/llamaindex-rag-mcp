@@ -71,7 +71,7 @@ describe("icon tabs in the right-hand card", () => {
     const card = await panel();
     await user.click(card.getByRole("tab", { name: "Citations" }));
     const chips = await card.findByRole("list", { name: "Citations" });
-    expect(within(chips).getAllByRole("button").map((chip) => chip.textContent)).toEqual(["[1]one.md", "[2]two.md"]);
+    expect(within(chips).getAllByRole("button", { name: /^\[/ }).map((chip) => chip.textContent)).toEqual(["[1]one.md", "[2]two.md"]);
   });
 
   it("lists the evidence rows in the Evidence tab without a second toggle", async () => {
@@ -82,7 +82,9 @@ describe("icon tabs in the right-hand card", () => {
     await user.click(card.getByRole("tab", { name: "Evidence" }));
     const rows = within(await card.findByRole("list", { name: "Evidence supplied to the model" })).getAllByRole("listitem");
     expect(rows).toHaveLength(2);
-    expect(rows[1]).toHaveTextContent("Text of two.md");
+    expect(rows[1]).toHaveTextContent("/srv/docs/two.md");
+    expect(rows[1]).toHaveTextContent("Reranker sigmoid (reranker_sigmoid_v1)");
+    expect(within(rows[1]!).queryByText("Text of two.md")).toBeNull();
     expect(card.queryByRole("button", { name: /^Evidence \(/ })).toBeNull();
   });
 
@@ -96,7 +98,7 @@ describe("icon tabs in the right-hand card", () => {
     const card = await panel();
     await user.click(card.getByRole("tab", { name: "Citations" }));
     const chips = await card.findByRole("list", { name: "Citations" });
-    expect(within(chips).getAllByRole("button").map((chip) => chip.textContent)).toEqual(["[1]second.md", "[2]third.md"]);
+    expect(within(chips).getAllByRole("button", { name: /^\[/ }).map((chip) => chip.textContent)).toEqual(["[1]second.md", "[2]third.md"]);
   });
 
   it("shows the citations of a reopened chat's last saved answer", async () => {
@@ -108,6 +110,18 @@ describe("icon tabs in the right-hand card", () => {
     await screen.findByText(/A saved answer/);
     const card = await panel();
     await user.click(card.getByRole("tab", { name: "Citations" }));
-    expect(within(await card.findByRole("list", { name: "Citations" })).getAllByRole("button").map((chip) => chip.textContent)).toEqual(["[1]saved.md"]);
+    expect(within(await card.findByRole("list", { name: "Citations" })).getAllByRole("button", { name: /^\[/ }).map((chip) => chip.textContent)).toEqual(["[1]saved.md"]);
+  });
+
+  it("puts a lineage and metadata button next to each citation chip", async () => {
+    const user = setup();
+    await ask(user);
+    await screen.findByText(/Lineage is kept/);
+    const card = await panel();
+    await user.click(card.getByRole("tab", { name: "Citations" }));
+    const chips = await card.findByRole("list", { name: "Citations" });
+    expect(within(chips).getAllByRole("button", { name: /^Lineage and metadata of citation / })).toHaveLength(2);
+    await user.click(within(chips).getByRole("button", { name: "Lineage and metadata of citation 2" }));
+    expect(await screen.findByRole("region", { name: "Lineage" })).toBeInTheDocument();
   });
 });
