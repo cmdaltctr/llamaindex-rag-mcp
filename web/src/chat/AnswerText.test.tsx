@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Citation, Evidence } from "../api/documents";
 import { TooltipProvider } from "../components/ui/tooltip";
-import { AnswerText } from "./AnswerText";
+import { AnswerText, ClaimList } from "./AnswerText";
 
 function cite(ordinal: number): Citation {
   return {
@@ -95,5 +95,104 @@ describe("AnswerText citations inside markdown", () => {
     show("Index `a[1]` here.\n\n```\nb[2]\n```");
     expect(screen.queryByRole("button")).toBeNull();
     expect(screen.getByText("a[1]")).toBeInTheDocument();
+  });
+});
+
+describe("ClaimList", () => {
+  function claims(items: { claim: string; verdict: string; ordinals: number[] }[]) {
+    const citations = [cite(1), cite(2)];
+    const evidence = citations.map((c) => ({ ...c, text: `Evidence ${c.ordinal}` })) as Evidence[];
+    return render(
+      <TooltipProvider>
+        <ClaimList claims={items} citations={citations} evidence={evidence} collection="documents" onShowChunk={vi.fn()} />
+      </TooltipProvider>,
+    );
+  }
+
+  it("renders inline code in a claim as code, with no backticks left", () => {
+    const { container } = claims([{ claim: "Run `omrg --version` first.", verdict: "unsupported", ordinals: [1] }]);
+    expect(screen.getByText("omrg --version").tagName).toBe("CODE");
+    expect(container).not.toHaveTextContent("`");
+  });
+
+  it("renders the cited ordinal of a claim as a citation button", () => {
+    claims([{ claim: "A claim.", verdict: "unsupported", ordinals: [1, 2] }]);
+    expect(screen.getByRole("button", { name: "Citation 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Citation 2" })).toBeInTheDocument();
+    expect(screen.getByText(/unsupported/)).toBeInTheDocument();
+  });
+
+  it("keeps a marker with no matching citation as text", () => {
+    claims([{ claim: "A claim.", verdict: "unsupported", ordinals: [9] }]);
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByText(/cites \[9\]/)).toBeInTheDocument();
+  });
+
+  it("shows a claim that is only a code fence as written", () => {
+    const { container } = claims([{ claim: "```", verdict: "unsupported", ordinals: [1] }]);
+    expect(container.querySelector("pre")).toBeNull();
+    expect(container).toHaveTextContent("```");
+  });
+
+  it("keeps one list item per claim and the list label", () => {
+    claims([
+      { claim: "One.", verdict: "unsupported", ordinals: [1] },
+      { claim: "Two.", verdict: "contradicted", ordinals: [2] },
+    ]);
+    const list = screen.getByRole("list", { name: "Claims that failed verification" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(2);
+  });
+});
+
+describe("AnswerText spacing", () => {
+  const SAMPLE = "## Steps\n\nFirst paragraph.\n\nSecond paragraph.\n\n1. one\n2. two\n   - nested a\n   - nested b\n\n- alpha\n- beta\n\nLast paragraph.";
+
+  it("puts every top-level block in one spaced column", () => {
+    const { container } = show(SAMPLE);
+    const column = container.firstElementChild as HTMLElement;
+    expect(column).toHaveClass("flex", "flex-col", "gap-4");
+    const tags = Array.from(column.children).map((el) => el.tagName);
+    expect(tags).toEqual(["H2", "P", "P", "OL", "UL", "P"]);
+  });
+
+  it("spaces list items from each other", () => {
+    const { container } = show(SAMPLE);
+    for (const list of container.querySelectorAll("ul, ol")) expect(list).toHaveClass("flex", "flex-col", "gap-2");
+  });
+
+  it("spaces a nested list and a second paragraph from the text above them in an item", () => {
+    const { container } = show("1. item text\n   - nested\n\n2. second\n\n   continued paragraph");
+    for (const item of container.querySelectorAll("li")) expect(item).toHaveClass("[&>*+*]:mt-2");
+  });
+
+  it("separates a heading from the paragraph that follows it", () => {
+    const { container } = show("### Title\n\nBody text.");
+    const column = container.firstElementChild as HTMLElement;
+    expect(column.children[0]!.tagName).toBe("H3");
+    expect(column.children[1]!.tagName).toBe("P");
+    expect(column).toHaveClass("gap-4");
+  });
+});
+
+describe("citation buttons and copied text", () => {
+  it("lets the reader select a citation in the answer, so a copy keeps the number", () => {
+    show("A claim [1].");
+    expect(screen.getByRole("button", { name: "Citation 1" })).toHaveClass("select-text");
+  });
+
+  it("lets the reader select a citation in a failed claim", () => {
+    const citations = [cite(1)];
+    const evidence = citations.map((c) => ({ ...c, text: "Evidence 1" })) as Evidence[];
+    render(
+      <TooltipProvider>
+        <ClaimList claims={[{ claim: "A claim.", verdict: "unsupported", ordinals: [1] }]} citations={citations} evidence={evidence} collection="documents" onShowChunk={vi.fn()} />
+      </TooltipProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Citation 1" })).toHaveClass("select-text");
+  });
+
+  it("keeps a citation close to the punctuation after it", () => {
+    show("A claim [1].");
+    expect(screen.getByRole("button", { name: "Citation 1" })).toHaveClass("px-0");
   });
 });

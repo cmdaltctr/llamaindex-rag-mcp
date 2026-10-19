@@ -41,7 +41,7 @@ function CitedText({ children }: { children: ReactNode }) {
               collection={target.collection}
               onShowChunk={target.onShowChunk}
               trigger={(props) => (
-                <Button variant="link" size="inline" dir="ltr" aria-label={`Citation ${citation.ordinal}`} className="align-baseline" {...props}>
+                <Button variant="link" size="inline" dir="ltr" aria-label={`Citation ${citation.ordinal}`} className="select-text px-0 align-baseline" {...props}>
                   [{part}]
                 </Button>
               )}
@@ -53,7 +53,7 @@ function CitedText({ children }: { children: ReactNode }) {
   );
 }
 
-const HEADING = "font-semibold text-foreground";
+const HEADING = "mt-2 font-semibold text-foreground";
 
 /**
  * Element map for the answer. Every element that holds running text passes it
@@ -62,7 +62,7 @@ const HEADING = "font-semibold text-foreground";
  */
 const ANSWER_COMPONENTS: Components = {
   p: ({ children }) => (
-    <p className="whitespace-pre-line">
+    <p className="whitespace-pre-line leading-relaxed">
       <CitedText>{children}</CitedText>
     </p>
   ),
@@ -111,14 +111,14 @@ const ANSWER_COMPONENTS: Components = {
       <CitedText>{children}</CitedText>
     </del>
   ),
-  ul: ({ children }) => <ul className="flex list-disc flex-col gap-1 ps-5">{children}</ul>,
+  ul: ({ children }) => <ul className="flex list-disc flex-col gap-2 ps-5">{children}</ul>,
   ol: ({ start, children }) => (
-    <ol start={start} className="flex list-decimal flex-col gap-1 ps-5">
+    <ol start={start} className="flex list-decimal flex-col gap-2 ps-5">
       {children}
     </ol>
   ),
   li: ({ children }) => (
-    <li className="whitespace-pre-line">
+    <li className="whitespace-pre-line leading-relaxed [&>*+*]:mt-2">
       <CitedText>{children}</CitedText>
     </li>
   ),
@@ -159,6 +159,51 @@ const ANSWER_COMPONENTS: Components = {
 };
 
 /**
+ * Element map for one claim. A claim is one line of the answer, so it keeps
+ * only inline marks and drops block elements to their text.
+ */
+const CLAIM_COMPONENTS: Components = {
+  p: ({ children }) => <CitedText>{children}</CitedText>,
+  strong: ANSWER_COMPONENTS.strong,
+  em: ANSWER_COMPONENTS.em,
+  code: ANSWER_COMPONENTS.code,
+};
+
+const CLAIM_ELEMENTS = ["p", "strong", "em", "code"];
+
+/** A line that is only a code fence has no text to render. Show it as written. */
+const BARE_FENCE = /^`{3,}\w*$/;
+
+interface ClaimListProps extends CitationTarget {
+  claims: { claim: string; verdict: string; ordinals: number[] }[];
+}
+
+/**
+ * The claims that failed verification, one line each. A claim renders its
+ * inline code and marks, and the `[n]` it cites is a citation button.
+ */
+export function ClaimList({ claims, citations, evidence, collection, onShowChunk }: ClaimListProps) {
+  return (
+    <CitationContext.Provider value={{ citations, evidence, collection, onShowChunk }}>
+      <ul aria-label="Claims that failed verification" className="flex flex-col gap-1 text-meta">
+        {claims.map((item, index) => (
+          <li key={index} className="break-words">
+            {BARE_FENCE.test(item.claim.trim()) ? (
+              item.claim.trim()
+            ) : (
+              <Markdown remarkPlugins={[remarkGfm]} components={CLAIM_COMPONENTS} allowedElements={CLAIM_ELEMENTS} unwrapDisallowed>
+                {item.claim}
+              </Markdown>
+            )}{" "}
+            <CitedText>{`(${item.verdict}, cites ${item.ordinals.map((n) => `[${n}]`).join(" ")})`}</CitedText>
+          </li>
+        ))}
+      </ul>
+    </CitationContext.Provider>
+  );
+}
+
+/**
  * The answer rendered as markdown (GitHub flavour). The model's text is parsed
  * into React elements and never into raw HTML, so markup in it shows as text.
  * A `[n]` marker is a citation button only when `n` matches a returned citation.
@@ -166,7 +211,7 @@ const ANSWER_COMPONENTS: Components = {
 export function AnswerText({ text, citations, evidence, collection, onShowChunk }: AnswerTextProps) {
   return (
     <CitationContext.Provider value={{ citations, evidence, collection, onShowChunk }}>
-      <div className="flex min-w-0 flex-col gap-2 break-words">
+      <div className="flex min-w-0 flex-col gap-4 break-words">
         <Markdown remarkPlugins={[remarkGfm]} components={ANSWER_COMPONENTS}>
           {text}
         </Markdown>

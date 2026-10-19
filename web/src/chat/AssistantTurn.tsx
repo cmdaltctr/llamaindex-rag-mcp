@@ -5,7 +5,7 @@ import { AlertNotice } from "../components/AlertNotice";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { AnswerText } from "./AnswerText";
+import { AnswerText, ClaimList } from "./AnswerText";
 import { answerStatus, failureLine } from "./answerStatus";
 
 interface AssistantTurnProps {
@@ -85,13 +85,7 @@ function AnswerBody({ result, collection, onShowChunk }: { result: AnswerResult;
       ) : null}
       {result.answer !== null ? <AnswerText text={result.answer} citations={result.citations} evidence={result.evidence} collection={collection} onShowChunk={onShowChunk} /> : null}
       {result.unverified_claims && result.unverified_claims.length > 0 ? (
-        <ul aria-label="Claims that failed verification" className="flex flex-col gap-1 text-meta">
-          {result.unverified_claims.map((claim, index) => (
-            <li key={index} className="break-words">
-              {claim.claim} ({claim.verdict}, cites {claim.ordinals.map((n) => `[${n}]`).join(" ")})
-            </li>
-          ))}
-        </ul>
+        <ClaimList claims={result.unverified_claims} citations={result.citations} evidence={result.evidence} collection={collection} onShowChunk={onShowChunk} />
       ) : null}
     </>
   );
