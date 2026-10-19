@@ -68,6 +68,6 @@
 
 ## 11. Integration checks
 
-- [ ] 11.1 Run `./scripts/local_ci.sh`; verify it passes
-- [ ] 11.2 Run `openspec validate move-settings-to-config-file --strict` and `openspec validate --all --strict`; verify both pass
-- [ ] 11.3 Live check in a throwaway `OMRG_CONFIG_DIR` and workspace: hand-edit then page-save (conflict), save a key (keychain plus reference, key absent from every file), change the port (dialog), break the file (problem shown, server up); check the page at 1280 px and 390 px in light and dark
+- [x] 11.1 Run `./scripts/local_ci.sh`; verify it passes
+- [x] 11.2 Run `openspec validate move-settings-to-config-file --strict` and `openspec validate --all --strict`; verify both pass
+- [ ] 11.3 Live check in a throwaway `OMRG_CONFIG_DIR` and workspace: hand-edit then page-save (conflict), save a key (keychain plus reference, key absent from every file), change the port (dialog), break the file (problem shown, server up); check the page at 1280 px and 390 px in light and dark (skipped: the user checks this by hand)
