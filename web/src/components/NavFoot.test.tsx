@@ -5,6 +5,7 @@ import App from "../App";
 import { NAV_COLLAPSED_KEY } from "../lib/navCollapsed";
 import { PREFERENCES_KEY } from "../lib/preferences";
 import { documentsServer, json } from "../test/fakeDocumentsServer";
+import { createQueryClient } from "../api/queries";
 import { renderWithProviders } from "../test/providers";
 
 const REPOSITORY = "https://github.com/cmdaltctr/llamaindex-rag-mcp";
@@ -109,6 +110,27 @@ describe("navigation foot", () => {
     await waitFor(() => expect(power).toHaveAccessibleName("Server status: Not answering"));
     expect(power.querySelector("svg")).toHaveClass("text-muted-foreground");
     expect(power.querySelector("svg")).not.toHaveClass("text-status-success");
+    await user.click(power);
+    const panel = document.querySelector("[data-slot='power-panel']") as HTMLElement;
+    expect(within(panel).getByText("Not answering")).toBeInTheDocument();
+    expect(within(panel).queryByText(/2\.3\.4/)).not.toBeInTheDocument();
+  });
+
+  it("turns grey and says Not answering when a later health poll fails, without the old version", async () => {
+    const user = userEvent.setup();
+    let up = true;
+    const queryClient = createQueryClient({ retry: false });
+    window.history.replaceState(null, "", "/");
+    const server = documentsServer({
+      "GET /v1/health": () => (up ? { status: "ok", ready: true, version: "2.3.4" } : json({ detail: "down" }, 503)),
+    });
+    renderWithProviders(<App />, { fetchImpl: server.fetchImpl, queryClient });
+    const power = within(foot()).getByRole("button", { name: /^Server status/ });
+    await waitFor(() => expect(power).toHaveAccessibleName("Server status: Running"));
+    up = false;
+    await queryClient.refetchQueries({ queryKey: ["health"] });
+    await waitFor(() => expect(power).toHaveAccessibleName("Server status: Not answering"));
+    expect(power.querySelector("svg")).toHaveClass("text-muted-foreground");
     await user.click(power);
     const panel = document.querySelector("[data-slot='power-panel']") as HTMLElement;
     expect(within(panel).getByText("Not answering")).toBeInTheDocument();

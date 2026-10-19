@@ -41,11 +41,11 @@ function place(button: HTMLElement, width: number, placement: "below" | "above")
   const roomBelow = window.innerHeight - rect.bottom - 4 - EDGE;
   // `above` flips below when the trigger sits near the top, for example in the small-screen navigation.
   if (placement === "above" && roomAbove >= roomBelow) {
-    return { bottom: window.innerHeight - rect.top + 4, left, maxHeight: Math.max(160, roomAbove) };
+    return { bottom: window.innerHeight - rect.top + 4, left, maxHeight: Math.max(0, roomAbove) };
   }
   const top = rect.bottom + 4;
   // Keep the whole panel on screen: a tall panel scrolls inside the space below the trigger.
-  return { top, left, maxHeight: Math.max(160, window.innerHeight - top - EDGE) };
+  return { top, left, maxHeight: Math.max(0, window.innerHeight - top - EDGE) };
 }
 
 /**
@@ -106,7 +106,7 @@ export function Popover({ trigger, children, slot = "popover-content", width = 2
             id={panelId}
             data-slot={slot}
             style={{ top: position.top, bottom: position.bottom, left: position.left, width, maxHeight: position.maxHeight }}
-            className={cn("fixed z-50 flex flex-col gap-2 rounded-control border border-border bg-popover p-3 text-meta text-popover-foreground shadow-floating", className)}
+            className={cn("fixed z-50 flex flex-col gap-2 overflow-y-auto rounded-control border border-border bg-popover p-3 text-meta text-popover-foreground shadow-floating", className)}
           >
             {typeof children === "function" ? children({ close: () => setPosition(null) }) : children}
           </div>,
