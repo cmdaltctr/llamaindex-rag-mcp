@@ -196,3 +196,21 @@ describe("citation buttons and copied text", () => {
     expect(screen.getByRole("button", { name: "Citation 1" })).toHaveClass("px-0");
   });
 });
+
+describe("AnswerText list items", () => {
+  const LOOSE = "- first item [1]\n\n- second item\n\n1. one\n\n2. two";
+
+  it("does not keep the newline text between an item's children, so the bullet shares a line with its text", () => {
+    const { container } = show(LOOSE);
+    for (const item of container.querySelectorAll("li")) {
+      // A loose item holds a newline text node before its paragraph. With pre-line it renders as a line break.
+      expect(item).not.toHaveClass("whitespace-pre-line");
+      expect(item.firstElementChild?.tagName).toBe("P");
+    }
+  });
+
+  it("colours the bullet and number markers with the primary label colour", () => {
+    const { container } = show(LOOSE);
+    for (const list of container.querySelectorAll("ul, ol")) expect(list).toHaveClass("marker:text-primary-label");
+  });
+});

@@ -111,14 +111,14 @@ const ANSWER_COMPONENTS: Components = {
       <CitedText>{children}</CitedText>
     </del>
   ),
-  ul: ({ children }) => <ul className="flex list-disc flex-col gap-2 ps-5">{children}</ul>,
+  ul: ({ children }) => <ul className="flex list-disc flex-col gap-2 ps-5 marker:text-primary-label">{children}</ul>,
   ol: ({ start, children }) => (
-    <ol start={start} className="flex list-decimal flex-col gap-2 ps-5">
+    <ol start={start} className="flex list-decimal flex-col gap-2 ps-5 marker:text-primary-label">
       {children}
     </ol>
   ),
   li: ({ children }) => (
-    <li className="whitespace-pre-line leading-relaxed [&>*+*]:mt-2">
+    <li className="leading-relaxed [&>*+*]:mt-2">
       <CitedText>{children}</CitedText>
     </li>
   ),
