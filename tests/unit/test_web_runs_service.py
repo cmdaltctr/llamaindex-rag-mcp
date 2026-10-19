@@ -73,7 +73,10 @@ def test_cli_refuses_a_locked_workspace_on_stderr(tmp_path: Path) -> None:
     held = WorkspaceLock.acquire(tmp_path / "ws")
     try:
         with patch("omrg.transports.cli.web._serve") as serve:
-            result = runner.invoke(cli_app, ["web", "--workspace", str(tmp_path / "ws")])
+            # --port 0: a login item on this machine can hold the default port 8765.
+            result = runner.invoke(
+                cli_app, ["web", "--port", "0", "--workspace", str(tmp_path / "ws")]
+            )
     finally:
         held.release()
     assert result.exit_code == 1
@@ -93,7 +96,7 @@ def test_cli_wires_the_workspace_run_service(tmp_path: Path, engine: Any) -> Non
         patch("omrg.transports.cli.web._serve", side_effect=fake_serve),
         patch("omrg.transports.api.app.default_engine_factory", return_value=engine),
     ):
-        result = runner.invoke(cli_app, ["web", "--workspace", str(tmp_path / "ws")])
+        result = runner.invoke(cli_app, ["web", "--port", "0", "--workspace", str(tmp_path / "ws")])
         assert result.exit_code == 0, result.output
         application = captured["app"]
         with TestClient(application, base_url=BASE):

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import socket
 import subprocess
 import sys
@@ -23,12 +22,15 @@ from rich.markup import escape
 
 from . import _launchagent, console
 from . import _web_login_item as core
+from . import _web_login_item_stop as stop
 from .web import resolve_port, web_app
 
 #: Seconds ``install`` and ``restart`` wait for the app to answer (design D8).
 START_TIMEOUT = 60.0
 #: Seconds ``restart`` waits for the old process to stop (design D8).
 STOP_TIMEOUT = 15.0
+#: Seconds ``restart`` waits for launchd to start a new process by itself.
+RESPAWN_GRACE = 5.0
 #: Seconds between two health requests while waiting.
 _POLL_SECONDS = 1.0
 _HOST = "127.0.0.1"
@@ -96,25 +98,40 @@ def _wait_for_health(
         _sleep(_POLL_SECONDS)
 
 
-def _agent_running(uid: int) -> bool:
-    """Return True when launchd still has a live process for the login item.
-
-    ``launchctl print`` shows ``pid = N`` at the first indent level only while
-    the process lives. Health is not enough: Uvicorn closes its socket first and
-    finishes the cleanup after that.
-    """
+def _agent_pid(uid: int) -> int | None:
+    """Return the process id that launchd shows for the login item, or ``None``."""
     done = _launchctl(_launchagent.print_command(uid, core.LABEL))
-    return done.returncode == 0 and re.search(r"^\tpid = \d+$", done.stdout, re.M) is not None
+    return stop.parse_pid(done.returncode, done.stdout)
 
 
-def _wait_until_stopped(port: int, uid: int, timeout: float = STOP_TIMEOUT) -> bool:
-    """Poll until nothing answers health on *port* and the process has gone."""
-    deadline = _clock() + timeout
-    while core.fetch_health(_HOST, port) is not None or _agent_running(uid):
-        if _clock() >= deadline:
-            return False
-        _sleep(_POLL_SECONDS)
-    return True
+def _wait(done: Callable[[], bool], timeout: float) -> bool:
+    return stop.wait_until(done, timeout, clock=_clock, sleep=_sleep)
+
+
+def _stop_and_settle(plan: core.WebLoginItemPlan, uid: int, port: int, old: int | None) -> bool:
+    """Send SIGTERM, wait for the old process to go, then wait for launchd to respawn.
+
+    Uvicorn ends by signal, so launchd counts a crash and starts a new process
+    by itself. The old process has gone when launchd shows no pid or another
+    one; health alone is no proof, because the socket closes first. Without an
+    old pid, the end of the health answers is the only sign. ``kickstart -k``
+    is never used: it could skip the clean shutdown.
+
+    Returns True when launchd started a new process within ``RESPAWN_GRACE``.
+    """
+    done = _launchctl(_launchagent.kill_command(uid, plan.label, "SIGTERM"))
+    if done.returncode != 0:
+        _report_launchctl_failure("kill", done)
+    if old is None:
+        gone = _wait(lambda: core.fetch_health(_HOST, port) is None, STOP_TIMEOUT)
+    else:
+        gone = _wait(lambda: _agent_pid(uid) != old, STOP_TIMEOUT)
+    if not gone:
+        _fail(
+            f"The app did not stop within {int(STOP_TIMEOUT)} seconds. "
+            "Run 'omrg web status' to see its state."
+        )
+    return _wait(lambda: _agent_pid(uid) is not None, RESPAWN_GRACE)
 
 
 def _wait_for_login_item(plan: core.WebLoginItemPlan, port: int) -> tuple[bool, bool]:
@@ -431,21 +448,13 @@ def restart() -> None:
         _fail("The login item is not installed. Run 'omrg web install' first.")
     uid = os.getuid()
     port = _current_port(plan)
-    if core.fetch_health(_HOST, port) is not None or _agent_running(uid):
-        # SIGTERM lets the app shut down in a clean way. kickstart -k would
-        # send an unspecified signal and could skip the clean shutdown.
-        done = _launchctl(_launchagent.kill_command(uid, plan.label, "SIGTERM"))
+    old = _agent_pid(uid)
+    running = core.fetch_health(_HOST, port) is not None or old is not None
+    if not (running and _stop_and_settle(plan, uid, port, old)):
+        # No process came back by itself, so start the app by hand.
+        done = _launchctl(_launchagent.kickstart_command(uid, plan.label))
         if done.returncode != 0:
-            _report_launchctl_failure("kill", done)
-        if not _wait_until_stopped(port, uid):
-            _fail(
-                f"The app did not stop within {int(STOP_TIMEOUT)} seconds. "
-                "Run 'omrg web status' to see its state."
-            )
-    # A clean exit does not trigger KeepAlive, so start the app by hand.
-    done = _launchctl(_launchagent.kickstart_command(uid, plan.label))
-    if done.returncode != 0:
-        _report_launchctl_failure("kickstart", done)
+            _report_launchctl_failure("kickstart", done)
 
     _say(f"Waiting up to {int(START_TIMEOUT)} seconds for the app to answer...")
     body = _wait_for_health(lambda: _current_port(plan))

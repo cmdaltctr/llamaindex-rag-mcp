@@ -322,7 +322,10 @@ def test_omrg_web_installs_the_buffer_on_the_root_logger_and_removes_it_on_exit(
         sock.close()
 
     with patch("omrg.transports.cli.web._serve", side_effect=fake_serve):
-        result = CliRunner().invoke(cli_app, ["web", "--workspace", str(tmp_path / "ws")])
+        # --port 0: a login item on this machine can hold the default port 8765.
+        result = CliRunner().invoke(
+            cli_app, ["web", "--port", "0", "--workspace", str(tmp_path / "ws")]
+        )
     assert result.exit_code == 0, result.output
     buffer = captured["buffer"]
     assert captured["attached"] is True

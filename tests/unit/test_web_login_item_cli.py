@@ -15,6 +15,8 @@ from typing import Any
 import pytest
 from tests.unit.test_web_login_item_support import Harness, flat, healthy
 
+from omrg.transports.cli import web_login_item as wl
+
 
 @pytest.fixture
 def h(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Harness:
@@ -642,6 +644,171 @@ def test_restart_reports_a_new_app_that_never_answers(h: Harness) -> None:
     assert result.exit_code != 0
     assert h.now >= 60.0
     assert str(h.error_log) in flat(result.output)
+
+
+class _Launchd:
+    """A fake launchd that respawns the app by itself after a signal.
+
+    Uvicorn re-raises SIGTERM, so launchd sees a crash and starts a new
+    process. The old process is 42, the one launchd starts is 43 and the one
+    ``kickstart`` starts is 44. *respawn_after* is the number of seconds
+    between ``kill`` and launchd's own start; ``None`` means launchd never
+    starts one.
+    """
+
+    def __init__(self, h: Harness, respawn_after: float | None, new: str = "1.1.0") -> None:
+        self.h = h
+        self.respawn_after = respawn_after
+        self.new = new
+        self.killed_at: float | None = None
+        self.kickstarted_at: float | None = None
+        h.pid = self.pid
+        h.health = self.health
+        h.on_launchctl = self.on_launchctl
+
+    def pid(self) -> int | None:
+        if self.kickstarted_at is not None:
+            return 44
+        if self.killed_at is None:
+            return 42
+        if self.respawn_after is not None and self.h.now - self.killed_at >= self.respawn_after:
+            return 43
+        return None
+
+    def health(self) -> dict[str, Any] | None:
+        pid = self.pid()
+        if pid is None:
+            return None
+        return healthy("1.0.0" if pid == 42 else self.new)
+
+    def on_launchctl(self, cmd: list[str]) -> None:
+        if cmd[1] == "kill":
+            self.killed_at = self.h.now
+        if cmd[1] == "kickstart":
+            self.kickstarted_at = self.h.now
+
+
+@pytest.mark.parametrize("respawn_after", [0.0, 1.0])
+def test_restart_does_not_kickstart_when_launchd_starts_a_new_process_at_once(
+    h: Harness, respawn_after: float
+) -> None:
+    """The signal ends the old process by signal; launchd starts a new one within 1 s.
+
+    At 0.0 the pid goes from 42 straight to 43, so the old process is gone
+    although no poll ever sees "no process".
+    """
+    h.install_real_plist()
+    launchd = _Launchd(h, respawn_after=respawn_after)
+
+    result = h.invoke("restart")
+
+    assert result.exit_code == 0, result.output
+    assert h.changes() == ["kill"]
+    assert launchd.kickstarted_at is None
+    assert "1.1.0" in result.output
+
+
+def test_restart_waits_in_the_grace_for_a_new_process_before_it_kickstarts(h: Harness) -> None:
+    """A new process 3 s after the signal is inside the 5 s grace."""
+    h.install_real_plist()
+    launchd = _Launchd(h, respawn_after=3.0)
+
+    result = h.invoke("restart")
+
+    assert result.exit_code == 0, result.output
+    assert h.changes() == ["kill"]
+    assert launchd.kickstarted_at is None
+
+
+def test_restart_kickstarts_once_after_the_grace_when_launchd_starts_nothing(h: Harness) -> None:
+    h.install_real_plist()
+    launchd = _Launchd(h, respawn_after=None)
+
+    result = h.invoke("restart")
+
+    assert result.exit_code == 0, result.output
+    assert h.changes() == ["kill", "kickstart"]
+    assert launchd.killed_at is not None and launchd.kickstarted_at is not None
+    assert launchd.kickstarted_at - launchd.killed_at >= wl.RESPAWN_GRACE == 5.0
+
+
+def test_restart_fails_without_kickstart_when_the_old_process_never_ends(h: Harness) -> None:
+    h.install_real_plist()
+    h.pid = lambda: 42
+    h.health = lambda: healthy("1.0.0")
+
+    result = h.invoke("restart")
+
+    assert result.exit_code != 0
+    assert h.changes() == ["kill"]
+    assert h.now >= wl.STOP_TIMEOUT
+    assert "omrg web status" in flat(result.output)
+
+
+def test_restart_only_kills_and_kickstarts_when_nothing_is_running(h: Harness) -> None:
+    """No health and no process id: there is nothing to stop."""
+    h.install_real_plist()
+    h.pid = lambda: None
+    h.health = lambda: None
+    h.on_launchctl = lambda cmd: (
+        setattr(h, "health", lambda: healthy("1.1.0")) if (cmd[1] == "kickstart") else None
+    )
+
+    result = h.invoke("restart")
+
+    assert result.exit_code == 0, result.output
+    assert h.changes() == ["kickstart"]
+
+
+def test_restart_treats_the_same_process_id_as_not_restarted_although_health_blinked(
+    h: Harness,
+) -> None:
+    """Health went down and came back, but the process id is still the old one."""
+    h.install_real_plist()
+    state = {"killed_at": None}
+    h.pid = lambda: 42
+    h.health = lambda: (
+        None
+        if state["killed_at"] is not None and h.now < state["killed_at"] + 3.0
+        else healthy("1.0.0")
+    )
+    h.on_launchctl = lambda cmd: state.update(killed_at=h.now) if cmd[1] == "kill" else None
+
+    result = h.invoke("restart")
+
+    assert result.exit_code != 0
+    assert h.changes() == ["kill"]
+    assert "omrg web status" in flat(result.output)
+
+
+def test_restart_waits_for_health_to_stop_when_the_process_id_is_unreadable(h: Harness) -> None:
+    """Health answers but ``launchctl print`` shows no pid: wait for the health to stop."""
+    h.install_real_plist()
+    state: dict[str, Any] = {"killed_at": None, "kickstarted": False}
+    h.pid = lambda: None
+
+    def health() -> dict[str, Any] | None:
+        if state["kickstarted"]:
+            return healthy("1.1.0")
+        if state["killed_at"] is None or h.now < state["killed_at"] + 4.0:
+            return healthy("1.0.0")
+        return None
+
+    def on(cmd: list[str]) -> None:
+        if cmd[1] == "kill":
+            state["killed_at"] = h.now
+        if cmd[1] == "kickstart":
+            state["kickstarted"] = True
+            state["kickstart_at"] = h.now
+
+    h.health = health
+    h.on_launchctl = on
+
+    result = h.invoke("restart")
+
+    assert result.exit_code == 0, result.output
+    assert h.changes() == ["kill", "kickstart"]
+    assert state["kickstart_at"] - state["killed_at"] >= 4.0
 
 
 def test_restart_reports_a_launchctl_failure(h: Harness) -> None:
