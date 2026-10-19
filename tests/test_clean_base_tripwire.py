@@ -101,7 +101,8 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # -2 (2026-10-19): the two real-Uvicorn signal tests in test_launch_link.py are marked slow.
 # +54 (2026-10-19, add-web-power-menu): admission count (4), power control argv and runner
 # (15), power routes (26), launch wiring (2) and the `omrg web start` command (7).
-_BASE_EXECUTED = 6670
+# +6 (2026-10-19, answer layout prompt): the layout and slack cases of test_answer_prompt_format.py.
+_BASE_EXECUTED = 6676
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.

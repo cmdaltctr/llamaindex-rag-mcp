@@ -43,8 +43,9 @@ from .prompt import GROUND_REFINE_TEMPLATE, GROUND_TEXT_QA_TEMPLATE
 CompletionSeam = Callable[[str], Awaitable[str]]
 
 #: Reserved head-room (characters) for template boilerplate when
-#: widening the per-round budget for the round bound.
-_TEMPLATE_SLACK = 1024
+#: widening the per-round budget for the round bound. The fixed text of
+#: the answer prompt (layout rules included) must stay below it.
+_TEMPLATE_SLACK = 1536
 
 #: Hard ceiling (characters) on one synthesis prompt round, independent
 #: of the configured context window (security finding F7).  A huge
