@@ -17,7 +17,7 @@ Work in a feature worktree that forks from `integration/core-web`, named `llamai
 
 ## 3. Build the LaunchAgent plan
 
-- [ ] 3.1 Move the atomic write out of `write_plist` in `cli/_launchagent.py` into `write_plist_atomic(path, content, overwrite)`. `write_plist` calls it. Run `uv run pytest tests/test_launchagent.py tests/test_install_login_watcher.py -q` and confirm that they pass without any change to those tests.
+- [ ] 3.1 Move the atomic write out of `write_plist` in `cli/_launchagent.py` into `write_plist_atomic(path, content, overwrite)`. `write_plist` calls it. Run `uv run pytest tests/unit/test_launchagent.py tests/test_install_login_watcher.py -q` and confirm that they pass without any change to those tests.
 - [ ] 3.2 Add `tests/unit/test_web_login_item_plan.py` for the `web-login-item` plist scenarios: label `com.omrg.web`; argument list with and without each option; `KeepAlive` is `{SuccessfulExit: false}`; `ThrottleInterval` is 60; `PATH` value; `WorkingDirectory` is the absolute `<home>/.omrg`; log paths; relative `--command-path` refused; the checkout warning fires for `<dir>/.venv/bin/omrg` when `<dir>/.git` exists and not otherwise; the settings message names `<home>/.omrg/.env` when it is missing and asks to copy only when the current folder has a `.env`. Run it and confirm that it fails.
 - [ ] 3.3 Add `cli/_web_login_item.py` with the plan dataclass, `build_plan`, `render_plist`, the checkout check and the health and version helpers from design D6. Reuse `compute_paths`, `resolve_command_path` and the `launchctl` argument builders. Run `tests/unit/test_web_login_item_plan.py` and confirm that it passes. Run `uv run pytest tests/test_file_size_ceiling.py -q` and confirm that it passes.
 
