@@ -18,6 +18,11 @@ The `omrg` command doubles as an MCP server and a CLI tool. With no arguments it
 | `omrg set-profile`           | Bind a built-in profile (`documents` or `codebase`) to a collection              |
 | `omrg benchmark`             | Benchmark embedding throughput without vector-store writes                       |
 | `omrg web`                   | Start the local web workspace (needs the `web` extra)                            |
+| `omrg web install`           | Keep the web app running as a macOS login item and start it                      |
+| `omrg web uninstall`         | Stop the login item and remove its LaunchAgent file                              |
+| `omrg web status`            | Show whether the login item is installed, running and answering                  |
+| `omrg web restart`           | Restart the login item, for example after you install a newer copy               |
+| `omrg web open`              | Open the app in your browser with a fresh sign-in link                           |
 | `omrg --version`             | Show version                                                                     |
 | `omrg --help`                | Show help                                                                        |
 | `omrg --install-completion`  | Install shell tab completion                                                     |
@@ -380,6 +385,67 @@ omrg web --allow-origin http://name.orca.localhost:57977
 The upload limit is the first value in this order: `--max-upload-mib`, then `WEB_MAX_UPLOAD_MIB` (environment or `.env`), then the limit saved in Settings > Workspace, then 50 MiB. A launch value locks the limit for that run, and Settings cannot change it. A value that is not a whole number from 1 to 2048 stops the command with exit code 2 before it binds a port. The message names the option, the variable and the range.
 
 The port is `--port` if you give it, else the port saved in Settings > MCP, else 8765. `--port 0` picks a free port. If the port is taken, the command exits with code 1 and prints `Port <n> is in use. Start with --port <n> to choose another port, then save it in Settings > MCP.` The command writes the one-time sign-in link to stderr. It does not run the legacy process-default installer. It refuses a non-loopback `--host`. Every option, sign-in, file grants, jobs and shutdown: [Web workspace](web-workspace.md).
+
+### web install, uninstall, status, restart, open
+
+Keep the web app running on a Mac. `omrg web` stops when you close its terminal window. The login item is a per-user LaunchAgent with the label `com.omrg.web`. It starts at every login and starts again after a crash. It stays stopped after a clean exit. The guide [Web workspace](web-workspace.md#keep-the-app-running) explains the sign-in link file.
+
+```bash
+# Show the plan and write nothing (works on any platform)
+omrg web install --dry-run
+
+# Install, load and start. The command waits up to 60 seconds for the app
+omrg web install
+
+# Open the app in your browser, signed in
+omrg web open
+
+# Check the state
+omrg web status
+omrg web status --json
+
+# Start the installed version, for example after you installed a newer copy
+omrg web restart
+
+# Stop the app and remove the login item. The workspace and the logs stay
+omrg web uninstall
+```
+
+Options of `omrg web install`:
+
+| Option | Default | Use |
+|---|---|---|
+| `--workspace PATH` | `~/.omrg/workspace` | Workspace folder. The login item gets the option only when you give it. |
+| `--port N` | saved port, else `8765` | TCP port, 1 to 65535. A login item needs a stable port, so `0` is not allowed. |
+| `--root DIR` | none | Approve a directory for file access. Repeat for more. The path is made absolute. |
+| `--experiment-root DIR` | none | Approve a directory for experiment workspaces. Repeat for more. |
+| `--command-path PATH` | `omrg` on your `PATH` | Absolute path of the `omrg` executable. |
+| `--dry-run` | off | Show the plan. Write no file and do not call `launchctl`. |
+| `--force` | off | Replace an existing login item. |
+| `--yes`, `-y` | off | Skip the confirmations. |
+
+Other options: `omrg web open --print` prints the full sign-in link to stderr and opens no browser. `omrg web uninstall --yes` skips the confirmation. `omrg web status --json` prints one JSON object.
+
+| Command | Exit code |
+|---|---|
+| `install` | 0 when the app answers. 1 when the platform is not macOS, a login item exists and `--force` is missing, `launchctl` fails, you refuse a confirmation, or the app does not answer within 60 seconds. The login item stays installed after a time-out. |
+| `uninstall` | 0 when it removed the login item, and also when nothing was installed. 1 when you refuse the confirmation or the agent stays loaded. |
+| `status` | 0 when the app answers `GET /v1/health`. 1 when it does not answer, or no login item is installed. |
+| `restart` | 0 when the new process answers. 1 when no login item is installed, the old process does not stop within 15 seconds, or the new process does not answer within 60 seconds. |
+| `open` | 0 when it opened the link or printed it. 1 when the login item is not running. The command never starts a server. |
+
+The login item is a copy of your `omrg` that launchd starts. Four rules follow from that:
+
+1. **Install `omrg` outside the checkout.** The login item runs the absolute path of the executable. A path inside a `.venv` of a source checkout stops working when you delete the checkout or its worktree. `install` shows a warning for such a path, and asks you to confirm or to pass `--yes`. Use `uv tool install` from your main checkout with the `web` extra. Do not use editable mode (`-e`): it keeps running the source files of the checkout.
+2. **Settings come from `~/.omrg/.env`.** launchd starts the login item in `~/.omrg` with no shell variables. The app reads the `.env` file in its working folder, so it reads `~/.omrg/.env`. Variables you export in your shell do not reach it. Copy your settings to `~/.omrg/.env` yourself. `install` shows the path of the file and, when the folder where you ran it has a `.env` file, asks you to copy it. The command never reads, copies or moves a `.env` file.
+3. **The `PATH` is fixed.** The login item gets `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin`, so it can start tools such as `llama-server`. A tool in another folder is not found.
+4. **A running copy does not change when you install a newer one.** `status` shows the running version and the installed version. Run `omrg web restart` to start the installed version. A restart signs the browser out. Run `omrg web open` to sign in again.
+
+`install` warns, and goes on, when something already listens on the target port. Stop a hand-started `omrg web` first, or the login item cannot bind the port.
+
+Files outside the repository: `~/Library/LaunchAgents/com.omrg.web.plist`, `~/Library/Logs/omrg/com.omrg.web.out.log`, `~/Library/Logs/omrg/com.omrg.web.err.log`, `<workspace>/launch-link` and the folder `~/.omrg`. The log files have no rotation. The access log is off, so they hold only start-up and error lines.
+
+> **Platform:** `install` works on macOS only. On any other platform it exits with code 1 unless you add `--dry-run`.
 
 ### Shell tab completion
 
