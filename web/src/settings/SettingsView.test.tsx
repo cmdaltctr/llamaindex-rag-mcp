@@ -87,7 +87,7 @@ describe("Appearance", () => {
     expect(document.documentElement.dataset.theme).toBe("light");
     const stored = JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) ?? "{}") as { theme?: string };
     expect(stored.theme).toBe("light");
-    expect(screen.getByRole("button", { name: "Switch to dark theme" })).toBeInTheDocument();
+    expect(within(screen.getByText("Local workspace").closest("header")!).getByRole("button", { name: "Switch to dark theme" })).toBeInTheDocument();
   });
 });
 

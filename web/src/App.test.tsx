@@ -146,10 +146,10 @@ describe("theme controls", () => {
   it("switches between light and dark with one click and names the target", async () => {
     const user = userEvent.setup();
     start();
-    await user.click(screen.getByRole("button", { name: "Switch to dark theme" }));
+    await user.click(within(screen.getByText("Local workspace").closest("header")!).getByRole("button", { name: "Switch to dark theme" }));
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) ?? "{}").theme).toBe("dark");
-    await user.click(screen.getByRole("button", { name: "Switch to light theme" }));
+    await user.click(within(screen.getByText("Local workspace").closest("header")!).getByRole("button", { name: "Switch to light theme" }));
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) ?? "{}").theme).toBe("light");
   });
@@ -158,7 +158,7 @@ describe("theme controls", () => {
     window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ theme: "dark", lastCollection: null }));
     start("#/settings");
     expect(document.documentElement.dataset.theme).toBe("dark");
-    expect(screen.getByRole("button", { name: "Switch to light theme" })).toBeInTheDocument();
+    expect(within(screen.getByText("Local workspace").closest("header")!).getByRole("button", { name: "Switch to light theme" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
   });
 
@@ -178,7 +178,7 @@ describe("theme controls", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(denied);
     const user = userEvent.setup();
     start();
-    await user.click(screen.getByRole("button", { name: "Switch to dark theme" }));
+    await user.click(within(screen.getByText("Local workspace").closest("header")!).getByRole("button", { name: "Switch to dark theme" }));
     expect(document.documentElement.dataset.theme).toBe("dark");
   });
 });

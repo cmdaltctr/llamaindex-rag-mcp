@@ -57,8 +57,8 @@ Uvicorn re-raises SIGTERM after its clean shutdown, so launchd sees a death by s
 
 ## 7. Add the navigation foot
 
-- [ ] 7.1 Load the `omrg-design` skill. Write failing component tests in `web/src`: four controls in order (theme, Settings, power, GitHub); no language control; a theme click writes the stored preference; the Settings link goes to `#/settings`; the power light is green when health answers and grey when it does not; the GitHub link has the right address and opens in a new tab; the collapsed layout shows icons only. Run the tests and confirm that they fail.
-- [ ] 7.2 Add the component under `web/src/components` and mount it at the foot of the side navigation (design D9). No new route. Run the tests and confirm that they pass.
-- [ ] 7.3 Check in a browser at 1280 px and 390 px against a scratch workspace. Report PASS or FAIL for each control. Ask before you start a server or a browser.
-- [ ] 7.4 Add a short "Navigation foot" paragraph to `docs/guides/web-workspace.md`. Run `uv run pytest tests/test_docs_references.py -q` and confirm that it passes.
-- [ ] 7.5 Run `npm run build` and the web tests in `web/`. Run `openspec validate add-web-login-item --strict` and `openspec validate --all --strict`. Confirm that all pass. When the user approves, commit as `feat(web): add the navigation foot`.
+- [x] 7.1 Load the `omrg-design` skill. Write failing component tests in `web/src`: four controls in order (theme, Settings, power, GitHub); no language control; a theme click writes the stored preference; the Settings link goes to `#/settings`; the power light is green when health answers and grey when it does not; the GitHub link has the right address and opens in a new tab; the collapsed layout shows icons only. Run the tests and confirm that they fail.
+- [x] 7.2 Add the component under `web/src/components` and mount it at the foot of the side navigation (design D9). No new route. Run the tests and confirm that they pass.
+- [x] 7.3 Check in a browser at 1280 px and 390 px against a scratch workspace. Report PASS or FAIL for each control. Ask before you start a server or a browser.
+- [x] 7.4 Add a short "Navigation foot" paragraph to `docs/guides/web-workspace.md`. Run `uv run pytest tests/test_docs_references.py -q` and confirm that it passes.
+- [x] 7.5 Run `npm run build` and the web tests in `web/`. Run `openspec validate add-web-login-item --strict` and `openspec validate --all --strict`. Confirm that all pass. When the user approves, commit as `feat(web): add the navigation foot`.

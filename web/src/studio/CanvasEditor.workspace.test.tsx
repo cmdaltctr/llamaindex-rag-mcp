@@ -120,9 +120,9 @@ describe("canvas state across the workspace", () => {
     await addWithKeyboard(user, "Cross-encoder rerank", "select.rerank");
     await user.click(outlineNode("dense"));
 
-    await user.click(screen.getByRole("button", { name: "Switch to dark theme" }));
+    await user.click(within(screen.getByText("Local workspace").closest("header")!).getByRole("button", { name: "Switch to dark theme" }));
     expect(document.documentElement.dataset.theme).toBe("dark");
-    await user.click(screen.getByRole("button", { name: "Switch to light theme" }));
+    await user.click(within(screen.getByText("Local workspace").closest("header")!).getByRole("button", { name: "Switch to light theme" }));
     expect(document.documentElement.dataset.theme).toBe("light");
 
     expect(outlineNode("dense")).toHaveAttribute("aria-pressed", "true");

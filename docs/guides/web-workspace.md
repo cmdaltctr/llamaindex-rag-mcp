@@ -450,6 +450,17 @@ The screenshots show a local server with small Markdown sources. The run output 
 
 On a phone, the areas use one column. Two examples at 390 px: [Home](images/web-workspace/home-light-390.png) and the [Studio canvas](images/web-workspace/studio-canvas-light-390.png).
 
+### Navigation foot
+
+The side navigation ends with four icon buttons. In the collapsed navigation they stack in one column. On a narrow screen they sit in one row under the area icons.
+
+1. **Theme.** One click switches between Light and Dark. It saves the same choice as the top bar and the Settings select.
+2. **Settings.** It opens the Settings view.
+3. **Power.** The icon is green while the server answers `GET /v1/health`. It is grey when the server does not answer. The panel states "Running" with the version, or "Not answering". It also shows the commands `omrg web restart` and `omrg web open`, each with a copy button.
+4. **GitHub.** It opens the OMRG repository in a new tab.
+
+Restart and Stop are not on the page. A restart ends your browser session, because sessions live in server memory. Under the login item, a stop signal makes launchd start the server again. Run `omrg web restart` or `omrg web open` in a terminal instead.
+
 ### Profiles in Studio
 
 Studio opens on a gallery of profiles. A profile is a group of three pipelines. A collection uses one profile, and the profile decides how that collection works.
