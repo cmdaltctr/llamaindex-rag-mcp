@@ -432,6 +432,7 @@ def _run_child_and_send_sigterm(tmp_path: Path, script: str) -> tuple[int, Path,
     return code, link_file, returned
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(sys.platform == "win32", reason="needs POSIX signals")
 def test_sigterm_removes_the_link_file_and_ends_by_signal(tmp_path: Path) -> None:
     pytest.importorskip("uvicorn")
@@ -443,6 +444,7 @@ def test_sigterm_removes_the_link_file_and_ends_by_signal(tmp_path: Path) -> Non
     assert code == -signal.SIGTERM
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(sys.platform == "win32", reason="needs POSIX signals")
 def test_a_removal_after_serve_returns_is_left_behind_by_sigterm(tmp_path: Path) -> None:
     """Control: this is the old behaviour, and why the hook sits in shutdown."""
