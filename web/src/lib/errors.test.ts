@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, type ApiErrorKind } from "../api/client";
-import { describeError } from "./errors";
+import { describeError, describeSaveError } from "./errors";
 
 const RAW = "Expected JSON from /v1/collections but received text/html (status 200). <html>stack at line 3</html>";
 
@@ -54,5 +54,55 @@ describe("describeError", () => {
     describeError(error("not-json", 200));
     expect(consoleError).toHaveBeenCalledTimes(1);
     expect(String(consoleError.mock.calls[0]?.join(" "))).toContain("stack at line");
+  });
+});
+
+describe("describeSaveError", () => {
+  let consoleError: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    consoleError.mockRestore();
+  });
+
+  function refused(status: number, body: unknown): ApiError {
+    return new ApiError("http", "Request failed.", "/v1/settings/llamacpp-server", status, body);
+  }
+
+  it("shows the server message of a 400 with a retry action", () => {
+    const message = "The program must be the llama-server file inside a folder you own.";
+    const friendly = describeSaveError(refused(400, { status: "error", message }));
+    expect(friendly.message).toBe(message);
+    expect(friendly.action.kind).toBe("retry");
+  });
+
+  it("reads the message from a detail field too", () => {
+    expect(describeSaveError(refused(400, { detail: "That model file does not exist." })).message).toBe("That model file does not exist.");
+  });
+
+  it("shows the revision conflict of a 409 with a Reload action", () => {
+    const message = "omrg.jsonc changed on disk. Reload to see the new values.";
+    const friendly = describeSaveError(refused(409, { status: "error", message }));
+    expect(friendly.message).toBe(message);
+    expect(friendly.action).toEqual({ kind: "reload", label: "Reload" });
+  });
+
+  it("falls back to the generic text when the body has no message", () => {
+    expect(describeSaveError(refused(400, { status: "error" })).message).toMatch(/could not complete/i);
+    expect(describeSaveError(refused(409, null)).message).toMatch(/could not complete/i);
+  });
+
+  it("leaves other statuses and other kinds to describeError", () => {
+    expect(describeSaveError(refused(500, { message: "boom" })).message).toMatch(/could not complete/i);
+    expect(describeSaveError(refused(404, { message: "nope" })).message).toMatch(/could not be found/i);
+    expect(describeSaveError(new ApiError("network", RAW, "/v1/x")).message).toMatch(/not reachable/i);
+    expect(describeSaveError(new Error(RAW)).message).toMatch(/something went wrong/i);
+  });
+
+  it("does not show a message that is not text", () => {
+    expect(describeSaveError(refused(400, { message: { value: "secret-value" } })).message).toMatch(/could not complete/i);
   });
 });

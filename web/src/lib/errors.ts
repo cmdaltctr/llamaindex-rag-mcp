@@ -52,3 +52,27 @@ export function describeError(error: unknown): FriendlyError {
       return { message: "The local server could not complete that request.", action: RETRY };
   }
 }
+
+/** The text of a server error body, when the body holds one. */
+function bodyMessage(body: unknown): string | null {
+  if (typeof body !== "object" || body === null) return null;
+  const record = body as Record<string, unknown>;
+  const message = record.message ?? record.detail;
+  return typeof message === "string" && message.length > 0 ? message : null;
+}
+
+/**
+ * Like `describeError`, for a refused Settings save. A 400 or 409 with a
+ * message in the body shows that message, because the server words it to name
+ * the rule or the source and never the refused value. Everything else keeps
+ * the generic text of `describeError`.
+ */
+export function describeSaveError(error: unknown): FriendlyError {
+  if (error instanceof ApiError && error.kind === "http" && (error.status === 400 || error.status === 409)) {
+    const message = bodyMessage(error.body);
+    if (message !== null) {
+      return { message, action: error.status === 409 ? { kind: "reload", label: "Reload" } : RETRY };
+    }
+  }
+  return describeError(error);
+}

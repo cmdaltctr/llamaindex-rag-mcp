@@ -72,3 +72,28 @@ export function cloudHost(connection: Connection): string {
 export function lockedSourceLine(source: string): string {
   return source === "config-file" ? "Set from config file (read-only here)" : "Set from environment (read-only here)";
 }
+
+/**
+ * The plain words for where a setting value comes from. One map for every
+ * Settings row. `env` and `dotenv` are locked: the page cannot change them.
+ */
+export const SOURCE_WORDS: Record<string, string> = {
+  env: "Set in the environment. Change it there.",
+  dotenv: "Set in .env. Change it there.",
+  "config-file": "from omrg.jsonc",
+  keychain: "in system keychain",
+  "key-file": "from key file",
+  default: "default",
+  none: "not set",
+};
+
+/** The words for a source, followed by `detail` (a variable name or a path) when given. An unknown source shows as it is. */
+export function sourceText(source: string, detail?: string | null): string {
+  const words = SOURCE_WORDS[source] ?? source;
+  return detail ? `${words} ${detail}` : words;
+}
+
+/** True when the environment or `.env` sets the value, so the page cannot change it. */
+export function isEnvironmentSource(source: string): boolean {
+  return source === "env" || source === "dotenv";
+}
