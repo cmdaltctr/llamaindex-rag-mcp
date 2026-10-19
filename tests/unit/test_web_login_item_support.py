@@ -57,6 +57,8 @@ class Harness:
         self.open_rc = 0
         #: Returns the health body at the current fake time, or None.
         self.health: Callable[[], dict[str, Any] | None] = lambda: None
+        #: Overrides whether the agent has a live process (default: it follows health).
+        self.alive: Callable[[], bool] | None = None
         #: Ports the commands asked ``GET /v1/health`` on, in order.
         self.health_ports: list[int] = []
         #: Called after each launchctl command, so a test can change the app state.
@@ -76,9 +78,18 @@ class Harness:
 
     def _launchctl(self, cmd: list[str]) -> subprocess.CompletedProcess[str]:
         self.launchctl_calls.append(list(cmd))
-        done = subprocess.CompletedProcess(cmd, self.launchctl_rc.get(cmd[1], 0), "", "")
+        stdout = ""
+        if cmd[1] == "print":
+            stdout = (
+                "\tstate = running\n\tpid = 42\n" if self._alive() else "\tstate = not running\n"
+            )
+        done = subprocess.CompletedProcess(cmd, self.launchctl_rc.get(cmd[1], 0), stdout, "")
         self.on_launchctl(cmd)
         return done
+
+    def _alive(self) -> bool:
+        """Whether launchd still has a process; follows health unless a test says otherwise."""
+        return self.alive() if self.alive is not None else self.health() is not None
 
     def _fetch_health(self, host: str, port: int, **_: Any) -> dict[str, Any] | None:
         self.health_ports.append(port)
@@ -109,9 +120,20 @@ class Harness:
         """The launchctl verbs called so far, in order."""
         return [call[1] for call in self.launchctl_calls]
 
-    def serve(self, version: str = "1.0.0", *, after: float = 0.0) -> None:
-        """From fake time *after* on, the app answers health."""
+    def serve(
+        self, version: str = "1.0.0", *, after: float = 0.0, link_port: int | None = None
+    ) -> None:
+        """From fake time *after* on, the app answers health.
+
+        With *link_port*, the app is a login-item server and has written its link file.
+        """
         self.health = lambda: healthy(version) if self.now >= after else None
+        if link_port is not None:
+            self.write_link(port=link_port)
+
+    def changes(self) -> list[str]:
+        """The launchctl verbs that change state (``print`` only reads)."""
+        return [v for v in self.verbs() if v != "print"]
 
     def install_plist(self) -> None:
         """Put a plist on disk, as an earlier install would."""

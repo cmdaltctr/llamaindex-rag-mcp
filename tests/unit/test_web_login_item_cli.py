@@ -29,7 +29,7 @@ def _install(h: Harness, *args: str, input: str | None = None):
 
 
 def test_install_prints_the_plan(h: Harness) -> None:
-    h.serve()
+    h.serve(link_port=8765)
 
     result = _install(h, "--yes")
 
@@ -41,7 +41,7 @@ def test_install_prints_the_plan(h: Harness) -> None:
 
 
 def test_install_writes_the_plist_and_loads_it(h: Harness) -> None:
-    h.serve()
+    h.serve(link_port=8765)
 
     result = _install(h, "--yes")
 
@@ -54,7 +54,7 @@ def test_install_writes_the_plist_and_loads_it(h: Harness) -> None:
 
 
 def test_install_waits_for_the_app_and_reports_it(h: Harness) -> None:
-    h.serve("2.5.0", after=5.0)
+    h.serve("2.5.0", after=5.0, link_port=8765)
 
     result = _install(h, "--yes")
 
@@ -65,7 +65,7 @@ def test_install_waits_for_the_app_and_reports_it(h: Harness) -> None:
 
 
 def test_install_creates_the_omrg_folder_and_the_log_folder(h: Harness) -> None:
-    h.serve()
+    h.serve(link_port=8765)
 
     _install(h, "--yes")
 
@@ -74,9 +74,10 @@ def test_install_creates_the_omrg_folder_and_the_log_folder(h: Harness) -> None:
 
 
 def test_options_reach_the_agent(h: Harness, tmp_path: Path) -> None:
-    h.serve()
+    h.serve(link_port=8765)
     papers = tmp_path / "papers"
     papers.mkdir()
+    h.write_link(port=9000)
 
     result = _install(h, "--root", str(papers), "--port", "9000", "--yes")
 
@@ -100,7 +101,7 @@ def test_existing_plist_is_refused_without_force(h: Harness) -> None:
 
 def test_force_replaces_an_existing_plist(h: Harness) -> None:
     h.install_plist()
-    h.serve()
+    h.serve(link_port=8765)
 
     result = _install(h, "--force", "--yes")
 
@@ -152,7 +153,7 @@ def test_relative_command_path_is_refused(h: Harness) -> None:
 
 def test_a_busy_port_gives_a_warning_and_the_install_goes_on(h: Harness) -> None:
     h.listening = True
-    h.serve()
+    h.serve(link_port=8765)
 
     result = _install(h, "--yes")
 
@@ -164,7 +165,7 @@ def test_a_busy_port_gives_a_warning_and_the_install_goes_on(h: Harness) -> None
 
 def test_the_port_check_uses_the_port_option(h: Harness) -> None:
     h.listening = True
-    h.serve()
+    h.serve(link_port=9100)
 
     result = _install(h, "--port", "9100", "--yes")
 
@@ -186,7 +187,7 @@ def checkout(h: Harness, tmp_path: Path) -> Path:
 
 
 def test_a_checkout_executable_shows_a_warning(h: Harness, checkout: Path) -> None:
-    h.serve()
+    h.serve(link_port=8765)
 
     result = _install(h, "--yes")
 
@@ -215,7 +216,7 @@ def test_an_interactive_run_asks_and_a_no_stops(h: Harness, checkout: Path) -> N
 
 def test_an_interactive_run_asks_and_a_yes_installs(h: Harness, checkout: Path) -> None:
     h.interactive = True
-    h.serve()
+    h.serve(link_port=8765)
 
     result = _install(h, input="y\ny\n")
 
@@ -250,7 +251,7 @@ def test_a_launchctl_failure_exits_non_zero(h: Harness) -> None:
 
 
 def test_install_never_reads_or_creates_a_dotenv(h: Harness) -> None:
-    h.serve()
+    h.serve(link_port=8765)
     dotenv = h.cwd / ".env"
     dotenv.write_text("OPENROUTER_API_KEY=sentinel-value\n", encoding="utf-8")
     before = (dotenv.read_text(encoding="utf-8"), dotenv.stat().st_mtime_ns)
@@ -262,6 +263,30 @@ def test_install_never_reads_or_creates_a_dotenv(h: Harness) -> None:
     assert "sentinel-value" not in result.output
     assert "Copy your settings" in flat(result.output)
     assert "~/.omrg/.env" in flat(result.output)
+
+
+def test_install_does_not_report_success_for_a_server_it_did_not_start(h: Harness) -> None:
+    """A hand-run 'omrg web' answers health but writes no link file."""
+    h.serve()
+
+    result = _install(h, "--yes")
+
+    text = flat(result.output)
+    assert result.exit_code != 0
+    assert "The app is running" not in text
+    assert "8765" in text
+    assert "Stop that process" in text
+    assert h.plist.exists()
+    assert h.now >= 60.0
+
+
+def test_install_ignores_a_link_file_for_another_port(h: Harness) -> None:
+    h.serve(link_port=9999)
+
+    result = _install(h, "--yes")
+
+    assert result.exit_code != 0
+    assert "The app is running" not in flat(result.output)
 
 
 # ── uninstall ────────────────────────────────────────────────────────────
@@ -487,7 +512,7 @@ def test_restart_stops_with_sigterm_then_starts_without_dash_k(h: Harness) -> No
     result = h.invoke("restart")
 
     assert result.exit_code == 0, result.output
-    assert h.launchctl_calls == [
+    assert [c for c in h.launchctl_calls if c[1] != "print"] == [
         ["launchctl", "kill", "SIGTERM", f"gui/{h.uid}/com.omrg.web"],
         ["launchctl", "kickstart", f"gui/{h.uid}/com.omrg.web"],
     ]
@@ -522,6 +547,66 @@ def test_restart_waits_while_the_old_app_drains(h: Harness) -> None:
     assert h.now >= drain_until
 
 
+def test_restart_waits_for_the_old_process_to_exit_not_only_for_health(h: Harness) -> None:
+    """Uvicorn closes its socket first and finishes cleanup later (CodeRabbit, PR 119)."""
+    h.install_real_plist()
+    socket_closed_at, process_exits_at = 2.0, 8.0
+    state: dict[str, Any] = {"new": False, "kickstart_at": None}
+
+    def health() -> dict[str, Any] | None:
+        if state["new"]:
+            return healthy("1.1.0")
+        return healthy("1.0.0") if h.now < socket_closed_at else None
+
+    def on(cmd: list[str]) -> None:
+        if cmd[1] == "kickstart":
+            state["kickstart_at"] = h.now
+            state["new"] = True
+
+    h.health = health
+    h.alive = lambda: state["new"] or h.now < process_exits_at
+    h.on_launchctl = on
+
+    result = h.invoke("restart")
+
+    assert result.exit_code == 0, result.output
+    assert state["kickstart_at"] is not None
+    assert state["kickstart_at"] >= process_exits_at
+
+
+def test_restart_stops_when_the_process_never_exits_although_health_is_down(h: Harness) -> None:
+    h.install_real_plist()
+    h.health = lambda: None
+    h.alive = lambda: True
+
+    result = h.invoke("restart")
+
+    assert result.exit_code != 0
+    assert h.changes() == ["kill"]
+    assert h.now >= 15.0
+
+
+def test_restart_restarts_an_app_that_is_still_starting_up(h: Harness) -> None:
+    """Health is down but the process lives, for example while it loads models."""
+    h.install_real_plist()
+    state: dict[str, Any] = {"alive": True, "new": False}
+    h.health = lambda: healthy("1.1.0") if state["new"] else None
+    h.alive = lambda: state["alive"] or state["new"]
+
+    def on(cmd: list[str]) -> None:
+        if cmd[1] == "kill":
+            state["alive"] = False
+        if cmd[1] == "kickstart":
+            state["new"] = True
+
+    h.on_launchctl = on
+
+    result = h.invoke("restart")
+
+    assert result.exit_code == 0, result.output
+    assert h.changes() == ["kill", "kickstart"]
+
+
 def test_restart_stops_when_the_old_app_does_not_stop(h: Harness) -> None:
     h.install_real_plist()
     h.serve()
@@ -529,7 +614,7 @@ def test_restart_stops_when_the_old_app_does_not_stop(h: Harness) -> None:
     result = h.invoke("restart")
 
     assert result.exit_code != 0
-    assert h.verbs() == ["kill"]
+    assert h.changes() == ["kill"]
     assert h.now >= 15.0
     assert "omrg web status" in flat(result.output)
 
@@ -544,7 +629,7 @@ def test_restart_starts_an_app_that_is_not_running(h: Harness) -> None:
     result = h.invoke("restart")
 
     assert result.exit_code == 0, result.output
-    assert h.verbs() == ["kickstart"]
+    assert h.changes() == ["kickstart"]
 
 
 def test_restart_reports_a_new_app_that_never_answers(h: Harness) -> None:

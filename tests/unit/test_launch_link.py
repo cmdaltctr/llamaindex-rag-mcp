@@ -121,6 +121,42 @@ def test_a_failed_write_does_not_break_sign_in(tmp_path: Path) -> None:
     assert token is not None
 
 
+def test_a_failed_renewal_is_retried_on_the_next_attempt(tmp_path: Path) -> None:
+    """The file must not keep a spent link for good (CodeRabbit, PR 119)."""
+    policy, link_file = _make(tmp_path)
+    spent = link_file.read_text(encoding="utf-8")
+    real_write = write_link_file
+    calls = {"n": 0}
+
+    def flaky(path: Path, url: str) -> None:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise OSError("disk full")
+        real_write(path, url)
+
+    with patch("omrg.transports.api.launch_link.write_link_file", side_effect=flaky):
+        assert policy.exchange_bootstrap(_secret(spent)) is not None
+        assert link_file.read_text(encoding="utf-8") == spent
+        # A browser that opened the spent link posts it again and is refused ...
+        assert policy.exchange_bootstrap(_secret(spent)) is None
+
+    # ... and that attempt put the new link in the file.
+    renewed = link_file.read_text(encoding="utf-8")
+    assert renewed != spent
+    assert policy.exchange_bootstrap(_secret(renewed)) is not None
+
+
+def test_a_failed_renewal_that_keeps_failing_never_breaks_sign_in(tmp_path: Path) -> None:
+    policy, link_file = _make(tmp_path)
+    spent = link_file.read_text(encoding="utf-8")
+
+    with patch("omrg.transports.api.launch_link.write_link_file", side_effect=OSError("full")):
+        assert policy.exchange_bootstrap(_secret(spent)) is not None
+        assert policy.exchange_bootstrap("omrg_bs_guess") is None
+
+    assert link_file.read_text(encoding="utf-8") == spent
+
+
 # ── The command ──────────────────────────────────────────────────────────
 
 

@@ -19,6 +19,11 @@ On macOS, `omrg web install` SHALL write a per-user LaunchAgent with the label `
 - **WHEN** the app does not answer `GET /v1/health` within 60 seconds of install
 - **THEN** the command MUST exit non-zero, MUST name the error log and `omrg web status`, and MUST leave the plist installed
 
+#### Scenario: Another process holds the port
+
+- **WHEN** a server that is not the login item answers `GET /v1/health` on the target port and no link file names that port
+- **THEN** the command MUST NOT report that the app is running, MUST exit non-zero, MUST say that another process may hold the port, and MUST leave the plist installed
+
 #### Scenario: Options reach the agent
 
 - **WHEN** the user runs `omrg web install --root ~/papers --port 9000 --yes`
@@ -113,6 +118,11 @@ The agent SHALL run with the working folder `~/.omrg`, so the app reads `~/.omrg
 - **WHEN** the user runs `omrg web restart`
 - **THEN** the old process MUST end through its normal shutdown, which removes its `launch-link` file
 - **AND** a new process MUST start even though the old one exited with status 0
+
+#### Scenario: Restart waits for the old process
+
+- **WHEN** the app has stopped answering `GET /v1/health` but launchd still shows a process for the agent
+- **THEN** `omrg web restart` MUST NOT run `launchctl kickstart` until that process has exited, and MUST exit non-zero if it has not exited within 15 seconds
 
 #### Scenario: Restart picks up a new install
 

@@ -22,6 +22,11 @@ When started with `--login-item`, the server SHALL write its one-time sign-in li
 - **THEN** the old secret MUST be refused
 - **AND** the file MUST hold a new link that signs in
 
+#### Scenario: A failed renewal is retried
+
+- **WHEN** the server cannot write the renewed link, and a later sign-in attempt arrives
+- **THEN** the server MUST write the current link to the file again, and the earlier sign-in MUST NOT fail
+
 #### Scenario: Clean shutdown removes the file
 
 - **WHEN** the server shuts down on SIGTERM

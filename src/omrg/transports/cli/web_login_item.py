@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -95,14 +96,45 @@ def _wait_for_health(
         _sleep(_POLL_SECONDS)
 
 
-def _wait_until_stopped(port: int, timeout: float = STOP_TIMEOUT) -> bool:
-    """Poll until nothing answers health on *port*. Returns False on time-out."""
+def _agent_running(uid: int) -> bool:
+    """Return True when launchd still has a live process for the login item.
+
+    ``launchctl print`` shows ``pid = N`` at the first indent level only while
+    the process lives. Health is not enough: Uvicorn closes its socket first and
+    finishes the cleanup after that.
+    """
+    done = _launchctl(_launchagent.print_command(uid, core.LABEL))
+    return done.returncode == 0 and re.search(r"^\tpid = \d+$", done.stdout, re.M) is not None
+
+
+def _wait_until_stopped(port: int, uid: int, timeout: float = STOP_TIMEOUT) -> bool:
+    """Poll until nothing answers health on *port* and the process has gone."""
     deadline = _clock() + timeout
-    while core.fetch_health(_HOST, port) is not None:
+    while core.fetch_health(_HOST, port) is not None or _agent_running(uid):
         if _clock() >= deadline:
             return False
         _sleep(_POLL_SECONDS)
     return True
+
+
+def _wait_for_login_item(plan: core.WebLoginItemPlan, port: int) -> tuple[bool, bool]:
+    """Wait until the login item itself is up on *port*.
+
+    Health alone is not proof: a hand-run ``omrg web`` on the same port also
+    answers. Only a login-item server writes the link file, so the file must
+    name this port too. Returns ``(started, something_answers)``.
+    """
+    deadline = _clock() + START_TIMEOUT
+    answered = False
+    while True:
+        if core.fetch_health(_HOST, port) is not None:
+            answered = True
+            info = _read_link(plan)
+            if info is not None and info.port == port:
+                return True, True
+        if _clock() >= deadline:
+            return False, answered
+        _sleep(_POLL_SECONDS)
 
 
 def _report_launchctl_failure(operation: str, done: subprocess.CompletedProcess[str]) -> NoReturn:
@@ -237,13 +269,21 @@ def install(
     _say(
         f"Waiting up to {int(START_TIMEOUT)} seconds for the app to answer on port {target_port}..."
     )
-    body = _wait_for_health(lambda: target_port)
-    if body is None:
+    started, answered = _wait_for_login_item(plan, target_port)
+    if not started and answered:
+        _fail(
+            f"Something answers on port {target_port}, but it is not the login item: it wrote "
+            "no sign-in link. Another 'omrg web' may hold the port. Stop that process. "
+            f"launchd retries every {core.THROTTLE_SECONDS} seconds. Read the error log: "
+            f"{plan.stderr_log}"
+        )
+    if not started:
         _fail(
             f"The app did not answer within {int(START_TIMEOUT)} seconds. The login item stays "
             f"installed. Read the error log: {plan.stderr_log}. "
             "Run 'omrg web status' to check again."
         )
+    body = core.fetch_health(_HOST, target_port) or {}
     console.print(
         f"[green]✓[/green] The app is running (version {escape(str(body.get('version', '?')))})."
     )
@@ -374,32 +414,10 @@ def status(
     if json_output:
         typer.echo(json.dumps(facts, indent=2), err=True)
     else:
-        _print_status(facts)
+        console.print("[bold]Web login item[/bold]")
+        for line in core.status_lines(facts):
+            _say(line)
     raise typer.Exit(code=0 if body is not None else 1)
-
-
-def _print_status(facts: dict[str, Any]) -> None:
-    answering = (
-        f"yes, version {facts['running_version']} at {facts['address']}"
-        if facts["running"]
-        else "no, the app is not answering"
-    )
-    console.print("[bold]Web login item[/bold]")
-    _say(f"  Installed:          yes ({facts['plist']})")
-    _say(f"  Loaded:             {'yes' if facts['loaded'] else 'no'}")
-    _say(f"  Running:            {answering}")
-    _say(f"  Installed version:  {facts['installed_version'] or 'unknown'}")
-    _say(f"  Workspace:          {facts['workspace']}")
-    _say(f"  Port:               {facts['port']}")
-    _say(f"  Error log:          {facts['stderr_log']}")
-    if facts["restart_needed"]:
-        _say(
-            f"The running app is version {facts['running_version']} and the installed copy is "
-            f"version {facts['installed_version']}. Run 'omrg web restart' to start the "
-            "installed version."
-        )
-    if not facts["running"]:
-        _say(f"Read the error log for the cause: {facts['stderr_log']}")
 
 
 @web_app.command()
@@ -413,13 +431,13 @@ def restart() -> None:
         _fail("The login item is not installed. Run 'omrg web install' first.")
     uid = os.getuid()
     port = _current_port(plan)
-    if core.fetch_health(_HOST, port) is not None:
+    if core.fetch_health(_HOST, port) is not None or _agent_running(uid):
         # SIGTERM lets the app shut down in a clean way. kickstart -k would
         # send an unspecified signal and could skip the clean shutdown.
         done = _launchctl(_launchagent.kill_command(uid, plan.label, "SIGTERM"))
         if done.returncode != 0:
             _report_launchctl_failure("kill", done)
-        if not _wait_until_stopped(port):
+        if not _wait_until_stopped(port, uid):
             _fail(
                 f"The app did not stop within {int(STOP_TIMEOUT)} seconds. "
                 "Run 'omrg web status' to see its state."

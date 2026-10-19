@@ -98,7 +98,7 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # +15 (2026-10-18, task 17.9): llama.cpp idle sleep rule, route, settings and lock cases.
 # +1 (2026-10-18): status read during a timed-out start never says exited.
 # +1 (2026-10-19): the fake llama-server answers without a reverse DNS lookup.
-_BASE_EXECUTED = 6597
+_BASE_EXECUTED = 6604
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -355,7 +355,9 @@ if not _has_qwen_tokenizer:
 # Re-measured at add-web-login-item (2026-10-19) from the CI logs of PR #119: the
 # test job ran 6590 executed with the web extra and the floors job ran 5587
 # without it, so 20 of the 118 new cases need fastapi (1003).
-_WEB_EXTRA_CASES = 1003
+# +7 executed after the PR #119 review (2026-10-19): install and restart race cases and the
+# link-renewal retry; 2 of them need fastapi (1005).
+_WEB_EXTRA_CASES = 1005
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)

@@ -297,6 +297,33 @@ def installed_version(
     return match.group(1) if match else None
 
 
+def status_lines(facts: dict[str, Any]) -> list[str]:
+    """Format the facts of ``omrg web status`` as text lines (no secret is ever in them)."""
+    answering = (
+        f"yes, version {facts['running_version']} at {facts['address']}"
+        if facts["running"]
+        else "no, the app is not answering"
+    )
+    lines = [
+        f"  Installed:          yes ({facts['plist']})",
+        f"  Loaded:             {'yes' if facts['loaded'] else 'no'}",
+        f"  Running:            {answering}",
+        f"  Installed version:  {facts['installed_version'] or 'unknown'}",
+        f"  Workspace:          {facts['workspace']}",
+        f"  Port:               {facts['port']}",
+        f"  Error log:          {facts['stderr_log']}",
+    ]
+    if facts["restart_needed"]:
+        lines.append(
+            f"The running app is version {facts['running_version']} and the installed copy is "
+            f"version {facts['installed_version']}. Run 'omrg web restart' to start the "
+            "installed version."
+        )
+    if not facts["running"]:
+        lines.append(f"Read the error log for the cause: {facts['stderr_log']}")
+    return lines
+
+
 __all__ = [
     "HEALTH_TIMEOUT",
     "LABEL",
@@ -317,5 +344,6 @@ __all__ = [
     "read_installed",
     "render_plist",
     "settings_message",
+    "status_lines",
     "workspace_dir",
 ]

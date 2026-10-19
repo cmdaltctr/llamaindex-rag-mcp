@@ -60,6 +60,8 @@ class RearmingAccessPolicy(AccessPolicy):
         """Create a policy that publishes its link to *link_file*."""
         super().__init__(host, port, bootstrap_secret=bootstrap_secret, extra_origins=extra_origins)
         self._link_file = link_file
+        #: True while the file holds a spent link because a renewal write failed.
+        self._publish_pending = False
 
     @classmethod
     def for_launch(  # pyright: ignore[reportIncompatibleMethodOverride]
@@ -98,12 +100,14 @@ class RearmingAccessPolicy(AccessPolicy):
 
         A secret is renewed after a successful sign-in and when the
         failed-attempt limit has disabled it. A single wrong guess changes
-        nothing.
+        nothing, except that it retries a renewal write that failed earlier.
         """
         token = super().exchange_bootstrap(candidate)
         with self._lock:
             if token is not None or self._bootstrap_failures >= MAX_BOOTSTRAP_FAILURES:
                 self._rearm()
+            elif self._publish_pending:
+                self._write_current()
         return token
 
     def _rearm(self) -> None:
@@ -111,9 +115,20 @@ class RearmingAccessPolicy(AccessPolicy):
         self._bootstrap = BOOTSTRAP_PREFIX + secrets.token_urlsafe(32)
         self._bootstrap_used = False
         self._bootstrap_failures = 0
+        self._write_current()
+
+    def _write_current(self) -> None:
+        """Write the current link. A failure is logged and retried on the next attempt.
+
+        The sign-in that triggered a renewal already succeeded, so a failed
+        write must not fail it. Until a later write works, the file keeps
+        the spent link. A browser that opens that link posts it, is refused,
+        and so triggers the retry; the user then runs 'omrg web open' again.
+        """
         try:
             write_link_file(self._link_file, self.launch_url())
         except OSError as exc:
-            # The sign-in that triggered this already succeeded; do not fail
-            # it. The file keeps the spent link until the next write works.
-            logger.warning("Could not renew the sign-in link file: %s", exc.strerror)
+            self._publish_pending = True
+            logger.warning("Could not renew the sign-in link file: %s", exc.strerror or exc)
+        else:
+            self._publish_pending = False

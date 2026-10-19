@@ -441,7 +441,7 @@ The login item is a copy of your `omrg` that launchd starts. Four rules follow f
 3. **The `PATH` is fixed.** The login item gets `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin`, so it can start tools such as `llama-server`. A tool in another folder is not found.
 4. **A running copy does not change when you install a newer one.** `status` shows the running version and the installed version. Run `omrg web restart` to start the installed version. A restart signs the browser out. Run `omrg web open` to sign in again.
 
-`install` warns, and goes on, when something already listens on the target port. Stop a hand-started `omrg web` first, or the login item cannot bind the port.
+`install` warns, and goes on, when something already listens on the target port. Stop a hand-started `omrg web` first, or the login item cannot bind the port. `install` reports success only when the app answers health and the sign-in link file names the target port, so a hand-started server on that port does not count. `restart` waits until the old process has exited, not only until health stops answering.
 
 Files outside the repository: `~/Library/LaunchAgents/com.omrg.web.plist`, `~/Library/Logs/omrg/com.omrg.web.out.log`, `~/Library/Logs/omrg/com.omrg.web.err.log`, `<workspace>/launch-link` and the folder `~/.omrg`. The log files have no rotation. The access log is off, so they hold only start-up and error lines.
 
