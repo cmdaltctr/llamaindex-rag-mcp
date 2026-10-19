@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any
 
 SCRIPT = """#!{python}
-import json, os, signal, sys, time
+import json, os, signal, socketserver, sys, time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -74,14 +74,21 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
+class Server(HTTPServer):
+    # HTTPServer.server_bind does a reverse DNS lookup, which can stall on a CI runner.
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = "127.0.0.1", self.server_address[1]
+
+
 if mode.startswith("die-after:"):
     deadline = time.time() + float(mode.split(":")[1])
-    server = HTTPServer(("127.0.0.1", port), Handler)
+    server = Server(("127.0.0.1", port), Handler)
     server.timeout = 0.05
     while time.time() < deadline:
         server.handle_request()
     sys.exit(7)
-HTTPServer(("127.0.0.1", port), Handler).serve_forever()
+Server(("127.0.0.1", port), Handler).serve_forever()
 """
 
 
