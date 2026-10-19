@@ -101,7 +101,11 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # -2 (2026-10-19): the two real-Uvicorn signal tests in test_launch_link.py are marked slow.
 # +54 (2026-10-19, add-web-power-menu): admission count (4), power control argv and runner
 # (15), power routes (26), launch wiring (2) and the `omrg web start` command (7).
-_BASE_EXECUTED = 6670
+# +499 (2026-10-19, move-settings-to-config-file): the settings-file source, JSONC editor and
+# writer, key references, handover, restart snapshot, configuration route, `omrg config`
+# commands and the file-backed settings routes. Measured with the web extra: 7162 executed
+# against 6663 before (6670 less the 7 optional cases above).
+_BASE_EXECUTED = 7169
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -365,7 +369,9 @@ if not _has_qwen_tokenizer:
 # -2 (2026-10-19): the two signal tests moved to the slow suite (1009).
 # +47 (2026-10-19, add-web-power-menu): every new case except the 7 `omrg web start`
 # cases needs fastapi (1056).
-_WEB_EXTRA_CASES = 1056
+# +75 (2026-10-19, move-settings-to-config-file): measured by hiding fastapi behind an
+# import shim, 6031 executed without it against 7162 with it (1131).
+_WEB_EXTRA_CASES = 1131
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)
