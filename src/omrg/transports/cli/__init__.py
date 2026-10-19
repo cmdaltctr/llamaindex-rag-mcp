@@ -234,4 +234,5 @@ from . import (  # noqa: E402,F401
     search,
     watch,
     web,
+    web_login_item,
 )

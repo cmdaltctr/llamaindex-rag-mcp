@@ -298,6 +298,11 @@ class TestCommandBuilders:
         assert cmd[1] == "kickstart"
         assert cmd[-1] == "gui/501/com.omrg.watch.x"
 
+    def test_kill_command(self, la) -> None:
+        """kill sends a named signal to gui/<uid>/<label>."""
+        cmd = la.kill_command(501, "com.omrg.web", "SIGTERM")
+        assert cmd == ["launchctl", "kill", "SIGTERM", "gui/501/com.omrg.web"]
+
 
 # ── Plist rendering and writing (tasks 2.1, 2.2) ─────────────────────
 

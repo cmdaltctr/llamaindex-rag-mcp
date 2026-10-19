@@ -85,6 +85,24 @@ Another OMRG web server is using the workspace <path>. Stop it, or start this on
 
 `GET /v1/session` returns the workspace path that the server uses, in the `workspace` field. The Workspace section of Settings shows it.
 
+## Keep the app running
+
+`omrg web` stops when you close its terminal window. On a Mac, a login item keeps the app running and starts it at every login. The commands are in the [CLI reference](cli-reference.md).
+
+```bash
+omrg web install    # write the login item and start it
+omrg web open       # open the app in your browser, signed in
+```
+
+A login item has no terminal, so it signs you in in a different way:
+
+- **The link file.** The server writes the sign-in link to `<workspace>/launch-link`, as one line. It writes the link to no terminal and no log. `omrg web open` reads the file and opens the link in your browser.
+- **Who can read it.** Only your macOS user can read the file (mode `0600`). Any program that runs as you can read it and sign in, including AI agents on your Mac. This is the same trust level as `workspace.db`, which these programs can already read.
+- **The link renews.** The server writes a new link after each sign-in and after 20 wrong guesses. It removes the file when it stops in a clean way.
+- **A restart signs the browser out.** Browser sessions live in memory only. Run `omrg web open` to sign in again.
+- **The access log is off.** The log files of the login item have no rotation, so the server writes only start-up and error lines.
+- **Settings come from `~/.omrg/.env`.** The login item runs in `~/.omrg` and reads the `.env` file in that folder. A hand-run `omrg web` reads the `.env` file of the folder where you run it. Shell variables do not reach the login item. Copy your settings to `~/.omrg/.env` yourself. The install command never copies or reads a `.env` file.
+
 ## Sign in
 
 The browser uses a session. A notebook or a script uses a bearer credential.

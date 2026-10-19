@@ -86,8 +86,11 @@ def _bind_socket(host: str, port: int) -> socket.socket:
     return sock
 
 
-def _serve(application: Any, sock: socket.socket) -> bool:
-    """Run Uvicorn on *sock* in this process. Returns whether it started."""
+def _serve(application: Any, sock: socket.socket, *, access_log: bool = True) -> bool:
+    """Run Uvicorn on *sock* in this process. Returns whether it started.
+
+    *access_log* is off for the login item: its log file has no rotation.
+    """
     import uvicorn
 
     from ..api.lifespan import request_shutdown
@@ -112,7 +115,7 @@ def _serve(application: Any, sock: socket.socket) -> bool:
         timeout_graceful_shutdown=5,
         proxy_headers=False,
         server_header=False,
-        access_log=True,
+        access_log=access_log,
     )
 
     class _Server(uvicorn.Server):
@@ -160,8 +163,21 @@ def _check_experiment_roots(roots: tuple[Path, ...]) -> None:
             raise ValueError(f"Experiment root {str(root)!r} is not an existing directory.")
 
 
-@app.command()
+web_app = typer.Typer(
+    name="web",
+    help=(
+        "Run the local web workspace, or keep it running as a macOS login item. "
+        "With no subcommand, start the server in this terminal."
+    ),
+    invoke_without_command=True,
+    no_args_is_help=False,
+)
+app.add_typer(web_app, name="web")
+
+
+@web_app.callback()
 def web(
+    ctx: typer.Context,
     workspace: Annotated[
         Path | None,
         typer.Option(
@@ -227,11 +243,29 @@ def web(
             ),
         ),
     ] = None,
+    login_item: Annotated[
+        bool,
+        typer.Option(
+            "--login-item",
+            hidden=True,
+            help="Run as the macOS login item (used by 'omrg web install').",
+        ),
+    ] = False,
 ) -> None:
     """Start the local web workspace on a loopback address."""
+    if ctx.invoked_subcommand is not None:
+        return
+    if login_item and port == 0:
+        console.print(
+            "[red]Error:[/red] --login-item needs a stable port, so it cannot be used "
+            "with --port 0.",
+            soft_wrap=True,
+        )
+        raise typer.Exit(code=2)
     _require_web_extra()
     from ..api.app import create_app
     from ..api.grants import RootGrants
+    from ..api.launch_link import LINK_FILE_NAME, RearmingAccessPolicy
     from ..api.lifespan import WebConfig, WorkspaceLock, WorkspaceLocked
     from ..api.origins import parse_extra_origin
     from ..api.runs_wiring import run_service_factory
@@ -276,7 +310,16 @@ def web(
         raise typer.Exit(code=1) from None
 
     bound_port = sock.getsockname()[1]
-    policy = AccessPolicy.for_launch(bind_host, bound_port, extra_origins=extra_origins)
+    policy: AccessPolicy
+    if login_item:
+        policy = RearmingAccessPolicy.for_launch(
+            bind_host,
+            bound_port,
+            link_file=workspace_dir / LINK_FILE_NAME,
+            extra_origins=extra_origins,
+        )
+    else:
+        policy = AccessPolicy.for_launch(bind_host, bound_port, extra_origins=extra_origins)
     config = WebConfig(
         workspace=workspace_dir,
         host=bind_host,
@@ -299,13 +342,30 @@ def web(
 
     for origin in extra_origins:
         console.print(f"Approved extra origin: {origin}", markup=False, highlight=False)
-    console.print("OMRG web workspace. Open this link in your browser (it works once):")
-    console.print(policy.launch_url(), markup=False, highlight=False, soft_wrap=True)
-    console.print("Press Ctrl+C to stop.")
+    if isinstance(policy, RearmingAccessPolicy):
+        try:
+            policy.publish()
+        except OSError as exc:
+            sock.close()
+            logging.getLogger().removeHandler(log_buffer)
+            console.print(
+                f"[red]Error:[/red] Cannot write the sign-in link file: {exc.strerror}",
+                soft_wrap=True,
+            )
+            raise typer.Exit(code=1) from None
+        console.print("OMRG web workspace (login item). Run 'omrg web open' to sign in.")
+    else:
+        console.print("OMRG web workspace. Open this link in your browser (it works once):")
+        console.print(policy.launch_url(), markup=False, highlight=False, soft_wrap=True)
+        console.print("Press Ctrl+C to stop.")
+    # The foreground call keeps its two arguments; only the login item changes it.
+    serve_options = {"access_log": False} if login_item else {}
     try:
-        started = _serve(application, sock)
+        started = _serve(application, sock, **serve_options)
     finally:
         logging.getLogger().removeHandler(log_buffer)
+        if isinstance(policy, RearmingAccessPolicy):
+            policy.retire()
     if started is False:
         console.print("[red]Error:[/red] The web server did not start. See the log above.")
         raise typer.Exit(code=1)
