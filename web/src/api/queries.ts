@@ -11,6 +11,7 @@ import { listExperiments } from "./experiments";
 import { listIntegrations } from "./integrations";
 import { getPipeline, getRevision, listOperations, PipelineIssuesError, validatePipeline, type GraphDocument, type NodeControls } from "./pipelines";
 import { listPlugins } from "./plugins";
+import { getPower } from "./power";
 import { getChat, listChats } from "./chats";
 import { getProfile, listProfiles } from "./profiles";
 import { getRunArtefact, getRunRecord, getRunResult, listRuns } from "./runs";
@@ -53,6 +54,7 @@ export const queryKeys = {
   roots: () => ["roots"] as const,
   session: () => ["session"] as const,
   health: () => ["health"] as const,
+  power: () => ["server", "power"] as const,
   connections: () => ["connections"] as const,
   chatSettings: () => ["settings", "chat"] as const,
   mcp: () => ["mcp"] as const,
@@ -160,6 +162,10 @@ export const sessionQuery = (api: ApiClient) =>
 
 export const healthQuery = (api: ApiClient) =>
   queryOptions({ queryKey: queryKeys.health(), queryFn: ({ signal }) => getHealth(api, { signal }) });
+
+/** Whether this server is the login item, so the page may turn it off or restart it. */
+export const powerQuery = (api: ApiClient) =>
+  queryOptions({ queryKey: queryKeys.power(), queryFn: ({ signal }) => getPower(api, { signal }) });
 
 /** Provider endpoints, models, key state and roles. Sends no request to any provider. */
 export const connectionsQuery = (api: ApiClient) =>

@@ -137,15 +137,17 @@ describe("navigation foot", () => {
     expect(within(panel).queryByText(/2\.3\.4/)).not.toBeInTheDocument();
   });
 
-  it("names the two commands in the panel and offers no Restart or Stop button", async () => {
+  it("offers Turn off and Restart, both disabled with the two commands named while the server is not the login item", async () => {
     const user = userEvent.setup();
-    start();
+    start({ ...HEALTH_UP, "GET /v1/server/power": () => ({ managed: false }) });
     await user.click(within(foot()).getByRole("button", { name: /^Server status/ }));
     const panel = document.querySelector("[data-slot='power-panel']") as HTMLElement;
+    await waitFor(() => expect(within(panel).getByText(/runs in a terminal/i)).toBeInTheDocument());
+    expect(within(panel).getByRole("button", { name: "Turn off" })).toBeDisabled();
+    expect(within(panel).getByRole("button", { name: "Restart" })).toBeDisabled();
     expect(within(panel).getByText("omrg web restart")).toBeInTheDocument();
     expect(within(panel).getByText("omrg web open")).toBeInTheDocument();
     expect(within(panel).getAllByRole("button", { name: /^Copy/ })).toHaveLength(2);
-    expect(screen.queryByRole("button", { name: /^(restart|stop)/i })).not.toBeInTheDocument();
   });
 
   it("links to the repository in a new tab without leaking the opener", () => {

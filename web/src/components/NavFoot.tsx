@@ -1,20 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { Power, Settings } from "lucide-react";
-import { useApi } from "../api/ApiProvider";
-import { healthQuery } from "../api/queries";
+import { Settings } from "lucide-react";
 import { formatRoute } from "../lib/routes";
 import { cn } from "../lib/utils";
-import { CopyButton } from "../settings/CopyButton";
+import { PowerMenu } from "./PowerMenu";
 import { ThemeToggle } from "./ThemeControls";
 import { Button } from "./ui/button";
-import { Popover } from "./ui/popover";
 
 const REPOSITORY_URL = "https://github.com/cmdaltctr/llamaindex-rag-mcp";
-const HEALTH_POLL_MS = 15_000;
-const COMMANDS = [
-  { what: "restart command", command: "omrg web restart", hint: "Restart the login item." },
-  { what: "open command", command: "omrg web open", hint: "Open the workspace in the browser with a fresh link." },
-] as const;
 
 // lucide-react 1.x ships no brand icons, so the GitHub mark is inline.
 function GitHubMark() {
@@ -25,41 +16,11 @@ function GitHubMark() {
   );
 }
 
-function PowerControl() {
-  const health = useQuery({ ...healthQuery(useApi()), refetchInterval: HEALTH_POLL_MS });
-  // A failed poll keeps the earlier `data`, so the error wins over it.
-  const state = health.isError ? "Not answering" : health.data ? "Running" : "Checking";
-  const running = state === "Running";
-  return (
-    <Popover
-      slot="power-panel"
-      placement="above"
-      width={272}
-      trigger={(props) => (
-        <Button variant="ghost" size="icon" aria-label={`Server status: ${state}`} {...props}>
-          <Power aria-hidden="true" className={running ? "text-status-success" : "text-muted-foreground"} />
-        </Button>
-      )}
-    >
-      <p className="text-ui font-medium">{state}</p>
-      {running && health.data ? <p className="text-muted-foreground">{`OMRG version ${health.data.version}`}</p> : null}
-      <p className="text-muted-foreground">Restart and stop are not on this page. Run these in a terminal.</p>
-      {COMMANDS.map(({ what, command, hint }) => (
-        <div key={command} className="flex flex-col gap-1">
-          <span className="text-muted-foreground">{hint}</span>
-          <code className="select-all rounded-small border border-border bg-muted px-2 py-1.5 text-code [overflow-wrap:anywhere]">{command}</code>
-          <CopyButton text={command} what={what} />
-        </div>
-      ))}
-    </Popover>
-  );
-}
-
 /**
  * Four icon controls at the foot of the side navigation: theme, Settings,
  * the server's power light and the GitHub repository. The power light follows
- * `GET /v1/health`; the panel names the commands for restart and open, and has
- * no button that acts on the server. Icons only, so the same strip fits the
+ * `GET /v1/health`; the panel holds Turn off and Restart, each behind a
+ * confirmation (see `PowerMenu`). Icons only, so the same strip fits the
  * collapsed column and the row below the `md` breakpoint.
  */
 export function NavFoot({ collapsed, onSettings }: { collapsed: boolean; onSettings: boolean }) {
@@ -78,7 +39,7 @@ export function NavFoot({ collapsed, onSettings }: { collapsed: boolean; onSetti
           <Settings aria-hidden="true" />
         </a>
       </Button>
-      <PowerControl />
+      <PowerMenu />
       <Button asChild variant="ghost" size="icon">
         <a href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" aria-label="OMRG on GitHub">
           <GitHubMark />
