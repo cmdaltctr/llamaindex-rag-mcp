@@ -124,4 +124,74 @@ describe("icon tabs in the right-hand card", () => {
     await user.click(within(chips).getByRole("button", { name: "Lineage and metadata of citation 2" }));
     expect(await screen.findByRole("region", { name: "Lineage" })).toBeInTheDocument();
   });
+
+  async function openPartlyCitedEvidence() {
+    const partly = { ...answer(["one.md", "two.md", "three.md"]), citations: [cited(2, "two.md")] };
+    const user = setup({ "POST /v1/collections/documents/answer": () => partly });
+    await ask(user);
+    await screen.findByText(/Lineage is kept/);
+    const card = await panel();
+    await user.click(card.getByRole("tab", { name: "Evidence" }));
+    await card.findByRole("list", { name: "Evidence supplied to the model" });
+    const rows = () => within(card.getByRole("list", { name: "Evidence supplied to the model" })).getAllByRole("listitem");
+    return { user, card, rows };
+  }
+
+  it("labels each evidence row Cited in green or Not cited in red", async () => {
+    const { rows } = await openPartlyCitedEvidence();
+    expect(rows()).toHaveLength(3);
+    const cited1 = within(rows()[1]!).getByText("Cited");
+    expect(cited1).toHaveAttribute("data-slot", "badge");
+    expect(cited1.className).toContain("status-success");
+    for (const index of [0, 2]) {
+      const badge = within(rows()[index]!).getByText("Not cited");
+      expect(badge).toHaveAttribute("data-slot", "badge");
+      expect(badge.className).toContain("status-error");
+      expect(within(rows()[index]!).queryByText("Cited")).toBeNull();
+    }
+  });
+
+  it("switches between Cited and Not cited, and shows all rows again when the pressed button is pressed again", async () => {
+    const { user, card, rows } = await openPartlyCitedEvidence();
+    const citedButton = card.getByRole("button", { name: "Cited (1)" });
+    const notCitedButton = card.getByRole("button", { name: "Not cited (2)" });
+    expect(citedButton).toHaveAttribute("aria-pressed", "false");
+    expect(notCitedButton).toHaveAttribute("aria-pressed", "false");
+    expect(rows()).toHaveLength(3);
+
+    await user.click(citedButton);
+    expect(citedButton).toHaveAttribute("aria-pressed", "true");
+    expect(rows()).toHaveLength(1);
+    expect(rows()[0]).toHaveTextContent("/srv/docs/two.md");
+
+    // Pressing the other button switches the filter: only one button is pressed at a time.
+    await user.click(notCitedButton);
+    expect(notCitedButton).toHaveAttribute("aria-pressed", "true");
+    expect(citedButton).toHaveAttribute("aria-pressed", "false");
+    expect(rows()).toHaveLength(2);
+    expect(rows().every((row) => within(row).queryByText("Not cited") !== null)).toBe(true);
+    expect(rows().map((row) => row.textContent)).toEqual([expect.stringContaining("one.md"), expect.stringContaining("three.md")]);
+
+    await user.click(notCitedButton);
+    expect(notCitedButton).toHaveAttribute("aria-pressed", "false");
+    expect(rows()).toHaveLength(3);
+  });
+
+  it("draws the pressed ring inside the button, so the scrolling card does not clip it", async () => {
+    const { user, card } = await openPartlyCitedEvidence();
+    const citedButton = card.getByRole("button", { name: "Cited (1)" });
+    await user.click(citedButton);
+    expect(citedButton.className).toContain("aria-pressed:ring-inset");
+  });
+
+  it("says so when a filter leaves no rows", async () => {
+    const noneCited = { ...answer(["one.md", "two.md"]), citations: [] };
+    const user = setup({ "POST /v1/collections/documents/answer": () => noneCited });
+    await ask(user);
+    await screen.findByText(/Lineage is kept/);
+    const card = await panel();
+    await user.click(card.getByRole("tab", { name: "Evidence" }));
+    await user.click(await card.findByRole("button", { name: "Cited (0)" }));
+    expect(card.getByText("No passages match this filter.")).toBeInTheDocument();
+  });
 });

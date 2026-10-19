@@ -58,7 +58,7 @@ export function KnowledgePanel({ collections, activeName, onSelect, latest, onSh
           {latest === null ? (
             <p className="text-meta text-muted-foreground">Evidence of the latest answer appears here.</p>
           ) : (
-            <EvidenceList evidence={latest.result.evidence} collection={latest.collection} onShowChunk={onShowChunk} />
+            <EvidenceList evidence={latest.result.evidence} citations={latest.result.citations} collection={latest.collection} onShowChunk={onShowChunk} />
           )}
         </TabsContent>
       </Tabs>

@@ -555,7 +555,7 @@ Next to each chip is a small "i" button (tooltip "Lineage and metadata"). Press 
 
 The index does not record which keys a chunk got from its document, so the popover lists the stored keys without labels.
 
-The Evidence tab shows one compact row for each passage the model was given. A row shows `[n]`, the source path and the score. It shows no passage text. Press Show passage on a row to open a popover with the exact text the model read. The server merges adjacent chunks of one source, so this text can be longer than one stored chunk.
+The Evidence tab shows one compact row for each passage the model was given. A row shows `[n]`, the source path and the score, and it shows no passage text. Every row carries a label: a green Cited for a passage the answer cited, and a red Not cited for the others. Above the rows, the buttons Cited and Not cited filter the list. Press Cited to show only the cited rows, or Not cited to show only the others. Press the pressed button again to show all rows. Press Show passage on a row to open a popover with the exact text the model read. The server merges adjacent chunks of one source, so this text can be longer than one stored chunk.
 
 Choose Open full chunk in any of these popovers to read the chunk in the chunk viewer. If the source was deleted, the popover keeps the saved passage text and says the stored chunk is not available.
 
