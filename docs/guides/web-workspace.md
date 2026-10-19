@@ -544,6 +544,8 @@ On a phone, History opens the list above the transcript: [open list at 390 px](i
 
 The right-hand card has three icon tabs: Knowledge base, Citations and Evidence. Citations and Evidence show the newest answer of the open chat, so nothing sits under the answer text. Hover a tab to see its name.
 
+The answer text renders as Markdown (GitHub flavour): bold, italic, headings, ordered and unordered lists, inline code, fenced code blocks, tables, quotes and links. The app never renders raw HTML from the model, so a tag in the answer shows as text. A link opens in a new tab, and a link with an unsafe scheme such as `javascript:` shows as plain text. A `[n]` marker stays a citation button inside any of these elements, but not inside code.
+
 Citations are the passages the answer cites. Evidence is every passage the model was given, so the Evidence tab usually has more rows than the Citations tab has chips.
 
 In the Citations tab, each citation is a chip such as `[1] configuration.md`. Press the chip to open a popover with the passage text and the button Open full chunk. A `[n]` marker in the answer text opens the same popover. That popover shows no lineage and no metadata.
