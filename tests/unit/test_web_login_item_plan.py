@@ -16,6 +16,7 @@ from typing import Any
 import pytest
 
 from omrg.transports.cli import _web_login_item as wli
+from omrg.transports.cli import _web_login_item_settings as login_settings
 from omrg.transports.cli._launchagent import InstallerError
 
 
@@ -187,43 +188,63 @@ def test_checkout_warning_is_silent_for_an_installed_tool(tmp_path: Path) -> Non
 # ── Settings file ────────────────────────────────────────────────────────
 
 
-def test_settings_message_names_the_missing_file(home: Path, tmp_path: Path) -> None:
-    cwd = tmp_path / "cwd"
-    cwd.mkdir()
-
-    message = wli.settings_message(home, cwd)
-
-    assert message is not None
-    assert "~/.omrg/.env" in message
-    assert str(home / ".omrg" / ".env") in message
-    assert "Copy" not in message
+@pytest.fixture
+def config_file(tmp_path: Path) -> Path:
+    return tmp_path / "home" / ".config" / "omrg" / "omrg.jsonc"
 
 
-def test_settings_message_asks_for_a_copy_when_the_folder_has_a_dotenv(
-    home: Path, tmp_path: Path
+def test_settings_rows_name_the_file_and_the_optional_dotenv(config_file: Path) -> None:
+    rows = " ".join(login_settings.plan_rows(config_file, home=config_file.parents[2]))
+
+    assert "~/.config/omrg/omrg.jsonc" in rows
+    assert "~/.omrg/.env" in rows
+    assert "optional" in rows
+    assert "overrides" in rows
+
+
+def test_missing_settings_file_suggests_config_init(config_file: Path, tmp_path: Path) -> None:
+    messages = login_settings.plan_warnings(
+        config_file, tmp_path / "cwd", home=config_file.parents[2]
+    )
+
+    assert len(messages) == 1
+    assert "~/.config/omrg/omrg.jsonc" in messages[0]
+    assert "omrg config init" in messages[0]
+
+
+def test_existing_settings_file_gives_no_warning(config_file: Path, tmp_path: Path) -> None:
+    config_file.parent.mkdir(parents=True)
+    config_file.write_text("{}\n", encoding="utf-8")
+
+    assert (
+        login_settings.plan_warnings(config_file, tmp_path / "cwd", home=config_file.parents[2])
+        == []
+    )
+
+
+def test_dotenv_in_the_working_folder_is_reported_as_not_read(
+    config_file: Path, tmp_path: Path
 ) -> None:
+    config_file.parent.mkdir(parents=True)
+    config_file.write_text("{}\n", encoding="utf-8")
     cwd = tmp_path / "cwd"
     cwd.mkdir()
     (cwd / ".env").write_text("OPENROUTER_API_KEY=sentinel-value\n", encoding="utf-8")
 
-    message = wli.settings_message(home, cwd)
+    messages = login_settings.plan_warnings(config_file, cwd, home=config_file.parents[2])
 
-    assert message is not None
-    assert "Copy your settings" in message
-    assert "sentinel-value" not in message
-
-
-def test_settings_message_is_silent_when_the_file_exists(home: Path, tmp_path: Path) -> None:
-    (home / ".omrg").mkdir()
-    (home / ".omrg" / ".env").write_text("A=1\n", encoding="utf-8")
-
-    assert wli.settings_message(home, tmp_path) is None
+    assert len(messages) == 1
+    assert "does not read" in messages[0]
+    assert str(cwd / ".env") in messages[0]
+    assert "omrg config init" in messages[0]
+    assert "sentinel-value" not in messages[0]
 
 
-def test_settings_message_creates_nothing(home: Path, tmp_path: Path) -> None:
-    wli.settings_message(home, tmp_path)
+def test_settings_text_creates_nothing(config_file: Path, tmp_path: Path) -> None:
+    login_settings.plan_rows(config_file, home=config_file.parents[2])
+    login_settings.plan_warnings(config_file, tmp_path, home=config_file.parents[2])
 
-    assert not (home / ".omrg").exists()
+    assert not config_file.parent.exists()
 
 
 # ── Names shared with the server ─────────────────────────────────────────

@@ -44,6 +44,8 @@ class Harness:
         self.command.parent.mkdir(parents=True)
         self.command.write_text("#!/bin/sh\n", encoding="utf-8")
         monkeypatch.setenv("HOME", str(self.home))
+        monkeypatch.delenv("OMRG_CONFIG_DIR", raising=False)
+        monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
         monkeypatch.chdir(self.cwd)
 
         self.macos = True

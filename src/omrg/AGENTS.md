@@ -19,6 +19,8 @@ The package marker, the public Engine and the composition root. Business logic l
 4. Resolve strategies through registries. Do not branch `if/elif` over strategy names.
 5. Public names go in `omrg.__all__` only.
 6. A new top-level module needs an entry in `tests/unit/test_verification_gaps_boundaries.py` and in the `core-never-imports-top-level-modules` list. Prefer a module under `core/`.
+7. Settings come from one source order, highest first: explicit option, `env`, `dotenv`, `omrg.jsonc` (`config-file`), YAML defaults, code default (ADR-087). Only `env` and `dotenv` lock a field.
+8. `config/` returns a `keychain://` key reference unresolved. `compose_providers` resolves it. A literal key never goes in `omrg.jsonc` or `.env` from code (root gotcha 18).
 
 ## Links
 

@@ -5,6 +5,7 @@
 - **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 - **Related:** [ADR-026](026-provider-registry-and-openrouter.md) (provider registry), [ADR-078](078-upload-limit-as-a-workspace-setting-and-run-artefact-route.md) (a launch value wins and locks), [ADR-080](080-profiles-own-pipelines.md) (the web server owns the workspace), [ADR-082](082-chats-live-in-the-workspace-database.md)
 - **Change:** `openspec/changes/add-llm-provider-settings/` (design D1 to D10)
+- **Amended:** 2026-10-19 — [ADR-087](087-settings-live-in-omrg-jsonc.md) replaces decision 12 (the folder is read-only), the lock and rank rules in decisions 2 and 13, and the "saved values live in the database" rank. See the addendum at the end.
 
 ## Context
 
@@ -83,3 +84,19 @@ Without a decision, keys would go to `.env` or the database in plaintext. Each n
 - `docs/guides/providers.md`, `docs/guides/configuration.md`, `docs/guides/web-workspace.md`
 - [ADR-026](026-provider-registry-and-openrouter.md), [ADR-078](078-upload-limit-as-a-workspace-setting-and-run-artefact-route.md), [ADR-080](080-profiles-own-pipelines.md)
 - keyring documentation (backends, priority, `PYTHON_KEYRING_BACKEND`)
+
+## Addendum (2026-10-19): Settings Move to omrg.jsonc
+
+[ADR-087](087-settings-live-in-omrg-jsonc.md) changes where saved settings live. The decisions of this ADR stay in force except for the rules below. Where ADR-087 and this text differ, ADR-087 wins.
+
+| Replaced rule | Where | New rule (ADR-087) |
+|---------------|-------|--------------------|
+| "The app never writes, creates or changes the permissions of anything" in the user config folder | Decision 12 | The Settings page writes `omrg.jsonc`. It creates the folder with mode 0700 and the file with mode 0600. It still never writes `secrets/` or `.env`, and never writes a literal key. |
+| "Saved web value (database address or keychain key)" is a rank of its own, and saved values live in the workspace database | Decision 13 | A page save writes `omrg.jsonc` (a key writes a `keychain://` reference). The `workspace_settings` table holds no settings. Saved rows move into the file once. |
+| "The environment, `.env` and `omrg.jsonc` lock their field (409)" | Decisions 2 and 13 | Only the process environment (`env`) and `.env` (`dotenv`) lock a field. A value in `omrg.jsonc` does not lock. |
+| The source values `env`, `config-file`, `saved`, `keychain`, `key-file`, `default` and `none` | Decision 13 | `saved` is gone and `dotenv` is added. Key fields drop `saved_at`. |
+| "The stdio MCP server and the CLI do not see saved web values" and "a change to them needs a restart" | Negative consequences | Every process reads `omrg.jsonc` and resolves `keychain://` references, so the CLI and the stdio server see page saves. `omrg web` applies a hand edit with no restart for most settings. |
+
+The new order, from highest, is: process environment, `.env`, `omrg.jsonc`, key file (secret fields only), default. A key reference in `omrg.jsonc` outranks the implicit key file.
+
+Unchanged: the keychain stores typed keys (decision 1), embeddings stay fixed (decision 4), the descriptors drive secret handling (decision 9) and a literal key in `omrg.jsonc` is ignored.

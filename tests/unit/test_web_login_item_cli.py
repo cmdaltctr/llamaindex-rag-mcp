@@ -263,8 +263,37 @@ def test_install_never_reads_or_creates_a_dotenv(h: Harness) -> None:
     assert (dotenv.read_text(encoding="utf-8"), dotenv.stat().st_mtime_ns) == before
     assert not (h.home / ".omrg" / ".env").exists()
     assert "sentinel-value" not in result.output
-    assert "Copy your settings" in flat(result.output)
-    assert "~/.omrg/.env" in flat(result.output)
+    assert "does not read" in flat(result.output)
+    assert "omrg config init" in flat(result.output)
+
+
+def test_dry_run_names_the_settings_file_and_suggests_config_init(h: Harness) -> None:
+    dotenv = h.cwd / ".env"
+    dotenv.write_text("OPENROUTER_API_KEY=sentinel-value\n", encoding="utf-8")
+    before = (dotenv.read_text(encoding="utf-8"), dotenv.stat().st_mtime_ns)
+
+    result = _install(h, "--dry-run")
+
+    text = flat(result.output)
+    assert result.exit_code == 0, result.output
+    assert "~/.config/omrg/omrg.jsonc" in text
+    assert "~/.omrg/.env is optional" in text
+    assert "does not read" in text
+    assert str(dotenv) in text
+    assert "omrg config init" in text
+    assert "sentinel-value" not in result.output
+    assert (dotenv.read_text(encoding="utf-8"), dotenv.stat().st_mtime_ns) == before
+    assert not (h.home / ".omrg").exists()
+    assert not (h.home / ".config").exists()
+
+
+def test_dry_run_honours_omrg_config_dir(h: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+    folder = h.home.parent / "elsewhere"
+    monkeypatch.setenv("OMRG_CONFIG_DIR", str(folder))
+
+    result = _install(h, "--dry-run")
+
+    assert str(folder / "omrg.jsonc") in flat(result.output)
 
 
 def test_install_does_not_report_success_for_a_server_it_did_not_start(h: Harness) -> None:

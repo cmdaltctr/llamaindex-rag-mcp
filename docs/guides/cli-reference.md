@@ -17,6 +17,7 @@ The `omrg` command doubles as an MCP server and a CLI tool. With no arguments it
 | `omrg delete`                | Delete documents by file path, metadata filter, or drop a collection             |
 | `omrg set-profile`           | Bind a built-in profile (`documents` or `codebase`) to a collection              |
 | `omrg benchmark`             | Benchmark embedding throughput without vector-store writes                       |
+| `omrg config init`           | Write a commented starter `omrg.jsonc` in the user config folder                 |
 | `omrg web`                   | Start the local web workspace (needs the `web` extra)                            |
 | `omrg web install`           | Keep the web app running as a macOS login item and start it                      |
 | `omrg web uninstall`         | Stop the login item and remove its LaunchAgent file                              |
@@ -346,12 +347,36 @@ Bind user profiles in Knowledge Base > Profile, or through the MCP endpoint of `
 The collection tag stays unchanged. A user profile is bound in the web server only, so a delete and
 a bind cannot cross in two processes. See [User profiles](configuration.md#user-profiles).
 
+### config init
+
+```bash
+omrg config init            # write the starter file
+omrg config init --force    # replace an existing file, keep a dated copy
+```
+
+`omrg.jsonc` holds every omrg setting. See [Configuration](configuration.md). `init` writes a starter file with every setting as a commented line. Each line shows the default and the environment name. The file sets nothing until you remove a comment mark.
+
+The command builds the file from the `Settings` model and `config/defaults.yaml`, so a new setting appears in it without an edit. A file key is the environment name in lower case. `__` nests one level: `RETRIEVAL__TOP_K` is `top_k` inside `retrieval`. The settings `web_port`, `web_max_upload_mib` and `mcp_http_enabled` are file-only keys. A key field shows a reference such as `env://OPENROUTER_API_KEY`. Never write an API key in the file.
+
+The folder is `$OMRG_CONFIG_DIR` when set, else `$XDG_CONFIG_HOME/omrg` when set, else `~/.config/omrg`. The command creates the folder with mode 0700 and the file with mode 0600.
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--force` | off | Replace an existing `omrg.jsonc`. The old file stays as `omrg.jsonc.<date>.bak`. When that name exists, the copy gets a number: `omrg.jsonc.<date>.2.bak`. |
+
+| Exit code | When |
+| --- | --- |
+| 0 | The file was written. |
+| 1 | `omrg.jsonc` exists and you did not pass `--force`, or the file could not be written. The message names the file. |
+
+Output goes to stderr, like all CLI output.
+
 ### web
 
 Start the local browser workspace on a loopback address. It needs the optional `web` extra (`uv sync --extra web` or `pip install "omrg[web]"`).
 
 ```bash
-# Start on the saved port, else 8765, with the default workspace
+# Start on the port in omrg.jsonc, else 8765, with the default workspace
 omrg web
 
 # Pick a free port instead
@@ -376,16 +401,16 @@ omrg web --allow-origin http://name.orca.localhost:57977
 | Option | Default | Use |
 |---|---|---|
 | `--workspace PATH` | `~/.omrg/workspace` | Directory for records, run artefacts and uploads. |
-| `--port N` | saved port, else `8765` | TCP port. `0` picks a free port. |
+| `--port N` | `web_port` in `omrg.jsonc`, else `8765` | TCP port. `0` picks a free port. |
 | `--root DIR` | none | Approve a directory for file access. Repeat for more directories. |
 | `--host ADDR` | `127.0.0.1` | Loopback address only: `127.0.0.1`, `::1` or `localhost`. |
 | `--experiment-root DIR` | none | Approve a directory for experiment workspaces. Repeat for more directories. |
 | `--allow-origin ORIGIN` | none | Approve one extra loopback browser origin for this run, for example an embedded preview. Repeat for more origins. See [Web workspace](web-workspace.md). |
-| `--max-upload-mib MIB` | saved limit, else `50` | Per-file upload limit in whole MiB, 1 to 2048. Also read from `WEB_MAX_UPLOAD_MIB`. |
+| `--max-upload-mib MIB` | `web_max_upload_mib` in `omrg.jsonc`, else `50` | Per-file upload limit in whole MiB, 1 to 2048. Also read from `WEB_MAX_UPLOAD_MIB`. |
 
-The upload limit is the first value in this order: `--max-upload-mib`, then `WEB_MAX_UPLOAD_MIB` (environment or `.env`), then the limit saved in Settings > Workspace, then 50 MiB. A launch value locks the limit for that run, and Settings cannot change it. A value that is not a whole number from 1 to 2048 stops the command with exit code 2 before it binds a port. The message names the option, the variable and the range.
+The upload limit is the first value in this order: `--max-upload-mib`, then `WEB_MAX_UPLOAD_MIB` (environment or `.env`), then `web_max_upload_mib` in `omrg.jsonc` (Settings > Workspace writes it), then 50 MiB. A launch value locks the limit for that run, and Settings cannot change it. A value that is not a whole number from 1 to 2048 stops the command with exit code 2 before it binds a port. The message names the option, the variable and the range.
 
-The port is `--port` if you give it, else the port saved in Settings > MCP, else 8765. `--port 0` picks a free port. If the port is taken, the command exits with code 1 and prints `Port <n> is in use. Start with --port <n> to choose another port, then save it in Settings > MCP.` The command writes the one-time sign-in link to stderr. It does not run the legacy process-default installer. It refuses a non-loopback `--host`. Every option, sign-in, file grants, jobs and shutdown: [Web workspace](web-workspace.md).
+The port is `--port` if you give it, else `web_port` in `omrg.jsonc` (Settings > MCP writes it), else 8765. `--port 0` picks a free port. If the port is taken, the command exits with code 1 and prints `Port <n> is in use. Start with --port <n> to choose another port, then save it in Settings > MCP.` The command writes the one-time sign-in link to stderr. It does not run the legacy process-default installer. It refuses a non-loopback `--host`. Every option, sign-in, file grants, jobs and shutdown: [Web workspace](web-workspace.md).
 
 ### web install, uninstall, status, restart, start, open
 
@@ -420,7 +445,7 @@ Options of `omrg web install`:
 | Option | Default | Use |
 |---|---|---|
 | `--workspace PATH` | `~/.omrg/workspace` | Workspace folder. The login item gets the option only when you give it. |
-| `--port N` | saved port, else `8765` | TCP port, 1 to 65535. A login item needs a stable port, so `0` is not allowed. |
+| `--port N` | `web_port` in `omrg.jsonc`, else `8765` | TCP port, 1 to 65535. A login item needs a stable port, so `0` is not allowed. |
 | `--root DIR` | none | Approve a directory for file access. Repeat for more. The path is made absolute. |
 | `--experiment-root DIR` | none | Approve a directory for experiment workspaces. Repeat for more. |
 | `--command-path PATH` | `omrg` on your `PATH` | Absolute path of the `omrg` executable. |
@@ -449,7 +474,7 @@ The login item is a copy of your `omrg` that launchd starts. A stop signal does 
     ```
 
     Do not use editable mode (`-e`): it keeps running the source files of the checkout. To update the copy later, run the same command with `--reinstall`, then `omrg web restart`.
-2. **Settings come from `~/.omrg/.env`.** launchd starts the login item in `~/.omrg` with no shell variables. The app reads the `.env` file in its working folder, so it reads `~/.omrg/.env`. Variables you export in your shell do not reach it. Copy your settings to `~/.omrg/.env` yourself. `install` shows the path of the file and, when the folder where you ran it has a `.env` file, asks you to copy it. The command never reads, copies or moves a `.env` file.
+2. **Settings come from `omrg.jsonc`.** The login item reads `omrg.jsonc` in the user config folder (`~/.config/omrg/omrg.jsonc` by default). It also reads `~/.omrg/.env` when that file exists. That `.env` is optional and overrides the file. launchd starts the login item in `~/.omrg` with no shell variables, so variables you export in your shell do not reach it. `install` shows the path of the settings file. When the folder where you ran it has a `.env` file, `install` tells you that the login item does not read it. Run `omrg config init` to write a starter file, then copy the settings you need into it. The command never reads, copies or moves a `.env` file.
 3. **The `PATH` is fixed.** The login item gets `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin`, so it can start tools such as `llama-server`. A tool in another folder is not found.
 4. **A running copy does not change when you install a newer one.** `status` shows the running version and the installed version. Run `omrg web restart` to start the installed version. A restart signs the browser out. Run `omrg web open` to sign in again.
 

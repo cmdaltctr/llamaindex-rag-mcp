@@ -2,7 +2,7 @@
 
 This package contains the Typer application and one module per command
 group: ``ingest.py``, ``search.py``, ``list.py``, ``watch.py``,
-``delete.py``, ``benchmark.py``, ``profile.py``,
+``delete.py``, ``benchmark.py``, ``profile.py``, ``config.py``,
 ``install_login_watcher.py``, and ``web.py``.
 
 All output goes to stderr (gotcha #5 — stdout is the MCP protocol channel
@@ -226,6 +226,7 @@ def run_cli() -> None:
 from . import (  # noqa: E402,F401
     answer,
     benchmark,
+    config,
     delete,
     ingest,
     install_login_watcher,

@@ -216,24 +216,6 @@ def checkout_warning(command_path: str) -> str | None:
     return None
 
 
-def settings_message(home: Path, cwd: Path) -> str | None:
-    """Name the settings file the login item reads, when it is missing (D7).
-
-    The command only checks that files exist. It never reads, copies or
-    moves a ``.env`` file.
-    """
-    settings = home / ".omrg" / ".env"
-    if settings.is_file():
-        return None
-    message = (
-        f"The login item reads ~/.omrg/.env ({settings}). That file does not exist, "
-        "so the login item starts with the code defaults."
-    )
-    if (cwd / ".env").is_file():
-        message += " Copy your settings there before you start it."
-    return message
-
-
 def parse_link(text: str) -> LinkInfo | None:
     """Parse the content of the link file, or return ``None`` if it is not a link."""
     link = text.strip()
@@ -343,7 +325,6 @@ __all__ = [
     "parse_link",
     "read_installed",
     "render_plist",
-    "settings_message",
     "status_lines",
     "workspace_dir",
 ]

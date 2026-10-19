@@ -22,6 +22,7 @@ from rich.markup import escape
 
 from . import _launchagent, console
 from . import _web_login_item as core
+from . import _web_login_item_settings as settings_text
 from . import _web_login_item_stop as stop
 from .web import resolve_port, web_app
 
@@ -168,9 +169,7 @@ def _plan_warnings(plan: core.WebLoginItemPlan, port: int) -> list[str]:
     checkout = core.checkout_warning(plan.command_path)
     if checkout:
         warnings.append(checkout)
-    settings = core.settings_message(plan.home, Path.cwd())
-    if settings:
-        warnings.append(settings)
+    warnings += settings_text.plan_warnings(settings_text.config_file(), Path.cwd(), plan.home)
     if _port_in_use(_HOST, port):
         warnings.append(
             f"Port {port} is already in use. Something else may be running 'omrg web'. "
@@ -187,6 +186,7 @@ def _print_plan(plan: core.WebLoginItemPlan, warnings: list[str], *, dry_run: bo
     _say(f"  Runs in:      {plan.working_directory}")
     _say(f"  Stdout log:   {plan.stdout_log}")
     _say(f"  Stderr log:   {plan.stderr_log}")
+    _say("\n".join(settings_text.plan_rows(settings_text.config_file(), plan.home)))
     for warning in warnings:
         console.print(f"[yellow]Warning:[/yellow] {escape(warning)}", soft_wrap=True)
     if dry_run:
@@ -236,7 +236,7 @@ def install(
     """Install the web app as a macOS login item and start it.
 
     The login item starts at every login, restarts after a crash, and
-    reads its settings from ~/.omrg/.env.
+    reads omrg.jsonc from the user config folder, and ~/.omrg/.env when it exists.
     """
     if not _is_macos() and not dry_run:
         _fail("Login items are macOS-only. Use --dry-run to preview the plan on other platforms.")

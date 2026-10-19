@@ -102,7 +102,7 @@ A login item has no terminal, so it signs you in in a different way:
 - **A stop signal restarts the app.** The login item starts again after a stop signal, because launchd treats it as a crash. Turn off in the power panel unloads it until the next login or `omrg web start`. Run `omrg web uninstall` to remove it for good.
 - **A restart signs the browser out.** Browser sessions live in memory only. Run `omrg web open` to sign in again.
 - **The access log is off.** The log files of the login item have no rotation, so the server writes only start-up and error lines.
-- **Settings come from `~/.omrg/.env`.** The login item runs in `~/.omrg` and reads the `.env` file in that folder. A hand-run `omrg web` reads the `.env` file of the folder where you run it. Shell variables do not reach the login item. Copy your settings to `~/.omrg/.env` yourself. The install command never copies or reads a `.env` file.
+- **Settings come from `omrg.jsonc`.** The login item reads `omrg.jsonc` in the user config folder (`~/.config/omrg/omrg.jsonc` by default). It also reads `~/.omrg/.env` when that file exists. That `.env` is optional and overrides the file. A hand-run `omrg web` reads the `.env` file of the folder where you run it. Shell variables do not reach the login item. Run `omrg config init` to write a starter `omrg.jsonc`. The install command never copies or reads a `.env` file.
 
 ## Sign in
 
