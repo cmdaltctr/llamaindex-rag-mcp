@@ -35,10 +35,30 @@ Work in a feature worktree that forks from `integration/core-web`, named `llamai
 
 These tasks change the user's machine. Ask before each one.
 
-- [ ] 5.1 With approval, install the application as a tool from the main checkout with the `web` extra (`uv tool install`). Record the exact command that works in `docs/guides/cli-reference.md`. Run `omrg --version` from a new shell and confirm that it prints a version.
-- [ ] 5.2 With approval, stop the scratch `omrg web` process that the user started by hand, so the port and the workspace lock are free. Run `lsof -nP -iTCP:8765 -sTCP:LISTEN` and confirm no output.
-- [ ] 5.3 Ask the user to copy their settings to `~/.omrg/.env` themselves (never copy `.env` for them). Run `omrg web install --dry-run` and read the plan. With approval, run `omrg web install`. Confirm that `omrg web status` exits 0, shows the installed version as running, and that Settings shows the embedding model from `~/.omrg/.env`.
-- [ ] 5.4 Run `omrg web open`, sign in, save a provider key in Settings > Providers, then run `omrg web restart` and `omrg web open` again. Confirm that the provider card still shows the key as set. This proves the keychain read under launchd. If it fails, update design D7 and the CLI reference before you go on.
-- [ ] 5.5 Run `omrg web uninstall --yes` and then `omrg web install` again. Confirm that `~/.omrg/workspace` kept its data and that the app answers.
+- [x] 5.1 With approval, install the application as a tool from the main checkout with the `web` extra (`uv tool install`). Record the exact command that works in `docs/guides/cli-reference.md`. Run `omrg --version` from a new shell and confirm that it prints a version.
+- [x] 5.2 With approval, stop the scratch `omrg web` process that the user started by hand, so the port and the workspace lock are free. Run `lsof -nP -iTCP:8765 -sTCP:LISTEN` and confirm no output.
+- [x] 5.3 Ask the user to copy their settings to `~/.omrg/.env` themselves (never copy `.env` for them). Run `omrg web install --dry-run` and read the plan. With approval, run `omrg web install`. Confirm that `omrg web status` exits 0, shows the installed version as running, and that Settings shows the embedding model from `~/.omrg/.env`.
+- [x] 5.4 Run `omrg web open`, sign in, save a provider key in Settings > Providers, then run `omrg web restart` and `omrg web open` again. Confirm that the provider card still shows the key as set. This proves the keychain read under launchd. If it fails, update design D7 and the CLI reference before you go on.
+- [x] 5.5 Run `omrg web uninstall --yes` and then `omrg web install` again. Confirm that `~/.omrg/workspace` kept its data and that the app answers.
 - [ ] 5.6 Ask the user to log out and in, or reboot, and then run `omrg web status`. Record the result in the group's commit message. This task is for the user to do.
-- [ ] 5.7 Run `openspec validate add-web-login-item --strict` and `openspec validate --all --strict` and confirm that both pass. With approval, run `./scripts/local_ci.sh` and confirm that it passes. When the user approves, commit any remaining change as `docs(web): record the login item checks on macOS`.
+- [ ] 5.7 Run `openspec validate add-web-login-item --strict` and `openspec validate --all --strict` and confirm that both pass. With approval, run `./scripts/local_ci.sh` and confirm that it passes. When the user approves, commit any remaining change as `docs(web): record the login item checks on macOS`. Run this after groups 6 and 7.
+
+## 6. Fix the two bugs found on the real Mac
+
+Uvicorn re-raises SIGTERM after its clean shutdown, so launchd sees a death by signal and restarts the app. Code after `serve()` never runs, so the link file stays behind after a stop.
+
+- [x] 6.1 Add failing cases to `tests/unit/test_web_login_item_cli.py` for `restart`: launchd restarts the app itself (no kickstart); launchd restarts after a short delay inside the 5-second grace; launchd does not restart (kickstart runs). Run the file and confirm that the new cases fail.
+- [x] 6.2 Fix `restart` in `cli/web_login_item.py` (design D8): read the process id from `launchctl print`, wait up to 15 seconds for the old id to go, wait up to 5 seconds for a new one, and run `kickstart` only when none appears. Move the stop logic into its own helper (this is the third patch to this function), and keep the file under 500 lines. Run `tests/unit/test_web_login_item_cli.py` and confirm that it passes.
+- [x] 6.3 Add failing cases to `tests/unit/test_launch_link.py`: the stop hook runs inside Uvicorn's shutdown, and a real subprocess that gets SIGTERM removes the link file before it dies by signal. Run the file and confirm that the new cases fail.
+- [x] 6.4 Add an `on_stop` hook to `_serve` in `cli/web.py` that runs inside `Server.shutdown`, and pass the policy's `retire` for the login item. Run `tests/unit/test_launch_link.py` and confirm that it passes.
+- [x] 6.5 Correct `docs/guides/cli-reference.md`, `docs/guides/web-workspace.md` and `docs/adr/085-web-login-item.md`. Run `uv run pytest tests/test_docs_references.py -q` and confirm that it passes.
+- [x] 6.6 Re-measure the clean-base tripwire pins in `tests/test_clean_base_tripwire.py`. Then run `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q`, the tripwire, `uv run lint-imports` and `uv run ruff check src tests`. Confirm that all pass. When the user approves, commit as `fix(cli): restart waits for launchd and the link file is removed at shutdown`.
+- [ ] 6.7 With approval, reinstall the tool (`uv tool install --reinstall` from the checkout). Run `omrg web restart` and confirm exit code 0 and a new process id. Then run `omrg web uninstall --yes` and `omrg web install`, and confirm that `~/.omrg/workspace/launch-link` is gone after a restart and written again after the start.
+
+## 7. Add the navigation foot
+
+- [ ] 7.1 Load the `omrg-design` skill. Write failing component tests in `web/src`: four controls in order (theme, Settings, power, GitHub); no language control; a theme click writes the stored preference; the Settings link goes to `#/settings`; the power light is green when health answers and grey when it does not; the GitHub link has the right address and opens in a new tab; the collapsed layout shows icons only. Run the tests and confirm that they fail.
+- [ ] 7.2 Add the component under `web/src/components` and mount it at the foot of the side navigation (design D9). No new route. Run the tests and confirm that they pass.
+- [ ] 7.3 Check in a browser at 1280 px and 390 px against a scratch workspace. Report PASS or FAIL for each control. Ask before you start a server or a browser.
+- [ ] 7.4 Add a short "Navigation foot" paragraph to `docs/guides/web-workspace.md`. Run `uv run pytest tests/test_docs_references.py -q` and confirm that it passes.
+- [ ] 7.5 Run `npm run build` and the web tests in `web/`. Run `openspec validate add-web-login-item --strict` and `openspec validate --all --strict`. Confirm that all pass. When the user approves, commit as `feat(web): add the navigation foot`.

@@ -388,7 +388,7 @@ The port is `--port` if you give it, else the port saved in Settings > MCP, else
 
 ### web install, uninstall, status, restart, open
 
-Keep the web app running on a Mac. `omrg web` stops when you close its terminal window. The login item is a per-user LaunchAgent with the label `com.omrg.web`. It starts at every login and starts again after a crash. It stays stopped after a clean exit. The guide [Web workspace](web-workspace.md#keep-the-app-running) explains the sign-in link file.
+Keep the web app running on a Mac. `omrg web` stops when you close its terminal window. The login item is a per-user LaunchAgent with the label `com.omrg.web`. It starts at every login. It starts again after a crash and after a stop signal. Only `omrg web uninstall` stops it for good. The guide [Web workspace](web-workspace.md#keep-the-app-running) explains the sign-in link file.
 
 ```bash
 # Show the plan and write nothing (works on any platform)
@@ -431,17 +431,24 @@ Other options: `omrg web open --print` prints the full sign-in link to stderr an
 | `install` | 0 when the app answers. 1 when the platform is not macOS, a login item exists and `--force` is missing, `launchctl` fails, you refuse a confirmation, or the app does not answer within 60 seconds. The login item stays installed after a time-out. |
 | `uninstall` | 0 when it removed the login item, and also when nothing was installed. 1 when you refuse the confirmation or the agent stays loaded. |
 | `status` | 0 when the app answers `GET /v1/health`. 1 when it does not answer, or no login item is installed. |
-| `restart` | 0 when the new process answers. 1 when no login item is installed, the old process does not stop within 15 seconds, or the new process does not answer within 60 seconds. |
+| `restart` | Sends `SIGTERM` and waits up to 15 seconds until the old process has ended. Then it waits up to 5 seconds for launchd to start a new process. It runs `launchctl kickstart` (never `-k`) only if none starts. Then it waits up to 60 seconds for the app to answer. 0 when the new app answers. 1 when no login item is installed, the old process does not end within 15 seconds, or the new app does not answer within 60 seconds. |
 | `open` | 0 when it opened the link or printed it. 1 when the login item is not running. The command never starts a server. |
 
-The login item is a copy of your `omrg` that launchd starts. Four rules follow from that:
+The login item is a copy of your `omrg` that launchd starts. A stop signal does not stop it, because launchd starts the app again about one second later. `kill` and Activity Monitor do not stop it. Use `omrg web uninstall`. Four rules follow from that:
 
-1. **Install `omrg` outside the checkout.** The login item runs the absolute path of the executable. A path inside a `.venv` of a source checkout stops working when you delete the checkout or its worktree. `install` shows a warning for such a path, and asks you to confirm or to pass `--yes`. Use `uv tool install` from your main checkout with the `web` extra. Do not use editable mode (`-e`): it keeps running the source files of the checkout.
+1. **Install `omrg` outside the checkout.** The login item runs the absolute path of the executable. A path inside a `.venv` of a source checkout stops working when you delete the checkout or its worktree. `install` shows a warning for such a path, and asks you to confirm or to pass `--yes`. Build the web front end first (`cd web && npm run build`), because the wheel ships the built files. Then install a copy from the checkout that holds the version you want. Run this from the checkout folder:
+
+    ```bash
+    uv tool install "omrg[web] @ file://$PWD"
+    omrg --version
+    ```
+
+    Do not use editable mode (`-e`): it keeps running the source files of the checkout. To update the copy later, run the same command with `--reinstall`, then `omrg web restart`.
 2. **Settings come from `~/.omrg/.env`.** launchd starts the login item in `~/.omrg` with no shell variables. The app reads the `.env` file in its working folder, so it reads `~/.omrg/.env`. Variables you export in your shell do not reach it. Copy your settings to `~/.omrg/.env` yourself. `install` shows the path of the file and, when the folder where you ran it has a `.env` file, asks you to copy it. The command never reads, copies or moves a `.env` file.
 3. **The `PATH` is fixed.** The login item gets `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin`, so it can start tools such as `llama-server`. A tool in another folder is not found.
 4. **A running copy does not change when you install a newer one.** `status` shows the running version and the installed version. Run `omrg web restart` to start the installed version. A restart signs the browser out. Run `omrg web open` to sign in again.
 
-`install` warns, and goes on, when something already listens on the target port. Stop a hand-started `omrg web` first, or the login item cannot bind the port. `install` reports success only when the app answers health and the sign-in link file names the target port, so a hand-started server on that port does not count. `restart` waits until the old process has exited, not only until health stops answering.
+`install` warns, and goes on, when something already listens on the target port. Stop a hand-started `omrg web` first, or the login item cannot bind the port. `install` reports success only when the app answers health and the sign-in link file names the target port, so a hand-started server on that port does not count. `restart` waits until the old process has ended, not only until health stops answering.
 
 Files outside the repository: `~/Library/LaunchAgents/com.omrg.web.plist`, `~/Library/Logs/omrg/com.omrg.web.out.log`, `~/Library/Logs/omrg/com.omrg.web.err.log`, `<workspace>/launch-link` and the folder `~/.omrg`. The log files have no rotation. The access log is off, so they hold only start-up and error lines.
 

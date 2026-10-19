@@ -98,7 +98,8 @@ A login item has no terminal, so it signs you in in a different way:
 
 - **The link file.** The server writes the sign-in link to `<workspace>/launch-link`, as one line. It writes the link to no terminal and no log. `omrg web open` reads the file and opens the link in your browser.
 - **Who can read it.** Only your macOS user can read the file (mode `0600`). Any program that runs as you can read it and sign in, including AI agents on your Mac. This is the same trust level as `workspace.db`, which these programs can already read.
-- **The link renews.** The server writes a new link after each sign-in and after 20 wrong guesses. It removes the file when it stops in a clean way.
+- **The link renews.** The server writes a new link after each sign-in and after 20 wrong guesses. It removes the file when it stops, also after a stop signal.
+- **A stop signal restarts the app.** The login item starts again after a stop signal, because launchd treats it as a crash. Run `omrg web uninstall` to stop it for good.
 - **A restart signs the browser out.** Browser sessions live in memory only. Run `omrg web open` to sign in again.
 - **The access log is off.** The log files of the login item have no rotation, so the server writes only start-up and error lines.
 - **Settings come from `~/.omrg/.env`.** The login item runs in `~/.omrg` and reads the `.env` file in that folder. A hand-run `omrg web` reads the `.env` file of the folder where you run it. Shell variables do not reach the login item. Copy your settings to `~/.omrg/.env` yourself. The install command never copies or reads a `.env` file.

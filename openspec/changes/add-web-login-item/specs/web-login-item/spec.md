@@ -63,14 +63,20 @@ The login item SHALL run an `omrg` executable path that the command resolved to 
 
 ### Requirement: The login item keeps the app running
 
-The agent SHALL start at load, SHALL restart the app after a crash or kill, and SHALL NOT restart it after a clean exit. It SHALL wait at least 60 seconds between starts. The agent SHALL write standard output and standard error to `~/Library/Logs/omrg/com.omrg.web.out.log` and `com.omrg.web.err.log`. The agent SHALL give the app a fixed `PATH` that includes `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin` and `/bin`.
+The agent SHALL start at load, SHALL restart the app after a crash or kill, and SHALL NOT restart it after an exit with status 0. The agent SHALL also start the app again after a stop signal, because the signal ends the process and launchd treats that as a crash. Only `omrg web uninstall` stops the app for good. The agent SHALL wait at least 60 seconds between starts. The agent SHALL write standard output and standard error to `~/Library/Logs/omrg/com.omrg.web.out.log` and `com.omrg.web.err.log`. The agent SHALL give the app a fixed `PATH` that includes `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin` and `/bin`.
 
 #### Scenario: Crash restarts
 
 - **WHEN** the app process ends with a non-zero status
 - **THEN** launchd MUST start it again after the wait
 
-#### Scenario: Clean stop stays stopped
+#### Scenario: A stop signal restarts the app
+
+- **WHEN** the app receives SIGTERM
+- **THEN** it MUST shut down in the normal way
+- **AND** launchd MUST start it again
+
+#### Scenario: Exit with status 0 stays stopped
 
 - **WHEN** the app exits with status 0
 - **THEN** launchd MUST NOT start it again
@@ -111,18 +117,29 @@ The agent SHALL run with the working folder `~/.omrg`, so the app reads `~/.omrg
 
 ### Requirement: Web login item restart
 
-`omrg web restart` SHALL stop the app with `SIGTERM`, so it shuts down cleanly, then start it again. It SHALL wait until the app answers `GET /v1/health` or 60 seconds pass. When no login item is installed it SHALL say so and exit non-zero.
+`omrg web restart` SHALL send `SIGTERM` to the app, so it shuts down cleanly. It SHALL wait until the old process has ended, for up to 15 seconds. It SHALL then wait up to 5 seconds for launchd to start a new process. Only if none starts SHALL the command start one with `launchctl kickstart`, and it SHALL NOT use the `-k` option. It SHALL then wait until the app answers `GET /v1/health` or 60 seconds pass, and it SHALL exit 0 only when the app answers. When no login item is installed it SHALL say so and exit non-zero.
 
 #### Scenario: Restart shuts down cleanly
 
 - **WHEN** the user runs `omrg web restart`
 - **THEN** the old process MUST end through its normal shutdown, which removes its `launch-link` file
-- **AND** a new process MUST start even though the old one exited with status 0
+- **AND** a new process MUST start
 
-#### Scenario: Restart waits for the old process
+#### Scenario: launchd restarts the app itself
 
-- **WHEN** the app has stopped answering `GET /v1/health` but launchd still shows a process for the agent
-- **THEN** `omrg web restart` MUST NOT run `launchctl kickstart` until that process has exited, and MUST exit non-zero if it has not exited within 15 seconds
+- **WHEN** launchd starts a new process within 5 seconds after the old one ended
+- **THEN** the command MUST NOT run `launchctl kickstart`
+- **AND** the command MUST exit 0 once the app answers `GET /v1/health`
+
+#### Scenario: No restart by launchd
+
+- **WHEN** no new process starts within 5 seconds after the old one ended
+- **THEN** the command MUST run `launchctl kickstart`
+
+#### Scenario: The old process does not end
+
+- **WHEN** the old process is still there after 15 seconds
+- **THEN** the command MUST exit non-zero, MUST NOT run `launchctl kickstart`, and MUST name `omrg web status`
 
 #### Scenario: Restart picks up a new install
 

@@ -2,7 +2,7 @@
 
 ### Requirement: A login-item server hands over a renewed private sign-in link
 
-When started with `--login-item`, the server SHALL write its one-time sign-in link to `<workspace>/launch-link`, as one line, in a file that only the current user can read (mode 0600), and SHALL NOT print the link to standard output, standard error or any log. After the link is used, or after the failed-attempt limit disables it, the server SHALL create a new link with a new secret and replace the file's content atomically. Each link SHALL work once. The server SHALL remove the file when it shuts down cleanly. A login-item server SHALL NOT write access-log lines. Browser sessions SHALL stay in server memory and SHALL end when the server stops.
+When started with `--login-item`, the server SHALL write its one-time sign-in link to `<workspace>/launch-link`, as one line, in a file that only the current user can read (mode 0600), and SHALL NOT print the link to standard output, standard error or any log. After the link is used, or after the failed-attempt limit disables it, the server SHALL create a new link with a new secret and replace the file's content atomically. Each link SHALL work once. The server SHALL remove the file during its shutdown, before the process ends, also when a stop signal ends the process. A login-item server SHALL NOT write access-log lines. Browser sessions SHALL stay in server memory and SHALL end when the server stops.
 
 #### Scenario: Link file is private
 
@@ -29,8 +29,8 @@ When started with `--login-item`, the server SHALL write its one-time sign-in li
 
 #### Scenario: Clean shutdown removes the file
 
-- **WHEN** the server shuts down on SIGTERM
-- **THEN** `<workspace>/launch-link` MUST NOT exist
+- **WHEN** the server receives SIGTERM
+- **THEN** `<workspace>/launch-link` MUST NOT exist once the process has ended
 
 #### Scenario: Foreground launch is unchanged
 
