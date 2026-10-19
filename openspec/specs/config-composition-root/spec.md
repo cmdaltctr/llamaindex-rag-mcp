@@ -10,6 +10,7 @@ frozen effective-settings object. No layer below the composition root
 reads configuration on its own.
 
 ## Requirements
+
 ### Requirement: Three-layer configuration architecture
 
 The system SHALL separate configuration into three layers: a typed settings
@@ -67,15 +68,17 @@ import concrete provider classes or a settings singleton.
 The system SHALL resolve the effective `Settings` by layering sources in a
 documented precedence order: subpackage model defaults (lowest),
 `config/defaults.yaml`, the selected YAML profile bundle when present,
-environment variables and `.env`, then explicit per-operation options
-(highest). `config/defaults.yaml` and profile bundles SHALL be expressed as
-nested mappings keyed by subpackage block (`chunking:`, `retrieval:`,
-`metadata:`) plus top-level cross-cutting keys, and SHALL be deep-merged
-rather than flattened. They SHALL contain no secrets, provider keys, or
-machine-specific absolute paths. YAML files SHALL be loaded via
-`importlib.resources` so they resolve correctly in both development
-(repository root) and installed (site-packages) contexts, and SHALL be
-declared as package data in `pyproject.toml`.
+`omrg.jsonc` in the user config folder, `.env`, the process environment, then
+explicit per-operation options (highest). `config/defaults.yaml` and profile
+bundles SHALL be expressed as nested mappings keyed by subpackage block
+(`chunking:`, `retrieval:`, `metadata:`) plus top-level cross-cutting keys, and
+SHALL be deep-merged rather than flattened. `omrg.jsonc` SHALL use the same
+nesting and SHALL be deep-merged in the same way. The YAML files SHALL contain
+no secrets, provider keys, or machine-specific absolute paths. YAML files SHALL
+be loaded via `importlib.resources` so they resolve correctly in both
+development (repository root) and installed (site-packages) contexts, and SHALL
+be declared as package data in `pyproject.toml`. The resolver SHALL record the
+source of each value so the transports can report it.
 
 #### Scenario: Environment overrides YAML
 
@@ -83,12 +86,29 @@ declared as package data in `pyproject.toml`.
   process environment
 - **THEN** the environment value MUST win
 
+#### Scenario: omrg.jsonc overrides YAML
+
+- **WHEN** `config/defaults.yaml` sets `retrieval.top_k` to 10 and `omrg.jsonc`
+  sets it to 7, and no environment value sets it
+- **THEN** the resolved value MUST be 7 with the source `config-file`
+
+#### Scenario: .env overrides omrg.jsonc
+
+- **WHEN** `omrg.jsonc` sets `retrieval.top_k` to 7 and `.env` sets
+  `RETRIEVAL__TOP_K=12`
+- **THEN** the resolved value MUST be 12 with the source `dotenv`
+
 #### Scenario: Nested YAML is deep-merged
 
 - **WHEN** `config/defaults.yaml` declares `retrieval.top_k` and the selected
   profile declares only `retrieval.rerank_enabled`
 - **THEN** the resolved settings MUST carry both values
 - **AND** the profile MUST NOT replace the whole `retrieval` block
+
+#### Scenario: Nested omrg.jsonc is deep-merged
+
+- **WHEN** `omrg.jsonc` declares only `retrieval.top_k`
+- **THEN** every other `retrieval` value MUST come from the lower sources
 
 #### Scenario: YAML contains no secrets
 
@@ -101,8 +121,6 @@ declared as package data in `pyproject.toml`.
 - **WHEN** the server runs from an installed wheel (not the repository root)
 - **THEN** `defaults.yaml` MUST be discoverable via `importlib.resources`
   regardless of the current working directory
-
----
 
 ### Requirement: Subpackage settings models
 
@@ -474,4 +492,3 @@ data-aware rollback procedure.
 - **THEN** it MUST provide source-checkout and packaged-extra Chroma installation forms
 - **AND** rollback MUST require pinning and verifying LanceDB before reverting software
 - **AND** historical ADRs MUST be marked superseded by link rather than rewritten
-

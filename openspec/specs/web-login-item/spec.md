@@ -88,20 +88,25 @@ The agent SHALL start at load, SHALL restart the app after a crash or kill, and 
 - **THEN** launchd MUST NOT start the app again in this login session
 - **AND** the plist file MUST still exist, so the agent loads at the next login
 
-### Requirement: The login item reads settings from ~/.omrg/.env
+### Requirement: The login item reads omrg.jsonc and an optional ~/.omrg/.env
 
-The agent SHALL run with the working folder `~/.omrg`, so the app reads `~/.omrg/.env` and no other `.env`. `install` SHALL create `~/.omrg` when it is missing. When `~/.omrg/.env` does not exist, the plan SHALL say that the login item reads that file. When the folder where `install` runs also has a `.env`, the plan SHALL tell the user to copy their settings to `~/.omrg/.env`. The command SHALL NOT read, copy or move any `.env` file.
+The agent SHALL run with the working folder `~/.omrg`. The app SHALL read `omrg.jsonc` from the user config folder, and SHALL also read `~/.omrg/.env` when that file exists. `install` SHALL create `~/.omrg` when it is missing. The plan SHALL name the `omrg.jsonc` path as the settings file and SHALL say that `~/.omrg/.env` is optional and overrides it. When the folder where `install` runs has a `.env`, the plan SHALL tell the user that the login item does not read it, and SHALL suggest `omrg config init`. The command SHALL NOT read, copy or move any `.env` file.
 
 #### Scenario: Settings file named in the plan
 
-- **WHEN** the user runs `omrg web install --dry-run` in a checkout that has a `.env` and `~/.omrg/.env` does not exist
-- **THEN** the plan MUST name `~/.omrg/.env` as the settings file and MUST tell the user to copy their settings there
-- **AND** `~/.omrg/.env` MUST still not exist after the command
+- **WHEN** the user runs `omrg web install --dry-run` in a checkout that has a `.env`
+- **THEN** the plan MUST name `~/.config/omrg/omrg.jsonc` as the settings file, MUST say that the checkout `.env` is not read, and MUST suggest `omrg config init`
+- **AND** no `.env` file MUST be created or changed
 
 #### Scenario: Settings reach the app
 
-- **WHEN** `~/.omrg/.env` sets `EMBED_MODEL` and the login item starts
+- **WHEN** `omrg.jsonc` sets `embed_model`, `~/.omrg/.env` does not exist, and the login item starts
 - **THEN** the running app MUST use that embedding model
+
+#### Scenario: Optional .env overrides
+
+- **WHEN** `omrg.jsonc` sets `embed_model` and `~/.omrg/.env` sets `EMBED_MODEL` to another model
+- **THEN** the running app MUST use the `.env` model, and Settings MUST report the source `dotenv`
 
 ### Requirement: Web login item status
 

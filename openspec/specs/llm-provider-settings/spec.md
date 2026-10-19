@@ -131,22 +131,22 @@ The rules for keychain storage, the environment lock, redaction, the last four c
 
 ### Requirement: Each provider value has one source
 
-Each editable address and the Chat choice SHALL come from the first of these sources, highest first: the process environment or `.env` (source `env`), `omrg.jsonc` in the user config folder (`config-file`), the value saved in the workspace (`saved`), the default (`default`). An API key SHALL come from the first of: the environment or `.env` (`env`), `omrg.jsonc` through an `env://` or `file://` reference (`config-file`), the system keychain (`keychain`), the key file `secrets/<provider>.key` (`key-file`), else none (`none`). A value from `env` or `config-file` SHALL lock its field: a write SHALL return 409 naming the variable to remove or the file to edit, and SHALL change nothing. A value from `keychain` or `key-file` SHALL NOT lock its field.
+Each editable address and the Chat choice SHALL come from the first of these sources, highest first: the process environment (`env`), the `.env` file (`dotenv`), `omrg.jsonc` (`config-file`), the default (`default`). An API key SHALL come from the first of: the environment (`env`), `.env` (`dotenv`), a reference in `omrg.jsonc` (`config-file` for `env://`, `key-file` for `file://`, `keychain` for `keychain://`), the key file `secrets/<provider>.key` (`key-file`), else none (`none`). A value from `env` or `dotenv` SHALL lock its field: a write SHALL return 409 naming the variable and where it is set, and SHALL change nothing. A value from any other source SHALL NOT lock its field. The source `saved` SHALL NOT exist.
 
 #### Scenario: Environment wins and locks
 
 - **WHEN** `.env` sets `LLAMACPP_CHAT_URL` and the user saves another llama.cpp chat address
-- **THEN** the server MUST return 409, the address in use MUST stay the `.env` value, and the field MUST report the source `env`
+- **THEN** the server MUST return 409, the address in use MUST stay the `.env` value, and the field MUST report the source `dotenv`
 
 #### Scenario: Saved value used
 
 - **WHEN** neither the environment nor `.env` sets `OLLAMA_BASE_URL` and the user saves `http://gpu-box.local:11434`
-- **THEN** the Ollama entry MUST report that address with the source `saved`
+- **THEN** `omrg.jsonc` MUST hold that address and the Ollama entry MUST report it with the source `config-file`
 
 #### Scenario: Cleared value falls back
 
-- **WHEN** the user clears the saved Ollama address
-- **THEN** the Ollama entry MUST report the default address with the source `default`
+- **WHEN** the user clears the Ollama address
+- **THEN** `omrg.jsonc` MUST no longer hold `ollama_base_url` and the Ollama entry MUST report the default address with the source `default`
 
 #### Scenario: Key from the environment
 
@@ -155,17 +155,22 @@ Each editable address and the Chat choice SHALL come from the first of these sou
 
 ### Requirement: API keys live only in the system keychain
 
-`PUT` and `DELETE /v1/connections/{provider}/key` (browser session, `credentials` scope) SHALL save a key to or remove it from the system keychain under the service `omrg` with the provider name as user name. The server SHALL use only a recommended backend (macOS Keychain, Windows Credential Locker, Secret Service). It SHALL NOT write a key to `.env`, the workspace database or any file.
+`PUT` and `DELETE /v1/connections/{provider}/key` (browser session, `credentials` scope) SHALL save a key to or remove it from the system keychain under the service `omrg` with the provider name as user name. A save SHALL also write `keychain://<provider>` as the provider's key reference in `omrg.jsonc`. A delete SHALL remove the keychain entry and that reference. The server SHALL use only a recommended backend (macOS Keychain, Windows Credential Locker, Secret Service). It SHALL NOT write a key to `.env`, the workspace database or any file.
 
 #### Scenario: Key saved in the keychain
 
 - **WHEN** a keychain is available and the user saves an OpenRouter key
-- **THEN** the keychain MUST hold the key under the service `omrg` and the user name `openrouter`, the workspace database MUST hold only the save time, and no file in the workspace or the working directory MUST contain the key
+- **THEN** the keychain MUST hold the key under the service `omrg` and the user name `openrouter`, `omrg.jsonc` MUST hold `keychain://openrouter`, and no file in the workspace, the config folder or the working directory MUST contain the key
+
+#### Scenario: Key replaces a file reference
+
+- **WHEN** `omrg.jsonc` holds a `file://` reference for OpenRouter and the user saves a key on the page
+- **THEN** the reference MUST become `keychain://openrouter` and the key file MUST be unchanged
 
 #### Scenario: Key removed
 
-- **WHEN** the user deletes the saved OpenRouter key and the environment sets none
-- **THEN** the keychain MUST no longer hold the key and the entry MUST report the source `none`
+- **WHEN** the user deletes the OpenRouter key saved in the keychain and nothing else sets one
+- **THEN** the keychain MUST no longer hold the key, `omrg.jsonc` MUST hold no OpenRouter key reference, and the entry MUST report the source `none`
 
 #### Scenario: Bearer credential refused
 
@@ -174,12 +179,12 @@ Each editable address and the Chat choice SHALL come from the first of these sou
 
 ### Requirement: No keychain means no saved key
 
-When no usable keychain backend is available, the server SHALL refuse to save a key with 409 and SHALL NOT store it anywhere else. Each secret field SHALL report that no keychain is available and name the environment variable to set instead. The fail and null backends, any backend from the `keyrings.alt` package, and any backend with priority below 1 SHALL count as not available.
+When no usable keychain backend is available, the server SHALL refuse to save a key with 409 and SHALL NOT store it anywhere else. Each secret field SHALL report that no keychain is available and name both the key file path and the environment variable to use instead. The fail and null backends, any backend from the `keyrings.alt` package, and any backend with priority below 1 SHALL count as not available.
 
 #### Scenario: Container without a keychain
 
 - **WHEN** the server runs where no recommended keychain backend exists and the user saves an OpenRouter key
-- **THEN** the server MUST return 409, MUST write the key nowhere, and the field MUST report no keychain and name `OPENROUTER_API_KEY`
+- **THEN** the server MUST return 409, MUST write the key nowhere, and the field MUST report no keychain and name `secrets/openrouter.key` and `OPENROUTER_API_KEY`
 
 #### Scenario: Plaintext backend refused
 
@@ -193,8 +198,8 @@ When no usable keychain backend is available, the server SHALL refuse to save a 
 
 #### Scenario: Saved key missing
 
-- **WHEN** the database records a key save but the keychain holds no `omrg` entry for the provider at start
-- **THEN** the field MUST report that the saved key is missing from the keychain, and the provider MUST be treated as having no key
+- **WHEN** `omrg.jsonc` holds `keychain://openrouter` but the keychain holds no `omrg` entry for it
+- **THEN** the field MUST report that the key is missing from the keychain, and the provider MUST be treated as having no key
 
 ### Requirement: A key is never returned and never logged
 
@@ -241,7 +246,7 @@ A provider address SHALL be an absolute `http` or `https` URL with a host, at mo
 
 ### Requirement: Saved values apply at once in the web server
 
-A saved address, key or Chat choice SHALL apply in the `omrg web` process with no restart: to the answer model, the claim-verification judge and metadata extraction, including for MCP clients served over HTTP. Calls that already started SHALL finish with the old client; later calls SHALL use the new one. Embedding identity SHALL NOT change. `omrg` over stdio, the CLI and experiment contexts SHALL NOT see saved values; they SHALL read the environment, `.env` and the user config folder only.
+A saved or hand-edited address, key or Chat choice SHALL apply in the `omrg web` process with no restart: to the answer model, the claim-verification judge and metadata extraction, including for MCP clients served over HTTP. Calls that already started SHALL finish with the old client; later calls SHALL use the new one. Embedding identity SHALL NOT change. `omrg` over stdio and the CLI SHALL read the same `omrg.jsonc` at launch, so they SHALL see page saves from their next launch.
 
 #### Scenario: Answer uses the new address at once
 
@@ -255,8 +260,13 @@ A saved address, key or Chat choice SHALL apply in the `omrg web` process with n
 
 #### Scenario: Stdio server unchanged
 
-- **WHEN** the user saves an OpenRouter key in the web workspace and starts `omrg` over stdio with no key in `.env` or the user config folder
-- **THEN** the stdio server MUST report no OpenRouter key
+- **WHEN** a stdio server is running and the user saves a new Ollama address in the web workspace
+- **THEN** the running stdio server MUST keep the address it read at launch
+
+#### Scenario: Stdio server sees a page save at its next launch
+
+- **WHEN** the user saves an OpenRouter key in the web workspace and then starts `omrg` over stdio with no key in the environment or `.env`
+- **THEN** the stdio server MUST use the key through the `keychain://openrouter` reference
 
 ### Requirement: The Ollama address is locked while Ollama makes embeddings
 
@@ -338,79 +348,6 @@ When any embedding use of the server names Ollama, the Ollama address SHALL be l
 - **WHEN** the user asks for the llama.cpp models and nothing listens at the chat address
 - **THEN** the result MUST report not reachable with the reason `refused`
 
-### Requirement: The user config folder is read-only
-
-The server, the CLI and the stdio MCP server SHALL read the user config folder: `$OMRG_CONFIG_DIR` when set, else `$XDG_CONFIG_HOME/omrg` when set, else `~/.config/omrg`. The folder MAY hold `omrg.jsonc` and `secrets/<provider>.key`. The code SHALL NOT write, create, move, delete or change the permissions of the folder or any file in it. A missing folder or file SHALL give no value and no warning. Both files SHALL be read at launch; a change SHALL need a restart.
-
-#### Scenario: Folder from OMRG_CONFIG_DIR
-
-- **WHEN** `OMRG_CONFIG_DIR` names a folder that holds `omrg.jsonc` and `XDG_CONFIG_HOME` is also set
-- **THEN** the server MUST read `omrg.jsonc` from the `OMRG_CONFIG_DIR` folder
-
-#### Scenario: Folder from XDG_CONFIG_HOME
-
-- **WHEN** `OMRG_CONFIG_DIR` is not set and `XDG_CONFIG_HOME` names a folder
-- **THEN** the server MUST read the `omrg` subfolder of it
-
-#### Scenario: Default folder
-
-- **WHEN** neither variable is set
-- **THEN** the server MUST read `~/.config/omrg`
-
-#### Scenario: Missing folder
-
-- **WHEN** the folder does not exist
-- **THEN** the server MUST start, MUST log no warning, and MUST NOT create the folder
-
-#### Scenario: Nothing is written
-
-- **WHEN** the server starts and a user saves addresses and keys in the web page
-- **THEN** no file or folder under the user config folder MUST be created, changed or have its mode changed
-
-#### Scenario: Restart needed
-
-- **WHEN** the user edits `omrg.jsonc` while the server runs
-- **THEN** the server MUST keep the values it read at launch
-
-### Requirement: omrg.jsonc holds non-secret values and key references
-
-`omrg.jsonc` SHALL accept JSON with comments and trailing commas. It MAY hold the keys `ollama_base_url`, `llamacpp_chat_url`, `openai_compatible_base_url` and `answer` with the members `provider` and `model`. It MAY hold a reference for each secret field, and a reference SHALL be `env://NAME` or `file://<absolute path>`. `env://NAME` SHALL read the environment variable `NAME`. A value in `omrg.jsonc` SHALL be validated by the same rules as a saved value (provider addresses are validated). A file that cannot be parsed SHALL give no values and one warning.
-
-#### Scenario: Address from the config file
-
-- **WHEN** `omrg.jsonc` sets `ollama_base_url` and neither the environment nor `.env` sets `OLLAMA_BASE_URL`
-- **THEN** the Ollama address field MUST report the source `config-file`, MUST be locked, and a save MUST return 409
-
-#### Scenario: Chat choice from the config file
-
-- **WHEN** `omrg.jsonc` holds `answer` with a provider and a model
-- **THEN** `GET /v1/settings/chat` MUST report the source `config-file` and locked, and `PUT /v1/settings/chat` MUST return 409
-
-#### Scenario: Comments and trailing commas
-
-- **WHEN** `omrg.jsonc` holds comments and a trailing comma and is otherwise valid
-- **THEN** the server MUST read the values
-
-#### Scenario: env reference
-
-- **WHEN** `omrg.jsonc` sets the OpenRouter key to `env://MY_ROUTER_KEY` and that variable holds a key
-- **THEN** the OpenRouter key field MUST report the source `config-file` and set, and the key MUST be used
-
-#### Scenario: env reference to an empty variable
-
-- **WHEN** the reference names a variable that is not set
-- **THEN** the field MUST give no value from the config file and the server MUST log no key text
-
-#### Scenario: Broken file
-
-- **WHEN** `omrg.jsonc` is not valid JSONC
-- **THEN** the server MUST read no value from it, MUST log one warning, and MUST start
-
-#### Scenario: Invalid address
-
-- **WHEN** `omrg.jsonc` sets `ollama_base_url` to `file:///etc/passwd`
-- **THEN** the server MUST ignore that value and MUST log one warning that names the field and not the value
-
 ### Requirement: A literal key in omrg.jsonc is ignored
 
 A secret field in `omrg.jsonc` that holds a value which is not an `env://` or `file://` reference SHALL be ignored. The server SHALL log one warning that names the field and SHALL NOT log the value. The server SHALL NOT use the value.
@@ -472,44 +409,6 @@ A `file://` reference SHALL resolve, after symlinks are followed, to a path insi
 
 - **WHEN** `secrets/` holds a file whose name is not a registered provider
 - **THEN** the server MUST ignore it
-
-### Requirement: The key file does not lock the key field
-
-A key from a key file SHALL rank below the system keychain. A key saved in the keychain SHALL override it. Removing the saved key SHALL make the key file apply again. `PUT` and `DELETE /v1/connections/{provider}/key` SHALL NOT return 409 only because a key file exists. A value from `omrg.jsonc` SHALL lock its field in the same way as the environment.
-
-#### Scenario: Keychain overrides the key file
-
-- **WHEN** `secrets/openrouter.key` holds a key and the user saves a different key in the keychain
-- **THEN** the OpenRouter key field MUST report the source `keychain` and the saved key MUST be used
-
-#### Scenario: Removing the saved key falls back
-
-- **WHEN** the user removes the saved OpenRouter key and `secrets/openrouter.key` exists
-- **THEN** the OpenRouter key field MUST report the source `key-file`
-
-#### Scenario: Config file locks
-
-- **WHEN** `omrg.jsonc` references an OpenRouter key
-- **THEN** `PUT /v1/connections/openrouter/key` MUST return 409 and the lock text MUST read "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it."
-
-### Requirement: The CLI and the stdio server read the user config folder
-
-The `config/` package SHALL read the user config folder, so the CLI, the stdio MCP server and the web server SHALL use the same values from it. Saved web values (database addresses and keychain keys) SHALL stay visible to the web server only.
-
-#### Scenario: Stdio uses the config folder
-
-- **WHEN** `omrg.jsonc` sets `ollama_base_url` and the user starts `omrg` over stdio
-- **THEN** the stdio server MUST use that address
-
-#### Scenario: CLI uses a key file
-
-- **WHEN** `secrets/openrouter.key` exists and the user runs a CLI command that needs the OpenRouter key
-- **THEN** the CLI MUST use that key
-
-#### Scenario: Saved web value stays web-only
-
-- **WHEN** the user saves an address in the web workspace and starts the CLI
-- **THEN** the CLI MUST NOT use the saved address
 
 ### Requirement: Keys from the user config folder are redacted
 
@@ -634,3 +533,41 @@ A provider descriptor SHALL be able to declare an integer field with a minimum, 
 
 - **WHEN** a test registers a fake provider with an integer field
 - **THEN** the card, the save route and the lock rules MUST work with no change outside the descriptor
+
+### Requirement: Key references and key files do not lock the key field
+
+A key from a key file, implicit or referenced, or from an `env://` reference SHALL NOT lock its field. A key saved on the page SHALL replace the reference with `keychain://<provider>`. `PUT` and `DELETE /v1/connections/{provider}/key` SHALL NOT return 409 only because a key file or a reference exists. The page SHALL NOT delete or change a key file.
+
+#### Scenario: Page key overrides the key file
+
+- **WHEN** `secrets/openrouter.key` holds a key and the user saves a different key on the page
+- **THEN** the OpenRouter key field MUST report the source `keychain` and the saved key MUST be used
+
+#### Scenario: Removing the page key falls back
+
+- **WHEN** the user removes the OpenRouter key saved on the page and `secrets/openrouter.key` exists
+- **THEN** the OpenRouter key field MUST report the source `key-file`
+
+#### Scenario: Config file reference does not lock
+
+- **WHEN** `omrg.jsonc` holds `env://MY_ROUTER_KEY` for OpenRouter and the user saves a key on the page
+- **THEN** the server MUST save it, and the reference MUST become `keychain://openrouter`
+
+### Requirement: The CLI and the stdio server share the page's settings
+
+The `config/` package SHALL read the user config folder, and the composition root SHALL resolve its key references, so the CLI, the stdio MCP server and the web server SHALL use the same values from it, including values saved on the Settings page.
+
+#### Scenario: Stdio uses the config folder
+
+- **WHEN** `omrg.jsonc` sets `ollama_base_url` and the user starts `omrg` over stdio
+- **THEN** the stdio server MUST use that address
+
+#### Scenario: CLI uses a key file
+
+- **WHEN** `secrets/openrouter.key` exists and the user runs a CLI command that needs the OpenRouter key
+- **THEN** the CLI MUST use that key
+
+#### Scenario: Page save reaches the CLI
+
+- **WHEN** the user saves an address in the web workspace and then starts the CLI
+- **THEN** the CLI MUST use the saved address
