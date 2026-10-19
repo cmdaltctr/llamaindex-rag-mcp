@@ -1,7 +1,7 @@
 # ADR-085: Web Login Item
 
 - **Date:** 2026-10-19
-- **Status:** Proposed (2026-10-19). The unit tests pass. The real-Mac checks 5.1 to 5.5 passed on 2026-10-19: the app read the keychain under launchd, and install, open, restart, uninstall and reinstall worked. Task 5.6 (log out and in) is open.
+- **Status:** Proposed (2026-10-19; the unit tests pass. The checks on the real Mac, tasks 5.1 to 5.6 of the change, are still open.)
 - **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 - **Related:** [ADR-075](075-omrg-owned-pipeline-runner-local-web-packaging-and-external-tool-plugins.md) (local web runtime), [ADR-079](079-approve-extra-loopback-origins-at-launch.md) (sign-in and origins), [ADR-083](083-llm-provider-settings-in-the-web-workspace.md) (keys in the keychain)
 - **Change:** `openspec/changes/add-web-login-item/` (design D1 to D8)
@@ -31,8 +31,7 @@ design:
    `tests/unit/test_web_group.py` pins the old form.
 2. **One LaunchAgent, label `com.omrg.web`** (D2). There is one web app per
    user. The plist uses `RunAtLoad`, `KeepAlive` with `SuccessfulExit: false`
-   (restart after any exit except status 0; Uvicorn ends the process by signal after a stop
-   signal, so launchd starts the app again and only `uninstall` stops it), a
+   (restart after a crash, stay stopped after a clean exit), a
    `ThrottleInterval` of 60 seconds, a fixed `PATH`, and the working folder
    `~/.omrg`. It reuses the path, command and `launchctl` helpers of
    `install-login-watcher`.
@@ -43,8 +42,7 @@ design:
 4. **A private link file replaces the printed link** (D4). In login-item mode
    the server writes the sign-in link to `<workspace>/launch-link` (mode 0600,
    atomic replace). It writes a new link after each sign-in and after the
-   failed-attempt limit. It removes the file in Uvicorn's shutdown step, before the process ends,
-   also when a stop signal ends the process. `omrg web
+   failed-attempt limit. It removes the file at a clean shutdown. `omrg web
    open` reads the file, checks that the app answers, and opens the link. It
    prints the address without the secret; `--print` prints the full link.
    The new class `RearmingAccessPolicy` lives in `transports/api/launch_link.py`
@@ -53,12 +51,9 @@ design:
    renewing policy, turns the access log off, and refuses `--port 0`.
 6. **Settings come from `~/.omrg/.env`** (D7). The login item runs in `~/.omrg`.
    `install` names the file and never reads, copies or moves a `.env` file.
-7. **Restart follows launchd** (D8). `restart` sends `SIGTERM` with
-   `launchctl kill` and waits up to 15 seconds until the old process has ended.
-   It then waits up to 5 seconds for launchd to start a new process. It runs
-   `launchctl kickstart` (never `-k`) only if none starts. It then waits up to
-   60 seconds for the app to answer. It exits 0 only when the new app answers.
-   `install` also waits up to 60 seconds for health.
+7. **Restart is clean** (D8). `restart` sends `SIGTERM` with `launchctl kill`,
+   waits up to 15 seconds for the app to stop, then runs `launchctl kickstart`
+   without `-k`. `install` and `restart` wait up to 60 seconds for health.
 
 ## Consequences
 
@@ -83,14 +78,12 @@ design:
 - The login item runs an installed copy, not the branch under work. The user
   runs `omrg web restart` after each reinstall.
 - The log files have no rotation.
-- Uvicorn re-raises SIGTERM, so a stop signal always restarts the app; only uninstall stops it.
 
 ### Neutral
 
 - macOS only. `install --dry-run` runs on any platform.
 - `install` warns about a busy port but does not probe the workspace lock.
 - Rollback is `omrg web uninstall`. The workspace, logs and data stay.
-- Uvicorn 0.54 causes the restart after a stop signal: it shuts down cleanly, then re-raises the signal. A later Uvicorn that exits with status 0 would stay stopped, and the `kickstart` step of `restart` would then start the app.
 
 ## Alternatives Considered
 
@@ -103,7 +96,6 @@ design:
 | **Short-lived link minted on demand** | It needs a signal handler and a clock. The file has the same trust level as `workspace.db`. Deferred. |
 | **Sessions that survive a restart** | It changes the access model and needs its own spec. |
 | **`kickstart -k` for restart** | The man page does not name the signal. A forced kill skips the lifespan shutdown and leaves the link file. |
-| **Wait for health to stop, then kickstart** | launchd restarts the app by itself after the signal, so the command waited for a stop that never lasted. |
 | **Working folder set to the checkout** | It brings back the checkout dependency that decision 3 removes. |
 
 ## References
@@ -111,3 +103,15 @@ design:
 - `src/omrg/transports/cli/web.py`, `src/omrg/transports/cli/web_login_item.py`, `src/omrg/transports/cli/_web_login_item.py`, `src/omrg/transports/cli/_launchagent.py`
 - `src/omrg/transports/api/launch_link.py`
 - `docs/guides/cli-reference.md`, `docs/guides/web-workspace.md`
+
+## Addendum (2026-10-19): real-Mac corrections
+
+The checks on the real Mac, tasks 5.1 to 5.5 of the change, passed on 2026-10-19. The app read the keychain under launchd. Install, open, restart, uninstall and reinstall worked. Task 5.6 (log out and in) is open. The status above stays Proposed. The checks found three corrections. They replace the text of decisions 2, 4 and 7 where it differs.
+
+1. **Decision 2, restart policy.** `KeepAlive` with `SuccessfulExit: false` restarts the app after any exit except status 0. Uvicorn 0.54 shuts down cleanly and then re-raises the stop signal, so the process ends by signal. launchd then starts the app again. A stop signal always restarts the app, and only `uninstall` stops it. A later Uvicorn that exits with status 0 would stay stopped. The `kickstart` step of `restart` would then start the app.
+2. **Decision 4, link file.** The server removes the link file in Uvicorn's shutdown step, before the process ends. The file is also removed when a stop signal ends the process.
+3. **Decision 7, restart.** `restart` sends `SIGTERM` with `launchctl kill` and waits up to 15 seconds until the old process has ended. It then waits up to 5 seconds for launchd to start a new process. It runs `launchctl kickstart` (never `-k`) only if none starts. It then waits up to 60 seconds for the app to answer. It exits 0 only when the new app answers. `install` also waits up to 60 seconds for health.
+
+Added consequence: a stop signal always restarts the app.
+
+Added alternative: **wait for health to stop, then kickstart.** Rejected. launchd restarts the app by itself after the signal, so the command waited for a stop that never lasted.
