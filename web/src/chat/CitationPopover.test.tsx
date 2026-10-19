@@ -5,6 +5,7 @@ import type { AnswerResult } from "../api/documents";
 import { documentsServer, json } from "../test/fakeDocumentsServer";
 import { renderWithProviders } from "../test/providers";
 import { AssistantTurn } from "./AssistantTurn";
+import { CitationList } from "./SourcesPanel";
 
 function cite(ordinal: number, chunkIds: string[], source = "/srv/docs/paper.pdf") {
   return {
@@ -36,9 +37,13 @@ function setup(handlers: Record<string, () => unknown> = {}) {
   });
   const onShowChunk = vi.fn();
   renderWithProviders(
-    <ul>
-      <AssistantTurn collection="documents" question="q" saved={RESULT} onShowChunk={onShowChunk} />
-    </ul>,
+    <>
+      <ul>
+        <AssistantTurn collection="documents" question="q" saved={RESULT} onShowChunk={onShowChunk} />
+      </ul>
+      {/* The chips live in the chat's Citations tab, not under the answer. */}
+      <CitationList citations={RESULT.citations} evidence={RESULT.evidence} collection="documents" onShowChunk={onShowChunk} />
+    </>,
     { fetchImpl: server.fetchImpl },
   );
   return { server, onShowChunk, user: userEvent.setup() };

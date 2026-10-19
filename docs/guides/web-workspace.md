@@ -520,17 +520,18 @@ Chat stores every finished answer in the workspace database, so a reload shows t
 2. Chat skips an answer with an error status. A Retry that works is saved.
 3. Choose New chat to start an empty chat. The old chat stays in the history list.
 4. On a screen 1024 px wide or more, the history list sits at the left of the transcript. On a narrow screen, choose History to open it.
+5. On a screen 1024 px wide or more, the history list and the knowledge base list each sit in a card. Choose the chevron on a card to hide it. A narrow strip with a show button stays in its place, and the chat grows into the free room. The cards show again after you reload the page, and they are always shown on a narrower screen.
 
 Group chats in folders. A folder holds chats and no other folder.
 
 1. Choose New folder, type a name and press Enter.
 2. Drag a chat onto a folder to move it. Drag it onto No folder to take it out.
-3. Open Move to on a chat to do the same move with the keyboard or by touch.
+3. Right-click a chat, or choose the more button (three dots) on it, then choose Move to a folder. A side menu lists No folder and each folder, with a tick on the current one. The more button also works with the keyboard and by touch.
 4. Choose Rename on a folder to change its name.
 
 Delete chats and folders. Each delete asks first and says how many chats it removes. A delete is permanent and cannot be undone.
 
-1. Choose the bin on a chat to delete one chat.
+1. Right-click a chat, or choose its more button (three dots), then choose Delete. A chat has no bin button, so a stray click cannot delete it.
 2. Choose Select, tick the chats, then choose Delete selected. All the chats go, or none.
 3. Choose the bin on a folder to delete the folder and every chat inside it.
 4. If you delete the open chat, Chat shows a new empty chat.
@@ -541,7 +542,7 @@ Only the browser session of `omrg web` reads, changes or deletes chats. A bearer
 
 On a phone, History opens the list above the transcript: [open list at 390 px](images/web-workspace/chat-history-open-dark-390.png).
 
-Press a citation chip or a `[n]` marker in an answer to open a popover. It shows the evidence text, the lineage of the chunk (source ID, source version, position, page and every chunk ID of a merged citation) and the stored metadata. Choose Open full chunk to read the chunk in the chunk viewer. The index does not record which keys a chunk got from its document, so the popover lists the stored keys without labels. If the source was deleted, the popover keeps the saved evidence text and says the stored chunk is not available.
+The right-hand card has three icon tabs: Knowledge base, Citations and Evidence. Citations and Evidence show the newest answer of the open chat, so nothing sits under the answer text. Hover a tab to see its name. Press a citation chip in the Citations tab, or a `[n]` marker in an answer, to open a popover. It shows the evidence text, the lineage of the chunk (source ID, source version, position, page and every chunk ID of a merged citation) and the stored metadata. Choose Open full chunk to read the chunk in the chunk viewer. The index does not record which keys a chunk got from its document, so the popover lists the stored keys without labels. If the source was deleted, the popover keeps the saved evidence text and says the stored chunk is not available.
 
 ### Studio canvas layout
 

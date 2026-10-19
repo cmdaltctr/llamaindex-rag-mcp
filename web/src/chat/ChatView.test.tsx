@@ -52,6 +52,11 @@ async function ask(user: ReturnType<typeof userEvent.setup>, question = "What is
   await user.click(screen.getByRole("button", { name: "Send" }));
 }
 
+/** Opens a tab of the right-hand card. */
+async function openTab(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(await screen.findByRole("tab", { name }));
+}
+
 function transcript() {
   return screen.getByRole("list", { name: "Transcript" });
 }
@@ -63,7 +68,7 @@ describe("layout and routes", () => {
     expect(screen.getByText(/each question answers from the knowledge base on its own/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New chat" })).toBeInTheDocument();
     const panel = screen.getByRole("list", { name: "Knowledge bases" });
-    const chips = within(panel).getAllByRole("button");
+    const chips = within(panel).getAllByRole("button").filter((button) => button.hasAttribute("aria-pressed"));
     expect(chips[0]).toHaveTextContent("documents");
     expect(chips[0]).toHaveTextContent("3 documents, 12 chunks");
     expect(chips[0]).toHaveAttribute("aria-pressed", "true");
@@ -162,19 +167,17 @@ describe("turns", () => {
     expect(screen.getByRole("button", { name: "Send" })).toBeEnabled();
   });
 
-  it("shows status as text, citation chips and a collapsible evidence section", async () => {
+  it("shows status as text under the answer, and the citation chips and evidence in the panel tabs", async () => {
     const { user } = setup({ "POST /v1/collections/documents/answer": () => answer({ verified: true }) });
     await ask(user);
     const turn = (await within(transcript()).findByText(/Lineage is kept/)).closest("li") as HTMLElement;
     expect(within(turn).getByText("Cited and verified")).toHaveAttribute("data-slot", "badge");
-    const chips = within(turn).getByRole("list", { name: "Citations" });
+    expect(within(turn).queryByRole("list", { name: "Citations" })).not.toBeInTheDocument();
+    await openTab(user, "Citations");
+    const chips = await screen.findByRole("list", { name: "Citations" });
     expect(within(chips).getAllByRole("button")).toHaveLength(2);
-    const toggle = within(turn).getByRole("button", { name: /Evidence/ });
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(within(turn).queryByText("Evidence one")).not.toBeInTheDocument();
-    await user.click(toggle);
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    const rows = within(within(turn).getByRole("list", { name: "Evidence supplied to the model" })).getAllByRole("listitem");
+    await openTab(user, "Evidence");
+    const rows = within(await screen.findByRole("list", { name: "Evidence supplied to the model" })).getAllByRole("listitem");
     expect(rows).toHaveLength(2);
     expect(rows[1]).toHaveTextContent("Evidence two");
     expect(rows[1]).toHaveTextContent("Reranker sigmoid (reranker_sigmoid_v1)");
@@ -183,6 +186,8 @@ describe("turns", () => {
   it("opens a citation chip in a popover, then the full chunk in the chunk viewer", async () => {
     const { user } = setup();
     await ask(user);
+    await screen.findByText(/Lineage is kept/);
+    await openTab(user, "Citations");
     const chips = await screen.findByRole("list", { name: "Citations" });
     await user.click(within(chips).getByRole("button", { name: /\[1\]/ }));
     expect(await screen.findByText("Evidence one", { selector: "[data-slot='citation-popover-content'] *" })).toBeInTheDocument();
@@ -195,14 +200,17 @@ describe("turns", () => {
   it("opens an evidence row in the chunk viewer", async () => {
     const { user } = setup();
     await ask(user);
-    await user.click(await screen.findByRole("button", { name: /Evidence/ }));
-    await user.click(screen.getByRole("button", { name: "Show chunk for evidence 1" }));
+    await screen.findByText(/Lineage is kept/);
+    await openTab(user, "Evidence");
+    await user.click(await screen.findByRole("button", { name: "Show chunk for evidence 1" }));
     expect(await within(await screen.findByRole("dialog", { name: "Stored chunk" })).findByText("Stored chunk one")).toBeInTheDocument();
   });
 
   it("does not offer a chunk link for a citation without a stored chunk id", async () => {
     const { user } = setup({ "POST /v1/collections/documents/answer": () => answer({ citations: [citation(1, null)], evidence: [] }) });
     await ask(user);
+    await screen.findByText(/Lineage is kept/);
+    await openTab(user, "Citations");
     const chips = await screen.findByRole("list", { name: "Citations" });
     expect(within(chips).queryByRole("button")).not.toBeInTheDocument();
     expect(chips).toHaveTextContent("No stored chunk ID");
@@ -271,7 +279,7 @@ describe("knowledge base panel and New chat", () => {
     await ask(user, "second");
     await waitFor(() => expect(within(transcript()).getAllByText(/Lineage is kept/)).toHaveLength(2));
 
-    await user.click(within(screen.getByRole("list", { name: "Knowledge bases" })).getByRole("button", { name: /notes/ }));
+    await user.click(within(screen.getByRole("list", { name: "Knowledge bases" })).getByRole("button", { name: /^notes/ }));
     expect(window.location.hash).toBe("#/chat/notes");
     expect(JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) ?? "{}").lastCollection).toBe("notes");
     expect(within(transcript()).getAllByText(/Lineage is kept/)).toHaveLength(2);
@@ -301,7 +309,7 @@ describe("knowledge base panel and New chat", () => {
     ];
     startApp("#/chat/documents", documentsServer({ "GET /v1/collections": () => collections }));
     const picker = await screen.findByRole("list", { name: "Knowledge bases" });
-    const buttons = within(picker).getAllByRole("button");
+    const buttons = within(picker).getAllByRole("button").filter((button) => button.hasAttribute("aria-pressed"));
     expect(buttons[0]).toHaveTextContent("Project docs");
     expect(buttons[1]).toHaveTextContent("notes");
     expect(await screen.findByPlaceholderText("Ask documents a question")).toBeInTheDocument();

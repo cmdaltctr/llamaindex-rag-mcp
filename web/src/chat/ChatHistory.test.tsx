@@ -34,7 +34,48 @@ function drag(chat: HTMLElement, target: HTMLElement, id: string) {
   fireEvent.drop(target, { dataTransfer });
 }
 
+const FILED_ONLY: FakeChatSeed = {
+  folders: [{ folder_id: "f1", name: "Work", created_at: "t" }],
+  chats: [{ chat_id: "c2", folder_id: "f1", title: "Filed chat" }],
+};
+
+describe("empty No folder group", () => {
+  it("is hidden when no chat is outside a folder", async () => {
+    setup(FILED_ONLY);
+    await screen.findByText("Filed chat");
+    expect(screen.queryByRole("region", { name: "No folder" })).toBeNull();
+    expect(screen.getByRole("region", { name: "Folder Work" })).toBeInTheDocument();
+  });
+
+  it("shows as a drop target while a filed chat is dragged, and moves the chat out", async () => {
+    const { store } = setup(FILED_ONLY);
+    const row = (await screen.findByText("Filed chat")).closest("li")!;
+    const dataTransfer = { setData: vi.fn(), getData: () => "c2", effectAllowed: "", dropEffect: "" };
+    fireEvent.dragStart(row, { dataTransfer });
+    const target = await screen.findByRole("region", { name: "No folder" });
+    fireEvent.dragOver(target, { dataTransfer });
+    fireEvent.drop(target, { dataTransfer });
+    await waitFor(() => expect(store.chats.get("c2")?.folder_id).toBeNull());
+  });
+
+  it("hides again when the drag ends without a drop", async () => {
+    setup(FILED_ONLY);
+    const row = (await screen.findByText("Filed chat")).closest("li")!;
+    fireEvent.dragStart(row, { dataTransfer: { setData: vi.fn(), getData: () => "c2", effectAllowed: "", dropEffect: "" } });
+    await screen.findByRole("region", { name: "No folder" });
+    fireEvent.dragEnd(row);
+    await waitFor(() => expect(screen.queryByRole("region", { name: "No folder" })).toBeNull());
+  });
+});
+
 describe("history list", () => {
+  it("shows New folder and Select without a History heading", async () => {
+    setup();
+    await screen.findByRole("button", { name: "New folder" });
+    expect(screen.queryByRole("heading", { name: "History" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Select" })).toBeInTheDocument();
+  });
+
   it("groups chats under their folder and the No folder row", async () => {
     setup();
     expect(await within(await screen.findByRole("region", { name: "No folder" })).findByText("Loose chat")).toBeInTheDocument();
@@ -98,20 +139,6 @@ describe("moving chats", () => {
     await waitFor(() => expect(store.chats.get("c2")?.folder_id).toBeNull());
     await waitFor(() => expect(within(group("No folder")).getByText("Filed chat")).toBeInTheDocument());
   });
-
-  it("moves a chat with the Move to menu, without a pointer drag", async () => {
-    const { user, store } = setup();
-    await user.click(await screen.findByRole("combobox", { name: "Move Loose chat to" }));
-    await user.click(await screen.findByRole("option", { name: "Work" }));
-    await waitFor(() => expect(store.chats.get("c1")?.folder_id).toBe("f1"));
-  });
-
-  it("offers No folder in the menu of a filed chat", async () => {
-    const { user, store } = setup();
-    await user.click(await screen.findByRole("combobox", { name: "Move Filed chat to" }));
-    await user.click(await screen.findByRole("option", { name: "No folder" }));
-    await waitFor(() => expect(store.chats.get("c2")?.folder_id).toBeNull());
-  });
 });
 
 
@@ -151,9 +178,10 @@ describe("deleting chats", () => {
     expect(server.find("POST", "/v1/chats/delete")).toHaveLength(0);
   });
 
-  it("deletes one chat from its own button", async () => {
+  it("deletes one chat from its menu", async () => {
     const { user, store } = setup(THREE);
-    await user.click(await screen.findByRole("button", { name: "Delete Two" }));
+    await user.click(await screen.findByRole("button", { name: "More actions for Two" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Delete" }));
     const dialog = await screen.findByRole("dialog", { name: "Delete this chat?" });
     expect(within(dialog).getByText(/removes 1 chat\b/i)).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Delete chat" }));
@@ -163,7 +191,8 @@ describe("deleting chats", () => {
 
   it("tells the view which chats went, so it can leave the open one", async () => {
     const { user, onRemoved } = setup(THREE);
-    await user.click(await screen.findByRole("button", { name: "Delete One" }));
+    await user.click(await screen.findByRole("button", { name: "More actions for One" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Delete" }));
     await user.click(await screen.findByRole("button", { name: "Delete chat" }));
     await waitFor(() => expect(onRemoved).toHaveBeenCalledWith(["c1"]));
   });

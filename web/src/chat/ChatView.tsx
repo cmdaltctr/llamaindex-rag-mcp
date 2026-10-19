@@ -14,12 +14,27 @@ import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import { Button } from "../components/ui/button";
 import { ChatHistory } from "./ChatHistory";
+import { KnowledgePanel } from "./KnowledgePanel";
+import { SidePanel } from "./SidePanel";
 import { useRoute } from "../lib/RouteProvider";
 import { chatReasonSentence } from "../settings/connectionWords";
 import { areaById } from "../lib/views";
 import { AssistantTurn } from "./AssistantTurn";
 import { Composer } from "./Composer";
 import { useChatSession, type Turn } from "./useChatSession";
+import { useLatestAnswer } from "./useLatestAnswer";
+
+/** Wide-screen columns by hidden cards. A hidden card keeps a strip for its show button. */
+function gridColumns(historyHidden: boolean, knowledgeHidden: boolean): string {
+  if (historyHidden) return knowledgeHidden ? "lg:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem]" : "lg:grid-cols-[2.25rem_minmax(0,1fr)_16rem]";
+  return knowledgeHidden ? "lg:grid-cols-[16rem_minmax(0,1fr)_2.25rem]" : "lg:grid-cols-[16rem_minmax(0,1fr)_16rem]";
+}
+
+/** The chat column grows with the room a hidden card gives back. */
+function chatWidth(historyHidden: boolean, knowledgeHidden: boolean): string {
+  if (historyHidden && knowledgeHidden) return "max-w-[80rem]";
+  return historyHidden || knowledgeHidden ? "max-w-[64rem]" : "max-w-[48rem]";
+}
 
 /**
  * `#/chat` and `#/chat/<collection>`: sequential question and answer. The
@@ -31,7 +46,10 @@ export function ChatView() {
   const routeCollection = route.area === "chat" ? route.collection : null;
   const routeChatId = route.area === "chat" ? route.chatId : null;
   const { turns, session, notice, chatId, send, newChat, openChat, onResult } = useChatSession(routeCollection, routeChatId);
+  const { latest, record } = useLatestAnswer(turns, session);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyHidden, setHistoryHidden] = useState(false);
+  const [knowledgeHidden, setKnowledgeHidden] = useState(false);
   const [chunk, setChunk] = useState<{ collection: string; chunkId: string } | null>(null);
   const chatStatus = useQuery(chatSettingsQuery(useApi())).data;
   const unavailable = chatStatus !== undefined && !chatStatus.ready;
@@ -73,18 +91,22 @@ export function ChatView() {
           ) : (
             <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
               <EmptyState icon={MessageCircle} message="Choose a knowledge base to start a conversation." />
-              <CollectionPicker label="Knowledge bases" collections={collections} selected={null} onSelect={select} stacked />
+              <CollectionPicker label="Knowledge bases" collections={collections} selected={null} onSelect={select} stacked showFiles />
             </div>
           )
         }
       >
         {(active, collections) => (
           // The column fills the remaining height so the composer can dock at its bottom.
-          <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-[16rem_minmax(0,1fr)_16rem] lg:grid-rows-[1fr]">
+          <div data-testid="chat-grid" className={`grid flex-1 grid-cols-1 gap-6 lg:grid-rows-[1fr] ${gridColumns(historyHidden, knowledgeHidden)}`}>
             <aside aria-label="Chat history" className={`flex-col self-start lg:order-none lg:flex ${historyOpen ? "order-first flex" : "hidden"}`}>
-              <ChatHistory activeChatId={chatId} onOpen={openFromHistory} onRemoved={(ids) => (chatId !== null && ids.includes(chatId) ? newChat() : undefined)} />
+              <SidePanel side="left" label="chat history" collapsed={historyHidden} onToggle={() => setHistoryHidden(!historyHidden)}>
+                {(hide) => (
+                  <ChatHistory activeChatId={chatId} onOpen={openFromHistory} onRemoved={(ids) => (chatId !== null && ids.includes(chatId) ? newChat() : undefined)} trailing={hide} />
+                )}
+              </SidePanel>
             </aside>
-            <div data-testid="chat-column" className="mx-auto flex w-full max-w-[48rem] flex-1 flex-col gap-4">
+            <div data-testid="chat-column" className={`mx-auto flex w-full flex-1 flex-col gap-4 ${chatWidth(historyHidden, knowledgeHidden)}`}>
               <div className="lg:hidden">
                 <Button variant="outline" size="sm" aria-expanded={historyOpen} onClick={() => setHistoryOpen(!historyOpen)}>
                   <History aria-hidden="true" />
@@ -105,7 +127,10 @@ export function ChatView() {
                     <TurnRows
                       key={`${session}-${turn.id}`}
                       turn={turn}
-                      onResult={(result) => void onResult(turn, result)}
+                      onResult={(result) => {
+                        record(turn, result);
+                        void onResult(turn, result);
+                      }}
                       onShowChunk={(collection, chunkId) => setChunk({ collection, chunkId })}
                     />
                   ))}
@@ -121,8 +146,18 @@ export function ChatView() {
               <Composer collection={active.name} busy={busy} unavailable={unavailable} onSend={send(active.name)} />
             </div>
             <aside aria-label="Knowledge base panel" className="order-first flex flex-col gap-2 self-start lg:order-none">
-              <h2 className="text-subsection-title font-semibold">Knowledge base</h2>
-              <CollectionPicker label="Knowledge bases" collections={collections} selected={active.name} onSelect={select} stacked />
+              <SidePanel side="right" label="knowledge bases" collapsed={knowledgeHidden} onToggle={() => setKnowledgeHidden(!knowledgeHidden)}>
+                {(hide) => (
+                  <KnowledgePanel
+                    collections={collections}
+                    activeName={active.name}
+                    onSelect={select}
+                    latest={latest}
+                    onShowChunk={(collection, chunkId) => setChunk({ collection, chunkId })}
+                    hide={hide}
+                  />
+                )}
+              </SidePanel>
             </aside>
           </div>
         )}
