@@ -79,7 +79,7 @@ The connection test sends `GET {base_url}/models` for `openai_compatible`, with 
 
 ### Where provider values come from
 
-For each address and key, the server uses the first source it finds, highest first: process environment, `.env`, `omrg.jsonc` in the user config folder, a value saved in `omrg web` Settings, a key file `secrets/<provider>.key` (keys only), the default. `GET /v1/connections` reports the source as `env`, `config-file`, `saved`, `keychain`, `key-file`, `default` or `none`, and the top-level `user_config_dir` (with `~` for home).
+For each address and key, the server uses the first source it finds, highest first: process environment, `.env`, `omrg.jsonc` in the user config folder (the Settings page writes this file), a key file `secrets/<provider>.key` (keys only), the default. `GET /v1/connections` reports the source as `env`, `dotenv`, `config-file`, `keychain`, `key-file`, `default` or `none`, and the top-level `user_config_dir` (with `~` for home).
 
 - The environment, `.env` and `omrg.jsonc` lock the field in Settings. The card shows "Set from environment (read-only here)" or "Set from config file (read-only here)".
 - A key file does not lock. The card shows "Set from key file (read-only here). Saving a key in the keychain overrides it."

@@ -216,7 +216,7 @@ The per-file limit is a workspace setting, from 1 to 2048 MiB. The server uses t
  "default_mib": 50, "min_mib": 1, "max_mib": 2048}
 ```
 
-`source` is `launch`, `saved` or `default`. To change the limit, send `PUT /v1/settings/upload-limit` with `{"max_mib": 200}`. To return to the default, send `{"max_mib": null}`. This request needs the browser session.
+`source` is `launch`, `config-file` or `default`. To change the limit, send `PUT /v1/settings/upload-limit` with `{"max_mib": 200}`. To return to the default, send `{"max_mib": null}`. This request needs the browser session.
 
 - The server saves the value first. Then it applies the value to new uploads at once, with no restart.
 - An upload in progress keeps the limit it started with.
@@ -302,7 +302,7 @@ The server can serve MCP at `/mcp`. It is off by default. Turn it on with `PUT /
 | Route | Scope | What it does |
 |---|---|---|
 | `GET /v1/integrations` | `read` | One entry for each installable extra and for Magika. `availability` is `available`, `not-installed` or `unknown` (a probe failed). Each entry has copy-ready `install_command` and `pip_command` values. |
-| `GET /v1/connections` | `read` | `config_dir`, `user_config_dir` (the user config folder, with `~` for home), `keychain` (`available` or `unavailable`) and one entry for each registered LLM provider. Each entry has `fields[]` (`id`, `label`, `kind`, `value` for addresses, `source` (`env`, `config-file`, `saved`, `keychain`, `key-file`, `default` or `none`), `locked`, `lock_reason`, `required` (false for a key the provider can run without), `set`, `last4`, `saved_at`, `state`), `read_only[]`, `roles`, `installed` and `install_hint`. A key is never returned. `last4` is set only when the key has 16 or more characters. |
+| `GET /v1/connections` | `read` | `config_dir`, `user_config_dir` (the user config folder, with `~` for home), `keychain` (`available` or `unavailable`) and one entry for each registered LLM provider. Each entry has `fields[]` (`id`, `label`, `kind`, `value` for addresses, `source` (`env`, `dotenv`, `config-file`, `keychain`, `key-file`, `default` or `none`), `locked`, `lock_reason`, `required` (false for a key the provider can run without), `set`, `last4`, `state`), `read_only[]`, `roles`, `installed` and `install_hint`. A key is never returned. `last4` is set only when the key has 16 or more characters. |
 | `PUT /v1/connections/{provider}` | `manage` | Body `{fields: {<id>: url or null}}`. Saves or clears addresses. Returns 400 for a bad address, 404 for an unknown provider or field, and 409 for a locked field (from the environment, `.env` or `omrg.jsonc`). |
 | `PUT /v1/connections/{provider}/key` | `credentials` | Body `{api_key}`, 8 to 512 printable characters with no spaces. Saves the key to the system keychain. Returns 409 when the key comes from the environment, `.env` or `omrg.jsonc`, or when no keychain exists. A key file does not cause a 409. |
 | `DELETE /v1/connections/{provider}/key` | `credentials` | Removes the key from the system keychain. |

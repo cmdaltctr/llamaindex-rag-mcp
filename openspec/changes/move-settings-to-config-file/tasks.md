@@ -64,7 +64,7 @@
 ## 10. Login item and docs
 
 - [x] 10.1 Update the `omrg web install` plan text to name `omrg.jsonc`, call `~/.omrg/.env` optional, and suggest `omrg config init`; test the dry-run scenario
-- [ ] 10.2 Write ADR-087 "Settings live in omrg.jsonc" and add an ADR-083 addendum that names the replaced rules; update `.env.example`, the root `AGENTS.md` and `src/omrg/AGENTS.md`; verify every `saved` source mention is gone with `grep -rn '"saved"' src web/src docs/guides`
+- [x] 10.2 Write ADR-087 "Settings live in omrg.jsonc" and add an ADR-083 addendum that names the replaced rules; update `.env.example`, the root `AGENTS.md` and `src/omrg/AGENTS.md`; verify every `saved` source mention is gone with `grep -rn '"saved"' src web/src docs/guides`
 
 ## 11. Integration checks
 

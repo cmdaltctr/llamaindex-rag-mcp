@@ -41,7 +41,7 @@ The file `workspace.db` has these tables:
 | `runs` | Status, revision, redacted settings, resource identities, inputs, failure, result reference and times. |
 | `run_events` | Events of each run, with a sequence number for each run. |
 | `plugin_registrations` | Approved external tools and their compatibility status. |
-| `workspace_settings` | Web-server settings: whether MCP over HTTP is on (`mcp_http_enabled`) and the saved port (`web_port`). |
+| `workspace_settings` | Empty. Older builds kept web-server settings here. The first launch of this build copies each row into `omrg.jsonc` and deletes it (ADR-087). The table stays so an older build still opens the file. |
 | `mcp_tokens` | The one MCP token, as a SHA-256 hash with its creation time. The token value is never stored. |
 | `profiles` | User profiles: id, title, description, base profile and the three pipelines (Ingest, Search, Answer) that each profile owns. Deleting a profile sets `archived_at`; the row stays. |
 | `chat_folders` | Folders for stored chats. One level. Deleting a folder deletes its chats. |
