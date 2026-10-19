@@ -436,6 +436,17 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """
     import sys
 
+    from omrg.config import Settings as OmrgSettings
+    from omrg.config import provenance
+
+    # A developer's .env reaches a test two ways, so close both
+    # (tests/unit/test_dotenv_isolation.py): ``omrg.config`` copied it into
+    # os.environ at import, and ``Settings()`` reads ``.env`` from the working
+    # folder each time it is built. Tests that need a .env pass ``_env_file``.
+    for name in provenance.DOTENV_KEYS:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setitem(OmrgSettings.model_config, "env_file", None)
+
     monkeypatch.setenv("VECTOR_STORE", "lancedb")
     monkeypatch.setenv("LANCEDB_URI", str(tmp_path / "lancedb"))
     monkeypatch.setenv("CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)

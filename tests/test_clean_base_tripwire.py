@@ -105,7 +105,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # writer, key references, handover, restart snapshot, configuration route, `omrg config`
 # commands and the file-backed settings routes. Measured with the web extra: 7162 executed
 # against 6663 before (6670 less the 7 optional cases above).
-_BASE_EXECUTED = 7169
+# +2 (2026-10-19, fix/settings-file-test-isolation): a working-folder .env must not leak into
+# tests, one case per leak path (os.environ at import, Settings env_file). No fastapi needed.
+_BASE_EXECUTED = 7171
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
