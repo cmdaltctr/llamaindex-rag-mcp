@@ -278,12 +278,42 @@ def render_plist(plan: LaunchAgentPlan) -> bytes:
     )
 
 
-def write_plist(plan: LaunchAgentPlan, content: bytes, *, overwrite: bool = False) -> Path:
-    """Atomically write the plist, creating parent directories.
+def write_plist_atomic(target: Path, content: bytes, overwrite: bool) -> Path:
+    """Atomically write a plist to *target*, creating parent directories.
 
     Writes to a temporary file in the target directory and renames it
     into place, so a crashed install can never leave a truncated plist
-    that launchd would load at login.
+    that launchd would load at login. The watcher and the web login item
+    share this function.
+
+    Args:
+        target: Destination path.
+        content: Rendered plist bytes.
+        overwrite: Allow replacing an existing plist.
+
+    Returns:
+        The written plist path.
+
+    Raises:
+        ExistingPlistError: When the target exists and *overwrite* is
+            False; the existing file is left untouched.
+    """
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists() and not overwrite:
+        raise ExistingPlistError(target)
+    fd, tmp_name = tempfile.mkstemp(dir=target.parent, prefix=f".{target.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(content)
+        os.replace(tmp_name, target)
+    except BaseException:
+        Path(tmp_name).unlink(missing_ok=True)
+        raise
+    return target
+
+
+def write_plist(plan: LaunchAgentPlan, content: bytes, *, overwrite: bool = False) -> Path:
+    """Atomically write the watcher plist (see :func:`write_plist_atomic`).
 
     Args:
         plan: Carries the destination path.
@@ -297,19 +327,7 @@ def write_plist(plan: LaunchAgentPlan, content: bytes, *, overwrite: bool = Fals
         ExistingPlistError: When the target exists and *overwrite* is
             False; the existing file is left untouched.
     """
-    target = plan.plist_path
-    target.parent.mkdir(parents=True, exist_ok=True)
-    if target.exists() and not overwrite:
-        raise ExistingPlistError(target)
-    fd, tmp_name = tempfile.mkstemp(dir=target.parent, prefix=f".{target.name}.", suffix=".tmp")
-    try:
-        with os.fdopen(fd, "wb") as handle:
-            handle.write(content)
-        os.replace(tmp_name, target)
-    except BaseException:
-        Path(tmp_name).unlink(missing_ok=True)
-        raise
-    return target
+    return write_plist_atomic(plan.plist_path, content, overwrite)
 
 
 def bootstrap_command(uid: int, plist_path: Path) -> list[str]:
@@ -334,6 +352,11 @@ def print_command(uid: int, label: str) -> list[str]:
 def kickstart_command(uid: int, label: str) -> list[str]:
     """Return the argv that immediately starts a loaded label."""
     return ["launchctl", "kickstart", f"gui/{uid}/{label}"]
+
+
+def kill_command(uid: int, label: str, signal: str) -> list[str]:
+    """Return the argv that sends the named *signal* to a loaded label's process."""
+    return ["launchctl", "kill", signal, f"gui/{uid}/{label}"]
 
 
 def run_launchctl(cmd: list[str]) -> subprocess.CompletedProcess:

@@ -62,12 +62,20 @@ def _guide_options() -> set[str]:
 
 
 def test_guide_options_equal_the_web_command_options() -> None:
-    """Every documented option exists, and every real option is documented."""
+    """Every documented option exists, and every visible option is documented.
+
+    ``--login-item`` is hidden on purpose: only the login item runs it.
+    """
     result = runner.invoke(cli_app, ["web", "--help"], env={"COLUMNS": "200", "NO_COLOR": "1"})
     assert result.exit_code == 0, result.output
     in_help = set(_OPTION.findall(result.output)) - {"--help"}
     command = typer.main.get_command(cli_app).commands["web"]  # type: ignore[attr-defined]
-    declared = {name for param in command.params for name in param.opts} - {"--help"}
+    declared = {
+        name
+        for param in command.params
+        if not getattr(param, "hidden", False)
+        for name in param.opts
+    } - {"--help"}
     assert _guide_options() == declared
     assert declared <= in_help
 
