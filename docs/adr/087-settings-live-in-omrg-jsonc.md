@@ -1,7 +1,7 @@
 # ADR-087: Settings Live in omrg.jsonc
 
 - **Date:** 2026-10-19
-- **Status:** Proposed
+- **Status:** Accepted
 - **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 - **Related:** [ADR-083](083-llm-provider-settings-in-the-web-workspace.md) (rules 12 and 13 and part of rule 2 are replaced, see its addendum), [ADR-078](078-upload-limit-as-a-workspace-setting-and-run-artefact-route.md) (the upload limit), [ADR-080](080-profiles-own-pipelines.md) (the web server owns the workspace), [ADR-085](085-web-login-item.md) (the login item), [ADR-086](086-web-power-menu.md) (the restart dialog), [ADR-037](037-architecture-v2-conformance.md) (settings are injected and frozen)
 - **Change:** `openspec/changes/move-settings-to-config-file/` (design D1 to D12)
