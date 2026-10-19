@@ -8,7 +8,9 @@ launch is unchanged.
 
 from __future__ import annotations
 
+import signal
 import stat
+import sys
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -260,3 +262,198 @@ def test_serve_passes_the_access_log_choice_to_uvicorn() -> None:
         assert config.call_args.kwargs["access_log"] is False
         _serve(MagicMock(), MagicMock())
         assert config.call_args.kwargs["access_log"] is True
+
+
+# ── The stop hook ────────────────────────────────────────────────────────
+#
+# Uvicorn re-raises SIGTERM after a graceful stop, and the default action
+# ends the process. Code after ``_serve()`` then never runs, so the link
+# file has to go inside Uvicorn's own shutdown step.
+
+
+def _serve_through_shutdown(**kwargs: Any) -> list[str]:
+    """Run ``_serve`` with a fake ``run`` that only drives ``shutdown``."""
+    import asyncio
+
+    from omrg.transports.cli.web import _serve
+
+    order: list[str] = []
+
+    async def parent_shutdown(self: Any, sockets: Any = None) -> None:
+        order.append("shutdown")
+
+    def run(self: Any, sockets: Any = None) -> None:
+        asyncio.run(self.shutdown(sockets))
+
+    with (
+        patch("uvicorn.Config"),
+        patch("uvicorn.Server.shutdown", parent_shutdown),
+        patch("uvicorn.Server.run", run),
+        patch("omrg.transports.api.security.install_log_redaction"),
+    ):
+        _serve(MagicMock(), MagicMock(), **kwargs)
+    return order
+
+
+def test_on_stop_runs_once() -> None:
+    calls: list[str] = []
+
+    _serve_through_shutdown(on_stop=lambda: calls.append("on_stop"))
+
+    assert calls == ["on_stop"]
+
+
+def test_on_stop_comes_after_the_parent_shutdown() -> None:
+    import asyncio
+
+    from omrg.transports.cli.web import _serve
+
+    order: list[str] = []
+
+    async def parent_shutdown(self: Any, sockets: Any = None) -> None:
+        order.append("shutdown")
+
+    def run(self: Any, sockets: Any = None) -> None:
+        asyncio.run(self.shutdown(sockets))
+
+    with (
+        patch("uvicorn.Config"),
+        patch("uvicorn.Server.shutdown", parent_shutdown),
+        patch("uvicorn.Server.run", run),
+        patch("omrg.transports.api.security.install_log_redaction"),
+    ):
+        _serve(MagicMock(), MagicMock(), on_stop=lambda: order.append("on_stop"))
+
+    assert order == ["shutdown", "on_stop"]
+
+
+def test_serve_without_on_stop_adds_no_hook() -> None:
+    assert _serve_through_shutdown() == ["shutdown"]
+
+
+def test_a_failing_on_stop_does_not_stop_the_shutdown() -> None:
+    def on_stop() -> None:
+        raise OSError("read-only file system")
+
+    # Must not raise out of ``shutdown``.
+    assert _serve_through_shutdown(on_stop=on_stop) == ["shutdown"]
+
+
+_CHILD = """
+import sys
+import types
+from pathlib import Path
+
+from omrg.transports.api.launch_link import write_link_file
+from omrg.transports.cli.web import _bind_socket, _serve
+
+link_file = Path(sys.argv[1])
+port_file = Path(sys.argv[2])
+
+
+async def app(scope, receive, send):
+    if scope["type"] == "lifespan":
+        while True:
+            message = await receive()
+            if message["type"] == "lifespan.startup":
+                await send({"type": "lifespan.startup.complete"})
+            else:
+                await send({"type": "lifespan.shutdown.complete"})
+                return
+    await send({"type": "http.response.start", "status": 200, "headers": []})
+    await send({"type": "http.response.body", "body": b"ok"})
+
+
+app.state = types.SimpleNamespace()
+sock = _bind_socket("127.0.0.1", 0)
+write_link_file(link_file, "http://127.0.0.1/#bootstrap=x")
+port_file.write_text(str(sock.getsockname()[1]), encoding="utf-8")
+_serve(app, sock, on_stop=lambda: link_file.unlink(missing_ok=True))
+# Reached only when the process was not ended by the re-raised signal.
+Path(sys.argv[3]).write_text("returned", encoding="utf-8")
+"""
+
+
+def _wait_for(check: Any, what: str, timeout: float = 8.0) -> Any:
+    import time
+
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        value = check()
+        if value:
+            return value
+        time.sleep(0.05)
+    raise AssertionError(f"Timed out waiting for {what}.")
+
+
+def _answers(port: int) -> bool:
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=1) as reply:
+            return reply.status == 200
+    except OSError:
+        return False
+
+
+def _run_child_and_send_sigterm(tmp_path: Path, script: str) -> tuple[int, Path, Path]:
+    import signal
+    import subprocess
+    import sys
+
+    link_file = tmp_path / LINK_FILE_NAME
+    port_file = tmp_path / "port"
+    returned = tmp_path / "returned"
+    source = tmp_path / "child.py"
+    source.write_text(script, encoding="utf-8")
+    child = subprocess.Popen(
+        [sys.executable, "-I", str(source), str(link_file), str(port_file), str(returned)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        try:
+            port = int(_wait_for(lambda: port_file.exists() and port_file.read_text(), "the port"))
+            _wait_for(lambda: link_file.exists() and _answers(port), "the server to answer")
+        except AssertionError as exc:
+            child.kill()
+            _, err = child.communicate()
+            raise AssertionError(
+                f"{exc} Child stderr: {err.decode(errors='replace')[-800:]}"
+            ) from None
+        child.send_signal(signal.SIGTERM)
+        code = child.wait(timeout=8)
+    finally:
+        if child.poll() is None:
+            child.kill()
+            child.wait()
+        if child.stderr is not None:
+            child.stderr.close()
+    return code, link_file, returned
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="needs POSIX signals")
+def test_sigterm_removes_the_link_file_and_ends_by_signal(tmp_path: Path) -> None:
+    pytest.importorskip("uvicorn")
+
+    code, link_file, returned = _run_child_and_send_sigterm(tmp_path, _CHILD)
+
+    assert not link_file.exists()
+    assert not returned.exists()  # code after _serve() never ran
+    assert code == -signal.SIGTERM
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="needs POSIX signals")
+def test_a_removal_after_serve_returns_is_left_behind_by_sigterm(tmp_path: Path) -> None:
+    """Control: this is the old behaviour, and why the hook sits in shutdown."""
+    pytest.importorskip("uvicorn")
+    old_style = _CHILD.replace(
+        "_serve(app, sock, on_stop=lambda: link_file.unlink(missing_ok=True))",
+        "_serve(app, sock)\nlink_file.unlink(missing_ok=True)",
+    )
+    assert old_style != _CHILD
+
+    code, link_file, _ = _run_child_and_send_sigterm(tmp_path, old_style)
+
+    assert link_file.exists()
+    assert code == -signal.SIGTERM

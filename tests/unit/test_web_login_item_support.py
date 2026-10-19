@@ -59,6 +59,9 @@ class Harness:
         self.health: Callable[[], dict[str, Any] | None] = lambda: None
         #: Overrides whether the agent has a live process (default: it follows health).
         self.alive: Callable[[], bool] | None = None
+        #: Overrides the process id that ``launchctl print`` shows (None: no process).
+        #: Takes precedence over ``alive``.
+        self.pid: Callable[[], int | None] | None = None
         #: Ports the commands asked ``GET /v1/health`` on, in order.
         self.health_ports: list[int] = []
         #: Called after each launchctl command, so a test can change the app state.
@@ -80,12 +83,19 @@ class Harness:
         self.launchctl_calls.append(list(cmd))
         stdout = ""
         if cmd[1] == "print":
+            pid = self._pid()
             stdout = (
-                "\tstate = running\n\tpid = 42\n" if self._alive() else "\tstate = not running\n"
+                "\tstate = not running\n" if pid is None else f"\tstate = running\n\tpid = {pid}\n"
             )
         done = subprocess.CompletedProcess(cmd, self.launchctl_rc.get(cmd[1], 0), stdout, "")
         self.on_launchctl(cmd)
         return done
+
+    def _pid(self) -> int | None:
+        """The process id that launchd reports: from ``pid``, else 42 while ``alive``."""
+        if self.pid is not None:
+            return self.pid()
+        return 42 if self._alive() else None
 
     def _alive(self) -> bool:
         """Whether launchd still has a process; follows health unless a test says otherwise."""

@@ -45,7 +45,7 @@ Plist content:
 |---|---|---|
 | `ProgramArguments` | `[omrg, "web", "--login-item", ...user options]` | Argument list, no shell. |
 | `RunAtLoad` | true | Starts at login and at load. |
-| `KeepAlive` | `{SuccessfulExit: false}` | Restarts after a crash or kill. A clean exit stays stopped. |
+| `KeepAlive` | `{SuccessfulExit: false}` | launchd restarts the app after a crash, a kill and any stop signal. Uvicorn re-raises SIGTERM after its clean shutdown, so launchd sees a death by signal. Only `omrg web uninstall` stops the app for good. |
 | `ThrottleInterval` | 60 | A start that fails at once (port in use, workspace locked) retries once a minute, not once a second. |
 | `EnvironmentVariables.PATH` | `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin` | launchd gives a sparse `PATH`; the app starts `llama-server` and similar tools. |
 | `WorkingDirectory` | `~/.omrg` (absolute; `install` creates it) | Settings read `.env` from the working folder (D7). Without this key launchd uses `/`. |
@@ -65,7 +65,7 @@ The foreground flow prints a one-time link to the terminal. A launchd run has no
 
 1. Writes the link to `<workspace>/launch-link` (mode 0600, created with that mode, replaced atomically).
 2. Replaces the secret with a new one after each sign-in and after the 20-failure lock.
-3. Deletes the file on clean shutdown.
+3. Deletes the file in Uvicorn's shutdown step (a hook on `Server.shutdown`). Uvicorn awaits that step before it re-raises the stop signal. Code after `serve()` returns never runs, because the process then ends by signal.
 
 `omrg web open` first checks `GET /v1/health` on the port in the file. A crash or `SIGKILL` leaves an old file behind, and opening its link would show a dead page. When the app answers, the command runs the macOS `open` command with the link. It prints the address without the secret; `--print` prints the full link for a browser that `open` does not reach, such as an embedded preview. Agents on this Mac capture terminal output, so the secret is not printed by default.
 
@@ -99,9 +99,29 @@ Keys that the user saved in Settings > Providers live in the keychain. A LaunchA
 
 `install` warns, and does not stop, when something already listens on the target port, because the user may be running `omrg web` by hand. The message tells them to stop that process first. `install` does not probe the workspace lock. A held lock shows in the error log, and `status` reports an app that does not answer. A health answer alone does not prove that the login item started, because a hand-run server on the same port also answers `GET /v1/health`. `install` therefore reports success only when the health check answers and the link file names the target port. Only a login-item server writes that file. On a time-out with a health answer but no link, the command says that another process holds the port. `uninstall` asks for confirmation; `launchctl bootout` sends `SIGTERM`, so the app shuts down cleanly.
 
-`restart` does not use `kickstart -k`. The man page does not name the signal it sends, and a forced kill skips the lifespan shutdown: open runs are not drained and the link file stays. `restart` sends `launchctl kill SIGTERM`, waits up to 15 seconds until health stops answering and `launchctl print` shows no process, then runs `launchctl kickstart`. Health alone is not enough: Uvicorn closes its socket first and finishes the shutdown after that. A kickstart without `-k` does nothing while the old process lives, and the old process then exits with status 0, which `KeepAlive` does not restart. The kickstart is needed because a clean exit does not trigger `KeepAlive` (D2).
+`restart` does not use `kickstart -k`. The man page does not name the signal it sends, and a forced kill skips the lifespan shutdown: open runs are not drained and the link file stays. `restart` sends `launchctl kill SIGTERM`. It then waits up to 15 seconds until `launchctl print` shows that the old process id is gone. Health is not the signal to wait for: Uvicorn closes its socket first and finishes the shutdown after that. Health that answers again is not the signal either, because launchd may already have started the new process. Next, `restart` waits up to 5 seconds for launchd to start a new process by itself. It normally does, after one second, because Uvicorn re-raises the signal and launchd treats that as a crash (D2). Only if no new process appears does `restart` run `launchctl kickstart` (without `-k`). Last, it waits up to 60 seconds for health.
 
 `install` and `restart` wait up to 60 seconds for health, because the first start builds the Engine and can load models. On time-out the command exits non-zero, says the app is still not answering, names the error log and `omrg web status`, and leaves the agent installed.
+
+### D9. The navigation foot
+
+The OMMS web app has a small strip of four icon controls at the bottom of its side navigation. OMRG gets the same strip without the language control, because the OMRG interface is in English only. The controls, in order:
+
+1. **Theme button.** One click switches Light and Dark. It writes the same stored preference as the top bar.
+2. **Settings link.** It goes to `#/settings`.
+3. **Power control.** The icon is green while `GET /v1/health` answers and grey when it does not. A small panel shows "Running" or "Not answering", the running version, and the two commands `omrg web restart` and `omrg web open`.
+4. **GitHub link.** It goes to https://github.com/cmdaltctr/llamaindex-rag-mcp and opens in a new tab.
+
+The foot adds no HTTP route. The power control reads `GET /v1/health`, which is public and already returns the version. The existing top-bar theme controls stay.
+
+The power control has no Restart or Stop button, for two reasons:
+
+- Browser sessions live in server memory. A restart from the page would sign the browser out, and the page cannot read the link file to sign back in.
+- Under launchd, a stop signal makes launchd start the app again (D2). A Stop button would not stop it.
+
+Restart and Stop from the page need persistent sessions and a stop route. That is a later change. The panel shows the two commands instead.
+
+The component follows the `omrg-design` skill: its tokens, icon set and collapsed-navigation rules.
 
 ## Risks / Trade-offs
 
@@ -113,6 +133,7 @@ Keys that the user saved in Settings > Providers live in the keychain. A LaunchA
 - **The keychain read under launchd is unproved.** → Task 5.4 checks it with a real saved key. If it fails, D7 changes to say keys must come from `~/.omrg/.env`.
 - **Settings drift between the terminal and the login item.** A hand-run `omrg web` in a checkout reads that checkout's `.env`; the login item reads `~/.omrg/.env`. → `install` names the file it will read, and the guide says which file each mode reads.
 - **Group conversion could change how `omrg web` parses options.** → Task 1.1 is a failing test first, and D1 names the fallback.
+- **Restart relies on launchd restarting after a signal death.** If a later Uvicorn exits with status 0, the kickstart fallback starts the app.
 
 ## Migration Plan
 
@@ -123,3 +144,5 @@ Keys that the user saved in Settings > Providers live in the keychain. A LaunchA
 ## Open Questions
 
 - Should a later change add the Settings toggle and the OMMS-style "newer version available" check? It needs a new HTTP route for install state, so it is a separate plan.
+- Should the duplicate theme button leave the top bar once the navigation foot exists?
+- Should sessions persist across a restart, so that a restart from the page can sign the browser back in?

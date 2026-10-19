@@ -15,6 +15,7 @@ import errno
 import importlib
 import logging
 import socket
+from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -86,10 +87,19 @@ def _bind_socket(host: str, port: int) -> socket.socket:
     return sock
 
 
-def _serve(application: Any, sock: socket.socket, *, access_log: bool = True) -> bool:
+def _serve(
+    application: Any,
+    sock: socket.socket,
+    *,
+    access_log: bool = True,
+    on_stop: Callable[[], None] | None = None,
+) -> bool:
     """Run Uvicorn on *sock* in this process. Returns whether it started.
 
     *access_log* is off for the login item: its log file has no rotation.
+    *on_stop* runs inside Uvicorn's shutdown step, after the normal shutdown.
+    After a SIGTERM stop, Uvicorn re-raises the signal and the default action
+    ends the process, so code placed after this call never runs.
     """
     import uvicorn
 
@@ -124,6 +134,16 @@ def _serve(application: Any, sock: socket.socket, *, access_log: bool = True) ->
             # connection drain can finish and the lifespan shutdown runs.
             request_shutdown(application)
             super().handle_exit(sig, frame)
+
+        async def shutdown(self, sockets: list[socket.socket] | None = None) -> None:
+            await super().shutdown(sockets)
+            if on_stop is None:
+                return
+            try:
+                on_stop()
+            except OSError:
+                # A failed clean-up must not turn a stop into a crash.
+                logging.getLogger(__name__).warning("The stop hook failed.")
 
     server = _Server(config)
     server.run(sockets=[sock])
@@ -359,7 +379,10 @@ def web(
         console.print(policy.launch_url(), markup=False, highlight=False, soft_wrap=True)
         console.print("Press Ctrl+C to stop.")
     # The foreground call keeps its two arguments; only the login item changes it.
-    serve_options = {"access_log": False} if login_item else {}
+    serve_options: dict[str, Any] = {}
+    if isinstance(policy, RearmingAccessPolicy):
+        # The stop hook removes the link file before Uvicorn re-raises SIGTERM.
+        serve_options = {"access_log": False, "on_stop": policy.retire}
     try:
         started = _serve(application, sock, **serve_options)
     finally:

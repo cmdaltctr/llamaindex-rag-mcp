@@ -126,7 +126,8 @@ def test_cli_passes_repeatable_experiment_roots(tmp_path: Path) -> None:
         captured["config"] = config
         return object()
 
-    args = ["web", "--workspace", str(tmp_path / "ws")]
+    # --port 0: a login item on this machine can hold the default port 8765.
+    args = ["web", "--port", "0", "--workspace", str(tmp_path / "ws")]
     for root in roots:
         args += ["--experiment-root", str(root)]
     with (

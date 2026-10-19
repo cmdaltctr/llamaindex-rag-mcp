@@ -173,7 +173,8 @@ def test_web_bypasses_legacy_installer_and_prints_bootstrap_url_to_stderr(
         patch("omrg.transports.cli.compose.ensure_runtime_setup") as setup,
         patch("omrg.transports.cli.web._serve", side_effect=fake_serve),
     ):
-        result = runner.invoke(cli_app, ["web", "--workspace", str(tmp_path / "ws")])
+        # --port 0: a login item on this machine can hold the default port 8765.
+        result = runner.invoke(cli_app, ["web", "--port", "0", "--workspace", str(tmp_path / "ws")])
 
     assert result.exit_code == 0, result.output
     setup.assert_not_called()
@@ -240,6 +241,8 @@ def test_web_passes_allowed_origins_to_the_policy_and_prints_them_first(tmp_path
             cli_app,
             [
                 "web",
+                "--port",
+                "0",
                 "--workspace",
                 str(tmp_path / "ws"),
                 "--allow-origin",

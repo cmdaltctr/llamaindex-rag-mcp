@@ -98,7 +98,8 @@ A login item has no terminal, so it signs you in in a different way:
 
 - **The link file.** The server writes the sign-in link to `<workspace>/launch-link`, as one line. It writes the link to no terminal and no log. `omrg web open` reads the file and opens the link in your browser.
 - **Who can read it.** Only your macOS user can read the file (mode `0600`). Any program that runs as you can read it and sign in, including AI agents on your Mac. This is the same trust level as `workspace.db`, which these programs can already read.
-- **The link renews.** The server writes a new link after each sign-in and after 20 wrong guesses. It removes the file when it stops in a clean way.
+- **The link renews.** The server writes a new link after each sign-in and after 20 wrong guesses. It removes the file when it stops, also after a stop signal.
+- **A stop signal restarts the app.** The login item starts again after a stop signal, because launchd treats it as a crash. Run `omrg web uninstall` to stop it for good.
 - **A restart signs the browser out.** Browser sessions live in memory only. Run `omrg web open` to sign in again.
 - **The access log is off.** The log files of the login item have no rotation, so the server writes only start-up and error lines.
 - **Settings come from `~/.omrg/.env`.** The login item runs in `~/.omrg` and reads the `.env` file in that folder. A hand-run `omrg web` reads the `.env` file of the folder where you run it. Shell variables do not reach the login item. Copy your settings to `~/.omrg/.env` yourself. The install command never copies or reads a `.env` file.
@@ -448,6 +449,17 @@ The screenshots show a local server with small Markdown sources. The run output 
 ![Studio canvas of a profile](images/web-workspace/studio-canvas-light-1280.png)
 
 On a phone, the areas use one column. Two examples at 390 px: [Home](images/web-workspace/home-light-390.png) and the [Studio canvas](images/web-workspace/studio-canvas-light-390.png).
+
+### Navigation foot
+
+The side navigation ends with four icon buttons. In the collapsed navigation they stack in one column. On a narrow screen they sit in one row under the area icons.
+
+1. **Theme.** One click switches between Light and Dark. It saves the same choice as the top bar and the Settings select.
+2. **Settings.** It opens the Settings view.
+3. **Power.** The icon is green while the server answers `GET /v1/health`. It is grey when the server does not answer. The panel states "Running" with the version, or "Not answering". It also shows the commands `omrg web restart` and `omrg web open`, each with a copy button.
+4. **GitHub.** It opens the OMRG repository in a new tab.
+
+Restart and Stop are not on the page. A restart ends your browser session, because sessions live in server memory. Under the login item, a stop signal makes launchd start the server again. Run `omrg web restart` or `omrg web open` in a terminal instead.
 
 ### Profiles in Studio
 
