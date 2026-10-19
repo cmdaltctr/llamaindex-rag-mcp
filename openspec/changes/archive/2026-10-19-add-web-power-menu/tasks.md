@@ -23,14 +23,14 @@
 - [x] 4.1 Load the `omrg-design` skill and read `web/DESIGN.md`. Verify: no literal colour appears in the new files.
 - [x] 4.2 Test first: component tests for `PowerMenu` cover the spec scenarios: confirmation before any POST, the post-action text for each action, disabled buttons with the reason when `managed` is false, and the 409 line. Verify: the tests fail before the component exists.
 - [x] 4.3 Add the API client calls and types in `web/src/api/`, then `PowerMenu`, and use it in `NavFoot.tsx`. Verify: task 4.2 passes, `npm run lint`, `npm run typecheck` and `npm test` pass in `web/`, and every file stays under 500 lines.
-- [ ] 4.4 Browser check against a scratch workspace (never the real login item or port 8765) at 1280 px and 390 px, with `managed` false and with a fake `managed` true. Verify: the panel fits both widths and the buttons read as disabled in the foreground case.
+- [x] 4.4 Browser check against a scratch workspace (never the real login item or port 8765) at 1280 px and 390 px, with `managed` false and with a fake `managed` true. Verify: the panel fits both widths and the buttons read as disabled in the foreground case.
 
 ## 5. Real-Mac checks (user steps)
 
-- [ ] 5.1 Reinstall the tool with `uv tool install` from the integration worktree and run `omrg web restart`. Verify: `omrg web status` shows the new version.
-- [ ] 5.2 Press Restart in the page. Verify: the app answers again, `omrg web open` signs in, and the time to return is noted. If it is over 15 seconds, add a line about the wait to the dialog.
-- [ ] 5.3 Press Turn off in the page. Verify: `omrg web status` shows the app stopped, the plist still exists, and `omrg web start` brings the app back.
-- [ ] 5.4 Start an ingestion and press Turn off. Verify: the panel shows the 409 line and the app keeps running.
+- [x] 5.1 Reinstall the tool with `uv tool install` from the integration worktree and run `omrg web restart`. Verify: `omrg web status` shows the new version.
+- [x] 5.2 Press Restart in the page. Verify: the app answers again, `omrg web open` signs in, and the time to return is noted. If it is over 15 seconds, add a line about the wait to the dialog. Measured 2026-10-19: back in 2.1 s, so the dialog needs no wait line.
+- [x] 5.3 Press Turn off in the page. Verify: `omrg web status` shows the app stopped, the plist still exists, and `omrg web start` brings the app back.
+- [x] 5.4 Start an ingestion and press Turn off. Verify: the panel shows the 409 line and the app keeps running.
 
 ## 6. Docs and records
 
@@ -39,5 +39,5 @@
 
 ## 7. Gates
 
-- [ ] 7.1 Run `openspec validate --all --strict`, `uv run lint-imports`, ruff, the fast test suite and `./scripts/local_ci.sh`. Verify: all pass.
-- [ ] 7.2 Commit each group with `uv run git commit` and a Conventional Commit message. Verify: the working tree is clean.
+- [x] 7.1 Run `openspec validate --all --strict`, `uv run lint-imports`, ruff, the fast test suite and `./scripts/local_ci.sh`. Verify: all pass.
+- [x] 7.2 Commit each group with `uv run git commit` and a Conventional Commit message. Verify: the working tree is clean.
