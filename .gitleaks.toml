@@ -5,6 +5,6 @@ useDefault = true
 [[allowlists]]
 description = "SHA-256 file-integrity manifests for the experiment recompute evidence are hashes, not secrets"
 paths = [
-  '''repair/evidence/task-4-recompute/hashes-before\.json''',
-  '''repair/evidence/task-4-recompute/hashes-after\.json''',
+  '''openspec/changes/archive/2026-09-13-repair-input-quality-experiment-evidence/evidence/repair/task-4-recompute/hashes-before\.json''',
+  '''openspec/changes/archive/2026-09-13-repair-input-quality-experiment-evidence/evidence/repair/task-4-recompute/hashes-after\.json''',
 ]

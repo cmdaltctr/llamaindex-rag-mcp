@@ -1,0 +1,145 @@
+{
+  "description": "Answer-family parity fixtures (task 3.6). Each case drives omrg.core.answer.answer() with pre-retrieved rows and scripted fake seams. The expected block is captured from the pre-extraction pipeline; timing diagnostics (*_ms) are removed because they are not deterministic. model_calls and judge_calls count every fake seam invocation.",
+  "rows": {
+    "tower": {
+      "chunk_id": "c-tower",
+      "source_id": "tower-doc",
+      "source_version": 1,
+      "source": "tower.txt",
+      "source_chunk_index": 0,
+      "score": 0.91,
+      "score_kind": "dense",
+      "text": "The tower is exactly 100 metres tall."
+    },
+    "bridge": {
+      "chunk_id": "c-bridge",
+      "source_id": "bridge-doc",
+      "source_version": 2,
+      "source": "bridge.md",
+      "source_chunk_index": 3,
+      "score": 0.034,
+      "score_kind": "rrf",
+      "text": "The bridge opened in 1932 and spans the river."
+    },
+    "merged": {
+      "chunk_id": "c-merged-2",
+      "chunk_ids": ["c-merged-1", "c-merged-2", "c-merged-3"],
+      "source_id": "merged-doc",
+      "source_version": 1,
+      "source": "merged.txt",
+      "source_chunk_index": 1,
+      "score": 0.77,
+      "score_kind": "dense",
+      "text": "Merged context about the lantern array and its weekly calibration."
+    }
+  },
+  "cases": [
+    {
+      "name": "no_evidence_with_model",
+      "rows": [],
+      "complete": {"replies": ["unused reply [1]."]}
+    },
+    {
+      "name": "no_evidence_without_model",
+      "rows": [],
+      "complete": null
+    },
+    {
+      "name": "ok_single_citation",
+      "rows": ["tower", "bridge"],
+      "complete": {"replies": ["The tower is 100 metres tall [1]."]}
+    },
+    {
+      "name": "ok_merged_constituents",
+      "rows": ["merged", "tower"],
+      "complete": {"replies": ["The array is calibrated weekly [ 1 ] and the tower is tall [2]."]}
+    },
+    {
+      "name": "citation_dedupe_range_and_malformed",
+      "rows": ["tower", "bridge"],
+      "complete": {"replies": ["Facts [2, 2] and [9] and [1, x] and [ 1 ] and [0]."]}
+    },
+    {
+      "name": "uncited_answer_is_unverified",
+      "rows": ["tower"],
+      "complete": {"replies": ["The tower is tall."]}
+    },
+    {
+      "name": "no_provider_keeps_evidence",
+      "rows": ["tower"],
+      "complete": null
+    },
+    {
+      "name": "generation_failure_attributed",
+      "rows": ["tower", "bridge"],
+      "complete": {"raise": "model endpoint down"}
+    },
+    {
+      "name": "citation_assembly_failure_attributed_to_generation",
+      "rows": ["tower"],
+      "complete": {"replies": ["A substantive answer citing [12345678901] deeply."]}
+    },
+    {
+      "name": "disabled_master_switch",
+      "rows": ["tower"],
+      "answer_block": {"enabled": false},
+      "complete": {"replies": ["never [1]."]}
+    },
+    {
+      "name": "verification_off_by_default_no_judge_call",
+      "rows": ["tower"],
+      "complete": {"replies": ["The tower is 100 metres tall [1]."]},
+      "judge": {"raise": "judge must not be called"}
+    },
+    {
+      "name": "verification_supported",
+      "rows": ["tower"],
+      "answer_block": {"verify_claims": true},
+      "complete": {"replies": ["The tower is 100 metres tall [1]."]},
+      "judge": {"replies": ["supported"]}
+    },
+    {
+      "name": "verification_unsupported_claim",
+      "rows": ["tower", "bridge"],
+      "answer_block": {"verify_claims": true},
+      "complete": {"replies": ["The tower is 100 metres tall [1]. The bridge opened in 1999 [2]."]},
+      "judge": {"replies": ["supported", "unsupported"]}
+    },
+    {
+      "name": "verification_all_unparseable_is_skipped",
+      "rows": ["tower"],
+      "answer_block": {"verify_claims": true},
+      "complete": {"replies": ["The tower is 100 metres tall [1]."]},
+      "judge": {"replies": ["I cannot decide."]}
+    },
+    {
+      "name": "verification_no_judge_default_reason",
+      "rows": ["tower"],
+      "answer_block": {"verify_claims": true},
+      "complete": {"replies": ["The tower is 100 metres tall [1]."]},
+      "judge": null
+    },
+    {
+      "name": "verification_no_judge_transport_reason",
+      "rows": ["tower"],
+      "answer_block": {"verify_claims": true},
+      "complete": {"replies": ["The tower is 100 metres tall [1]."]},
+      "judge": null,
+      "verify_unavailable_reason": "verification provider unavailable: unknown provider 'nope'"
+    },
+    {
+      "name": "verification_judge_failure_degrades",
+      "rows": ["tower"],
+      "answer_block": {"verify_claims": true},
+      "complete": {"replies": ["The tower is 100 metres tall [1]."]},
+      "judge": {"raise": "judge network down"}
+    },
+    {
+      "name": "verification_skipped_for_uncited_answer",
+      "rows": ["tower"],
+      "answer_block": {"verify_claims": true},
+      "complete": {"replies": ["The tower is tall."]},
+      "judge": {"raise": "judge must not be called"}
+    }
+  ]
+}

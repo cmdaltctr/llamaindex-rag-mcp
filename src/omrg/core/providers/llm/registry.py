@@ -11,6 +11,8 @@ import importlib
 from collections.abc import Callable
 from typing import Any
 
+from .connection import ConnectionDescriptor
+
 _registry: dict[str, str] = {}
 _cache: dict[str, Callable[..., Any]] = {}
 
@@ -32,6 +34,7 @@ def register(name: str, import_path: str) -> None:
 _PROVIDER_EXTRAS: dict[str, str] = {
     "llamacpp": "llamacpp",
     "openrouter": "openrouter",
+    "anthropic": "anthropic",
 }
 
 
@@ -65,6 +68,21 @@ def get(name: str) -> Callable[..., Any]:
     return fn
 
 
+def describe_all() -> dict[str, ConnectionDescriptor]:
+    """Return each registered provider's connection descriptor, in registration order.
+
+    Imports each provider module, which is cheap because modules import
+    LlamaIndex only inside ``build()``. A module without a ``CONNECTION``
+    descriptor has no card and is left out.
+    """
+    described: dict[str, ConnectionDescriptor] = {}
+    for name, import_path in _registry.items():
+        descriptor = getattr(importlib.import_module(import_path.split(":")[0]), "CONNECTION", None)
+        if descriptor is not None:
+            described[name] = descriptor
+    return described
+
+
 def available() -> list[str]:
     """Return the sorted list of registered provider names."""
     return sorted(_registry)
@@ -74,3 +92,5 @@ def available() -> list[str]:
 register("ollama", "omrg.core.providers.llm.ollama:build")
 register("llamacpp", "omrg.core.providers.llm.llamacpp:build")
 register("openrouter", "omrg.core.providers.llm.openrouter:build")
+register("openai_compatible", "omrg.core.providers.llm.openai_compatible:build")
+register("anthropic", "omrg.core.providers.llm.anthropic:build")

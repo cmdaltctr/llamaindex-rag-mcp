@@ -2,7 +2,8 @@
 
 Change the profile bound to a ChromaDB collection (non-destructive).
 Profiles control retrieval behaviour: 'documents' (quality-first) or
-'codebase' (speed-first).
+'codebase' (speed-first). This command binds built-in profiles only; a
+user profile is bound in the web workspace.
 """
 
 from __future__ import annotations
@@ -47,6 +48,13 @@ def set_profile_cmd(
     if profile not in ("documents", "codebase"):
         console.print(
             f"[red]Error:[/red] Invalid profile {profile!r}. Available: documents, codebase."
+        )
+        # A user profile is bound in the web workspace only (design D11): a
+        # delete and a bind must run in one process.
+        console.print(
+            "Bind user profiles in Knowledge Base > Profile, "
+            "or through the MCP endpoint of `omrg web`.",
+            markup=False,
         )
         raise typer.Exit(code=1)
 

@@ -20,7 +20,7 @@ from llama_index.core.schema import NodeRelationship, RelatedNodeInfo, TextNode
 from omrg.core.ingestion import ingest_path_async, pipeline
 from omrg.core.vectordb import get_default_store, set_default_store
 from omrg.core.vectordb.identity import EmbeddingIdentity
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 _COLLECTION = "stage3_legacy"
 _EXPERIMENT_COLLECTION = "stage3_legacy_experiment_only"

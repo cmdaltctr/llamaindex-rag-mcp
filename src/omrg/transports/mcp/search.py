@@ -4,34 +4,27 @@ from __future__ import annotations
 
 import asyncio
 
+from mcp.server.mcpserver import Context
 from mcp.types import ToolAnnotations
 
-from ...core.retrieval import search
-from . import (
-    _error_detail,
-    _error_message,
-    _get_profile_resolver,
-    _get_reranker,
-    _log_tool_error,
-    mcp,
+from .context import mcp_context
+from .errors import error_detail, error_message, log_tool_error
+
+DESCRIPTION = (
+    "Search the indexed documents using semantic similarity. "
+    "Returns the most relevant text chunks with their source file "
+    "and relevance score. Optionally re-score results with a "
+    "cross-encoder reranker for better precision, or filter by "
+    "a minimum similarity threshold. Accepts an optional "
+    "collection name to scope the search and an optional "
+    "metadata_filter to restrict results by metadata fields. "
+    "Adjacent chunks of one document are merged so splitter overlap "
+    "is not returned twice; expand_window adds each chunk's "
+    "neighbours to the merged context when requested."
 )
+ANNOTATIONS = ToolAnnotations(read_only_hint=True, destructive_hint=False)
 
 
-@mcp.tool(
-    description=(
-        "Search the indexed documents using semantic similarity. "
-        "Returns the most relevant text chunks with their source file "
-        "and relevance score. Optionally re-score results with a "
-        "cross-encoder reranker for better precision, or filter by "
-        "a minimum similarity threshold. Accepts an optional "
-        "collection name to scope the search and an optional "
-        "metadata_filter to restrict results by metadata fields. "
-        "Adjacent chunks of one document are merged so splitter overlap "
-        "is not returned twice; expand_window adds each chunk's "
-        "neighbours to the merged context when requested."
-    ),
-    annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False),
-)
 async def search_documents(
     query: str,
     top_k: int | None = None,
@@ -42,6 +35,8 @@ async def search_documents(
     diagnostics: bool = False,
     collection: str = "documents",
     metadata_filter: dict | None = None,
+    *,
+    ctx: Context,
 ) -> list[dict]:
     """Search indexed documents for semantically relevant chunks.
 
@@ -68,50 +63,37 @@ async def search_documents(
         diagnostics: Include core-produced retrieval diagnostics when true.
         collection: Name of the ChromaDB collection to search.
         metadata_filter: ChromaDB-compatible filter for dense and sparse candidates.
+        ctx: Request context (framework-injected; never part of the tool schema).
 
     Returns:
         On success, a list of result dicts. On failure, a single-element
         list with an error dict. The handler never raises.
     """
+    mcp = mcp_context(ctx)
+    engine = mcp.engine
     try:
-        try:
-            effective = _get_profile_resolver().resolve(collection)
-        except ValueError as exc:
-            return [
-                {
-                    "status": "error",
-                    "error_type": "validation",
-                    "message": _error_detail(exc),
-                }
-            ]
-
-        if top_k is None:
-            top_k = effective.top_k
-        if similarity_threshold is None:
-            similarity_threshold = effective.retrieval.similarity_threshold
-        if hybrid is None:
-            hybrid = effective.hybrid_enabled
-        return await asyncio.to_thread(
-            search,
-            query,
-            top_k=top_k,
-            similarity_threshold=similarity_threshold,
-            rerank=rerank,
-            hybrid=hybrid,
-            expand_window=expand_window,
-            collection_name=collection,
-            metadata_filter=metadata_filter,
-            include_diagnostics=diagnostics,
-            reranker=_get_reranker(),
-            effective_settings=effective,
-        )
+        # None values go to the Engine unchanged. It resolves them from the
+        # profile of the collection, or from the graph of a user profile (D14).
+        async with mcp.admit():
+            return await asyncio.to_thread(
+                engine.search,
+                query,
+                top_k=top_k,
+                similarity_threshold=similarity_threshold,
+                rerank=rerank,
+                hybrid=hybrid,
+                expand_window=expand_window,
+                collection_name=collection,
+                metadata_filter=metadata_filter,
+                include_diagnostics=diagnostics,
+            )
     except ValueError as exc:
-        _log_tool_error("search_documents validation", exc)
+        log_tool_error(mcp, "search_documents validation", exc)
         return [
             {
                 "status": "error",
                 "error_type": "validation",
-                "message": _error_detail(exc),
+                "message": error_detail(mcp, exc),
             }
         ]
     except Exception as exc:
@@ -122,11 +104,11 @@ async def search_documents(
             error_type = "retrieval"
         else:
             error_type = "internal"
-        _log_tool_error(f"search_documents {error_type}", exc)
+        log_tool_error(mcp, f"search_documents {error_type}", exc)
         return [
             {
                 "status": "error",
                 "error_type": error_type,
-                "message": _error_message(exc),
+                "message": error_message(mcp, exc),
             }
         ]

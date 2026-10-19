@@ -1,6 +1,49 @@
 # MCP Tools Reference
 
-Eight tools are exposed over the MCP protocol. All parameters are optional except where marked _(required)_.
+Nine tools are exposed over the MCP protocol. All parameters are optional except where marked _(required)_.
+
+## Connect a client
+
+### Stdio
+
+Each client starts its own `omrg` process:
+
+```json
+{ "mcpServers": { "omrg": { "command": "uv", "args": ["run", "omrg"] } } }
+```
+
+### HTTP
+
+`omrg web` can serve the same nine tools at `/mcp`, so a client shares the running server and its Engine. The endpoint is off until you turn it on.
+
+1. Start the server: `omrg web --root ~/papers`.
+2. In the browser, open Settings > MCP. Turn on MCP over HTTP. Create a token. The token is shown once.
+3. Add the server to the client. The URL is the one that Settings shows, for example `http://127.0.0.1:8765/mcp`:
+
+```json
+{
+  "mcpServers": {
+    "omrg": {
+      "type": "http",
+      "url": "http://127.0.0.1:8765/mcp",
+      "headers": { "Authorization": "Bearer omrg_mcp_<token>" }
+    }
+  }
+}
+```
+
+With Claude Code: `claude mcp add --transport http omrg http://127.0.0.1:8765/mcp --header "Authorization: Bearer omrg_mcp_<token>"`.
+
+Rules for HTTP:
+
+- A switched-off endpoint answers 404. A foreign `Origin` gets 403. An origin approved with `omrg web --allow-origin` is not foreign. A missing, wrong or revoked token gets 401. The checks run in that order.
+- Rotating the token ends access for the old token at the next request. Update each client.
+- `ingest_documents` and `get_codebase_map` accept only paths inside a directory that you approved with `--root`. A path outside, or a symlink that leads outside, returns `{"status": "error", ...}`. Stdio keeps its earlier behaviour.
+- The token works on `/mcp` only. It never opens a `/v1` route.
+- The server must run. Stop it and the client loses the connection. Use stdio if the client should start OMRG itself.
+- Without the saved port or `--port`, the server listens on 8765. Save a port in Settings > MCP, or start with `--port <n>`.
+
+---
 
 ## `search_documents`
 
@@ -17,6 +60,9 @@ Semantic similarity search over indexed documents.
 | `collection`           | string | `"documents"` | Vector-store collection to search                                                                                                                                                                        |
 | `metadata_filter`      | dict   | `null`        | ChromaDB-compatible `where` clause, e.g. `{"category": "AI"}`. It constrains both dense and sparse candidates before fusion.                                                                             |
 | `diagnostics`          | bool   | `false`       | Include core-produced ranking, policy, threshold, reranker, and sparse-backend diagnostics. Keep disabled for lean responses.                                                                            |
+
+A collection that follows a user profile runs the Search pipeline of that
+profile. See [User profiles](#user-profiles).
 
 When `diagnostics` is `true`, results also preserve every diagnostic field
 produced by core retrieval. The transport does not define or rename these
@@ -159,6 +205,14 @@ With evidence but no model available from either side, the tool returns an
 actionable error. The error names `ANSWER__PROVIDER` and `ANSWER__MODEL`,
 and the client-sampling alternative.
 
+**User-profile collections always use the server model.** When the collection
+follows a user profile (see [User profiles](#user-profiles)), the tool runs the
+Answer pipeline of that profile. A client sampling request cannot enter a
+pipeline run. The tool checks the profile of the collection first and sends no
+sampling request to the client, even when the client offers sampling.
+`completion_source` is `server`. The server needs a configured answer model
+(`ANSWER__PROVIDER` / `ANSWER__MODEL`).
+
 ### Citation verifiability
 
 Citations are built from chunk lineage, never from model-invented
@@ -290,7 +344,20 @@ Generate a compact codebase map showing file types, code communities, document c
 | `path`    | string | `"."`   | Project directory path to map                      |
 | `refresh` | bool   | `false` | If true, rebuild the map regardless of cache state |
 
-Results are cached per-project keyed by git commit hash in `.opencode/codebase-graph.json`. Use `refresh=true` to force a rebuild after code changes.
+Results are cached per project in `<CODEBASE_MAP_CACHE_DIR>/codebase-graph.json` (default `.opencode/`). The tool reuses a cached map only when both of these match:
+
+1. The git commit hash.
+2. The owner context: the map settings and the store's durable data version for the `documents` collection.
+
+Any other record is a miss. The tool rebuilds the map and then replaces the record. It does not delete old records in advance. Use `refresh=true` to force a rebuild.
+
+The tool reads the composed settings and store at its own boundary and passes them to the core. The parameters and the JSON error shape stay the same. If no store is composed, the tool builds the map without document communities.
+
+Reuse is reduced in these cases:
+
+- The store gives no durable data version. This applies to Chroma, to an absent `documents` collection, and to a LanceDB table that has no dataset epoch yet. The tool then rebuilds on every call.
+- The path is not a git repository. The tool then rebuilds on every call.
+- Records written before owner context existed. The first call rebuilds and replaces them.
 
 **Read-only:** This tool does not modify any files or databases.
 
@@ -298,14 +365,16 @@ Results are cached per-project keyed by git commit hash in `.opencode/codebase-g
 
 ## `change_collection_profile`
 
-Switch a collection between the `documents` and `codebase` profiles. This
-changes retrieval behaviour only — no chunks are re-chunked or re-embedded.
+Change the profile of a collection. The built-in profiles are `documents` and
+`codebase`. A ready user profile also works on the MCP endpoint of `omrg web`
+(see [User profiles](#user-profiles)). The change affects retrieval behaviour
+only. No chunk is re-chunked or re-embedded.
 
-| Parameter    | Type   | Default      | Description                                               |
-| ------------ | ------ | ------------ | --------------------------------------------------------- |
-| `collection` | string | _(required)_ | Collection to change                                      |
-| `profile`    | string | _(required)_ | `documents` or `codebase`                                 |
-| `confirm`    | bool   | `false`      | Apply the change. When `false`, returns a preview instead |
+| Parameter    | Type   | Default      | Description                                                                                  |
+| ------------ | ------ | ------------ | -------------------------------------------------------------------------------------------- |
+| `collection` | string | _(required)_ | Collection to change                                                                         |
+| `profile`    | string | _(required)_ | `documents`, `codebase`, or on the web endpoint the `profile_id` of a ready user profile    |
+| `confirm`    | bool   | `false`      | Apply the change. When `false`, returns a preview instead                                    |
 
 Called without `confirm`, it returns a preview describing what would change:
 which levers move, whether each applies immediately or only to future ingests,
@@ -323,6 +392,83 @@ then on. The preview makes that distinction visible before you commit to it.
 
 A collection cannot be set to `hybrid` — that is a server mode, not a
 collection profile. See [Configuration](configuration.md#profiles).
+
+For a user profile, the preview adds a `pipelines` list (the three pipelines
+with their current revision numbers) and `notes`. The tool refuses a profile
+that is not ready. The error carries `not_ready_reasons`, a list of plain
+English lines that say what to fix.
+
+On the web endpoint, the tool also refuses any profile, built-in or user,
+whose embedding model differs from the model that made the collection's
+vectors (ADR-081). The message names both models. The preview and the confirm
+step both run this check.
+
+**The stdio server cannot bind a user profile.** It refuses a user profile id
+with this message and changes nothing:
+
+```text
+Bind user profiles in Knowledge Base > Profile, or through the MCP endpoint of `omrg web`.
+```
+
+---
+
+## `list_profiles`
+
+List the profiles that a collection can use. The tool has no parameters and
+changes nothing (read-only). Built-in profiles come first, then the user
+profiles of the web workspace.
+
+Each item has these fields:
+
+| Field              | Meaning                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| `profile_id`       | The id to pass to `change_collection_profile`                                                  |
+| `kind`             | `builtin` or `user`                                                                           |
+| `title`            | Display name                                                                                  |
+| `description`      | Short description                                                                             |
+| `base_profile`     | `documents` or `codebase`: the built-in profile whose settings apply                          |
+| `slots`            | Pipeline ids for `ingest`, `search` and `answer`. All `null` for a built-in profile            |
+| `ready`            | `true` when the profile can be bound to a collection                                          |
+| `not_ready_reasons`| Plain English lines that say what to fix when `ready` is `false`                              |
+| `used_by`          | Names of the collections whose stored profile tag is this id                                  |
+
+On the web endpoint (`/mcp`) the items are the same as `GET /v1/profiles`.
+On the stdio server the items come from the read-only catalogue of the
+default workspace (`~/.omrg/workspace/workspace.db`). Readiness and `used_by`
+use the same checks as the web server. When that file does not exist, the
+list holds the two built-in profiles.
+
+On error the tool returns a list with one `{"status": "error", "message": "..."}` item.
+
+---
+
+## User profiles
+
+A user profile owns three pipelines (Ingest, Search and Answer). You create and
+edit user profiles in the web workspace (Knowledge Base > Profile). A
+collection that follows a user profile searches, answers and ingests through
+those pipelines.
+
+| Server                | `search_documents`, `answer_documents`                                    | Bind a user profile (`change_collection_profile`)       |
+| --------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `omrg web` at `/mcp`  | Runs the user profile pipelines                                           | Yes, when the profile is ready                          |
+| stdio (`omrg`)        | Runs the user profile pipelines, when the default workspace file exists   | No. The tool refuses with the message above             |
+
+The stdio server opens the default workspace database read-only. It never
+creates, migrates or writes the file. A workspace that `omrg web --workspace`
+placed in another folder is not found.
+
+When the default workspace file does not exist and a collection follows a user
+profile, `search_documents` and `answer_documents` return an error. The error
+names the profile and the path `~/.omrg/workspace/workspace.db`. It tells you
+to start `omrg web` once with the default workspace, or to change the
+collection's profile to `documents` or `codebase`.
+
+Values that you pass to `search_documents` (`top_k`, `similarity_threshold`,
+`rerank`, `metadata_filter`, `expand_window`) replace the matching pipeline
+step settings. Omitted values stay `null`, so the profile decides. For a user
+profile, `hybrid` has no effect: the steps of the Search pipeline decide
+whether sparse retrieval runs.
 
 ---
 

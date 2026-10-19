@@ -168,7 +168,7 @@ def ocr_fingerprint_payload(fingerprint: Any) -> dict[str, Any]:
         payload, so a missing fingerprint can never silently omit the
         field from the index identity.
     """
-    if is_dataclass(fingerprint):
+    if is_dataclass(fingerprint) and not isinstance(fingerprint, type):
         return asdict(fingerprint)
     return dict(_UNAVAILABLE_FINGERPRINT_PAYLOAD)
 

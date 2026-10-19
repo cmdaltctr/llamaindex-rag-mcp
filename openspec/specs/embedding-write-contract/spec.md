@@ -18,8 +18,10 @@ included. Adapter code SHALL invoke the shared validation immediately
 before its backend SDK mutation as the enforcement point. The validator
 SHALL receive the collection name, embedding provider/model diagnostic,
 and stable node or row identifiers. The number of identifiers SHALL
-exactly equal the number of vectors. `write_nodes` SHALL use its composed
-embedding identity; a direct `upsert_precomputed` caller SHALL supply the
+exactly equal the number of vectors. `write_nodes` SHALL use the identity of
+the embedder that produced the batch: the identity that the caller supplies
+for the write, or the store's composed embedding identity when the caller
+supplies none. A direct `upsert_precomputed` caller SHALL supply the
 provider/model diagnostic explicitly. Both `write_nodes`-produced embeddings
 and valid precomputed vectors SHALL pass through the same rule.
 
@@ -58,6 +60,14 @@ and valid precomputed vectors SHALL pass through the same rule.
 - **WHEN** the caller submits vectors
 - **THEN** it MUST supply the embedding provider/model diagnostic explicitly
 - **AND** validation MUST NOT depend on an optional store identity
+
+#### Scenario: A profile write reports the profile's model
+
+- **GIVEN** a store composed with model A
+- **AND** a caller writes nodes embedded with model B and supplies the identity of model B
+- **WHEN** a vector in the batch is malformed
+- **THEN** the diagnostic MUST name model B
+- **AND** the diagnostic MUST NOT name model A
 
 ### Requirement: Empty vectors are rejected
 
@@ -179,3 +189,103 @@ and replacement paths that reach node writes.
 - **WHEN** the contract suite runs against ChromaDB and LanceDB
 - **THEN** each invalid-vector case MUST reject before collection or schema creation, row conversion, SDK mutation, or generation advancement
 - **AND** each valid-vector case MUST persist through the selected adapter
+
+### Requirement: The write stamp follows the embedder used
+
+When a caller supplies an embedding identity to `write_nodes`, the store SHALL check and stamp the collection with that identity, not with its composed identity. The check SHALL complete before any backend mutation. A collection with no stamp SHALL receive the supplied identity on its first write. A stamped collection whose stamp differs SHALL refuse the batch. When the caller supplies none, the store SHALL keep its composed identity.
+
+#### Scenario: A new collection is stamped with the profile's model
+
+- **GIVEN** a store composed with model A
+- **AND** collection `fresh` does not exist
+- **WHEN** a caller writes nodes into `fresh` with the identity of model B
+- **THEN** `fresh` SHALL be stamped with model B
+
+#### Scenario: A stamped collection refuses another model before mutation
+
+- **GIVEN** collection `papers` is stamped with model A
+- **WHEN** a caller writes nodes into `papers` with the identity of model B
+- **THEN** the write SHALL fail before any backend mutation
+- **AND** no row from the batch SHALL persist
+- **AND** the collection generation SHALL NOT advance
+- **AND** the message SHALL name model A and model B
+
+#### Scenario: A write without a supplied identity keeps today's rule
+
+- **GIVEN** a store composed with model A
+- **WHEN** a caller writes nodes without a supplied identity
+- **THEN** the store SHALL check and stamp with model A
+
+#### Scenario: Both backends follow the supplied identity
+
+- **WHEN** the stamp tests run against ChromaDB and LanceDB
+- **THEN** each backend SHALL stamp the supplied identity on a new collection
+- **AND** each backend SHALL refuse a supplied identity that differs from the stamp
+
+### Requirement: The model stamp is checked before embedding and before shape validation
+
+A `VectorStore.write_nodes` call SHALL compare the active embedding identity with the stamp of an existing collection before it embeds any node and before it validates any vector shape. A mismatch SHALL raise the identity-mismatch error that names the stamped model and the active model. The check SHALL be read-only: it SHALL NOT create a collection, stamp a legacy collection, install a dataset epoch or advance the collection generation. A collection with no stamp, a collection that does not exist, and a store with no active identity SHALL pass the check. The write SHALL still stamp a legacy collection after the vectors pass validation, as today. Both ChromaDB and LanceDB SHALL apply this rule.
+
+#### Scenario: A model of another vector size meets a stamped collection
+
+- **GIVEN** a collection is stamped with model A and holds vectors of size 1024
+- **AND** the active model B makes vectors of size 768
+- **WHEN** `write_nodes` receives nodes without vectors
+- **THEN** the write MUST fail with the identity-mismatch error that names A and B
+- **AND** the error MUST NOT be a vector-size error
+- **AND** the embedder MUST NOT be called
+- **AND** no row MUST persist and the collection generation MUST NOT advance
+
+#### Scenario: A model of the same vector size meets a stamped collection
+
+- **GIVEN** a collection is stamped with model A
+- **AND** the active model B makes vectors of the same size
+- **WHEN** `write_nodes` receives nodes
+- **THEN** the write MUST fail with the identity-mismatch error that names A and B
+- **AND** the embedder MUST NOT be called
+
+#### Scenario: A legacy collection without a stamp is still stamped after the write
+
+- **GIVEN** a collection holds vectors and has no stamp
+- **WHEN** `write_nodes` receives valid nodes
+- **THEN** the early check MUST pass without changing the collection
+- **AND** the write MUST stamp the collection with the active identity after validation
+
+#### Scenario: A new collection passes the check
+
+- **GIVEN** the collection does not exist
+- **WHEN** `write_nodes` receives valid nodes
+- **THEN** the early check MUST pass
+- **AND** the early check MUST NOT create the collection
+
+#### Scenario: A matching stamp passes the check
+
+- **GIVEN** a collection is stamped with the active model
+- **WHEN** `write_nodes` receives valid nodes
+- **THEN** the write MUST succeed as it does today
+
+### Requirement: A refused ingest source is not embedded
+
+The ingestion graph SHALL check the target collection's model stamp against the identity of the embedder in use before `embed.chunks` calls the embedder. A mismatch SHALL fail the source with the identity-mismatch error, and no embedding request SHALL be sent for that source. A collection that does not exist or has no stamp SHALL pass the check. The commit step SHALL keep its own check, because a collection can change while a source is embedded.
+
+#### Scenario: A paid provider is not billed for a refused source
+
+- **GIVEN** a collection is stamped with model A
+- **AND** an ingest run embeds with model B
+- **WHEN** the run reaches `embed.chunks` for a source
+- **THEN** the source MUST fail with the identity-mismatch error that names A and B
+- **AND** the embedder MUST NOT receive any text
+
+#### Scenario: A stamp that appears during embedding is still refused at commit
+
+- **GIVEN** a collection has no stamp when `embed.chunks` runs
+- **AND** another run stamps it with a different model before the commit step
+- **WHEN** the commit step writes the source
+- **THEN** the write MUST fail with the identity-mismatch error
+- **AND** no row MUST persist
+
+#### Scenario: A new collection is embedded as usual
+
+- **GIVEN** the target collection does not exist
+- **WHEN** the run reaches `embed.chunks`
+- **THEN** the source MUST be embedded

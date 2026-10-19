@@ -34,6 +34,31 @@ Source file (PDF, DOCX, TXT, ...)
 
 Re-ingesting a file is an **upsert** — old chunks are removed before new ones are written. There is no duplication.
 
+## Ingestion stages as graph operations
+
+`ingest_path_async` and the ingestion graph operations call the same per-source functions. The standard path did not change when the graph operations were added.
+
+| Stage | Shared function | Module | Graph operation |
+|---|---|---|---|
+| Find eligible files | `gather_supported_files`, `iter_source_units` | `src/omrg/core/ingestion/loader.py`, `src/omrg/core/ingestion/sources.py` | `source.discover` |
+| Source identity and reuse check | `prepare_source`, `check_source_state` | `src/omrg/core/ingestion/sources.py` | `source.identify` |
+| Read | `read_document` | `src/omrg/core/ingestion/backends/orchestrator.py` | `read.document` |
+| Normalise reader output | `normalise_backend_read` | `src/omrg/core/ingestion/chunker.py` | `prepare.normalise` |
+| Metadata enrichment | `enrich_documents` | `src/omrg/core/ingestion/chunker.py` | `prepare.enrich` |
+| Split | `split_documents` | `src/omrg/core/ingestion/chunker.py` | `prepare.chunk` |
+| Embed | `prepare_source_embeddings` | `src/omrg/core/ingestion/replacement.py` | `embed.chunks` |
+| Protected commit | `commit_prepared_source` | `src/omrg/core/ingestion/commit.py` | `commit.source` |
+
+The adapters live in `src/omrg/core/ingestion/graph_adapters.py`. The descriptors and the canonical ingestion graph live in `src/omrg/core/ingestion/graph_adapters_catalogue.py`. The canonical `ingestion` template is that graph. It processes one source at a time and writes the same rows as `Engine.ingest` on the fixtures in `tests/fixtures/pipeline_parity/ingestion/`.
+
+A graph cannot write to the vector store directly. `commit.source` keeps the lineage checks, the embedding write contract below, the source write lock and the stale-row clean-up. `src/omrg/core/ingestion/graph_fingerprint.py` adds the graph's index-shaping operations and parameters to the source identity. A changed chunker setting in a graph therefore makes the next explicit ingest rebuild the affected sources. A layout change or a query-only change does not.
+
+These values and behaviours are unchanged:
+
+- `chunking.chunk_size` defaults to `512` and `chunking.chunk_overlap` defaults to `100`.
+- Each file keeps its own failure handling. A failed file does not undo the files committed before it.
+- `ingest_path_async` and `Engine.ingest` return the same dictionary keys as before: `status`, `files_indexed`, `files_skipped_unchanged`, `files_skipped_binary`, `chunks_created`, `chunks_removed`, `collection`, `file_details`, `metadata_degraded`, `timings` and `peak_rss_bytes`, plus `error_type`, `message` and `warnings` when they apply.
+
 ## Embedding write contract
 
 Stage 4 is fail-closed
@@ -48,6 +73,14 @@ mutation. The shared validator rejects a batch that contains:
 - a non-finite element (NaN or infinity)
 - mixed vector dimensions within one batch
 - a dimension that conflicts with the existing collection
+
+The model stamp is checked first. Before it embeds or checks vector shape,
+the store compares the collection's stamped model with the active model. A
+mismatch raises the identity-mismatch error that names both models, whatever
+the vector size. The ingestion graph makes the same read-only check before
+`embed.chunks`, so a refused source is not embedded and a paid provider is not
+billed for it. The commit step repeats the check, because another run can
+stamp the collection while a source is embedded.
 
 A rejected batch writes nothing: no rows, no collection recreation, and no
 generation change. The error names the collection, the embedding
@@ -676,6 +709,54 @@ never silent.
 
 Both backends run their blocking parser work in worker threads, so a
 long parse never blocks the MCP event loop.
+
+## Document chunking strategy contract
+
+The chunker (`core/ingestion/chunker.py`) first routes code and
+configuration files by content type. All other files are documents. Both
+document branches use the same strategy:
+
+- **Structured reads** (cloud parsers that return paragraphs or tables).
+- **Unstructured reads** (the local reader chain, with file-level
+  metadata extraction).
+
+For each document read, the chunker resolves `sentence` through
+`core/chunking/registry.py` and awaits the registered callable. The
+chunker does not call private sentence helpers. A replacement that you
+register under `sentence` therefore runs during ordinary ingestion.
+
+The chunker calls the strategy with these arguments:
+
+```python
+nodes = await strategy(
+    documents,  # LlamaIndex Documents from the document backend
+    str(file_path),  # used for logging only
+    is_markdown,  # `.md` suffix OR reader-declared Markdown
+    chunk_size=...,  # markdown_chunk_size for Markdown, else chunk_size
+    chunk_overlap=...,  # resolved overlap, or the caller override
+    settings=resolved,  # the injected EffectiveSettings
+    markdown_chunking=...,  # resolved Markdown chunking value, else None
+)
+```
+
+The strategy owns splitting. For Markdown, it also owns the shared
+post-processing (heading metadata, heading prepend, small-chunk drop).
+The chunker applies post-processing exactly once, through the strategy.
+A replacement strategy must apply its own Markdown post-processing.
+
+The chunker keeps these responsibilities:
+
+- Reading the file once through the document backend.
+- PDF text normalisation before the strategy call.
+- The `content_type` metadata on every node.
+- File-level metadata attachment (unstructured reads only).
+- The metadata-degradation marker on the returned chunk list.
+
+The chunker accepts an optional keyword-only `store`. The ingestion
+pipeline passes the vector store that it writes to. The chunker forwards
+that store to metadata extraction, so category lookup reads the owning
+store. When `store` is omitted, metadata extraction uses only the seed
+categories.
 
 ## Supported file formats
 

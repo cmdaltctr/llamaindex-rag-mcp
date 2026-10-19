@@ -1,0 +1,1004 @@
+{
+  "no_evidence_with_model": {
+    "result": {
+      "status": "no_evidence",
+      "query": "parity question",
+      "answer": null,
+      "citations": [],
+      "evidence": [],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "diagnostics": {
+        "completion_calls": 0
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "diagnostics"
+    ],
+    "model_calls": 0,
+    "judge_calls": 0
+  },
+  "no_evidence_without_model": {
+    "result": {
+      "status": "no_evidence",
+      "query": "parity question",
+      "answer": null,
+      "citations": [],
+      "evidence": [],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "diagnostics": {
+        "completion_calls": 0
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "diagnostics"
+    ],
+    "model_calls": 0,
+    "judge_calls": 0
+  },
+  "ok_single_citation": {
+    "result": {
+      "status": "ok",
+      "query": "parity question",
+      "answer": "The tower is 100 metres tall [1].",
+      "citations": [
+        {
+          "ordinal": 1,
+          "chunk_id": "c-tower",
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense"
+        }
+      ],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        },
+        {
+          "chunk_id": "c-bridge",
+          "source_id": "bridge-doc",
+          "source_version": 2,
+          "source": "bridge.md",
+          "source_chunk_index": 3,
+          "score": 0.034,
+          "score_kind": "rrf",
+          "ordinal": 2,
+          "chunk_ids": [
+            "c-bridge"
+          ],
+          "text": "The bridge opened in 1932 and spans the river."
+        }
+      ],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "diagnostics": {
+        "completion_calls": 1
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 0
+  },
+  "ok_merged_constituents": {
+    "result": {
+      "status": "ok",
+      "query": "parity question",
+      "answer": "The array is calibrated weekly [ 1 ] and the tower is tall [2].",
+      "citations": [
+        {
+          "ordinal": 1,
+          "chunk_id": "c-merged-2",
+          "chunk_ids": [
+            "c-merged-1",
+            "c-merged-2",
+            "c-merged-3"
+          ],
+          "source_id": "merged-doc",
+          "source_version": 1,
+          "source": "merged.txt",
+          "source_chunk_index": 1,
+          "score": 0.77,
+          "score_kind": "dense"
+        },
+        {
+          "ordinal": 2,
+          "chunk_id": "c-tower",
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense"
+        }
+      ],
+      "evidence": [
+        {
+          "chunk_id": "c-merged-2",
+          "source_id": "merged-doc",
+          "source_version": 1,
+          "source": "merged.txt",
+          "source_chunk_index": 1,
+          "score": 0.77,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-merged-1",
+            "c-merged-2",
+            "c-merged-3"
+          ],
+          "text": "Merged context about the lantern array and its weekly calibration."
+        },
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 2,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        }
+      ],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "diagnostics": {
+        "completion_calls": 1
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 0
+  },
+  "citation_dedupe_range_and_malformed": {
+    "result": {
+      "status": "ok",
+      "query": "parity question",
+      "answer": "Facts [2, 2] and [9] and [1, x] and [ 1 ] and [0].",
+      "citations": [
+        {
+          "ordinal": 1,
+          "chunk_id": "c-tower",
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense"
+        },
+        {
+          "ordinal": 2,
+          "chunk_id": "c-bridge",
+          "chunk_ids": [
+            "c-bridge"
+          ],
+          "source_id": "bridge-doc",
+          "source_version": 2,
+          "source": "bridge.md",
+          "source_chunk_index": 3,
+          "score": 0.034,
+          "score_kind": "rrf"
+        }
+      ],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        },
+        {
+          "chunk_id": "c-bridge",
+          "source_id": "bridge-doc",
+          "source_version": 2,
+          "source": "bridge.md",
+          "source_chunk_index": 3,
+          "score": 0.034,
+          "score_kind": "rrf",
+          "ordinal": 2,
+          "chunk_ids": [
+            "c-bridge"
+          ],
+          "text": "The bridge opened in 1932 and spans the river."
+        }
+      ],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "diagnostics": {
+        "completion_calls": 1
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 0
+  },
+  "uncited_answer_is_unverified": {
+    "result": {
+      "status": "generation_unverified",
+      "query": "parity question",
+      "answer": "The tower is tall.",
+      "citations": [],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        }
+      ],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "diagnostics": {
+        "completion_calls": 1
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 0
+  },
+  "no_provider_keeps_evidence": {
+    "result": {
+      "status": "error",
+      "query": "parity question",
+      "answer": null,
+      "citations": [],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        }
+      ],
+      "failure_stage": null,
+      "error": "No answer model is configured for grounded answering. Set ANSWER__PROVIDER (and ANSWER__MODEL) to configure a server-side model, or use an MCP client that supports sampling so the client's model can complete the answer.",
+      "completion_source": "server",
+      "diagnostics": {
+        "completion_calls": 0
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "diagnostics"
+    ],
+    "model_calls": 0,
+    "judge_calls": 0
+  },
+  "generation_failure_attributed": {
+    "result": {
+      "status": "error",
+      "query": "parity question",
+      "answer": null,
+      "citations": [],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        },
+        {
+          "chunk_id": "c-bridge",
+          "source_id": "bridge-doc",
+          "source_version": 2,
+          "source": "bridge.md",
+          "source_chunk_index": 3,
+          "score": 0.034,
+          "score_kind": "rrf",
+          "ordinal": 2,
+          "chunk_ids": [
+            "c-bridge"
+          ],
+          "text": "The bridge opened in 1932 and spans the river."
+        }
+      ],
+      "failure_stage": "generation",
+      "error": "Generation failed: ConnectionError: model endpoint down",
+      "completion_source": "server",
+      "diagnostics": {
+        "completion_calls": 1
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 0
+  },
+  "citation_assembly_failure_attributed_to_generation": {
+    "result": {
+      "status": "error",
+      "query": "parity question",
+      "answer": null,
+      "citations": [],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        }
+      ],
+      "failure_stage": "generation",
+      "error": "Generation failed: citation assembly rejected the model output: ValueError: Citation ordinal has more than 9 digits (got 11); supplied sources are numbered from 1, so this cannot be a valid citation.",
+      "completion_source": "server",
+      "diagnostics": {
+        "completion_calls": 1
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 0
+  },
+  "disabled_master_switch": {
+    "result": {
+      "status": "error",
+      "query": "parity question",
+      "answer": null,
+      "citations": [],
+      "evidence": [],
+      "failure_stage": null,
+      "error": "Grounded answering is disabled. Set ANSWER__ENABLED=true to enable it, or use search_documents for ranked chunks without a language-model call.",
+      "completion_source": "server"
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source"
+    ],
+    "model_calls": 0,
+    "judge_calls": 0
+  },
+  "verification_off_by_default_no_judge_call": {
+    "result": {
+      "status": "ok",
+      "query": "parity question",
+      "answer": "The tower is 100 metres tall [1].",
+      "citations": [
+        {
+          "ordinal": 1,
+          "chunk_id": "c-tower",
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense"
+        }
+      ],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        }
+      ],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "diagnostics": {
+        "completion_calls": 1
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 0
+  },
+  "verification_supported": {
+    "result": {
+      "status": "ok",
+      "query": "parity question",
+      "answer": "The tower is 100 metres tall [1].",
+      "citations": [
+        {
+          "ordinal": 1,
+          "chunk_id": "c-tower",
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense"
+        }
+      ],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        }
+      ],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "verified": true,
+      "diagnostics": {
+        "completion_calls": 1,
+        "verification_calls": 1
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "verified",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 1
+  },
+  "verification_unsupported_claim": {
+    "result": {
+      "status": "unverified_claims",
+      "query": "parity question",
+      "answer": "The tower is 100 metres tall [1]. The bridge opened in 1999 [2].",
+      "citations": [
+        {
+          "ordinal": 1,
+          "chunk_id": "c-tower",
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense"
+        },
+        {
+          "ordinal": 2,
+          "chunk_id": "c-bridge",
+          "chunk_ids": [
+            "c-bridge"
+          ],
+          "source_id": "bridge-doc",
+          "source_version": 2,
+          "source": "bridge.md",
+          "source_chunk_index": 3,
+          "score": 0.034,
+          "score_kind": "rrf"
+        }
+      ],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        },
+        {
+          "chunk_id": "c-bridge",
+          "source_id": "bridge-doc",
+          "source_version": 2,
+          "source": "bridge.md",
+          "source_chunk_index": 3,
+          "score": 0.034,
+          "score_kind": "rrf",
+          "ordinal": 2,
+          "chunk_ids": [
+            "c-bridge"
+          ],
+          "text": "The bridge opened in 1932 and spans the river."
+        }
+      ],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "unverified_claims": [
+        {
+          "claim": "The bridge opened in 1999.",
+          "verdict": "unsupported",
+          "ordinals": [
+            2
+          ]
+        }
+      ],
+      "diagnostics": {
+        "completion_calls": 1,
+        "verification_calls": 2
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "unverified_claims",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 2
+  },
+  "verification_all_unparseable_is_skipped": {
+    "result": {
+      "status": "ok",
+      "query": "parity question",
+      "answer": "The tower is 100 metres tall [1].",
+      "citations": [
+        {
+          "ordinal": 1,
+          "chunk_id": "c-tower",
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense"
+        }
+      ],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        }
+      ],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "verification_skipped": "unparseable verdict rate 100.0%",
+      "diagnostics": {
+        "completion_calls": 1,
+        "verification_calls": 1
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "verification_skipped",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 1
+  },
+  "verification_no_judge_default_reason": {
+    "result": {
+      "status": "ok",
+      "query": "parity question",
+      "answer": "The tower is 100 metres tall [1].",
+      "citations": [
+        {
+          "ordinal": 1,
+          "chunk_id": "c-tower",
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense"
+        }
+      ],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        }
+      ],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "verification_skipped": "verification provider unavailable (no judge configured)",
+      "diagnostics": {
+        "completion_calls": 1
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "verification_skipped",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 0
+  },
+  "verification_no_judge_transport_reason": {
+    "result": {
+      "status": "ok",
+      "query": "parity question",
+      "answer": "The tower is 100 metres tall [1].",
+      "citations": [
+        {
+          "ordinal": 1,
+          "chunk_id": "c-tower",
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense"
+        }
+      ],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        }
+      ],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "verification_skipped": "verification provider unavailable: unknown provider 'nope'",
+      "diagnostics": {
+        "completion_calls": 1
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "verification_skipped",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 0
+  },
+  "verification_judge_failure_degrades": {
+    "result": {
+      "status": "ok",
+      "query": "parity question",
+      "answer": "The tower is 100 metres tall [1].",
+      "citations": [
+        {
+          "ordinal": 1,
+          "chunk_id": "c-tower",
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense"
+        }
+      ],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        }
+      ],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "verification_skipped": "verification failed: ConnectionError: judge network down",
+      "diagnostics": {
+        "completion_calls": 1,
+        "verification_calls": 0
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "verification_skipped",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 1
+  },
+  "verification_skipped_for_uncited_answer": {
+    "result": {
+      "status": "generation_unverified",
+      "query": "parity question",
+      "answer": "The tower is tall.",
+      "citations": [],
+      "evidence": [
+        {
+          "chunk_id": "c-tower",
+          "source_id": "tower-doc",
+          "source_version": 1,
+          "source": "tower.txt",
+          "source_chunk_index": 0,
+          "score": 0.91,
+          "score_kind": "dense",
+          "ordinal": 1,
+          "chunk_ids": [
+            "c-tower"
+          ],
+          "text": "The tower is exactly 100 metres tall."
+        }
+      ],
+      "failure_stage": null,
+      "error": null,
+      "completion_source": "server",
+      "diagnostics": {
+        "completion_calls": 1
+      }
+    },
+    "result_keys": [
+      "status",
+      "query",
+      "answer",
+      "citations",
+      "evidence",
+      "failure_stage",
+      "error",
+      "completion_source",
+      "diagnostics"
+    ],
+    "model_calls": 1,
+    "judge_calls": 0
+  }
+}

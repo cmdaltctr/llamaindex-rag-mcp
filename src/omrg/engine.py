@@ -18,11 +18,33 @@ import collections
 import logging
 from typing import TYPE_CHECKING, Any
 
+from . import engine_profiles
+from .compose_pipelines import EnginePipelines
+from .core.vectordb.identity import RedactionSecrets
+from .engine_answer import ClientCompletion, build_verifier, select_completion
+from .engine_embedders import EngineEmbedders, definition_collection, embedding_for
+from .engine_lifecycle import (
+    graph_host,
+    install_as_process_default,
+    release_resources,
+    resolve_bound,
+)
+from .engine_providers import EngineProviders
+
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
     from llama_index.core.embeddings import BaseEmbedding
 
+    from .core.answer.pipeline import ResolvedRetrieval
+    from .core.pipelines import (
+        AdmissionSnapshot,
+        CancellationToken,
+        PipelineDefinition,
+        PipelineResult,
+        PreflightReport,
+    )
+    from .core.pipelines.events import EventSink
     from .core.profiles.resolver import ProfileResolver
     from .core.retrieval.reranker import CrossEncoderReranker
     from .core.settings import EffectiveSettings
@@ -33,7 +55,7 @@ logger = logging.getLogger(__name__)
 _QUERY_EMBED_CACHE_MAXSIZE = 128
 
 
-class Engine:
+class Engine(EngineProviders):
     """Owns its providers, store and settings for its lifetime.
 
     Construct via ``Engine.from_environment()`` or directly with
@@ -46,7 +68,10 @@ class Engine:
         - ``answer(question, ...)`` — async, returns the answer result dict
         - ``list_collections()`` — sync, returns list[str]
         - ``delete_collection(name)`` — sync
-        - ``close()`` — sync
+        - ``resolve_settings(collection)`` — sync, returns frozen settings
+        - ``validate_pipeline(definition, ...)`` — sync, no side effects
+        - ``run_pipeline(definition, ...)`` — async, returns PipelineResult
+        - ``close()`` — sync; refused while a graph run is active
     """
 
     def __init__(
@@ -61,6 +86,9 @@ class Engine:
         answer_llm_factory: Callable[[], Any] | None = None,
         verify_llm_factory: Callable[[Any], Any] | None = None,
         ocr_client: Any = None,
+        redaction: RedactionSecrets | None = None,
+        embedders: EngineEmbedders | None = None,
+        snapshot_source: Callable[[], Any] | None = None,
     ) -> None:
         """Own already-composed dependencies; construct nothing.
 
@@ -83,22 +111,37 @@ class Engine:
                 The engine owns its lifecycle: OCR-required PDFs dispatched
                 by this engine's ingests reuse its lazily-started
                 subprocess, and :meth:`close` closes it.
+            redaction: Credential values :meth:`redact` removes from error
+                text. ``None`` means the Engine has nothing to remove.
+            embedders: Embedders by (provider, model) for collections whose
+                profile names a model (ADR-081). ``None`` keeps only
+                *embed_model*.
+            snapshot_source: Optional callable returning the provider
+                settings a generation freezes when it is created. With it,
+                each factory above receives that snapshot as its last
+                argument (the verify factory gets ``(block, snapshot)``).
         """
-        self._effective_settings = effective_settings
         self._store = store
         self._embed_model = embed_model
+        self._embedders = embedders or EngineEmbedders(embed_model)
         self._reranker = reranker
-        self._profile_resolver = profile_resolver
-        self._profile_resolver_factory = profile_resolver_factory
-        self._answer_llm_factory = answer_llm_factory
-        self._verify_llm_factory = verify_llm_factory
+        self._init_providers(
+            effective_settings,
+            resolver=profile_resolver,
+            resolver_factory=profile_resolver_factory,
+            answer_llm_factory=answer_llm_factory,
+            verify_llm_factory=verify_llm_factory,
+            snapshot_source=snapshot_source,
+        )
         self._ocr_client = ocr_client
-        self._answer_llm: Any = None
+        self._redaction = redaction or RedactionSecrets()
         # Engine-owned query embedding cache: keyed by (query, model_name),
         # shared between filtered/unfiltered search within this engine,
         # never between engines, dropped on close().
         self._query_cache: collections.OrderedDict = collections.OrderedDict()
         self._closed = False
+        # Graph state: catalogue (built on first use), run lock, leases.
+        self._pipelines = EnginePipelines()
 
     # ── Construction ───────────────────────────────────────────────
 
@@ -128,7 +171,17 @@ class Engine:
         self._check_open()
         from .core.ingestion.pipeline import ingest_path_async
 
-        effective = self._resolve_settings(collection_name)
+        effective, binding = self._resolve_bound(collection_name)
+        if binding is not None and binding.user:
+            return await engine_profiles.ingest(
+                self,
+                binding,
+                path,
+                collection_name,
+                progress_callback=progress_callback,
+                values={"chunk_size": chunk_size, "chunk_overlap": chunk_overlap},
+            )
+        embed_model, identity = embedding_for(self, collection_name, binding)
         return await ingest_path_async(
             path,
             chunk_size=chunk_size,
@@ -137,7 +190,8 @@ class Engine:
             collection_name=collection_name,
             effective_settings=effective,
             store=self._store,
-            embed_model=self._embed_model,
+            embed_model=embed_model,
+            embedding_identity=identity,
             ocr_client=self._ocr_client,
         )
 
@@ -160,7 +214,26 @@ class Engine:
         self._check_open()
         from .core.retrieval.pipeline import search
 
-        effective = self._resolve_settings(collection_name)
+        effective, binding = self._resolve_bound(collection_name)
+        if binding is not None and binding.user:
+            return engine_profiles.search(
+                self,
+                binding,
+                query,
+                collection_name,
+                include_diagnostics=include_diagnostics,
+                values={
+                    "top_k": top_k,
+                    "similarity_threshold": similarity_threshold,
+                    "rerank": rerank,
+                    "hybrid": hybrid,
+                    "expand_window": expand_window or None,
+                    "metadata_filter": metadata_filter,
+                    "technical_fraction": technical_fraction,
+                    "fetch_k": fetch_k,
+                },
+            )
+        embed_model, identity = embedding_for(self, collection_name, binding)
         return search(
             query,
             top_k=top_k,
@@ -176,7 +249,8 @@ class Engine:
             reranker=self._reranker,
             store=self._store,
             effective_settings=effective,
-            embed_model=self._embed_model,
+            embed_model=embed_model,
+            embedding_identity=identity,
             query_cache=self._query_cache,
         )
 
@@ -192,42 +266,55 @@ class Engine:
         collection_name: str = "documents",
         metadata_filter: dict | None = None,
         include_diagnostics: bool = False,
+        client_completion: ClientCompletion | None = None,
+        rows: list[dict] | ResolvedRetrieval | None = None,
     ) -> dict:
-        """Answer a question from retrieved evidence with verifiable citations."""
+        """Answer a question from retrieved evidence with verifiable citations.
+
+        Args:
+            question: Free-text question.
+            top_k: Maximum chunks used as evidence.
+            similarity_threshold: Minimum evidence score.
+            rerank: Tri-state rerank control.
+            hybrid: Tri-state hybrid retrieval control.
+            expand_window: Neighbours merged into each chunk.
+            collection_name: Collection to answer from.
+            metadata_filter: Store-compatible metadata filter.
+            include_diagnostics: Include retrieval and completion diagnostics.
+            client_completion: A caller's completion that replaces the server
+                answer model and caps the answer rounds. Verification stays
+                server-side. ``None`` keeps the server model.
+            rows: Pre-retrieved rows (or a :class:`ResolvedRetrieval`); the
+                Engine skips retrieval and answers from them.
+        """
         self._check_open()
         from .core.answer.pipeline import answer as core_answer
 
-        effective = self._resolve_settings(collection_name)
-
-        # Lazily build the answer LLM on first use.
-        complete = None
-        if self._answer_llm is None and self._answer_llm_factory is not None:
-            self._answer_llm = self._answer_llm_factory()
-        if self._answer_llm is not None:
-            complete = self._server_seam(self._answer_llm)
-
-        # Build the verify LLM if claim verification is enabled. A
-        # construction failure degrades to verification_skipped with the
-        # redacted provider diagnostic retained (ADR-059); a None result
-        # keeps the plain no-judge reason.
-        verify_complete = None
-        verify_unavailable_reason = None
-        if getattr(effective.answer, "verify_claims", False):
-            if self._verify_llm_factory is not None:
-                try:
-                    verify_llm = self._verify_llm_factory(effective.answer)
-                except Exception as exc:
-                    verify_unavailable_reason = (
-                        "verification provider unavailable: "
-                        f"{type(exc).__name__}: {self._redact_error(exc, effective)}"
-                    )
-                else:
-                    if verify_llm is not None:
-                        verify_complete = self._server_seam(verify_llm)
-                    else:
-                        verify_unavailable_reason = (
-                            "verification provider unavailable (no judge configured)"
-                        )
+        effective, binding = self._resolve_bound(collection_name)
+        if binding is not None and binding.user:
+            engine_profiles.refuse_caller_inputs(binding, client_completion, rows)
+            return await engine_profiles.answer(
+                self,
+                binding,
+                question,
+                collection_name,
+                values={
+                    "top_k": top_k,
+                    "similarity_threshold": similarity_threshold,
+                    "rerank": rerank,
+                    "hybrid": hybrid,
+                    "expand_window": expand_window or None,
+                    "metadata_filter": metadata_filter,
+                    "include_diagnostics": include_diagnostics or None,
+                },
+            )
+        embed_model, identity = embedding_for(self, collection_name, binding)
+        complete, effective, source = select_completion(
+            effective, client_completion, self._get_answer_llm
+        )
+        verify_complete, verify_unavailable_reason = build_verifier(
+            effective, self._verify_llm_factory, self.redact
+        )
 
         return await core_answer(
             question,
@@ -242,11 +329,13 @@ class Engine:
             complete=complete,
             verify_complete=verify_complete,
             verify_unavailable_reason=verify_unavailable_reason,
-            completion_source="server",
+            completion_source=source,
+            rows=rows,
             reranker=self._reranker,
             store=self._store,
             effective_settings=effective,
-            embed_model=self._embed_model,
+            embed_model=embed_model,
+            embedding_identity=identity,
             query_cache=self._query_cache,
         )
 
@@ -263,6 +352,88 @@ class Engine:
         self._check_open()
         self._store.delete_collection(name)
 
+    @property
+    def store(self) -> Any:
+        """The owned vector store (read-only; callers must not close it)."""
+        self._check_open()
+        return self._store
+
+    @property
+    def profile_resolver(self) -> Any:
+        """This Engine's profile resolver, or ``None`` when it has none."""
+        return self._resolver()
+
+    def resolve_settings(self, collection: str | None = None) -> EffectiveSettings:
+        """Return the frozen settings for ``collection`` (default: settings collection).
+
+        Uses the Engine's own profile resolver, else the Engine settings.
+        """
+        self._check_open()
+        return self._resolve_settings(collection or self._effective_settings.collection_name)
+
+    def validate_pipeline(
+        self,
+        definition: PipelineDefinition | Mapping[str, Any],
+        *,
+        inputs: Mapping[str, Any] | None = None,
+        collection: str | None = None,
+    ) -> AdmissionSnapshot | PreflightReport:
+        """Validate a graph against this Engine, with no side effects.
+
+        With ``inputs`` the graph is admitted and the frozen
+        ``AdmissionSnapshot`` is returned (:meth:`run_pipeline` accepts
+        it); without, a draft check returns the ``PreflightReport``.
+        ``collection`` is the default for nodes that name none.
+
+        Raises:
+            PipelineValidationError: With every node, port and input issue.
+        """
+        self._check_open()
+        host = self._graph_host(collection or definition_collection(definition))
+        return self._pipelines.validate(definition, host, inputs=inputs)
+
+    async def run_pipeline(
+        self,
+        definition: PipelineDefinition | Mapping[str, Any] | AdmissionSnapshot,
+        *,
+        inputs: Mapping[str, Any] | None = None,
+        on_event: EventSink | None = None,
+        cancellation: CancellationToken | None = None,
+        run_id: str | None = None,
+    ) -> PipelineResult:
+        """Validate, admit and run a graph on this Engine's borrowed resources.
+
+        Accepts an ``AdmissionSnapshot`` too (omit ``inputs``). Runs on one
+        Engine are serialised. Failures and cancellation give a result.
+        ``run_id`` names the run in its events and result (a caller's job id).
+
+        Raises:
+            PipelineValidationError: Before any side effect.
+            RuntimeError: When the Engine is closed.
+        """
+        self._check_open()
+        host = self._graph_host(definition_collection(definition))
+        return await self._pipelines.run(
+            definition,
+            host,
+            inputs=inputs,
+            on_event=on_event,
+            cancellation=cancellation,
+            run_id=run_id,
+        )
+
+    def describe_operations(self, collection: str | None = None) -> list[dict[str, Any]]:
+        """Return the graph operation catalogue with availability reasons."""
+        self._check_open()
+        return self._pipelines.describe(self._graph_host(collection))
+
+    def redact(self, text: str) -> str:
+        """Remove configured credential values from *text*.
+
+        Transports call this on every error text they return or log.
+        """
+        return self._redaction.redact(text)
+
     def close(self) -> None:
         """Release this engine's resources; reject further use.
 
@@ -276,49 +447,14 @@ class Engine:
         """
         if self._closed:
             return
-        self._closed = True
-        # Drop the engine-owned query embedding cache.
-        self._query_cache.clear()
-        # Evict BM25 cache entries for this store's identity only.
-        from .core.retrieval.sparse import evict_bm25_cache
-
-        evict_bm25_cache(self._store.cache_identity)
-        # Close the owned store; a failure is logged, not raised, so the
-        # reference release below always completes.
-        try:
-            self._store.close()
-        except Exception as exc:
-            logger.warning(
-                "store close() failed during engine close: %s: %s",
-                type(exc).__name__,
-                exc,
-                exc_info=True,
+        if self._pipelines.active_runs:
+            raise RuntimeError(
+                f"Engine has {self._pipelines.active_runs} active graph run(s); cancel them or "
+                "wait for them to finish, then close the Engine again."
             )
-        # Close the owned OCR worker client (task 2.6a): stop accepting
-        # requests, close stdin, bounded graceful wait, then terminate.
-        # A failure is logged, not raised, mirroring the store release.
-        if self._ocr_client is not None:
-            try:
-                self._ocr_client.close()
-            except Exception as exc:
-                logger.warning(
-                    "OCR worker client close() failed during engine close: %s: %s",
-                    type(exc).__name__,
-                    exc,
-                    exc_info=True,
-                )
-        # Release owned references (ADR-061: the embedder reference must
-        # go so a closed engine never pins model resources). Shared
-        # process-wide caches (reranker model cache) are untouched.
-        self._store = None  # type: ignore[assignment]
-        self._embed_model = None  # type: ignore[assignment]
-        self._reranker = None
-        self._profile_resolver = None
-        self._profile_resolver_factory = None
-        self._answer_llm = None
-        self._answer_llm_factory = None
-        self._verify_llm_factory = None
-        self._ocr_client = None
+        self._closed = True
+        self._pipelines.release()
+        release_resources(self)
 
     # ── Internal helpers ───────────────────────────────────────────
 
@@ -331,33 +467,17 @@ class Engine:
         if self._closed:
             raise RuntimeError("Engine is closed; construct a new Engine for further operations.")
 
-    @staticmethod
-    def _redact_error(exc: BaseException, effective: Any) -> str:
-        """Format *exc* without leaking credential material."""
-        from .core.vectordb.identity import redact_cloud_secrets, redact_secret
-
-        detail = str(exc)
-        detail = redact_cloud_secrets(
-            detail,
-            getattr(effective, "chroma_cloud_api_key", "") or "",
-            getattr(effective, "chroma_cloud_tenant", "") or "",
-            getattr(effective, "chroma_cloud_database", "") or "",
-        )
-        return redact_secret(detail, getattr(effective, "openrouter_api_key", "") or "")
+    def _graph_host(self, collection: str | None) -> Any:
+        """Describe this Engine's resources to graph validation and runs."""
+        return graph_host(self, collection)
 
     def _resolve_settings(self, collection_name: str) -> EffectiveSettings:
-        """Resolve effective settings for a collection via the profile resolver.
+        """Resolve a collection's settings; an invalid profile tag raises."""
+        return self._resolve_bound(collection_name)[0]
 
-        The profile resolver is constructed lazily from its factory on
-        first use so ``build_engine`` does not eagerly construct it.
-        Resolution errors propagate: an invalid collection profile tag
-        is a configuration error, not an absent optional capability.
-        """
-        if self._profile_resolver is None and self._profile_resolver_factory is not None:
-            self._profile_resolver = self._profile_resolver_factory()
-        if self._profile_resolver is not None:
-            return self._profile_resolver.resolve(collection_name)
-        return self._effective_settings
+    def _resolve_bound(self, collection_name: str) -> tuple[EffectiveSettings, Any]:
+        """Resolve the settings and the profile binding with one tag read."""
+        return resolve_bound(self, collection_name)
 
     def _install_as_process_default(self) -> None:
         """Install this engine's components as process defaults (legacy transports).
@@ -366,21 +486,4 @@ class Engine:
         itself never installs; this method is the installer over the
         built engine.
         """
-        from llama_index.core import Settings as LlamaIndexSettings
-
-        from .core.settings import set_default_effective_settings
-        from .core.vectordb import set_default_store
-
-        LlamaIndexSettings.embed_model = self._embed_model
-        set_default_store(self._store)
-        set_default_effective_settings(self._effective_settings)
-
-    @staticmethod
-    def _server_seam(llm: Any) -> Any:
-        """Adapt the composition-root LLM to the core async completion seam."""
-
-        async def seam(prompt: str) -> str:
-            completion = await llm.acomplete(prompt)
-            return completion.text
-
-        return seam
+        install_as_process_default(self)

@@ -46,6 +46,11 @@ dependencies = [
     "httpx>=0.27.0",
     # LlamaIndex LLM integration for llamaindex metadata extraction mode
     "llama-index-llms-ollama>=0.9.0",
+    # OpenAI-compatible Chat providers (llama.cpp, OpenRouter and the
+    # OpenAI-compatible provider). Installed by default so these providers
+    # work in Settings without an extra. See ADR-083.
+    "llama-index-embeddings-openai-like>=0.3.0",
+    "llama-index-llms-openai-like>=0.7.0",
     "docx2txt>=0.9",
     # PDF parser fallback (Rust + PDFium, Apache-2.0). See ADR-020.
     "liteparse>=2.0.0",
@@ -109,13 +114,15 @@ community-leiden = [
 azure = [
     "azure-ai-documentintelligence>=1.0.0",
 ]
-llamacpp = [
-    "llama-index-embeddings-openai-like>=0.3.0",
-    "llama-index-llms-openai-like>=0.5.0",
-]
-openrouter = [
-    "llama-index-embeddings-openai-like>=0.3.0",
-    "llama-index-llms-openai-like>=0.5.0",
+# Kept so `uv sync --extra llamacpp` and `--extra openrouter` still work. The
+# packages now come with the base install (ADR-083), so both extras are empty.
+llamacpp = []
+openrouter = []
+# Anthropic Chat provider (opt-in). The LlamaIndex wrapper requires
+# anthropic[bedrock,vertex], which adds about 40 MB of AWS and Google SDKs,
+# so it stays out of the base install. See ADR-083.
+anthropic = [
+    "llama-index-llms-anthropic>=0.11.0",
 ]
 # PyTorch-backed reranker (opt-in). Adds ~200 MB on macOS ARM, more on
 # Linux. Default backend stays ONNX; installing this does not change
@@ -129,6 +136,14 @@ torch = [
     # require huggingface-hub <1.0).
     "transformers>=5.0.0",
 ]
+# Local web workspace (add-local-web-pipeline-workspace, ADR-075).
+# Install: uv sync --extra web / pip install "omrg[web]". Only `omrg web`
+# needs it; imports and other commands work without it.
+web = [
+    "fastapi>=0.143.0",
+    "keyring>=25.6",
+    "uvicorn>=0.52.0",
+]
 
 [project.scripts]
 omrg = "omrg.transports.cli:run_cli"
@@ -139,6 +154,14 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/omrg"]
+# Built web assets are gitignored (`npm run build` in web/ writes them).
+# `artifacts` ships them when present without failing a source checkout
+# that has not built them; scripts/check_web_wheel.py fails release
+# preparation when a wheel lacks them.
+artifacts = ["src/omrg/transports/api/static/**"]
+# Folder guides for agents (AGENTS.md and its CLAUDE.md link) are for source
+# checkouts only; a pattern without a slash matches at any depth.
+exclude = ["AGENTS.md", "CLAUDE.md"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/omrg/config/defaults.yaml" = "omrg/config/defaults.yaml"
@@ -151,6 +174,10 @@ allow-direct-references = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# pytest-xdist: keep each test file on one worker, in file order. Some tests
+# rely on logging state set up by an earlier test in the same file, so the
+# default per-test distribution fails them. Ignored when -n is not given.
+addopts = "--dist loadfile"
 testpaths = ["tests"]
 # Root on sys.path so tests can import experiments._lib.* (add-chroma-cloud-backend).
 pythonpath = ["."]
@@ -225,6 +252,12 @@ source_modules = [
     # logic with an injected LLM seam (design D1) — it must never import a
     # provider or transport module directly, with NO ignore entry.
     "omrg.core.answer",
+    # add-local-web-pipeline-workspace task 1.3: the graph runner and the
+    # workspace services receive providers by injection, with NO ignore entry.
+    "omrg.core.pipelines",
+    "omrg.core.workspace",
+    "omrg.core.plugins",
+    "omrg.core.experiments",
     "omrg.daemon",
 ]
 forbidden_modules = [
@@ -242,6 +275,9 @@ ignore_imports = [
     # previously inline.  The contract forbids business logic from importing
     # concrete provider modules; the registry is the sanctioned indirection.
     "omrg.core.metadata.llamaindex -> omrg.core.providers.llm.registry",
+    # The model check (ADR-081) resolves the embedding registry in the
+    # composition root; the profile service reaches it through compose_embedding.
+    "omrg.compose_embedding -> omrg.core.providers.embeddings.registry",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -258,6 +294,246 @@ forbidden_modules = [
 ]
 unmatched_ignore_imports_alerting = "error"
 
+# ─── Local web pipeline workspace contracts ───────────────────────────
+# Added by add-local-web-pipeline-workspace task 1.3 (design D4, D7, D10).
+# tests/test_pipeline_import_boundaries.py proves that each forbidden
+# module, imported on purpose, breaks its contract. Indirect chains are
+# checked too, so a route through another package is also rejected.
+
+# The graph runner schedules injected adapters. It must not reach a domain
+# implementation, a provider, a transport, a process launcher, the SQLite
+# records adapter, a web framework, or a notebook runtime.
+[[tool.importlinter.contracts]]
+name = "pipeline-runner-independent-of-domains"
+type = "forbidden"
+source_modules = ["omrg.core.pipelines"]
+forbidden_modules = [
+    "omrg.core.ingestion",
+    "omrg.core.retrieval",
+    "omrg.core.answer",
+    "omrg.core.providers",
+    "omrg.transports",
+    "subprocess",
+    "sqlite3",
+    "fastapi",
+    "starlette",
+    "uvicorn",
+    "marimo",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# Graph adapters belong to their owning domain and do not import a sibling
+# domain's implementation (design D4, task 3.8). Composition joins them
+# through the catalogue. Direct imports only: shared lower layers (for
+# example core.vectordb) may still be reached through the domain itself.
+[[tool.importlinter.contracts]]
+name = "retrieval-graph-adapters-stay-in-domain"
+type = "forbidden"
+source_modules = [
+    "omrg.core.retrieval.graph_adapters",
+    "omrg.core.retrieval.graph_adapters_catalogue",
+    "omrg.core.retrieval.graph_adapters_retrieve",
+    "omrg.core.retrieval.graph_adapters_values",
+]
+forbidden_modules = ["omrg.core.ingestion", "omrg.core.answer"]
+allow_indirect_imports = true
+unmatched_ignore_imports_alerting = "error"
+
+[[tool.importlinter.contracts]]
+name = "ingestion-graph-adapters-stay-in-domain"
+type = "forbidden"
+source_modules = [
+    "omrg.core.ingestion.graph_adapters",
+    "omrg.core.ingestion.graph_adapters_catalogue",
+    "omrg.core.ingestion.graph_adapters_values",
+    "omrg.core.ingestion.graph_fingerprint",
+]
+forbidden_modules = ["omrg.core.retrieval", "omrg.core.answer"]
+allow_indirect_imports = true
+unmatched_ignore_imports_alerting = "error"
+
+[[tool.importlinter.contracts]]
+name = "answer-graph-adapters-stay-in-domain"
+type = "forbidden"
+source_modules = ["omrg.core.answer.graph_adapters"]
+forbidden_modules = ["omrg.core.ingestion", "omrg.core.retrieval"]
+allow_indirect_imports = true
+unmatched_ignore_imports_alerting = "error"
+
+# Experiment contexts hold pure registration and admission rules. Engines,
+# stores and processes come from compose_experiments (design D10, task 8.5).
+[[tool.importlinter.contracts]]
+name = "experiment-contexts-stay-pure"
+type = "forbidden"
+source_modules = ["omrg.core.experiments"]
+forbidden_modules = [
+    "omrg.compose",
+    "omrg.engine",
+    "omrg.engine_answer",
+    "omrg.core.ingestion",
+    "omrg.core.retrieval",
+    "omrg.core.answer",
+    "omrg.core.providers",
+    "omrg.core.vectordb",
+    "omrg.core.workspace",
+    "omrg.core.plugins",
+    "omrg.transports",
+    "omrg.integrations",
+    "subprocess",
+    "socket",
+    "signal",
+    "sqlite3",
+    "fastapi",
+    "starlette",
+    "uvicorn",
+    "marimo",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# The plugin host validates manifests and decides launches; it never starts
+# a process or opens a socket itself (design D10, task 8.1). The owned-process
+# adapter is omrg.integrations.process_launcher, injected by composition.
+[[tool.importlinter.contracts]]
+name = "plugin-host-starts-no-processes"
+type = "forbidden"
+source_modules = ["omrg.core.plugins"]
+forbidden_modules = [
+    "omrg.core.ingestion",
+    "omrg.core.retrieval",
+    "omrg.core.answer",
+    "omrg.core.providers",
+    "omrg.transports",
+    "omrg.integrations",
+    "subprocess",
+    "socket",
+    "signal",
+    "sqlite3",
+    "fastapi",
+    "starlette",
+    "uvicorn",
+    "marimo",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# Workspace services receive persistence and process control from the
+# composition root. The standard-library SQLite adapter and the process
+# adapter stay integration leaves (see integrations-are-leaves).
+[[tool.importlinter.contracts]]
+name = "workspace-services-independent-of-domains-and-web"
+type = "forbidden"
+source_modules = ["omrg.core.workspace"]
+forbidden_modules = [
+    "omrg.core.ingestion",
+    "omrg.core.retrieval",
+    "omrg.core.answer",
+    "omrg.transports",
+    "subprocess",
+    "sqlite3",
+    "fastapi",
+    "starlette",
+    "uvicorn",
+    "marimo",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# Every core package, including core.providers and the domain graph
+# adapters, stays below the transports.
+[[tool.importlinter.contracts]]
+name = "core-never-imports-transports"
+type = "forbidden"
+source_modules = ["omrg.core"]
+forbidden_modules = ["omrg.transports"]
+unmatched_ignore_imports_alerting = "error"
+
+# Domain graph adapters live in their owning core packages (design D4).
+# No core module may depend on the optional web extra, a notebook runtime,
+# or SQLite; those belong to transports/api and integrations.
+[[tool.importlinter.contracts]]
+name = "core-free-of-web-notebook-and-sqlite-runtimes"
+type = "forbidden"
+source_modules = ["omrg.core"]
+forbidden_modules = [
+    "fastapi",
+    "starlette",
+    "uvicorn",
+    "marimo",
+    "sqlite3",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# Core sits below the public API and the composition root (spec
+# architecture-boundary-enforcement, "Ingestion no longer reaches upward").
+# The forbidden list names every top-level src/omrg/*.py module except
+# __init__; tests/test_core_import_contracts.py fails when a new top-level
+# module is not added here, and proves a violation breaks the contract.
+[[tool.importlinter.contracts]]
+name = "core-never-imports-top-level-modules"
+type = "forbidden"
+source_modules = ["omrg.core"]
+forbidden_modules = [
+    "omrg.capabilities",
+    "omrg.compose",
+    "omrg.compose_answer",
+    "omrg.compose_connections",
+    "omrg.compose_llamacpp",
+    "omrg.compose_embedding",
+    "omrg.compose_engine",
+    "omrg.compose_experiments",
+    "omrg.compose_pipeline_runs",
+    "omrg.compose_pipelines",
+    "omrg.compose_profile_embedding",
+    "omrg.compose_profile_setup",
+    "omrg.compose_profiles",
+    "omrg.compose_providers",
+    "omrg.compose_settings",
+    "omrg.compose_templates",
+    "omrg.engine",
+    "omrg.engine_answer",
+    "omrg.engine_embedders",
+    "omrg.engine_lifecycle",
+    "omrg.engine_profiles",
+    "omrg.engine_providers",
+    "omrg.pipeline_templates",
+]
+ignore_imports = [
+    # SANCTIONED (pre-dates this change, on v3): when no OCR client is
+    # injected and the OCR fallback is enabled, ingest builds an
+    # operation-owned client through omrg.capabilities.build_ocr_routes.
+    # The import is lazy, inside the function. Only this one edge is
+    # excused; any other core -> top-level import breaks the contract.
+    "omrg.core.ingestion.pipeline -> omrg.capabilities",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# Ingestion and retrieval do not import one another (architecture
+# invariant 2). Direct imports only: both reach shared lower layers
+# (core.vectordb, config and its pure-data settings models), so indirect
+# chains through those layers are expected and not checked here.
+[[tool.importlinter.contracts]]
+name = "ingestion-and-retrieval-stay-independent"
+type = "forbidden"
+source_modules = ["omrg.core.ingestion"]
+forbidden_modules = ["omrg.core.retrieval"]
+allow_indirect_imports = true
+unmatched_ignore_imports_alerting = "error"
+
+[[tool.importlinter.contracts]]
+name = "retrieval-stays-independent-of-ingestion"
+type = "forbidden"
+source_modules = ["omrg.core.retrieval"]
+forbidden_modules = ["omrg.core.ingestion"]
+allow_indirect_imports = true
+unmatched_ignore_imports_alerting = "error"
+
+# Command-line and MCP frameworks belong to transports/ (transport
+# separation). Core never imports them.
+[[tool.importlinter.contracts]]
+name = "core-free-of-transport-frameworks"
+type = "forbidden"
+source_modules = ["omrg.core"]
+forbidden_modules = ["mcp", "typer", "click"]
+unmatched_ignore_imports_alerting = "error"
+
 # ─── Architecture-v2 conformance contracts ────────────────────────────
 # Added by the complete-architecture-v2-conformance change. Each is added
 # before its fix so the failing state is observed first (design.md D7).
@@ -270,8 +546,8 @@ type = "forbidden"
 source_modules = ["omrg"]
 forbidden_modules = ["chromadb"]
 ignore_imports = [
-    "omrg.core.vectordb.chroma -> chromadb",
-    "omrg.core.vectordb.chroma_cloud -> chromadb",
+    "omrg.core.vectordb.chroma.store -> chromadb",
+    "omrg.core.vectordb.chroma.cloud -> chromadb",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -285,9 +561,9 @@ type = "forbidden"
 source_modules = ["omrg"]
 forbidden_modules = ["lancedb"]
 ignore_imports = [
-    "omrg.core.vectordb.lancedb -> lancedb",
-    "omrg.core.vectordb.lance_literal -> lancedb",
-    "omrg.core.vectordb.lance_fts -> lancedb",
+    "omrg.core.vectordb.lancedb.store -> lancedb",
+    "omrg.core.vectordb.lancedb.literal -> lancedb",
+    "omrg.core.vectordb.lancedb.fts -> lancedb",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -416,6 +692,7 @@ dev = [
     "pytest>=9.0.3",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.1.0",
+    "pytest-xdist>=3.8.0",
     # ruff floor raised so pre-commit (which runs ``uv run ruff``) formats
     # identically on the floors and on the locked version. See ADR-042.
     "ruff>=0.16.0",
@@ -476,3 +753,4 @@ exclude = [
 ]
 venvPath = "."
 venv = ".venv"
+pythonVersion = "3.11"

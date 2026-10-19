@@ -16,7 +16,7 @@ import pytest
 from omrg.core.ingestion import ingest_path_async
 from omrg.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock
 from omrg.core.vectordb import get_default_store, set_default_store
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 _COLLECTION = "markdown_chunking_pipeline"
 

@@ -60,7 +60,7 @@ def run_smoke() -> int:
     load_dotenv(PROJECT_ROOT / ".env")
 
     from omrg.config import Settings
-    from omrg.core.vectordb.chroma import build_chroma_vector_store
+    from omrg.core.vectordb.chroma.store import build_chroma_vector_store
 
     settings = Settings()
     if settings.chroma_mode != "cloud":

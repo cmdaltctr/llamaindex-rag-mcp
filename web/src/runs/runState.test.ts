@@ -1,0 +1,159 @@
+import { describe, expect, it } from "vitest";
+import { applyEvent, bypassReason, displayStatus, edgeRunStyle, EMPTY_RUN_VIEW, finishedNodes, foldEvents, reconcileRun, statusLabel, unitCounts } from "./runState";
+import { event } from "./test/fakes";
+
+describe("run state from events", () => {
+  it("reports only what events report: a node without events has no state", () => {
+    const view = foldEvents([event(1, "node_queued", { node_id: "dense" }), event(2, "node_started", { node_id: "dense" })]);
+    expect(view.nodes.dense?.status).toBe("running");
+    expect(view.nodes.rerank).toBeUndefined();
+    expect(view.lastSequence).toBe(2);
+  });
+
+  it("never invents progress figures from progress events", () => {
+    const view = foldEvents([
+      event(1, "node_started", { node_id: "embed" }),
+      event(2, "node_progress", { node_id: "embed", summary: { message: "Embedded batch 2", data: { done: 2, total: 5 } } }),
+    ]);
+    expect(view.nodes.embed?.status).toBe("running");
+    expect(view.nodes.embed?.message).toBe("Embedded batch 2");
+    expect(JSON.stringify(view)).not.toMatch(/percent|%|progress":\s*\d/);
+  });
+
+  it("records a fallback with its reason and a failure with its error", () => {
+    const view = foldEvents([
+      event(1, "node_started", { node_id: "rerank" }),
+      event(2, "node_fallback", { node_id: "rerank", summary: { message: "reranker model unavailable" } }),
+      event(3, "node_completed", { node_id: "rerank", summary: { data: { rows: 4, score_kind: "dense_similarity_v1" } } }),
+      event(4, "node_started", { node_id: "answer" }),
+      event(5, "node_failed", { node_id: "answer", summary: { message: "TimeoutError: model" } }),
+      event(6, "node_skipped", { node_id: "cite", summary: { message: "Upstream node 'answer' did not complete." } }),
+    ]);
+    expect(view.nodes.rerank).toMatchObject({ status: "succeeded", fallback: "reranker model unavailable" });
+    expect(displayStatus(view.nodes.rerank)).toBe("fallback");
+    expect(view.nodes.rerank?.summary).toEqual({ rows: 4, score_kind: "dense_similarity_v1" });
+    expect(view.nodes.answer).toMatchObject({ status: "failed", error: "TimeoutError: model" });
+    expect(view.nodes.cite).toMatchObject({ status: "skipped", message: "Upstream node 'answer' did not complete." });
+  });
+
+  it("ignores an event whose sequence it has already applied", () => {
+    const once = applyEvent(EMPTY_RUN_VIEW, event(1, "node_failed", { node_id: "dense", summary: { message: "boom" } }));
+    const again = applyEvent(once, event(1, "node_completed", { node_id: "dense" }));
+    expect(again).toBe(once);
+  });
+
+  it("counts units from unit events only", () => {
+    const view = foldEvents([
+      event(1, "unit_started", { unit_id: "a.md" }),
+      event(2, "node_started", { node_id: "read", unit_id: "a.md" }),
+      event(3, "unit_completed", { unit_id: "a.md" }),
+      event(4, "unit_started", { unit_id: "b.md" }),
+      event(5, "unit_failed", { unit_id: "b.md" }),
+      event(6, "node_started", { node_id: "read", unit_id: "c.md" }),
+    ]);
+    expect(unitCounts(view)).toEqual({ started: 2, completed: 1, failed: 1, cancelled: 0 });
+  });
+
+  it("collects committed effects and the authoritative status event", () => {
+    const view = foldEvents([
+      event(1, "effect_committed", { node_id: "commit", unit_id: "a.md", summary: { data: { effect: "source:a" } } }),
+      event(2, "effect_committed", { node_id: "commit", summary: { message: "source:b" } }),
+      event(3, "run.status", { summary: { status: "cancelled", wall_time_s: 3.5, failed_node: null } }),
+    ]);
+    expect(view.effects).toEqual(["source:a", "source:b"]);
+    expect(view.runStatus).toBe("cancelled");
+    expect(view.wallTimeS).toBe(3.5);
+  });
+
+  it("labels states in words", () => {
+    expect(statusLabel("succeeded")).toBe("Completed");
+    expect(statusLabel("fallback")).toBe("Fallback");
+    expect(statusLabel(null)).toBe("Not started");
+  });
+});
+
+describe("bypass and pass-through", () => {
+  const off = { reranked: false, reason: "disabled by node parameter", rows: 3 };
+
+  it("shows a node that passed its input through as bypassed, with the reason", () => {
+    const view = foldEvents([event(1, "node_started", { node_id: "rerank" }), event(2, "node_completed", { node_id: "rerank", summary: { data: off } })]);
+    expect(displayStatus(view.nodes.rerank)).toBe("bypassed");
+    expect(bypassReason(view.nodes.rerank)).toBe("disabled by node parameter");
+  });
+
+  it("keeps a node that did its work as completed", () => {
+    const view = foldEvents([event(1, "node_completed", { node_id: "rerank", summary: { data: { reranked: true, rows: 3 } } })]);
+    expect(displayStatus(view.nodes.rerank)).toBe("succeeded");
+    expect(bypassReason(view.nodes.rerank)).toBeNull();
+  });
+
+  it("lets a fallback win over a pass-through", () => {
+    const view = foldEvents([
+      event(1, "node_started", { node_id: "rerank" }),
+      event(2, "node_fallback", { node_id: "rerank", summary: { message: "reranker model unavailable" } }),
+      event(3, "node_completed", { node_id: "rerank", summary: { data: { reranked: false, rows: 3 } } }),
+    ]);
+    expect(displayStatus(view.nodes.rerank)).toBe("fallback");
+  });
+
+  it("takes a core bypass reason from the event message", () => {
+    const view = foldEvents([event(1, "node_bypassed", { node_id: "rerank", summary: { message: "Disabled in the graph.", data: { reason: "disabled in the graph" } } })]);
+    expect(bypassReason(view.nodes.rerank)).toBe("Disabled in the graph.");
+  });
+});
+
+describe("reconcile with the run record", () => {
+  const running = foldEvents([event(4, "run.status", { summary: { status: "running" } })]);
+
+  it("takes the run status from a record that is as new as the events", () => {
+    expect(reconcileRun(running, { status: "cancelling", last_sequence: 4 }).runStatus).toBe("cancelling");
+    expect(reconcileRun(running, { status: "failed", last_sequence: 7 }).runStatus).toBe("failed");
+  });
+
+  it("ignores a record older than the events already applied", () => {
+    expect(reconcileRun(running, { status: "queued", last_sequence: 2 })).toBe(running);
+  });
+});
+
+describe("edge highlighting", () => {
+  it("highlights an edge only while its target node runs", () => {
+    expect(edgeRunStyle("running", false)).toEqual({ animated: true, className: "flow-edge--active" });
+    expect(edgeRunStyle("succeeded", false)).toEqual({ animated: false, className: undefined });
+    expect(edgeRunStyle("queued", false)).toEqual({ animated: false, className: undefined });
+    expect(edgeRunStyle(undefined, false)).toEqual({ animated: false, className: undefined });
+  });
+
+  it("uses a static highlight when motion is reduced", () => {
+    expect(edgeRunStyle("running", true)).toEqual({ animated: false, className: "flow-edge--active" });
+  });
+});
+
+describe("edge into a step that just finished", () => {
+  it("animates in the success style, or shows it still when motion is reduced", () => {
+    expect(edgeRunStyle("succeeded", false, true)).toEqual({ animated: true, className: "flow-edge--done" });
+    expect(edgeRunStyle("succeeded", true, true)).toEqual({ animated: false, className: "flow-edge--done" });
+  });
+
+  it("leaves a running step as it was, and ignores the flag for any other status", () => {
+    expect(edgeRunStyle("running", false, true)).toEqual({ animated: true, className: "flow-edge--active" });
+    expect(edgeRunStyle("failed", false, true)).toEqual({ animated: false, className: undefined });
+    expect(edgeRunStyle("queued", false, true)).toEqual({ animated: false, className: undefined });
+    expect(edgeRunStyle("succeeded", false, false)).toEqual({ animated: false, className: undefined });
+  });
+});
+
+describe("finishedNodes", () => {
+  const state = (status: "queued" | "running" | "succeeded" | "failed") => ({ status, fallback: null, error: null, message: null, summary: null, unitId: null, startedAt: null, endedAt: null });
+
+  it("names a step that went from running to succeeded, and no other", () => {
+    const before = { a: state("running"), b: state("running"), c: state("queued"), d: state("succeeded") };
+    const after = { a: state("succeeded"), b: state("failed"), c: state("succeeded"), d: state("succeeded"), e: state("succeeded") };
+    expect(finishedNodes(before, after)).toEqual(["a"]);
+  });
+
+  it("names nothing when nothing changed", () => {
+    const same = { a: state("running") };
+    expect(finishedNodes(same, same)).toEqual([]);
+  });
+});
+

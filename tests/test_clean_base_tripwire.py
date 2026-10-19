@@ -62,10 +62,88 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # isolation suite (tasks 4.8/4.9) with engine-level profile-isolation
 # cases (2468 -> 2508 executed, and the two new chroma-gated
 # write-contract cases add 2 base skips: 127 -> 129).
-_OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 3313
+# Re-baselined at add-vector-store-label-to-knowledge-base: two registry label
+# cases and three collection-list store cases add 5 executed tests (5142 -> 5147).
+# Re-baselined at add-collection-display-name: the display name round-trip case,
+# 16 route cases and one OpenAPI case add 18 executed tests (5147 -> 5165).
+# Re-baselined at organise-backend-folders (2026-10-16): the folder-layout (11)
+# and folder-guide (41) suites, 9 registry-string and import-detector cases, 3
+# wheel-guide cases, 1 route-scan case and 3 contract-coverage cases for the new
+# packages add 68 executed tests (5165 -> 5233). No test was removed.
+# Re-baselined at unify-profiles-and-pipelines (2026-10-17): the profile store,
+# service, upgrade, resolver, contract, Engine dispatch, route, MCP, CLI and
+# watcher suites add 349 executed tests (5233 -> 5582). One test was removed:
+# the old "runs on one Engine are serialised" case, replaced by the locking suite.
+# Re-baselined at add-chat-history-and-canvas-view-controls (2026-10-18): migration 5 (4),
+# chat repository (16) and chat route (14) cases add 34 executed tests (5741 -> 5775);
+# the 14 route cases need the web extra.
+# Two layout direction cases (GraphLayout model) add 2 more (5775 -> 5777 with the web extra).
+# Five chat route error-branch cases (codecov patch gap) add 5 more (5784 -> 5789).
+# Re-baselined at add-llm-provider-settings (2026-10-18): descriptor, value-source, keychain,
+# engine-provider, redaction, connection and Chat settings route cases add 261 (5789 -> 6050).
+# Re-baselined at the openai_compatible and anthropic providers (2026-10-18): 43 descriptor,
+# value-source, redaction and Engine cases, 31 route cases (they need the web extra) and 62
+# extra role-by-provider parameter cases add 136 (6050 -> 6186). The Anthropic build case uses
+# a stub module, so it runs with or without the anthropic extra.
+# 6197 = 6190 measured here + 3 tokenizer + 4 ground-truth cases that skip on a clean runner.
+# The last four cases are the shared-prefix redaction and no-environment-key tests.
+# +5 (2026-10-18, TDR-036): empty-reply and refine-swallow cases in test_answer_empty_reply.py.
+# +52 (2026-10-18, user config folder): test_user_config.py and the key-route log test.
+# +206 (2026-10-18, context windows and the managed llama.cpp server): settings, launch rules,
+# lifecycle with a fake server, routes, Ollama call payloads.
+# 6460 = 6453 measured with the web extra + 3 tokenizer + 4 ground-truth cases.
+# +2 (2026-10-18): the own-group signal guard tests in test_llamacpp_server_lifecycle.py.
+# +15 (2026-10-18, task 17.9): llama.cpp idle sleep rule, route, settings and lock cases.
+# +1 (2026-10-18): status read during a timed-out start never says exited.
+# +1 (2026-10-19): the fake llama-server answers without a reverse DNS lookup.
+# -2 (2026-10-19): the two real-Uvicorn signal tests in test_launch_link.py are marked slow.
+_BASE_EXECUTED = 6616
+# Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
+# (store stamp-first tests and graph embed-step tests). Measured in two clean
+# venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
+# Re-baselined at ci-integration-core-web: the sse-starlette shutdown-flag isolation
+# module adds 2 executed tests that need no fastapi (5582 -> 5584).
+# Re-baselined at add-pdf-reader-step-setting (2026-10-17): the step reader, option
+# availability, fingerprint, identity and Engine probe suites add 36 executed tests
+# (5584 -> 5620).
+# Re-baselined at add-profile-embedding-model (2026-10-18): the provider model
+# override, store and retrieval identity, Engine embedder, workspace v4, lock,
+# check-model, route and review-fix suites add 118 executed tests (5620 -> 5738).
+# Re-baselined at add-web-allow-origin-option: the origin parser suite adds 23
+# executed tests that need no fastapi, and the policy, MCP and launch cases add
+# 10 that do (5109 -> 5142; see _WEB_EXTRA_CASES below).
+# The working-directory .env check adds 2 executed tests (5107 -> 5109).
+# Re-baselined at add-run-output-inspection-and-upload-limit: the run artefact
+# route, node summary artefacts, the upload-limit setting, routes and launch
+# option, and their contract checks add 49 executed tests (5058 -> 5107). 37 of
+# them need fastapi, 36 in two new modules (see _WEB_EXTRA_CASES below).
+# Re-baselined at redesign-web-workspace (backend tasks 5 to 7): the integration
+# catalogue, experiment folders, provider connections and server log routes
+# add 165 executed tests (4893 -> 5058). 70 of them are in four new
+# fastapi-dependent modules (see _WEB_EXTRA_CASES below).
+# Re-baselined at add-mcp-http-transport (2026-10-14): Engine client
+# completion and redaction, the MCP factory and context, workspace settings
+# and token storage, port selection, and the MCP-over-HTTP gate, end-to-end
+# and contract tests add 117 executed tests (4776 -> 4893). Five of them are
+# the Chroma Cloud redaction cases of test_mcp_tools.py, which now build an
+# Engine with cloud credentials and no longer need the chroma extra: they ran
+# as skips before (133 -> 128 skipped).
+# Re-baselined after the add-local-web-pipeline-workspace verification gap
+# fixes (2026-10-13): provenance, job events, experiment outputs, OCR
+# ownership, import-contract, wheel-check and verification-gap tests add 87
+# executed tests (4689 -> 4776); skips and deselections are unchanged.
+# Re-baselined at add-local-web-pipeline-workspace (2026-10-13): graph
+# contracts, runner, domain graph adapters and parity fixtures, workspace
+# records and run service, web transport and OpenAPI conformance, plugin
+# host, experiment contexts, starter notebook and guide tests add 1274
+# executed tests (3415 -> 4689); skips are unchanged and one slow wheel
+# test adds a deselection (19 -> 20).
+# Re-baselined at repair-modular-core-boundaries (2026-10-13): registry
+# dispatch, owning-store metadata, codebase cache-context and accessor-guard
+# regressions add 102 executed tests (3313 -> 3415); skips and deselections
+# are unchanged.
 # Re-baselined at raise-local-ocr-min-confidence-to-0-9 (2026-10-07):
 # below-cut, default-agreement and page/document identity cases add 4
 # executed tests (3309 -> 3313); skips and deselections are unchanged.
@@ -212,7 +290,10 @@ _BASE_EXECUTED = 3313
 # seven-tool discovery rename, plus five CLI transport cases for
 # `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
-_BASE_SKIPPED = 133  # Reference count before the environment adjustments below.
+# The exact skipped count is no longer pinned (see ``_base_suite_counts``): the
+# inner suite runs in parallel, and a parallel run reports one fewer skip than a
+# serial run. A test that stops running still moves the exact executed count, and
+# the Chroma skip sources are asserted statically below.
 # +2 at modular-ocr-workers-dots-mocr: the real-eq01 detector case and the
 # real dots.mocr patch case run only when OMRG_EQ01_PDF or
 # OMRG_DOTS_MOCR_MODEL_DIR names a local copy (131 -> 133).
@@ -225,13 +306,9 @@ _HISTORICAL_GT = (
 )
 if not _HISTORICAL_GT.exists():
     _BASE_EXECUTED -= 4
-    _BASE_SKIPPED += 4
-# The Exp25 installed-adapter cases run when the optional OpenAI-like
-# embedding package exists. They otherwise skip, so both supported
-# dependency sets keep an exact, documented manifest.
-if find_spec("llama_index.embeddings.openai_like") is not None:
-    _BASE_EXECUTED += _OPENAI_LIKE_ADAPTER_CASES
-    _BASE_SKIPPED -= _OPENAI_LIKE_ADAPTER_CASES
+# The nine Exp25 installed-adapter cases always run now:
+# the OpenAI-like packages moved into the base dependencies (ADR-083), so the
+# pin below includes them and there is no conditional adjustment.
 # Three model-token chunking cases use a cached Qwen3-Embedding-4B tokenizer
 # when it is present in the HuggingFace hub cache. They skip on a clean CI
 # runner, so both supported environments keep an exact, documented manifest.
@@ -247,14 +324,60 @@ _has_qwen_tokenizer = bool(
 )
 if not _has_qwen_tokenizer:
     _BASE_EXECUTED -= _CACHED_TOKENIZER_CASES
-    _BASE_SKIPPED += _CACHED_TOKENIZER_CASES
-_BASE_DESELECTED = 19  # -m "not slow": existing 14 plus four quality gates
-# plus the golden-answer gate (add-grounded-answer-synthesis-3 task 7.1).
+# The reference counts assume the optional ``web`` extra (FastAPI) is
+# installed, as in the CI ``test`` job. Without it, each web test module
+# skips at import through ``pytest.importorskip("fastapi")``: its cases do
+# not run, and pytest reports one skip per module, not one per case. The
+# floors matrix and the extras jobs install no ``web`` extra.
+# Measured 2026-10-13 by hiding fastapi behind an import shim and running
+# the 28 fastapi-dependent files with and without it: 344 cases run with
+# the extra; without it each of the 28 modules reports one skip.
+# Re-measured at add-mcp-http-transport: six new fastapi-dependent modules add 58
+# cases (402 with the extra; 34 module skips without it).
+# Re-measured at redesign-web-workspace: four new fastapi-dependent modules
+# (integrations, experiment folders, connections, logs) add 70 cases (472
+# with the extra; 38 module skips without it).
+# Re-measured at add-run-output-inspection-and-upload-limit: two new
+# fastapi-dependent modules (run artefacts, upload limit) add 36 cases and the
+# MCP conformance module adds 1 (509 with the extra; 40 module skips without it).
+# Re-measured at add-web-allow-origin-option: new cases in three existing
+# fastapi-dependent modules add 10 (519 with the extra; still 40 module skips).
+# Re-measured at ci-integration-core-web: CI had not run on integration/core-web,
+# so the count drifted unseen while the profiles, pipelines and Studio changes
+# landed. The floors job (no web extra) ran 4951 executed tests against 5056
+# pinned, so the fastapi-dependent cases are 105 more (624 with the extra).
+# Re-measured at add-profile-embedding-model (2026-10-18) in two clean venvs:
+# 5731 executed with the web extra, 5081 without, so 26 more (650).
+# add-chat-history-and-canvas-view-controls: the 14 chat route cases need fastapi (664).
+# Re-measured at the openai_compatible and anthropic providers: 31 route cases (700).
+# Re-measured 2026-10-18 on a base install with no web extra (floors, Python 3.12): the provider
+# settings routes, Chat settings, llama.cpp server, config folder and key-route cases all need
+# fastapi, so 5771 expected vs 5488 run gave 283 more (983).
+# Re-measured at add-web-login-item (2026-10-19) from the CI logs of PR #119: the
+# test job ran 6590 executed with the web extra and the floors job ran 5587
+# without it, so 20 of the 118 new cases need fastapi (1003).
+# +7 executed after the PR #119 review (2026-10-19): install and restart race cases and the
+# link-renewal retry; 2 of them need fastapi (1005).
+# +14 executed after the restart and link-file fixes (2026-10-19): 8 restart cases and 6
+# link-file cases; the 6 link-file cases need fastapi (1011).
+# -2 (2026-10-19): the two signal tests moved to the slow suite (1009).
+_WEB_EXTRA_CASES = 1009
+if find_spec("fastapi") is None:
+    _BASE_EXECUTED -= _WEB_EXTRA_CASES
+# -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)
+_BASE_DESELECTED = 21
+# +2 (2026-10-19): the two signal tests in test_launch_link.py are slow. That module
+# needs fastapi (module-level importorskip), so a run without it never collects them.
+if find_spec("fastapi") is not None:
+    _BASE_DESELECTED += 2
+# plus the golden-answer gate (add-grounded-answer-synthesis-3 task 7.1)
+# plus the marimo-manifest wheel check (add-local-web-pipeline-workspace).
 _CHROMA_GATED_FILES = frozenset(
     {
         "test_chroma_cloud.py",
         "test_chunk_lineage_navigation.py",
         "test_compose.py",
+        "test_embedding_write_contract.py",
         "test_experiment_storage.py",
         "test_hybrid_retrieval.py",
         "test_lancedb_store.py",
@@ -335,53 +458,73 @@ def test_base_default_search_runs_without_chroma() -> None:
     assert not leaked, f"search imported chroma modules: {leaked}"
 
 
-def _base_suite_run() -> subprocess.CompletedProcess[str]:
-    """Run the fast base suite in this environment, ignoring this module.
+def _pytest_args(*extra: str) -> list[str]:
+    """Return the inner pytest command, ignoring this module to avoid recursion."""
+    return [
+        sys.executable,
+        "-m",
+        "pytest",
+        "-m",
+        "not slow",
+        "-q",
+        "--ignore=tests/test_clean_base_tripwire.py",
+        *extra,
+    ]
 
-    The subprocess reuses the running interpreter so the assertion holds
-    for the exact environment under test. This module is ignored to avoid
-    recursing into itself.
+
+def _base_suite_counts() -> tuple[int, int]:
+    """Run the fast base suite in this environment; return ``(passed, deselected)``.
+
+    The subprocess reuses the running interpreter so the assertion holds for the
+    exact environment under test. It runs in parallel when pytest-xdist is
+    installed (``--dist loadfile`` comes from ``pyproject.toml``), about three
+    times faster than a serial run. A parallel summary line has no deselected
+    count, so that number comes from a separate collection-only run, which takes
+    seconds and gives the same answer in serial and parallel.
     """
     root = Path(__file__).resolve().parent.parent
-    return subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "pytest",
-            "-m",
-            "not slow",
-            "-q",
-            "-rs",
-            "--ignore=tests/test_clean_base_tripwire.py",
-        ],
+    parallel = ("-n", "auto", "--maxprocesses=8") if find_spec("xdist") is not None else ()
+    run = subprocess.run(
+        _pytest_args(*parallel),
         cwd=root,
         capture_output=True,
         text=True,
         timeout=1800,
     )
+    assert run.returncode == 0, f"base suite failed:\n{run.stdout}\n{run.stderr}"
+    summary = re.search(r"(\d+) passed", run.stdout)
+    assert summary, f"unparseable base suite summary:\n{run.stdout[-500:]}"
+
+    collect = subprocess.run(
+        _pytest_args("--collect-only"),
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert collect.returncode == 0, f"collection failed:\n{collect.stdout}\n{collect.stderr}"
+    collected = re.search(r"tests? collected(?: \((\d+) deselected\))?", collect.stdout)
+    assert collected, f"unparseable collection summary:\n{collect.stdout[-500:]}"
+    return int(summary.group(1)), int(collected.group(1) or 0)
 
 
 def test_base_skip_manifest_is_exact() -> None:
-    """The clean-base suite pins its executed/skipped counts and Chroma guards.
+    """The clean-base suite pins its executed and deselected counts and Chroma guards.
 
     Task 5.2: the only sanctioned base skips are the named Chroma-gated
     files, and every one of those cases must run in the chroma-extra CI
     job (which fails if anything skips with the ``chroma extra not
-    installed`` reason). The pinned counts come from the ``-rs`` summary
-    line — always printed — while the Chroma-skip sources are asserted
-    statically, because module-level ``importorskip`` output differs
-    across invocation contexts and is not reliably parseable.
+    installed`` reason). The exact executed count catches a test that stops
+    running, and the deselected count catches a test that gains or loses the
+    ``slow`` mark. The exact skipped count is not pinned: a parallel run
+    reports one fewer skip than a serial run, and a skip adds nothing the
+    other checks miss. The Chroma-skip sources are asserted statically,
+    because module-level ``importorskip`` output differs across invocation
+    contexts and is not reliably parseable.
     """
-    proc = _base_suite_run()
-    assert proc.returncode == 0, f"base suite failed:\n{proc.stdout}\n{proc.stderr}"
-    output = proc.stdout
-
-    summary = re.search(r"(\d+) passed, (\d+) skipped, (\d+) deselected", output)
-    assert summary, f"unparseable base suite summary:\n{output[-500:]}"
-    passed, skipped, deselected = (int(v) for v in summary.groups())
+    passed, deselected = _base_suite_counts()
 
     assert passed == _BASE_EXECUTED, f"base executed count drifted: {passed}"
-    assert skipped == _BASE_SKIPPED, f"base skipped count drifted: {skipped}"
     assert deselected == _BASE_DESELECTED, f"base deselected count drifted: {deselected}"
 
     # Static guard check: every declared chroma-gated file must carry its

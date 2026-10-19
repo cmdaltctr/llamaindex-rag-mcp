@@ -272,3 +272,68 @@ def test_injected_model_with_cache_hits_engine_cache() -> None:
     assert model.calls == 1  # second call hit the supplied cache
     assert first == second
     assert ("cached-needle", "injected-with-cache-1") in cache
+
+
+# ── ADR-081: the cache key carries provider and model ─────────────────────
+
+
+def _counting(model_name: str) -> _CountingMockEmbedding:
+    return _CountingMockEmbedding.make(model_name=model_name)
+
+
+def test_two_identities_with_equal_model_name_never_share_an_entry() -> None:
+    """Same ``model_name`` under two providers embeds twice (spec: cache key)."""
+    from collections import OrderedDict
+
+    from omrg.core.vectordb.identity import EmbeddingIdentity
+
+    cache: OrderedDict = OrderedDict()
+    ollama_embed, llama_embed = _counting("shared-name"), _counting("shared-name")
+    ollama_id = EmbeddingIdentity(provider="ollama", model="shared-name")
+    llama_id = EmbeddingIdentity(provider="llamacpp", model="shared-name")
+
+    _dense._embed_query("q", ollama_embed, cache, embedding_identity=ollama_id)
+    _dense._embed_query("q", llama_embed, cache, embedding_identity=llama_id)
+
+    assert (ollama_embed.calls, llama_embed.calls) == (1, 1)
+    assert len(cache) == 2
+
+
+def test_one_identity_on_two_collections_embeds_once() -> None:
+    """The key has no collection, so a second collection reuses the vector."""
+    from collections import OrderedDict
+
+    from omrg.core.vectordb.identity import EmbeddingIdentity
+
+    cache: OrderedDict = OrderedDict()
+    embed = _counting("one-model")
+    identity = EmbeddingIdentity(provider="ollama", model="one-model")
+
+    first = _dense._embed_query("q", embed, cache, embedding_identity=identity)
+    second = _dense._embed_query("q", embed, cache, embedding_identity=identity)
+
+    assert embed.calls == 1
+    assert first == second
+
+
+def test_identity_keyed_cache_stays_bounded() -> None:
+    from collections import OrderedDict
+
+    from omrg.core.vectordb.identity import EmbeddingIdentity
+
+    cache: OrderedDict = OrderedDict()
+    embed = _counting("bounded")
+    identity = EmbeddingIdentity(provider="ollama", model="bounded")
+    for index in range(_dense._QUERY_EMBED_CACHE_MAXSIZE + 40):
+        _dense._embed_query(f"q{index}", embed, cache, embedding_identity=identity)
+
+    assert len(cache) == _dense._QUERY_EMBED_CACHE_MAXSIZE
+
+
+def test_without_identity_the_key_stays_query_and_model_name() -> None:
+    from collections import OrderedDict
+
+    cache: OrderedDict = OrderedDict()
+    _dense._embed_query("q", _counting("plain"), cache)
+
+    assert list(cache) == [("q", "plain")]

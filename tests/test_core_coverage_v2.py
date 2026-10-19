@@ -98,7 +98,7 @@ class TestFetchAll:
     """The bulk read added for the document graph (task 6.1)."""
 
     def _store(self, collection):
-        from omrg.core.vectordb.chroma import ChromaVectorStore
+        from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
         store = ChromaVectorStore(persist_dir="/tmp/x")
         store._get_collection = MagicMock(return_value=collection)
@@ -118,7 +118,7 @@ class TestFetchAll:
         assert self._store(collection).fetch_all("documents", ["metadatas"]) is None
 
     def test_missing_collection_returns_none(self) -> None:
-        from omrg.core.vectordb.chroma import ChromaVectorStore
+        from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
         store = ChromaVectorStore(persist_dir="/tmp/x")
         store._get_collection = MagicMock(side_effect=Exception("no such collection"))
@@ -149,12 +149,20 @@ class TestMcpHandlersNeverRaise:
         self, mcp_server, tool: str, args: dict
     ) -> None:
         """A core-layer exception becomes an error result, never a raise."""
+        engine = mcp_server.test_context.engine
         targets = {
-            "search_documents": "omrg.transports.mcp.search.search",
-            "list_indexed_documents": "omrg.transports.mcp.list._list_documents",
-            "get_codebase_map": ("omrg.core.codebase.codebase_map.get_codebase_map_text"),
+            "search_documents": (engine, "search"),
+            "list_indexed_documents": (
+                __import__("omrg.transports.mcp.list", fromlist=["_list_documents"]),
+                "_list_documents",
+            ),
+            "get_codebase_map": (
+                __import__("omrg.core.codebase.codebase_map", fromlist=["x"]),
+                "get_codebase_map_text",
+            ),
         }
-        with patch(targets[tool], side_effect=RuntimeError("boom")):
+        target, name = targets[tool]
+        with patch.object(target, name, side_effect=RuntimeError("boom")):
             async with connected_client(mcp_server) as client:
                 result = await client.call_tool(tool, args)
         text = result.content[0].text
@@ -173,10 +181,10 @@ class TestMcpProfileResolutionErrors:
 
     async def test_ingest_reports_invalid_profile_tag(self, mcp_server) -> None:
         with patch.object(
-            __import__("omrg.transports.mcp", fromlist=["_profile_resolver"]),
-            "_profile_resolver",
-        ) as resolver:
-            resolver.resolve.side_effect = ValueError("tagged 'hybrid'")
+            mcp_server.test_context.engine,
+            "resolve_settings",
+            side_effect=ValueError("tagged 'hybrid'"),
+        ):
             async with connected_client(mcp_server) as client:
                 result = await client.call_tool(
                     "ingest_documents", {"path": ".", "collection": "bad"}
@@ -184,11 +192,12 @@ class TestMcpProfileResolutionErrors:
         assert "hybrid" in result.content[0].text
 
     async def test_search_reports_invalid_profile_tag(self, mcp_server) -> None:
+        # The handler passes the caller's values on; the Engine resolves the tag (D14).
         with patch.object(
-            __import__("omrg.transports.mcp", fromlist=["_profile_resolver"]),
-            "_profile_resolver",
-        ) as resolver:
-            resolver.resolve.side_effect = ValueError("tagged 'hybrid'")
+            mcp_server.test_context.engine,
+            "search",
+            side_effect=ValueError("tagged 'hybrid'"),
+        ):
             async with connected_client(mcp_server) as client:
                 result = await client.call_tool(
                     "search_documents", {"query": "x", "collection": "bad"}
@@ -201,7 +210,7 @@ class TestMcpProfileChangeErrors:
 
     async def test_preview_failure_returns_error(self, mcp_server) -> None:
         with patch(
-            "omrg.core.profiles.generate_safety_contract",
+            "omrg.transports.mcp.profile.generate_safety_contract",
             side_effect=RuntimeError("store unreachable"),
         ):
             async with connected_client(mcp_server) as client:
@@ -213,7 +222,7 @@ class TestMcpProfileChangeErrors:
 
     async def test_apply_failure_returns_error(self, mcp_server) -> None:
         with patch(
-            "omrg.core.profiles.apply_profile_change",
+            "omrg.transports.mcp.profile.apply_profile_change",
             side_effect=RuntimeError("write failed"),
         ):
             async with connected_client(mcp_server) as client:
@@ -225,7 +234,7 @@ class TestMcpProfileChangeErrors:
 
     async def test_list_collections_failure_returns_error(self, mcp_server) -> None:
         with patch(
-            "omrg.core.retrieval.list_collections",
+            "omrg.transports.mcp.list._list_collections",
             side_effect=RuntimeError("no store"),
         ):
             async with connected_client(mcp_server) as client:

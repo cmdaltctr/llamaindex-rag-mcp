@@ -7,7 +7,7 @@ Provides:
 - EphemeralClient monkeypatch (no disk I/O for ChromaDB) — active only when
   the optional ``chroma`` extra is installed
 - Mock embedding model (no Ollama server required)
-- FastMCP server instance fixture
+- MCP server fixture built by the factory over a test Engine
 - Helper context manager for in-memory MCP client sessions
 """
 
@@ -16,6 +16,7 @@ from __future__ import annotations
 import math
 import os
 import tempfile
+from collections.abc import Iterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -260,6 +261,36 @@ def effective_settings():
 
 
 @pytest.fixture(autouse=True)
+def _plain_cli_help_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep Typer help output free of ANSI styling, whatever the runner sets.
+
+    Typer reads ``GITHUB_ACTIONS``, ``FORCE_COLOR`` and ``PY_COLORS`` once, at
+    import, into ``typer.rich_utils.FORCE_TERMINAL``. On GitHub Actions that
+    constant is true, so ``--help`` text gains escape codes and help-text
+    assertions fail there while they pass on a laptop. Setting the constant
+    off makes the output the same everywhere. Deleting the environment
+    variables inside a test would not work, because the read is already done.
+    """
+    monkeypatch.setattr("typer.rich_utils.FORCE_TERMINAL", False, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _reset_sse_shutdown_flag() -> Iterator[None]:
+    """Clear sse-starlette's process-wide shutdown flag around every test.
+
+    ``AppStatus.should_exit`` latches true once uvicorn's ``handle_exit`` runs
+    and never resets. Any later streamed response in the same worker then ends
+    at once, so MCP calls return a cut-off body. Which tests share a worker
+    depends on the worker count, so the failure shows on CI and not locally.
+    """
+    from sse_starlette.sse import AppStatus
+
+    AppStatus.should_exit = False
+    yield
+    AppStatus.should_exit = False
+
+
+@pytest.fixture(autouse=True)
 def _install_default_effective_settings(_isolate_env, _reset_default_store, tmp_path: Path):
     """Install a composition-root default EffectiveSettings for every test.
 
@@ -356,6 +387,36 @@ def _patch_embed_model(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureR
 
 
 @pytest.fixture(autouse=True)
+def _no_real_keychain(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point ``keyring`` at the fail backend so no test reads the real keychain.
+
+    Tests that need a keychain install their own backend with
+    ``keyring.set_keyring``; this patch is undone after each test.
+    """
+    try:
+        import keyring.core
+        from keyring.backends import fail
+    except ImportError:
+        return
+    monkeypatch.setattr(keyring.core, "_keyring_backend", fail.Keyring())
+    # The adapter detects a backend once per process; that would replace the
+    # fail backend with the real keychain.
+    from omrg.integrations import keychain
+
+    monkeypatch.setattr(keychain, "_BACKEND_READY", True)
+
+
+@pytest.fixture(autouse=True)
+def _isolated_user_config_dir(monkeypatch: pytest.MonkeyPatch, tmp_path_factory) -> None:
+    """Point the user config folder at an empty temporary folder.
+
+    No test may read the real ``~/.config/omrg``. Tests of the folder itself
+    set ``OMRG_CONFIG_DIR`` again.
+    """
+    monkeypatch.setenv("OMRG_CONFIG_DIR", str(tmp_path_factory.mktemp("omrg-config") / "omrg"))
+
+
+@pytest.fixture(autouse=True)
 def _isolate_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Set deterministic environment variables for every test.
 
@@ -414,23 +475,85 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 # ── FastMCP server fixture ─────────────────────────────────────────────────
 
 
+def build_mcp_engine(effective=None, **engine_kwargs):
+    """Return an Engine over this test's default store and settings.
+
+    The store, settings and mock embedder come from the autouse fixtures
+    above. ``effective`` replaces the default settings (pass
+    ``profile_resolver_factory=None`` with it so they are used as given);
+    ``engine_kwargs`` (for example ``answer_llm_factory``) override or
+    extend the constructor arguments.
+    """
+    from omrg import compose
+    from omrg.core.settings import get_default_effective_settings
+    from omrg.core.vectordb import get_default_store
+    from omrg.engine import Engine
+
+    store = get_default_store()
+    kwargs = {
+        "store": store,
+        "embed_model": _patch_embed_model._mock,
+        "profile_resolver_factory": lambda: compose.build_profile_resolver(store=store),
+    }
+    kwargs.update(engine_kwargs)
+    return Engine(effective or get_default_effective_settings(), **kwargs)
+
+
+def direct_ctx(server_or_context, session=None):
+    """Return a request-context stand-in for calling a handler directly.
+
+    Args:
+        server_or_context: A server from :func:`build_mcp_server` or an
+            ``McpContext``.
+        session: Value for ``ctx.session`` (the legacy sampling seam).
+    """
+    from types import SimpleNamespace
+
+    context = getattr(server_or_context, "test_context", server_or_context)
+    return SimpleNamespace(
+        request_context=SimpleNamespace(lifespan_context=context, session=session),
+        session=session,
+    )
+
+
+def build_mcp_server(engine=None, *, paths=None, admit=None, effective=None, **engine_kwargs):
+    """Build the real MCP server over a test lifespan (no process defaults).
+
+    Args:
+        engine: A ready Engine; built from ``engine_kwargs`` when omitted.
+        paths: ``PathPolicy`` (defaults to allow-all, as on stdio).
+        admit: Admission hook (defaults to the no-op stdio hook).
+        effective: Settings for the Engine (see :func:`build_mcp_engine`).
+        **engine_kwargs: Passed to :func:`build_mcp_engine`.
+    """
+    from omrg.transports.mcp import create_mcp_server
+    from omrg.transports.mcp.context import McpContext, PathPolicy, no_admission
+
+    context = McpContext(
+        engine if engine is not None else build_mcp_engine(effective, **engine_kwargs),
+        paths or PathPolicy.allow_all(),
+        admit or no_admission,
+    )
+
+    @asynccontextmanager
+    async def lifespan(_server):
+        yield context
+
+    server = create_mcp_server(lifespan)
+    server.test_context = context  # type: ignore[attr-defined]
+    return server
+
+
 @pytest.fixture
 def mcp_server():
-    """Return the real FastMCP server instance from omrg.transports.mcp.
+    """Return a real MCP server built by the factory over a test Engine.
 
     The LanceDB store and embedding patches are applied via autouse
     fixtures above, so the server uses a tmp-path store and mock
-    embeddings.
-
-    The test fixture supplies a mock embedding model for tool handlers.
+    embeddings. Tools read the Engine from the lifespan context, never a
+    process default.
     """
-    from omrg.transports.mcp import mcp
-
-    # Importing server.py triggers config.py which sets
-    # Settings.embed_model = OllamaEmbedding(...).  Re-apply mock.
-    Settings.embed_model = _patch_embed_model._mock
-
-    return mcp
+    return build_mcp_server()
 
 
 @asynccontextmanager

@@ -7,6 +7,7 @@ flag handling, progress reporting, and error messages.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import signal
@@ -94,13 +95,18 @@ class TestEntryPoint:
 
     def test_bad_provider_fails_at_server_startup_without_traceback(self) -> None:
         """Invalid provider configuration fails before the server starts."""
-        with patch("omrg.transports.mcp.mcp.run") as mock_run:
+        # MCP main() calls logging.basicConfig(force=True) before it builds
+        # the Engine; keep the root logger untouched for later tests.
+        with (
+            patch("omrg.transports.mcp.create_mcp_server") as mock_factory,
+            patch("logging.basicConfig"),
+        ):
             result = runner.invoke(app, [], env={"EMBED_PROVIDER": "not-a-provider"})
 
         assert result.exit_code == 1
         assert "EMBED_PROVIDER" in result.output
         assert "Traceback" not in result.output
-        mock_run.assert_not_called()
+        mock_factory.assert_not_called()
 
     def test_unknown_subcommand(self) -> None:
         """Unknown subcommand produces a non-zero exit code."""
@@ -1251,21 +1257,26 @@ class TestReportGeneration:
         assert result.exit_code == 0
         assert not report_path.exists()
 
-    def test_report_overwrites_existing(self, dir_with_docs: Path, tmp_path: Path) -> None:
+    def test_report_overwrites_existing(
+        self, dir_with_docs: Path, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """--report overwrites existing file and logs warning."""
         report_path = tmp_path / "report.json"
         report_path.write_text('{"old": true}')
 
-        result = runner.invoke(
-            app,
-            [
-                "ingest",
-                str(dir_with_docs),
-                "--json",
-                "--report",
-                str(report_path),
-            ],
-        )
+        # ``runner.invoke`` skips ``run_cli``, which is the only place that
+        # installs a stderr log handler. Read the log record, not the output.
+        with caplog.at_level(logging.WARNING, logger="omrg.transports.cli._report"):
+            result = runner.invoke(
+                app,
+                [
+                    "ingest",
+                    str(dir_with_docs),
+                    "--json",
+                    "--report",
+                    str(report_path),
+                ],
+            )
         assert result.exit_code == 0
         assert report_path.exists()
 
@@ -1275,7 +1286,7 @@ class TestReportGeneration:
         assert "timestamp" in report
 
         # Verify warning was logged about overwriting
-        assert "Overwriting" in result.output or "overwriting" in result.output.lower()
+        assert any("Overwriting existing report" in r.getMessage() for r in caplog.records)
 
 
 # ── I: Integration tests with real PDFs ─────────────────────────────────────

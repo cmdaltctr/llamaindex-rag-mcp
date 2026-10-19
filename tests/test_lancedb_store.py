@@ -26,7 +26,7 @@ from omrg.core.vectordb.identity import (
     IDENTITY_PROVIDER_KEY,
     EmbeddingIdentity,
 )
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 _PRECOMPUTED_IDENTITY = EmbeddingIdentity(provider="test", model="mock")
 
@@ -39,7 +39,7 @@ def test_bm25_cache_isolated_between_chroma_and_lance(tmp_path: Path) -> None:
     pytest.importorskip(
         "chromadb", reason="chroma extra not installed; runs in the chroma-extra CI job"
     )
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     collection = "cross_backend_cache_isolation"
     chroma = ChromaVectorStore()

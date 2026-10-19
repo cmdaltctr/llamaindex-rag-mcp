@@ -58,6 +58,7 @@ class SearchRetriever(BaseRetriever):
         effective_settings: Any = None,
         embed_model: Any = None,
         query_cache: Any = None,
+        embedding_identity: Any = None,
     ) -> None:
         """Store the retrieval arguments; nothing runs until ``retrieve``.
 
@@ -78,6 +79,8 @@ class SearchRetriever(BaseRetriever):
             embed_model: Optional injected embedding model (the engine's
                 embedder); ``None`` selects the legacy global path.
             query_cache: Optional engine-owned query embedding cache.
+            embedding_identity: Provider and model that embed the query
+                (ADR-081); sent to ``search`` only when set.
         """
         self._search_fn = search_fn
         self._collection_name = collection_name
@@ -92,6 +95,7 @@ class SearchRetriever(BaseRetriever):
         self._effective_settings = effective_settings
         self._embed_model = embed_model
         self._query_cache = query_cache
+        self._embedding_identity = embedding_identity
         # Raw search rows from the last retrieve() call.
         self.rows: list[dict] = []
         super().__init__(callback_manager=None)
@@ -103,6 +107,8 @@ class SearchRetriever(BaseRetriever):
         else:
             _search = self._search_fn
 
+        identity = self._embedding_identity
+        identity_kwargs = {"embedding_identity": identity} if identity else {}
         self.rows = _search(
             query_bundle.query_str,
             top_k=self._top_k,
@@ -117,6 +123,7 @@ class SearchRetriever(BaseRetriever):
             effective_settings=self._effective_settings,
             embed_model=self._embed_model,
             query_cache=self._query_cache,
+            **identity_kwargs,
         )
         return [_row_to_node(row) for row in self.rows]
 

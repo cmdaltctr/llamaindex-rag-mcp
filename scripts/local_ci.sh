@@ -4,7 +4,8 @@
 #
 # Covers: ruff, ruff format, import-linter, OpenSpec strict validation,
 # the OpenAPI contract, the torch-free default-install check, and the
-# full fast suite under the same env vars CI sets.
+# full fast suite and the clean-base tripwire under the same env vars CI sets, the frontend gates,
+# and the web wheel asset check (skipped when npm is absent).
 #
 # Deliberately excluded (not replicable without mutating the venv):
 #   - floors matrix (uv sync --resolution lowest-direct per extra)
@@ -42,14 +43,47 @@ if printf '%s\n' "$packages" | grep -qiE '^(torch|transformers)([[:space:]]|$)';
 fi
 echo "OK: default install is torch-free"
 
-step "fast suite (CI env)"
+# The fast suite runs in parallel when pytest-xdist is installed (about three
+# times faster; --dist loadfile comes from pyproject.toml). The clean-base
+# tripwire runs as its own step: it starts a second copy of the suite inside
+# one test, which a parallel run of the main suite cannot split.
+parallel=()
+if uv run --no-sync python -c "import xdist" >/dev/null 2>&1; then
+  parallel=(-n auto --maxprocesses=8)
+fi
+
+step "fast suite (CI env${parallel:+, parallel})"
 PDF_READER=pypdf \
 EMBED_PROVIDER=local \
 LOCAL_BACKEND=ollama \
 EMBED_MODEL=nomic-embed-text \
 OLLAMA_BASE_URL=http://localhost:11434 \
 METADATA_LLM_PROVIDER=local \
-  uv run --no-sync pytest -m "not slow" --tb=short -q
+  uv run --no-sync pytest -m "not slow" --tb=short -q ${parallel[@]+"${parallel[@]}"} \
+    --deselect tests/test_clean_base_tripwire.py
+
+step "clean-base tripwire (CI env)"
+PDF_READER=pypdf \
+EMBED_PROVIDER=local \
+LOCAL_BACKEND=ollama \
+EMBED_MODEL=nomic-embed-text \
+OLLAMA_BASE_URL=http://localhost:11434 \
+METADATA_LLM_PROVIDER=local \
+  uv run --no-sync pytest tests/test_clean_base_tripwire.py --tb=short -q
+
+step "frontend gates and web wheel assets"
+# CI runs the frontend job; the release workflow runs the wheel check.
+# The wheel goes to a temporary directory, so dist/ stays untouched.
+if command -v npm >/dev/null 2>&1; then
+  (cd web && npm ci && npm run lint && npm run typecheck && npm test && npm run build)
+  wheel_dir="$(mktemp -d)"
+  trap 'rm -rf "$wheel_dir"' EXIT
+  uv build --wheel --out-dir "$wheel_dir"
+  uv run --no-sync python scripts/check_web_wheel.py "$wheel_dir"/*.whl
+  echo "OK: wheel contains the web workspace assets"
+else
+  echo "SKIPPED: npm not found. Install Node 22 or later to run the frontend gates and the web wheel check." >&2
+fi
 
 step "pyright (advisory — CI runs it non-blocking)"
 if command -v npx >/dev/null 2>&1; then

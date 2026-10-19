@@ -31,7 +31,7 @@ from llama_index.core import Settings
 from llama_index.core.embeddings import MockEmbedding
 
 from omrg.core.vectordb.identity import EmbeddingIdentity
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 # ── Helpers ─────────────────────────────────────────────────────────────
 

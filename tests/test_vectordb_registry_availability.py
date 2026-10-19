@@ -236,7 +236,7 @@ def test_sparse_capability_follows_selected_store(
     # a warning and never loads chromadb.
     _scrub_chroma_from_sys_modules(monkeypatch)
     assert _chroma_modules_loaded() == []
-    import omrg.core.vectordb.lance_fts as lance_fts
+    import omrg.core.vectordb.lancedb.fts as lance_fts
 
     monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: False)
     native_settings = Settings(
@@ -312,3 +312,15 @@ def test_absent_backend_generic_guidance_names_extra() -> None:
     message = str(excinfo.value)
     assert "Install the 'demo' extra." in message
     assert "uv sync" not in message
+
+
+def test_builtin_backends_carry_display_labels() -> None:
+    """Spec: vector-store-registry, scenario 'Built-in backends have labels'."""
+    assert registry.describe("lancedb")["label"] == "LanceDB"
+    assert registry.describe("chroma")["label"] == "ChromaDB"
+
+
+def test_label_defaults_to_registered_name() -> None:
+    """Spec: vector-store-registry, scenario 'Registration without a label'."""
+    registry.register("_test_unlabelled", "fakepkg_unlabelled:build")
+    assert registry.describe("_test_unlabelled")["label"] == "_test_unlabelled"

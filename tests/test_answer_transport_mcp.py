@@ -21,7 +21,7 @@ from mcp.client import Client
 from mcp.shared.exceptions import MCPDeprecationWarning
 from mcp.types import CreateMessageResult, SamplingCapability, TextContent
 
-from conftest import connected_client
+from conftest import build_mcp_server, connected_client, direct_ctx
 from omrg.core.ingestion import ingest_path_async
 from omrg.transports.mcp import answer_documents
 from omrg.transports.mcp.answer import (
@@ -243,13 +243,13 @@ async def test_server_fallback_reports_server_source(
     """Scenario: falls back to the configured server model."""
     await _ingest_collection(tmp_path)
     fake = _FakeLLM()
-    monkeypatch.setattr("omrg.compose.build_answer_llm", lambda settings=None: fake)
+    server = build_mcp_server(answer_llm_factory=lambda: fake)
 
     result = await answer_documents(
         query=_QUERY,
         collection=_COLLECTION,
         similarity_threshold=0.0,
-        ctx=None,
+        ctx=direct_ctx(server),
     )
 
     assert result["status"] == "ok", result
@@ -262,13 +262,13 @@ async def test_neither_path_returns_actionable_error(
 ) -> None:
     """Scenario: neither available names both options and never raises."""
     await _ingest_collection(tmp_path)
-    monkeypatch.setattr("omrg.compose.build_answer_llm", lambda settings=None: None)
+    server = build_mcp_server(answer_llm_factory=lambda: None)
 
     result = await answer_documents(
         query=_QUERY,
         collection=_COLLECTION,
         similarity_threshold=0.0,
-        ctx=None,
+        ctx=direct_ctx(server),
     )
 
     assert result["status"] == "error"
@@ -286,9 +286,10 @@ async def test_internal_failure_is_returned_not_raised(
         raise RuntimeError("core exploded")
 
     await _ingest_collection(tmp_path)
-    monkeypatch.setattr("omrg.transports.mcp.answer.answer", _explode)
+    server = build_mcp_server()
+    monkeypatch.setattr(server.test_context.engine, "answer", _explode)
 
-    result = await answer_documents(query=_QUERY, collection=_COLLECTION, ctx=None)
+    result = await answer_documents(query=_QUERY, collection=_COLLECTION, ctx=direct_ctx(server))
 
     assert result["status"] == "error"
     standard_keys = (
@@ -335,7 +336,7 @@ async def test_legacy_seam_returns_client_text() -> None:
     """The legacy seam awaits ``create_message`` and returns the client text."""
     session = _RecordingSession("legacy reply body")
 
-    text = await _legacy_complete(_FakeContext(session), "answer this")
+    text = await _legacy_complete(_FakeContext(session), "answer this", 256)
 
     assert text == "legacy reply body"
     assert len(session.prompts) == 1
@@ -355,19 +356,14 @@ async def test_real_create_message_emits_deprecation_warning() -> None:
 
 
 async def test_completion_calls_respect_the_configured_round_bound(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
     """COMPACT refinement is bounded by ``answer.max_rounds`` on the server path."""
-    from omrg.core.settings import (
-        AnswerBlock,
-        get_default_effective_settings,
-        set_default_effective_settings,
-    )
+    from omrg.core.settings import AnswerBlock, get_default_effective_settings
 
     await _ingest_collection(tmp_path)
     current = get_default_effective_settings()
     bounded = current.model_copy(update={"answer": AnswerBlock(context_window=64, max_rounds=2)})
-    set_default_effective_settings(bounded)
 
     fake = _FakeLLM()
 
@@ -378,14 +374,17 @@ async def test_completion_calls_respect_the_configured_round_bound(
         )
 
     fake.acomplete = _counting  # type: ignore[method-assign]
-    monkeypatch.setattr("omrg.compose.build_answer_llm", lambda settings=None: fake)
+    # No profile resolver, so the Engine uses the bounded settings as given.
+    server = build_mcp_server(
+        effective=bounded, profile_resolver_factory=None, answer_llm_factory=lambda: fake
+    )
 
     result = await answer_documents(
         query=_QUERY,
         collection=_COLLECTION,
         similarity_threshold=0.0,
         diagnostics=True,
-        ctx=None,
+        ctx=direct_ctx(server),
     )
 
     assert result["status"] == "ok", result
@@ -397,34 +396,37 @@ async def test_completion_calls_respect_the_configured_round_bound(
 # ── Claim verification (ADR-059): transport-level threading ───────────────
 
 
+def _verifying_settings() -> Any:
+    from omrg.core.settings import AnswerBlock, get_default_effective_settings
+
+    return get_default_effective_settings().model_copy(
+        update={"answer": AnswerBlock(verify_claims=True)}
+    )
+
+
 async def test_verification_skipped_when_judge_build_fails(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
     """A raising judge build degrades to verification_skipped, never an error."""
     await _ingest_collection(tmp_path)
     fake = _FakeLLM()
-    monkeypatch.setattr("omrg.compose.build_answer_llm", lambda settings=None: fake)
 
     def _no_judge(*args: Any, **kwargs: Any) -> Any:
         raise ImportError("OPENROUTER_API_KEY is not set")
 
-    monkeypatch.setattr("omrg.compose.build_verify_llm", _no_judge)
-    monkeypatch.setenv("ANSWER__VERIFY_CLAIMS", "true")
-    # Force the process-wide resolver to rebuild so the env change
-    # reaches the profile-resolved answer block (its bundles cache per
-    # instance; a stale cache would keep verify_claims=false).
-    from omrg.transports import mcp as mcp_transport
+    server = build_mcp_server(
+        effective=_verifying_settings(),
+        profile_resolver_factory=None,
+        answer_llm_factory=lambda: fake,
+        verify_llm_factory=_no_judge,
+    )
 
-    monkeypatch.setattr(mcp_transport, "_profile_resolver", None)
-    try:
-        result = await answer_documents(
-            query=_QUERY,
-            collection=_COLLECTION,
-            similarity_threshold=0.0,
-            ctx=None,
-        )
-    finally:
-        monkeypatch.setattr(mcp_transport, "_profile_resolver", None)
+    result = await answer_documents(
+        query=_QUERY,
+        collection=_COLLECTION,
+        similarity_threshold=0.0,
+        ctx=direct_ctx(server),
+    )
 
     assert result["status"] == "ok", result
     assert "verification provider unavailable" in result["verification_skipped"]
@@ -432,7 +434,7 @@ async def test_verification_skipped_when_judge_build_fails(
 
 
 async def test_verification_judges_through_the_injected_seam(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
     """An adversarial answer over real evidence surfaces unverified_claims."""
     await _ingest_collection(tmp_path)
@@ -444,7 +446,6 @@ async def test_verification_judges_through_the_injected_seam(
         )
 
     adversarial.acomplete = _lie  # type: ignore[method-assign]
-    monkeypatch.setattr("omrg.compose.build_answer_llm", lambda settings=None: adversarial)
 
     class _JudgeLLM:
         calls = 0
@@ -454,24 +455,115 @@ async def test_verification_judges_through_the_injected_seam(
             assert "\n<evidence>\n" in prompt, "the judge must see delimited evidence"
             return SimpleNamespace(text="unsupported")
 
-    monkeypatch.setattr("omrg.compose.build_verify_llm", lambda *a, **k: _JudgeLLM())
-    monkeypatch.setenv("ANSWER__VERIFY_CLAIMS", "true")
-    from omrg.transports import mcp as mcp_transport
+    server = build_mcp_server(
+        effective=_verifying_settings(),
+        profile_resolver_factory=None,
+        answer_llm_factory=lambda: adversarial,
+        verify_llm_factory=lambda _block: _JudgeLLM(),
+    )
 
-    monkeypatch.setattr(mcp_transport, "_profile_resolver", None)
-    try:
-        result = await answer_documents(
-            query=_QUERY,
-            collection=_COLLECTION,
-            similarity_threshold=0.0,
-            diagnostics=True,
-            ctx=None,
-        )
-    finally:
-        monkeypatch.setattr(mcp_transport, "_profile_resolver", None)
+    result = await answer_documents(
+        query=_QUERY,
+        collection=_COLLECTION,
+        similarity_threshold=0.0,
+        diagnostics=True,
+        ctx=direct_ctx(server),
+    )
 
     assert result["status"] == "unverified_claims", result
     assert result["unverified_claims"], "the failing claim must be listed"
     assert result["evidence"], "evidence is retained"
     assert result["diagnostics"]["verification_calls"] >= 1
     assert _JudgeLLM.calls >= 1
+
+
+# ── User-profile collections use the server model (D17, task 8.9) ─────────
+
+
+def _user_profile_engine(
+    tmp_path: Path, effective_settings: Any, *, allow_legacy: bool = False
+) -> tuple[Any, Any, Any]:
+    """Return an Engine on a collection that follows ``my-notes``, its model seam and a run log."""
+    from tests.fixtures.pipeline_parity.answer.harness import (
+        case_by_name,
+        case_rows,
+        case_settings,
+        make_seam,
+    )
+    from tests.unit.test_answer_graph_adapters_support import FakeLLM
+    from tests.unit.test_engine_pipelines_support import Factory
+    from tests.unit.test_engine_profiles_support import count_graph_runs
+    from tests.unit.test_mcp_stdio_profiles_support import engine_builder, make_env
+    from tests.unit.test_pipeline_templates_parity import _store_rows
+
+    from omrg.core.settings import AnswerBlock
+
+    case = case_by_name("ok_single_citation")
+    settings = case_settings(effective_settings(), case)
+    if allow_legacy:
+        settings = settings.model_copy(update={"answer": AnswerBlock(allow_legacy_sampling=True)})
+    env = make_env(tmp_path / "seed", effective_settings)
+    complete = make_seam(case.get("complete"))
+    engine = engine_builder(
+        settings,
+        _store_rows(case_rows(case)),
+        "my-notes",
+        env_overrides={"RETRIEVAL__RERANK_ENABLED": "false"},
+        answer_llm_factory=Factory(FakeLLM(complete)),
+        verify_llm_factory=Factory(None),
+    )(env.catalogue)
+    return engine, complete, count_graph_runs(engine)
+
+
+async def test_a_user_profile_collection_never_sends_a_sampling_request(
+    tmp_path: Path, effective_settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Scenario: a client that offers sampling gets no request; the server model answers."""
+    from tests.fixtures.pipeline_parity.answer.harness import QUERY
+
+    for name in ("RETRIEVAL__HYBRID_ENABLED", "RETRIEVAL__RERANK_ENABLED", "RETRIEVAL__TOP_K"):
+        monkeypatch.delenv(name, raising=False)
+    engine, complete, runs = _user_profile_engine(tmp_path, effective_settings)
+    seen: list[Any] = []
+
+    async def _sampling_callback(context: Any, params: Any) -> CreateMessageResult:
+        seen.append(params)
+        raise AssertionError("a sampling request reached the client")
+
+    async with Client(
+        build_mcp_server(engine),
+        sampling_callback=_sampling_callback,
+        sampling_capabilities=SamplingCapability(),
+    ) as client:
+        result = await client.call_tool(
+            "answer_documents", {"query": QUERY, "collection": "parity"}
+        )
+
+    data = _extract_result(result)
+    assert data["status"] == "ok", data
+    assert data["completion_source"] == "server"
+    assert seen == []
+    assert runs == ["run_pipeline"]
+    assert len(complete.prompts) >= 1, "the server model must write the answer"
+
+
+async def test_a_user_profile_collection_skips_the_legacy_sampling_seam(
+    tmp_path: Path, effective_settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An older session that allows legacy sampling still gets the server model."""
+    from tests.fixtures.pipeline_parity.answer.harness import QUERY
+
+    for name in ("RETRIEVAL__HYBRID_ENABLED", "RETRIEVAL__RERANK_ENABLED", "RETRIEVAL__TOP_K"):
+        monkeypatch.delenv(name, raising=False)
+    engine, _, runs = _user_profile_engine(tmp_path, effective_settings, allow_legacy=True)
+    session = _RecordingSession("client text")
+    ctx = direct_ctx(build_mcp_server(engine), session=session)
+    ctx.protocol_version = _LEGACY
+    ctx.client_capabilities = SimpleNamespace(sampling=_CAPABILITY)
+
+    result = await answer_documents(query=QUERY, collection="parity", ctx=ctx)
+
+    assert result["status"] == "ok", result
+    assert result["completion_source"] == "server"
+    assert session.prompts == []
+    assert runs == ["run_pipeline"]

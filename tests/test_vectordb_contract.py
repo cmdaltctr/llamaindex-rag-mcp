@@ -24,9 +24,9 @@ from pathlib import Path
 import pytest
 
 from omrg.core.vectordb.base import VectorStore
+from omrg.core.vectordb.chroma.paged import PagedReadMixin
 from omrg.core.vectordb.identity import EmbeddingIdentity
-from omrg.core.vectordb.lancedb import LanceVectorStore
-from omrg.core.vectordb.paged import PagedReadMixin
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 # Task 5.1: the ChromaDB adapter import is lazy so this shared contract
 # module collects (and runs every LanceDB parameter) in the base install
@@ -40,7 +40,7 @@ def _store_class(backend: str) -> type[VectorStore]:
     """Resolve the concrete class lazily (chromadb may be absent)."""
     if backend == "lancedb":
         return LanceVectorStore
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     return ChromaVectorStore
 
@@ -432,6 +432,26 @@ class TestCollectionMetadata:
         assert result.get("a") == 1
         assert result.get("b") == 2
 
+    def test_display_name_round_trips_and_clears_with_empty_string(
+        self, store: VectorStore
+    ) -> None:
+        """A display name is stored, overwritten, then cleared with ``""``.
+
+        Spec: local-web-workspace, 'Collections have an editable display
+        name'. Clearing stores an empty string because a metadata merge
+        cannot be relied on to delete a key on every backend.
+        """
+        store.create_collection("named")
+        store.update_collection_metadata("named", {"display_name": "Project docs"})
+        assert (store.get_collection_metadata("named") or {}).get("display_name") == "Project docs"
+        store.update_collection_metadata("named", {"display_name": "Renamed"})
+        assert (store.get_collection_metadata("named") or {}).get("display_name") == "Renamed"
+        store.update_collection_metadata("named", {"display_name": ""})
+        assert (store.get_collection_metadata("named") or {}).get("display_name") == ""
+        # Other keys survive the clear.
+        store.update_collection_metadata("named", {"profile": "codebase"})
+        assert (store.get_collection_metadata("named") or {}).get("profile") == "codebase"
+
 
 # ── Generation counter ────────────────────────────────────────────────
 
@@ -650,8 +670,8 @@ class TestFilteredDocuments:
         """
         import inspect
 
-        from omrg.core.vectordb.lance_paged import LancePagedReadMixin
-        from omrg.core.vectordb.paged import PagedReadMixin
+        from omrg.core.vectordb.chroma.paged import PagedReadMixin
+        from omrg.core.vectordb.lancedb.paged import LancePagedReadMixin
 
         lance_source = inspect.getsource(LancePagedReadMixin.iter_filtered_documents)
         assert "translate_where" in lance_source
@@ -789,7 +809,7 @@ class TestChromaWhereTranslation:
         assert [row[0] for row in rows] == ["c1"]
 
     def test_compound_filter_key_order_is_preserved(self) -> None:
-        from omrg.core.vectordb.paged import _chroma_where
+        from omrg.core.vectordb.chroma.paged import _chroma_where
 
         where = _chroma_where({"b": 2, "a": 1})
         assert where == {"$and": [{"b": 2}, {"a": 1}]}
@@ -798,3 +818,63 @@ class TestChromaWhereTranslation:
         store = _StubPagedStore(_WhereCapturingCollection(self.ROWS))
         with pytest.raises(ValueError, match="non-empty where filter"):
             list(store.iter_filtered_documents("docs", {}))
+
+
+# ── ADR-081: a query supplies its own embedding identity ──────────────────
+
+_IDENTITY_A = EmbeddingIdentity(provider="ollama", model="model-a")
+_IDENTITY_B = EmbeddingIdentity(provider="ollama", model="model-b")
+
+
+@pytest.fixture(params=["chroma", "lancedb"])
+def identity_store(request: pytest.FixtureRequest, tmp_path: Path) -> VectorStore:
+    """Return a store composed with identity A for each backend."""
+    if request.param == "chroma":
+        pytest.importorskip("chromadb", reason="chroma extra not installed")
+        return _store_class("chroma")(embedding_identity=_IDENTITY_A)
+    return LanceVectorStore(uri=str(tmp_path / "lancedb"), embedding_identity=_IDENTITY_A)
+
+
+def _write_stamped(store: VectorStore, name: str, identity: EmbeddingIdentity) -> None:
+    from llama_index.core.embeddings import MockEmbedding
+    from llama_index.core.schema import TextNode
+
+    store.write_nodes(
+        [TextNode(text="alpha beta", id_=f"{name}-1")],
+        name,
+        embed_model=MockEmbedding(embed_dim=8, model_name=identity.model),
+        embedding_identity=identity,
+    )
+
+
+class TestQuerySuppliesEmbeddingIdentity:
+    """``query_dense(..., embedding_identity=B)`` replaces the composed identity A."""
+
+    def test_dense_query_accepts_a_collection_stamped_with_the_supplied_identity(
+        self, identity_store: VectorStore
+    ) -> None:
+        _write_stamped(identity_store, "stamped-b", _IDENTITY_B)
+        rows = identity_store.query_dense("stamped-b", [0.5] * 8, 3, embedding_identity=_IDENTITY_B)
+        assert len(rows) == 1
+
+    def test_dense_query_refuses_a_collection_stamped_with_another_identity(
+        self, identity_store: VectorStore
+    ) -> None:
+        _write_stamped(identity_store, "stamped-a", _IDENTITY_A)
+        with pytest.raises(ValueError, match="model-b"):
+            identity_store.query_dense("stamped-a", [0.5] * 8, 3, embedding_identity=_IDENTITY_B)
+
+    def test_dense_query_without_identity_keeps_the_composed_rule(
+        self, identity_store: VectorStore
+    ) -> None:
+        _write_stamped(identity_store, "stamped-b2", _IDENTITY_B)
+        with pytest.raises(ValueError, match="model-a"):
+            identity_store.query_dense("stamped-b2", [0.5] * 8, 3)
+
+    def test_native_sparse_query_checks_the_supplied_identity(self, tmp_path: Path) -> None:
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"), embedding_identity=_IDENTITY_A)
+        _write_stamped(store, "fts-b", _IDENTITY_B)
+        assert store.query_native_sparse("fts-b", "alpha", 3, embedding_identity=_IDENTITY_B)
+        with pytest.raises(ValueError, match="model-b"):
+            _write_stamped(store, "fts-a", _IDENTITY_A)
+            store.query_native_sparse("fts-a", "alpha", 3, embedding_identity=_IDENTITY_B)

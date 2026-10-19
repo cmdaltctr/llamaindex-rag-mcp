@@ -14,6 +14,7 @@ from typing import Any
 from llama_index.core import Settings
 
 from ..norm_guard import NormCheck, check_query_vector
+from ..vectordb.identity import EmbeddingIdentity
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,9 @@ logger = logging.getLogger(__name__)
 # agentic loops) do not re-hit Ollama for the embedding step.  The cache
 # is keyed by ``(prepared_query, embed_model_name)`` so a model swap (e.g. via
 # ``Settings.embed_model = ...`` in tests) automatically invalidates
-# entries from the previous model.  See ADR-016 / OpenSpec change
+# entries from the previous model. A call that supplies an embedding identity
+# (ADR-081) keys by ``(prepared_query, provider, model)`` instead, so two
+# providers with an equal model name never share an entry.  See ADR-016 / OpenSpec change
 # ``rag-retrieval-quality-improvements`` Decision 4.
 _QUERY_EMBED_CACHE_MAXSIZE = 128
 
@@ -65,6 +68,8 @@ def _embed_query(
     query: str,
     embed_model: Any = None,
     cache: Any = None,
+    *,
+    embedding_identity: EmbeddingIdentity | None = None,
 ) -> list[float]:
     """Embed a query, using the provided cache when available.
 
@@ -77,8 +82,11 @@ def _embed_query(
         embed_model: Optional injected embedding model.  When ``None``,
             the LlamaIndex global is read (legacy transport path).
         cache: Optional ``OrderedDict``-shaped cache keyed by
-            ``(query, model_name)``. When ``None``, the module-level
+            ``(query, model_name)``, or by ``(query, provider, model)``
+            when an identity is supplied. When ``None``, the module-level
             LRU cache is used on the legacy global path only.
+        embedding_identity: Optional provider and model of *embed_model*
+            (ADR-081). It changes the cache key only.
 
     Returns:
         Embedding vector as a list of floats.
@@ -92,7 +100,11 @@ def _embed_query(
         # collisions across instances.
         return list(embed_model.get_query_embedding(query))
     if cache is not None:
-        key = (query, model_name)
+        key = (
+            (query, embedding_identity.provider, embedding_identity.model)
+            if embedding_identity is not None
+            else (query, model_name)
+        )
         if key in cache:
             cache.move_to_end(key)
             return list(cache[key])
@@ -152,6 +164,7 @@ def _dense_query_rows(
     norm_tolerance: float = 0.001,
     attach_norm_diagnostic: bool = False,
     timing_report: dict | None = None,
+    embedding_identity: EmbeddingIdentity | None = None,
 ) -> list[dict]:
     """Query the vector store for dense matches and return result rows.
 
@@ -172,6 +185,9 @@ def _dense_query_rows(
         norm_tolerance: Maximum permitted ``|norm - 1.0|`` (inclusive).
         attach_norm_diagnostic: When True (diagnostics mode), attach the
             ``norm_guard`` state dict to every result row.
+        embedding_identity: Provider and model that embedded the query
+            (ADR-081). It keys the cache and replaces the store identity in
+            the stamp guard. ``None`` keeps the composed identity.
         timing_report: Optional dict to accumulate per-stage wall-clock
             durations into. When supplied, ``embedding_seconds`` and
             ``dense_seconds`` are accumulated (design D4/D5 of
@@ -186,7 +202,8 @@ def _dense_query_rows(
     """
     t0 = time.perf_counter()
     prepared_query = _prepare_query_embedding_input(query, query_instruction)
-    query_embedding = _embed_query(prepared_query, embed_model, cache)
+    identity_kwargs = {"embedding_identity": embedding_identity} if embedding_identity else {}
+    query_embedding = _embed_query(prepared_query, embed_model, cache, **identity_kwargs)
     t1 = time.perf_counter()
     if timing_report is not None:
         timing_report["embedding_seconds"] = timing_report.get("embedding_seconds", 0.0) + (t1 - t0)
@@ -202,6 +219,7 @@ def _dense_query_rows(
         query_embedding=query_embedding,
         n_results=fetch_k,
         where=metadata_filter,
+        **identity_kwargs,
     )
     t3 = time.perf_counter()
     if timing_report is not None:

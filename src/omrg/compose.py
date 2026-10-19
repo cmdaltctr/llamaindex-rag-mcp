@@ -12,6 +12,7 @@ store. Importing this module has no runtime side effects.
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 from .capabilities import (  # noqa: F401  (re-exported for existing callers/tests)
@@ -24,6 +25,7 @@ from .capabilities import (  # noqa: F401  (re-exported for existing callers/tes
 )
 from .config import Settings, _resolve_effective_embed_provider, get_settings
 from .core.providers.embeddings import registry as embed_registry
+from .core.settings import PROVIDER_SECRET_FIELDS, provider_secret_values
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +39,7 @@ EMBEDDING_PROVIDER_SCOPE = "engine"
 # ── Runtime setup state ─────────────────────────────────────────────
 
 _runtime_setup_done: bool = False
+_runtime_engine: Any = None
 
 
 # ── Runtime capability probes ────────────────────────────────────────
@@ -89,8 +92,50 @@ def redaction_values() -> dict[str, str]:
         "chroma_cloud_api_key": settings.chroma_cloud_api_key,
         "chroma_cloud_tenant": settings.chroma_cloud_tenant,
         "chroma_cloud_database": settings.chroma_cloud_database,
-        "openrouter_api_key": settings.openrouter_api_key,
+        **dict(zip(PROVIDER_SECRET_FIELDS, provider_secret_values(settings), strict=True)),
     }
+
+
+def connection_summary(
+    values: ProviderValues | None = None, catalogue: Any = None
+) -> dict[str, Any]:
+    """Return the provider connection summary for ``GET /v1/connections``.
+
+    Composition-root surface: the web transport may not call
+    ``get_settings()``. The builder lives in ``compose_connections``.
+
+    Args:
+        values: Saved provider values and keychain facts from the web
+            runtime. ``None`` shows the environment's settings only.
+        catalogue: The profile catalogue. The Ollama address is locked while
+            any profile in it selects Ollama embeddings (design D4).
+    """
+    from .compose_connections import build_connection_summary
+    from .core.profiles.catalogue import uses_ollama_embeddings
+
+    settings = get_settings()
+    if values is not None:
+        settings = apply_provider_values(
+            settings, values, profiles_ollama=uses_ollama_embeddings(catalogue)
+        )
+    return build_connection_summary(settings, Path.cwd(), values, catalogue)
+
+
+def connection_targets(values: ProviderValues | None = None) -> dict[str, Any]:
+    """Return the model-list requests a provider test sends (server side only)."""
+    from .compose_connections import build_connection_targets
+
+    settings = get_settings()
+    if values is not None:
+        settings = apply_provider_values(settings, values)
+    return build_connection_targets(settings)
+
+
+def llamacpp_server_settings(values: ProviderValues | None = None) -> dict[str, Any]:
+    """Return the managed llama.cpp server settings for ``GET /v1/llamacpp/server``."""
+    from .compose_llamacpp import build_llamacpp_server_view
+
+    return build_llamacpp_server_view(get_settings(), values)
 
 
 def build_reranker(settings: Settings | None = None) -> Any:
@@ -178,6 +223,11 @@ def storage_summary(settings: Settings | None = None) -> str:
 # root is the sanctioned construction surface.  build_verify_llm (ADR-059)
 # joins it for the same reason.
 from .compose_answer import build_answer_llm, build_verify_llm  # noqa: E402,F401
+from .compose_providers import (  # noqa: E402,F401
+    ProviderValues,
+    apply_provider_values,
+    provider_effective_settings,
+)
 from .compose_settings import settings_to_effective  # noqa: E402,F401
 
 # Backward-compatible import surface (existing callers/tests).
@@ -189,6 +239,7 @@ def build_profile_resolver(
     *,
     store: Any = None,
     env_overrides: Any = None,
+    catalogue: Any = None,
 ) -> Any:
     """Construct the :class:`ProfileResolver` with its dependencies injected.
 
@@ -210,10 +261,13 @@ def build_profile_resolver(
             overrides, captured at composition time so an
             already-constructed engine never observes later environment
             changes. ``None`` keeps the legacy live-environment read.
+        catalogue: Optional :class:`ProfileCatalogue` that user profile tags
+            resolve through. ``None`` means this process found no workspace,
+            so a tag that is not built-in is refused with an explanation.
 
     Returns:
         A :class:`ProfileResolver` with ``server_profile``, ``base``,
-        ``store`` and ``env_overrides`` injected.
+        ``store``, ``env_overrides`` and ``catalogue`` injected.
     """
     from .core.profiles import ProfileResolver
 
@@ -225,6 +279,7 @@ def build_profile_resolver(
         server_profile=settings.rag_profile,
         base=settings_to_effective(settings),
         env_overrides=env_overrides,
+        catalogue=catalogue,
     )
 
 
@@ -385,12 +440,25 @@ def ensure_runtime_setup() -> None:
 
     Safe to call multiple times — only runs once.
     """
-    global _runtime_setup_done
+    global _runtime_setup_done, _runtime_engine
     if _runtime_setup_done:
         return
-    engine = build_engine()
+    from .compose_profile_setup import workspace_profile_catalogue
+
+    engine = build_engine(catalogue=workspace_profile_catalogue())
     engine._install_as_process_default()
+    _runtime_engine = engine
     _runtime_setup_done = True
+
+
+def runtime_engine() -> Any:
+    """Return the Engine that :func:`ensure_runtime_setup` built.
+
+    Commands that must run a user profile's pipelines use it, so they do not
+    open a second store client on the same path.
+    """
+    ensure_runtime_setup()
+    return _runtime_engine
 
 
 def reset_runtime_setup() -> None:
@@ -398,8 +466,9 @@ def reset_runtime_setup() -> None:
 
     Used by tests that need to re-trigger setup with different env vars.
     """
-    global _runtime_setup_done
+    global _runtime_setup_done, _runtime_engine
     _runtime_setup_done = False
+    _runtime_engine = None
 
 
 # Engine construction lives in a sibling module (this module sits at the

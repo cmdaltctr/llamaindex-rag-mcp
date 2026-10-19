@@ -25,7 +25,7 @@ Result: **38 passed in 2.28s**. Pytest reported no skipped tests.
 `evidence/task-4-checkpoint-repair.md` records the required fail-before result: 24 failures before the safeguards, including the experiment 26 four-query prefix and experiment 27 one-query prefix incorrectly producing PASS.
 
 A fresh SHA-256 comparison of every path in
-`repair/evidence/task-4-recompute/hashes-after.json` reported:
+`openspec/changes/archive/2026-09-13-repair-input-quality-experiment-evidence/evidence/repair/task-4-recompute/hashes-after.json` reported:
 
 ```text
 ok=25 bad=0 missing=0 total=25
@@ -33,8 +33,8 @@ ok=25 bad=0 missing=0 total=25
 
 The recomputed reports remain in distinct destinations:
 
-- `repair/evidence/task-4-recompute/exp26/`
-- `repair/evidence/task-4-recompute/exp27/`
+- `openspec/changes/archive/2026-09-13-repair-input-quality-experiment-evidence/evidence/repair/task-4-recompute/exp26/`
+- `openspec/changes/archive/2026-09-13-repair-input-quality-experiment-evidence/evidence/repair/task-4-recompute/exp27/`
 
 They report complete 223-query cells and the preserved FAIL verdicts.
 

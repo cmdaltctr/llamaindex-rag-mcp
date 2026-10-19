@@ -194,20 +194,29 @@ def _run_catchup_ingest(watch_path: Path, collection: str) -> dict:
     aborts installation instead of silently ingesting under default
     settings — the running watcher tolerates that fallback per-file, but
     an install must not bake a broken baseline into a login-time agent.
+    A collection that follows a user profile runs that profile's Ingest
+    pipeline through the process Engine.
     """
     import asyncio
 
     from ... import compose
+    from ...compose_profile_setup import workspace_profile_catalogue
     from ...core.ingestion import ingest_path_async
 
     try:
-        effective = compose.build_profile_resolver().resolve(collection)
+        resolver = compose.build_profile_resolver(catalogue=workspace_profile_catalogue())
+        effective, binding = resolver.resolve_bound(collection)
     except ValueError as exc:
         console.print(
             f"[red]Error:[/red] Cannot resolve the profile for collection {collection!r}: {exc}"
         )
         console.print("Fix the collection's profile configuration, then retry the installation.")
         raise typer.Exit(code=1) from None
+
+    if binding.user:
+        return asyncio.run(
+            compose.runtime_engine().ingest(str(watch_path), collection_name=collection)
+        )
 
     return asyncio.run(
         ingest_path_async(

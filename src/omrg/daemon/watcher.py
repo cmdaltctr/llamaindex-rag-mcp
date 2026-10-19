@@ -278,24 +278,40 @@ class DocumentIngestHandler(MoveHandlingMixin, PatternMatchingEventHandler):
             self._timers.pop(file_path, None)
 
     def _dispatch_ingest(self, file_path: str, current_hash: str) -> None:
-        """Run ingestion via asyncio.run from the watcher thread."""
+        """Run ingestion via asyncio.run from the watcher thread.
+
+        A collection that follows a user profile runs that profile's Ingest
+        pipeline through the process Engine. A collection whose profile cannot
+        be resolved (for example, a user profile with no workspace database)
+        skips this file with a warning; the watcher keeps running.
+        """
         from .. import compose
+        from ..compose_profile_setup import workspace_profile_catalogue
         from ..core.ingestion import ingest_path_async
 
         # Phase 4: resolve the collection's profile for per-operation levers.
         try:
-            effective = compose.build_profile_resolver().resolve(self._collection_name)
-        except ValueError:
-            effective = None
+            resolver = compose.build_profile_resolver(catalogue=workspace_profile_catalogue())
+            effective, binding = resolver.resolve_bound(self._collection_name)
+        except ValueError as exc:
+            logger.warning("Ingestion skipped for %s: %s", file_path, exc)
+            return
 
         try:
-            result = asyncio.run(
-                ingest_path_async(
-                    file_path,
-                    collection_name=self._collection_name,
-                    effective_settings=effective,
+            if binding.user:
+                result = asyncio.run(
+                    compose.runtime_engine().ingest(
+                        file_path, collection_name=self._collection_name
+                    )
                 )
-            )
+            else:
+                result = asyncio.run(
+                    ingest_path_async(
+                        file_path,
+                        collection_name=self._collection_name,
+                        effective_settings=effective,
+                    )
+                )
 
             if result.get("status") == "error":
                 error_msg = result.get("message", "unknown error")

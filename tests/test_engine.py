@@ -22,14 +22,22 @@ from omrg.core.settings import EffectiveSettings, MetadataBlock
 
 
 def test_public_api_exports_engine_effective_settings_version() -> None:
-    """``omrg`` exports exactly Engine, EffectiveSettings and __version__."""
+    """``omrg`` exports exactly the engine, settings, graph types and version."""
     import omrg
 
     assert hasattr(omrg, "Engine")
     assert hasattr(omrg, "EffectiveSettings")
     assert hasattr(omrg, "__version__")
     assert omrg.__version__ != "1.8.0"  # not the stale literal
-    assert omrg.__all__ == ["Engine", "EffectiveSettings", "__version__"]
+    assert omrg.__all__ == [
+        "Engine",
+        "EffectiveSettings",
+        "PipelineDefinition",
+        "PipelineResult",
+        "PipelineEvent",
+        "PipelineValidationError",
+        "__version__",
+    ]
 
 
 def test_importing_omrg_constructs_nothing() -> None:
@@ -64,7 +72,7 @@ def test_engine_constructs_directly_without_runtime_setup(tmp_path: Path) -> Non
     No ``ensure_runtime_setup()`` call is needed — the engine owns its
     store, embedder and settings.
     """
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
     from omrg.engine import Engine
 
     settings = EffectiveSettings(
@@ -98,7 +106,7 @@ def test_engine_from_environment_delegates_to_build_engine() -> None:
 
 def test_two_engines_have_independent_query_caches(tmp_path: Path) -> None:
     """Two engines do not share query-embedding caches."""
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
     from omrg.engine import Engine
 
     settings = EffectiveSettings(
@@ -121,7 +129,7 @@ def test_two_engines_have_independent_query_caches(tmp_path: Path) -> None:
 def test_engine_close_evicts_only_own_bm25_entries(tmp_path: Path) -> None:
     """Closing one engine evicts only its own BM25 cache entries."""
     from omrg.core.retrieval.sparse import BM25SparseRetriever
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
     from omrg.engine import Engine
 
     settings = EffectiveSettings(
@@ -154,7 +162,7 @@ def test_engine_close_evicts_only_own_bm25_entries(tmp_path: Path) -> None:
 
 def test_engine_close_is_idempotent(tmp_path: Path) -> None:
     """Calling close() twice is safe."""
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
     from omrg.engine import Engine
 
     settings = EffectiveSettings(
@@ -514,7 +522,22 @@ def test_engine_public_method_surface_is_exactly_documented() -> None:
     """The Engine public method set is exactly the documented surface."""
     from omrg.engine import Engine
 
-    expected = {"ingest", "search", "answer", "list_collections", "delete_collection", "close"}
+    # Task 4.3 adds graph validation and execution, and a read-only
+    # settings accessor for transports (add-local-web-pipeline-workspace).
+    expected = {
+        "ingest",
+        "search",
+        "answer",
+        "list_collections",
+        "delete_collection",
+        "close",
+        "resolve_settings",
+        "validate_pipeline",
+        "run_pipeline",
+        "describe_operations",
+        # Credential redaction for transports (add-mcp-http-transport D9).
+        "redact",
+    }
     actual = {
         name
         for name, member in vars(Engine).items()
@@ -971,14 +994,11 @@ def test_engine_answer_verify_failure_degrades_with_redacted_reason() -> None:
     """A verify-provider failure degrades to a redacted skipped reason."""
     import asyncio
 
+    from omrg.core.vectordb.identity import RedactionSecrets
     from omrg.engine import Engine
 
     effective = MagicMock()
     effective.answer.verify_claims = True
-    effective.openrouter_api_key = "sk-SECRET123"
-    effective.chroma_cloud_api_key = ""
-    effective.chroma_cloud_tenant = ""
-    effective.chroma_cloud_database = ""
     captured: dict[str, Any] = {}
 
     async def fake_core_answer(_question: str, **kwargs: Any) -> dict:
@@ -993,6 +1013,7 @@ def test_engine_answer_verify_failure_degrades_with_redacted_reason() -> None:
         store=MagicMock(cache_identity="verify-fail"),
         embed_model=MagicMock(),
         verify_llm_factory=failing_verify_factory,
+        redaction=RedactionSecrets(provider_keys=("sk-SECRET123",)),
     )
     with patch("omrg.core.answer.pipeline.answer", side_effect=fake_core_answer):
         result = asyncio.run(engine.answer("question"))

@@ -81,6 +81,17 @@ development of OMRG — Opinionated Modular RAG.
 | [072](./072-modular-ocr-engines-dots-mocr-primary-and-maths-routing.md) | Modular OCR Engines, dots.mocr as Primary Engine, and Maths-Page Routing | 2026-10-06 | Proposed |
 | [073](./073-make-the-torch-extra-a-normal-choice.md) | Make the Optional `torch` Extra a Normal Choice | 2026-10-08 | Accepted |
 | [074](./074-run-local-decision-models-through-llama-cpp-q8-0-gguf.md) | Run Local Decision Models Through llama.cpp Q8_0 GGUF | 2026-10-08 | Proposed |
+| [075](./075-omrg-owned-pipeline-runner-local-web-packaging-and-external-tool-plugins.md) | OMRG-Owned Pipeline Runner, Local Web Packaging, and External-Tool Plugins | 2026-10-13 | Accepted |
+| [076](./076-serve-mcp-from-the-web-server-with-a-lifespan-provided-engine.md) | Serve MCP from the Web Server with a Lifespan-Provided Engine | 2026-10-14 | Accepted |
+| [077](./077-web-workspace-client-foundation.md) | Web Workspace Client Foundation | 2026-10-15 | Accepted |
+| [078](./078-upload-limit-as-a-workspace-setting-and-run-artefact-route.md) | Upload Limit as a Workspace Setting, and a Run Artefact Route | 2026-10-15 | Accepted |
+| [079](./079-approve-extra-loopback-origins-at-launch.md) | Approve Extra Loopback Origins at Launch | 2026-10-15 | Accepted |
+| [080](./080-profiles-own-pipelines.md) | Profiles Own Pipelines | 2026-10-16 | Proposed |
+| [081](./081-per-profile-embedding-models.md) | Per-Profile Embedding Models | 2026-10-17 | Accepted |
+| [082](./082-chats-live-in-the-workspace-database.md) | Chats Live in the Workspace Database | 2026-10-18 | Accepted |
+| [083](./083-llm-provider-settings-in-the-web-workspace.md) | LLM Provider Settings in the Web Workspace | 2026-10-18 | Proposed |
+| [084](./084-context-windows-and-an-owned-llama-server.md) | Context Windows and a llama.cpp Server omrg Owns | 2026-10-18 | Proposed |
+| [085](./085-web-login-item.md) | Web Login Item | 2026-10-19 | Proposed |
 
 ## Convention
 

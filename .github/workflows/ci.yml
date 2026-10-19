@@ -5,9 +5,9 @@ on:
   schedule:
     - cron: "23 3 * * *"
   push:
-    branches: [main, v3]
+    branches: [main, v3, integration/core-web]
   pull_request:
-    branches: [main, v3, harden-pipeline-correctness-before-calibration]
+    branches: [main, v3, integration/core-web, harden-pipeline-correctness-before-calibration]
 
 jobs:
   test:
@@ -37,11 +37,18 @@ jobs:
         # Pinned to SHA for security — astral-sh/setup-uv@v8.2.0
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
+      # The web extra (FastAPI) lets the web transport and OpenAPI
+      # runtime conformance tests run here. The clean-base tripwire counts
+      # assume it; jobs without it adjust through the tripwire's
+      # fastapi-absent branch.
       - name: Install dependencies
         env:
           UV_LINK_MODE: copy
-        run: uv sync --frozen
+        run: uv sync --frozen --extra web
 
+      # Parallel with pytest-xdist; `--dist loadfile` comes from pyproject.toml.
+      # The tripwire starts a second copy of the suite inside one test, which a
+      # parallel run cannot split, so it runs as its own step below.
       - name: Run tests (fast)
         env:
           PDF_READER: pypdf
@@ -50,7 +57,17 @@ jobs:
           EMBED_MODEL: nomic-embed-text
           OLLAMA_BASE_URL: http://localhost:11434
           METADATA_LLM_PROVIDER: local
-        run: uv run --no-sync pytest -m "not slow" --tb=short -q
+        run: uv run --no-sync pytest -m "not slow" --tb=short -q -n auto --maxprocesses=8 --deselect tests/test_clean_base_tripwire.py
+
+      - name: Run clean-base tripwire
+        env:
+          PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
+        run: uv run --no-sync pytest tests/test_clean_base_tripwire.py --tb=short -q
 
       # Verify the default install stays torch-free (ADR-038).
       - name: Verify default install is torch-free
@@ -224,7 +241,9 @@ jobs:
           - azure
           - llamacpp
           - openrouter
+          - anthropic
           - chroma
+          - web
     steps:
       # Pinned to SHA for security — actions/checkout@v7.0.0
       # fetch-depth 0: the exp-29 pinned-baseline tests read historical
@@ -265,7 +284,20 @@ jobs:
         # The exact skip/count manifest is a clean-base assertion. Optional
         # extras intentionally activate additional tests, so those matrix
         # entries exercise the suite without the base-only tripwire module.
-        run: uv run --no-sync pytest -m "not slow" --tb=short -q ${{ matrix.extra && '--ignore=tests/test_clean_base_tripwire.py' || '' }}
+        # The base entry runs the tripwire as its own step (it cannot run inside
+        # a parallel suite), so it is deselected here.
+        run: uv run --no-sync pytest -m "not slow" --tb=short -q -n auto --maxprocesses=8 ${{ matrix.extra && '--ignore=tests/test_clean_base_tripwire.py' || '--deselect tests/test_clean_base_tripwire.py' }}
+
+      - name: Run clean-base tripwire at floors
+        if: matrix.extra == ''
+        env:
+          PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
+        run: uv run --no-sync pytest tests/test_clean_base_tripwire.py --tb=short -q
 
       - name: Verify base install stays Leiden-free
         if: matrix.extra == ''
@@ -359,6 +391,48 @@ jobs:
           METADATA_LLM_PROVIDER: local
         run: uv run --no-sync pytest -m "slow" -k "torch or backend_contract" --tb=short -v
 
+  # The web workspace frontend (web/) is a separate Node project. Its
+  # build output ships in the wheel, so lint, type, unit-test and build
+  # failures must block a PR like the Python gates do.
+  frontend:
+    if: github.event_name != 'schedule'
+    name: Frontend (web)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      # Pinned to SHA for security — actions/checkout@v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        # Pinned to SHA for security — actions/setup-node@v7.0.0
+        # Node 22 LTS satisfies the web/package.json engines field (>=22.12.0).
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
   lint:
     if: github.event_name != 'schedule'
     name: Lint (Ruff)
@@ -424,15 +498,17 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies
-        # community-leiden, llamacpp, and openrouter included so patch
-        # coverage exercises the optional Leiden strategies and the
-        # OpenAILikeEmbedding adapters (their tests skipif-guard without
-        # the extra). chroma and hybrid join for the same reason: this is
+        # community-leiden and anthropic included so patch coverage
+        # exercises the optional Leiden strategies and the Anthropic Chat
+        # provider (its tests skipif-guard without the extra). llamacpp and
+        # openrouter stay as empty extras so the old command still works:
+        # the OpenAI-like packages are now in the base install. chroma and hybrid join for the same reason: this is
         # the sole coverage upload, and the chroma adapter plus the
         # chroma-gated suites must count towards patch coverage of
-        # vector-store diffs. The base-only absence assertions live in
+        # vector-store diffs. web joins so the web transport tests count
+        # towards coverage too. The base-only absence assertions live in
         # the floors job instead.
-        run: uv sync --frozen --extra community-leiden --extra llamacpp --extra openrouter --extra chroma --extra hybrid
+        run: uv sync --frozen --extra community-leiden --extra llamacpp --extra openrouter --extra anthropic --extra chroma --extra hybrid --extra web
 
       - name: Run tests with coverage
         env:

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from omrg.core.vectordb.lance_table_name import validate_table_name
+from omrg.core.vectordb.lancedb.table_name import validate_table_name
 
 _BAD_NAMES = [
     "",

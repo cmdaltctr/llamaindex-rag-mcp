@@ -52,11 +52,28 @@ class VectorStore(ABC):
         """
         return None
 
-    # Writes.
+    def check_embedding_identity(
+        self, collection_name: str, identity: EmbeddingIdentity | None = None
+    ) -> None:
+        """Raise the identity-mismatch error if the collection's stamp conflicts.
+
+        Read-only: it never creates a collection, stamps a legacy one,
+        installs an epoch or advances the generation. An absent collection,
+        an unstamped one and a store with no active identity all pass.
+        *identity* replaces the composed identity for this call. Callers use
+        it to refuse a write before any embedding request. The default
+        keeps older third-party stores instantiable.
+        """
+        return None
 
     @abstractmethod
     def write_nodes(
-        self, nodes: list[Any], collection_name: str, *, embed_model: Any = None
+        self,
+        nodes: list[Any],
+        collection_name: str,
+        *,
+        embed_model: Any = None,
+        embedding_identity: EmbeddingIdentity | None = None,
     ) -> None:
         """Embed/write LlamaIndex nodes and bump generation exactly once.
 
@@ -66,6 +83,8 @@ class VectorStore(ABC):
             embed_model: Optional injected embedding model. When None, the
                 adapter falls back to the LlamaIndex global (legacy
                 transport path).
+            embedding_identity: Optional identity that replaces the composed
+                store identity for the check, the stamp and diagnostics.
         """
 
     def upsert_precomputed(
@@ -96,8 +115,13 @@ class VectorStore(ABC):
         query_embedding: list[float],
         n_results: int,
         where: dict | None = None,
+        *,
+        embedding_identity: EmbeddingIdentity | None = None,
     ) -> list[dict]:
-        """Return canonical higher-is-better dense result rows."""
+        """Return canonical higher-is-better dense result rows.
+
+        *embedding_identity* replaces the composed identity for the guard.
+        """
 
     def query_native_sparse(
         self,
@@ -105,6 +129,8 @@ class VectorStore(ABC):
         query: str,
         n_results: int,
         where: dict | None = None,
+        *,
+        embedding_identity: EmbeddingIdentity | None = None,
     ) -> list[dict]:
         """Return canonical higher-is-better native sparse (FTS) result rows.
 

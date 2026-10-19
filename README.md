@@ -70,11 +70,11 @@ Both collections then behave correctly in the same running engine. See
 
 You need [uv](https://docs.astral.sh/uv/) and one of
 [llama.cpp](https://github.com/ggml-org/llama.cpp) (default),
-[Ollama](https://ollama.com), or an [OpenRouter](https://openrouter.ai) key.
+[Ollama](https://ollama.com), or an [OpenRouter](https://openrouter.ai) key. `omrg web` can also start and stop its own llama.cpp chat server and set the Ollama context window (see [Configuration](docs/guides/configuration.md#local-llamacpp-server)).
 
 ```bash
 cp .env.example .env      # then edit it — see below
-uv sync --extra llamacpp
+uv sync                   # the llama.cpp backend needs no extra
 
 # start llama-server (downloads the GGUF models automatically)
 llama-server -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 --port 8080 --embeddings &
@@ -168,6 +168,7 @@ The same `omrg` command is both the MCP server and a terminal tool.
 | `omrg delete`           | Delete documents or drop a collection |
 | `omrg set-profile`      | Bind a collection to a profile        |
 | `omrg benchmark`        | Benchmark embedding throughput        |
+| `omrg web`              | Start the local web workspace (`web` extra) |
 
 Every flag and example: [CLI reference](docs/guides/cli-reference.md).
 
@@ -212,11 +213,13 @@ LOCAL_BACKEND=ollama
 EMBED_MODEL=qwen3-embedding:0.6b
 ```
 
-**OpenRouter for cloud embeddings or LLM** — no local model servers.
+**OpenRouter for cloud embeddings or LLM** — no local model servers. It needs no extra.
 
 ```bash
-uv sync --extra openrouter
+uv sync
 ```
+
+Chat answers can also use any OpenAI-compatible server (OpenAI, Together, vLLM, LM Studio) with no extra, or Anthropic with `uv sync --extra anthropic`. Set them in `omrg web` under Settings > Providers, or in the read-only user config folder (`~/.config/omrg/omrg.jsonc` and `secrets/<provider>.key`, also read by the CLI and the stdio server; see [Configuration](docs/guides/configuration.md#user-config-folder)). See also [Providers](docs/guides/providers.md).
 
 ```bash
 # .env
@@ -252,6 +255,8 @@ Full setup for each: [Providers](docs/guides/providers.md).
 | [Metadata extraction](docs/guides/metadata-extraction.md) | Auto-categorisation and filtering                |
 | [Reranker](docs/guides/reranker.md)                       | When reranking helps, and when it does not       |
 | [Testing](docs/guides/testing.md)                         | Running the suite, writing tests                 |
+| [Web workspace](docs/guides/web-workspace.md)             | `omrg web`: launch, sign-in, file grants, jobs   |
+| [Notebooks](docs/guides/notebooks.md)                     | Optional marimo plugin, trust, starter notebook  |
 | [Decision records](docs/adr/)                             | Why things are the way they are                  |
 | [Contributing](CONTRIBUTING.md)                           | Workflow and conventions                         |
 

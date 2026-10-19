@@ -1,68 +1,69 @@
 ## Purpose
 
 Define the modular subpackage structure for the core RAG pipeline: metadata extraction, ingestion, chunking, and retrieval. Phase 1 of the five-phase modular refactor — mechanical extraction with backward-compatible shims, no behaviour change.
+
 ## Requirements
+
 ### Requirement: Metadata subpackage extraction
 
-The system SHALL provide all metadata-extraction behaviour formerly in
-`metadata_extractor.py` from a `core/metadata/` subpackage containing one
-module per extraction backend (`keyword.py`, `ollama.py`, `llamaindex.py`,
-`llamacpp.py`), an orchestrator module (`extractor.py`) that dispatches to the
-configured backend, and a `taxonomy.py` module holding the hybrid category
-logic (ADR-013). `extractor.py` SHALL select a backend by resolving it through
-`core/metadata/registry.py` and SHALL NOT dispatch by an if/elif chain over
-backend names, nor import concrete backend modules at the top level.
+Metadata extraction SHALL remain in `core/metadata/`, with registered
+keyword, Ollama, LlamaIndex, llama.cpp, and OpenRouter implementations and
+shared prompt/taxonomy helpers. Dispatch SHALL use
+`core/metadata/registry.py` without name-specific branching or module-level
+imports of concrete backends. Existing positional text, filename, and
+settings arguments SHALL remain valid; built-in strategies SHALL also accept
+the documented optional keyword-only store context. Supplied context SHALL
+reach shared classification and fallback paths.
 
 #### Scenario: Backend split is faithful
-
-- **WHEN** the extraction is complete
-- **THEN** each of the four extraction backends MUST live in its own module
-  under `core/metadata/`
-- **AND** OpenRouter MUST NOT exist as a standalone backend module (it routes
-  through the llamaindex/local mode via the provider registry)
+- **WHEN** the metadata subpackage is inspected
+- **THEN** each supported implementation SHALL remain in its owning backend module
+- **AND** OpenRouter SHALL retain its existing registered implementation
 
 #### Scenario: Behaviour preservation
-
-- **WHEN** any supported metadata mode (`keyword`, `ollama`, `llamaindex`,
-  `llamacpp`, `disabled`) is exercised through the new subpackage
-- **THEN** the extracted metadata output MUST be identical to the pre-refactor
-  output for the same input and configuration
+- **WHEN** an existing metadata mode runs with the same intended settings/store
+- **THEN** output shape, retry policy, parsing, and degradation behaviour SHALL remain unchanged
+- **AND** accidental cross-store category lookup SHALL be corrected
 
 #### Scenario: Backend resolved through the registry
-
-- **WHEN** the extractor dispatches to a backend
-- **THEN** it MUST call `registry.get(<backend name>)`
-- **AND** `core/metadata/extractor.py` MUST contain no if/elif chain over
-  backend names and no module-level import of a concrete backend module
+- **WHEN** the extractor selects a backend
+- **THEN** it SHALL use the metadata registry
+- **AND** dispatch SHALL contain no name-specific branch or top-level concrete-backend import
 
 #### Scenario: Disabled sentinel honoured
-
-- **WHEN** metadata extraction is configured as disabled
-- **THEN** the extractor MUST short-circuit without resolving a backend
+- **WHEN** metadata extraction is disabled
+- **THEN** it SHALL return without category lookup or backend resolution
 
 #### Scenario: Extraction results unchanged
+- **WHEN** the selected backend succeeds with the same supplied category context
+- **THEN** returned category/keyword/summary fields SHALL retain their existing semantics
 
-- **WHEN** each backend runs against the same input as before the change
-- **THEN** the extracted metadata MUST be identical
-
----
+#### Scenario: Fallback preserves the owning store
+- **WHEN** LlamaIndex or local extraction falls back to another configured backend
+- **THEN** the supplied store and resolved settings SHALL reach that fallback
+- **AND** no default store SHALL replace them
 
 ### Requirement: Ingestion and chunking subpackage extraction
 
 The system SHALL provide ingestion orchestration from a `core/ingestion/`
-subpackage (`loader.py`, `chunker.py`, `writer.py`) exposing
-`ingest_path_async()` as its public entry point, and SHALL provide the four
-existing chunking strategies from a `core/chunking/` strategy folder
-(`code.py`, `markdown.py`, `sentence.py`, `config_file.py`). The chunker
-SHALL select a strategy by resolving it through `core/chunking/registry.py`,
-and SHALL NOT import concrete strategy modules at the top level.
+subpackage exposing `ingest_path_async()` as the standard public entry point,
+and SHALL provide the existing chunking strategies from `core/chunking/`.
+Asynchronous graph ingestion SHALL use reusable internal source preparation,
+reading, normalisation, enrichment, splitting, embedding, and protected
+replacement stages from those same packages. Chunking dispatch SHALL resolve
+strategies through `core/chunking/registry.py` without module-level imports of
+concrete strategies. Both structured and unstructured document branches SHALL
+invoke the selected registered document strategy, rather than private
+implementation helpers. Reading, metadata attachment, reader declarations, and
+degradation reporting SHALL retain their existing owners and semantics. Graph
+execution SHALL NOT introduce a separate ingestion algorithm or a synchronous
+mutation entry point.
 
 #### Scenario: Content-type dispatch preserved
 
 - **WHEN** a file with a known content type (e.g. `.py`, `.md`, `.yaml`) is
-  ingested
-- **THEN** the chunker MUST route it to the same strategy as before the
-  refactor (content-type precedence is unchanged)
+  ingested through the standard operation or a graph
+- **THEN** the shared chunker MUST preserve its content-type precedence
 
 #### Scenario: Strategy resolved through the registry
 
@@ -71,73 +72,101 @@ and SHALL NOT import concrete strategy modules at the top level.
 - **AND** `core/ingestion/chunker.py` MUST have no module-level import of
   `core.chunking.code`, `core.chunking.markdown`, `core.chunking.sentence`, or
   `core.chunking.config_file`
+- **AND** the chunker MUST NOT call sentence splitting or post-processing
+  helpers directly
 
 #### Scenario: Only existing strategies extracted
 
-- **WHEN** the `core/chunking/` folder is inspected
-- **THEN** it MUST contain exactly the four pre-existing strategies
-- **AND** MUST NOT contain `structural.py` or `evidence_md.py` (net-new
-  strategies deferred to a later change)
+- **WHEN** this change extends chunking for graph adapters
+- **THEN** it MUST reuse the existing registered strategies
+- **AND** it MUST NOT add a net-new chunking algorithm merely for the canvas
 
 #### Scenario: Async ingestion entry point preserved
 
-- **WHEN** a caller invokes ingestion
-- **THEN** `ingest_path_async` MUST remain the sole ingestion entry point
-  (AGENTS.md invariant #4), accepting an `EffectiveSettings` parameter
+- **WHEN** an existing caller invokes ingestion
+- **THEN** `ingest_path_async` MUST remain available with its injected
+  `EffectiveSettings` parameter and existing behaviour
+- **AND** new graph ingestion MUST be asynchronous and receive frozen settings
 
----
+#### Scenario: Protected replacement is reused
+
+- **WHEN** a graph writes an indexed source
+- **THEN** the graph MUST use the same source/embedding validation and
+  replacement operation as standard ingestion
+- **AND** write, verification, and stale cleanup MUST stay together
+
+#### Scenario: Registered replacement reaches production dispatch
+
+- **WHEN** the sentence registry resolves a sentinel replacement
+- **THEN** structured and unstructured standard/graph document dispatch MUST invoke it
+- **AND** the regression MUST fail if either branch returns to a private splitter
+
+#### Scenario: Reader-produced Markdown remains intact
+
+- **WHEN** a non-Markdown source is read as declared Markdown
+- **THEN** the selected strategy MUST receive that declaration
+- **AND** headings, model-token settings, and post-processing MUST be applied exactly once
+
+#### Scenario: Metadata degradation survives dispatch
+
+- **WHEN** unstructured metadata extraction reports degradation
+- **THEN** returned chunk results MUST retain that marker through the registered strategy call
 
 ### Requirement: Retrieval subpackage grouping
 
-The system SHALL group dense retrieval, sparse retrieval, fusion, reranking,
-the `search()` orchestrator, and the rerank threshold policy under a
-`core/retrieval/` subpackage, including a `pipeline.py` module owning the
-end-to-end `search()` orchestration and a `policy.py` module owning the
-`RETRIEVAL__HARD_TECHNICAL_THRESHOLD` ÷30 rerank threshold policy. `pipeline.py` SHALL
-resolve retrieval stages through `core/retrieval/registry.py` and SHALL NOT
-import concrete stage modules at the top level.
+The system SHALL keep dense retrieval, sparse retrieval, fusion, reranking,
+the `search()` orchestration facade, and threshold policy under
+`core/retrieval/`. Candidate sizing, filtering, policy, fallback, and context
+operations needed by graphs SHALL have shared implementations in that
+subpackage. Standard and graph adapters SHALL resolve strategy implementations
+through the existing registries, without name-specific dispatch branches or
+module-level imports of concrete strategies.
 
 #### Scenario: End-to-end search dispatch
 
-- **WHEN** `search()` is called through the new subpackage
-- **THEN** `pipeline.py` MUST orchestrate dense + sparse + RRF + rerank policy
-  exactly as the pre-refactor `retrieval.py` did
+- **WHEN** `search()` is called through the subpackage
+- **THEN** it MUST preserve its existing dense + sparse + RRF + rerank policy
+  orchestration and result semantics
 
 #### Scenario: Stages resolved through the registry
 
-- **WHEN** `pipeline.py` needs the dense, fusion, policy, or reranker stage
-- **THEN** it MUST resolve it through `registry.get(...)`
-- **AND** `pipeline.py` MUST have no module-level import of those stage modules
+- **WHEN** standard or graph retrieval dispatch needs a registered
+  implementation
+- **THEN** it MUST resolve it through the relevant `registry.get(...)`
+- **AND** dispatch modules MUST have no module-level imports of concrete
+  implementation modules
 
 #### Scenario: Threshold policy relocated intact
 
-- **WHEN** the rerank threshold policy is inspected in `core/retrieval/policy.py`
-- **THEN** the `RETRIEVAL__HARD_TECHNICAL_THRESHOLD = 0.3` ÷30 scaling logic MUST be
-  numerically identical to the pre-refactor implementation (AGENTS.md gotcha
-  #3 — recalibration requires re-running experiment 1)
+- **WHEN** threshold policy is used in a standard search or graph
+- **THEN** the calibrated ÷30 rerank transform MUST remain numerically
+  identical
+- **AND** no new calibration or default change MUST occur in this change
 
 #### Scenario: Reranker model cache reset preserved
 
 - **WHEN** tests need a clean reranker state
 - **THEN** `reset_model_cache()` MUST clear the process-wide model cache
-  (AGENTS.md gotcha #2)
 
----
+#### Scenario: Graph and search share filtering
+
+- **WHEN** canonical graph and standard retrieval filter the same fixtures
+- **THEN** they MUST use the same score-kind, dense-eligibility, top-k, and
+  reranker-failure rules
 
 ### Requirement: Behaviour preservation and test continuity
 
-The refactor SHALL NOT change any observable runtime behaviour of retrieval,
-ingestion, or metadata extraction: public operation semantics, CLI commands,
-MCP tool signatures, return shapes, and error contracts are identical before
-and after. Changes to Python import paths, the configuration surface, and
-removed compatibility modules are governed by the breaking-change
-requirements of this change and are excluded from this preservation
-guarantee.
+Existing retrieval, ingestion, metadata extraction, and answering operation
+semantics SHALL remain compatible: public signatures, defaults, return
+shapes, CLI commands, MCP tool signatures, and error contracts are preserved.
+New graph APIs and the explicit web command are additive. Graph adapters SHALL
+reuse shared algorithms and retain current lineage, score, recovery, and
+citation safeguards.
 
 #### Scenario: Full test suite passes
 
-- **WHEN** `uv run pytest -m "not slow" --cov=omrg` is run at the change
-  boundary
+- **WHEN** the approved implementation validation runs
+  `uv run pytest -m "not slow" --cov=omrg`
 - **THEN** all tests MUST pass
 - **AND** coverage MUST meet the recorded floors: Core + MCP ≥95%,
   Orchestration ≥85%, Overall ≥90%
@@ -150,7 +179,6 @@ guarantee.
 
 #### Scenario: MCP and CLI surfaces unchanged
 
-- **WHEN** the MCP server and CLI are exercised after the change
-- **THEN** every tool signature and subcommand MUST behave identically to the
-  pre-change versions
-
+- **WHEN** existing MCP tools and CLI commands are exercised after the change
+- **THEN** their signatures and behaviour MUST remain compatible
+- **AND** no-argument `omrg` MUST still start the MCP stdio server

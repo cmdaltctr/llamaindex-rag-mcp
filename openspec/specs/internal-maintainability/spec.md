@@ -5,6 +5,7 @@
 Define internal code-quality boundaries for helper naming, lock naming, test isolation, and concurrency primitives so the codebase remains honest and auditable without changing user-facing behaviour.
 
 ## Requirements
+
 ### Requirement: Unsupported file discovery comments match behavior
 Internal file discovery helpers SHALL not contain unreachable branches or comments claiming unsupported single files are tracked when callers reject unsupported single files earlier.
 
@@ -29,14 +30,6 @@ Watcher synchronization primitives SHALL be named according to the state they pr
 - **THEN** its name SHALL reflect shared watcher state rather than only timers
 - **THEN** watcher behavior SHALL remain unchanged
 
-### Requirement: Metadata ChromaDB client lazy initialization is safe
-The metadata extraction ChromaDB client cache SHALL avoid unguarded first-use races.
-
-#### Scenario: Concurrent first category lookup
-- **WHEN** two ingestion threads request existing categories at the same time
-- **THEN** `_get_chroma_client()` SHALL initialize the cached client without unguarded double-creation
-- **THEN** both callers SHALL receive a usable ChromaDB client
-
 ### Requirement: Test persist directory does not imply shared filesystem state
 Tests SHALL not rely on a hardcoded shared ChromaDB persist path when an isolated path is available.
 
@@ -48,16 +41,30 @@ Tests SHALL not rely on a hardcoded shared ChromaDB persist path when an isolate
 ### Requirement: Documented source paths resolve
 
 Documentation that cites a source file path SHALL cite a path that exists.
-Every `src/omrg/**/*.py` path referenced in `docs/guides/` or
-`tests/TEST_README.md` SHALL resolve to a file on disk. Records under
-`docs/adr/` are EXCLUDED: an ADR legitimately cites paths that were correct
-when the decision was taken and have since moved.
+Every `src/omrg/**/*.py` path referenced in `docs/guides/`,
+`tests/TEST_README.md`, the root `AGENTS.md` or a folder guidance file SHALL
+resolve to a file on disk. A short citation that starts at a top-level
+package folder (`core/`, `transports/`, `integrations/`, `config/` or
+`daemon/`) and omits `src/omrg/` SHALL resolve below `src/omrg/` in the same
+way. Records under `docs/adr/` are EXCLUDED: an ADR legitimately cites paths
+that were correct when the decision was taken and have since moved.
 
 #### Scenario: A guide cites a path deleted by a refactor
 
 - **WHEN** a guide references `src/omrg/config.py` after the v2 split moved it to `src/omrg/config/__init__.py`
 - **THEN** the documentation reference check SHALL fail
 - **THEN** the failure SHALL name the citing file, its line, and the unresolved path
+
+#### Scenario: A guide cites a moved file without the package prefix
+
+- **WHEN** a guide references `core/vectordb/lancedb.py` after the file moved to `core/vectordb/lancedb/store.py`
+- **THEN** the documentation reference check SHALL fail
+- **THEN** the failure SHALL name the citing file, its line, and the unresolved path
+
+#### Scenario: A folder guidance file cites a moved file
+
+- **WHEN** `src/omrg/core/vectordb/AGENTS.md` cites a module path that no longer exists
+- **THEN** the documentation reference check SHALL fail and name that file and line
 
 #### Scenario: A historical ADR cites a since-deleted path
 
@@ -116,3 +123,103 @@ banners regardless of which test module ran earlier in the same session.
   execution
 - **THEN** teardown restores the handler and level configuration that existed
   before the module ran
+
+### Requirement: Codebase helper imports are order independent
+Codebase map/cache modules and their shared data models SHALL import successfully in fresh processes regardless of cache-first or map-first order. Existing model import paths and serialised fields SHALL remain compatible.
+
+#### Scenario: Cache imports first
+- **WHEN** a fresh interpreter imports cache before the map facade
+- **THEN** both imports SHALL succeed and the cache SHALL construct the shared model types
+
+#### Scenario: Map imports first
+- **WHEN** a fresh interpreter imports the map facade before cache
+- **THEN** both imports SHALL succeed with the same model classes
+
+#### Scenario: Existing model consumer imports through the facade
+- **WHEN** a caller imports the existing inventory/map models through their current facade
+- **THEN** those names SHALL resolve to the shared classes
+- **AND** JSON round-trip fields SHALL remain unchanged
+
+### Requirement: Codebase cache reuse proves its supplied context
+Cache reuse SHALL require the current Git commit and compatible supplied settings/store context. Existing filename and map payload SHALL remain. Missing or unproven owner context SHALL be a safe miss; non-Git projects SHALL remain uncached. A process-local identity SHALL not be treated as durable across processes.
+
+#### Scenario: Matching commit and owner
+- **WHEN** commit and proven owner context match
+- **THEN** the existing cached map SHALL be reusable
+
+#### Scenario: Same path and commit but different owner
+- **WHEN** two callers share a cache directory but differ in supplied store or map settings
+- **THEN** one SHALL not return the other's cached map
+
+#### Scenario: Old cache has no owner context
+- **WHEN** an old record lacks a usable owner context
+- **THEN** it SHALL be treated as a miss
+- **AND** startup SHALL not delete cache, vector, or experiment data
+
+#### Scenario: Owner context is unavailable
+- **WHEN** reliable context cannot be established for persistent reuse
+- **THEN** that context SHALL rebuild rather than return an unverified cache hit
+
+#### Scenario: Commit changes or project is not Git
+- **WHEN** the commit differs or no Git commit is available
+- **THEN** existing invalidation/non-Git behaviour SHALL remain in force
+
+### Requirement: Repair regressions exercise production seams
+Regression tests SHALL invoke production chunk dispatch, actual prompt construction with fake model calls, explicit map/cache contexts, and fresh import orders. They SHALL fail when the corresponding repair is removed, rather than pass through a shared private helper or swallowed exception.
+
+#### Scenario: Private splitting bypass is restored
+- **WHEN** document dispatch returns to a private splitter despite a registered replacement
+- **THEN** the production-dispatch regression SHALL fail
+
+#### Scenario: Global lookup error is swallowed
+- **WHEN** taxonomy loses supplied-store labels by swallowing a global lookup error
+- **THEN** the prompt-content regression SHALL fail
+
+#### Scenario: Passing structural checks coexist with a behavioural regression
+- **WHEN** file-size/import checks pass but one repaired production seam regresses
+- **THEN** its dedicated behavioural regression SHALL still fail
+
+### Requirement: Key source folders carry agent guidance files
+
+Each of these folders SHALL contain an `AGENTS.md` file and a `CLAUDE.md`
+symbolic link that points to it: `src/omrg/`, `src/omrg/core/`,
+`src/omrg/core/vectordb/`, `src/omrg/core/retrieval/`,
+`src/omrg/core/ingestion/`, `src/omrg/core/pipelines/`,
+`src/omrg/transports/`, `src/omrg/integrations/`, `web/src/` and `tests/`.
+Each guidance file SHALL be at most 40 lines and SHALL link to the root
+`AGENTS.md`. An automated check SHALL enforce these rules.
+
+#### Scenario: Guidance file missing
+
+- **WHEN** one of the listed folders has no `AGENTS.md`
+- **THEN** the check SHALL fail and name the folder
+
+#### Scenario: Claude link points elsewhere
+
+- **WHEN** a listed folder has a `CLAUDE.md` that is a regular file, or a link whose target is not `AGENTS.md`
+- **THEN** the check SHALL fail and name the folder
+
+#### Scenario: Guidance file grows too long
+
+- **WHEN** a guidance file has more than 40 lines
+- **THEN** the check SHALL fail and name the file and its line count
+
+#### Scenario: Guidance file does not link back
+
+- **WHEN** a guidance file contains no link to the root `AGENTS.md`
+- **THEN** the check SHALL fail and name the file
+
+### Requirement: Agent guidance files stay out of the wheel
+
+The built wheel SHALL contain no `AGENTS.md` and no `CLAUDE.md` file at any
+depth. The release wheel check SHALL report each such file it finds.
+
+#### Scenario: Wheel built from the source tree
+
+- **WHEN** a wheel is built from a tree that holds folder guidance files under `src/omrg/`
+- **THEN** no `AGENTS.md` or `CLAUDE.md` entry SHALL appear in the wheel
+
+#### Scenario: A guidance file leaks into a wheel
+
+- **WHEN** the release wheel check reads a wheel that contains `omrg/core/AGENTS.md`
+- **THEN** the check SHALL fail and name that entry

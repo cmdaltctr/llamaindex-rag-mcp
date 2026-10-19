@@ -1,0 +1,213 @@
+/*
+ * Stylesheet entry. It loads Tailwind v4 and third-party CSS into one fixed
+ * cascade order, lowest priority first:
+ *
+ *   theme, base  Tailwind theme variables, then Tailwind's preflight reset and
+ *                the few global rules below.
+ *   vendor       third-party CSS (React Flow).
+ *   components   overrides that must target a third-party library's own class
+ *                names. Everything else is a utility on our own elements.
+ *   utilities    Tailwind utility classes.
+ *
+ * A layered rule loses to any later layer whatever its specificity, so a
+ * utility class beats every vendor rule, including one with higher
+ * specificity. A rule outside all layers beats every layer. Add new
+ * stylesheets here, in a layer, and never import a .css file from a
+ * component (cascade.test.ts fails if one does, or if a third .css file
+ * appears).
+ *
+ * tokens.css holds custom properties only and main.tsx imports it first.
+ */
+@layer theme, base, vendor, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "tw-animate-css";
+@import "@xyflow/react/dist/style.css" layer(vendor);
+
+
+/*
+ * Theme variants follow the same two switches as tokens.css: the data-theme
+ * attribute, then the operating system preference. Tokens already change with
+ * the theme, so most classes need no dark: variant. The variant exists for
+ * components added later with the shadcn CLI, whose templates use dark:.
+ */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * Token bridge. tokens.css stays the single source of truth; these aliases
+ * only give Tailwind utility names to its custom properties. The shadcn names
+ * (background, card, primary, accent ...) follow the shadcn convention so
+ * generated components compile without edits. Note that shadcn "accent" is the
+ * neutral selection fill, and "primary" is the brand accent from tokens.css.
+ * cascade.test.ts checks that every alias points at a token that exists.
+ */
+@theme inline {
+  --color-background: var(--surface-canvas);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--surface-elevated);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--surface-elevated);
+  --color-popover-foreground: var(--text-primary);
+  --color-secondary: var(--surface-muted);
+  --color-secondary-foreground: var(--text-primary);
+  --color-muted: var(--surface-muted);
+  --color-muted-foreground: var(--text-secondary);
+  --color-accent: var(--selection);
+  --color-accent-foreground: var(--text-primary);
+  --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
+  --color-input: var(--border);
+  --color-ring: var(--focus-ring);
+
+  --color-primary: var(--accent);
+  --color-primary-label: var(--accent-label);
+  --color-primary-tint: var(--accent-tint);
+  --color-primary-tint-hover: var(--accent-tint-hover);
+  --color-primary-tint-active: var(--accent-tint-active);
+  --color-primary-tint-border: var(--accent-tint-border);
+
+  --color-selection: var(--selection);
+  --color-interactive-hover: var(--interactive-hover);
+  --color-interactive-active: var(--interactive-active);
+
+  --color-destructive: var(--status-error);
+  --color-status-error: var(--status-error);
+  --color-status-warning: var(--status-warning);
+  --color-status-success: var(--status-success);
+  --color-status-info: var(--status-info);
+  --color-status-error-label: var(--status-error-label);
+  --color-status-warning-label: var(--status-warning-label);
+  --color-status-success-label: var(--status-success-label);
+  --color-status-info-label: var(--status-info-label);
+
+  --shadow-floating: var(--shadow-floating);
+
+  /*
+   * Radius, font and size tokens already use Tailwind's own names, so these
+   * entries only register the utilities. Tailwind also emits them as
+   * self-referencing declarations in the theme layer. They are inert: the
+   * unlayered declarations in tokens.css always win over a layered one.
+   */
+  --radius-control: var(--radius-control);
+  --radius-small: var(--radius-small);
+  --radius-panel: var(--radius-panel);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --text-page-title: var(--text-page-title);
+  --text-section-title: var(--text-section-title);
+  --text-subsection-title: var(--text-subsection-title);
+  --text-ui: var(--text-ui);
+  --text-meta: var(--text-meta);
+  --text-code: var(--text-code);
+}
+
+/*
+ * React Flow (Studio canvas). The library draws edges, handles and controls
+ * with its own classes, so these few rules map them to the tokens. Every
+ * other element of the canvas is a utility class in the component.
+ * Node markup lives in studio/OperationNode.tsx.
+ */
+/*
+ * Global rules that preflight does not provide. Preflight already resets
+ * box sizing, margins, headings and form controls.
+ */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--surface-canvas);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-ui);
+    line-height: 1.45;
+  }
+
+  /* One focus ring for every control; primitives add no ring of their own. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .react-flow {
+    --xy-background-color: var(--surface-canvas);
+    --xy-background-pattern-color: var(--border-hover);
+    --xy-edge-stroke: var(--text-secondary);
+    --xy-edge-stroke-selected: var(--accent);
+    --xy-connectionline-stroke: var(--accent);
+    --xy-handle-background-color: var(--surface-elevated);
+    --xy-handle-border-color: var(--text-secondary);
+    --xy-controls-button-background-color: var(--surface-elevated);
+    --xy-controls-button-background-color-hover: var(--surface-muted);
+    --xy-controls-button-color: var(--text-primary);
+    --xy-controls-button-border-color: var(--border);
+    --xy-attribution-background-color: transparent;
+    color: var(--text-primary);
+  }
+
+  /* The library sets "outline: none" on selectable nodes; keep a visible focus ring. */
+  .react-flow__node:focus-visible,
+  .react-flow__edge:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Set by FlowSurface: a connection the server refused, the edge into a running node, and the edge into a node that just finished. */
+  .flow-edge--invalid .react-flow__edge-path {
+    stroke: var(--status-error);
+  }
+
+  .flow-edge--active .react-flow__edge-path {
+    stroke: var(--status-info);
+    stroke-width: 2;
+  }
+
+  /*
+   * A step card grows when the user expands its summary or its settings, and it can
+   * grow past its grid row. React Flow sets the stacking order inline, so the rule needs
+   * !important. The expanded card then covers its neighbours instead of hiding behind them.
+   */
+  .react-flow__node:has([aria-expanded="true"]) {
+    z-index: 10 !important;
+  }
+
+  /* The edge into a step that finished a moment ago in a live run. */
+  .flow-edge--done .react-flow__edge-path {
+    stroke: var(--status-success);
+    stroke-width: 2;
+  }
+}

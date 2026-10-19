@@ -15,7 +15,14 @@ The `omrg` command doubles as an MCP server and a CLI tool. With no arguments it
 | `omrg watch <dir>`           | Watch a directory for new/changed documents and auto-ingest them                 |
 | `omrg install-login-watcher` | Install a macOS LaunchAgent that runs the document watcher at login              |
 | `omrg delete`                | Delete documents by file path, metadata filter, or drop a collection             |
+| `omrg set-profile`           | Bind a built-in profile (`documents` or `codebase`) to a collection              |
 | `omrg benchmark`             | Benchmark embedding throughput without vector-store writes                       |
+| `omrg web`                   | Start the local web workspace (needs the `web` extra)                            |
+| `omrg web install`           | Keep the web app running as a macOS login item and start it                      |
+| `omrg web uninstall`         | Stop the login item and remove its LaunchAgent file                              |
+| `omrg web status`            | Show whether the login item is installed, running and answering                  |
+| `omrg web restart`           | Restart the login item, for example after you install a newer copy               |
+| `omrg web open`              | Open the app in your browser with a fresh sign-in link                           |
 | `omrg --version`             | Show version                                                                     |
 | `omrg --help`                | Show help                                                                        |
 | `omrg --install-completion`  | Install shell tab completion                                                     |
@@ -24,8 +31,8 @@ The `omrg` command doubles as an MCP server and a CLI tool. With no arguments it
 
 | Flag                 | Applies to                                               | Description                                                          |
 | -------------------- | -------------------------------------------------------- | -------------------------------------------------------------------- |
-| `--collection`, `-c` | `ingest`, `search`, `list`, `watch`, `delete`, `answer`  | Collection name in the selected vector store (default `"documents"`) |
-| `--json`             | `ingest`, `search`, `list`, `list-collections`, `delete`, `answer` | Output results as JSON (written to stderr like all CLI output; stdout stays the MCP protocol channel) |
+| `--collection`, `-c` | `ingest`, `search`, `list`, `watch`, `delete`, `answer`, `set-profile` | Collection name in the selected vector store (default `"documents"`) |
+| `--json`             | `ingest`, `search`, `list`, `list-collections`, `delete`, `answer`, `set-profile` | Output results as JSON (written to stderr like all CLI output; stdout stays the MCP protocol channel) |
 | `--chunk-size`       | `ingest`                                                 | Override chunk size (characters)                                     |
 | `--chunk-overlap`    | `ingest`                                                 | Override chunk overlap (characters)                                  |
 | `--report`, `-r`     | `ingest`                                                 | Write ingestion report to a file                                     |
@@ -38,7 +45,8 @@ The `omrg` command doubles as an MCP server and a CLI tool. With no arguments it
 | `--debounce`, `-d`   | `watch`                                                  | Debounce interval in seconds (default: 2)                            |
 | `--verbose`, `-v`    | `watch`                                                  | Enable DEBUG-level logging                                           |
 | `--dry-run`          | `delete`                                                 | Preview deletion without modifying the selected vector store         |
-| `--yes`, `-y`        | `delete`                                                 | Skip confirmation prompt for collection deletion                     |
+| `--yes`, `-y`        | `delete`, `set-profile`                                  | Skip the confirmation prompt                                         |
+| `--profile`, `-p`    | `set-profile`                                            | Target built-in profile: `documents` or `codebase`                   |
 
 ## Examples
 
@@ -64,6 +72,12 @@ omrg ingest /path/to/docs/ --json
 Collections are created automatically on first ingest — nothing to set up.
 
 File reading is sequential. For ingestion throughput, tune `INGESTION__EMBED_BATCH_SIZE` and `INGESTION__EMBED_CONCURRENCY` in your environment.
+
+A collection can follow a user profile (see [User profiles](configuration.md#user-profiles)).
+`omrg ingest` then runs the Ingest pipeline of that profile. The command reads the profile from
+the default workspace file, `~/.omrg/workspace/workspace.db`, and opens it read-only. If the file
+does not exist, the command exits with code 1 and names the profile and the path. A collection
+that follows `documents` or `codebase` ingests as before.
 
 ### search
 
@@ -99,6 +113,13 @@ only), and `rerank_seconds` (when reranking ran). A stage that did not run is
 absent — absence means "did not execute", never "took zero time". No total
 duration is emitted. Dense and sparse stages run concurrently in hybrid mode,
 so their durations overlap; do not sum them to get wall time.
+
+A collection can follow a user profile. `omrg search` then runs the Search pipeline of that
+profile. The command reads the profile from the default workspace file, read-only. Without that
+file the command exits with code 1 and names the profile and the path. For such a collection,
+`--top-k`, `--threshold`, `--rerank` and `--expand-window` replace the matching step setting of the
+pipeline only when you type them. `--hybrid` has no step setting: the wiring of the pipeline
+decides whether retrieval is hybrid. A built-in collection uses the defaults of its profile.
 
 > Search-time metadata filtering is available via the `search_documents` MCP tool. The CLI supports metadata filters for deletion via `omrg delete --metadata`.
 
@@ -176,6 +197,11 @@ Error: No answer model is configured for grounded answering. Set ANSWER__PROVIDE
 The server model and the sampling preferences are configured with the
 `ANSWER__*` variables. See [Configuration](configuration.md#answering--answer__).
 
+A collection can follow a user profile. `omrg answer` then runs the Answer pipeline of that
+profile, with the answer model and the judge that the process builds from `ANSWER__*`. The command
+reads the profile from the default workspace file, read-only. Without that file the command exits
+with code 1 and names the profile and the path.
+
 ### list
 
 ```bash
@@ -247,6 +273,12 @@ omrg watch /path/to/docs/ --debounce 5
 omrg watch /path/to/docs/ --verbose
 ```
 
+A collection that follows a user profile is ingested through the Ingest pipeline of that profile.
+The watcher reads the profile from the default workspace file, read-only. If the file does not
+exist, the watcher logs the error that names the profile and the path for each changed file and
+keeps running. Create the workspace file with `omrg web`, or change the collection to `documents`
+or `codebase`, and the next change of a file is ingested.
+
 > **Cold-start gap:** The watcher only detects changes after it starts. Run `omrg ingest <path>` first to catch up on existing files.
 
 > **Concurrency warning:** Do not run `omrg watch` and `omrg ingest` (or the MCP server) simultaneously against the same collection. Two processes do not share the internal write lock.
@@ -274,7 +306,7 @@ On macOS the command writes a per-user LaunchAgent that runs `omrg watch <dir>` 
 
 The label is deterministic: `com.omrg.watch.<slug>-<hash>`, built from the folder name and the collection. Files live at `~/Library/LaunchAgents/<label>.plist`, `~/Library/Logs/omrg/<label>.out.log`, and `~/Library/Logs/omrg/<label>.err.log`. Without `--load` or `--start` the watcher starts at your next login. Use `--command-path` to pin an exact `omrg` executable when you keep several Python environments.
 
-With `--initial-ingest`, the installer indexes the folder before it writes the plist or touches launchctl. It reuses the `omrg ingest` pipeline, so the collection's profile governs chunking and extraction. A broken collection profile aborts the install; `--force` applies only to ordinary ingest errors.
+With `--initial-ingest`, the installer indexes the folder before it writes the plist or touches launchctl. It reuses the `omrg ingest` pipeline, so the collection's profile governs chunking and extraction. A broken collection profile aborts the install; `--force` applies only to ordinary ingest errors. For a collection that follows a user profile, the catch-up ingest runs the Ingest pipeline of that profile. If the default workspace file does not exist, the install stops with the error that names the profile and the path.
 
 > **Platform:** Installation is macOS-only. On any other platform the command exits unless you add `--dry-run`. A dry run prints the label, command, plist path, and log paths; it neither writes files nor calls launchctl.
 
@@ -288,6 +320,139 @@ rm ~/Library/LaunchAgents/com.omrg.watch.<slug>-<hash>.plist
 ```
 
 Re-run the command with `--force` to update an existing watcher instead.
+
+### set-profile
+
+```bash
+# Preview the change and confirm
+omrg set-profile --collection my_code --profile codebase
+
+# Apply without the prompt
+omrg set-profile -c my_code -p codebase --yes
+
+# Print the safety contract as JSON (applies only with --yes)
+omrg set-profile -c my_code -p codebase --json
+```
+
+The command takes `documents` or `codebase`. It prints which settings change and when, then asks
+`Continue?` unless you pass `--yes`. The change does not re-chunk or re-embed existing chunks.
+Any other name, including the id of a user profile, exits with code 1 and prints:
+
+```text
+Bind user profiles in Knowledge Base > Profile, or through the MCP endpoint of `omrg web`.
+```
+
+The collection tag stays unchanged. A user profile is bound in the web server only, so a delete and
+a bind cannot cross in two processes. See [User profiles](configuration.md#user-profiles).
+
+### web
+
+Start the local browser workspace on a loopback address. It needs the optional `web` extra (`uv sync --extra web` or `pip install "omrg[web]"`).
+
+```bash
+# Start on the saved port, else 8765, with the default workspace
+omrg web
+
+# Pick a free port instead
+omrg web --port 0
+
+# Approve two directories for file access
+omrg web --root ~/papers --root ~/notes
+
+# Use another workspace and a fixed port
+omrg web --workspace ~/omrg-demo --port 8765
+
+# Approve a root for experiment workspaces
+omrg web --experiment-root ~/omrg-experiments
+
+# Raise the per-file upload limit to 200 MiB for this run
+omrg web --max-upload-mib 200
+
+# Allow an embedded preview pane to sign in
+omrg web --allow-origin http://name.orca.localhost:57977
+```
+
+| Option | Default | Use |
+|---|---|---|
+| `--workspace PATH` | `~/.omrg/workspace` | Directory for records, run artefacts and uploads. |
+| `--port N` | saved port, else `8765` | TCP port. `0` picks a free port. |
+| `--root DIR` | none | Approve a directory for file access. Repeat for more directories. |
+| `--host ADDR` | `127.0.0.1` | Loopback address only: `127.0.0.1`, `::1` or `localhost`. |
+| `--experiment-root DIR` | none | Approve a directory for experiment workspaces. Repeat for more directories. |
+| `--allow-origin ORIGIN` | none | Approve one extra loopback browser origin for this run, for example an embedded preview. Repeat for more origins. See [Web workspace](web-workspace.md). |
+| `--max-upload-mib MIB` | saved limit, else `50` | Per-file upload limit in whole MiB, 1 to 2048. Also read from `WEB_MAX_UPLOAD_MIB`. |
+
+The upload limit is the first value in this order: `--max-upload-mib`, then `WEB_MAX_UPLOAD_MIB` (environment or `.env`), then the limit saved in Settings > Workspace, then 50 MiB. A launch value locks the limit for that run, and Settings cannot change it. A value that is not a whole number from 1 to 2048 stops the command with exit code 2 before it binds a port. The message names the option, the variable and the range.
+
+The port is `--port` if you give it, else the port saved in Settings > MCP, else 8765. `--port 0` picks a free port. If the port is taken, the command exits with code 1 and prints `Port <n> is in use. Start with --port <n> to choose another port, then save it in Settings > MCP.` The command writes the one-time sign-in link to stderr. It does not run the legacy process-default installer. It refuses a non-loopback `--host`. Every option, sign-in, file grants, jobs and shutdown: [Web workspace](web-workspace.md).
+
+### web install, uninstall, status, restart, open
+
+Keep the web app running on a Mac. `omrg web` stops when you close its terminal window. The login item is a per-user LaunchAgent with the label `com.omrg.web`. It starts at every login. It starts again after a crash and after a stop signal. Only `omrg web uninstall` stops it for good. The guide [Web workspace](web-workspace.md#keep-the-app-running) explains the sign-in link file.
+
+```bash
+# Show the plan and write nothing (works on any platform)
+omrg web install --dry-run
+
+# Install, load and start. The command waits up to 60 seconds for the app
+omrg web install
+
+# Open the app in your browser, signed in
+omrg web open
+
+# Check the state
+omrg web status
+omrg web status --json
+
+# Start the installed version, for example after you installed a newer copy
+omrg web restart
+
+# Stop the app and remove the login item. The workspace and the logs stay
+omrg web uninstall
+```
+
+Options of `omrg web install`:
+
+| Option | Default | Use |
+|---|---|---|
+| `--workspace PATH` | `~/.omrg/workspace` | Workspace folder. The login item gets the option only when you give it. |
+| `--port N` | saved port, else `8765` | TCP port, 1 to 65535. A login item needs a stable port, so `0` is not allowed. |
+| `--root DIR` | none | Approve a directory for file access. Repeat for more. The path is made absolute. |
+| `--experiment-root DIR` | none | Approve a directory for experiment workspaces. Repeat for more. |
+| `--command-path PATH` | `omrg` on your `PATH` | Absolute path of the `omrg` executable. |
+| `--dry-run` | off | Show the plan. Write no file and do not call `launchctl`. |
+| `--force` | off | Replace an existing login item. |
+| `--yes`, `-y` | off | Skip the confirmations. |
+
+Other options: `omrg web open --print` prints the full sign-in link to stderr and opens no browser. `omrg web uninstall --yes` skips the confirmation. `omrg web status --json` prints one JSON object.
+
+| Command | Exit code |
+|---|---|
+| `install` | 0 when the app answers. 1 when the platform is not macOS, a login item exists and `--force` is missing, `launchctl` fails, you refuse a confirmation, or the app does not answer within 60 seconds. The login item stays installed after a time-out. |
+| `uninstall` | 0 when it removed the login item, and also when nothing was installed. 1 when you refuse the confirmation or the agent stays loaded. |
+| `status` | 0 when the app answers `GET /v1/health`. 1 when it does not answer, or no login item is installed. |
+| `restart` | Sends `SIGTERM` and waits up to 15 seconds until the old process has ended. Then it waits up to 5 seconds for launchd to start a new process. It runs `launchctl kickstart` (never `-k`) only if none starts. Then it waits up to 60 seconds for the app to answer. 0 when the new app answers. 1 when no login item is installed, the old process does not end within 15 seconds, or the new app does not answer within 60 seconds. |
+| `open` | 0 when it opened the link or printed it. 1 when the login item is not running. The command never starts a server. |
+
+The login item is a copy of your `omrg` that launchd starts. A stop signal does not stop it, because launchd starts the app again about one second later. `kill` and Activity Monitor do not stop it. Use `omrg web uninstall`. Four rules follow from that:
+
+1. **Install `omrg` outside the checkout.** The login item runs the absolute path of the executable. A path inside a `.venv` of a source checkout stops working when you delete the checkout or its worktree. `install` shows a warning for such a path, and asks you to confirm or to pass `--yes`. Build the web front end first (`cd web && npm run build`), because the wheel ships the built files. Then install a copy from the checkout that holds the version you want. Run this from the checkout folder:
+
+    ```bash
+    uv tool install "omrg[web] @ file://$PWD"
+    omrg --version
+    ```
+
+    Do not use editable mode (`-e`): it keeps running the source files of the checkout. To update the copy later, run the same command with `--reinstall`, then `omrg web restart`.
+2. **Settings come from `~/.omrg/.env`.** launchd starts the login item in `~/.omrg` with no shell variables. The app reads the `.env` file in its working folder, so it reads `~/.omrg/.env`. Variables you export in your shell do not reach it. Copy your settings to `~/.omrg/.env` yourself. `install` shows the path of the file and, when the folder where you ran it has a `.env` file, asks you to copy it. The command never reads, copies or moves a `.env` file.
+3. **The `PATH` is fixed.** The login item gets `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin`, so it can start tools such as `llama-server`. A tool in another folder is not found.
+4. **A running copy does not change when you install a newer one.** `status` shows the running version and the installed version. Run `omrg web restart` to start the installed version. A restart signs the browser out. Run `omrg web open` to sign in again.
+
+`install` warns, and goes on, when something already listens on the target port. Stop a hand-started `omrg web` first, or the login item cannot bind the port. `install` reports success only when the app answers health and the sign-in link file names the target port, so a hand-started server on that port does not count. `restart` waits until the old process has ended, not only until health stops answering.
+
+Files outside the repository: `~/Library/LaunchAgents/com.omrg.web.plist`, `~/Library/Logs/omrg/com.omrg.web.out.log`, `~/Library/Logs/omrg/com.omrg.web.err.log`, `<workspace>/launch-link` and the folder `~/.omrg`. The log files have no rotation. The access log is off, so they hold only start-up and error lines.
+
+> **Platform:** `install` works on macOS only. On any other platform it exits with code 1 unless you add `--dry-run`.
 
 ### Shell tab completion
 

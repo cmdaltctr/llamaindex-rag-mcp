@@ -18,6 +18,8 @@ import time
 
 import pytest
 
+from conftest import build_mcp_server, direct_ctx
+
 pytestmark = [pytest.mark.asyncio]
 
 
@@ -78,7 +80,8 @@ class TestIngestResponsiveness:
         await asyncio.sleep(0.1)
 
         results = await asyncio.wait_for(
-            search_documents("test", top_k=5, collection=coll), timeout=30
+            search_documents("test", top_k=5, collection=coll, ctx=direct_ctx(build_mcp_server())),
+            timeout=30,
         )
 
         assert not ingest_task.done(), (
@@ -145,9 +148,10 @@ class TestIngestResponsiveness:
                 }
             ]
 
-        monkeypatch.setattr("omrg.transports.mcp.search.search", slow_search)
+        server = build_mcp_server()
+        monkeypatch.setattr(server.test_context.engine, "search", slow_search)
 
-        search_task = asyncio.create_task(search_documents("slow"))
+        search_task = asyncio.create_task(search_documents("slow", ctx=direct_ctx(server)))
         await asyncio.sleep(0.05)
 
         await asyncio.sleep(0.01)
@@ -263,7 +267,8 @@ class TestSplitterOffload:
         await asyncio.to_thread(entered.wait, 10)
 
         results = await asyncio.wait_for(
-            search_documents("test", top_k=5, collection=coll), timeout=10
+            search_documents("test", top_k=5, collection=coll, ctx=direct_ctx(build_mcp_server())),
+            timeout=10,
         )
 
         assert not ingest_task.done(), (

@@ -104,7 +104,7 @@ Hybrid search fuses two rankings: dense embedding similarity and a sparse keywor
 | `bm25` (default) | In-process BM25, cached per store and collection, invalidated on every mutation | Base install, backend-agnostic |
 | `native` | LanceDB native full-text search over the stored `text` column | LanceDB only |
 
-The registry (`core/retrieval/sparse_registry.py`) maps backend names to implementations; adding a backend is one new file plus one `register()` line. `auto` is deliberately not a backend: the composition root resolves it before query time through the selected store's capability metadata plus a real native-FTS probe (`omrg.core.vectordb.lance_fts:probe_native_fts`). On LanceDB `auto` resolves to `native`. Chroma declares no native capability, so `auto` resolves to `bm25` there. An unknown concrete name fails startup listing `auto` plus the registered names.
+The registry (`core/retrieval/sparse_registry.py`) maps backend names to implementations; adding a backend is one new file plus one `register()` line. `auto` is deliberately not a backend: the composition root resolves it before query time through the selected store's capability metadata plus a real native-FTS probe (`omrg.core.vectordb.lancedb.fts:probe_native_fts`). On LanceDB `auto` resolves to `native`. Chroma declares no native capability, so `auto` resolves to `bm25` there. An unknown concrete name fails startup listing `auto` plus the registered names.
 
 Scores are not comparable across backends. Native rows carry `score_kind` `native_fts_v1`, the engine's raw higher-is-better score. Only rank order feeds RRF, so the scale difference never affects fusion.
 
@@ -128,7 +128,7 @@ Selecting `native` on a store without the capability logs a WARNING at compositi
 
 ### FTS lifecycle (LanceDB)
 
-The native path owns one full-text-search index per collection. The contract lives in `core/vectordb/lance_fts.py` and is pinned by `tests/test_lancedb_native_fts_contract.py`:
+The native path owns one full-text-search index per collection. The contract lives in `core/vectordb/lancedb/fts.py` and is pinned by `tests/test_lancedb_native_fts_contract.py`:
 
 - **Creation** is additive and triggered on the first native query, indexing existing rows synchronously. A collection without an index keeps working through every other operation.
 - **Staleness** is a durable property: writes by any process show as `num_unindexed_rows > 0` in `list_indices()` statistics. The process-local generation counter is not used for this. BM25 cache validity uses the store's durable data version where one exists ([ADR-056](../adr/056-lineage-navigation-replaces-a-document-store.md)); the process-local counter is the fallback.
@@ -140,3 +140,31 @@ The BM25 path never emits these warnings; it indexes every chunk it sees.
 ### Migration
 
 Existing collections need no re-ingestion: the first native query creates the FTS index additively and indexes existing rows synchronously. FTS indexes add per-collection disk footprint. To roll back, set `RETRIEVAL__HYBRID_SPARSE_BACKEND=bm25`; stored data and any FTS indexes are left untouched. An unused index is inert.
+
+## Retrieval stages as graph operations
+
+`search()` and the graph operations share one set of retrieval functions. The search path did not change when the graph operations were added.
+
+| Stage | Shared function | Module | Graph operation |
+|---|---|---|---|
+| Levers (`top_k`, threshold, hybrid) | `resolve_search_levers` | `src/omrg/core/retrieval/operations.py` | `retrieve.prepare_query` |
+| Rerank decision | `resolve_rerank_decision` | `src/omrg/core/retrieval/operations.py` | `retrieve.prepare_query` |
+| Candidate pool | `size_candidate_pool` | `src/omrg/core/retrieval/operations.py` | `retrieve.prepare_query` |
+| Dense retrieval | `_dense_query_rows` (registry name `dense`) | `src/omrg/core/retrieval/dense.py` | `retrieve.dense` |
+| Sparse retrieval | `sparse_policy_runner` | `src/omrg/core/retrieval/sparse_dispatch.py` | `retrieve.sparse` |
+| Dense eligibility before fusion | `first_stage_dense_threshold`, `apply_dense_eligibility` | `src/omrg/core/retrieval/operations.py` | `combine.rrf` |
+| Fusion | `rrf_with_metadata` (registry name `fusion`) | `src/omrg/core/retrieval/fusion.py` | `combine.rrf` |
+| Reranking and its failure fallback | `run_reranker`, `rerank_succeeded` | `src/omrg/core/retrieval/operations.py` | `select.rerank` |
+| Threshold (÷30 after a successful rerank) and `top_k` | `apply_score_threshold`, `rank_and_truncate`, `needs_dense_fallback` | `src/omrg/core/retrieval/operations.py` | `select.threshold` |
+| Lineage expansion and overlap merge | `assemble` | `src/omrg/core/retrieval/assembly.py` | `context.assemble` |
+
+The adapters live in `src/omrg/core/retrieval/graph_adapters.py` and `src/omrg/core/retrieval/graph_adapters_retrieve.py`. Their descriptors live in `src/omrg/core/retrieval/graph_adapters_catalogue.py`. The canonical `search` template chains these operations in the order above. It returns the same rows, scores, score kinds, rank provenance and fallback reasons as `Engine.search` on the recorded fixtures in `tests/fixtures/pipeline_parity/retrieval/`.
+
+These values and behaviours are unchanged:
+
+- `retrieval.top_k` defaults to `10`.
+- `retrieval.rerank_enabled` defaults to `false`. The `documents` profile sets it to `true`. The `codebase` profile keeps it `false`.
+- The threshold is divided by 30 only after a successful rerank. A failed rerank keeps the dense threshold.
+- `search()` returns a list of row dictionaries with the same keys as before. `include_diagnostics=True` adds the same rank provenance fields.
+
+In a graph, a failed rerank or a native-to-BM25 sparse fallback is a node fallback. The run result reports the reason in the node outcome. It does not fail the run.

@@ -1,32 +1,42 @@
 """Hybrid category taxonomy (ADR-013).
 
-Queries the vector store for existing categories across all collections,
-merges them with seed categories from the keyword rules, and provides
-the category-gathering machinery used by the LLM-based backends (ollama,
-llamacpp, openrouter) to prefer reuse of existing labels.  Extracted
-from the original ``metadata_extractor.py`` monolith as part of Phase 1;
-rewired through the vector store ABC in Phase 3.
+Queries the supplied vector store for existing categories across all
+collections, merges them with seed categories from the keyword rules, and
+provides the category-gathering machinery used by the LLM-based backends
+(ollama, llamacpp, openrouter) to prefer reuse of existing labels.
+
+This module is a leaf: it receives resolved settings and the owning store
+from its caller.  It never reads a process-default store or default
+settings.  Without a store, classification is seed-only
+(``repair-modular-core-boundaries`` design D2).
 """
 
 from __future__ import annotations
 
-from ..settings import resolve_effective_settings
-from ..vectordb import get_default_store
-from ..vectordb.base import VectorStore
+from typing import TYPE_CHECKING
+
 from ._common import _normalise_category, logger
 from .keyword import _load_keyword_rules
 
+if TYPE_CHECKING:
+    from ..settings import EffectiveSettings
+    from ..vectordb.base import VectorStore
 
-def _get_seed_categories(settings: object | None = None) -> frozenset[str]:
-    """Extract unique category names from the current keyword rules.
 
-    These serve as the initial taxonomy when the store is empty (first run).
-    The categories are normalised (lowercase) for consistent comparison.
+def _get_seed_categories(settings: EffectiveSettings) -> frozenset[str]:
+    """Extract unique category names from the configured keyword rules.
+
+    These serve as the initial taxonomy when the store is empty (first run)
+    or when no store is supplied.  The categories are normalised
+    (lowercase) for consistent comparison.
+
+    Args:
+        settings: Resolved settings that carry the keyword rules.
 
     Returns:
         Frozen set of normalised seed category names.
     """
-    rules = _load_keyword_rules(resolve_effective_settings(settings))
+    rules = _load_keyword_rules(settings)
     seen: set[str] = set()
     for rule in rules:
         cat = rule.get("category", "").lower()
@@ -58,22 +68,26 @@ def _collect_categories_from_collection(store: VectorStore, collection_name: str
     return categories
 
 
-def _gather_existing_categories() -> list[str]:
-    """Query the vector store across all collections for unique category values.
+def _gather_existing_categories(*, store: VectorStore | None = None) -> list[str]:
+    """Query the supplied store across all collections for unique category values.
 
-    Fetches metadata from every collection in the store, extracts the
+    Fetches metadata from every collection in *store*, extracts the
     ``"category"`` field from each entry, deduplicates, and normalises to
     lowercase.  Returns an empty list on failure (no crash — callers fall
     back to seed categories).
 
+    Args:
+        store: The owning :class:`VectorStore`.  ``None`` means standalone
+            classification: no lookup, no warning, seed categories only.
+
     Returns:
         List of unique, normalised category strings currently stored in the
-        vector store.  Empty list if the store is unreachable or has no
-        category metadata yet.
+        supplied store.  Empty list if no store is supplied, the store is
+        unreachable, or it has no category metadata yet.
     """
+    if store is None:
+        return []
     try:
-        store = get_default_store()
-
         categories: set[str] = set()
         for collection_name in store.list_collections():
             try:

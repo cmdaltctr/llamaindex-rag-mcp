@@ -326,7 +326,7 @@ class TestResolveSparseBackendNative:
     def test_native_with_probe_true_returns_native(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A native request with the probe passing returns native."""
         import omrg.compose as compose
-        import omrg.core.vectordb.lance_fts as lance_fts
+        import omrg.core.vectordb.lancedb.fts as lance_fts
 
         monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: True)
         assert compose.resolve_sparse_backend(self._settings("native")) == "native"
@@ -340,7 +340,7 @@ class TestResolveSparseBackendNative:
         import logging
 
         import omrg.compose as compose
-        import omrg.core.vectordb.lance_fts as lance_fts
+        import omrg.core.vectordb.lancedb.fts as lance_fts
 
         monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: False)
         with caplog.at_level(logging.WARNING, logger="omrg.compose"):
@@ -742,7 +742,7 @@ def test_build_vector_store_chroma_delegates_to_factory() -> None:
     """build_vector_store with chroma delegates to build_chroma_vector_store."""
     from omrg.compose import build_vector_store
 
-    with patch("omrg.core.vectordb.chroma.build_chroma_vector_store") as mock_build:
+    with patch("omrg.core.vectordb.chroma.store.build_chroma_vector_store") as mock_build:
         build_vector_store(_settings(vector_store="chroma"))
         mock_build.assert_called_once()
 
@@ -757,7 +757,7 @@ def test_build_vector_store_lancedb_constructs_store(tmp_path: Path) -> None:
     ``test_vectordb_registry.py``).
     """
     from omrg.compose import build_vector_store
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
     uri = str(tmp_path / "lancedb")
     settings = _settings(
@@ -1119,7 +1119,7 @@ def test_build_vector_store_none_delegates_to_get_settings() -> None:
     controlled = _settings(vector_store="chroma")
     with (
         patch("omrg.compose.get_settings", return_value=controlled) as mock_gs,
-        patch("omrg.core.vectordb.chroma.build_chroma_vector_store"),
+        patch("omrg.core.vectordb.chroma.store.build_chroma_vector_store"),
     ):
         build_vector_store(None)
     mock_gs.assert_called_once()
@@ -1142,3 +1142,173 @@ def test_build_profile_resolver_explicit_settings_skips_get_settings() -> None:
     with patch("omrg.compose.get_settings") as mock_gs:
         build_profile_resolver(_settings())
     mock_gs.assert_not_called()
+
+
+# ── build_engine(provider_source=...) (add-llm-provider-settings, task 5.3) ──
+
+
+class _EngineParts:
+    """Patches the heavy builders so ``build_engine`` runs on real ``Settings``."""
+
+    def __init__(self, base: Settings) -> None:
+        self.base = base
+        self.embed_settings: list[Settings] = []
+        self.store_settings: list[Settings] = []
+        self.calls: list[str] = []
+
+    def __enter__(self) -> _EngineParts:
+        from contextlib import ExitStack
+
+        def embed(settings: Settings) -> MagicMock:
+            self.embed_settings.append(settings)
+            return MagicMock(model_name="embed")
+
+        def store(settings: Settings) -> MagicMock:
+            self.store_settings.append(settings)
+            mock = MagicMock()
+            mock.cache_identity = "id"
+            return mock
+
+        self.stack = ExitStack()
+        enter = self.stack.enter_context
+        enter(patch("omrg.compose.get_settings", return_value=self.base))
+        enter(patch("omrg.compose.build_embed_model", side_effect=embed))
+        enter(patch("omrg.compose.build_vector_store", side_effect=store))
+        enter(patch("omrg.compose.build_reranker", return_value=MagicMock()))
+        enter(patch("omrg.compose._log_norm_guard_state"))
+        enter(
+            patch(
+                "omrg.compose._resolve_active_strategies",
+                side_effect=lambda s: self.calls.append("strategies"),
+            )
+        )
+        enter(
+            patch(
+                "omrg.config.check_legacy_env_vars",
+                side_effect=lambda *a: self.calls.append("legacy-env"),
+            )
+        )
+        enter(
+            patch(
+                "omrg.core.vectordb.legacy.evaluate_legacy_chroma_data",
+                side_effect=lambda *a: self.calls.append("legacy-chroma"),
+            )
+        )
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.stack.close()
+
+
+def _provider_base(tmp_path: Path) -> Settings:
+    """Settings with no environment-locked provider field, whatever the host sets."""
+    base = Settings(
+        _env_file=None,
+        embed_provider="openrouter",
+        embed_model="",
+        openrouter_api_key="",
+        lancedb_uri=str(tmp_path / "lancedb"),
+    )
+    object.__setattr__(base, "provider_explicit", frozenset())
+    return base
+
+
+def test_build_engine_with_provider_source_runs_the_environment_safeguards(
+    tmp_path: Path,
+) -> None:
+    from omrg.compose import ProviderValues
+    from omrg.compose_engine import build_engine
+
+    with _EngineParts(_provider_base(tmp_path)) as parts:
+        engine = build_engine(provider_source=lambda: ProviderValues())
+    assert parts.calls == ["legacy-env", "legacy-chroma", "strategies"]
+    engine.close()
+
+
+def test_build_engine_starts_with_the_saved_values(tmp_path: Path) -> None:
+    from omrg.compose import ProviderValues
+    from omrg.compose_engine import build_engine
+
+    values = ProviderValues(
+        {"answer.model": "saved-model", "answer.provider": "openrouter", "openrouter_api_key": "k"}
+    )
+    with _EngineParts(_provider_base(tmp_path)) as parts:
+        engine = build_engine(provider_source=lambda: values)
+    assert engine._effective_settings.answer.model == "saved-model"
+    assert engine._effective_settings.openrouter_api_key == "k"
+    assert parts.embed_settings[0].answer.model == "saved-model"
+    assert parts.store_settings[0].openrouter_api_key == "k"
+    assert engine.redact("failed with key k and more") != "failed with key k and more"
+    engine.close()
+
+
+def test_each_generation_freezes_the_values_the_source_returns_when_it_starts(
+    tmp_path: Path,
+) -> None:
+    from omrg.compose import ProviderValues
+    from omrg.compose_engine import build_engine
+
+    current = {"v": ProviderValues({"answer.model": "first"})}
+    seen: dict[str, list[Settings]] = {"answer": [], "verify": [], "resolver": []}
+
+    def answer(settings: Settings) -> str:
+        seen["answer"].append(settings)
+        return "answer-llm"
+
+    def verify(settings: Settings, answer_block: object = None) -> str:
+        seen["verify"].append(settings)
+        return "judge"
+
+    def resolver(settings: Settings, **_: object) -> str:
+        seen["resolver"].append(settings)
+        return "resolver"
+
+    with (
+        _EngineParts(_provider_base(tmp_path)),
+        patch("omrg.compose_answer.build_answer_llm", side_effect=answer),
+        patch("omrg.compose_answer.build_verify_llm", side_effect=verify),
+        patch("omrg.compose.build_profile_resolver", side_effect=resolver),
+    ):
+        engine = build_engine(provider_source=lambda: current["v"])
+        first = engine._gen
+        current["v"] = ProviderValues({"answer.model": "second", "openrouter_api_key": "new"})
+        # The first generation builds late and still sees the values it started with.
+        assert first.answer_llm_factory() == "answer-llm"
+        assert first.verify_llm_factory(object()) == "judge"
+        assert first.resolver_factory() == "resolver"
+        effective = engine._gen.effective
+        engine.use_provider_settings(
+            effective.model_copy(
+                update={
+                    "openrouter_api_key": "new",
+                    "answer": effective.answer.model_copy(update={"model": "second"}),
+                }
+            )
+        )
+        assert engine._answer_llm_factory() == "answer-llm"
+        assert engine._verify_llm_factory(object()) == "judge"
+        assert engine._profile_resolver_factory() == "resolver"
+    assert [s.answer.model for s in seen["answer"]] == ["first", "second"]
+    # The first generation also builds its resolver for the Ollama guard.
+    assert [s.answer.model for s in seen["resolver"]] == ["first", "first", "second"]
+    assert seen["verify"][0].openrouter_api_key != "new"
+    assert seen["verify"][1].openrouter_api_key == "new"
+    engine.close()
+
+
+def test_build_engine_without_the_keyword_uses_the_resolved_settings_as_before(
+    tmp_path: Path,
+) -> None:
+    from omrg.compose_engine import build_engine
+
+    base = _provider_base(tmp_path)
+    seen: list[Settings] = []
+    with (
+        _EngineParts(base) as parts,
+        patch("omrg.compose_answer.build_answer_llm", side_effect=lambda s: seen.append(s)),
+    ):
+        engine = build_engine()
+        engine._answer_llm_factory()
+    assert seen == [base] and seen[0] is base
+    assert parts.embed_settings[0] is base and parts.store_settings[0] is base
+    engine.close()

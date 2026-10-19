@@ -68,6 +68,19 @@ _EVIDENCE_TRUNCATED_MARKER = "\n[evidence truncated]\n"
 _MARKER_RESERVE = len(_EVIDENCE_TRUNCATED_MARKER) + 64
 
 
+class SeamCompletionError(RuntimeError):
+    """A seam failure carried past LlamaIndex's refine loop (TDR-036).
+
+    The refine loop (``llama_index/core/response_synthesizers/refine.py``,
+    llama-index-core 0.14.23) catches ``ValidationError``, ``ValueError``
+    and ``TypeError`` from every LLM call, logs "Structured response
+    error" and answers with the text "Empty Response". A provider that
+    rejects a malformed reply (Ollama's empty ``role``) raises one of
+    those types, so :class:`SeamLLM` re-raises it as this type, which the
+    loop does not catch. The original error is ``__cause__``.
+    """
+
+
 def _char_tokenizer(text: str) -> list[int]:
     """Deterministic character-count stand-in for a real tokenizer.
 
@@ -98,6 +111,10 @@ class SeamLLM(CustomLLM):
     seam: Any = None
     seam_calls: int = 0
     last_reply: str = ""
+    #: True once any seam reply carried text. Refine replaces an
+    #: all-empty synthesis with "Empty Response", so the flag is the
+    #: only reliable sign that the model said nothing.
+    replied_text: bool = False
 
     @property
     def metadata(self) -> LLMMetadata:
@@ -123,9 +140,13 @@ class SeamLLM(CustomLLM):
             # prevented this): reuse the last reply rather than
             # exceeding the advertised bound.
             return CompletionResponse(text=self.last_reply)
-        reply = await self.seam(prompt)
+        try:
+            reply = await self.seam(prompt)
+        except (ValueError, TypeError) as exc:  # pydantic ValidationError is a ValueError
+            raise SeamCompletionError(str(exc)) from exc
         self.last_reply = reply
         self.seam_calls += 1
+        self.replied_text = self.replied_text or bool(reply.strip())
         return CompletionResponse(text=reply)
 
     @llm_completion_callback()
@@ -335,7 +356,8 @@ async def run_synthesis(
         max_rounds: Maximum completion rounds.
 
     Returns:
-        ``(answer_text, completion_calls)``.
+        ``(answer_text, completion_calls)``. *answer_text* is ``""`` when
+        no seam reply carried text, never refine's "Empty Response".
     """
     nodes, total = _fit_and_measure(nodes, context_window, max_output_tokens, max_rounds)
     synthesiser, adapter = build_synthesiser(
@@ -346,6 +368,8 @@ async def run_synthesis(
         total_context_chars=total,
     )
     response = await synthesiser.asynthesize(query, nodes)
+    if not adapter.replied_text:
+        return "", adapter.seam_calls
     return str(response), adapter.seam_calls
 
 

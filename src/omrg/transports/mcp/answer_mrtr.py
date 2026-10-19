@@ -9,15 +9,16 @@ request id to every MRTR retry (the client re-issues ``tools/call``
 with ``input_responses``/``request_state`` and resolver bodies re-run),
 so keying on ``ctx.request_id`` missed every round — a one-round answer
 searched twice, stale entries lingered.  The cache is keyed by the
-session's lifespan-context identity (stable across one connection's
-rounds, distinct between connections — verified against the pinned
-SDK) plus ``(query, collection)``; the tool body evicts its entry when
-it completes.
+lifespan-context identity (stable across one connection's rounds;
+verified against the pinned SDK) plus ``(query, collection)``; the tool
+body evicts its entry when it completes.
 
-Collision semantics: concurrent answers on one session with the same
-``(query, collection)`` but different retrieval arguments share an
-entry — the rows come from the first caller's arguments.  Rows are
-deterministic for a fixed argument set and the body's pop is
+Collision semantics: concurrent answers on one lifespan context with
+the same ``(query, collection)`` but different retrieval arguments share
+an entry.  Over HTTP the web server's one lifespan context serves every
+session, so this also holds across clients; the web API is single-user
+(one MCP token).  The rows come from the first caller's arguments.
+Rows are deterministic for a fixed argument set and the body's pop is
 idempotent, so a race loser simply re-retrieves.  Residual risk (a
 dead connection's lifespan id being reused with the same query) is
 bounded by the process-wide FIFO (32 entries).
@@ -36,8 +37,7 @@ from mcp.types import CreateMessageResult, SamplingMessage, TextContent
 
 from ...core.answer.pipeline import ResolvedRetrieval, evidence_rows, labelled_nodes
 from ...core.answer.synthesis import plan_next_prompt
-from ...core.retrieval import search as _core_search
-from . import _get_profile_resolver, _get_reranker
+from .context import mcp_context
 
 #: Depth of the MRTR resolver chain: at most this many client completion
 #: rounds per tool call.  Load-bearing (review F5): the client path
@@ -95,14 +95,6 @@ def _result_text(result: CreateMessageResult | None) -> str:
         return ""
     content = result.content
     return getattr(content, "text", None) or str(content)
-
-
-def _answer_settings() -> Any:
-    """Read the answer block from the composition-root default settings."""
-    from ...core.settings import get_default_effective_settings
-
-    settings = get_default_effective_settings()
-    return getattr(settings, "answer", None)
 
 
 def _session_facts(ctx: Context | None) -> tuple[str | None, object | None]:
@@ -195,15 +187,11 @@ async def _retrieve(
     if existing is not None and existing.rows is not None:
         return existing
 
-    effective = _get_profile_resolver().resolve(collection)
-    answer_block = _answer_settings()
-    merged = effective.model_copy(
-        update={"answer": answer_block} if answer_block is not None else {}
-    )
+    engine = mcp_context(ctx).engine
     # search() is synchronous; off the event loop like search_documents.
     start = time.perf_counter()
     rows = await asyncio.to_thread(
-        _core_search,
+        engine.search,
         query,
         top_k=retrieval_kwargs.get("top_k"),
         similarity_threshold=retrieval_kwargs.get("similarity_threshold"),
@@ -212,8 +200,6 @@ async def _retrieve(
         expand_window=retrieval_kwargs.get("expand_window", 0),
         collection_name=collection,
         metadata_filter=retrieval_kwargs.get("metadata_filter"),
-        reranker=_get_reranker(),
-        effective_settings=merged,
     )
     retrieval_ms = (time.perf_counter() - start) * 1000.0
     payload = _RequestPayload(rows=rows, evidence=evidence_rows(rows), retrieval_ms=retrieval_ms)
@@ -247,6 +233,21 @@ def consume_preflight(
     )
 
 
+def follows_user_profile(engine: Any, collection: str) -> bool:
+    """Return whether the collection follows a user profile (D17).
+
+    A user-profile answer runs its Answer pipeline with the server model:
+    MCP client sampling and pre-fetched rows cannot enter a pipeline run.
+    An Engine with no profile resolver serves built-in profiles only.
+
+    Raises:
+        ValueError: If the collection's profile tag cannot be resolved, for
+            example a user profile this process cannot read (D11).
+    """
+    resolver = engine.profile_resolver
+    return resolver is not None and resolver.binding(collection).user
+
+
 def _client_round_cap(block: Any) -> int:
     """Effective rounds on the client path: settings or chain depth (F5)."""
     return min(int(block.max_rounds), _MAX_MRTR_ROUNDS)
@@ -266,8 +267,15 @@ async def _ask_round(
     exception would surface as a raw tool error instead of the
     structured-result contract.
     """
-    block = _answer_settings()
-    if block is None or not getattr(block, "enabled", True):
+    engine = mcp_context(ctx).engine
+    try:
+        if follows_user_profile(engine, collection):
+            return None  # D17: the server model answers; no Sample goes out.
+    except Exception:
+        # An unresolvable profile ends the chain; the tool body reports it.
+        return None
+    block = engine.resolve_settings(collection).answer
+    if not block.enabled:
         # Master switch (F4): no Sample issued when answering is off.
         return None
     from .answer import select_completion_source
@@ -420,16 +428,6 @@ def _client_seam(replies: list[str]) -> Any:
             f"client completion rounds exhausted ({len(replies)} served; "
             f"the synthesis requested round {index + 1})"
         )
-
-    return seam
-
-
-def _server_seam(llm: Any) -> Any:
-    """Adapt the composition-root LLM to the core async completion seam."""
-
-    async def seam(prompt: str) -> str:
-        completion = await llm.acomplete(prompt)
-        return completion.text
 
     return seam
 

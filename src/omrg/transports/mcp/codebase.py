@@ -2,36 +2,53 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
+
+from mcp.server.mcpserver import Context
 from mcp.types import ToolAnnotations
 
-from . import _error_message, _log_tool_error, mcp
+from ...core.codebase import codebase_map
+from .context import PathDenied, mcp_context
+from .errors import error_message, log_tool_error
 
-
-@mcp.tool(
-    description=(
-        "Generate a compact codebase map showing file types, code communities, "
-        "document communities, cross-links, and architectural hubs. Useful for "
-        "agents starting a session on an unfamiliar codebase. Results are cached "
-        "per-project keyed by git commit hash. Use refresh=true to force rebuild."
-    ),
-    annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False),
+DESCRIPTION = (
+    "Generate a compact codebase map showing file types, code communities, "
+    "document communities, cross-links, and architectural hubs. Useful for "
+    "agents starting a session on an unfamiliar codebase. Results are cached "
+    "per-project keyed by git commit hash. Use refresh=true to force rebuild."
 )
-def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
+ANNOTATIONS = ToolAnnotations(read_only_hint=True, destructive_hint=False)
+
+
+async def get_codebase_map(path: str = ".", refresh: bool = False, *, ctx: Context) -> str:
     """Generate a compact codebase map for the given project path.
+
+    This transport is the context boundary (design D3): it resolves the
+    composed settings and store from the Engine and passes them to core
+    explicitly. Over HTTP the path must lie inside an approved ``--root``.
 
     Returns a JSON error string on failure (gotcha #1).
     """
-    import json
-
+    mcp = mcp_context(ctx)
     try:
-        from ...core.codebase.codebase_map import get_codebase_map_text
-
-        return get_codebase_map_text(path=path, refresh=refresh)
+        checked = mcp.paths.check(path)
+    except PathDenied as exc:
+        return json.dumps({"status": "error", "message": str(exc)})
+    try:
+        async with mcp.admit():
+            return await asyncio.to_thread(
+                codebase_map.get_codebase_map_text,
+                path=checked,
+                refresh=refresh,
+                settings=mcp.engine.resolve_settings(None),
+                store=mcp.engine.store,
+            )
     except Exception as exc:
-        _log_tool_error("get_codebase_map", exc)
+        log_tool_error(mcp, "get_codebase_map", exc)
         return json.dumps(
             {
                 "status": "error",
-                "message": _error_message(exc),
+                "message": error_message(mcp, exc),
             }
         )

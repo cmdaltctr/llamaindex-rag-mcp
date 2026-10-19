@@ -4,7 +4,12 @@ This module provides the ``get_codebase_map`` functionality: scanning a project
 directory for file types, building code and document graphs, detecting
 communities and hubs, and formatting a compact text map for agent consumption.
 
-All settings are read from ``config.py``. No cross-imports with ``retrieval.py``.
+Settings and the vector store are supplied by the caller (design D3). The
+map entry points take them as keyword arguments and forward them to
+detection, community selection, the document graph, and the cache. No
+function here reads the default store, and settings are resolved only at
+the documented ``get_codebase_map_text`` entry boundary when a legacy
+caller omits them. No cross-imports with ``core/retrieval``.
 """
 
 from __future__ import annotations
@@ -12,12 +17,16 @@ from __future__ import annotations
 import json
 import logging
 import subprocess
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ...integrations.magika import _EXCLUDED_DIRS, FileEntry
-from ..settings import get_default_effective_settings
+from ..settings import EffectiveSettings, resolve_effective_settings
+from . import cache as _cache
+from .models import CodebaseMap, FileInventory
+
+if TYPE_CHECKING:
+    from ..vectordb.base import VectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -95,22 +104,8 @@ _BINARY_SUFFIXES: set[str] = {
 # ``from omrg.codebase_map import FileEntry`` consumers keep working.
 
 
-@dataclass
-class FileInventory:
-    """Aggregated file-type inventory for a project.
-
-    Attributes:
-        entries: All file entries.
-        type_counts: Mapping of "group/label" to count.
-        binary_files: List of binary file paths.
-        mismatches: List of (path, suffix_label, magika_label) tuples where
-            Magika's detection differs from the file extension.
-    """
-
-    entries: list[FileEntry] = field(default_factory=list)
-    type_counts: dict[str, int] = field(default_factory=dict)
-    binary_files: list[str] = field(default_factory=list)
-    mismatches: list[tuple[str, str, str]] = field(default_factory=list)
+# FileInventory and CodebaseMap live in ``models.py`` (design D4) and are
+# re-exported here, so existing imports from this module keep working.
 
 
 def _is_magika_available(settings: Any | None = None) -> bool:
@@ -166,7 +161,7 @@ def scan_with_suffix(path: str, settings: Any | None = None) -> list[FileEntry]:
     """
     project_root = Path(path)
     entries: list[FileEntry] = []
-    effective = settings if settings is not None else get_default_effective_settings()
+    effective = resolve_effective_settings(settings)
 
     if project_root.is_file():
         return [_entry(".", project_root.suffix.lower())]
@@ -213,7 +208,7 @@ def detect_file_types(path: str, settings: Any | None = None) -> FileInventory:
         and mismatches.
     """
     inventory = FileInventory()
-    effective = settings if settings is not None else get_default_effective_settings()
+    effective = resolve_effective_settings(settings)
 
     if _is_magika_available(settings):
         try:
@@ -256,28 +251,12 @@ def detect_file_types(path: str, settings: Any | None = None) -> FileInventory:
 # ── Graph assembly and map formatting (Section 5 tasks) ──────────────────
 
 
-@dataclass
-class CodebaseMap:
-    """Complete codebase map combining file inventory, graphs, and communities.
-
-    Attributes:
-        inventory: File-type inventory from Magika/suffix detection.
-        code_communities: List of code communities from the code graph.
-        doc_communities: List of document communities from the document graph.
-        cross_links: List of cross-links between code and document communities.
-        hubs: List of hub files (high in-degree).
-        commit_hash: Git commit hash for cache keying (or None).
-    """
-
-    inventory: FileInventory = field(default_factory=FileInventory)
-    code_communities: list[dict] = field(default_factory=list)
-    doc_communities: list[dict] = field(default_factory=list)
-    cross_links: list[dict] = field(default_factory=list)
-    hubs: list[dict] = field(default_factory=list)
-    commit_hash: str | None = None
-
-
-def build_codebase_map(path: str) -> CodebaseMap:
+def build_codebase_map(
+    path: str,
+    *,
+    settings: EffectiveSettings,
+    store: VectorStore | None = None,
+) -> CodebaseMap:
     """Build a complete codebase map for a project directory.
 
     Orchestrates Magika file-type detection, code graph construction,
@@ -285,11 +264,17 @@ def build_codebase_map(path: str) -> CodebaseMap:
 
     Args:
         path: Project directory path.
+        settings: Effective settings, forwarded to detection, community
+            selection, and both document-graph builds.
+        store: Vector store that holds the ``documents`` collection. ``None``
+            builds a store-less map: inventory and code information only,
+            with empty document communities. No default store is queried.
 
     Returns:
         A ``CodebaseMap`` with all components assembled.
     """
-    effective = get_default_effective_settings()  # boundary resolves once; detectors take it
+    effective = settings
+    threshold = effective.doc_similarity_threshold
     inventory = detect_file_types(path, settings=effective)
 
     code_files = [e for e in inventory.entries if e.group == "code" and e.is_text]
@@ -325,23 +310,23 @@ def build_codebase_map(path: str) -> CodebaseMap:
     # place in the codebase that bypassed the ABC, contradicting ADR-034 and
     # silently breaking under any non-Chroma store.
     collection = None
-    try:
-        from ..documents.doc_graph import CollectionView
-        from ..vectordb import get_default_store
+    if store is not None:
+        try:
+            from ..documents.doc_graph import CollectionView
 
-        view = CollectionView(get_default_store(), "documents")
-        if view.count() == 0:
-            logger.debug("Document collection is empty")
-        else:
-            collection = view
-    except Exception as exc:
-        logger.warning("Could not access the document collection for the graph: %s", exc)
+            view = CollectionView(store, "documents")
+            if view.count() == 0:
+                logger.debug("Document collection is empty")
+            else:
+                collection = view
+        except Exception as exc:
+            logger.warning("Could not access the document collection for the graph: %s", exc)
 
     if doc_files:
         try:
             from ..documents.doc_graph import build_document_graph, detect_document_communities
 
-            doc_graph = build_document_graph(collection)
+            doc_graph = build_document_graph(collection, threshold=threshold)
             doc_comms = detect_document_communities(doc_graph, settings=effective)
             doc_communities = [
                 {
@@ -358,9 +343,9 @@ def build_codebase_map(path: str) -> CodebaseMap:
     # Cross-links (only if both code and doc communities exist)
     if code_communities and doc_communities:
         try:
-            from ..documents.doc_graph import compute_cross_links
+            from ..documents.doc_graph import build_document_graph, compute_cross_links
 
-            dg = build_document_graph(collection)
+            dg = build_document_graph(collection, threshold=threshold)
             links = compute_cross_links(code_graph, dg)
             cross_links = [
                 {"code": link.code, "doc": link.doc, "relation": link.relation} for link in links
@@ -368,7 +353,7 @@ def build_codebase_map(path: str) -> CodebaseMap:
         except Exception as exc:
             logger.warning("Cross-link detection failed: %s", exc)
 
-    commit_hash = _get_git_commit_hash(path)
+    commit_hash = _cache._get_git_commit_hash(path)
     if commit_hash is None:
         logger.info("Caching disabled — not a git repository")
 
@@ -382,16 +367,35 @@ def build_codebase_map(path: str) -> CodebaseMap:
     )
 
 
-def get_codebase_map_text(path: str = ".", refresh: bool = False) -> str:
+def get_codebase_map_text(
+    path: str = ".",
+    refresh: bool = False,
+    *,
+    settings: EffectiveSettings | None = None,
+    store: VectorStore | None = None,
+) -> str:
     """Get a formatted codebase map for a project, with caching.
 
     This is the main entry point called by the MCP tool handler. It checks
     the cache first (unless ``refresh=True``), builds the map on cache miss,
     and returns the formatted text.
 
+    This is the documented settings entry boundary: when *settings* is
+    omitted, it resolves the composition-root default once through
+    ``resolve_effective_settings``. Explicit settings bypass that lookup.
+    The store is never resolved here; ``None`` means a store-less map.
+
+    A cached map is reused only when the git commit and the owner context
+    (map settings plus the store's durable data version) both match.
+    Otherwise the map is rebuilt; see ``cache.py``.
+
     Args:
         path: Project directory path (default current directory).
         refresh: If True, rebuild the map regardless of cache state.
+        settings: Effective settings for detection, communities, document
+            thresholds, and the cache directory.
+        store: Vector store holding the ``documents`` collection, or
+            ``None`` for a store-less map.
 
     Returns:
         Formatted codebase map text string. On error, returns a JSON string
@@ -426,15 +430,23 @@ def get_codebase_map_text(path: str = ".", refresh: bool = False) -> str:
                 }
             )
 
+        effective = resolve_effective_settings(settings)
+        cache_dir = effective.codebase_map_cache_dir
+        owner_context = _cache.build_owner_context(effective, store)
+
         # Check cache (unless refresh is requested)
         if not refresh:
-            cached = _load_cache(str(path_obj))
+            cached = _cache._load_cache(
+                str(path_obj), cache_dir=cache_dir, owner_context=owner_context
+            )
             if cached is not None:
                 return format_codebase_map(cached)
 
         # Build fresh map
-        codebase_map = build_codebase_map(str(path_obj))
-        _save_cache(str(path_obj), codebase_map)
+        codebase_map = build_codebase_map(str(path_obj), settings=effective, store=store)
+        _cache._save_cache(
+            str(path_obj), codebase_map, cache_dir=cache_dir, owner_context=owner_context
+        )
 
         return format_codebase_map(codebase_map)
 
@@ -450,9 +462,11 @@ def get_codebase_map_text(path: str = ".", refresh: bool = False) -> str:
 
 # ── Re-exports ───────────────────────────────────────────────────────────
 # Caching and rendering live in sibling modules after the task 8.5 split.
-# Re-exported so existing imports and test monkeypatch targets keep working.
+# Re-exported so existing imports keep working. The functions above call
+# the cache through its module, so patches on ``cache.*`` take effect
+# (AGENTS.md gotcha 8b: patch targets follow the function).
 
-from .cache import (  # noqa: E402
+from .cache import (  # noqa: E402,F401
     _get_git_commit_hash,
     _load_cache,
     _save_cache,

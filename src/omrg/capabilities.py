@@ -27,6 +27,9 @@ from .integrations.ocr_worker.fingerprint import (
 __all__ = [
     "UNAVAILABLE_OCR_WORKER_FINGERPRINT",
     "build_ocr_routes",
+    "magika_available",
+    "module_installed",
+    "pdf_reader_installed",
     "probe_ocr_worker",
     "reset_ocr_fingerprint_cache",
     "resolve_document_backend",
@@ -39,17 +42,71 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-def _azure_sdk_available() -> bool:
-    """Whether the optional ``azure.ai.documentintelligence`` module resolves.
+def module_installed(module: str) -> bool:
+    """Whether the optional *module* resolves, without importing it.
 
     ``find_spec`` raises (rather than returning ``None``) when a parent
     package is absent or a ``sys.modules`` entry is ``None``, so both
     miss modes are treated as "not installed".
     """
     try:
-        return find_spec("azure.ai.documentintelligence") is not None
+        return find_spec(module) is not None
     except (ImportError, ValueError):
         return False
+
+
+def _azure_sdk_available() -> bool:
+    """Whether the optional ``azure.ai.documentintelligence`` module resolves."""
+    return module_installed("azure.ai.documentintelligence")
+
+
+def pdf_reader_installed(reader: str) -> bool:
+    """Whether the dependency of the registered PDF *reader* imports.
+
+    Uses the same registry probe as :func:`resolve_pdf_reader`.
+
+    Raises:
+        KeyError: *reader* is not a registered PDF reader.
+    """
+    from .integrations.pdf import registry as pdf_registry
+
+    try:
+        pdf_registry.probe(reader)
+    except ImportError:
+        return False
+    return True
+
+
+def pdf_reader_options() -> dict[str, str | None]:
+    """Probe every registered PDF reader once.
+
+    Uses the same registry probe as :func:`pdf_reader_installed`.
+
+    Returns:
+        Reader name to ``None`` (installed) or the reason it cannot run,
+        which names the missing package.
+    """
+    from .integrations.pdf import registry as pdf_registry
+
+    options: dict[str, str | None] = {}
+    for name in pdf_registry.available():
+        if pdf_reader_installed(name):
+            options[name] = None
+            continue
+        package = pdf_registry.describe(name)["probe_module"]
+        options[name] = f"The package '{package}' is not installed."
+    return options
+
+
+def magika_available(settings: Any) -> bool:
+    """Whether the configured Magika binary is on ``PATH``.
+
+    Args:
+        settings: Frozen ``EffectiveSettings`` that carry ``magika_binary``.
+    """
+    from .integrations.magika import _is_magika_available
+
+    return _is_magika_available(settings)
 
 
 def resolve_document_backend(settings: Settings) -> str:

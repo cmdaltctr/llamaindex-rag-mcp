@@ -145,6 +145,13 @@ Why one place: before the v2 work, objects were built in a dozen scattered
 spots, all reading one shared global. That is how you end up unable to run two
 configurations at once.
 
+The composition root is split by concern. `compose.py` is the entry point.
+`compose_settings.py`, `compose_engine.py` and `compose_answer.py` build the
+settings, the Engine and the answer models. `compose_pipelines.py` builds the
+operation catalogue and plans graph runs for one Engine.
+`pipeline_templates.py` publishes the canonical graphs. These modules sit at
+the top level because they import more than one domain.
+
 ### `core/` — does the work
 
 | Folder             | Job                                                                                        |
@@ -159,10 +166,47 @@ configurations at once.
 | `core/codebase/`   | Codebase map and code graph                                                                |
 | `core/documents/`  | Document similarity graph                                                                  |
 | `core/community/`  | Community-detection strategies for both graphs (Louvain default, Leiden optional)          |
+| `core/answer/`     | Answer from retrieved evidence: synthesis, citations and optional claim checks             |
+| `core/pipelines/`  | Graph contracts, operation catalogue, validation, admission and the graph runner           |
+| `core/workspace/`  | Workspace records, the repository contract and the local run service                       |
 | `core/settings.py` | `EffectiveSettings` — the frozen settings object passed around                             |
 
 `core/ingestion/` and `core/retrieval/` do not import each other. They share
 only settings.
+
+`core/codebase/` receives its context explicitly. `build_codebase_map` and
+`get_codebase_map_text` take `settings=` and `store=` keywords. The map passes
+the settings to detection, community detection, both document-graph builds,
+and the cache. `store=None` gives a map with no document communities; it never
+reads a default store. `get_codebase_map_text` is the documented boundary that
+resolves default settings when a caller omits them. The MCP tool supplies both
+values. `FileInventory` and `CodebaseMap` live in `core/codebase/models.py`, so
+`cache.py` and `codebase_map.py` import in any order.
+
+### Pipeline graphs: who owns what
+
+A pipeline graph connects registered operations. The graph code is split so
+that the runner knows no domain, and each domain owns its own operations.
+
+| Module | Owns |
+| --- | --- |
+| `core/pipelines/` | Graph documents, port types, the operation catalogue, preflight, admission, the scheduler, cancellation, events and results. It imports no domain package. |
+| `core/ingestion/graph_adapters*.py` | Sources, Read, Prepare text and Embed / commit operations. `graph_adapters_catalogue.py` holds the canonical ingestion graph. |
+| `core/ingestion/graph_fingerprint.py` | Index-shaping identity of an ingestion graph. |
+| `core/ingestion/sources.py`, `core/ingestion/commit.py` | Per-source seams and the protected commit that `ingest_path_async` and the adapters share. |
+| `core/retrieval/graph_adapters*.py` | Retrieve, Combine, Select and Context operations. |
+| `core/retrieval/operations.py` | Sizing, rerank policy, filtering and fallback rules that `search()` and the adapters share. |
+| `core/answer/graph_adapters.py` | Answer and Verify operations. |
+| `core/answer/stages.py`, `core/answer/results.py` | Evidence, synthesis, citation and verification stages, and the result shapes, that `answer()` and the adapters share. |
+| `core/workspace/` | Workspace records, the repository contract and the local run service. It imports no web framework and no SQLite. |
+| `compose_pipelines.py` | Builds the catalogue from the three domain registrars, describes the Engine to preflight, plans runs and leases Engine resources. |
+| `pipeline_templates.py` | The canonical `ingestion`, `search` and `answer` graphs. |
+
+Each adapter calls the same function as the standard operation. There is no
+second copy of ranking, the ÷30 threshold transform, chunking or source
+replacement. The standard `ingest`, `search` and `answer` paths keep their
+signatures, defaults and return shapes. The canonical templates reproduce
+them on recorded fixtures. See [Pipeline graphs](pipelines.md).
 
 ### Stable source and chunk lineage
 
@@ -198,7 +242,7 @@ Two stores sit behind the `VectorStore` ABC (ADR-034): `lancedb`, the
 base-install default, and `chroma`, an explicit optional extra selected with
 `VECTOR_STORE` (ADR-049).
 
-`core/vectordb/chroma.py` is the single module that imports `chromadb` and
+`core/vectordb/chroma/store.py` is the single module that imports `chromadb` and
 the single construction site for both deployments. Local mode builds a
 `PersistentClient` over the resolved persist directory; cloud mode builds
 and validates a `CloudClient`, with a heartbeat round trip so
@@ -207,7 +251,7 @@ Following upstream LlamaIndex's client-construction/VectorStore split, the
 constructed client is injected into `ChromaVectorStore`, which stays
 deployment-agnostic.
 
-`core/vectordb/lancedb.py` is the LanceDB implementation (ADR-046): one
+`core/vectordb/lancedb/store.py` is the LanceDB implementation (ADR-046): one
 `lancedb.connect(uri)` connection backs the store, and each RAG collection
 maps to one LanceDB table. Table creation is lazy — the vector dimension
 locks on first write — and the LlamaIndex adapter is constructed with
@@ -219,31 +263,36 @@ protocol channel.
 Collection metadata records the embedding configuration that owns the
 vector space: `rag_embed_provider`, `rag_embed_model`, and
 `rag_index_identity`. Vector dimensions alone cannot prove compatibility,
-so a same-dimension model swap is rejected before any write or query.
+so a model swap, of the same or a different dimension, is rejected before any
+embedding, write or query (`check_embedding_identity` is the read-only check).
 Stamping is read-merge-write: Chroma's `modify(metadata=...)` replaces the
 complete map, so existing profile tags are read and merged first. The
 LanceDB store keeps the same triple in each table's durable Arrow schema
 metadata, merged through pylance's `update_schema_metadata`.
 
-Supporting modules keep each store under the 500-line ceiling:
+Each backend has its own folder: `core/vectordb/lancedb/` and
+`core/vectordb/chroma/`. The modules shared by every backend stay at the
+`core/vectordb/` root, and `tests/unit/test_folder_layout.py` fails when
+backend code lands there. Supporting modules keep each store under the
+500-line ceiling:
 
 - `core/vectordb/identity.py` — the `EmbeddingIdentity` type and the
   `IdentityGuardMixin` (stamping plus write/query-path mismatch rejection)
-- `core/vectordb/paged.py` — the `PagedReadMixin` (bounded and bulk
+- `core/vectordb/chroma/paged.py` — the `PagedReadMixin` (bounded and bulk
   collection reads, formerly `chroma_utils.py`)
 - `core/vectordb/naming.py` — deterministic experiment collection names
   (e.g. `exp14-qasper-openrouter-qwen3-8b-liteparse-cs512-co100`)
-- `core/vectordb/lance_meta.py` — the LanceDB table-metadata seam and its
+- `core/vectordb/lancedb/meta.py` — the LanceDB table-metadata seam and its
   identity guard, reusing `identity.py`'s pure helpers, plus the metadata
   struct evolution that grows a table's Arrow struct when later writes
   introduce new metadata keys
-- `core/vectordb/lance_filter.py` — ChromaDB `where` dict → LanceDB filter
+- `core/vectordb/lancedb/filter.py` — ChromaDB `where` dict → LanceDB filter
   translation through the `lancedb.expr` value serialiser; operators are
   null-aware and schema-absent fields fold to constants, preserving
   ChromaDB missing-field semantics across backends
-- `core/vectordb/lance_paged.py` — the LanceDB paged-read mixin (scanner
+- `core/vectordb/lancedb/paged.py` — the LanceDB paged-read mixin (scanner
   pages plus `strip_internal_metadata`)
-- `core/vectordb/lance_fts.py` — the native full-text-search seam: additive
+- `core/vectordb/lancedb/fts.py` — the native full-text-search seam: additive
   FTS index lifecycle, native sparse queries, coverage diagnostics, and the
   capability probe
 - `core/vectordb/validation.py` — the fail-closed embedding write contract
@@ -297,7 +346,7 @@ directory, `{LANCEDB_URI}/{collection_name}.lance`. A regression test pins
 this layout against a real temporary store (`TestNativeLayoutPin`); it
 asserts layout only and says nothing about concurrency. Collection names are
 validated as non-empty single path components at the adapter's table-access
-boundary (`core/vectordb/lance_table_name.py`); Chroma name validation stays
+boundary (`core/vectordb/lancedb/table_name.py`); Chroma name validation stays
 deferred with the per-directory scope. Three layers stay distinct: the
 process-global ingestion mutation lock (`write_lock` in
 `core/ingestion/_state.py`) serialises mutations across all collections
@@ -309,10 +358,12 @@ specification: `openspec/changes/add-per-collection-persist-dirs/`.
 
 ### `transports/` — exposes it
 
-- `transports/mcp/` — the MCP server, eight tools, over stdio (split by tool)
+- `transports/mcp/` — the MCP server, nine tools, over stdio (split by tool)
 - `transports/cli/` — the `omrg` command, one file per command group
-- `transports/api/` — an OpenAPI contract for a future REST API. No code yet,
-  deliberately: the contract is published before anything implements it.
+- `transports/api/`: the optional local web runtime (`omrg web`). It is a
+  FastAPI application with the `web` extra. Its routes call the Engine and
+  the workspace run service. It holds no ranking, chunking or graph logic.
+  The base install does not import it.
 
 Transports hold no business logic. They resolve a profile, call core, format
 the answer.
@@ -351,7 +402,7 @@ argument instead of reading a global.
 
 ### A new chunking strategy
 
-1. Write `core/chunking/mystrategy.py`
+1. Write `core/chunking/<name>.py`
 2. Add one line to `core/chunking/registry.py`:
 
 ```python
@@ -382,10 +433,11 @@ default seed of `0` keeps partitions deterministic run to run.
 Implement `VectorStore` from `core/vectordb/base.py`, add one `register()`
 line to `core/vectordb/registry.py`, and let `compose.build_vector_store`
 resolve it by name — never a branch over the name (invariant #10).
-ChromaDB is confined to `core/vectordb/chroma.py`; LanceDB is confined to
-`core/vectordb/lancedb.py` and the filter translator
-`core/vectordb/lance_filter.py`. Contracts fail the build if either
-library is imported anywhere else.
+Put the backend in its own folder (`core/vectordb/<name>/`). ChromaDB is
+confined to `core/vectordb/chroma/store.py` and `core/vectordb/chroma/cloud.py`;
+LanceDB is confined to `core/vectordb/lancedb/store.py`,
+`core/vectordb/lancedb/literal.py` and `core/vectordb/lancedb/fts.py`.
+Contracts fail the build if either library is imported anywhere else.
 
 ### OCR engines and maths routing
 
@@ -481,7 +533,7 @@ peers stays an integration.
 Every Python module under `src/omrg/integrations/`, classified. A contract
 test fails when a module is missing from this table.
 
-<!-- integration-inventory:start count=24 -->
+<!-- integration-inventory:start count=36 -->
 
 | Module                                   | Availability                                                   | Selector                                                            | Shared contract                               | Fallback owner                                                                    | Disposition                                                         |
 | ---------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -509,6 +561,18 @@ test fails when a module is missing from this table.
 | `omrg.integrations.pdf.pypdfium`      | Optional `pdf-pypdfium2` extra                                 | `PDF_READER=pypdfium2`                                              | `load_data`                                   | None                                                                              | Registered reader strategy                                          |
 | `omrg.integrations.pdf.registry`      | Native                                                         | `PDF_READER` concrete values                                        | Reader class with `load_data`                 | None; unknown names raise                                                         | Lazy registry for concrete PDF readers                              |
 | `omrg.integrations.tokenizer`         | Base `tokenizers` and `huggingface-hub` dependencies           | `EMBEDDING__TOKENIZER_MODEL` and `EMBEDDING__TOKENIZER_REVISION`    | `load_tokenizer(model, revision)`             | `core/chunking/model_token.py` legacy splitter                                    | Offline cache adapter; never downloads                              |
+| `omrg.integrations.process_launcher`  | Native (standard library; no shell)                            | A registered and enabled external-tool plugin                       | Owned process group, private directory, loopback port | None; a used port or failed launch is refused                             | Only plugin module that starts processes; imports no `omrg.core` module |
+| `omrg.integrations.keychain` | `keyring` (optional, `web` extra; imported inside functions) | System keychain for provider API keys | Provider name to key under service `omrg` | None; no keychain means unavailable and a save raises | Never falls back to a plaintext store; each call runs in a worker thread with a time limit |
+| `omrg.integrations.workspace_sqlite`  | Native (standard-library `sqlite3`)                            | None; the web runtime composes it                                   | `core/workspace/repository.py` contract       | None                                                                              | Facade; exports `SqliteWorkspaceRepository` and schema errors       |
+| `omrg.integrations.workspace_sqlite.chats` | Native (standard-library `sqlite3`) | None | Stored chats, turns and chat folders as plain dictionaries | None; a failed transaction rolls back | Chat store for the web server; imports no `omrg.core` module |
+| `omrg.integrations.workspace_sqlite.deletion` | Native (standard-library `sqlite3`)                    | Previewed workspace cleanup                                         | Finished runs and their events                | None; runs inside the caller's transaction                                        | Deletes run rows only; pipelines and revisions stay                 |
+| `omrg.integrations.workspace_sqlite.pipeline_sql` | Native (standard-library `sqlite3`)                    | None                                                                | Shared pipeline and revision inserts, read and write transactions | None; a failed transaction rolls back                                 | Used by the repository and the profile store; imports no `omrg.core` module |
+| `omrg.integrations.workspace_sqlite.profiles` | Native (standard-library `sqlite3`)                        | None                                                                | User profiles and the pipelines they own; a read-only catalogue | None; the catalogue opens the file read-only and never migrates it    | Profile store for the web server; catalogue for every other process |
+| `omrg.integrations.workspace_sqlite.repository` | Native (standard-library `sqlite3`)                  | None                                                                | Workspace records as plain dictionaries       | None; a failed transaction rolls back                                             | Repository adapter; imports no `omrg.core` module                   |
+| `omrg.integrations.workspace_sqlite.rows` | Native                                                     | None                                                                | JSON encoding and row-to-record conversion    | None                                                                              | Helper for the repository adapter                                   |
+| `omrg.integrations.workspace_sqlite.schema` | Native (standard-library `sqlite3`)                      | None                                                                | Versioned migrations, backups, owner-only files | Migration rollback to the last version                                          | Application records only; never opens a vector store                |
+| `omrg.integrations.workspace_sqlite.settings` | Native (standard-library `sqlite3`)                        | None                                                                | Typed web-server settings (`mcp_http_enabled`, `web_port`) | None; an invalid stored value reads as unset                  | Refuses unknown keys; imports no `omrg.core` module                 |
+| `omrg.integrations.workspace_sqlite.tokens` | Native (standard-library `sqlite3`)                        | None                                                                | The one durable MCP token, stored as a SHA-256 hash | None; a failed rotation keeps the old token                    | Shows the token value once; constant-time verify                    |
 
 <!-- integration-inventory:end -->
 
@@ -564,7 +628,7 @@ Live registry contents, kept in step with the code by contract tests:
 
 <!-- registry-names:llm -->
 
-`llamacpp` `ollama` `openrouter`
+`anthropic` `llamacpp` `ollama` `openai_compatible` `openrouter`
 
 <!-- /registry-names:llm -->
 
@@ -606,7 +670,7 @@ Live registry contents, kept in step with the code by contract tests:
   owns the retry budget plus exactly one local fallback.
 - Native sparse retrieval is implemented: `bm25` and `native` are registered
   in `core/retrieval/sparse_registry.py`, the LanceDB FTS lifecycle lives in
-  `core/vectordb/lance_fts.py`, and `auto` resolves at the composition
+  `core/vectordb/lancedb/fts.py`, and `auto` resolves at the composition
   boundary through the store capability probe.
 - Every other current family already uses a registry or a documented policy
   alias or sentinel. No migration was required for this change.
@@ -619,12 +683,16 @@ These are not documentation. They fail the build.
 
 | Rule                                                               | Enforced by                                      |
 | ------------------------------------------------------------------ | ------------------------------------------------ |
-| ChromaDB only in `core/vectordb/chroma.py`                         | `chromadb-confined-to-vectordb`                  |
-| LanceDB only in `core/vectordb/` (`lancedb.py`, `lance_filter.py`) | `lancedb-confined-to-vectordb`                   |
+| ChromaDB only in `core/vectordb/chroma/`                           | `chromadb-confined-to-vectordb`                  |
+| LanceDB only in `core/vectordb/lancedb/`                           | `lancedb-confined-to-vectordb`                   |
 | `config/` never imports business logic                             | `config-is-leaf`                                 |
 | `integrations/` never imports core or transports                   | `integrations-are-leaves`                        |
 | `core/` never imports transports or providers                      | `core-business-avoids-providers-transports`      |
 | `core/community/` never imports either graph consumer              | `community-strategies-independent-of-consumers`  |
+| `core/pipelines/` never imports a domain package                   | `pipeline-runner-independent-of-domains`         |
+| Graph adapters stay in their domain package                        | `retrieval-graph-adapters-stay-in-domain`, `ingestion-graph-adapters-stay-in-domain`, `answer-graph-adapters-stay-in-domain` |
+| `core/workspace/` never imports a domain or the web runtime        | `workspace-services-independent-of-domains-and-web` |
+| `core/` never imports FastAPI, Starlette, Uvicorn, marimo or SQLite | `core-free-of-web-notebook-and-sqlite-runtimes`  |
 | Settings models stay pure data                                     | `settings-models-are-pure-data`                  |
 | Every package covered by some contract                             | `tests/test_contract_coverage.py`                |
 | No global settings reads in core                                   | `tests/test_no_global_settings_reads.py`         |

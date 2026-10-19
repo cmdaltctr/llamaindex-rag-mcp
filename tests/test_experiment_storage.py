@@ -35,7 +35,7 @@ import chromadb
 import pytest
 
 from omrg.config import Settings
-from omrg.core.vectordb.chroma import ChromaVectorStore
+from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
 _CLOUD_KEY = "0" * 8 + "-chroma-exp-key"
 

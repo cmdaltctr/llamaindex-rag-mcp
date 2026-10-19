@@ -11,14 +11,22 @@ from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from io import StringIO
 
 import typer
+from click.core import ParameterSource
 from rich.table import Table
 
 from ... import compose
+from ...compose_profile_setup import workspace_profile_catalogue
 from . import _print_ollama_error, _sanitise_display_name, app, console
+
+
+def _given(ctx: typer.Context, name: str) -> bool:
+    """Whether the user typed the option, so a default never overrides a graph step."""
+    return ctx.get_parameter_source(name) == ParameterSource.COMMANDLINE
 
 
 @app.command()
 def search(
+    ctx: typer.Context,
     query: str = typer.Argument(..., help="Natural language search query."),
     top_k: int | None = typer.Option(None, "--top-k", "-k", help="Max results to return."),
     threshold: float = typer.Option(0.0, "--threshold", "-t", help="Minimum similarity score."),
@@ -51,33 +59,52 @@ def search(
     ),
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON."),
 ) -> None:
-    """Search indexed documents for semantically relevant chunks."""
+    """Search indexed documents for semantically relevant chunks.
+
+    A collection that follows a user profile runs that profile's Search
+    pipeline (the default workspace is read, never written).
+    """
     from ...core.retrieval import search as do_search
 
     try:
-        effective = compose.build_profile_resolver().resolve(collection)
+        resolver = compose.build_profile_resolver(catalogue=workspace_profile_catalogue())
+        effective, binding = resolver.resolve_bound(collection)
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from None
 
-    if top_k is None:
+    if not binding.user and top_k is None:
         top_k = effective.top_k
 
     try:
         output_guard = redirect_stdout(StringIO()) if json_output else nullcontext()
         error_guard = redirect_stderr(StringIO()) if json_output else nullcontext()
         with output_guard, error_guard:
-            results = do_search(
-                query,
-                top_k=top_k,
-                similarity_threshold=threshold,
-                rerank=rerank,
-                hybrid=hybrid,
-                expand_window=expand_window,
-                collection_name=collection,
-                include_diagnostics=diagnostics,
-                effective_settings=effective,
-            )
+            if binding.user:
+                # A value the user did not type must not replace a step setting
+                # of the profile's graph (design D14).
+                results = compose.runtime_engine().search(
+                    query,
+                    top_k=top_k,
+                    similarity_threshold=threshold if _given(ctx, "threshold") else None,
+                    rerank=rerank,
+                    hybrid=hybrid if _given(ctx, "hybrid") else None,
+                    expand_window=expand_window,
+                    collection_name=collection,
+                    include_diagnostics=diagnostics,
+                )
+            else:
+                results = do_search(
+                    query,
+                    top_k=top_k,
+                    similarity_threshold=threshold,
+                    rerank=rerank,
+                    hybrid=hybrid,
+                    expand_window=expand_window,
+                    collection_name=collection,
+                    include_diagnostics=diagnostics,
+                    effective_settings=effective,
+                )
     except ConnectionError as exc:
         _print_ollama_error(str(exc), json_output)
         raise typer.Exit(code=1) from None

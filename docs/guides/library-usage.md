@@ -46,7 +46,7 @@ For tests or multi-engine setups, pass already-composed dependencies:
 
 ```python
 from omrg import Engine, EffectiveSettings
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 settings = EffectiveSettings(...)
 store = LanceVectorStore(uri="/path/to/lancedb")
@@ -54,6 +54,8 @@ engine = Engine(settings, store=store, embed_model=my_embedder)
 ```
 
 The constructor accepts the dependencies and constructs nothing itself.
+Backend classes such as `LanceVectorStore` are internal and can move in any
+release. The public API is `omrg.Engine`.
 See [Configuration](configuration.md) for the full settings schema.
 
 ---
@@ -95,6 +97,85 @@ engine.delete_collection("old_data")
 **`close` (sync)** — release the engine's resources. See
 [Lifecycle](#lifecycle) below.
 
+**`resolve_settings` (sync)**: return the frozen settings that the
+engine uses for a collection.
+
+**`validate_pipeline` (sync)** and **`run_pipeline` (async)**: validate
+and run a pipeline graph. See [Pipeline graphs](#pipeline-graphs) below.
+
+The defaults and return shapes of `ingest`, `search` and `answer` did not
+change when the graph methods were added. Each standard operation calls
+the same domain functions as its canonical graph template.
+
+---
+
+## Pipeline graphs
+
+A pipeline graph connects registered operations. The engine validates
+the graph before any side effect, then runs it on the engine's own store,
+embedder, reranker and answer models. The graph methods need no web
+server and no notebook package. For the graph document, the operation
+catalogue and the validation errors, see [Pipeline graphs](pipelines.md).
+
+Start from a canonical template. `pipeline_templates(engine)` returns the
+`ingestion`, `search` and `answer` graphs, shaped for this engine:
+
+> **Advanced imports.** The examples in this guide import three names that
+> are not in `omrg.__all__`. They are internal and can change without a major
+> version:
+>
+> - `pipeline_templates` from `omrg.compose_pipelines` (template helper).
+> - `RunCancellation` from `omrg.core.pipelines` (cancellation token).
+> - `LanceVectorStore` from `omrg.core.vectordb.lancedb.store` (vector store).
+>
+> The first two are not necessary. You can send your own `PipelineDefinition`
+> to `Engine.run_pipeline()`, and the `cancellation` argument is optional.
+
+<!-- pipeline-python: library-run -->
+```python
+import asyncio
+
+from omrg.compose_pipelines import pipeline_templates
+from omrg.core.pipelines import RunCancellation
+
+search = next(t for t in pipeline_templates(engine) if t.name == "search")
+
+# Validate with inputs: admits the graph and changes nothing.
+snapshot = engine.validate_pipeline(search.definition, inputs={"query": "how does caching work?"})
+
+
+async def on_event(event):
+    print(event.sequence, event.kind, event.node_id or "")
+
+
+result = asyncio.run(engine.run_pipeline(snapshot, on_event=on_event))
+print(result.status)  # succeeded
+hits = result.outputs["results"].public_rows()  # same shape as engine.search()
+```
+
+To cancel a run, pass a `RunCancellation` token and call `cancel()`. The
+run starts no new node, lets a started node or commit finish, and returns
+a result with `status == "cancelled"`:
+
+<!-- pipeline-python: library-cancel -->
+```python
+token = RunCancellation()
+token.cancel("user request")
+result = asyncio.run(
+    engine.run_pipeline(
+        search.definition,
+        inputs={"query": "how does caching work?"},
+        on_event=on_event,
+        cancellation=token,
+    )
+)
+print(result.status)  # cancelled
+```
+
+`run_pipeline` raises `PipelineValidationError` only for an invalid
+graph or invalid inputs. A runtime failure returns a result with
+`status == "failed"`, the `failed_node` and the `completed_effects`.
+
 ---
 
 ## Two engines in one process
@@ -103,7 +184,7 @@ Construct two engines with different stores and embedders. They do not share sta
 
 ```python
 from omrg import Engine, EffectiveSettings
-from omrg.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb.store import LanceVectorStore
 
 docs = Engine(
     EffectiveSettings(...), store=LanceVectorStore(uri="./docs.lance"), embed_model=doc_embedder

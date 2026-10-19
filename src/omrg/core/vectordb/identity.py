@@ -16,6 +16,7 @@ pure helpers that redact configured Chroma Cloud connection values.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
@@ -76,6 +77,27 @@ def embedding_identity_from_settings(settings: Any) -> EmbeddingIdentity:
     return EmbeddingIdentity(provider=provider, model=model, index_identity=None)
 
 
+def write_identity(
+    override: EmbeddingIdentity | None,
+    composed: EmbeddingIdentity | None,
+    embed_model: Any,
+) -> EmbeddingIdentity:
+    """Return the identity a write validates and stamps with.
+
+    A per-call *override* wins over the store's *composed* identity. Direct
+    calls with neither fall back to a diagnostic identity named after the
+    embedder, which is used for error text only.
+    """
+    return (
+        override
+        or composed
+        or EmbeddingIdentity(
+            provider=type(embed_model).__name__,
+            model=str(getattr(embed_model, "model_name", type(embed_model).__name__)),
+        )
+    )
+
+
 def redact_secret(message: str, secret: str | None) -> str:
     """Redact a full secret and each prefix of six or more characters.
 
@@ -98,6 +120,30 @@ def redact_secret(message: str, secret: str | None) -> str:
     return message
 
 
+def redact_secrets(message: str, secrets: Iterable[str | None]) -> str:
+    """Redact every secret in *secrets* from *message*.
+
+    Every full value and every prefix of six or more characters goes into one
+    list, longest piece first. Two keys of one provider often share a prefix
+    such as ``sk-ant-api03-``. Removing one key's short prefix first would
+    leave the rest of a cut-off piece of the other key in the text.
+
+    Args:
+        message: Raw message text.
+        secrets: Secret values. Blank and ``None`` entries are skipped.
+
+    Returns:
+        The redacted message.
+    """
+    pieces: set[str] = set()
+    for secret in {s for s in secrets if s}:
+        pieces.add(secret)
+        pieces.update(secret[:length] for length in range(_MIN_REDACTED_PREFIX_LEN, len(secret)))
+    for piece in sorted(pieces, key=len, reverse=True):
+        message = message.replace(piece, "***")
+    return message
+
+
 def redact_cloud_secrets(
     message: str,
     api_key: str | None,
@@ -108,6 +154,41 @@ def redact_cloud_secrets(
     for value in (api_key, tenant, database):
         message = redact_secret(message, value)
     return message
+
+
+@dataclass(frozen=True)
+class RedactionSecrets:
+    """Credential values to remove from error text.
+
+    Held by the Engine (not by ``EffectiveSettings``, which stays pure data)
+    so every transport redacts the same values.
+
+    Attributes:
+        chroma_cloud_api_key: Chroma Cloud API key.
+        chroma_cloud_tenant: Chroma Cloud tenant identifier.
+        chroma_cloud_database: Chroma Cloud database name.
+        provider_keys: The LLM provider API keys in use (OpenRouter, the
+            OpenAI-compatible server, Anthropic and any later provider).
+        retired_provider_keys: Earlier provider keys. A call that began
+            with an old key can still fail with it in the error text, so
+            the Engine keeps every key it has held (append-only).
+    """
+
+    chroma_cloud_api_key: str = ""
+    chroma_cloud_tenant: str = ""
+    chroma_cloud_database: str = ""
+    provider_keys: tuple[str, ...] = ()
+    retired_provider_keys: tuple[str, ...] = ()
+
+    def redact(self, text: str) -> str:
+        """Remove each value and each prefix of six or more characters."""
+        text = redact_cloud_secrets(
+            text,
+            self.chroma_cloud_api_key,
+            self.chroma_cloud_tenant,
+            self.chroma_cloud_database,
+        )
+        return redact_secrets(text, (*self.retired_provider_keys, *self.provider_keys))
 
 
 def read_stored_identity(collection: Any) -> tuple[str | None, str | None, str | None]:
@@ -200,36 +281,50 @@ class IdentityGuardMixin:
     # Supplied by the concrete store.
     _identity: EmbeddingIdentity | None
 
-    def _check_or_stamp_identity(self, collection: Any) -> None:
-        """Write-path rule: stamp legacy collections, reject mismatches."""
-        if self._identity is None:
+    def _check_or_stamp_identity(
+        self, collection: Any, identity: EmbeddingIdentity | None = None
+    ) -> None:
+        """Write-path rule: stamp legacy collections, reject mismatches.
+
+        ``identity`` replaces the composed identity for this call (ADR-081).
+        """
+        active = identity or self._identity
+        if active is None:
             return
         stored = read_stored_identity(collection)
         if stored[0] is None:
-            stamp_collection_identity(collection, self._identity)
+            stamp_collection_identity(collection, active)
             return
-        self._reject_identity_mismatch(collection.name, stored)
+        self._reject_identity_mismatch(collection.name, stored, active)
 
-    def _guard_query_identity(self, collection_name: str, collection: Any) -> None:
+    def _guard_query_identity(
+        self,
+        collection_name: str,
+        collection: Any,
+        identity: EmbeddingIdentity | None = None,
+    ) -> None:
         """Query-path rule: reject mismatches before the query is issued.
 
         Legacy collections without identity metadata query normally;
         stamping never happens on the read path so read-only
         evaluation workers never mutate a shared collection.
+        ``identity`` replaces the composed identity for this call.
         """
-        if self._identity is None:
+        active = identity or self._identity
+        if active is None:
             return
         stored = read_stored_identity(collection)
         if stored[0] is not None:
-            self._reject_identity_mismatch(collection_name, stored)
+            self._reject_identity_mismatch(collection_name, stored, active)
 
     def _reject_identity_mismatch(
         self,
         collection_name: str,
         stored: tuple[str | None, str | None, str | None],
+        identity: EmbeddingIdentity | None = None,
     ) -> None:
         """Raise unless the stored identity matches the active one."""
-        identity = self._identity
-        if identity is None or identities_match(stored, identity):
+        active = identity or self._identity
+        if active is None or identities_match(stored, active):
             return
-        raise build_identity_mismatch_error(collection_name, stored, identity)
+        raise build_identity_mismatch_error(collection_name, stored, active)

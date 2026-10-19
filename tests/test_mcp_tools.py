@@ -17,7 +17,7 @@ import logging
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from unittest.mock import ANY, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 from mcp.types import TextContent
@@ -153,7 +153,7 @@ def _root_logging_leak_guard() -> Iterator[None]:
 # ── Tool discovery ─────────────────────────────────────────────────────────
 
 
-async def test_list_tools_discovers_all_eight(mcp_server) -> None:
+async def test_list_tools_discovers_all_nine(mcp_server) -> None:
     """The server must expose all expected tools."""
     async with connected_client(mcp_server) as client:
         result = await client.list_tools()
@@ -167,6 +167,7 @@ async def test_list_tools_discovers_all_eight(mcp_server) -> None:
             "delete_documents",
             "get_codebase_map",
             "change_collection_profile",
+            "list_profiles",
         }
 
 
@@ -180,6 +181,56 @@ async def test_search_documents_annotations_remain_read_only(mcp_server) -> None
     annotations = tool.annotations.model_dump(by_alias=True)
     assert annotations["readOnlyHint"] is True
     assert annotations["destructiveHint"] is False
+
+
+# ── list_profiles ──────────────────────────────────────────────────────────
+
+
+async def test_list_profiles_carries_read_only_annotations(mcp_server) -> None:
+    """The profile list changes nothing, so it is marked read-only."""
+    async with connected_client(mcp_server) as client:
+        result = await client.list_tools()
+
+    tool = next(item for item in result.tools if item.name == "list_profiles")
+    assert tool.annotations is not None
+    annotations = tool.annotations.model_dump(by_alias=True)
+    assert annotations["readOnlyHint"] is True
+    assert annotations["destructiveHint"] is False
+
+
+async def test_list_profiles_returns_the_built_ins_without_a_catalogue(mcp_server) -> None:
+    """A process with no workspace catalogue lists the built-in profiles only."""
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool("list_profiles", {})
+
+    items = _extract_result(result)
+    assert [item["profile_id"] for item in items] == ["documents", "codebase"]
+    for item in items:
+        assert item["kind"] == "builtin" and item["ready"] is True
+        assert item["not_ready_reasons"] == []
+        assert item["slots"] == {"ingest": None, "search": None, "answer": None}
+        assert item["used_by"] == []
+
+
+async def test_list_profiles_adds_the_user_profiles_of_the_catalogue(
+    tmp_path: Path, effective_settings: Any
+) -> None:
+    """With a catalogue the list holds the built-ins, then each user profile."""
+    from tests.unit.test_mcp_stdio_profiles_support import PROFILE, engine_builder, make_env
+
+    env = make_env(tmp_path / "seed", effective_settings)
+    env.service.create_profile("Empty", source=None)
+    engine = engine_builder(effective_settings(), [], "documents")(env.catalogue)
+    from conftest import build_mcp_server
+
+    async with connected_client(build_mcp_server(engine)) as client:
+        items = _extract_result(await client.call_tool("list_profiles", {}))
+
+    assert [item["profile_id"] for item in items] == ["documents", "codebase", PROFILE, "empty"]
+    mine, empty = items[2], items[3]
+    assert mine["kind"] == "user" and mine["base_profile"] == "documents"
+    assert mine["ready"] is True and set(mine["slots"]) == {"ingest", "search", "answer"}
+    assert empty["ready"] is False and len(empty["not_ready_reasons"]) == 3
 
 
 # ── ingest_documents ───────────────────────────────────────────────────────
@@ -196,8 +247,9 @@ async def test_ingest_documents_with_fixtures_dir(mcp_server, fixtures_dir: Path
 
 async def test_ingest_documents_returns_lazy_setup_error(mcp_server) -> None:
     """Lazy profile-resolver construction errors return an MCP error result."""
-    with patch(
-        "omrg.transports.mcp.ingest._get_profile_resolver",
+    with patch.object(
+        mcp_server.test_context.engine,
+        "resolve_settings",
         side_effect=ImportError("missing optional dependency"),
     ):
         async with connected_client(mcp_server) as client:
@@ -246,7 +298,9 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
 
     assert inspect.iscoroutinefunction(server.search_documents)
 
-    with patch("omrg.transports.mcp.search.search", return_value=expected) as mock_search:
+    with patch.object(
+        mcp_server.test_context.engine, "search", return_value=expected
+    ) as mock_search:
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -266,20 +320,16 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
         top_k=3,
         similarity_threshold=0.25,
         rerank=True,
-        hybrid=False,
+        hybrid=None,
         expand_window=0,
         collection_name="mcp_shape_coll",
         metadata_filter=None,
         include_diagnostics=False,
-        reranker=ANY,
-        effective_settings=ANY,
     )
 
 
 async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> None:
-    """MCP omitted rerank should pass None so retrieval resolves policy."""
-    from omrg.config import get_settings as _gs
-
+    """Omitted values reach the Engine as None, so it resolves them from the profile (D14)."""
     expected = [
         {
             "score": 0.9,
@@ -290,7 +340,9 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
         }
     ]
 
-    with patch("omrg.transports.mcp.search.search", return_value=expected) as mock_search:
+    with patch.object(
+        mcp_server.test_context.engine, "search", return_value=expected
+    ) as mock_search:
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -301,16 +353,14 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
     assert data == expected
     mock_search.assert_called_once_with(
         "fixture",
-        top_k=_gs().retrieval.top_k,
-        similarity_threshold=_gs().retrieval.similarity_threshold,
+        top_k=None,
+        similarity_threshold=None,
         rerank=None,
-        hybrid=_gs().retrieval.hybrid_enabled,
+        hybrid=None,
         expand_window=0,
         collection_name="documents",
         metadata_filter=None,
         include_diagnostics=False,
-        reranker=ANY,
-        effective_settings=ANY,
     )
 
 
@@ -343,7 +393,7 @@ async def test_search_documents_diagnostics_passthrough(
             item.update({"dense_rank": 1, "fused_rank": 1, "sparse_backend": "bm25"})
         return [item]
 
-    with patch("omrg.transports.mcp.search.search", side_effect=_search):
+    with patch.object(mcp_server.test_context.engine, "search", side_effect=_search):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -774,31 +824,33 @@ async def test_delete_documents_path_dry_run_nonexistent_coll(
 
 
 def test_main_calls_mcp_run() -> None:
-    """main() prepares runtime state, then calls mcp.run(transport='stdio')."""
+    """main() builds one Engine and runs the factory-built server on stdio."""
+    server = MagicMock()
+    catalogue = object()
     with (
+        patch("omrg.compose_profile_setup.workspace_profile_catalogue", return_value=catalogue),
         patch("omrg.transports.mcp.compose.ensure_runtime_setup") as mock_setup,
-        patch("omrg.transports.mcp._get_reranker") as mock_reranker,
-        patch("omrg.transports.mcp._get_profile_resolver") as mock_resolver,
-        patch("omrg.transports.mcp.mcp.run") as mock_run,
+        patch("omrg.transports.mcp.compose.build_engine") as mock_build,
+        patch("omrg.transports.mcp.create_mcp_server", return_value=server) as mock_factory,
     ):
         from omrg.transports.mcp import main
 
         main()
 
-    mock_setup.assert_called_once()
-    mock_reranker.assert_called_once()
-    mock_resolver.assert_called_once()
-    mock_run.assert_called_once_with(transport="stdio")
+    mock_setup.assert_not_called()
+    mock_build.assert_called_once_with(catalogue=catalogue)
+    mock_factory.assert_called_once()
+    server.run.assert_called_once_with(transport="stdio")
 
 
 def test_main_reports_runtime_setup_error(capsys: pytest.CaptureFixture[str]) -> None:
     """main() reports startup configuration errors without starting the server."""
     with (
         patch(
-            "omrg.transports.mcp.compose.ensure_runtime_setup",
+            "omrg.transports.mcp.compose.build_engine",
             side_effect=ValueError("EMBED_PROVIDER='invalid'"),
         ),
-        patch("omrg.transports.mcp.mcp.run") as mock_run,
+        patch("omrg.transports.mcp.create_mcp_server") as mock_factory,
         pytest.raises(SystemExit, match="1"),
     ):
         from omrg.transports.mcp import main
@@ -806,7 +858,27 @@ def test_main_reports_runtime_setup_error(capsys: pytest.CaptureFixture[str]) ->
         main()
 
     assert "Error: EMBED_PROVIDER='invalid'" in capsys.readouterr().err
-    mock_run.assert_not_called()
+    mock_factory.assert_not_called()
+
+
+def test_main_stops_startup_when_the_profile_resolver_is_invalid(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """An invalid profile configuration still fails at startup, not at first search."""
+    engine = MagicMock()
+    type(engine).profile_resolver = PropertyMock(side_effect=ValueError("bad profile tag"))
+    with (
+        patch("omrg.transports.mcp.compose.build_engine", return_value=engine),
+        patch("omrg.transports.mcp.create_mcp_server") as mock_factory,
+        pytest.raises(SystemExit, match="1"),
+    ):
+        from omrg.transports.mcp import main
+
+        main()
+
+    assert "bad profile tag" in capsys.readouterr().err
+    engine.close.assert_called_once()
+    mock_factory.assert_not_called()
 
 
 def test_force_basic_config_shelters_existing_root_handlers(tmp_path: Path) -> None:
@@ -848,28 +920,19 @@ def test_leak_guard_detects_closed_handlers(tmp_path: Path) -> None:
     assert not _holds_dead_stream(live)
 
 
-def test_runtime_resources_are_built_once(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Lazy MCP runtime resources are cached after their first construction."""
-    import omrg.transports.mcp as mcp_module
+async def test_stdio_lifespan_yields_allow_all_context_and_closes_the_engine() -> None:
+    """The stdio lifespan hands handlers the Engine and closes it on exit."""
+    from omrg.transports.mcp import _stdio_lifespan
+    from omrg.transports.mcp.context import PathPolicy, no_admission
 
-    reranker = object()
-    resolver = object()
-    monkeypatch.setattr(mcp_module, "_reranker", None)
-    monkeypatch.setattr(mcp_module, "_profile_resolver", None)
+    engine = MagicMock()
+    async with _stdio_lifespan(engine)(MagicMock()) as context:
+        assert context.engine is engine
+        assert context.paths == PathPolicy.allow_all()
+        assert context.admit is no_admission
+        engine.close.assert_not_called()
 
-    with (
-        patch.object(mcp_module.compose, "build_reranker", return_value=reranker) as build_reranker,
-        patch.object(
-            mcp_module.compose, "build_profile_resolver", return_value=resolver
-        ) as build_resolver,
-    ):
-        assert mcp_module._get_reranker() is reranker
-        assert mcp_module._get_reranker() is reranker
-        assert mcp_module._get_profile_resolver() is resolver
-        assert mcp_module._get_profile_resolver() is resolver
-
-    build_reranker.assert_called_once()
-    build_resolver.assert_called_once()
+    engine.close.assert_called_once()
 
 
 # ── search_documents: metadata_filter exposure ─────────────────────────────
@@ -889,8 +952,9 @@ async def test_search_documents_metadata_filter_passed_through(
         }
     ]
 
-    with patch(
-        "omrg.transports.mcp.search.search",
+    with patch.object(
+        mcp_server.test_context.engine,
+        "search",
         return_value=expected,
     ) as mock_search:
         async with connected_client(mcp_server) as client:
@@ -974,8 +1038,9 @@ async def test_search_documents_expand_window_passthrough(
         }
     ]
 
-    with patch(
-        "omrg.transports.mcp.search.search",
+    with patch.object(
+        mcp_server.test_context.engine,
+        "search",
         return_value=expected,
     ) as mock_search:
         async with connected_client(mcp_server) as client:
@@ -994,8 +1059,9 @@ async def test_search_documents_unfiltered_unchanged(mcp_server) -> None:
     """Unfiltered search must pass metadata_filter=None to retrieval."""
     expected: list[dict] = []
 
-    with patch(
-        "omrg.transports.mcp.search.search",
+    with patch.object(
+        mcp_server.test_context.engine,
+        "search",
         return_value=expected,
     ) as mock_search:
         async with connected_client(mcp_server) as client:
@@ -1021,7 +1087,7 @@ async def test_search_documents_validation_error_envelope(
     def _raise_value_error(*args, **kwargs):
         raise ValueError("Invalid where clause: unsupported operator $bogus")
 
-    with patch("omrg.transports.mcp.search.search", side_effect=_raise_value_error):
+    with patch.object(mcp_server.test_context.engine, "search", side_effect=_raise_value_error):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -1058,7 +1124,7 @@ async def test_search_documents_retrieval_error_envelope(
     def _raise_chroma(*args, **kwargs):
         raise fake_chroma("collection 'x' is corrupt")
 
-    with patch("omrg.transports.mcp.search.search", side_effect=_raise_chroma):
+    with patch.object(mcp_server.test_context.engine, "search", side_effect=_raise_chroma):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -1082,7 +1148,7 @@ async def test_search_documents_internal_error_envelope(
     def _raise_unexpected(*args, **kwargs):
         raise KeyError("missing config key 'foo'")
 
-    with patch("omrg.transports.mcp.search.search", side_effect=_raise_unexpected):
+    with patch.object(mcp_server.test_context.engine, "search", side_effect=_raise_unexpected):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -1118,7 +1184,7 @@ async def test_search_documents_success_has_no_status_key(
         },
     ]
 
-    with patch("omrg.transports.mcp.search.search", return_value=expected):
+    with patch.object(mcp_server.test_context.engine, "search", return_value=expected):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -1158,8 +1224,21 @@ async def test_get_codebase_map_handler_is_callable(mcp_server, tmp_path) -> Non
 # ── Cloud credential redaction in error envelopes (add-chroma-cloud-backend) ──
 # Regression tests for the redaction defect found in commit dc3f35e. MCP
 # error responses and warning logs must remove a full or truncated API key,
-# tenant, and database value. The cloud runtime is set up first so configured
-# cloud values are available when the error is formatted.
+# tenant, and database value. Since add-mcp-http-transport (design D9) the
+# Engine owns the values: these tests build it with cloud credentials
+# instead of patching ``get_settings()``, so they need no ``chroma`` extra.
+
+# Test key chosen so no prefix collides with words that legitimately
+# appear in error messages. Built by concatenation so secret scanners
+# see only low-entropy fragments; it is a fixture, never a credential.
+_CLOUD_KEY = "0" * 8 + "-chroma-test-key"
+
+
+def _assert_no_key_material(message: str, key: str) -> None:
+    """Assert neither the key nor any prefix of six-plus characters appears."""
+    assert key not in message, f"full API key leaked in: {message!r}"
+    for size in range(6, len(key) + 1):
+        assert key[:size] not in message, f"API key prefix ({size} chars) leaked: {key[:size]!r}"
 
 
 def _mcp_error_log_text(caplog: pytest.LogCaptureFixture) -> str:
@@ -1176,58 +1255,27 @@ def _mcp_error_log_text(caplog: pytest.LogCaptureFixture) -> str:
     )
 
 
-async def _ingest_failure_result(
-    mcp_server,
-    monkeypatch: pytest.MonkeyPatch,
-    leaked_text: str,
-    settings_overrides: dict | None = None,
-):
-    """Set up a cloud runtime, then make ingest fail with ``leaked_text``."""
-    from llama_index.core.embeddings import MockEmbedding
+async def _ingest_failure_result(leaked_text: str, **secrets: str):
+    """Build an Engine that holds cloud credentials, then fail ingest with ``leaked_text``."""
+    from conftest import build_mcp_server
+    from omrg.core.vectordb.identity import RedactionSecrets
 
-    from omrg.compose import ensure_runtime_setup, reset_runtime_setup
-    from omrg.core.vectordb import reset_default_store
-    from test_chroma_cloud import _cloud_settings, _install_fake_cloud_client, _shared_client
-
-    cloud_settings = _cloud_settings(
-        chroma_cloud_tenant="99999999-tenant",
-        chroma_cloud_database="88888888-database",
-        **(settings_overrides or {}),
+    redaction = RedactionSecrets(
+        **{"chroma_cloud_tenant": "99999999-tenant", "chroma_cloud_database": "88888888-database"}
+        | {"chroma_cloud_api_key": _CLOUD_KEY}
+        | secrets
     )
-    reset_runtime_setup()
-    reset_default_store()
-    try:
-        _install_fake_cloud_client(monkeypatch, backing=_shared_client())
-        with (
-            patch("omrg.compose.get_settings", return_value=cloud_settings),
-            patch(
-                "omrg.compose.build_embed_model",
-                return_value=MockEmbedding(embed_dim=384),
-            ),
-        ):
-            ensure_runtime_setup()
-            with patch(
-                "omrg.transports.mcp.ingest.ingest_path_async",
-                side_effect=RuntimeError(leaked_text),
-            ):
-                async with connected_client(mcp_server) as client:
-                    return await client.call_tool("ingest_documents", {"path": "leak-probe.txt"})
-    finally:
-        reset_runtime_setup()
-        reset_default_store()
+    server = build_mcp_server(redaction=redaction)
+    with patch.object(server.test_context.engine, "ingest", side_effect=RuntimeError(leaked_text)):
+        async with connected_client(server) as client:
+            return await client.call_tool("ingest_documents", {"path": "leak-probe.txt"})
 
 
 @pytest.mark.parametrize("form", ["full", "prefix"], ids=["full", "prefix"])
-async def test_ingest_error_envelope_redacts_cloud_key(
-    mcp_server, monkeypatch: pytest.MonkeyPatch, caplog, form: str
-) -> None:
+async def test_ingest_error_envelope_redacts_cloud_key(caplog, form: str) -> None:
     """MCP ingest error responses and logs never echo key material."""
-    from test_chroma_cloud import _CLOUD_KEY, _assert_no_key_material
-
     leaked = _CLOUD_KEY if form == "full" else _CLOUD_KEY[:12]
-    result = await _ingest_failure_result(
-        mcp_server, monkeypatch, f"401 Unauthorized: api_key={leaked} rejected"
-    )
+    result = await _ingest_failure_result(f"401 Unauthorized: api_key={leaked} rejected")
 
     data = _extract_result(result)
     assert data["status"] == "error"
@@ -1237,21 +1285,15 @@ async def test_ingest_error_envelope_redacts_cloud_key(
     _assert_no_key_material(log_text, _CLOUD_KEY)
 
 
-async def test_ingest_error_envelope_redacts_tenant_and_database(
-    mcp_server, monkeypatch: pytest.MonkeyPatch, caplog
-) -> None:
+async def test_ingest_error_envelope_redacts_tenant_and_database(caplog) -> None:
     """Chroma Cloud identifiers never echo in error envelopes or logs."""
-    from test_chroma_cloud import _assert_no_key_material
-
     # Digit-led so no >=6-char prefix collides with legitimate words such
     # as "tenant" in the surrounding error text.
     tenant = "9" * 8 + "-tenant"
     database = "8" * 8 + "-database"
     result = await _ingest_failure_result(
-        mcp_server,
-        monkeypatch,
         f"ChromaAuthError: unauthorized for tenant={tenant} database={database} "
-        "at https://api.trychroma.com",
+        "at https://api.trychroma.com"
     )
 
     data = _extract_result(result)
@@ -1265,19 +1307,12 @@ async def test_ingest_error_envelope_redacts_tenant_and_database(
 
 
 @pytest.mark.parametrize("form", ["full", "prefix"], ids=["full", "prefix"])
-async def test_ingest_error_envelope_redacts_openrouter_key(
-    mcp_server, monkeypatch: pytest.MonkeyPatch, caplog, form: str
-) -> None:
+async def test_ingest_error_envelope_redacts_openrouter_key(caplog, form: str) -> None:
     """The OpenRouter embedding API key never echoes in envelopes or logs."""
-    from test_chroma_cloud import _assert_no_key_material
-
     key = "sk-or-" + "4" * 12
     leaked = key if form == "full" else key[:12]
     result = await _ingest_failure_result(
-        mcp_server,
-        monkeypatch,
-        f"OpenAI error 401: invalid api_key={leaked}",
-        settings_overrides={"openrouter_api_key": key},
+        f"OpenAI error 401: invalid api_key={leaked}", provider_keys=(key,)
     )
 
     data = _extract_result(result)
@@ -1320,13 +1355,13 @@ def test_main_settings_failure_prints_reason(
     """
     from omrg.transports import mcp as mcp_mod
 
-    def _settings_failure() -> None:
+    def _settings_failure(**_kwargs: object) -> None:
         raise ValueError("EMBED_PROVIDER='bogus' is not an accepted value")
 
     monkeypatch.setattr(mcp_mod.logging, "basicConfig", lambda **_kwargs: None)
-    monkeypatch.setattr(mcp_mod.compose, "ensure_runtime_setup", _settings_failure)
+    monkeypatch.setattr(mcp_mod.compose, "build_engine", _settings_failure)
     monkeypatch.setattr(mcp_mod.compose, "get_settings", _settings_failure)
-    monkeypatch.setattr(mcp_mod.mcp, "run", lambda **_kwargs: None)
+    monkeypatch.setattr(mcp_mod, "create_mcp_server", lambda *_a, **_k: None)
 
     with pytest.raises(SystemExit) as excinfo:
         mcp_mod.main()
@@ -1342,14 +1377,13 @@ def test_main_settings_failure_prints_reason(
 
 def test_all_handlers_importable_from_package_root() -> None:
     """Every handler is importable from the package root and is the same
-    callable the server registered.
+    callable the factory registers on a server.
 
-    This guards against the bottom import block using module-only imports
-    (``from . import search``) which register the decorator but do not bind
-    the handler name on the package, breaking
-    ``from omrg.transports.mcp import search_documents``.
+    The registered list must name every tool, so a new tool cannot be left
+    out of this check.
     """
     import omrg.transports.mcp as pkg
+    from omrg.transports.mcp import server as server_module
 
     handler_names = [
         "ingest_documents",
@@ -1359,18 +1393,21 @@ def test_all_handlers_importable_from_package_root() -> None:
         "delete_documents",
         "get_codebase_map",
         "change_collection_profile",
+        "list_profiles",
+        "answer_documents",
     ]
+    registered = {handler.__name__: handler for handler, _d, _a in server_module._TOOLS}
+    assert set(handler_names) == set(registered), "handler_names drifted from registered tools"
 
-    # Each name must be importable from the package root.
     for name in handler_names:
-        assert hasattr(pkg, name), f"{name} not re-exported from package root"
-
-    # Each must be the same object the server registered.
-    mgr = getattr(pkg.mcp, "_tool_manager", None) or getattr(pkg.mcp, "tool_manager", None)
-    registry = getattr(mgr, "_tools", None) or getattr(mgr, "tools", None) or {}
-    for name in handler_names:
-        registered = registry[name]
-        fn = getattr(registered, "fn", None) or registered
-        assert getattr(pkg, name) is fn, (
-            f"{name} on package root is not the same object the server registered"
+        assert getattr(pkg, name) is registered[name], (
+            f"{name} on package root is not the handler the factory registers"
         )
+
+
+def test_there_is_no_module_level_server_or_process_default_accessor() -> None:
+    """Design D1: the module-level server and the process-default getters are gone."""
+    import omrg.transports.mcp as pkg
+
+    for name in ("mcp", "_get_reranker", "_get_profile_resolver", "_reranker", "_profile_resolver"):
+        assert not hasattr(pkg, name), name

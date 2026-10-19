@@ -38,11 +38,15 @@ def _finalise_read_bar(progress: Progress, read_task_id: TaskID | None) -> None:
             progress.update(read_task_id, completed=task.total)
 
 
-def _run_ingest_with_rich_progress(path: str, ingest_kwargs: dict) -> dict:
+def _run_ingest_with_rich_progress(
+    path: str, ingest_kwargs: dict, ingest_fn: Callable | None = None
+) -> dict:
     """Run ingestion with dual Rich progress bars (TTY mode)."""
     import asyncio
 
-    from ...core.ingestion import ingest_path_async
+    run_ingest = ingest_fn
+    if run_ingest is None:
+        from ...core.ingestion import ingest_path_async as run_ingest
 
     with Progress(
         SpinnerColumn(),
@@ -68,7 +72,7 @@ def _run_ingest_with_rich_progress(path: str, ingest_kwargs: dict) -> dict:
             elif phase == "embed" and embed_task_id is not None:
                 progress.update(embed_task_id, completed=total)
 
-        return asyncio.run(ingest_path_async(path, progress_callback=on_progress, **ingest_kwargs))
+        return asyncio.run(run_ingest(path, progress_callback=on_progress, **ingest_kwargs))
 
 
 def _make_plain_callback() -> Callable[[str, int, int], None]:
@@ -110,19 +114,27 @@ def _install_sigint_handler():
     return _original_handler
 
 
-def _run_ingest(path: str, ingest_kwargs: dict, json_output: bool) -> dict:
-    """Execute ingestion with the appropriate progress display mode."""
+def _run_ingest(
+    path: str, ingest_kwargs: dict, json_output: bool, ingest_fn: Callable | None = None
+) -> dict:
+    """Execute ingestion with the appropriate progress display mode.
+
+    ``ingest_fn`` is the async ingestion call. ``None`` selects the direct core
+    call; a collection that follows a user profile passes ``Engine.ingest``.
+    """
     import asyncio
 
-    from ...core.ingestion import ingest_path_async
+    run_ingest = ingest_fn
+    if run_ingest is None:
+        from ...core.ingestion import ingest_path_async as run_ingest
 
     if json_output:
-        return asyncio.run(ingest_path_async(path, **ingest_kwargs))
+        return asyncio.run(run_ingest(path, **ingest_kwargs))
     elif console.is_terminal:
-        return _run_ingest_with_rich_progress(path, ingest_kwargs)
+        return _run_ingest_with_rich_progress(path, ingest_kwargs, run_ingest)
     else:
         return asyncio.run(
-            ingest_path_async(
+            run_ingest(
                 path,
                 progress_callback=_make_plain_callback(),
                 **ingest_kwargs,
@@ -215,17 +227,26 @@ def ingest(
 
     File reading is sequential. Tune ingestion throughput with the
     EMBED_BATCH_SIZE and EMBED_CONCURRENCY environment variables.
+    A collection that follows a user profile runs that profile's Ingest
+    pipeline (the default workspace is read, never written).
     """
     from ... import compose
+    from ...compose_profile_setup import workspace_profile_catalogue
     from ...core.ingestion._state import shutdown_requested as _shutdown_requested
 
     try:
-        effective = compose.build_profile_resolver().resolve(collection)
+        resolver = compose.build_profile_resolver(catalogue=workspace_profile_catalogue())
+        effective, binding = resolver.resolve_bound(collection)
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from None
 
-    ingest_kwargs: dict = {"collection_name": collection, "effective_settings": effective}
+    ingest_kwargs: dict = {"collection_name": collection}
+    ingest_fn: Callable | None = None
+    if binding.user:
+        ingest_fn = compose.runtime_engine().ingest
+    else:
+        ingest_kwargs["effective_settings"] = effective
     if chunk_size is not None:
         ingest_kwargs["chunk_size"] = chunk_size
     if chunk_overlap is not None:
@@ -234,7 +255,7 @@ def ingest(
     _original_handler = _install_sigint_handler()
 
     try:
-        result = _run_ingest(path, ingest_kwargs, json_output)
+        result = _run_ingest(path, ingest_kwargs, json_output, ingest_fn)
     except ConnectionError as exc:
         from . import _print_ollama_error
 

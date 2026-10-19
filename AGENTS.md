@@ -9,9 +9,12 @@ uv sync                          # Install deps (uv, not pip/poetry)
 uv run omrg                   # Start MCP server (stdio)
 uv run omrg ingest ./docs     # CLI ingest
 uv run pytest -m "not slow" -v   # Fast tests (no Ollama, no disk I/O)
+uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q  # Parallel, ~2.5 min (xdist; serial ~7.5 min). Quick feedback; the tripwire has its own step
 uv run pytest --cov=omrg      # Coverage
 ./scripts/local_ci.sh         # PR-blocking CI jobs, run locally before pushing
 ```
+
+**Parallel runs (`-n`).** `pyproject.toml` sets `--dist loadfile`, so each test file stays on one worker. Do not pass `--dist load`: tests that rely on logging state set earlier in the same file then fail at random. The tripwire runs its own inner suite in parallel too (~2.5 min) and no longer pins the skipped count, because a parallel run reports one fewer skip than a serial one; it still pins the executed and deselected counts. Run `./scripts/local_ci.sh` (parallel main suite, then the tripwire) before you push. The CI `test` and `floors` jobs use the same split (parallel main suite, tripwire as its own step); the other CI jobs stay serial.
 
 ## Last known good reference point
 
@@ -42,8 +45,8 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 → Full detail: [`docs/guides/architecture.md`](docs/guides/architecture.md)
 
 1. **`config/` is the single source of truth for settings data; `compose.py` constructs everything.** `config/` is a LEAF: it must not import `core/` business logic (only the pure-data `core/*/settings.py` models). There is **no** `config.settings` singleton and no `RESOLVED_*` constants — importing `config` resolves nothing. `compose.py` is the only production caller of `get_settings()`, and it owns the runtime capability probes (sparse backend, PDF reader).
-2. **No cross-imports** between `core/ingestion/` and `core/retrieval/` — they share only settings. The v1 top-level shims (`ingestion.py`, `retrieval.py`, `server.py`, `cli.py`, `readers/`, …) were **deleted in v2.0.0**; `src/omrg/` holds only `__init__.py` and `compose.py` at the top level.
-3. **Transports are thin wrappers** — `transports/mcp/` (MCP server, split by tool), `transports/cli/` (CLI split by command group), and `transports/api/` (OpenAPI contract only) all delegate to `core/`. No transport contains business logic. The `core/` layer never imports from `transports/`.
+2. **No cross-imports** between `core/ingestion/` and `core/retrieval/` — they share only settings. The v1 top-level shims (`ingestion.py`, `retrieval.py`, `server.py`, `cli.py`, `readers/`, …) were **deleted in v2.0.0**; `src/omrg/` holds the package marker, the public Engine and the composition-root modules, pinned by `tests/unit/test_verification_gaps_boundaries.py`.
+3. **Transports are thin wrappers** — `transports/mcp/` (MCP server, split by tool), `transports/cli/` (CLI split by command group), and `transports/api/` (optional local HTTP transport for `omrg web`, `web` extra, with its OpenAPI 3.1 contract; route groups live in `transports/api/routes/`) all delegate to `core/`. No transport contains business logic. The `core/` layer never imports from `transports/`.
 4. **All ingestion is async** — `ingest_path_async` is the sole entry point.
 5. **Balanced retrieval defaults are intentional** (ADR-018): `retrieval.top_k=10`, `chunking.chunk_overlap=100`. Read from the injected `EffectiveSettings`, never hardcode. Env vars are nested: `RETRIEVAL__TOP_K`, `CHUNKING__CHUNK_OVERLAP` (ADR-037). **Note:** the code default is `RERANK_ENABLED=false` (flipped off after Experiment 10, which showed the reranker degrades technical-workload retrieval by 19–27%). Phase 4 profiles restore ADR-018's balanced intent per use case: the `documents` profile sets `reranker_enabled: true` (semantic workloads benefit from the reranker), while the `codebase` profile keeps it `false` (speed-first for coding agents). The profile-level value takes precedence over the global default at operation time.
 6. **Codebase/document graph modules live under `core/`** — `core/codebase/{codebase_map,code_graph,ast_extract,communities,cache,format}.py` and `core/documents/{doc_graph,similarity}.py` (ADR-037). They have no cross-imports with `core/ingestion/` or `core/retrieval/`. Magika detection lives in `integrations/magika.py` and does **not** import back into the codebase map.
@@ -51,7 +54,7 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 8. **Graph construction is deterministic** — no LLM involvement in code graph, document graph, or community detection.
 9. **Settings are injected, never global** (ADR-037). `core/` and `integrations/` MUST NOT import a settings singleton. Entry points (`search`, `ingest_path_async`) resolve `EffectiveSettings` **once at the boundary**; everything below takes it as a parameter. `EffectiveSettings` and all four of its blocks are frozen. `Engine` owns its embedder, store and settings; `EMBEDDING_PROVIDER_SCOPE = "engine"` (was `"process"`), so each engine gets an isolated embedder lifecycle.
 10. **`Engine` is the public API.** The public surface is `omrg.Engine`, `omrg.EffectiveSettings` and `omrg.__version__` — exported via PEP 562 lazy imports. There is no module-level default engine. `compose.build_engine()` is the single construction path; `ensure_runtime_setup()` is the legacy installer for pre-v2 callers.
-11. **Registries are the dispatch mechanism** (PROPOSAL §4.4). A new strategy = one new file + one `register()` line. Dispatch modules MUST NOT import concrete strategy modules at module level, and MUST NOT branch `if/elif` over strategy names.
+11. **Registries are the dispatch mechanism** (PROPOSAL §4.4). A new strategy = one new file + one `register()` line. Dispatch modules MUST NOT import concrete strategy modules at module level, and MUST NOT branch `if/elif` over strategy names. Each vector-store backend has its own folder under `core/vectordb/` (`lancedb/`, `chroma/`).
 12. **No file exceeds 500 lines.** Enforced by `tests/test_file_size_ceiling.py`.
 
 ## Critical Gotchas (silent breakage if violated)
@@ -73,8 +76,9 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 12. **OpenSpec validation is a guardrail, not a constitution.** If a spec has factually wrong content (wrong default value, wrong scenario name, stale accepted-set), fix it. When `openspec validate --strict` then complains that a MODIFIED block "drops" scenarios from the baseline, the baseline spec itself is wrong — fix the baseline in `openspec/specs/` too. Do not work around the validator by keeping incorrect content and adding explanatory notes. The tool serves the spec, not the other way around.
 13. **Dependency floors are enforced by `tests/test_dependency_floors.py` and the `floors` CI job.** The test fails when a declared floor drifts more than one minor below its locked version (or sits above it). The `floors` job installs with `--resolution lowest-direct` and runs the fast suite. When raising a floor, update the exemption dict in the test if the gap is intentional (with a comment naming the reason). See ADR-042.
 14. **BM25 cache validity is durable where the store supports it.** `_get_or_build_index` resolves an explicitly tagged validity token: durable `(omrg_dataset_epoch, table.version)` from `get_data_version()` on Lance, else the tagged process-local generation counter. Cross-process writes therefore invalidate the server's BM25 cache. Chroma falls back to the local counter and warns once per collection naming the reduced guarantee; a transition between the two modes never compares equal.
-15. **Worktree removal destroys gitignored history.** Before `git worktree remove` on a merged branch, copy the preserve-class gitignored artefacts to the target worktree: experiment `output/`, `eval_results.json`, `ground-truth.json`, `corpus/`; `graphify-out/`; `.ua/`. Never copy `.env`. Drop regenerable caches (`.coverage`, `__pycache__`, `.venv`, `.ruff_cache`, `.pytest_cache`). Verify the copy before removal. Heavy experiment artefacts not in a GitHub Release should be uploaded to one first — the `.gitignore` "stored in GitHub Releases" comment is aspirational, not enforced.
+15. **Worktree removal destroys gitignored history.** Before `git worktree remove` on a merged branch, copy the preserve-class gitignored artefacts to `/Users/aizat/Development/DATA/omrg/experiments/<experiment folder>/`, using the same layout: experiment `output/`, `eval_results.json`, `ground-truth.json`, `corpus/`; `graphify-out/`. Record each copy's SHA-256 in `DATA/omrg/experiments/copy-receipt.json` and summarise it in `DATA/omrg/DATA_LOCATIONS.md`. Verify the copy before removal. Never copy `.env`. Drop regenerable caches (`.coverage`, `__pycache__`, `.venv`, `.ruff_cache`, `.pytest_cache`). Keep the data local: do not upload artefacts to GitHub Releases or any public host.
 16. **Run decision models (`/v1/systemone`) at 8-bit or higher.** Experiment 38 compared Clef-flash builds with hosted scores on all 1,322 page/tier pairs. The 8-bit builds (llama.cpp Q8_0 and MLX 8-bit) correlated with hosted above 0.999 and gave the same gate outcome. MLX 4-bit differed on 96 to 177 pages per wording and sent a usable document to OCR. Use llama.cpp build b11510 or later (it includes the Metal fix from PR #30100; `llama update` can lag behind the main release) or MLX 8-bit. Do not use a 4-bit build until its scores are checked against a reference on the full set, not on a few documents. Time local servers one request at a time, because MLX queues requests and the saved per-request times then include waiting. The evidence covers Clef-flash on 40 documents only; other models are untested. See ADR-074 (Proposed) and `experiments/38-rescue-quality-signal-2026-09-30/report.md`.
+17. **The web server owns the workspace; other processes only read it.** User profiles live in `~/.omrg/workspace/workspace.db` (or the `omrg web --workspace` folder). The stdio MCP server, the CLI and the watcher open the default file read-only through `compose_profiles.workspace_profile_catalogue()` and never create, migrate or write it. Only `omrg web` and its MCP endpoint bind a user profile to a collection. A built-in profile (`documents`, `codebase`) keeps the direct Engine path and runs no saved pipeline; only a user-profile collection runs graphs in the request (`engine_profiles.py`). See ADR-080.
 
 ## Hard Boundaries
 
@@ -125,6 +129,21 @@ Releases via `python-semantic-release` on every push to `main`. `feat:` → mino
 > based on. The Codecov project checks are currently **informational** (not
 > CI-blocking) while the targets are recalibrated for branch measurement.
 > The `patch` check (new code coverage) remains blocking. See TDR-007.
+
+## Folder guides
+
+Each folder below has a short `AGENTS.md` (and a `CLAUDE.md` link to it). Read the guide before you edit in that folder.
+
+- [`src/omrg/`](src/omrg/AGENTS.md): composition root and public Engine
+- [`src/omrg/core/`](src/omrg/core/AGENTS.md): business logic
+- [`src/omrg/core/vectordb/`](src/omrg/core/vectordb/AGENTS.md): vector stores, one folder per backend
+- [`src/omrg/core/retrieval/`](src/omrg/core/retrieval/AGENTS.md): search and reranker
+- [`src/omrg/core/ingestion/`](src/omrg/core/ingestion/AGENTS.md): indexing
+- [`src/omrg/core/pipelines/`](src/omrg/core/pipelines/AGENTS.md): graph runner
+- [`src/omrg/transports/`](src/omrg/transports/AGENTS.md): MCP, CLI and HTTP API
+- [`src/omrg/integrations/`](src/omrg/integrations/AGENTS.md): external services
+- [`web/src/`](web/src/AGENTS.md): workspace front end
+- [`tests/`](tests/AGENTS.md): Python test suite
 
 ## Detailed Documentation
 

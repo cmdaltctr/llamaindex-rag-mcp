@@ -1,0 +1,124 @@
+import type { EffectiveControl, OperationDescriptor, ValidationIssue } from "../api/pipelines";
+import type { ProfileRecord } from "../api/profiles";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { findOperation } from "./connections";
+import { EmbeddingModelSection } from "./EmbeddingModelSection";
+import { removeNode, setEnabled, setParam, toggleGraphInput, toggleGraphOutput, type Draft } from "./graph";
+import { NodeDetails } from "./NodeDetails";
+import { ParamField } from "./ParamField";
+import { paramFields } from "./schema";
+import { controlFor, firstSentence, valueNote } from "./stepSummary";
+
+interface NodeInspectorProps {
+  draft: Draft;
+  nodeId: string | null;
+  catalogue: readonly OperationDescriptor[];
+  issues: readonly ValidationIssue[];
+  controls: Record<string, EffectiveControl[]>;
+  onChange: (change: (draft: Draft) => Draft) => void;
+  /** A read-only graph shows the values: every field is disabled and the step cannot be removed. */
+  readOnly?: boolean;
+  /** The open profile. With it, an Embed chunks step shows the profile's embedding model. */
+  profile?: ProfileRecord;
+}
+
+function Check({ checked, onChange, disabled, children }: { checked: boolean; onChange: (checked: boolean) => void; disabled: boolean; children: string }) {
+  return (
+    <label className="flex items-center gap-2 text-ui">
+      <input type="checkbox" checked={checked} disabled={disabled} className="size-4 accent-primary" onChange={(event) => onChange(event.target.checked)} />
+      {children}
+    </label>
+  );
+}
+
+/** Settings for the selected node, generated from its operation's catalogue entry. */
+export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onChange, readOnly = false, profile }: NodeInspectorProps) {
+  const node = draft.graph.nodes.find((candidate) => candidate.id === nodeId);
+  if (!node) {
+    return <p className="text-meta text-muted-foreground">Select a step to edit its settings.</p>;
+  }
+  const id = node.id;
+  const operation = findOperation(catalogue, node.operation, node.version);
+  const nodeIssues = issues.filter((issue) => issue.node_id === id);
+  const isInput = (port: string) => draft.graph.inputs.some((i) => i.targets.some((t) => t.node === id && t.port === port));
+  const isOutput = (port: string) => draft.graph.outputs.some((o) => o.source.node === id && o.source.port === port);
+
+  return (
+    <>
+      <h3 className="text-subsection-title font-semibold">{operation?.title ?? "Unknown operation"}</h3>
+      {operation && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant="hue">{operation.family}</Badge>
+        </div>
+      )}
+      {operation?.description && <p className="text-meta text-muted-foreground">{firstSentence(operation.description)}</p>}
+      {operation && !operation.available && (
+        <p className="text-meta text-status-warning-label">Unavailable on this host: {operation.unavailable_reasons.join(" ")}</p>
+      )}
+      {nodeIssues.length > 0 && (
+        <ul className="flex flex-col gap-1">
+          {nodeIssues.map((issue, index) => (
+            <li key={index} className="text-meta text-status-error-label">
+              {issue.port ? `${issue.port}: ` : ""}
+              {issue.message}
+            </li>
+          ))}
+        </ul>
+      )}
+      {operation?.bypass && (
+        <>
+          <Check disabled={readOnly} checked={node.enabled === false} onChange={(checked) => onChange((current) => setEnabled(current, id, !checked))}>
+            Bypass this step
+          </Check>
+          <p className="text-meta text-muted-foreground">
+            A bypassed node passes its <code className="font-mono text-code">{operation.bypass.input_port}</code> input through unchanged.
+          </p>
+        </>
+      )}
+      {profile !== undefined && node.operation === "embed.chunks" && <EmbeddingModelSection profile={profile} />}
+      {operation &&
+        paramFields(operation).map((field) => (
+          <ParamField
+            key={`${id}:${field.name}`}
+            field={field}
+            disabled={readOnly}
+            value={node.params?.[field.name]}
+            note={valueNote(field, node, controlFor(field, controls[id]), draft.graph)}
+            onChange={(value) => onChange((current) => setParam(current, id, field.name, value))}
+          />
+        ))}
+      {operation && (operation.inputs.length > 0 || operation.outputs.length > 0) && (
+        <fieldset className="flex min-w-0 flex-col gap-2 rounded-control border border-border p-3">
+          <legend className="px-1 text-ui font-medium">Graph inputs and outputs</legend>
+          {operation.inputs.map((port) => (
+            <Check
+              key={`in:${port.name}`}
+              disabled={readOnly}
+              checked={isInput(port.name)}
+              onChange={(checked) => onChange((current) => toggleGraphInput(current, id, port.name, port.type.kind, checked))}
+            >
+              {`Use input ${port.name} as a graph input`}
+            </Check>
+          ))}
+          {operation.outputs.map((port) => (
+            <Check
+              key={`out:${port.name}`}
+              disabled={readOnly}
+              checked={isOutput(port.name)}
+              onChange={(checked) => onChange((current) => toggleGraphOutput(current, id, port.name, checked))}
+            >
+              {`Expose output ${port.name} as a graph output`}
+            </Check>
+          ))}
+        </fieldset>
+      )}
+      {!readOnly && (
+        <Button variant="destructive" onClick={() => onChange((current) => removeNode(current, id))}>
+          Remove step
+        </Button>
+      )}
+      <NodeDetails node={node} operation={operation} issues={nodeIssues} controls={controls[id] ?? []} />
+    </>
+  );
+}

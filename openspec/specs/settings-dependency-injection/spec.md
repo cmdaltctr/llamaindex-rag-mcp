@@ -8,6 +8,7 @@ root, and no import-time snapshots — a deployment's configuration is a
 fact about an operation, not about the process.
 
 ## Requirements
+
 ### Requirement: Immutable effective settings value object
 
 The system SHALL provide a single frozen `EffectiveSettings` value object that
@@ -42,56 +43,54 @@ binary, thresholds). It SHALL live in a pure-data module with no imports from
 `search()` and `ingest_path_async()` SHALL accept an `EffectiveSettings`
 parameter and SHALL pass it down to every module they call. Modules under
 `core/` and `integrations/` SHALL NOT import a process-wide settings object.
-The producer of the instance SHALL be `ProfileResolver.resolve(collection)` for
-collection-bound operations and `compose.py` for operations with no
-collection.
+The producer SHALL remain the collection profile resolver or composition
+boundary. Documented legacy entry-boundary resolution SHALL occur only when
+explicit settings are omitted; lower helpers SHALL receive the resolved value.
+Codebase-map generation, detection, communities, document thresholds, and
+cache helpers SHALL use supplied settings rather than independently reading
+defaults.
 
 #### Scenario: No global settings read in core
-
-- **WHEN** `src/omrg/core/` and `src/omrg/integrations/` are searched for
-  `from ...config import settings` (or any equivalent import of the resolved
-  settings singleton)
-- **THEN** the search MUST return zero results
+- **WHEN** production core/integrations are checked for resolved configuration-singleton imports
+- **THEN** the search SHALL return zero forbidden results
 
 #### Scenario: Settings flow from the entry point
-
-- **WHEN** `search()` is invoked with an `EffectiveSettings` whose
-  `retrieval.top_k` is 20
-- **THEN** the dense retriever, fusion, policy, and reranker stages MUST all
-  observe 20 without consulting any other source
+- **WHEN** search receives effective settings with retrieval top-k 20
+- **THEN** its dense, fusion, policy, and reranker operations SHALL observe that instance without another lookup
 
 #### Scenario: Two operations with different settings in one process
-
-- **WHEN** two `search()` calls run in the same process with
-  `EffectiveSettings` instances differing in `rerank_enabled`
-- **THEN** each call MUST honour its own instance
-- **AND** neither call MUST be affected by the other
+- **WHEN** two searches receive different reranker settings
+- **THEN** each SHALL honour its own supplied settings without interference
 
 #### Scenario: Tests inject rather than patch
-
-- **WHEN** a test needs a non-default configuration value
-- **THEN** it MUST construct an `EffectiveSettings` and pass it into the
-  operation
-- **AND** it MUST NOT patch attributes on a module-level settings singleton
+- **WHEN** a test needs a non-default value
+- **THEN** it SHALL pass an explicit effective-settings instance
+- **AND** it SHALL not patch a settings singleton to simulate injection
 
 #### Scenario: PDF reader factory receives the reader name
-
-- **WHEN** the ingestion pipeline needs a PDF reader adapter
-- **THEN** the call site SHALL pass the resolved reader name from its injected
-  settings
-- **AND** the factory SHALL perform no settings lookup of its own
+- **WHEN** ingestion selects a PDF reader
+- **THEN** the factory SHALL receive the reader from injected settings without its own settings lookup
 
 #### Scenario: Content-type detection receives the injected settings
+- **WHEN** an explicit Engine ingests with no process-default settings installed
+- **THEN** detection SHALL use its supplied settings
+- **AND** it SHALL not fall back because a global settings getter failed
+- **AND** detected content type SHALL retain its existing index-identity role
 
-- **WHEN** `ingest_path_async()` runs in a process that constructed its
-  `Engine` directly and installed no process-global default
-  (`get_default_effective_settings()` would raise)
-- **THEN** content-type detection MUST proceed using the operation's injected
-  `EffectiveSettings`
-- **AND** it MUST NOT raise, log, or otherwise fall back to extension-based
-  routing because of a settings lookup
-- **AND** a populated `content_type` MUST participate in the file's index
-  identity exactly as it does in processes that installed the global
+#### Scenario: Two codebase contexts choose different cache directories
+- **WHEN** callers supply settings with distinct cache locations
+- **THEN** each map/cache operation SHALL use the supplied location
+- **AND** a poisoned default-settings getter SHALL not affect either call
+
+#### Scenario: Document graph threshold is supplied
+- **WHEN** map construction builds document communities and cross-links
+- **THEN** both document-graph calls SHALL receive the supplied similarity threshold
+- **AND** an omitted argument SHALL not cause a leaf default lookup
+
+#### Scenario: Legacy MCP supplies its context
+- **WHEN** the existing MCP codebase tool is called with its unchanged parameters
+- **THEN** its boundary SHALL supply composed settings/store to core
+- **AND** its signature, annotations, path validation, and error shape SHALL remain compatible
 
 ### Requirement: No settings singleton outside the composition root
 
@@ -156,3 +155,17 @@ read from the injected `EffectiveSettings` at call time.
   recorded rationale (for example the reranker model name kept per ADR-033)
 - **AND** it MUST NOT be consumed as the live value by any code path
 
+### Requirement: Default accessor guards cover repaired leaves
+Executable guards SHALL detect forbidden default-store and default-effective-settings access in metadata taxonomy and codebase/cache leaves, including aliases, qualified calls, and local imports. Documented compatibility entry resolution SHALL have narrow allowances that do not exempt leaf reads.
+
+#### Scenario: A leaf reintroduces a default getter
+- **WHEN** a guard fixture or repaired leaf contains a forbidden default read
+- **THEN** the guard SHALL fail naming its source and line
+
+#### Scenario: Alias hides the accessor
+- **WHEN** a forbidden accessor is imported under another name or called through a module qualifier
+- **THEN** the guard SHALL still detect the access
+
+#### Scenario: Supplied values bypass compatibility defaults
+- **WHEN** an entry boundary receives explicit settings/store
+- **THEN** the behavioural regression SHALL prove that no default accessor is called

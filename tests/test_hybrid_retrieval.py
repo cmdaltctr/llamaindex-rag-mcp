@@ -154,15 +154,16 @@ def test_mcp_search_documents_signature_exposes_hybrid_opt_in() -> None:
 
 
 async def test_mcp_search_documents_passes_hybrid_through(monkeypatch) -> None:
-    """MCP calls must forward ``hybrid`` unchanged to retrieval.search."""
-    import omrg.transports.mcp.search as search_mod
+    """MCP calls must forward ``hybrid`` unchanged to the Engine's search."""
+    from conftest import build_mcp_server, direct_ctx
 
+    server = build_mcp_server()
     mock_search = MagicMock(return_value=[])
-    monkeypatch.setattr(search_mod, "search", mock_search)
+    monkeypatch.setattr(server.test_context.engine, "search", mock_search)
 
     from omrg.transports.mcp import search_documents
 
-    await search_documents("needle", hybrid=True, rerank=False)
+    await search_documents("needle", hybrid=True, rerank=False, ctx=direct_ctx(server))
 
     mock_search.assert_called_once()
     assert mock_search.call_args.kwargs["hybrid"] is True
@@ -388,7 +389,7 @@ def test_bm25_cache_namespaces_same_collection_by_store() -> None:
 def test_two_chroma_store_instances_do_not_share_bm25_rows() -> None:
     """Two Chroma adapters with the same collection name stay isolated."""
     from omrg.core.retrieval.sparse import BM25SparseRetriever
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     client_a = FakePersistentClient(
         {
@@ -711,7 +712,7 @@ def test_hybrid_false_matches_dense_only_result_shape(monkeypatch) -> None:
     )
     client = FakePersistentClient({"documents": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
@@ -749,7 +750,7 @@ def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
     collection = FakeCollection("documents", dense_rows)
     client = FakePersistentClient({"documents": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
@@ -816,7 +817,7 @@ def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
     )
     client = FakePersistentClient({"documents": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
@@ -866,7 +867,7 @@ def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
     )
     client = FakePersistentClient({"documents": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
@@ -917,7 +918,7 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
     )
     client = FakePersistentClient({"mixed_native": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
@@ -979,7 +980,7 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
     collection = FakeCollection("paged_native", rows)
     client = FakePersistentClient({"paged_native": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client, scan_page_size=1)
     monkeypatch.setattr(
@@ -1040,7 +1041,7 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
     )
     client = FakePersistentClient({"native_fallback": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
@@ -1087,7 +1088,7 @@ def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> Non
     )
     client = FakePersistentClient({"bm25_no_warn": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
@@ -1148,7 +1149,7 @@ def test_sparse_backend_auto_selects_native_when_supported(monkeypatch) -> None:
 def test_sparse_backend_auto_respects_a_failing_probe(monkeypatch) -> None:
     """A probe that reports unavailability resolves auto to bm25."""
     import omrg.compose as compose
-    import omrg.core.vectordb.lance_fts as lance_fts
+    import omrg.core.vectordb.lancedb.fts as lance_fts
     from omrg.config import Settings
     from omrg.core.retrieval.settings import RetrievalSettings
 
@@ -1228,7 +1229,7 @@ def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
     )
     client = FakePersistentClient({"colosseum_regression": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
@@ -1299,7 +1300,7 @@ def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
     )
     client = FakePersistentClient({"documents": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(

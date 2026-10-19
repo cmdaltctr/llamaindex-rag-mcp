@@ -9,11 +9,12 @@ lint-imports contracts and the file-size test are the executable forms
 of these rules; this spec is the contract they enforce.
 
 ## Requirements
+
 ### Requirement: ChromaDB confined to the vector store implementation
 
-Production code SHALL import `chromadb` only from
-`src/omrg/core/vectordb/chroma.py`. Every other module that needs vector
-store access SHALL receive a `VectorStore` instance by injection. An
+Production code SHALL import `chromadb` only from modules in the
+`src/omrg/core/vectordb/chroma/` folder. Every other module that needs
+vector store access SHALL receive a `VectorStore` instance by injection. An
 import-linter contract SHALL enforce this, and SHALL fail CI when any other
 module imports `chromadb`.
 
@@ -25,10 +26,8 @@ module imports `chromadb`.
 
 #### Scenario: Contract fails on a new leak
 
-- **WHEN** a module outside `core/vectordb/chroma.py` adds `import chromadb`
+- **WHEN** a module outside `core/vectordb/chroma/` adds `import chromadb`
 - **THEN** `uv run lint-imports` MUST fail naming the offending module
-
----
 
 ### Requirement: Configuration is a leaf module
 
@@ -85,18 +84,22 @@ import-linter contract SHALL enforce the direction.
 ### Requirement: Full-package import boundary coverage
 
 The import-linter contract set SHALL cover every package under
-`src/omrg/`, not a subset. The business-layer contract SHALL name
+`src/omrg/`. The business-layer contract SHALL include
 `core.ingestion`, `core.retrieval`, `core.metadata`, `core.chunking`,
 `core.vectordb`, `core.profiles`, `core.codebase`, `core.documents`,
-`core.community`, and `daemon` as source modules, forbidding imports of
-`core.providers` and `transports` from all of them.
+`core.community`, `core.answer`, `core.pipelines`, `core.workspace`,
+`core.plugins`, `core.experiments`, and `daemon`, forbidding concrete provider and transport dependencies under
+the existing sanctioned exceptions. New packages SHALL not be omitted from
+coverage.
 
 #### Scenario: Every package is a contract source
 
 - **WHEN** the contract set in `pyproject.toml` is compared against the
   packages present under `src/omrg/`
 - **THEN** every package MUST appear as a source module in at least one
-  contract
+  applicable contract
+- **AND** new graph/workspace packages MUST not depend on FastAPI, notebook
+  runtimes, or transport modules
 
 #### Scenario: Transport import from core fails
 
@@ -106,31 +109,42 @@ The import-linter contract set SHALL cover every package under
 
 ### Requirement: Use-case subsystems live under core
 
-The codebase-understanding subsystem SHALL live at `core/codebase/`
-(`codebase_map`, `code_graph` and their supporting modules) and the
-document-graph subsystem SHALL live at `core/documents/` (`doc_graph` and its
-supporting modules), per the agreed target tree. No module under `core/` SHALL
-import from a top-level `src/omrg/*.py` business module.
+The codebase-understanding subsystem SHALL live at `core/codebase/` and the
+document-graph subsystem SHALL live at `core/documents/`. Domain algorithms
+and graph execution SHALL remain under `core/`. Top-level modules SHALL
+serve public API or composition responsibilities rather than implementing
+domain algorithms. Domain subsystems SHALL share injected contracts and
+settings without direct ingestion/retrieval cross-imports.
 
 #### Scenario: Ingestion no longer reaches upward
 
-- **WHEN** `core/ingestion/pipeline.py` needs file-type detection
-- **THEN** it MUST import from `omrg.core.codebase`
-- **AND** MUST NOT import from a top-level `omrg.codebase_map` module
+- **WHEN** ingestion needs file-type detection
+- **THEN** it MUST call the core codebase detector through `core.codebase`
+  (a core-to-core import) or the sanctioned `integrations.magika` leaf
+- **AND** no `core/` module MUST import a top-level `omrg` module, except
+  the one sanctioned lazy import of `omrg.capabilities` in
+  `core/ingestion/pipeline.py` that builds an operation-owned OCR client
+  when none is injected
+- **AND** `uv run lint-imports` MUST fail when any other `core/` module
+  imports a top-level `omrg` module
 
 #### Scenario: Top-level business modules are gone
 
 - **WHEN** `src/omrg/` is listed after the change
-- **THEN** the only top-level modules MUST be `__init__.py`, `compose.py`, and
-  the `config/` package
+- **THEN** public API and composition modules such as `__init__.py`,
+  `engine.py`, `compose.py`, the `compose_*.py` composition helpers,
+  `capabilities.py` (runtime capability probes), and
+  `pipeline_templates.py` (built-in graph templates) MAY exist
+- **AND** ingestion, retrieval, graph scheduling, and workspace business
+  algorithms MUST remain in their owning `core/` packages
 
 #### Scenario: Subsystems share only settings
 
-- **WHEN** `core/codebase/` and `core/documents/` imports are inspected
-- **THEN** neither MUST import from `core/ingestion/` or `core/retrieval/`
-  other than through injected interfaces
-
----
+- **WHEN** domain subsystem imports are inspected
+- **THEN** codebase/document graph packages MUST not import ingestion or
+  retrieval implementations
+- **AND** ingestion and retrieval MUST not import one another
+- **AND** cross-domain orchestration MUST use injected contracts
 
 ### Requirement: Executable file-size ceiling
 
@@ -160,3 +174,54 @@ The shared community strategy package SHALL not import from codebase or document
 - **WHEN** the optional Leiden adapter is inspected
 - **THEN** it SHALL not import from `omrg.core`, `omrg.transports`, or `omrg.daemon`
 
+### Requirement: Graph scheduling is independent of domain implementations
+The generic graph runner SHALL receive operation adapters and resources through injection. It SHALL not import ingestion, retrieval, answering, provider, transport, or process-launch implementations. Domain adapters SHALL remain in their owning packages and use existing registries.
+
+#### Scenario: New operation is registered
+- **WHEN** a new compatible operation adapter is added and registered
+- **THEN** the runner SHALL execute it without a name-specific branch or concrete implementation import
+
+#### Scenario: Runner reaches into a domain implementation
+- **WHEN** the runner imports a domain or transport implementation directly
+- **THEN** executable boundary tests SHALL fail naming the offending edge
+
+### Requirement: Application persistence and external tools remain injected leaves
+Workspace services SHALL receive persistence and process-control interfaces from composition. Their adapters SHALL exchange pure data and avoid importing core business logic. Core graph execution SHALL not import SQLite, web frameworks, uv, or marimo implementations.
+
+#### Scenario: Web runtime is unavailable
+- **WHEN** graph validation/execution is imported without web or notebook dependencies
+- **THEN** the import SHALL succeed without constructing an application or tool process
+
+#### Scenario: External process wrapper imports business logic
+- **WHEN** a process or persistence integration adds a core business import
+- **THEN** executable boundary tests SHALL reject that dependency
+
+### Requirement: HTTP route groups live in one routes folder
+
+Every FastAPI route group of the local web transport SHALL live in the
+`transports/api/routes/` folder. The `transports/api/` root SHALL hold the
+application factory, the OpenAPI contract and the shared support modules,
+and no module that declares a route group. The package file of the routes
+folder SHALL import nothing. An automated layout check SHALL enforce these
+rules. Moving a route group SHALL NOT change any HTTP path, method, scope
+or response.
+
+#### Scenario: Route group added at the transport root
+
+- **WHEN** a module that creates an `APIRouter` is added at the
+  `transports/api/` root
+- **THEN** the layout check MUST fail and name the file
+
+#### Scenario: Application registers every route group
+
+- **WHEN** the application is built
+- **THEN** it MUST register the route group of every module in
+  `transports/api/routes/` that declares one
+- **AND** the OpenAPI conformance check MUST pass with the same paths as
+  before the move
+
+#### Scenario: Source scans include the routes folder
+
+- **WHEN** a test reads the transport source to check a rule, for example
+  the workspace file names that must come from one place
+- **THEN** it MUST read the modules in `transports/api/routes/` as well

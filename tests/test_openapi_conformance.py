@@ -91,7 +91,8 @@ def _derive_search_params() -> dict[str, Any]:
     return {
         name: param.default
         for name, param in sig.parameters.items()
-        if name not in _PATH_PARAMETER_EXCLUSIONS
+        # ``ctx`` is the framework-injected request context, never a parameter.
+        if name not in _PATH_PARAMETER_EXCLUSIONS and name != "ctx"
     }
 
 

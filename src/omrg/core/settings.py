@@ -18,6 +18,17 @@ from pydantic import BaseModel, ConfigDict, Field
 #: Valid ``OCR_ROUTING_UNIT`` values; ``page`` is opt-in.
 OCR_ROUTING_UNITS = ("document", "page")
 
+#: Server-default provider fields the web workspace may change while the
+#: server runs: addresses first, then API keys. They match the ``fields`` of
+#: the LLM provider connection descriptors (a test checks this). Everything
+#: that handles provider values by name reads these tuples, so a provider with
+#: a new field adds its name here and nowhere else.
+PROVIDER_ADDRESS_FIELDS = ("ollama_base_url", "llamacpp_chat_url", "openai_compatible_base_url")
+PROVIDER_SECRET_FIELDS = ("openrouter_api_key", "openai_compatible_api_key", "anthropic_api_key")
+#: Whole-number editable fields that live in ``EffectiveSettings``: the Ollama
+#: context window (chat and metadata calls only, never embeddings).
+PROVIDER_INT_FIELDS = ("ollama_context_window",)
+
 
 class ChunkingBlock(BaseModel):
     """Chunking knobs carried in :attr:`EffectiveSettings.chunking`."""
@@ -282,9 +293,13 @@ class EffectiveSettings(BaseModel):
     llamacpp_chat_url: str = "http://localhost:8081/v1"
     llamacpp_chat_model: str = ""
     openrouter_api_key: str = ""
+    openai_compatible_base_url: str = "https://api.openai.com/v1"
+    openai_compatible_api_key: str = ""
+    anthropic_api_key: str = ""
     openrouter_embed_model: str = ""
     openrouter_llm_model: str = ""
     ollama_base_url: str = "http://localhost:11434"
+    ollama_context_window: int = 16384
     embed_model: str = ""
 
     # ── PDF reader ────────────────────────────────────────────────
@@ -402,6 +417,15 @@ class EffectiveSettings(BaseModel):
 # honour the instance they were given.
 
 _default_effective: EffectiveSettings | None = None
+
+
+def provider_secret_values(settings: object) -> tuple[str, ...]:
+    """Return the value of each provider API key on *settings*, in field order.
+
+    A field the object lacks counts as blank. Blank values are kept so the
+    position matches :data:`PROVIDER_SECRET_FIELDS`.
+    """
+    return tuple(str(getattr(settings, name, "") or "") for name in PROVIDER_SECRET_FIELDS)
 
 
 def set_default_effective_settings(settings: EffectiveSettings) -> None:
