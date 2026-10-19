@@ -27,7 +27,8 @@ function GitHubMark() {
 
 function PowerControl() {
   const health = useQuery({ ...healthQuery(useApi()), refetchInterval: HEALTH_POLL_MS });
-  const state = health.data ? "Running" : health.isError ? "Not answering" : "Checking";
+  // A failed poll keeps the earlier `data`, so the error wins over it.
+  const state = health.isError ? "Not answering" : health.data ? "Running" : "Checking";
   const running = state === "Running";
   return (
     <Popover
@@ -41,7 +42,7 @@ function PowerControl() {
       )}
     >
       <p className="text-ui font-medium">{state}</p>
-      {health.data ? <p className="text-muted-foreground">{`OMRG version ${health.data.version}`}</p> : null}
+      {running && health.data ? <p className="text-muted-foreground">{`OMRG version ${health.data.version}`}</p> : null}
       <p className="text-muted-foreground">Restart and stop are not on this page. Run these in a terminal.</p>
       {COMMANDS.map(({ what, command, hint }) => (
         <div key={command} className="flex flex-col gap-1">
