@@ -46,6 +46,9 @@ jobs:
           UV_LINK_MODE: copy
         run: uv sync --frozen --extra web
 
+      # Parallel with pytest-xdist; `--dist loadfile` comes from pyproject.toml.
+      # The tripwire starts a second copy of the suite inside one test, which a
+      # parallel run cannot split, so it runs as its own step below.
       - name: Run tests (fast)
         env:
           PDF_READER: pypdf
@@ -54,7 +57,17 @@ jobs:
           EMBED_MODEL: nomic-embed-text
           OLLAMA_BASE_URL: http://localhost:11434
           METADATA_LLM_PROVIDER: local
-        run: uv run --no-sync pytest -m "not slow" --tb=short -q
+        run: uv run --no-sync pytest -m "not slow" --tb=short -q -n auto --maxprocesses=8 --deselect tests/test_clean_base_tripwire.py
+
+      - name: Run clean-base tripwire
+        env:
+          PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
+        run: uv run --no-sync pytest tests/test_clean_base_tripwire.py --tb=short -q
 
       # Verify the default install stays torch-free (ADR-038).
       - name: Verify default install is torch-free
@@ -271,7 +284,20 @@ jobs:
         # The exact skip/count manifest is a clean-base assertion. Optional
         # extras intentionally activate additional tests, so those matrix
         # entries exercise the suite without the base-only tripwire module.
-        run: uv run --no-sync pytest -m "not slow" --tb=short -q ${{ matrix.extra && '--ignore=tests/test_clean_base_tripwire.py' || '' }}
+        # The base entry runs the tripwire as its own step (it cannot run inside
+        # a parallel suite), so it is deselected here.
+        run: uv run --no-sync pytest -m "not slow" --tb=short -q -n auto --maxprocesses=8 ${{ matrix.extra && '--ignore=tests/test_clean_base_tripwire.py' || '--deselect tests/test_clean_base_tripwire.py' }}
+
+      - name: Run clean-base tripwire at floors
+        if: matrix.extra == ''
+        env:
+          PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
+        run: uv run --no-sync pytest tests/test_clean_base_tripwire.py --tb=short -q
 
       - name: Verify base install stays Leiden-free
         if: matrix.extra == ''

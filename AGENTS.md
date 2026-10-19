@@ -14,7 +14,7 @@ uv run pytest --cov=omrg      # Coverage
 ./scripts/local_ci.sh         # PR-blocking CI jobs, run locally before pushing
 ```
 
-**Parallel runs (`-n`).** `pyproject.toml` sets `--dist loadfile`, so each test file stays on one worker. Do not pass `--dist load`: tests that rely on logging state set earlier in the same file then fail at random. The tripwire runs its own inner suite in parallel too (~2.5 min) and no longer pins the skipped count, because a parallel run reports one fewer skip than a serial one; it still pins the executed and deselected counts. Run `./scripts/local_ci.sh` (parallel main suite, then the tripwire) before you push; CI stays serial.
+**Parallel runs (`-n`).** `pyproject.toml` sets `--dist loadfile`, so each test file stays on one worker. Do not pass `--dist load`: tests that rely on logging state set earlier in the same file then fail at random. The tripwire runs its own inner suite in parallel too (~2.5 min) and no longer pins the skipped count, because a parallel run reports one fewer skip than a serial one; it still pins the executed and deselected counts. Run `./scripts/local_ci.sh` (parallel main suite, then the tripwire) before you push. The CI `test` and `floors` jobs use the same split (parallel main suite, tripwire as its own step); the other CI jobs stay serial.
 
 ## Last known good reference point
 
