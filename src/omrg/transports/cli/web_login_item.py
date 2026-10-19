@@ -24,7 +24,7 @@ from . import _launchagent, console
 from . import _web_login_item as core
 from . import _web_login_item_settings as settings_text
 from . import _web_login_item_stop as stop
-from .web import resolve_port, web_app
+from .web import resolve_port, saved_web_port, web_app
 
 #: Seconds ``install`` and ``restart`` wait for the app to answer (design D8).
 START_TIMEOUT = 60.0
@@ -73,12 +73,8 @@ def _fail(message: str, code: int = 1) -> NoReturn:
 
 
 def _target_port(plan: core.WebLoginItemPlan) -> int:
-    """Return the port the server will bind: ``--port``, else the saved port, else 8765."""
-    from ...core.workspace import WorkspaceLayout
-    from ...integrations.workspace_sqlite.settings import read_saved_web_port
-
-    saved = read_saved_web_port(WorkspaceLayout(core.workspace_dir(plan)).records)
-    return resolve_port(plan.port, saved)
+    """Return the bound port: ``--port``, else ``web_port`` in ``omrg.jsonc``, else 8765."""
+    return resolve_port(plan.port, saved_web_port())
 
 
 def _wait_for_health(

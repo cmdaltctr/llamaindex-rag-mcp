@@ -320,3 +320,150 @@ def test_a_reference_from_the_file_resolves_end_to_end(
         settings, store=FakeKeychain({"openrouter": SECRET})
     )
     assert (resolved.openrouter_api_key, problems) == (SECRET, {})
+
+
+# ── compose.get_settings resolves references for the CLI and stdio (task 5.3) ─
+
+
+def _reference_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, text: str) -> None:
+    folder = tmp_path / "omrg-config"
+    folder.mkdir()
+    (folder / "omrg.jsonc").write_text(text, encoding="utf-8")
+    monkeypatch.setenv("OMRG_CONFIG_DIR", str(folder))
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.setattr("omrg.config._settings", None)
+
+
+def test_compose_get_settings_resolves_a_keychain_reference(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from omrg import compose
+    from omrg.integrations import keychain
+
+    _reference_folder(tmp_path, monkeypatch, '{"openrouter_api_key": "keychain://openrouter"}')
+    store = FakeKeychain({"openrouter": SECRET})
+    monkeypatch.setattr(keychain, "KeychainStore", lambda: store)
+    first = compose.get_settings()
+    assert first.openrouter_api_key == SECRET
+    assert first.setting_sources["openrouter_api_key"] == "keychain"
+    assert compose.get_settings() is first  # resolved once for one launch
+    assert store.reads == ["openrouter"]
+    monkeypatch.setattr("omrg.config._settings", None)
+
+
+def test_compose_get_settings_without_a_reference_never_loads_the_keychain(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from omrg import compose
+
+    _reference_folder(tmp_path, monkeypatch, '{"llamacpp_chat_url": "http://gpu:8081/v1"}')
+    monkeypatch.delitem(sys.modules, "omrg.integrations.keychain", raising=False)
+    monkeypatch.setitem(sys.modules, "keyring", None)  # an import now raises ImportError
+    settings = compose.get_settings()
+    assert settings.llamacpp_chat_url == "http://gpu:8081/v1"
+    assert "omrg.integrations.keychain" not in sys.modules
+    monkeypatch.setattr("omrg.config._settings", None)
+
+
+def test_compose_get_settings_logs_a_missing_entry_by_provider_name_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    from omrg import compose
+    from omrg.integrations import keychain
+
+    _reference_folder(tmp_path, monkeypatch, '{"openrouter_api_key": "keychain://openrouter"}')
+    monkeypatch.setattr(keychain, "KeychainStore", lambda: FakeKeychain({}))
+    with caplog.at_level("WARNING"):
+        settings = compose.get_settings()
+    assert settings.openrouter_api_key == ""
+    assert "openrouter" in caplog.text and "keychain-missing" in caplog.text
+    monkeypatch.setattr("omrg.config._settings", None)
+
+
+# ── provider_values_from_file: the file over the launch settings (D7) ─────
+
+
+def _file(tmp_path: Path, text: str) -> Any:
+    from omrg.config.settings_file import read_settings_file
+
+    folder = tmp_path / "cfg"
+    folder.mkdir(exist_ok=True)
+    (folder / "omrg.jsonc").write_text(text, encoding="utf-8")
+    return read_settings_file(folder)
+
+
+def test_values_from_the_file_override_the_launch_settings(tmp_path: Path) -> None:
+    from omrg.compose_providers import provider_values_from_file
+
+    text = '{"llamacpp_chat_url": "http://gpu:1/v1", "answer": {"model": "m"}}'
+    values = provider_values_from_file(make_settings(), _file(tmp_path, text), None)
+    assert values.values["llamacpp_chat_url"] == "http://gpu:1/v1"
+    assert values.values["answer.model"] == "m"
+    assert values.sources == {"llamacpp_chat_url": "config-file", "answer.model": "config-file"}
+
+
+def test_a_field_the_file_dropped_goes_back_to_the_code_default(tmp_path: Path) -> None:
+    from omrg.compose_providers import provider_values_from_file
+
+    base = make_settings(llamacpp_chat_url="http://old:1/v1")
+    object.__setattr__(base, "setting_sources", {"llamacpp_chat_url": "config-file"})
+    values = provider_values_from_file(base, _file(tmp_path, "{}"), None)
+    default = Settings.model_fields["llamacpp_chat_url"].default
+    assert values.values["llamacpp_chat_url"] == default
+    assert apply_provider_values(base, values).llamacpp_chat_url == default
+
+
+def test_a_key_the_file_dropped_is_unset(tmp_path: Path) -> None:
+    from omrg.compose_providers import provider_values_from_file
+
+    base = make_settings(openrouter_api_key=SECRET)
+    object.__setattr__(base, "setting_sources", {"openrouter_api_key": "keychain"})
+    values = provider_values_from_file(base, _file(tmp_path, "{}"), None)
+    assert "openrouter_api_key" in values.unset
+    applied = apply_provider_values(base, values)
+    assert applied.openrouter_api_key == ""
+    assert "openrouter_api_key" not in applied.setting_sources
+
+
+def test_an_environment_field_is_left_to_the_environment(tmp_path: Path) -> None:
+    from omrg.compose_providers import provider_values_from_file
+
+    base = make_settings()
+    object.__setattr__(base, "provider_explicit", frozenset({"llamacpp_chat_url"}))
+    text = '{"llamacpp_chat_url": "http://x:1/v1"}'
+    values = provider_values_from_file(base, _file(tmp_path, text), None)
+    assert "llamacpp_chat_url" not in values.values
+    assert apply_provider_values(base, values).llamacpp_chat_url == base.llamacpp_chat_url
+
+
+def test_a_keychain_reference_resolves_through_the_given_store(tmp_path: Path) -> None:
+    from omrg.compose_providers import provider_values_from_file
+
+    store = FakeKeychain({"openrouter": SECRET})
+    values = provider_values_from_file(
+        make_settings(), _file(tmp_path, '{"openrouter_api_key": "keychain://openrouter"}'), store
+    )
+    assert values.values["openrouter_api_key"] == SECRET
+    assert values.sources["openrouter_api_key"] == "keychain"
+    assert values.keychain_available is True and values.key_problems == {}
+    assert SECRET not in repr(values)
+
+
+def test_a_reference_with_no_keychain_is_unreadable_and_unset(tmp_path: Path) -> None:
+    from omrg.compose_providers import provider_values_from_file
+
+    values = provider_values_from_file(
+        make_settings(), _file(tmp_path, '{"openrouter_api_key": "keychain://openrouter"}'), None
+    )
+    assert values.key_problems == {"openrouter": "keychain-unreadable"}
+    assert "openrouter_api_key" in values.unset and values.keychain_available is False
+
+
+def test_the_chat_pair_locks_together(tmp_path: Path) -> None:
+    from omrg.compose_providers import provider_values_from_file
+
+    base = make_settings()
+    object.__setattr__(base, "provider_explicit", frozenset({"answer.model"}))
+    text = '{"answer": {"provider": "llamacpp"}}'
+    values = provider_values_from_file(base, _file(tmp_path, text), None)
+    assert "answer.provider" not in values.values

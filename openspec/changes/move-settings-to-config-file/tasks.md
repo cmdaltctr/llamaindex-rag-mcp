@@ -30,36 +30,36 @@
 
 ## 5. Web server uses the file
 
-- [ ] 5.1 Replace the shared `WorkspaceSettings` in `mcp_http.py::McpHttp` (line 109) with a settings-file store, and pass it to `ProviderState` (`provider_state.py:344`); move `routes/chat_settings.py` (own instance, line 97), `routes/mcp.py` (port, upload limit), `lifespan.py::_upload_limit` and the saves of `routes/llamacpp_server.py` onto it; every save route takes and returns `revision`; update their tests to assert the file content after each save
-- [ ] 5.2 Drop `saved_at` from key fields in `compose_connections.py` (line 199), `openapi.yaml` and `web/src/api/`; verify the OpenAPI conformance tests (`tests/unit/test_web_openapi_conformance*.py`) pass
-- [ ] 5.3 Key routes write the keychain and the `keychain://` reference, and delete both on Remove; tests for each scenario in "API keys live only in the system keychain" and "Key references and key files do not lock the key field"
-- [ ] 5.4 Replace `read_saved_web_port` in `transports/cli/web.py` and `web_login_item.py::_target_port` with the file value; tests for every scenario in "The web server listens on a stable port"
-- [ ] 5.5 Add live reload by file stamp in `ProviderState` and the restart-only snapshot; tests: hand edit of `answer.model` applies on the next request, hand edit of `retrieval.top_k` is reported and not applied
-- [ ] 5.6 Return the server rule message on every 400 and 409 settings answer without the value; test that no refused value appears in any response body
-- [ ] 5.7 Run `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q`; verify it passes
+- [x] 5.1 Replace the shared `WorkspaceSettings` in `mcp_http.py::McpHttp` (line 109) with a settings-file store, and pass it to `ProviderState` (`provider_state.py:344`); move `routes/chat_settings.py` (own instance, line 97), `routes/mcp.py` (port, upload limit), `lifespan.py::_upload_limit` and the saves of `routes/llamacpp_server.py` onto it; every save route takes and returns `revision`; update their tests to assert the file content after each save
+- [x] 5.2 Drop `saved_at` from key fields in `compose_connections.py` (line 199), `openapi.yaml` and `web/src/api/`; verify the OpenAPI conformance tests (`tests/unit/test_web_openapi_conformance*.py`) pass
+- [x] 5.3 Key routes write the keychain and the `keychain://` reference, and delete both on Remove; tests for each scenario in "API keys live only in the system keychain" and "Key references and key files do not lock the key field"
+- [x] 5.4 Replace `read_saved_web_port` in `transports/cli/web.py` and `web_login_item.py::_target_port` with the file value; tests for every scenario in "The web server listens on a stable port"
+- [x] 5.5 Add live reload by file stamp in `ProviderState` and the restart-only snapshot; tests: hand edit of `answer.model` applies on the next request, hand edit of `retrieval.top_k` is reported and not applied
+- [x] 5.6 Return the server rule message on every 400 and 409 settings answer without the value; test that no refused value appears in any response body
+- [x] 5.7 Run `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q`; verify it passes
 
 ## 6. Move saved rows out of the database
 
-- [ ] 6.1 Write failing tests for `transports/api/settings_handover.py`: rows copied when the file lacks the key, file wins, `key_saved_at` becomes `keychain://`, rows deleted, folder not writable leaves rows and sets the notice, CLI and stdio never call it
-- [ ] 6.2 Implement the handover and call it from the lifespan before `ProviderState` starts, without growing `lifespan.py` past 500 lines; verify 6.1 passes
+- [x] 6.1 Write failing tests for `transports/api/settings_handover.py`: rows copied when the file lacks the key, file wins, `key_saved_at` becomes `keychain://`, rows deleted, folder not writable leaves rows and sets the notice, CLI and stdio never call it
+- [x] 6.2 Implement the handover and call it from the lifespan before `ProviderState` starts, without growing `lifespan.py` past 500 lines; verify 6.1 passes
 
 ## 7. Configuration endpoint
 
-- [ ] 7.1 Add `routes/configuration.py` and its `openapi.yaml` entry; tests for masking, `applies`, `restart_pending`, problems and the handover notice; verify the OpenAPI contract test passes
+- [x] 7.1 Add `routes/configuration.py` and its `openapi.yaml` entry; tests for masking, `applies`, `restart_pending`, problems and the handover notice; verify the OpenAPI contract test passes
 
 ## 8. CLI commands
 
 - [x] 8.1 Write failing tests for `omrg config init` (template parses, sets nothing, covers every `Settings` field, refuses an existing file, `--force` keeps a dated copy) and `omrg config show` (masked keys, stderr only)
-- [ ] 8.2 Implement `transports/cli/config.py`; verify 8.1 passes and update `docs/guides/cli-reference.md`
+- [x] 8.2 Implement `transports/cli/config.py`; verify 8.1 passes and update `docs/guides/cli-reference.md`
 
 ## 9. Settings page
 
 - [x] 9.1 Load the `omrg-design` skill; add `SettingRow.tsx` and the source words map with Vitest tests for each source text and the filled Edit input
-- [ ] 9.2 Move provider cards, the Chat section, the Ollama context window, the llama.cpp panel and Settings › Workspace to `SettingRow`; key fields use the summary row with Replace and Remove; update their tests for every changed scenario in the `workspace-settings` delta
+- [x] 9.2 Move provider cards, the Chat section, the Ollama context window, the llama.cpp panel and Settings › Workspace to `SettingRow`; key fields use the summary row with Replace and Remove; update their tests for every changed scenario in the `workspace-settings` delta
 - [x] 9.3 Add `describeSaveError` and use it in Settings forms; test the llama.cpp program rule message and the revision conflict with its Reload action
 - [x] 9.4 Add the restart dialog using the power menu routes; tests for login-item, foreground and Later
-- [ ] 9.5 Add Settings › Configuration from `GET /v1/settings/configuration`; tests for grouping, masking, problems and "Restart to apply"
-- [ ] 9.6 Run `npm run lint`, `npm run typecheck`, `npm test` and `npm run build` in `web/`; verify all pass
+- [x] 9.5 Add Settings › Configuration from `GET /v1/settings/configuration`; tests for grouping, masking, problems and "Restart to apply"
+- [x] 9.6 Run `npm run lint`, `npm run typecheck`, `npm test` and `npm run build` in `web/`; verify all pass
 
 ## 10. Login item and docs
 

@@ -1,11 +1,13 @@
 """``omrg config`` command group.
 
 ``init`` writes a commented starter ``omrg.jsonc`` in the user config
-folder. All output goes to stderr (gotcha #5).
+folder. ``show`` prints every setting with its value and source. All output
+goes to stderr (gotcha #5).
 """
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 from pathlib import Path
@@ -14,7 +16,9 @@ from typing import Annotated, NoReturn
 import typer
 from rich.markup import escape
 
+from ...config.settings_file import SettingsFile, read_settings_file
 from ...config.user_config import CONFIG_FILE, display_path, user_config_dir
+from ..settings_view import SettingView, describe_settings
 from . import app, console
 from .config_template import build_template, today
 
@@ -104,3 +108,64 @@ def init(
     console.print(
         f"[green]✓[/green] Wrote {shown}. Every setting is commented out.", soft_wrap=True
     )
+
+
+_KEYCHAIN_NOTES = {
+    "keychain-missing": "The keychain has no key for {provider}.",
+    "keychain-unreadable": "The keychain could not be read, so the key for {provider} is not set.",
+}
+
+
+def _value_text(view: SettingView) -> str:
+    """Return the value column: JSON for a value, a masked phrase for a key field."""
+    if view.last4 is not None:
+        return f"set, ending {view.last4}" if view.last4 else "set"
+    if view.value is None:
+        return "not set"
+    return json.dumps(view.value, ensure_ascii=False)
+
+
+_FILE_STATES = {"absent": "not found", "ok": "found", "broken": "cannot be read"}
+
+
+def _file_line(file: SettingsFile) -> str:
+    return f"File: {display_path(file.path)} ({_FILE_STATES.get(file.state, file.state)})"
+
+
+@config_app.command()
+def show() -> None:
+    """Print every setting with its value and where the value came from.
+
+    A key shows only whether it is set and its last four characters. Problems
+    found in omrg.jsonc are listed by key. The command writes nothing and
+    prints to stderr only.
+    """
+    from ...compose_providers import resolve_keychain_references
+    from ...config import Settings
+
+    settings, key_problems = resolve_keychain_references(Settings())
+    file = read_settings_file()
+    views = describe_settings(
+        launch=settings, live=settings, file=file, snapshot=file.values, pending=()
+    )
+    console.print(escape(_file_line(file)), soft_wrap=True)
+    groups: dict[str, list[SettingView]] = {}
+    for view in views:
+        block = view.key.partition(".")[0] if "." in view.key else "general"
+        groups.setdefault(block, []).append(view)
+    for block, members in groups.items():
+        console.print(f"\n{escape(block)}:", soft_wrap=True)
+        for view in members:
+            line = f"  {view.key} = {_value_text(view)}  ({view.source})"
+            console.print(escape(line), soft_wrap=True)
+    notes = [
+        _KEYCHAIN_NOTES[reason].format(provider=provider)
+        for provider, reason in sorted(key_problems.items())
+        if reason in _KEYCHAIN_NOTES
+    ]
+    if file.problems or notes:
+        console.print(f"\nProblems in {escape(display_path(file.path))}:", soft_wrap=True)
+        for problem in file.problems:
+            console.print(escape(f"  {problem.key}: {problem.message}"), soft_wrap=True)
+        for note in notes:
+            console.print(escape(f"  {note}"), soft_wrap=True)

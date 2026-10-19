@@ -1,11 +1,12 @@
-"""Saved LLM provider values of one web launch (design D3, D6, D7).
+"""LLM provider values of one web launch (ADR-087, design D3, D6, D7).
 
-:class:`ProviderState` reads the saved addresses, the Chat choice and the
-keychain keys into a :class:`~omrg.compose_providers.ProviderValues`, hands
-them to the Engine factory as its ``provider_source`` and applies each save
-in the order of design D6: keychain (keys only), database, runtime values,
-``engine.use_provider_settings``. When the Engine refuses, the database row
-(and a changed key) go back and the previous values return.
+:class:`ProviderState` reads the provider addresses, the Chat choice and the
+keys from ``omrg.jsonc`` (and the keychain behind a ``keychain://`` reference)
+into a :class:`~omrg.compose_providers.ProviderValues`, hands them to the
+Engine factory as its ``provider_source`` and applies each save in this order:
+keychain (keys only), the file, runtime values, ``engine.use_provider_settings``.
+When the Engine refuses, the file keys (and a changed key) go back and the
+previous values return. A hand edit of the file applies through :meth:`reload`.
 
 The module also holds the address and key rules, which name the rule and
 never repeat the value.
@@ -19,16 +20,22 @@ import logging
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import replace
-from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlsplit
 
-from ...compose_providers import ProviderValues, provider_effective_settings
+from ...compose_providers import (
+    ProviderValues,
+    current_provider_values,
+    provider_effective_settings,
+)
+from ...config.rules import SECRET_FIELDS
+from ...config.settings_file import ABSENT, SettingsFile
+from ...config.settings_file_write import SettingsFileError, WriteResult
+from ...config.user_config import KEYCHAIN_PREFIX
 from ...core.providers.llm import registry
 from ...core.providers.llm.connection import ConnectionDescriptor, ConnectionField
-from ...core.providers.llm.llamacpp_rules import LLAMACPP_SERVER_FIELDS
 from ...integrations.keychain import KeychainUnavailableError
-from ...integrations.workspace_sqlite.settings import WorkspaceSettings, provider_key
+from .settings_store import SettingsFileStore, Stamp
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +128,11 @@ def valid_key(value: str) -> bool:
     )
 
 
+def secret_texts(values: ProviderValues) -> list[str]:
+    """Return the key texts in *values*, for the launch's append-only secret set."""
+    return [text for path, text in values.values.items() if path in SECRET_FIELDS and text]
+
+
 def descriptor_of(provider: str) -> ConnectionDescriptor | None:
     """Return the connection descriptor of a registered *provider*, or ``None``."""
     return registry.describe_all().get(provider)
@@ -133,25 +145,34 @@ def field_of(descriptor: ConnectionDescriptor, field_id: str) -> ConnectionField
 
 def overlay(values: ProviderValues, typed: Mapping[str, str]) -> ProviderValues:
     """Return *values* with the typed ``Settings`` fields laid over them (nothing saved)."""
-    return replace(values, values={**values.values, **typed})
+    return replace(values, values={**values.values, **typed}, unset=values.unset - set(typed))
 
 
 class ProviderState:
-    """Saved provider values, the stores behind them and the secret set.
+    """Provider values read from ``omrg.jsonc``, the keychain and the secret set.
+
+    The file is the store (ADR-087). ``load`` reads it, ``reload`` follows a
+    change made behind the server's back (a hand edit), and each save writes
+    the file first and then reloads, so the values in force always come from
+    the file.
 
     Args:
-        settings: Workspace settings store (the database is already prepared).
+        store: The ``omrg.jsonc`` store.
         keychain: A :class:`~omrg.integrations.keychain.KeychainStore` or a
             stand-in with the same methods.
         secrets: The launch's append-only secret set.
     """
 
-    def __init__(self, settings: WorkspaceSettings, keychain: Any, secrets: Any) -> None:
+    def __init__(self, store: SettingsFileStore, keychain: Any, secrets: Any) -> None:
         """Create the state with no values loaded; call :meth:`load`."""
-        self.settings = settings
+        self.store = store
         self.keychain = keychain
         self.secrets = secrets
         self.values = ProviderValues()
+        #: Revision (content hash) of the file the values were read from.
+        self.revision = ABSENT
+        #: Stamp of the file at that read (D7).
+        self.stamp: Stamp | None = None
         #: Serialises saves so two requests never interleave their writes.
         self.lock = asyncio.Lock()
 
@@ -160,145 +181,133 @@ class ProviderState:
         return self.values
 
     def load(self) -> ProviderValues:
-        """Read the keychain keys and the database rows; add each key to the secret set."""
-        providers = list(registry.describe_all())
-        for secret in self.keychain.load(providers).values():
-            self.secrets.add(secret.reveal())
-        self.values = self.build()
+        """Read the file and the keychain keys; add each key to the secret set."""
+        self._adopt(self.store.stamp(), self.store.read())
         return self.values
 
-    def build(self) -> ProviderValues:
-        """Build values from the database rows and the keys now in memory."""
-        values: dict[str, str] = {}
-        saved_at: dict[str, str] = {}
-        problems: dict[str, str] = {}
-        for provider, descriptor in registry.describe_all().items():
-            self._provider_values(provider, descriptor, values)
-            stamp = self.settings.get_key_saved_at(provider)
-            if stamp is not None:
-                saved_at[provider] = stamp
-                if self.keychain.get(provider) is None:
-                    problems[provider] = self._problem(provider)
-        for spec in LLAMACPP_SERVER_FIELDS:  # the managed llama.cpp server, not a descriptor
-            saved = self.settings.get_valid(provider_key("llamacpp", spec.id))
-            if saved:
-                values[spec.settings_field] = saved
-        chat_provider = self.settings.get_chat_provider()
-        chat_model = self.settings.get_chat_model()
-        if chat_provider:
-            values["answer.provider"] = chat_provider
-        if chat_model:
-            values["answer.model"] = chat_model
-        available = bool(self.keychain.available)
-        return ProviderValues(
-            values=values,
-            key_saved_at=saved_at,
-            key_problems=problems,
-            keychain_available=available,
-            keychain_reason=None if available else "No system keychain is available.",
-        )
-
-    def _provider_values(
-        self, provider: str, descriptor: ConnectionDescriptor, values: dict[str, str]
-    ) -> None:
-        for spec in descriptor.fields:
-            if spec.kind == "secret":
-                secret = self.keychain.get(provider)
-                if secret is not None:
-                    values[spec.settings_field] = secret.reveal()
-                continue
-            saved = self.settings.get_valid(provider_key(provider, spec.id))
-            if saved:
-                values[spec.settings_field] = saved
-
-    def _problem(self, provider: str) -> str:
-        """Return ``keychain-missing`` or ``keychain-unreadable`` for a saved key not loaded."""
-        return str(self.keychain.state(provider, True))
-
-    # ── Saves (design D6 order) ──────────────────────────────────────────
-
-    def _commit(self, engine: Any, restore: Callable[[], None]) -> None:
-        """Rebuild the runtime values and give them to the Engine, or roll back."""
-        previous = self.values
-        self.values = self.build()
+    def _adopt(self, stamp: Stamp | None, file: SettingsFile) -> bool:
+        """Take *file* as the current state. Return whether the provider values changed."""
         try:
-            engine.use_provider_settings(provider_effective_settings(self.source))
-        except (ValueError, RuntimeError):
-            restore()
-            self.values = previous
-            logger.info("The engine refused new provider values; the save was rolled back.")
-            raise EngineRefused from None
+            values = current_provider_values(file, self.keychain)
+        except ValueError:  # the settings cannot be resolved; the Engine build reports why
+            logger.warning("The settings cannot be resolved; no values from omrg.jsonc apply.")
+            values = ProviderValues()
+        for key in secret_texts(values):
+            self.secrets.add(key)
+        changed = values != self.values
+        self.values, self.revision, self.stamp = values, file.revision, stamp
+        return changed
 
-    def save_fields(self, engine: Any, provider: str, updates: Mapping[str, str | None]) -> None:
-        """Save or clear addresses (field id to value or ``None``).
+    def file_changed(self) -> bool:
+        """Return whether the file stamp differs from the last read (D7)."""
+        return self.store.stamp() != self.stamp
+
+    def reload(self, engine: Any) -> SettingsFile:
+        """Re-read the file and give changed values to the Engine. A refusal keeps the old values.
+
+        Returns:
+            The file that was read, for the settings that are not provider values.
+        """
+        stamp, file = self.store.stamp(), self.store.read()
+        previous = (self.values, self.revision, self.stamp)
+        if self._adopt(stamp, file):
+            try:
+                engine.use_provider_settings(provider_effective_settings(self.source))
+            except (ValueError, RuntimeError):
+                self.values = previous[0]
+                logger.info("The engine refused values from omrg.jsonc; they apply at restart.")
+        return file
+
+    # ── Saves ────────────────────────────────────────────────────────────
+
+    def save_fields(
+        self, engine: Any, changes: Mapping[str, Any], revision: str | None
+    ) -> WriteResult:
+        """Write *changes* to ``omrg.jsonc`` and apply them. A value of ``None`` removes its key.
 
         Raises:
-            EngineRefused: The Engine refused; the rows are restored.
+            SettingsFileError: The write was refused (rule, conflict or disk).
+            EngineRefused: The Engine refused; the file is put back.
         """
-        keys = {fid: provider_key(provider, fid) for fid in updates}
-        old = {fid: self.settings.get(key) for fid, key in keys.items()}
-        for fid, value in updates.items():
-            self.settings.set(keys[fid], value)
+        before = self.store.raw(list(changes))
+        result = self.store.write(changes, revision)
+        stamp, file = self.store.stamp(), self.store.read()
+        previous = self.values
+        self._adopt(stamp, file)
+        if self.values != previous:
+            try:
+                engine.use_provider_settings(provider_effective_settings(self.source))
+            except (ValueError, RuntimeError):
+                self._put_file_back(before, result)
+                self.values = previous
+                logger.info("The engine refused new provider values; the save was rolled back.")
+                raise EngineRefused from None
+        return result
 
-        def restore() -> None:
-            for fid, value in old.items():
-                self.settings.set(keys[fid], value)
-
-        self._commit(engine, restore)
+    def _put_file_back(self, before: Mapping[str, Any], result: WriteResult) -> None:
+        """Best effort: return the saved keys to their earlier raw values."""
+        try:
+            self.store.write(before, result.revision)
+            self._adopt(self.store.stamp(), self.store.read())
+        except SettingsFileError:
+            logger.warning("omrg.jsonc could not be restored after the engine refused a change.")
 
     def save_chat(
-        self, engine: Any, choice: tuple[str, str] | None, previous: tuple[Any, Any]
-    ) -> None:
-        """Save or clear the Chat provider and model and apply them with every saved value.
-
-        Args:
-            engine: The running Engine.
-            choice: ``(provider, model)``, or ``None`` to clear the choice.
-            previous: The ``(provider, model)`` rows to restore when the Engine refuses.
+        self, engine: Any, choice: tuple[str, str] | None, revision: str | None
+    ) -> WriteResult:
+        """Save or clear the Chat provider and model and apply them.
 
         Raises:
-            EngineRefused: The Engine refused; the rows are restored.
+            SettingsFileError: The write was refused.
+            EngineRefused: The Engine refused; the file is put back.
         """
-        self.settings.set_chat_choice(*(choice or (None, None)))
-        self._commit(engine, lambda: self.settings.set_chat_choice(*previous))
+        provider, model = choice if choice is not None else (None, None)
+        return self.save_fields(
+            engine, {"answer.provider": provider, "answer.model": model}, revision
+        )
 
-    def save_key(self, engine: Any, provider: str, key: str) -> None:
-        """Save *key* to the keychain, record the save time and apply it.
+    def save_key(
+        self, engine: Any, provider: str, field: str, key: str, revision: str | None
+    ) -> WriteResult:
+        """Save *key* to the keychain and write ``keychain://<provider>`` to the file.
 
-        The caller adds *key* to the secret set first.
+        The caller adds *key* to the secret set first. The revision is checked
+        before the keychain is touched.
 
         Raises:
+            SettingsFileError: The write was refused. The keychain keeps its old entry.
             KeychainUnavailableError: The keychain call failed; nothing is written.
-            EngineRefused: The Engine refused; the row and the key are restored.
+            EngineRefused: The Engine refused; the file and the key are put back.
         """
-        previous = self.keychain.get(provider)
-        old_stamp = self.settings.get_key_saved_at(provider)
+        self.store.check_revision(revision)
+        previous = self.keychain.read(provider)
         self.keychain.save(provider, key)
-        self.settings.set_key_saved_at(provider, datetime.now(UTC).isoformat(timespec="seconds"))
-
-        def restore() -> None:
-            self.settings.set_key_saved_at(provider, old_stamp)
+        try:
+            return self.save_fields(engine, {field: f"{KEYCHAIN_PREFIX}{provider}"}, revision)
+        except BaseException:
             self._put_back(provider, previous)
+            raise
 
-        self._commit(engine, restore)
-
-    def delete_key(self, engine: Any, provider: str) -> None:
-        """Remove the key from the keychain and clear the save time.
+    def delete_key(
+        self, engine: Any, provider: str, field: str, revision: str | None
+    ) -> WriteResult:
+        """Remove the keychain entry and the ``keychain://`` reference. Other references stay.
 
         Raises:
+            SettingsFileError: The write was refused. The keychain keeps its entry.
             KeychainUnavailableError: The keychain call failed; nothing changed.
-            EngineRefused: The Engine refused; the row and the key are restored.
+            EngineRefused: The Engine refused; the file and the key are put back.
         """
-        previous = self.keychain.get(provider)
-        old_stamp = self.settings.get_key_saved_at(provider)
+        self.store.check_revision(revision)
+        reference = self.store.raw([field])[field]
+        previous = self.keychain.read(provider)
         self.keychain.delete(provider)
-        self.settings.set_key_saved_at(provider, None)
-
-        def restore() -> None:
-            self.settings.set_key_saved_at(provider, old_stamp)
+        ours = isinstance(reference, str) and reference.startswith(KEYCHAIN_PREFIX)
+        try:
+            return self.save_fields(engine, {field: None} if ours else {}, revision)
+        except BaseException:
             self._put_back(provider, previous)
-
-        self._commit(engine, restore)
+            raise
 
     def _put_back(self, provider: str, previous: Any) -> None:
         """Best effort: return the keychain entry of *provider* to *previous*."""
@@ -334,13 +343,13 @@ def build_engine(engine_factory: Callable[..., Any], provider_source: Any) -> An
 
 
 def load_providers(app: Any, mcp_http: Any) -> ProviderState | None:
-    """Read the saved provider values and keychain keys after the database is prepared.
+    """Read the provider values and keychain keys after the database is prepared.
 
     Keys join the launch's secret set so logs and answer errors never show
-    them. Returns ``None`` when the app has no workspace settings store.
+    them. Returns ``None`` when the app has no settings store.
     """
     if mcp_http is None:
         return None
-    state = ProviderState(mcp_http.settings, app.state.keychain, app.state.secrets)
+    state = ProviderState(mcp_http.store, app.state.keychain, app.state.secrets)
     state.load()
     return state

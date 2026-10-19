@@ -38,7 +38,7 @@ def build_llamacpp_server_view(
     Returns:
         ``{"chat_url": str, "binary": field, "model": field, "context_window":
         field, "idle_sleep": field}``. A field holds ``id``, ``label``, ``kind``, ``value``,
-        ``min``, ``max``, ``source`` (``env``, ``config-file``, ``saved`` or
+        ``min``, ``max``, ``source`` (``env``, ``dotenv``, ``config-file`` or
         ``default``), ``locked`` and ``lock_reason``.
     """
     values = values or ProviderValues()

@@ -17,7 +17,7 @@ import pytest
 
 from omrg import compose
 from omrg.compose_connections import build_connection_summary, build_connection_targets
-from omrg.compose_providers import ProviderValues
+from omrg.compose_providers import ProviderValues, apply_provider_values
 from omrg.config import Settings
 from omrg.core.answer.settings import AnswerSettings
 from omrg.core.metadata.settings import MetadataSettings
@@ -147,7 +147,6 @@ def test_url_field_shape_and_default_source(monkeypatch: pytest.MonkeyPatch) -> 
         "lock_reason": None,
         "set": True,
         "last4": None,
-        "saved_at": None,
         "state": None,
     }
     assert field(entries["llamacpp"], "chat_url")["value"] == "http://llama.test:8081/v1"
@@ -164,16 +163,23 @@ def test_environment_value_has_source_env_and_locks(monkeypatch: pytest.MonkeyPa
     )
 
 
-def test_saved_value_has_source_saved(monkeypatch: pytest.MonkeyPatch) -> None:
-    settings = make_settings(ollama_base_url="http://gpu-box.local:11434", local_backend="llamacpp")
-    values = ProviderValues({"ollama_base_url": "http://gpu-box.local:11434"})
+def test_a_value_from_the_config_file_has_that_source_and_does_not_lock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    base_settings = make_settings(local_backend="llamacpp")
+    values = ProviderValues(
+        {"ollama_base_url": "http://gpu-box.local:11434"},
+        sources={"ollama_base_url": "config-file"},
+    )
+    settings = apply_provider_values(base_settings, values)
     result = build_connection_summary(settings, Path.cwd(), values)
     base = field(by_provider(result)["ollama"], "base_url")
     assert (base["source"], base["locked"], base["value"]) == (
-        "saved",
+        "config-file",
         False,
         "http://gpu-box.local:11434",
     )
+    assert "saved" not in json.dumps(result)
 
 
 def test_ollama_address_locked_while_embeddings_use_ollama(
@@ -199,18 +205,18 @@ def test_key_field_when_unset_without_a_keychain(monkeypatch: pytest.MonkeyPatch
 
 
 def test_key_from_the_keychain_shows_last_four_only(monkeypatch: pytest.MonkeyPatch) -> None:
-    settings = make_settings(openrouter_api_key=SECRET)
     values = ProviderValues(
         {"openrouter_api_key": SECRET},
-        key_saved_at={"openrouter": "2026-10-18T09:00:00Z"},
+        sources={"openrouter_api_key": "keychain"},
         keychain_available=True,
     )
+    settings = apply_provider_values(make_settings(), values)
     result = build_connection_summary(settings, Path.cwd(), values)
     assert result["keychain"] == "available"
     key = field(by_provider(result)["openrouter"], "api_key")
     assert (key["set"], key["source"], key["locked"]) == (True, "keychain", False)
     assert key["last4"] == SECRET[-4:]
-    assert key["saved_at"] == "2026-10-18T09:00:00Z"
+    assert "saved_at" not in key
     assert key["value"] is None
     dumped = json.dumps(result)
     assert SECRET not in dumped
@@ -242,7 +248,6 @@ def test_a_saved_key_that_cannot_be_used_reports_its_state(
     monkeypatch: pytest.MonkeyPatch, state: str
 ) -> None:
     values = ProviderValues(
-        key_saved_at={"openrouter": "2026-10-18T09:00:00Z"},
         key_problems={"openrouter": state},
         keychain_available=True,
     )

@@ -73,8 +73,8 @@ servers:
       port:
         default: "8765"
         description: >
-          Loopback port chosen at launch: `omrg web --port`, else the port
-          saved with `PUT /v1/settings/web-port`, else 8765. `--port 0`
+          Loopback port chosen at launch: `omrg web --port`, else `web_port` in
+          `omrg.jsonc` (saved with `PUT /v1/settings/web-port`), else 8765. `--port 0`
           picks a free port. The launch URL on stderr names it.
 
 x-omrg-scope-catalogue:
@@ -2787,8 +2787,10 @@ paths:
       operationId: setMcpEnabled
       summary: Turn MCP over HTTP on or off
       description: >
-        The value is stored in the workspace database, then applied without a
-        restart. Turning it off ends open sessions at their next request.
+        The value is written to `mcp_http_enabled` in `omrg.jsonc`, then applied
+        without a restart. A hand edit of the file also applies at the next request.
+        Turning it off ends open sessions at their next request. The body may carry
+        the `revision` last read; a stale one gives 409.
       security:
         - sessionCookie: [manage]
       x-omrg-scopes: [manage]
@@ -2872,10 +2874,11 @@ paths:
   /settings/web-port:
     get:
       operationId: getWebPort
-      summary: Read the saved and the bound web port
+      summary: Read the file port and the bound web port
       description: >
-        `saved` is used at the next launch when `--port` is not given.
-        `bound` is the port this server listens on now.
+        `saved` is `web_port` in `omrg.jsonc`; it is used at the next launch when
+        `--port` is not given. `bound` is the port this server listens on now.
+        `differs` is true when the file holds a port other than the bound one.
       security:
         - sessionCookie: [read]
         - bearerToken: [read]
@@ -2901,8 +2904,9 @@ paths:
       operationId: setWebPort
       summary: Save or clear the port for later launches
       description: >
-        Accepts 1024 to 65535, or `null` to clear. The running server does
-        not rebind.
+        Writes `web_port` to `omrg.jsonc`. Accepts 1024 to 65535, or `null` to clear;
+        any other value gives 400 with the range. The running server does not rebind.
+        The body may carry the `revision` last read; a stale one gives 409.
       security:
         - sessionCookie: [manage]
       x-omrg-scopes: [manage]
@@ -2936,8 +2940,9 @@ paths:
       summary: Read the per-file upload limit in force and its range
       description: >
         `max_bytes` is the limit in force. `source` is `launch` when
-        `--max-upload-mib` or `WEB_MAX_UPLOAD_MIB` set it, `saved` when the
-        value saved in Settings applies, and `default` otherwise.
+        `--max-upload-mib` or `WEB_MAX_UPLOAD_MIB` set it, `config-file` when
+        `web_max_upload_mib` in `omrg.jsonc` applies, and `default` otherwise.
+        A hand edit of the file applies to new uploads at the next request.
       security:
         - sessionCookie: [read]
         - bearerToken: [read]
@@ -2964,8 +2969,10 @@ paths:
       summary: Save or clear the per-file upload limit
       description: >
         Accepts a whole number of MiB from 1 to 2048, or `null` to return to
-        the default. The server saves the value first and then applies it to
-        new uploads at once. An upload in progress keeps the limit it
+        the default; any other value gives 400 with the range. The server writes
+        `web_max_upload_mib` to `omrg.jsonc` first and then applies it to
+        new uploads at once. The body may carry the `revision` last read; a stale
+        one gives 409. An upload in progress keeps the limit it
         started with. A body that is not valid gets 400. When a launch
         option set the limit, the request gets 409 and nothing changes.
       security:
@@ -3051,11 +3058,12 @@ paths:
         `read_only` values and the `roles` that use the provider. Roles
         follow the startup rules: `embeddings`, `answers` (when answering
         is enabled), `metadata` and `verification`. A field holds its
-        `source` (`env`, `config-file`, `saved`, `keychain`, `key-file`, `default` or
+        `source` (`env`, `dotenv`, `config-file`, `keychain`, `key-file`, `default` or
         `none`), whether
-        it is `locked` and why. A key field holds `set`, `saved_at`,
-        `state` and the last four characters only when the key has 16 or
-        more characters. The key value is never returned. This route sends
+        it is `locked` and why. Only `env` and `dotenv` lock a field. A key field holds
+        `set`, `state` and the last four characters only when the key has 16 or
+        more characters. The key value is never returned. `revision` is the stamp of
+        `omrg.jsonc` at this read; a save sends it back. This route sends
         no request to any provider.
       security:
         - sessionCookie: [read]
@@ -3086,11 +3094,14 @@ paths:
       description: >
         Body `{fields: {<id>: address or null}}`. An address is an absolute `http` or
         `https` URL with a host, at most 2,048 characters, with no user name, password,
-        query or fragment; `null` clears the saved value. Order of writes: database,
-        runtime values, then the running Engine. If the Engine refuses, the previous
-        value returns and the route answers 409. 400 for a bad address (the message
+        query or fragment; `null` clears the value. The values go to `omrg.jsonc`; the
+        file is written first, then the running Engine takes them. If the Engine refuses,
+        the previous file content returns and the route answers 409. The body may carry
+        the `revision` last read; a stale one gives 409 "omrg.jsonc changed on disk. Reload
+        to see the new values." and nothing is written. 400 for a bad address (the message
         names the rule, not the value), 404 for an unknown provider or field, 409 for a
-        field locked by the environment or by the embeddings role.
+        field set by the environment or `.env`, or locked by the embeddings role. The
+        answer carries the new `revision`.
       security:
         - sessionCookie: [manage]
       x-omrg-scopes: [manage]
@@ -3136,9 +3147,11 @@ paths:
       description: >
         Body `{api_key}` of 8 to 512 printable characters with no spaces. The key joins
         the redaction set before the keychain sees it, then goes to the system keychain
-        under the service `omrg`. The workspace database holds only the save time. 409
-        when the key comes from the environment or no usable keychain exists. A bearer
-        credential never passes. The response never holds the key.
+        under the service `omrg`, and `keychain://<provider>` goes to `omrg.jsonc` as the
+        key reference (it replaces an `env://` or `file://` reference; a key file is never
+        changed). No file holds the key. 409 when the key comes from the environment or
+        `.env`, no usable keychain exists, or `omrg.jsonc` changed since the `revision` in
+        the body. A bearer credential never passes. The response never holds the key.
       security:
         - sessionCookie: [credentials]
       x-omrg-scopes: [credentials]
@@ -3180,8 +3193,10 @@ paths:
       operationId: removeProviderKey
       summary: Remove a provider API key from the system keychain
       description: >
-        Removes the key from the system keychain and clears the save time. 409 when the
-        key comes from the environment or no usable keychain exists.
+        Removes the key from the system keychain and the `keychain://` reference from
+        `omrg.jsonc`. Another reference (`env://`, `file://`) stays. The optional body
+        `{revision}` guards against a hand edit; a stale one gives 409. 409 also when the
+        key comes from the environment or `.env`, or no usable keychain exists.
       security:
         - sessionCookie: [credentials]
       x-omrg-scopes: [credentials]
@@ -3192,6 +3207,12 @@ paths:
           schema:
             type: string
             pattern: "^[a-z][a-z0-9_-]{0,63}$"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderRevisionRequest"
       responses:
         "200":
           description: Done.
@@ -3357,7 +3378,8 @@ paths:
         `--sleep-idle-seconds` flag. 400 names
         the rule and never the value. Changing the program or the model needs
         the `credentials` scope of the browser session; 403 otherwise. 409 for
-        a field locked by the environment or by `omrg.jsonc`. A running server
+        a field set by the environment or `.env`, or when `omrg.jsonc` changed since the
+        `revision` in the body. The values are written to `omrg.jsonc`. A running server
         keeps running.
       security:
         - sessionCookie: [manage]
@@ -3486,7 +3508,7 @@ paths:
       summary: Read the Chat provider and model
       description: >
         Returns the provider and model Chat uses, where the choice comes from
-        (`env`, `saved` or `default`), whether the environment locks it and
+        (`env`, `dotenv`, `config-file` or `default`), whether the environment locks it and
         why, whether answering is `enabled`, and whether Chat is `ready`. When
         it is not ready, `reason` is `disabled`, `unknown-provider`,
         `not-installed` or `not-configured`. This route sends no request to
@@ -3516,11 +3538,12 @@ paths:
       operationId: setChatSettings
       summary: Save or clear the Chat provider and model
       description: >
-        Body `{provider, model}` saves the choice. A `null` or empty body clears it.
-        The Engine uses the choice from the next answer, with no restart.
-        Returns 400 for an unknown provider or a bad model name, and 409 when
-        the environment sets the choice or the Engine refuses it. Browser
-        session only.
+        Body `{provider, model, revision?}` writes `answer.provider` and `answer.model`
+        to `omrg.jsonc`. A body with only `revision`, an empty body or `null` clears both
+        keys. The Engine uses the choice from the next answer, with no restart.
+        Returns 400 for an unknown provider, a bad model name or only one of the two,
+        and 409 when the environment or `.env` sets the choice, `omrg.jsonc` changed since
+        `revision`, or the Engine refuses it. Browser session only.
       security:
         - sessionCookie: [manage]
       x-omrg-scopes: [manage]
@@ -3529,7 +3552,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ChatChoice"
+              $ref: "#/components/schemas/ChatSaveRequest"
       responses:
         "200":
           description: The Chat choice after the change.
@@ -3687,6 +3710,44 @@ paths:
           $ref: "#/components/responses/InternalError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+
+  # ── Configuration list (omrg.jsonc) ─────────────────────────────────
+  /settings/configuration:
+    get:
+      operationId: getSettingsConfiguration
+      summary: List every setting with its source, restart state and file problems
+      description: >
+        Lists every setting with the value in force, where it came from
+        (`init`, `env`, `dotenv`, `config-file`, `key-file`, `keychain` or
+        `default`), and whether it applies at once (`live`) or only after a
+        restart (`restart`). `restart_pending` is true when `omrg.jsonc` now
+        holds another value for a restart-only setting: the row keeps the value
+        the server started with. A key field has `value` null and `last4` with
+        its last four characters (an empty string when the key is shorter than
+        eight characters); a key is never sent. `problems` names each key in
+        `omrg.jsonc` that was ignored, by key and never by value. `handover`
+        says whether saved workspace rows could not be moved into the file, and
+        names the folder. The route reads the file and sends no request to any
+        provider.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The configuration list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SettingsConfiguration"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   # ── Power control (session only) ────────────────────────────────────
   /server/power:
@@ -4227,13 +4288,22 @@ components:
     McpState:
       type: object
       additionalProperties: false
-      required: [status, enabled, url, token]
+      required: [status, revision, enabled, source, url, token]
       properties:
         status:
           type: string
           enum: [ok]
+        revision:
+          type: string
+          description: >
+            Stamp of `omrg.jsonc` (SHA-256 of its bytes, or `absent`). A save may send it back;
+            a file that changed since gives 409.
         enabled:
           type: boolean
+        source:
+          type: string
+          enum: [config-file, default]
+          description: '`config-file` when `omrg.jsonc` holds `mcp_http_enabled`.'
         url:
           type: string
           description: The full `/mcp` address on the bound host and port.
@@ -4255,6 +4325,12 @@ components:
       properties:
         enabled:
           type: boolean
+        revision:
+          type: [string, "null"]
+          maxLength: 128
+          description: >
+            The `revision` last read. A file that changed since gives 409 with
+            "omrg.jsonc changed on disk. Reload to see the new values." and nothing is written.
 
     McpTokenCreated:
       type: object
@@ -4285,17 +4361,25 @@ components:
     WebPortState:
       type: object
       additionalProperties: false
-      required: [status, saved, bound]
+      required: [status, revision, saved, bound, differs]
       properties:
         status:
           type: string
           enum: [ok]
+        revision:
+          type: string
+          description: >
+            Stamp of `omrg.jsonc` (SHA-256 of its bytes, or `absent`). A save may send it back;
+            a file that changed since gives 409.
         saved:
           type: [integer, "null"]
-          description: The port saved for the next launch, or null.
+          description: '`web_port` in `omrg.jsonc` (used at the next launch), or null.'
         bound:
           type: integer
           description: The port this server listens on now.
+        differs:
+          type: boolean
+          description: Whether the file port differs from the bound port.
 
     WebPortRequest:
       type: object
@@ -4306,24 +4390,35 @@ components:
           type: [integer, "null"]
           minimum: 1024
           maximum: 65535
+        revision:
+          type: [string, "null"]
+          maxLength: 128
+          description: >
+            The `revision` last read. A file that changed since gives 409 with
+            "omrg.jsonc changed on disk. Reload to see the new values." and nothing is written.
 
     UploadLimitState:
       type: object
       additionalProperties: false
-      required: [status, max_bytes, source, saved_mib, default_mib, min_mib, max_mib]
+      required: [status, revision, max_bytes, source, saved_mib, default_mib, min_mib, max_mib]
       properties:
         status:
           type: string
           enum: [ok]
+        revision:
+          type: string
+          description: >
+            Stamp of `omrg.jsonc` (SHA-256 of its bytes, or `absent`). A save may send it back;
+            a file that changed since gives 409.
         max_bytes:
           type: integer
           description: The per-file limit in force, in bytes.
         source:
           type: string
-          enum: [launch, saved, default]
+          enum: [launch, config-file, default]
         saved_mib:
           type: [integer, "null"]
-          description: The value saved in Settings, or null.
+          description: '`web_max_upload_mib` in `omrg.jsonc`, or null.'
         default_mib:
           type: integer
           description: The limit when nothing is saved (50).
@@ -4341,6 +4436,12 @@ components:
           type: [integer, "null"]
           minimum: 1
           maximum: 2048
+        revision:
+          type: [string, "null"]
+          maxLength: 128
+          description: >
+            The `revision` last read. A file that changed since gives 409 with
+            "omrg.jsonc changed on disk. Reload to see the new values." and nothing is written.
 
     Root:
       type: object
@@ -7332,7 +7433,7 @@ components:
     ProviderField:
       type: object
       additionalProperties: false
-      required: [id, label, kind, required, min, max, value, source, locked, lock_reason, set, last4, saved_at, state]
+      required: [id, label, kind, required, min, max, value, source, locked, lock_reason, set, last4, state]
       properties:
         id:
           type: string
@@ -7358,7 +7459,7 @@ components:
           description: The address in use, or the number of an `int` field. A key field holds null.
         source:
           type: string
-          enum: [env, config-file, saved, keychain, key-file, default, none]
+          enum: [env, dotenv, config-file, keychain, key-file, default, none]
         locked:
           type: boolean
         lock_reason:
@@ -7370,8 +7471,6 @@ components:
           type: [string, "null"]
           maxLength: 4
           description: The last four characters of a key of 16 or more characters.
-        saved_at:
-          type: [string, "null"]
         state:
           type: [string, "null"]
           enum: [keychain-missing, keychain-unreadable, null]
@@ -7420,18 +7519,23 @@ components:
     ConnectionList:
       type: object
       additionalProperties: false
-      required: [status, config_dir, user_config_dir, keychain, connections]
+      required: [status, revision, config_dir, user_config_dir, keychain, connections]
       properties:
         status:
           type: string
           enum: [ok]
+        revision:
+          type: string
+          description: >
+            Stamp of `omrg.jsonc` (SHA-256 of its bytes, or `absent`). A save may send it back;
+            a file that changed since gives 409.
         config_dir:
           type: string
           description: The server's working directory. The settings read `<config_dir>/.env`.
         user_config_dir:
           type: string
           description: >
-            The read-only user config folder, with `~` for the home folder.
+            The user config folder, with `~` for the home folder.
             It holds `omrg.jsonc` and `secrets/<provider>.key`.
         keychain:
           type: string
@@ -7470,21 +7574,45 @@ components:
           minLength: 1
           maxLength: 200
 
+    ChatSaveRequest:
+      type: [object, "null"]
+      additionalProperties: false
+      properties:
+        provider:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 64
+        model:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 200
+        revision:
+          type: [string, "null"]
+          maxLength: 128
+          description: >
+            The `revision` last read. A file that changed since gives 409 with
+            "omrg.jsonc changed on disk. Reload to see the new values." and nothing is written.
+
     ChatSettings:
       type: object
       additionalProperties: false
-      required: [status, provider, model, source, locked, lock_reason, enabled, ready, reason]
+      required: [status, revision, provider, model, source, locked, lock_reason, enabled, ready, reason]
       properties:
         status:
           type: string
           enum: [ok]
+        revision:
+          type: string
+          description: >
+            Stamp of `omrg.jsonc` (SHA-256 of its bytes, or `absent`). A save may send it back;
+            a file that changed since gives 409.
         provider:
           type: string
         model:
           type: string
         source:
           type: string
-          enum: [env, config-file, saved, default]
+          enum: [env, dotenv, config-file, default]
         locked:
           type: boolean
         lock_reason:
@@ -7554,6 +7682,12 @@ components:
       additionalProperties: false
       required: [fields]
       properties:
+        revision:
+          type: [string, "null"]
+          maxLength: 128
+          description: >
+            The `revision` last read. A file that changed since gives 409 with
+            "omrg.jsonc changed on disk. Reload to see the new values." and nothing is written.
         fields:
           type: object
           minProperties: 1
@@ -7575,15 +7709,37 @@ components:
           minLength: 8
           maxLength: 512
           description: Printable characters with no spaces. Never returned.
+        revision:
+          type: [string, "null"]
+          maxLength: 128
+          description: >
+            The `revision` last read. A file that changed since gives 409 with
+            "omrg.jsonc changed on disk. Reload to see the new values." and nothing is written.
+
+    ProviderRevisionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        revision:
+          type: [string, "null"]
+          maxLength: 128
+          description: >
+            The `revision` last read. A file that changed since gives 409 with
+            "omrg.jsonc changed on disk. Reload to see the new values." and nothing is written.
 
     ProviderSaved:
       type: object
       additionalProperties: false
-      required: [status]
+      required: [status, revision]
       properties:
         status:
           type: string
           enum: [ok]
+        revision:
+          type: string
+          description: >
+            Stamp of `omrg.jsonc` (SHA-256 of its bytes, or `absent`). A save may send it back;
+            a file that changed since gives 409.
 
     # ── Managed llama.cpp server ────────────────────────────────────────
     LlamacppServerField:
@@ -7607,7 +7763,7 @@ components:
           type: [integer, "null"]
         source:
           type: string
-          enum: [env, config-file, saved, default]
+          enum: [env, dotenv, config-file, default]
         locked:
           type: boolean
         lock_reason:
@@ -7617,11 +7773,16 @@ components:
       type: object
       additionalProperties: false
       required:
-        [status, state, reason, exit_code, pid_running, running_with, pending_restart, saved]
+        [status, revision, state, reason, exit_code, pid_running, running_with, pending_restart, saved]
       properties:
         status:
           type: string
           enum: [ok]
+        revision:
+          type: string
+          description: >
+            Stamp of `omrg.jsonc` (SHA-256 of its bytes, or `absent`). A save may send it back;
+            a file that changed since gives 409.
         state:
           type: string
           enum: [stopped, starting, running, failed]
@@ -7690,6 +7851,12 @@ components:
         idle_sleep:
           type: [integer, number, string, "null"]
           description: Seconds from 0 to 86,400 (or a string of digits). 0 turns sleep off.
+        revision:
+          type: [string, "null"]
+          maxLength: 128
+          description: >
+            The `revision` last read. A file that changed since gives 409 with
+            "omrg.jsonc changed on disk. Reload to see the new values." and nothing is written.
 
     # ── Server log ──────────────────────────────────────────────────────
     LogRecord:
@@ -7712,6 +7879,85 @@ components:
         message:
           type: string
           description: Redacted. Cut at 10,000 characters.
+
+    SettingsConfiguration:
+      type: object
+      additionalProperties: false
+      required: [status, path, revision, settings, problems, handover]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        path:
+          type: string
+          description: Path of `omrg.jsonc`, with the home folder written as `~`.
+        revision:
+          type: string
+          description: SHA-256 of the file bytes, or `absent` when the file does not exist.
+        settings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigurationSetting"
+        problems:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigurationProblem"
+        handover:
+          $ref: "#/components/schemas/ConfigurationHandover"
+
+    ConfigurationSetting:
+      type: object
+      additionalProperties: false
+      required: [key, value, source, applies, restart_pending]
+      properties:
+        key:
+          type: string
+          description: Dotted setting key, for example `retrieval.top_k`.
+        value:
+          description: >
+            The value in force as plain JSON data. Null for a key field and for
+            a setting with no value.
+        source:
+          type: string
+          enum: [init, env, dotenv, config-file, key-file, keychain, default]
+        applies:
+          type: string
+          enum: [live, restart]
+        restart_pending:
+          type: boolean
+        last4:
+          type: string
+          maxLength: 4
+          description: >
+            Present only on a key field that is set: its last four characters,
+            or an empty string for a key shorter than eight characters.
+
+    ConfigurationProblem:
+      type: object
+      additionalProperties: false
+      required: [key, kind, message]
+      properties:
+        key:
+          type: string
+          description: The key in `omrg.jsonc`, or `omrg.jsonc` for a file that cannot be read.
+        kind:
+          type: string
+          enum: [broken, invalid, unknown, retired]
+        message:
+          type: string
+          description: Plain-English rule or advice. It never holds the value.
+
+    ConfigurationHandover:
+      type: object
+      additionalProperties: false
+      required: [pending, folder]
+      properties:
+        pending:
+          type: boolean
+          description: Saved workspace settings could not be moved into `omrg.jsonc`.
+        folder:
+          type: [string, "null"]
+          description: The config folder to name in the notice, when `pending`.
 
     PowerStatus:
       type: object

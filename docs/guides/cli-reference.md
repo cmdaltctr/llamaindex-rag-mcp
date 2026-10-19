@@ -18,6 +18,7 @@ The `omrg` command doubles as an MCP server and a CLI tool. With no arguments it
 | `omrg set-profile`           | Bind a built-in profile (`documents` or `codebase`) to a collection              |
 | `omrg benchmark`             | Benchmark embedding throughput without vector-store writes                       |
 | `omrg config init`           | Write a commented starter `omrg.jsonc` in the user config folder                 |
+| `omrg config show`           | Print every setting with its value and source, and the problems in `omrg.jsonc`  |
 | `omrg web`                   | Start the local web workspace (needs the `web` extra)                            |
 | `omrg web install`           | Keep the web app running as a macOS login item and start it                      |
 | `omrg web uninstall`         | Stop the login item and remove its LaunchAgent file                              |
@@ -370,6 +371,20 @@ The folder is `$OMRG_CONFIG_DIR` when set, else `$XDG_CONFIG_HOME/omrg` when set
 | 1 | `omrg.jsonc` exists and you did not pass `--force`, or the file could not be written. The message names the file. |
 
 Output goes to stderr, like all CLI output.
+
+### config show
+
+```bash
+omrg config show
+```
+
+Prints every setting with its value and the source that set it. The command writes nothing and prints to stderr only, so stdout stays free for the MCP channel. It exits 0 even when `omrg.jsonc` has problems.
+
+Each line reads `key = value  (source)`. The source is one of `env` (the process environment), `dotenv` (a `.env` line), `config-file` (`omrg.jsonc`), `key-file` (`secrets/<provider>.key`), `keychain` (a `keychain://` reference that resolved) or `default`. A key field shows `set, ending <last four>` or `not set`, never the key. A key shorter than eight characters shows only `set`.
+
+Below the list, a `Problems in` section names each key in `omrg.jsonc` that was ignored: a file that cannot be read, a value that breaks its rule, an unknown key, or a retired name with its replacement. The section never repeats a value. It also says when a `keychain://` reference found no key.
+
+A `keychain://` reference makes the command read the system keychain. macOS may ask you to allow access. A file with no such reference never opens the keychain.
 
 ### web
 

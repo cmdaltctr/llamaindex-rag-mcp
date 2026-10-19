@@ -40,8 +40,10 @@ from ...integrations.workspace_sqlite.schema import make_private_dirs
 from .admission import Admission as Admission
 from .admission import AdmissionClosed as AdmissionClosed
 from .grants import RootGrants
+from .live_settings import initial_upload_limit
 from .provider_state import build_engine, load_providers
-from .uploads import DEFAULT_MAX_UPLOAD_BYTES, MIB, UploadStore
+from .settings_launch import prepare_settings
+from .uploads import DEFAULT_MAX_UPLOAD_BYTES, UploadStore
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +66,12 @@ class WebConfig:
         host: Loopback address the server binds.
         port: Bound TCP port (needed for Host and Origin checks).
         roots: Operator-approved directories (``--root``).
-        max_upload_bytes: Per-file upload limit when no launch or saved
-            limit applies.
+        max_upload_bytes: Per-file upload limit when no launch option or
+            ``web_max_upload_mib`` value applies.
         launch_upload_limit_mib: Per-file upload limit in MiB from
             ``--max-upload-mib`` or ``WEB_MAX_UPLOAD_MIB``, or ``None``. It
-            wins over the saved limit and locks it for this launch.
+            wins over the ``web_max_upload_mib`` file value and locks it for
+            this launch.
         static_dir: Built frontend assets, or ``None`` for API only.
         upload_extensions: Ingestible extensions accepted for upload. The
             default is the existing ``ingestion.ingest_extensions`` default;
@@ -197,7 +200,7 @@ class WebRuntime:
     """Resources owned by one running web server.
 
     ``upload_limit_source`` names where the limit in force came from:
-    ``launch``, ``saved`` or ``default``.
+    ``launch``, ``config-file`` or ``default``.
     """
 
     config: WebConfig
@@ -348,16 +351,6 @@ def build_lifespan(
     return lifespan
 
 
-def _upload_limit(config: WebConfig, mcp_http: Any) -> tuple[int, str]:
-    """Return the upload limit in bytes and its source: launch, then saved, then default."""
-    if config.launch_upload_limit_mib is not None:
-        return config.launch_upload_limit_mib * MIB, "launch"
-    saved = mcp_http.settings.get_upload_limit_mib() if mcp_http is not None else None
-    if saved is not None:
-        return saved * MIB, "saved"
-    return config.max_upload_bytes, "default"
-
-
 @asynccontextmanager
 async def _owned_runtime(
     app: FastAPI,
@@ -368,10 +361,11 @@ async def _owned_runtime(
     """Build, publish and finally shut down the runtime of one launch."""
     layout = WorkspaceLayout(config.workspace)
     mcp_http = getattr(app.state, "mcp_http", None)
+    await asyncio.to_thread(prepare_settings, app, layout.records, config.port)
     if mcp_http is not None:
         mcp_http.prepare()
     providers = await asyncio.to_thread(load_providers, app, mcp_http)
-    max_bytes, source = _upload_limit(config, mcp_http)
+    max_bytes, source = initial_upload_limit(config, getattr(mcp_http, "store", None))
     uploads = UploadStore(layout.uploads, max_bytes=max_bytes)
     uploads.prepare()
     grants = RootGrants.from_paths(config.roots).with_root(uploads.directory, "managed")

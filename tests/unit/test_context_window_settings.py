@@ -1,8 +1,8 @@
 """Context window settings: sources, locks and live apply (Parts A.1 to A.4).
 
 ``ollama_context_window`` and ``llamacpp_context_window`` follow the provider
-precedence of design D2: environment and ``.env`` lock, ``omrg.jsonc`` locks,
-a saved web value applies, then the default of 16,384 tokens. No test calls a
+precedence of ADR-087: environment and ``.env`` lock, ``omrg.jsonc`` applies
+and does not lock, then the default of 16,384 tokens. No test calls a
 provider or reads the real user config folder.
 """
 
@@ -92,13 +92,16 @@ def test_bad_environment_value_fails_startup(
 
 @pytest.mark.parametrize("raw", ["8192", '"8192"'])
 @pytest.mark.parametrize("field", list(FIELDS))
-def test_config_file_sets_and_locks(folder: Path, tmp_path: Path, field: str, raw: str) -> None:
+def test_config_file_sets_and_does_not_lock(
+    folder: Path, tmp_path: Path, field: str, raw: str
+) -> None:
     (folder / "omrg.jsonc").write_text(f'{{"{field}": {raw}}}', encoding="utf-8")
     settings = build(tmp_path)
     assert getattr(settings, field) == 8192
     assert isinstance(getattr(settings, field), int)
     assert field in settings.config_file_fields
-    assert locked_fields(settings, settings.provider_explicit)[field] == "config-file"
+    assert settings.setting_sources[field] == "config-file"
+    assert field not in locked_fields(settings, settings.provider_explicit)
 
 
 @pytest.mark.parametrize("raw", ["987654321", "100", '"abc"', "16384.5", "true"])
@@ -209,10 +212,12 @@ def window(h: Any, provider: str = "ollama") -> dict[str, Any]:
 def test_save_applies_live_and_reset_returns_to_default(harness: Any) -> None:
     with harness() as h:
         assert h.put("ollama", {"context_window": 32768}).status_code == 200
-        assert (window(h)["value"], window(h)["source"]) == (32768, "saved")
+        assert (window(h)["value"], window(h)["source"]) == (32768, "config-file")
+        assert '"ollama_context_window": 32768' in h.file_text()
         assert h.engines[0]._effective_settings.ollama_context_window == 32768
         assert h.put("ollama", {"context_window": None}).status_code == 200
         assert (window(h)["value"], window(h)["source"]) == (16384, "default")
+        assert "ollama_context_window" not in h.file_text()
         assert h.engines[0]._effective_settings.ollama_context_window == 16384
 
 
@@ -344,14 +349,14 @@ def test_server_text_fields_take_dotenv_and_lock(tmp_path: Path, field: str, var
 
 
 @pytest.mark.parametrize("field", list(TEXT_FIELDS))
-def test_server_text_fields_take_the_config_file_and_lock(
+def test_server_text_fields_take_the_config_file_and_do_not_lock(
     folder: Path, tmp_path: Path, field: str
 ) -> None:
     (folder / "omrg.jsonc").write_text(f'{{"{field}": "/from/file"}}', encoding="utf-8")
     settings = build(tmp_path)
     assert getattr(settings, field) == "/from/file"
     assert field in settings.config_file_fields
-    assert locked_fields(settings, settings.provider_explicit)[field] == "config-file"
+    assert field not in locked_fields(settings, settings.provider_explicit)
 
 
 def test_a_saved_server_value_applies_unless_locked(tmp_path: Path) -> None:
@@ -387,11 +392,14 @@ def test_idle_sleep_from_the_environment_locks(
     assert locked_fields(settings, settings.provider_explicit)[IDLE] == "environment"
 
 
-def test_idle_sleep_from_the_config_file_locks(folder: Path, tmp_path: Path) -> None:
+def test_idle_sleep_from_the_config_file_applies_and_does_not_lock(
+    folder: Path, tmp_path: Path
+) -> None:
     (folder / "omrg.jsonc").write_text('{"llamacpp_idle_sleep_seconds": 900}', encoding="utf-8")
     settings = build(tmp_path)
     assert getattr(settings, IDLE) == 900
     assert IDLE in settings.config_file_fields
+    assert IDLE not in locked_fields(settings, settings.provider_explicit)
 
 
 @pytest.mark.parametrize("value", ["-1", "86401", "soon"])

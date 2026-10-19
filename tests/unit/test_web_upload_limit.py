@@ -1,9 +1,9 @@
-"""The per-file upload limit as a workspace setting and a launch option (design D4).
+"""The per-file upload limit as an ``omrg.jsonc`` setting and a launch option (ADR-087).
 
-Tasks 3.2 and 3.3 of add-run-output-inspection-and-upload-limit: the
-``/v1/settings/upload-limit`` routes, the startup order (launch, then
-saved, then default), the single-read limit of an upload in progress and
-``omrg web --max-upload-mib`` with ``WEB_MAX_UPLOAD_MIB``.
+The ``/v1/settings/upload-limit`` routes, the startup order (launch, then
+``web_max_upload_mib`` in the file, then default), the single-read limit of an
+upload in progress, live reload of a hand edit and ``omrg web --max-upload-mib``
+with ``WEB_MAX_UPLOAD_MIB``.
 """
 
 from __future__ import annotations
@@ -20,9 +20,9 @@ pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient  # noqa: E402
 from typer.testing import CliRunner  # noqa: E402
 
-from omrg.core.workspace import WorkspaceLayout  # noqa: E402
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
-from omrg.integrations.workspace_sqlite.settings import WorkspaceSettings  # noqa: E402
+from omrg.config.settings_file import read_settings_file  # noqa: E402
+from omrg.config.settings_file_write import SettingsFileWriteError, write_settings  # noqa: E402
+from omrg.config.user_config import user_config_dir  # noqa: E402
 from omrg.transports.api.app import create_app  # noqa: E402
 from omrg.transports.api.lifespan import WebConfig  # noqa: E402
 from omrg.transports.api.security import AccessPolicy  # noqa: E402
@@ -77,19 +77,19 @@ def web(workspace: Path) -> Any:
     client.__exit__(None, None, None)
 
 
-def _saved(workspace: Path) -> int | None:
-    return WorkspaceSettings(WorkspaceLayout(workspace).records).get_upload_limit_mib()
+def _saved(workspace: Path | None = None) -> int | None:
+    value = read_settings_file().values.get("web_max_upload_mib")
+    return value if isinstance(value, int) else None
 
 
-def _save(workspace: Path, mib: int) -> None:
-    records = WorkspaceLayout(workspace).records
-    SqliteWorkspaceRepository(records)
-    WorkspaceSettings(records).set_upload_limit_mib(mib)
+def _save(workspace: Path | None, mib: int) -> None:
+    write_settings({"web_max_upload_mib": mib}, revision=None)
 
 
-def _state(max_mib: int, source: str, saved: int | None) -> dict[str, Any]:
+def _state(max_mib: int, source: str, saved: int | None, revision: str = "") -> dict[str, Any]:
     return {
         "status": "ok",
+        "revision": revision or read_settings_file().revision,
         "max_bytes": max_mib * MIB,
         "source": source,
         "saved_mib": saved,
@@ -109,20 +109,21 @@ def _preflight(client: Any, size: int) -> Any:
 def test_get_reports_the_default_and_the_range(web: Any) -> None:
     response = web.get(URL)
     assert response.status_code == 200, response.text
-    assert response.json() == _state(50, "default", None)
+    assert response.json() == _state(50, "default", None, "absent")
 
 
 def test_put_applies_at_once_and_survives_a_restart(web: Any, workspace: Path) -> None:
     assert _preflight(web, 120 * MIB).status_code == 413
     response = web.put(URL, json={"max_mib": 200}, headers=ORIGIN)
     assert response.status_code == 200, response.text
-    assert response.json() == _state(200, "saved", 200)
+    assert response.json() == _state(200, "config-file", 200)
     assert _preflight(web, 120 * MIB).status_code == 200
-    assert _saved(workspace) == 200
+    assert _saved() == 200
+    assert '"web_max_upload_mib": 200' in (user_config_dir() / "omrg.jsonc").read_text()
     web.__exit__(None, None, None)
     again = _client(workspace)
     try:
-        assert again.get(URL).json() == _state(200, "saved", 200)
+        assert again.get(URL).json() == _state(200, "config-file", 200)
         assert _preflight(again, 120 * MIB).status_code == 200
     finally:
         again.__exit__(None, None, None)
@@ -133,8 +134,48 @@ def test_put_null_returns_to_the_default(web: Any, workspace: Path) -> None:
     response = web.put(URL, json={"max_mib": None}, headers=ORIGIN)
     assert response.status_code == 200, response.text
     assert response.json() == _state(50, "default", None)
-    assert _saved(workspace) is None
+    assert _saved() is None
+    assert "web_max_upload_mib" not in (user_config_dir() / "omrg.jsonc").read_text()
     assert _preflight(web, 51 * MIB).status_code == 413
+
+
+def test_a_hand_edit_applies_to_the_next_upload(web: Any) -> None:
+    assert _preflight(web, 120 * MIB).status_code == 413
+    write_settings({"web_max_upload_mib": 200}, revision=None)  # an editor, not the page
+    assert _preflight(web, 120 * MIB).status_code == 200
+    assert web.get(URL).json() == _state(200, "config-file", 200)
+    write_settings({"web_max_upload_mib": None}, revision=None)
+    assert _preflight(web, 120 * MIB).status_code == 413
+
+
+def test_a_stale_revision_is_409_and_the_hand_edit_stays(web: Any) -> None:
+    first = web.get(URL).json()["revision"]
+    _save(None, 300)  # a hand edit after the page read
+    response = web.put(URL, json={"max_mib": 200, "revision": first}, headers=ORIGIN)
+    assert response.status_code == 409
+    assert response.json()["message"] == "omrg.jsonc changed on disk. Reload to see the new values."
+    assert _saved() == 300
+
+
+def test_a_saved_row_moves_to_the_file_at_launch(workspace: Path) -> None:
+    import sqlite3
+
+    from omrg.core.workspace import WorkspaceLayout
+    from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+
+    records = WorkspaceLayout(workspace).records
+    SqliteWorkspaceRepository(records)
+    conn = sqlite3.connect(records)
+    conn.execute("INSERT INTO workspace_settings VALUES ('upload_limit_mib', '200')")
+    conn.commit()
+    conn.close()
+    client = _client(workspace)
+    try:
+        # The handover (task 6.2) copies the old row into omrg.jsonc, then deletes it.
+        assert client.get(URL).json() == _state(200, "config-file", 200)
+        assert read_settings_file().values["web_max_upload_mib"] == 200
+    finally:
+        client.__exit__(None, None, None)
 
 
 @pytest.mark.parametrize(
@@ -155,8 +196,10 @@ def test_put_rejects_invalid_values_and_changes_nothing(
     response = web.put(URL, json=body, headers=ORIGIN)
     assert response.status_code == 400, response.text
     assert response.json()["status"] == "error"
-    assert web.get(URL).json() == _state(200, "saved", 200)
-    assert _saved(workspace) == 200
+    if body.get("max_mib") in (0, 4096):
+        assert "1 to 2048" in response.json()["message"]
+    assert web.get(URL).json() == _state(200, "config-file", 200)
+    assert _saved() == 200
 
 
 def test_a_bearer_can_read_but_not_change_the_limit(web: Any, workspace: Path) -> None:
@@ -167,18 +210,20 @@ def test_a_bearer_can_read_but_not_change_the_limit(web: Any, workspace: Path) -
     assert web.get(URL, headers=every_scope).status_code == 200
     refused = web.put(URL, json={"max_mib": 200}, headers=every_scope)
     assert refused.status_code == 403
-    assert _saved(workspace) is None
+    assert _saved() is None
 
 
 def test_a_failed_save_changes_nothing(web: Any, workspace: Path) -> None:
     runtime = web.app.state.runtime
-    with (
-        patch.object(WorkspaceSettings, "set_upload_limit_mib", side_effect=OSError("disk")),
-        pytest.raises(OSError),
+    with patch(
+        "omrg.transports.api.settings_store.write_settings",
+        side_effect=SettingsFileWriteError("omrg.jsonc could not be written."),
     ):
-        web.put(URL, json={"max_mib": 200}, headers=ORIGIN)
+        response = web.put(URL, json={"max_mib": 200}, headers=ORIGIN)
+    assert response.status_code == 500
+    assert response.json()["message"] == "omrg.jsonc could not be written."
     assert runtime.uploads.max_bytes == 50 * MIB
-    assert web.get(URL).json() == _state(50, "default", None)
+    assert web.get(URL).json() == _state(50, "default", None, "absent")
 
 
 # ── 3.2 Upload in progress ───────────────────────────────────────────────
@@ -215,8 +260,9 @@ def test_a_launch_value_beats_the_saved_value_and_locks_settings(workspace: Path
         assert refused.status_code == 409
         assert refused.json()["message"] == LAUNCH_MESSAGE
         assert client.get(URL).json() == _state(400, "launch", 200)
-        assert _saved(workspace) == 200
-        assert _preflight(client, 300 * MIB).status_code == 200
+        assert _saved() == 200
+        write_settings({"web_max_upload_mib": 100}, revision=None)  # a hand edit
+        assert _preflight(client, 300 * MIB).status_code == 200  # the launch option still wins
     finally:
         client.__exit__(None, None, None)
 

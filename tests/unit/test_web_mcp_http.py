@@ -65,7 +65,9 @@ def test_default_state_api_reports_off_without_a_token(live: Live) -> None:
     state = live.browser().get("/v1/mcp").json()
     assert state == {
         "status": "ok",
+        "revision": "absent",
         "enabled": False,
+        "source": "default",
         "url": live.mcp_url,
         "token": {"exists": False, "created_at": None},
     }
@@ -141,6 +143,33 @@ def test_enable_and_token_survive_a_restart(tmp_path: Path) -> None:
         assert state["enabled"] is True
         assert state["token"]["exists"] is True
         assert mcp_post(second, token, INITIALIZE).status_code == 200
+
+
+def test_enable_writes_the_file_and_a_hand_edit_turns_it_off(live: Live) -> None:
+    from omrg.config.settings_file_write import write_settings
+    from omrg.config.user_config import user_config_dir
+
+    token = enable_mcp(live)
+    assert '"mcp_http_enabled": true' in (user_config_dir() / "omrg.jsonc").read_text()
+    assert live.browser().get("/v1/mcp").json()["source"] == "config-file"
+    assert mcp_post(live, token, INITIALIZE).status_code == 200
+
+    write_settings({"mcp_http_enabled": False}, revision=None)  # an editor, not the page
+
+    assert mcp_post(live, token, INITIALIZE).status_code == 404
+    assert live.browser().get("/v1/mcp").json()["enabled"] is False
+
+
+def test_a_stale_revision_cannot_toggle_mcp(live: Live) -> None:
+    from omrg.config.settings_file_write import write_settings
+
+    browser = live.browser()
+    first = browser.get("/v1/mcp").json()["revision"]
+    write_settings({"web_port": 9100}, revision=None)  # a hand edit after the page read
+    response = browser.put("/v1/mcp", json={"enabled": True, "revision": first})
+    assert response.status_code == 409
+    assert "changed on disk" in response.json()["message"]
+    assert browser.get("/v1/mcp").json()["enabled"] is False
 
 
 def test_turning_mcp_off_ends_an_open_session(live: Live) -> None:

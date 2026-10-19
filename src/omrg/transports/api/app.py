@@ -17,6 +17,7 @@ from ... import __version__
 from ...integrations.keychain import KeychainStore
 from .errors import install_error_handlers
 from .lifespan import RunServiceFactory, WebConfig, build_lifespan, default_engine_factory
+from .live_settings import LiveSettingsMiddleware
 from .llamacpp_server import LlamacppServer, owning_lifespan
 from .log_buffer import LogBuffer
 from .mcp_http import build_mcp_http
@@ -24,6 +25,7 @@ from .middleware import GuardMiddleware
 from .routes.admin import router as admin_router
 from .routes.chat_settings import router as chat_settings_router
 from .routes.chats import router as chats_router
+from .routes.configuration import router as configuration_router
 from .routes.connections import router as connections_router
 from .routes.documents import router as documents_router
 from .routes.embedding import router as embedding_router
@@ -55,6 +57,7 @@ API_ROUTERS: tuple[APIRouter, ...] = (
     profiles_router,
     chats_router,
     chat_settings_router,
+    configuration_router,
     embedding_router,
     runs_router,
     experiments_router,
@@ -154,5 +157,6 @@ def create_app(
         app.include_router(router)
     app.state.mcp_http = build_mcp_http(app, config, policy)
     app.router.default = FrontendFallback(config.static_dir)
+    app.add_middleware(LiveSettingsMiddleware)  # inside the guard: only allowed requests reload
     app.add_middleware(GuardMiddleware, policy=policy)
     return app

@@ -23,7 +23,8 @@ from .capabilities import (  # noqa: F401  (re-exported for existing callers/tes
     validate_document_backend,
     validate_sparse_backend,
 )
-from .config import Settings, _resolve_effective_embed_provider, get_settings
+from .config import Settings, _resolve_effective_embed_provider
+from .config import get_settings as _config_get_settings
 from .core.providers.embeddings import registry as embed_registry
 from .core.settings import PROVIDER_SECRET_FIELDS, provider_secret_values
 
@@ -35,6 +36,14 @@ logger = logging.getLogger(__name__)
 # path still installs one engine as the process default for transport
 # compatibility, but direct Engine construction never mutates the global.
 EMBEDDING_PROVIDER_SCOPE = "engine"
+
+
+def get_settings() -> Settings:
+    """Return the resolved ``Settings`` with ``keychain://`` key references resolved (D6)."""
+    from .compose_providers import resolve_launch_settings
+
+    return resolve_launch_settings(_config_get_settings())
+
 
 # ── Runtime setup state ─────────────────────────────────────────────
 

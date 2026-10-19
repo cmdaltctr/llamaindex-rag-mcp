@@ -1,24 +1,27 @@
 """Provider connections: summary, saved addresses and keys, tests, model lists (design D6, D7).
 
 ``GET /v1/connections`` shows the registered LLM providers and sends no
-request. ``PUT /v1/connections/{provider}`` saves addresses, the key routes
-use the system keychain, and ``test`` and ``models`` contact a provider only
-when called. Every write, test and list route needs the browser session. No
-route returns a key, a response body or exception text.
+request. ``PUT /v1/connections/{provider}`` writes addresses to ``omrg.jsonc``,
+the key routes use the system keychain and write ``keychain://<provider>`` to
+the file, and ``test`` and ``models`` contact a provider only when called. The
+read returns the file ``revision``; each save may send it back (ADR-087). Every
+write, test and list route needs the browser session. No route returns a key,
+a response body or exception text.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Body
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .... import compose
 from ....compose_providers import provider_settings
+from ....config.settings_file_write import SettingsFileError
 from ....core.providers.llm.connection import ConnectionDescriptor
 from ....integrations.keychain import KeychainUnavailableError
 from ..connection_probe import list_models, probe
@@ -37,6 +40,7 @@ from ..provider_state import (
     typed_settings,
     valid_key,
 )
+from ..settings_store import refusal_response
 from .experiments import ManageScope
 from .graphs import ok
 from .mcp import CredentialsScope
@@ -46,6 +50,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1")
 
 _REFUSED = "The running engine cannot take this change. Restart the server to apply it."
+
+
+Revision = Annotated[str, Field(max_length=128)] | None
 
 
 class FieldValuesBody(BaseModel):
@@ -62,6 +69,15 @@ class SaveFieldsBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     fields: dict[str, str | int | float | None] = Field(min_length=1, max_length=16)
+    revision: Revision = None
+
+
+class RevisionBody(BaseModel):
+    """Optional body of ``DELETE /v1/connections/{provider}/key``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    revision: Revision = None
 
 
 class KeyBody(BaseModel):
@@ -70,6 +86,7 @@ class KeyBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     api_key: str = Field(min_length=MIN_KEY_CHARS, max_length=MAX_KEY_CHARS)
+    revision: Revision = None
 
     @field_validator("api_key")
     @classmethod
@@ -109,7 +126,7 @@ async def get_connections(_: ReadScope, runtime: RuntimeDep) -> Response:
             state.values if state else None,
             runtime.engine.profile_catalogue(),
         )
-    return ok(summary)
+    return ok({**summary, "revision": state.revision if state else "absent"})
 
 
 @router.put("/connections/{provider}", operation_id="saveProviderFields")
@@ -121,7 +138,7 @@ async def save_provider_fields(
     state = _state(runtime)
     if descriptor is None or state is None:
         return _unknown()
-    updates: dict[str, str | None] = {}
+    updates: dict[str, str | int | None] = {}
     for fid, value in body.fields.items():
         spec = field_of(descriptor, fid)
         if spec is None:
@@ -131,17 +148,22 @@ async def save_provider_fields(
         text, rule = check_field(spec, value)
         if rule:
             return error_response(400, rule)
-        updates[fid] = text
+        updates[spec.settings_field] = int(text) if spec.kind == "int" and text else text
     async with admitted(runtime), state.lock:
         entry = await _entry(state, runtime, provider)
+        wanted = {f.id for f in descriptor.fields if f.settings_field in updates}
         for field in entry["fields"]:
-            if field["id"] in updates and field["locked"]:
+            if field["id"] in wanted and field["locked"]:
                 return error_response(409, field["lock_reason"] or "This field is locked.")
         try:
-            await run_in_threadpool(state.save_fields, runtime.engine, provider, updates)
+            result = await run_in_threadpool(
+                state.save_fields, runtime.engine, updates, body.revision
+            )
+        except SettingsFileError as exc:
+            return refusal_response(exc)
         except EngineRefused:
             return error_response(409, _REFUSED)
-    return ok({})
+    return ok({"revision": result.revision})
 
 
 def _key_field(descriptor: ConnectionDescriptor) -> Any:
@@ -154,8 +176,10 @@ async def save_provider_key(
 ) -> Response:
     """Save the API key of *provider* to the system keychain.
 
-    The key joins the redaction set before the keychain sees it. 409 when the
-    key comes from the environment or no keychain exists.
+    The reference `keychain://<provider>` goes to `omrg.jsonc`; the key goes to
+    no file. The key joins the redaction set before the keychain sees it. 409
+    when the key comes from the environment or `.env`, no keychain exists, or the
+    file changed since `revision`.
     """
     descriptor = descriptor_of(provider)
     state = _state(runtime)
@@ -168,17 +192,31 @@ async def save_provider_key(
         if field["locked"]:
             return error_response(409, field["lock_reason"] or "This key is locked.")
         try:
-            await run_in_threadpool(state.save_key, runtime.engine, provider, body.api_key)
+            result = await run_in_threadpool(
+                state.save_key,
+                runtime.engine,
+                provider,
+                _key_field(descriptor).settings_field,
+                body.api_key,
+                body.revision,
+            )
+        except SettingsFileError as exc:
+            return refusal_response(exc)
         except KeychainUnavailableError:
             return error_response(409, "The system keychain could not save the key.")
         except EngineRefused:
             return error_response(409, _REFUSED)
-    return ok({})
+    return ok({"revision": result.revision})
 
 
 @router.delete("/connections/{provider}/key", operation_id="removeProviderKey")
-async def remove_provider_key(_: CredentialsScope, provider: str, runtime: RuntimeDep) -> Response:
-    """Remove the saved API key of *provider* from the system keychain."""
+async def remove_provider_key(
+    _: CredentialsScope,
+    provider: str,
+    runtime: RuntimeDep,
+    body: Annotated[RevisionBody | None, Body()] = None,
+) -> Response:
+    """Remove the API key of *provider* from the keychain, and its `keychain://` reference."""
     descriptor = descriptor_of(provider)
     state = _state(runtime)
     if descriptor is None or state is None or _key_field(descriptor) is None:
@@ -189,12 +227,20 @@ async def remove_provider_key(_: CredentialsScope, provider: str, runtime: Runti
         if field["locked"]:
             return error_response(409, field["lock_reason"] or "This key is locked.")
         try:
-            await run_in_threadpool(state.delete_key, runtime.engine, provider)
+            result = await run_in_threadpool(
+                state.delete_key,
+                runtime.engine,
+                provider,
+                _key_field(descriptor).settings_field,
+                body.revision if body else None,
+            )
+        except SettingsFileError as exc:
+            return refusal_response(exc)
         except KeychainUnavailableError:
             return error_response(409, "The system keychain could not remove the key.")
         except EngineRefused:
             return error_response(409, _REFUSED)
-    return ok({})
+    return ok({"revision": result.revision})
 
 
 async def _typed_target(

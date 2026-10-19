@@ -2,10 +2,12 @@
 
 ``GET /v1/settings/chat`` reports the provider and model that answer Chat
 and whether Chat is ready. It sends no request to any provider.
-``PUT /v1/settings/chat`` saves or clears the choice, and the Engine takes
-it at once. ``POST /v1/settings/chat/test`` builds the model, sends one
-short prompt and reports a reason from a fixed set. A test never saves,
-and no reply text or exception text leaves the server.
+``PUT /v1/settings/chat`` writes or clears ``answer.provider`` and
+``answer.model`` in ``omrg.jsonc``, and the Engine takes the choice at once.
+Both routes carry the file ``revision`` (ADR-087).
+``POST /v1/settings/chat/test`` builds the model, sends one short prompt and
+reports a reason from a fixed set. A test never saves, and no reply text or
+exception text leaves the server.
 """
 
 from __future__ import annotations
@@ -15,7 +17,7 @@ import importlib.util
 import logging
 import time
 import unicodedata
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body
@@ -23,15 +25,15 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from ....compose_providers import ProviderValues, locked_fields, provider_effective_settings
+from ....compose_providers import ProviderValues, locked_fields
 from ....compose_providers import provider_settings as _provider_settings
-from ....config.user_config import config_file_reason
+from ....config.settings_file_write import SettingsFileError
 from ....core.providers.llm import registry as llm_registry
-from ....core.workspace import WorkspaceLayout
-from ....integrations.workspace_sqlite.settings import WorkspaceSettings
 from ..engine_access import ReadScope, RuntimeDep, admitted
 from ..errors import error_response
 from ..lifespan import WebRuntime
+from ..provider_state import EngineRefused
+from ..settings_store import refusal_response
 from .experiments import ManageScope
 from .graphs import ok
 
@@ -49,7 +51,7 @@ _VARIABLES = {_PROVIDER_PATH: "ANSWER__PROVIDER", _MODEL_PATH: "ANSWER__MODEL"}
 
 
 class ChatChoice(BaseModel):
-    """A Chat provider and model name."""
+    """A Chat provider and model name (the body of a test)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -57,9 +59,23 @@ class ChatChoice(BaseModel):
     model: Annotated[str, Field(min_length=1, max_length=MAX_MODEL_CHARS)]
 
 
+class ChatSaveBody(BaseModel):
+    """Body of ``PUT /v1/settings/chat``.
+
+    A choice has both ``provider`` and ``model``. A body with neither (only an
+    optional ``revision``), or no body, clears the choice.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    provider: Annotated[str, Field(min_length=1, max_length=64)] | None = None
+    model: Annotated[str, Field(min_length=1, max_length=MAX_MODEL_CHARS)] | None = None
+    revision: Annotated[str, Field(max_length=128)] | None = None
+
+
 @dataclass
 class RuntimeProviderValues:
-    """Holder of the saved provider values the web server applies.
+    """Holder of provider values for a runtime built without a ``ProviderState``.
 
     Calling the holder returns the current values, so it works as the
     ``provider_source`` of ``compose.build_engine``.
@@ -72,29 +88,20 @@ class RuntimeProviderValues:
 
 
 def provider_values_of(runtime: WebRuntime) -> Any:
-    """Return a callable that gives the saved provider values in use.
+    """Return a callable that gives the provider values in use.
 
     The launch's :class:`~omrg.transports.api.provider_state.ProviderState`
-    holds the saved addresses, keychain keys and Chat choice together, so
-    Chat readiness and a Chat save see the same keys and addresses as the
-    other routes. Without one (a runtime built by hand), a holder of the
-    saved Chat choice alone is created and attached.
+    holds the values read from ``omrg.jsonc`` and the keychain, so Chat
+    readiness and a Chat save see the same keys and addresses as the other
+    routes. Without one (a runtime built by hand), an empty holder is used.
     """
     if runtime.providers is not None:
         return runtime.providers.source
     holder = getattr(runtime, "provider_values", None)
     if holder is None:
-        saved = _workspace(runtime)
-        values: dict[str, str] = {}
-        if (provider := saved.get_chat_provider()) and (model := saved.get_chat_model()):
-            values = {_PROVIDER_PATH: provider, _MODEL_PATH: model}
-        holder = RuntimeProviderValues(ProviderValues(values=values))
+        holder = RuntimeProviderValues(ProviderValues())
         runtime.provider_values = holder  # type: ignore[attr-defined]
     return holder
-
-
-def _workspace(runtime: WebRuntime) -> WorkspaceSettings:
-    return WorkspaceSettings(WorkspaceLayout(runtime.config.workspace).records)
 
 
 def module_installed(name: str) -> bool:
@@ -124,41 +131,39 @@ def _not_ready_reason(settings: Any, provider: str, model: str) -> str | None:
     return None
 
 
+def _chat_source(settings: Any, locked: bool) -> str:
+    """Return the Chat choice source: ``env``/``dotenv`` (locks), ``config-file`` or ``default``."""
+    words = [settings.setting_sources.get(p, "default") for p in _VARIABLES]
+    if locked:
+        return "dotenv" if "dotenv" in words and "env" not in words else "env"
+    return "config-file" if "config-file" in words else "default"
+
+
 def _status(runtime: WebRuntime) -> dict[str, Any]:
     """Return the body of ``GET /v1/settings/chat``."""
-    values = provider_values_of(runtime)()
     settings = _provider_settings(provider_values_of(runtime))
-    explicit = settings.provider_explicit
-    env_vars = [_VARIABLES[p] for p in _VARIABLES if p in explicit]
-    from_file = any(p in settings.config_file_fields for p in _VARIABLES)
-    saved = any(values.values.get(p) for p in _VARIABLES)
+    env_vars = [_VARIABLES[p] for p in _VARIABLES if p in settings.provider_explicit]
     provider, model = settings.answer.provider.strip(), settings.answer.model
     reason = "disabled" if not settings.answer.enabled else None
     if reason is None:
         reason = _not_ready_reason(settings, provider, model)
+    state = runtime.providers
     return {
+        "revision": state.revision if state is not None else "absent",
         "provider": provider,
         "model": model,
-        "source": "config-file"
-        if from_file
-        else "env"
-        if env_vars
-        else "saved"
-        if saved
-        else "default",
+        "source": _chat_source(settings, bool(env_vars)),
         "locked": bool(env_vars),
-        "lock_reason": _lock_reason(env_vars, settings if from_file else None),
+        "lock_reason": _lock_reason(env_vars),
         "enabled": settings.answer.enabled,
         "ready": reason is None,
         "reason": reason,
     }
 
 
-def _lock_reason(env_vars: list[str], file_settings: Any = None) -> str | None:
+def _lock_reason(env_vars: list[str]) -> str | None:
     if not env_vars:
         return None
-    if file_settings is not None:
-        return config_file_reason(file_settings.user_config_dir)
     return f"Set by {' and '.join(env_vars)} in the environment or .env. Remove it to edit here."
 
 
@@ -176,8 +181,7 @@ def _locked_response(settings: Any) -> Response | None:
     names = [_VARIABLES[p] for p in _VARIABLES if p in locked]
     if not names:
         return None
-    from_file = settings if locked.get(_PROVIDER_PATH) == "config-file" else None
-    return error_response(409, _lock_reason(names, from_file) or "The Chat choice is locked.")
+    return error_response(409, _lock_reason(names) or "The Chat choice is locked.")
 
 
 @router.get("/settings/chat", operation_id="getChatSettings")
@@ -191,64 +195,47 @@ async def get_chat_settings(_: ReadScope, runtime: RuntimeDep) -> Response:
     return ok(body)
 
 
-def _apply(runtime: WebRuntime, choice: ChatChoice | None, *, previous: tuple[Any, ...]) -> None:
-    """Save the choice, then update runtime values and the Engine; roll back on refusal."""
-    if runtime.providers is not None:
-        runtime.providers.save_chat(
-            runtime.engine, None if choice is None else (choice.provider, choice.model), previous
-        )
-        return
-    holder = provider_values_of(runtime)
-    database = _workspace(runtime)
-    old_values = holder.current
-    values = {k: v for k, v in old_values.values.items() if k not in _VARIABLES}
-    if choice is not None:
-        values |= {_PROVIDER_PATH: choice.provider, _MODEL_PATH: choice.model}
-    database.set_chat_choice(
-        None if choice is None else choice.provider, None if choice is None else choice.model
-    )
-    holder.current = replace(old_values, values=values)
-    try:
-        runtime.engine.use_provider_settings(provider_effective_settings(holder))
-    except (ValueError, RuntimeError):
-        holder.current = old_values
-        database.set_chat_choice(previous[0], previous[1])
-        raise
-
-
 @router.put("/settings/chat", operation_id="setChatSettings")
 async def set_chat_settings(
     _: ManageScope,
     runtime: RuntimeDep,
-    body: Annotated[ChatChoice | None, Body()] = None,
+    body: Annotated[ChatSaveBody | None, Body()] = None,
 ) -> Response:
-    """Save the Chat provider and model, or clear both with a `null` or empty body.
+    """Write the Chat provider and model to `omrg.jsonc`, or clear both.
 
+    A body without `provider` and `model`, or no body, clears the choice.
     The Engine uses the choice from the next answer. 400 for an unknown
-    provider or bad model name, 409 when the environment sets the choice
-    or the Engine refuses it.
+    provider or bad model name, 409 when the environment sets the choice,
+    the file changed since `revision`, or the Engine refuses it. The answer
+    carries the new `revision`.
     """
-    async with admitted(runtime):
-        if body is not None:
-            if body.provider not in llm_registry.available():
-                return error_response(400, "Unknown Chat provider.")
-            if not _valid_model(body.model):
-                return error_response(
-                    400, "The model name must be 1 to 200 characters with no control characters."
-                )
+    body = body or ChatSaveBody()
+    choice = None
+    if body.provider is not None or body.model is not None:
+        if body.provider is None or body.model is None:
+            return error_response(400, "Send both provider and model, or neither to clear.")
+        if body.provider not in llm_registry.available():
+            return error_response(400, "Unknown Chat provider.")
+        if not _valid_model(body.model):
+            return error_response(
+                400, "The model name must be 1 to 200 characters with no control characters."
+            )
+        choice = (body.provider, body.model)
+    state = runtime.providers
+    if state is None:
+        return error_response(404, "Provider settings are not available.")
+    async with admitted(runtime), state.lock:
         settings = await run_in_threadpool(_provider_settings, provider_values_of(runtime))
         if (locked := _locked_response(settings)) is not None:
             return locked
-        database = _workspace(runtime)
-        previous = await run_in_threadpool(
-            lambda: (database.get_chat_provider(), database.get_chat_model())
-        )
         try:
-            await run_in_threadpool(_apply, runtime, body, previous=previous)
-        except (ValueError, RuntimeError):
+            await run_in_threadpool(state.save_chat, runtime.engine, choice, body.revision)
+        except SettingsFileError as exc:
+            return refusal_response(exc)
+        except EngineRefused:
             return error_response(409, "The running server could not take this Chat choice.")
         result = await run_in_threadpool(_status, runtime)
-    logger.info("Chat choice %s", "cleared" if body is None else "saved")
+    logger.info("Chat choice %s", "cleared" if choice is None else "saved")
     return ok(result)
 
 

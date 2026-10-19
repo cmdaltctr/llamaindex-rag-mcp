@@ -131,14 +131,19 @@ def test_get_needs_read_and_a_read_bearer_can_see_it(rig: Any) -> None:
 # ── PUT ──────────────────────────────────────────────────────────────────
 
 
-def test_save_all_three_then_read_them_with_source_saved(rig: Any) -> None:
+def test_save_all_three_then_read_them_with_source_config_file(rig: Any) -> None:
     with rig() as r:
         r.save_all()
+        text = r.h.file_text()
+        assert f'"llamacpp_server_binary": "{r.program.path}"' in text
+        assert '"llamacpp_context_window": 4096' in text
         saved = r.get()["saved"]
         assert saved["binary"]["value"] == str(r.program.path)
         assert saved["model"]["value"] == str(r.model)
         assert saved["context_window"]["value"] == 4096
-        assert {saved[k]["source"] for k in ("binary", "model", "context_window")} == {"saved"}
+        assert {saved[k]["source"] for k in ("binary", "model", "context_window")} == {
+            "config-file"
+        }
 
 
 def test_a_null_clears_a_saved_value(rig: Any) -> None:
@@ -147,7 +152,8 @@ def test_a_null_clears_a_saved_value(rig: Any) -> None:
         assert r.put({"model": None}).status_code == 200
         saved = r.get()["saved"]
         assert (saved["model"]["value"], saved["model"]["source"]) == ("", "default")
-        assert saved["binary"]["source"] == "saved"
+        assert saved["binary"]["source"] == "config-file"
+        assert "llamacpp_server_model" not in r.h.file_text()
 
 
 @pytest.mark.parametrize(
@@ -237,18 +243,33 @@ def test_an_environment_value_locks_the_field_and_names_the_variable(
         assert (entry["locked"], entry["source"]) == (True, "env")
 
 
-def test_a_config_file_value_locks_the_field(rig: Any) -> None:
-    from omrg import compose
+def test_a_config_file_value_does_not_lock_the_field_and_is_written_back(rig: Any) -> None:
+    from omrg.config.settings_file_write import write_settings
 
-    with rig(explicit=frozenset({"llamacpp_context_window"})) as r:
-        # make_settings restates the sources, so the test restates what omrg.jsonc set.
-        settings = compose.get_settings()
-        object.__setattr__(settings, "config_file_fields", frozenset({"llamacpp_context_window"}))
-        object.__setattr__(settings, "user_config_dir", "/home/u/.config/omrg")
+    with rig() as r:
+        write_settings({"llamacpp_context_window": 8192}, revision=None)  # a hand edit
+        entry = r.get()["saved"]["context_window"]
+        assert (entry["value"], entry["source"], entry["locked"]) == (8192, "config-file", False)
         response = r.put({"context_window": 4096})
-        assert response.status_code == 409
-        assert "omrg.jsonc" in response.json()["message"]
-        assert r.get()["saved"]["context_window"]["source"] == "config-file"
+        assert response.status_code == 200, response.text
+        assert '"llamacpp_context_window": 4096' in r.h.file_text()
+        assert r.get()["saved"]["context_window"]["value"] == 4096
+
+
+def test_every_answer_carries_the_file_revision_and_a_stale_one_is_409(rig: Any) -> None:
+    from omrg.config.settings_file_write import write_settings
+
+    with rig() as r:
+        first = r.get()["revision"]
+        assert first == "absent"
+        assert r.put({"context_window": 4096}).json()["revision"] == r.h.store.read().revision
+        write_settings({"web_port": 9100}, revision=None)  # a hand edit after the page read
+        stale = r.put({"context_window": 8192, "revision": first})
+        assert stale.status_code == 409
+        assert (
+            stale.json()["message"] == "omrg.jsonc changed on disk. Reload to see the new values."
+        )
+        assert '"llamacpp_context_window": 4096' in r.h.file_text()
 
 
 # ── Scopes ───────────────────────────────────────────────────────────────

@@ -35,8 +35,19 @@ INSTALL_HINT = (
 DEFAULT_PORT = 8765
 
 
+def saved_web_port() -> int | None:
+    """Return ``web_port`` from ``omrg.jsonc``, or ``None`` when the file does not set a valid one.
+
+    An invalid value is ignored here and listed as a problem in Settings.
+    """
+    from ...config.settings_file import read_settings_file
+
+    port = read_settings_file().values.get("web_port")
+    return port if isinstance(port, int) else None
+
+
 def resolve_port(given: int | None, saved: int | None) -> int:
-    """Return the port to bind: ``--port``, else the saved port, else 8765.
+    """Return the port to bind: ``--port``, else ``web_port`` in ``omrg.jsonc``, else 8765.
 
     ``0`` from ``--port`` is kept: it asks for a free port.
     """
@@ -301,12 +312,10 @@ def web(
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {escape(str(exc))}", soft_wrap=True)
         raise typer.Exit(code=2) from None
-    from ...core.workspace import WorkspaceLayout, default_workspace
+    from ...core.workspace import default_workspace
 
     workspace_dir = (workspace or default_workspace()).expanduser()
-    from ...integrations.workspace_sqlite.settings import read_saved_web_port
-
-    wanted_port = resolve_port(port, read_saved_web_port(WorkspaceLayout(workspace_dir).records))
+    wanted_port = resolve_port(port, saved_web_port())
     try:
         sock = _bind_socket(bind_host, wanted_port)
     except OSError as exc:

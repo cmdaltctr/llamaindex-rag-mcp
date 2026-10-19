@@ -9,7 +9,7 @@ Each registered provider gets one entry built from its ``CONNECTION``
 descriptor (``core/providers/llm/connection.py``), so this module names no
 provider. Roles follow the startup rules (``compose._resolve_active_strategies``
 and ``compose_answer``). The key value never enters the summary: a key field
-holds a flag, a source, a save time and at most the last four characters.
+holds a flag, a source and at most the last four characters.
 Only :func:`build_connection_targets` carries the key, for the server's own
 test request.
 """
@@ -22,7 +22,7 @@ from typing import Any
 
 from .compose_providers import ProviderValues, locked_fields
 from .config import Settings, _resolve_effective_embed_provider
-from .config.user_config import config_file_reason, display_path
+from .config.user_config import display_path
 from .core.profiles.catalogue import uses_ollama_embeddings
 from .core.providers.llm import registry
 from .core.providers.llm.connection import ConnectionDescriptor, ConnectionField, ConnectionTarget
@@ -103,14 +103,12 @@ def _dotted(spec: ConnectionField) -> str:
 _KEY_FILE_REASON = (
     "Set from the key file (read-only here). Saving a key in the keychain overrides it."
 )
+#: The field ``source`` of a ``setting_sources`` word. ``yaml`` and ``init`` are defaults here.
+_SOURCE_WORDS = {"yaml": "default", "init": "default"}
 
 
-def _locked(
-    spec: ConnectionField, locks: dict[str, str], settings: Settings
-) -> tuple[bool, str | None]:
+def _locked(spec: ConnectionField, locks: dict[str, str]) -> tuple[bool, str | None]:
     reason = locks.get(_dotted(spec))
-    if reason == "config-file":
-        return True, config_file_reason(settings.user_config_dir)
     if reason == "environment":
         return (
             True,
@@ -121,9 +119,14 @@ def _locked(
     return False, None
 
 
-def _lock_source(reason: str) -> str:
-    """Return the field ``source`` of a lock reason."""
-    return "config-file" if reason == "config-file" else "env"
+def _source(settings: Settings, spec: ConnectionField, locks: dict[str, str]) -> str:
+    """Return the field ``source``: ``env`` or ``dotenv`` when locked, else the file word."""
+    word = settings.setting_sources.get(_dotted(spec), "default")
+    if locks.get(_dotted(spec)) == "environment":
+        return word if word in ("env", "dotenv") else "env"
+    return (
+        word if word in ("config-file", "keychain", "key-file") else _SOURCE_WORDS.get(word, word)
+    )
 
 
 def _plain_field(
@@ -131,14 +134,7 @@ def _plain_field(
 ) -> dict[str, Any]:
     """Return the entry of an address (``url``) or whole-number (``int``) field."""
     value = getattr(settings, spec.settings_field)
-    saved = (values.values.get(spec.settings_field) or "").strip()
-    locked, lock_reason = _locked(spec, locks, settings)
-    if locks.get(spec.settings_field) in ("environment", "config-file"):
-        source = _lock_source(locks[spec.settings_field])
-    elif saved and not locked:
-        source = "saved"
-    else:
-        source = "default"
+    locked, lock_reason = _locked(spec, locks)
     return {
         "id": spec.id,
         "label": spec.label,
@@ -147,12 +143,11 @@ def _plain_field(
         "min": spec.minimum,
         "max": spec.maximum,
         "value": value,
-        "source": source,
+        "source": _source(settings, spec, locks),
         "locked": locked,
         "lock_reason": lock_reason,
         "set": bool(value),
         "last4": None,
-        "saved_at": None,
         "state": None,
     }
 
@@ -165,17 +160,15 @@ def _secret_field(
     locks: dict[str, str],
 ) -> dict[str, Any]:
     key = str(getattr(settings, spec.settings_field) or "").strip()
-    locked, lock_reason = _locked(spec, locks, settings)
-    lock = locks.get(spec.settings_field)
-    from_environment = lock in ("environment", "config-file")
-    state = None if from_environment else values.key_problems.get(provider)
-    saved = bool((values.values.get(spec.settings_field) or "").strip())
-    if from_environment:
-        source = _lock_source(str(lock))
-    elif key and not saved and spec.settings_field in settings.key_file_fields:
-        source, lock_reason = "key-file", _KEY_FILE_REASON
+    locked, lock_reason = _locked(spec, locks)
+    state = None if locked else values.key_problems.get(provider)
+    if locked:
+        source = _source(settings, spec, locks)
     elif key:
-        source = "keychain"
+        word = _source(settings, spec, locks)
+        source = word if word in ("config-file", "keychain", "key-file") else "keychain"
+        if source == "key-file":
+            lock_reason = _KEY_FILE_REASON
     else:
         source = "none"
     if not locked and not values.keychain_available:
@@ -196,7 +189,6 @@ def _secret_field(
         "lock_reason": lock_reason,
         "set": bool(key),
         "last4": key[-4:] if len(key) >= _LAST4_MIN_LENGTH else None,
-        "saved_at": None if from_environment else values.key_saved_at.get(provider),
         "state": state,
     }
 

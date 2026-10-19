@@ -33,7 +33,6 @@ from tests.unit.test_web_openapi_conformance_support import FAMILIES, ContractCh
 
 from omrg import compose  # noqa: E402
 from omrg.core.providers.llm import registry as llm_registry  # noqa: E402
-from omrg.integrations.workspace_sqlite.settings import WorkspaceSettings  # noqa: E402
 from omrg.transports.api.routes import chat_settings  # noqa: E402
 
 REPLY = "REPLY-MARKER-do-not-return"
@@ -61,7 +60,11 @@ def setup(tmp_path: Path, effective_settings: Any, configure: Any, monkeypatch: 
     with TestClient(app, base_url=BASE) as client:
         login(client, policy)
         client.applied = applied  # type: ignore[attr-defined]
-        client.db = WorkspaceSettings(app.state.mcp_http.records)  # type: ignore[attr-defined]
+        client.store = app.state.mcp_http.store  # type: ignore[attr-defined]
+        client.chat = lambda: tuple(  # type: ignore[attr-defined]
+            app.state.mcp_http.store.read().values.get(key)
+            for key in ("answer.provider", "answer.model")
+        )
         client.policy = policy  # type: ignore[attr-defined]
         yield client
 
@@ -79,6 +82,7 @@ def test_get_default_choice(setup: Any) -> None:
     body = setup.get("/v1/settings/chat").json()
     assert body == {
         "status": "ok",
+        "revision": "absent",
         "provider": "ollama",
         "model": "answer-model",
         "source": "default",
@@ -150,12 +154,18 @@ def test_get_env_source_locks(setup: Any, configure: Any) -> None:
 def test_put_saves_and_applies(setup: Any) -> None:
     response = put(setup, {"provider": "llamacpp", "model": "my-model"})
     assert response.status_code == 200, response.text
-    assert (setup.db.get_chat_provider(), setup.db.get_chat_model()) == ("llamacpp", "my-model")
+    assert setup.chat() == ("llamacpp", "my-model")
+    assert response.json()["revision"] == setup.store.read().revision
+    assert '"model": "my-model"' in setup.store.path.read_text(encoding="utf-8")
     assert len(setup.applied) == 1
     assert setup.applied[0].answer.provider == "llamacpp"
     assert setup.applied[0].answer.model == "my-model"
     body = setup.get("/v1/settings/chat").json()
-    assert (body["provider"], body["model"], body["source"]) == ("llamacpp", "my-model", "saved")
+    assert (body["provider"], body["model"], body["source"]) == (
+        "llamacpp",
+        "my-model",
+        "config-file",
+    )
     assert body["locked"] is False
 
 
@@ -166,14 +176,15 @@ def test_put_requires_session_and_origin(setup: Any) -> None:
     assert setup.put("/v1/settings/chat", json=payload, headers=headers).status_code == 403
     setup.cookies.clear()
     assert setup.put("/v1/settings/chat", json=payload, headers=ORIGIN).status_code == 401
-    assert setup.db.get_chat_provider() is None
+    assert setup.chat() == (None, None)
 
 
 def test_put_null_clears(setup: Any) -> None:
     put(setup, {"provider": "llamacpp", "model": "m"})
     response = put(setup, None)
     assert response.status_code == 200, response.text
-    assert (setup.db.get_chat_provider(), setup.db.get_chat_model()) == (None, None)
+    assert setup.chat() == (None, None)
+    assert "answer" not in setup.store.path.read_text(encoding="utf-8").replace("answer-model", "")
     assert setup.get("/v1/settings/chat").json()["source"] == "default"
     assert setup.applied[-1].answer.provider == "ollama"
 
@@ -193,8 +204,7 @@ def test_put_null_clears(setup: Any) -> None:
 def test_put_bad_body_is_400_and_saves_nothing(setup: Any, body: Any) -> None:
     response = put(setup, body)
     assert response.status_code in (400, 422), response.text
-    assert setup.db.get_chat_provider() is None
-    assert setup.db.get_chat_model() is None
+    assert setup.chat() == (None, None)
     assert setup.applied == []
 
 
@@ -207,7 +217,7 @@ def test_put_locked_is_409_naming_variable(setup: Any, configure: Any) -> None:
     response = put(setup, {"provider": "ollama", "model": "m"})
     assert response.status_code == 409
     assert "ANSWER__MODEL" in response.text
-    assert setup.db.get_chat_model() is None
+    assert setup.chat() == (None, None)
     assert setup.applied == []
     assert put(setup, None).status_code == 409
 
@@ -222,7 +232,7 @@ def test_put_engine_refusal_restores_state(setup: Any) -> None:
     setup.app.state.runtime.engine.use_provider_settings = refuse
     response = put(setup, {"provider": "ollama", "model": "new"})
     assert response.status_code == 409
-    assert (setup.db.get_chat_provider(), setup.db.get_chat_model()) == ("llamacpp", "old")
+    assert setup.chat() == ("llamacpp", "old")
     body = setup.get("/v1/settings/chat").json()
     assert (body["provider"], body["model"]) == ("llamacpp", "old")
 
@@ -300,7 +310,7 @@ def test_model_replies(setup: Any, fake_llm: Any) -> None:
     assert set(body) == {"status", "ok", "reason", "elapsed_ms"}
     assert built == [("llamacpp", "cand")]
     assert REPLY not in response.text
-    assert setup.db.get_chat_provider() is None  # a test never saves
+    assert setup.chat() == (None, None)  # a test never saves
     assert setup.applied == []
 
 
@@ -331,7 +341,7 @@ def test_fixed_reasons_and_no_text(setup: Any, fake_llm: Any, behaviour: Any, re
     body = response.json()
     assert (body["ok"], body["reason"]) == (False, reason)
     assert FAILURE not in response.text
-    assert setup.db.get_chat_provider() is None
+    assert setup.chat() == (None, None)
 
 
 def test_slow_model_times_out(setup: Any, fake_llm: Any, monkeypatch: pytest.MonkeyPatch) -> None:

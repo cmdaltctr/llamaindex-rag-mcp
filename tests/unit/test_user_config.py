@@ -511,16 +511,13 @@ def field_of(summary: dict[str, Any], provider: str, field_id: str) -> dict[str,
     return next(f for f in entry(summary, provider)["fields"] if f["id"] == field_id)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="group 5: compose_connections must read Settings.setting_sources (ADR-087)",
-)
 def test_summary_reports_config_file_field_unlocked(
     folder: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("HOME", str(folder.parent))
     monkeypatch.setenv("USERPROFILE", str(folder.parent))
     monkeypatch.setenv("OMRG_CONFIG_DIR", str(folder.parent / "omrg-config"))
+    monkeypatch.setenv("LOCAL_BACKEND", "llamacpp")  # Ollama makes no embeddings, so it is free
     write_config(folder, '{"ollama_base_url": "http://from-jsonc:1"}')
     summary = build_connection_summary(build(tmp_path), tmp_path)
     field = field_of(summary, "ollama", "base_url")
@@ -552,7 +549,11 @@ def test_summary_key_file_key_is_not_locked(folder: Path, tmp_path: Path) -> Non
 
 def test_summary_saved_key_beats_key_file(folder: Path, tmp_path: Path) -> None:
     write_key(folder, "openrouter", FILE_KEY)
-    values = ProviderValues(values={"openrouter_api_key": SAVED_KEY}, keychain_available=True)
+    values = ProviderValues(
+        values={"openrouter_api_key": SAVED_KEY},
+        sources={"openrouter_api_key": "keychain"},
+        keychain_available=True,
+    )
     settings = apply_provider_values(build(tmp_path), values)
     field = field_of(build_connection_summary(settings, tmp_path, values), "openrouter", "api_key")
     assert field["source"] == "keychain"
@@ -570,10 +571,6 @@ def test_summary_key_file_without_keychain_keeps_the_no_keychain_lock(
     assert "No system keychain" in field["lock_reason"]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="group 5: compose_connections must read Settings.setting_sources (ADR-087)",
-)
 def test_summary_jsonc_key_reference_is_not_locked(
     folder: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

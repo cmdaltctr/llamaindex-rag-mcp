@@ -27,13 +27,13 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 from ...core.workspace import WorkspaceLayout
 from ...integrations.workspace_sqlite import SqliteWorkspaceRepository
-from ...integrations.workspace_sqlite.settings import WorkspaceSettings
 from ...integrations.workspace_sqlite.tokens import McpTokenStore
 from ..mcp import create_mcp_server
 from ..mcp.context import McpContext, PathPolicy
 from .errors import error_response
 from .lifespan import WebConfig
 from .security import AccessPolicy
+from .settings_store import SettingsFileStore
 
 MCP_PATH = "/mcp"
 
@@ -89,9 +89,10 @@ class McpHttp:
         host: Bound loopback address.
         port: Bound port.
         records: The workspace database file.
-        enabled: In-memory copy of the stored switch. ``PUT /v1/mcp`` updates
-            it after the database write; the gate reads it on every request.
-        settings: Workspace settings store.
+        enabled: In-memory copy of the ``mcp_http_enabled`` switch in ``omrg.jsonc``.
+            ``PUT /v1/mcp`` updates it after the file write and a hand edit
+            updates it at the next request; the gate reads it on every request.
+        store: The ``omrg.jsonc`` store (ADR-087).
         tokens: MCP token store.
         session_manager: The SDK session manager, run by the web lifespan.
     """
@@ -99,14 +100,13 @@ class McpHttp:
     host: str
     port: int
     records: Path
-    settings: WorkspaceSettings = field(init=False)
+    store: SettingsFileStore = field(default_factory=SettingsFileStore)
     tokens: McpTokenStore = field(init=False)
     enabled: bool = False
     session_manager: Any = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
-        """Create the stores. The database file is opened by :meth:`prepare`."""
-        self.settings = WorkspaceSettings(self.records)
+        """Create the token store. The database file is opened by :meth:`prepare`."""
         self.tokens = McpTokenStore(self.records)
 
     @property
@@ -116,9 +116,9 @@ class McpHttp:
         return f"http://{host}:{self.port}{MCP_PATH}"
 
     def prepare(self) -> None:
-        """Create and migrate the workspace database, then load the stored switch."""
+        """Create and migrate the workspace database, then read the switch from the file."""
         SqliteWorkspaceRepository(self.records)
-        self.enabled = self.settings.get_mcp_http_enabled()
+        self.enabled = self.store.read().values.get("mcp_http_enabled") is True
 
 
 def build_mcp_http(app: FastAPI, config: WebConfig, policy: AccessPolicy) -> McpHttp:

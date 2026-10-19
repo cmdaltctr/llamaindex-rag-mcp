@@ -30,6 +30,7 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
 )
 
 from omrg import compose  # noqa: E402
+from omrg.config.settings_file_write import write_settings  # noqa: E402
 from omrg.engine import Engine  # noqa: E402
 from omrg.integrations.keychain import KeychainUnavailableError, Secret  # noqa: E402
 from omrg.transports.api import connection_probe  # noqa: E402
@@ -56,6 +57,9 @@ class FakeKeychain:
 
     def get(self, provider: str) -> Secret | None:
         return Secret(self.data[provider]) if provider in self.data else None
+
+    def read(self, provider: str) -> Secret | None:
+        return self.get(provider)
 
     def save(self, provider: str, key: str) -> None:
         if self.secrets is not None:
@@ -97,10 +101,19 @@ class Harness:
         entry = next(c for c in self.connections()["connections"] if c["provider"] == provider)
         return next(f for f in entry["fields"] if f["id"] == field_id)
 
-    def put(self, provider: str, fields: dict[str, Any]) -> Any:
+    def put(self, provider: str, fields: dict[str, Any], **extra: Any) -> Any:
         return self.client.put(
-            f"/v1/connections/{provider}", json={"fields": fields}, headers=ORIGIN
+            f"/v1/connections/{provider}", json={"fields": fields, **extra}, headers=ORIGIN
         )
+
+    @property
+    def store(self) -> Any:
+        return self.app.state.mcp_http.store
+
+    def file_text(self) -> str:
+        """The text of ``omrg.jsonc`` (empty when the file does not exist)."""
+        path = self.store.path
+        return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
 @pytest.fixture
@@ -111,14 +124,21 @@ def harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         keychain_available: bool = True,
         engine_cls: type = Engine,
         stored: dict[str, str] | None = None,
+        sources: dict[str, str] | None = None,
         **overrides: Any,
     ):
         overrides.setdefault("local_backend", "llamacpp")  # Ollama makes no embeddings
         settings = make_settings(**overrides)
+        if sources is not None:  # the source word of each launch setting (``dotenv``, ...)
+            object.__setattr__(settings, "setting_sources", dict(sources))
         monkeypatch.setattr(compose, "get_settings", lambda: settings)
         secrets = SecretSet()
         keychain = FakeKeychain(keychain_available, secrets)
         keychain.data.update(stored or {})
+        if stored:  # a key is used only through its keychain:// reference in omrg.jsonc
+            write_settings(
+                {f"{name}_api_key": f"keychain://{name}" for name in stored}, revision=None
+            )
         engines: list[Any] = []
 
         def factory(provider_source: Any) -> Any:
@@ -167,12 +187,16 @@ def test_save_and_clear_an_address_with_no_restart(harness: Any) -> None:
         assert answer_url(h) is None
         response = h.put("ollama", {"base_url": NEW_URL})
         assert response.status_code == 200, response.text
+        assert response.json()["revision"] == h.store.read().revision
         field = h.field("ollama", "base_url")
-        assert (field["value"], field["source"]) == (NEW_URL, "saved")
+        assert (field["value"], field["source"]) == (NEW_URL, "config-file")
+        assert field["locked"] is False
+        assert f'"ollama_base_url": "{NEW_URL}"' in h.file_text()
         assert answer_url(h) == NEW_URL  # the next answer uses it, no restart
         assert h.put("ollama", {"base_url": None}).status_code == 200
         field = h.field("ollama", "base_url")
         assert (field["value"], field["source"]) == ("http://ollama.test:11434", "default")
+        assert "ollama_base_url" not in h.file_text()
         assert answer_url(h) is None
 
 
@@ -197,6 +221,7 @@ def test_a_bad_address_is_400_and_saves_nothing(harness: Any, bad: str) -> None:
         assert bad not in response.text or bad == ""
         assert "absolute http or https" in response.json()["message"]
         assert h.field("ollama", "base_url")["source"] == "default"
+        assert h.file_text() == ""
 
 
 def test_unknown_provider_and_field_are_404(harness: Any) -> None:
@@ -242,7 +267,7 @@ def test_when_the_engine_refuses_the_row_and_values_return(harness: Any) -> None
         response = h.put("ollama", {"base_url": NEW_URL})
         assert response.status_code == 409
         assert h.field("ollama", "base_url")["source"] == "default"
-        assert h.app.state.mcp_http.settings.get("provider.ollama.base_url") is None
+        assert "ollama_base_url" not in h.file_text()
         assert h.app.state.runtime.providers.values.values == {}
 
 
@@ -250,7 +275,7 @@ def test_a_saved_address_survives_a_restart(harness: Any, tmp_path: Path) -> Non
     with harness() as h:
         assert h.put("ollama", {"base_url": NEW_URL}).status_code == 200
     with harness() as h:
-        assert h.field("ollama", "base_url")["source"] == "saved"
+        assert h.field("ollama", "base_url")["source"] == "config-file"
         assert answer_url(h) == NEW_URL
 
 
@@ -296,8 +321,9 @@ def test_a_key_goes_to_the_keychain_after_the_secret_set(harness: Any) -> None:
         assert h.keychain.known_before_save == [True]  # secrets.add came first
         field = h.field("openrouter", "api_key")
         assert (field["set"], field["source"], field["last4"]) == (True, "keychain", KEY64[-4:])
-        assert field["saved_at"] is not None
-        assert h.app.state.mcp_http.settings.get_key_saved_at("openrouter") is not None
+        assert "saved_at" not in field
+        assert '"openrouter_api_key": "keychain://openrouter"' in h.file_text()
+        assert KEY64 not in h.file_text()
         assert KEY64 in list(h.secrets)
 
 
@@ -308,14 +334,15 @@ def test_a_key_is_removed_and_the_flag_cleared(harness: Any) -> None:
         assert response.status_code == 200
         assert h.keychain.data == {}
         field = h.field("openrouter", "api_key")
-        assert (field["set"], field["source"], field["saved_at"]) == (False, "none", None)
+        assert (field["set"], field["source"]) == (False, "none")
+        assert "openrouter_api_key" not in h.file_text()
         assert KEY64 in list(h.secrets)  # a replaced or removed key stays redacted
 
 
 def test_a_saved_key_is_loaded_at_launch_and_redacted(harness: Any) -> None:
     with harness() as h:
         put_key(h)
-    with harness() as h:  # same workspace; the fake keychain is new, so the key is missing
+    with harness() as h:  # same config folder; the fake keychain is new, so the key is missing
         field = h.field("openrouter", "api_key")
         assert field["state"] == "keychain-missing" and field["set"] is False
 
@@ -347,14 +374,14 @@ def test_no_keychain_means_409_and_nothing_written(harness: Any) -> None:
         assert response.status_code == 409
         assert "OPENROUTER_API_KEY" in response.json()["message"]
         assert h.keychain.data == {}
-        assert h.app.state.mcp_http.settings.get_key_saved_at("openrouter") is None
+        assert h.file_text() == ""
 
 
 def test_a_failed_keychain_call_is_409_and_writes_nothing(harness: Any) -> None:
     with harness() as h:
         h.keychain.fail_save = True
         assert put_key(h).status_code == 409
-        assert h.app.state.mcp_http.settings.get_key_saved_at("openrouter") is None
+        assert h.file_text() == ""
 
 
 @pytest.mark.parametrize(
@@ -378,7 +405,7 @@ def test_when_the_engine_refuses_a_key_save_everything_returns(harness: Any) -> 
     with harness(engine_cls=RefusingEngine) as h:
         assert put_key(h).status_code == 409
         assert h.keychain.data == {}
-        assert h.app.state.mcp_http.settings.get_key_saved_at("openrouter") is None
+        assert "openrouter_api_key" not in h.file_text()
 
 
 # ── 7.4 No response holds the key ────────────────────────────────────────
@@ -446,7 +473,7 @@ def test_a_typed_address_is_tested_and_not_saved(harness: Any, mock_http: Any) -
         assert response.json() == {"status": "ok", "reachable": True, "reason": None}
         assert [str(r.url) for r in mock_http.seen] == [NEW_URL + "/api/tags"]
         assert h.field("ollama", "base_url")["source"] == "default"
-        assert h.app.state.mcp_http.settings.get("provider.ollama.base_url") is None
+        assert h.file_text() == ""
 
 
 def test_a_typed_key_is_sent_and_neither_saved_nor_logged(

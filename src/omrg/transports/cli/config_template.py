@@ -19,15 +19,14 @@ from pydantic import BaseModel
 
 from ...config import Settings
 from ...config.rules import INTERNAL_FIELDS, SECRET_FIELDS
-from ..api.uploads import DEFAULT_MAX_UPLOAD_BYTES, MIB
-from .web import DEFAULT_PORT
+from ..settings_view import FILE_ONLY_DEFAULTS
 
 #: Settings that live only in the file, with their default and the
 #: environment name that also sets them (``None`` when there is none).
 #: The keys must equal ``config.rules.FILE_ONLY``; a test pins that.
 FILE_ONLY: dict[str, tuple[Any, str | None]] = {
-    "web_port": (DEFAULT_PORT, None),
-    "web_max_upload_mib": (DEFAULT_MAX_UPLOAD_BYTES // MIB, "WEB_MAX_UPLOAD_MIB"),
+    "web_port": (FILE_ONLY_DEFAULTS["web_port"], None),
+    "web_max_upload_mib": (FILE_ONLY_DEFAULTS["web_max_upload_mib"], "WEB_MAX_UPLOAD_MIB"),
     "mcp_http_enabled": (False, None),
 }
 
