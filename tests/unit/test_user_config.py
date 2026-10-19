@@ -1,8 +1,11 @@
-"""The read-only user config folder: ``omrg.jsonc`` and ``secrets/<provider>.key``.
+"""The user config folder: ``omrg.jsonc`` and ``secrets/<provider>.key``.
 
 Every test points ``OMRG_CONFIG_DIR`` at a temporary folder. No test reads the
 real ``~/.config/omrg`` and no test uses a real key: the keys are fake
 constants (design D1, user decision 2026-10-18).
+
+A value from ``omrg.jsonc`` does not lock its field (ADR-087): only the
+environment and ``.env`` lock.
 """
 
 from __future__ import annotations
@@ -19,12 +22,8 @@ from omrg import compose
 from omrg.compose_connections import build_connection_summary
 from omrg.compose_providers import ProviderValues, apply_provider_values, locked_fields
 from omrg.config import Settings
-from omrg.config.user_config import (
-    display_path,
-    load_user_config,
-    parse_jsonc,
-    user_config_dir,
-)
+from omrg.config.settings_file import load_user_config
+from omrg.config.user_config import display_path, parse_jsonc, user_config_dir
 
 FILE_KEY = "sk-or-v1-FILEKEYVALUE0123456789"  # gitleaks:allow
 OTHER_KEY = "sk-or-v1-OTHERKEYVALUE012345678"  # gitleaks:allow
@@ -263,13 +262,15 @@ def test_broken_json_gives_no_values_and_one_warning(
     assert "secret-host-name" not in messages[0]
 
 
-def test_wrong_types_give_no_values_and_one_warning(
+def test_a_wrong_type_is_ignored_with_one_warning_and_the_rest_stay(
     folder: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     write_config(folder, '{"ollama_base_url": 12, "llamacpp_chat_url": "http://ok/v1"}')
     with caplog.at_level(logging.WARNING):
-        assert load_user_config().values == {}
-    assert len(warnings_of(caplog)) == 1
+        assert load_user_config().values == {"llamacpp_chat_url": "http://ok/v1"}
+    messages = warnings_of(caplog)
+    assert len(messages) == 1
+    assert "ollama_base_url" in messages[0]
 
 
 def test_missing_folder_gives_nothing_and_creates_nothing(
@@ -400,7 +401,7 @@ def test_address_precedence(folder: Path, tmp_path: Path, monkeypatch: pytest.Mo
     write_config(folder, '{"ollama_base_url": "http://from-jsonc:1"}')
     settings = build(tmp_path)
     assert settings.ollama_base_url == "http://from-jsonc:1"
-    assert "ollama_base_url" in settings.provider_explicit
+    assert "ollama_base_url" not in settings.provider_explicit  # the file does not lock
     assert "ollama_base_url" in settings.config_file_fields
 
     dotenv = build(tmp_path, "OLLAMA_BASE_URL=http://from-dotenv:2\n")
@@ -413,13 +414,14 @@ def test_address_precedence(folder: Path, tmp_path: Path, monkeypatch: pytest.Mo
     assert "ollama_base_url" not in env.config_file_fields
 
 
-def test_saved_address_loses_to_jsonc_and_beats_default(folder: Path, tmp_path: Path) -> None:
+def test_jsonc_address_does_not_lock_a_saved_address(folder: Path, tmp_path: Path) -> None:
     saved = ProviderValues(values={"llamacpp_chat_url": "http://saved:4"})
-    plain = build(tmp_path)
-    assert apply_provider_values(plain, saved).llamacpp_chat_url == "http://saved:4"
     write_config(folder, '{"llamacpp_chat_url": "http://from-jsonc:1"}')
-    locked = build(tmp_path)
-    assert apply_provider_values(locked, saved).llamacpp_chat_url == "http://from-jsonc:1"
+    file_set = build(tmp_path)
+    assert "llamacpp_chat_url" not in locked_fields(file_set, file_set.provider_explicit)
+    assert apply_provider_values(file_set, saved).llamacpp_chat_url == "http://saved:4"
+    dotenv_set = build(tmp_path, "LLAMACPP_CHAT_URL=http://from-dotenv:2/v1\n")
+    assert apply_provider_values(dotenv_set, saved).llamacpp_chat_url == "http://from-dotenv:2/v1"
 
 
 def test_key_precedence(folder: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -471,13 +473,21 @@ def test_keychain_key_overrides_the_key_file_and_removal_falls_back(
     assert apply_provider_values(settings, ProviderValues()).openrouter_api_key == FILE_KEY
 
 
-def test_jsonc_chat_choice_locks_both_fields(folder: Path, tmp_path: Path) -> None:
+def test_jsonc_chat_choice_does_not_lock(folder: Path, tmp_path: Path) -> None:
     write_config(folder, '{"answer": {"provider": "anthropic"}}')
     settings = build(tmp_path)
     assert settings.answer.provider == "anthropic"
+    assert settings.config_file_fields == frozenset({"answer.provider"})
     locks = locked_fields(settings, settings.provider_explicit)
-    assert locks["answer.provider"] == "config-file"
-    assert locks["answer.model"] == "config-file"
+    assert "answer.provider" not in locks
+    assert "answer.model" not in locks
+
+
+def test_dotenv_chat_model_locks_both_chat_fields(folder: Path, tmp_path: Path) -> None:
+    write_config(folder, '{"answer": {"provider": "anthropic"}}')
+    settings = build(tmp_path, "ANSWER__MODEL=qwen3:8b\n")
+    locks = locked_fields(settings, settings.provider_explicit)
+    assert locks["answer.provider"] == locks["answer.model"] == "environment"
 
 
 def test_stdio_and_cli_settings_see_the_jsonc_values(
@@ -501,7 +511,11 @@ def field_of(summary: dict[str, Any], provider: str, field_id: str) -> dict[str,
     return next(f for f in entry(summary, provider)["fields"] if f["id"] == field_id)
 
 
-def test_summary_reports_config_file_field_locked(
+@pytest.mark.xfail(
+    strict=True,
+    reason="group 5: compose_connections must read Settings.setting_sources (ADR-087)",
+)
+def test_summary_reports_config_file_field_unlocked(
     folder: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("HOME", str(folder.parent))
@@ -511,10 +525,8 @@ def test_summary_reports_config_file_field_locked(
     summary = build_connection_summary(build(tmp_path), tmp_path)
     field = field_of(summary, "ollama", "base_url")
     assert field["source"] == "config-file"
-    assert field["locked"] is True
-    assert field["lock_reason"] == (
-        "Set in ~/omrg-config/omrg.jsonc. Edit that file and restart to change it."
-    )
+    assert field["locked"] is False
+    assert field["lock_reason"] is None
     assert summary["user_config_dir"] == "~/omrg-config"
 
 
@@ -558,7 +570,11 @@ def test_summary_key_file_without_keychain_keeps_the_no_keychain_lock(
     assert "No system keychain" in field["lock_reason"]
 
 
-def test_summary_jsonc_key_reference_is_locked_as_config_file(
+@pytest.mark.xfail(
+    strict=True,
+    reason="group 5: compose_connections must read Settings.setting_sources (ADR-087)",
+)
+def test_summary_jsonc_key_reference_is_not_locked(
     folder: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("MY_TEST_KEY", FILE_KEY)
@@ -568,8 +584,7 @@ def test_summary_jsonc_key_reference_is_locked_as_config_file(
     )
     field = field_of(summary, "openrouter", "api_key")
     assert field["source"] == "config-file"
-    assert field["locked"] is True
-    assert "omrg.jsonc" in field["lock_reason"]
+    assert field["locked"] is False
 
 
 def test_environment_still_reports_env(
@@ -624,38 +639,126 @@ def test_resolving_never_writes_creates_or_chmods(folder: Path, tmp_path: Path) 
     assert snapshot(folder) == before
 
 
-# ── Web routes ───────────────────────────────────────────────────────────
+# ── Key references (move-settings-to-config-file, task 3.1) ──────────────
 
 
-def test_chat_settings_report_the_config_file(
+def test_tilde_in_a_file_reference_expands_to_the_home_folder(
+    folder: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = folder.parent
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.setenv("OMRG_CONFIG_DIR", str(home / ".config" / "omrg"))
+    config = home / ".config" / "omrg"
+    config.mkdir(parents=True, mode=0o700)
+    write_key(config, "custom", FILE_KEY)
+    write_config(config, '{"openrouter_api_key": "file://~/.config/omrg/secrets/custom.key"}')
+    loaded = load_user_config()
+    assert loaded.values["openrouter_api_key"] == FILE_KEY
+    assert loaded.key_paths["openrouter_api_key"] == str(config / "secrets" / "custom.key")
+
+
+def test_tilde_path_outside_secrets_is_refused(
+    folder: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = folder.parent
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    secrets_dir(folder)
+    (home / "stray.key").write_text(FILE_KEY, encoding="utf-8")
+    write_config(folder, '{"openrouter_api_key": "file://~/stray.key"}')
+    assert "openrouter_api_key" not in load_user_config().values
+
+
+def test_keychain_reference_comes_back_unresolved(folder: Path, tmp_path: Path) -> None:
+    write_config(folder, '{"openrouter_api_key": "keychain://openrouter"}')
+    loaded = load_user_config()
+    assert loaded.references == {"openrouter_api_key": "openrouter"}
+    assert "openrouter_api_key" not in loaded.values
+    settings = build(tmp_path)
+    assert settings.keychain_refs == {"openrouter_api_key": "openrouter"}
+    assert settings.openrouter_api_key == ""
+
+
+def test_keychain_reference_needs_a_provider_name(folder: Path) -> None:
+    write_config(folder, '{"openrouter_api_key": "keychain://"}')
+    assert load_user_config().references == {}
+
+
+def test_keychain_reference_beats_the_implicit_key_file(folder: Path, tmp_path: Path) -> None:
+    write_key(folder, "openrouter", FILE_KEY)
+    write_config(folder, '{"openrouter_api_key": "keychain://openrouter"}')
+    settings = build(tmp_path)
+    assert settings.openrouter_api_key == ""
+    assert settings.keychain_refs == {"openrouter_api_key": "openrouter"}
+
+
+def test_environment_drops_a_keychain_reference(
     folder: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from omrg.transports.api.routes import chat_settings
-
-    write_config(folder, '{"answer": {"provider": "anthropic", "model": "claude-x"}}')
+    write_config(folder, '{"openrouter_api_key": "keychain://openrouter"}')
+    monkeypatch.setenv("OPENROUTER_API_KEY", ENV_KEY)
     settings = build(tmp_path)
-    monkeypatch.setattr(chat_settings, "provider_values_of", lambda _rt: ProviderValues)
-    monkeypatch.setattr(chat_settings, "_provider_settings", lambda _src: settings)
-    body = chat_settings._status(object())  # type: ignore[arg-type]
-    assert body["source"] == "config-file"
-    assert body["locked"] is True
-    assert "omrg.jsonc" in body["lock_reason"]
-    response = chat_settings._locked_response(settings)
-    assert response is not None
-    assert response.status_code == 409
-    assert b"omrg.jsonc" in response.body
+    assert settings.openrouter_api_key == ENV_KEY
+    assert settings.keychain_refs == {}
 
 
-def test_a_jsonc_address_is_409_over_http(harness: Any, folder: Path) -> None:
-    write_config(folder, '{"openai_compatible_base_url": "http://oai.cfg/v1"}')
-    # make_settings replaces provider_explicit, so the test restates what the file set.
-    with harness(explicit=frozenset({"openai_compatible_base_url"})) as h:
-        response = h.put("openai_compatible", {"base_url": "http://other.test/v1"})
-        assert response.status_code == 409
-        assert "omrg.jsonc" in response.json()["message"]
-        field = h.field("openai_compatible", "base_url")
-        assert (field["value"], field["source"]) == ("http://oai.cfg/v1", "config-file")
-        assert h.connections()["user_config_dir"]
+def test_literal_key_never_reaches_settings_or_the_problem_list(
+    folder: Path, tmp_path: Path
+) -> None:
+    from omrg.config.settings_file import KIND_INVALID, read_settings_file
+
+    write_config(folder, f'{{"openrouter_api_key": "{LITERAL_KEY}"}}')
+    settings = build(tmp_path)
+    assert settings.openrouter_api_key == ""
+    (problem,) = read_settings_file().problems
+    assert (problem.kind, problem.key) == (KIND_INVALID, "openrouter_api_key")
+    assert LITERAL_KEY not in repr(read_settings_file()) + problem.message
+
+
+def test_implicit_key_file_reports_key_file_and_its_path(folder: Path, tmp_path: Path) -> None:
+    write_key(folder, "anthropic", FILE_KEY)
+    settings = build(tmp_path)
+    assert settings.anthropic_api_key == FILE_KEY
+    assert settings.setting_sources["anthropic_api_key"] == "key-file"
+    assert settings.key_file_paths["anthropic_api_key"] == str(folder / "secrets" / "anthropic.key")
+    assert settings.key_file_fields == frozenset({"anthropic_api_key"})
+    assert settings.config_file_fields == frozenset()
+
+
+def test_file_reference_reports_key_file_and_env_reference_reports_config_file(
+    folder: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = write_key(folder, "custom", FILE_KEY)
+    monkeypatch.setenv("MY_TEST_KEY", OTHER_KEY)
+    write_config(
+        folder,
+        f'{{"anthropic_api_key": "file://{target}", "openrouter_api_key": "env://MY_TEST_KEY"}}',
+    )
+    settings = build(tmp_path)
+    assert settings.setting_sources["anthropic_api_key"] == "key-file"
+    assert settings.key_file_paths["anthropic_api_key"] == str(target)
+    assert settings.setting_sources["openrouter_api_key"] == "config-file"
+    assert settings.config_file_fields == frozenset({"openrouter_api_key"})
+    assert OTHER_KEY not in repr(settings.setting_sources)
+
+
+def test_other_key_fields_take_references_too(
+    folder: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("MY_TEST_KEY", OTHER_KEY)
+    monkeypatch.delenv("VECTOR_STORE")  # conftest pins lancedb; the file picks chroma here
+    write_config(
+        folder,
+        '{"vector_store": "chroma", "chroma_cloud_api_key": "env://MY_TEST_KEY",'
+        ' "azure_doc_intelligence_key": "keychain://azure"}',
+    )
+    settings = build(tmp_path)
+    assert settings.chroma_cloud_api_key == OTHER_KEY
+    assert settings.keychain_refs == {"azure_doc_intelligence_key": "azure"}
+
+
+# ── Web routes ───────────────────────────────────────────────────────────
 
 
 def test_a_key_file_key_is_overridden_by_the_keychain_and_comes_back(

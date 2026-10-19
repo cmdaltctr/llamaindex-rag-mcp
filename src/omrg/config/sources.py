@@ -151,13 +151,18 @@ class _ProfileYamlSettingsSource(PydanticBaseSettingsSource):
     source.  This source only affects the startup ``Settings`` singleton.
     """
 
-    def __init__(self, settings_cls: type[BaseSettings]) -> None:
+    def __init__(self, settings_cls: type[BaseSettings], file_profile: str | None = None) -> None:
         super().__init__(settings_cls)
+        self._file_profile = file_profile
         self._data: dict[str, Any] = self._load_profile()
 
     def _load_profile(self) -> dict[str, Any]:
-        """Load the profile bundle selected by ``RAG_PROFILE``."""
-        profile = os.environ.get("RAG_PROFILE", "documents")
+        """Load the profile bundle selected by ``RAG_PROFILE``.
+
+        The environment wins. Without it, the ``rag_profile`` key of
+        ``omrg.jsonc`` selects the bundle, then ``documents``.
+        """
+        profile = os.environ.get("RAG_PROFILE", self._file_profile or "documents")
         return _load_profile_bundle(profile)
 
     def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str, bool]:

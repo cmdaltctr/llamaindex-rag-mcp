@@ -1,16 +1,18 @@
-"""Read-only user config folder: ``omrg.jsonc`` and ``secrets/<provider>.key``.
+"""The user config folder: ``omrg.jsonc`` and ``secrets/<provider>.key``.
 
 The folder is ``$OMRG_CONFIG_DIR``, else ``$XDG_CONFIG_HOME/omrg``, else
-``~/.config/omrg``. OMRG only reads it. It never creates, writes or changes
-the mode of anything there.
+``~/.config/omrg``. This module only reads it. Writing ``omrg.jsonc`` is the
+job of ``settings_file_write``; nothing here creates or changes anything.
 
-``omrg.jsonc`` is JSON with comments and trailing commas. It may set the
-non-secret provider fields, and it may point at a key with ``env://NAME`` or
-``file://<absolute path inside secrets/>``. A literal key in the file is
+``omrg.jsonc`` is JSON with comments and trailing commas (read in
+``settings_file``). A key field holds a reference: ``env://NAME``,
+``file://<absolute path inside secrets/>`` (a leading ``~`` expands to the
+home folder) or ``keychain://<provider>``. A literal key in the file is
 ignored. ``secrets/<provider>.key`` holds one key per provider.
 
-This module is a leaf: it imports no OMRG code. Messages name a field or a
-path, never a value.
+This module is a leaf: it imports no OMRG code. It returns a ``keychain://``
+reference unresolved (``compose_providers`` resolves it). Messages name a
+field or a path, never a value.
 """
 
 from __future__ import annotations
@@ -32,12 +34,8 @@ SECRETS_DIR = "secrets"
 MAX_KEY_BYTES = 4096
 _NAME = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+KEYCHAIN_PREFIX = "keychain://"
 
-#: ``omrg.jsonc`` keys that hold an address, as ``Settings`` field paths.
-_ADDRESS_KEYS = ("ollama_base_url", "llamacpp_chat_url", "openai_compatible_base_url")
-#: ``omrg.jsonc`` keys that hold free text (a program path, a model); the
-#: managed llama.cpp server checks them again at save and at launch.
-_TEXT_KEYS = ("llamacpp_server_binary", "llamacpp_server_model")
 #: ``omrg.jsonc`` keys that hold a whole number, with the allowed range. The
 #: same range binds the environment, the saved web value and the descriptors.
 INT_KEY_BOUNDS: dict[str, tuple[int, int]] = {
@@ -45,8 +43,8 @@ INT_KEY_BOUNDS: dict[str, tuple[int, int]] = {
     "llamacpp_context_window": (2048, 262144),
     "llamacpp_idle_sleep_seconds": (0, 86400),
 }
-#: ``omrg.jsonc`` keys that hold a key reference. The provider name is the
-#: key minus ``_api_key``; it names the file ``secrets/<provider>.key``.
+#: Keys that also read ``secrets/<provider>.key`` when ``omrg.jsonc`` holds no
+#: reference. The provider name is the key minus ``_api_key``.
 _SECRET_KEYS = ("openrouter_api_key", "openai_compatible_api_key", "anthropic_api_key")
 
 _warned: set[tuple[str, str]] = set()
@@ -61,16 +59,21 @@ class UserConfig:
     Attributes:
         directory: The resolved folder (it may not exist).
         values: ``omrg.jsonc`` values by ``Settings`` field path, with each
-            resolved key reference.
+            ``env://`` and ``file://`` key reference resolved.
         key_file: Key-file keys by ``Settings`` field name.
+        references: ``keychain://`` references by ``Settings`` field name,
+            as the provider name. They stay unresolved here.
+        key_paths: Where each key from ``file://`` or ``secrets/`` came from.
     """
 
     directory: Path
-    values: dict[str, str] = field(default_factory=dict)
+    values: dict[str, Any] = field(default_factory=dict)
     key_file: dict[str, str] = field(default_factory=dict)
+    references: dict[str, str] = field(default_factory=dict)
+    key_paths: dict[str, str] = field(default_factory=dict)
 
     def __repr__(self) -> str:
-        names = sorted({*self.values, *self.key_file})
+        names = sorted({*self.values, *self.key_file, *self.references})
         return f"UserConfig(directory={self.directory}, fields={names})"
 
 
@@ -155,39 +158,6 @@ def _join_outside_strings(parts: list[str]) -> str:
     return "".join(pieces)
 
 
-def _load_json(path: Path) -> dict[str, Any] | None:
-    """Return the parsed ``omrg.jsonc`` object, or ``None`` when it is absent or broken."""
-    try:
-        text = path.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        return None
-    except (OSError, UnicodeDecodeError):
-        _warn_once("broken", str(path), "Ignoring %s: it cannot be read.", path)
-        return None
-    try:
-        data = parse_jsonc(text)
-    except ValueError:
-        _warn_once("broken", str(path), "Ignoring %s: it is not valid JSON.", path)
-        return None
-    if not isinstance(data, dict):
-        _warn_once("broken", str(path), "Ignoring %s: the top level must be an object.", path)
-        return None
-    return data
-
-
-def _typed(data: dict[str, Any]) -> bool:
-    """Return whether every known key in *data* has the right type."""
-    for key in (*_ADDRESS_KEYS, *_TEXT_KEYS, *_SECRET_KEYS):
-        if key in data and not isinstance(data[key], str):
-            return False
-    answer = data.get("answer")
-    if answer is None:
-        return True
-    return isinstance(answer, dict) and all(
-        isinstance(answer.get(k, ""), str) for k in ("provider", "model")
-    )
-
-
 def _is_windows() -> bool:
     """Return whether file modes are meaningless here (Windows)."""
     return os.name == "nt"
@@ -237,89 +207,92 @@ def _read_secret_file(path: Path, secrets: Path) -> str | None:
         return None
 
 
-def _resolve_reference(key: str, reference: str, secrets: Path, config_path: Path) -> str | None:
-    """Resolve an ``env://`` or ``file://`` reference; warn naming *key* only."""
+@dataclass(frozen=True)
+class KeychainRef:
+    """A ``keychain://<provider>`` reference, left unresolved for the composition root."""
+
+    provider: str
+
+
+def _resolve_reference(
+    key: str, reference: str, secrets: Path, config_path: Path
+) -> tuple[str | KeychainRef | None, str | None]:
+    """Resolve a key reference. Warn once, naming *key* only.
+
+    Returns:
+        ``(resolved, problem)``. *resolved* is the key text for ``env://`` and
+        ``file://``, a :class:`KeychainRef` for ``keychain://``, or ``None``.
+        *problem* is a rule text (never a value) when the reference is bad; an
+        ``env://`` name that is not set is not a problem.
+    """
+    subject = f"{config_path}:{key}"
     if reference.startswith("env://"):
         name = reference[len("env://") :]
         if not _ENV_NAME.match(name):
-            _warn_once(
-                "ref", f"{config_path}:{key}", "Ignoring %s in %s: bad env name.", key, config_path
-            )
-            return None
-        return os.environ.get(name, "").strip() or None
+            _warn_once("ref", subject, "Ignoring %s in %s: bad env name.", key, config_path)
+            return None, "The env:// reference needs a valid variable name."
+        return os.environ.get(name, "").strip() or None, None
     if reference.startswith("file://"):
-        raw = reference[len("file://") :]
+        raw = os.path.expanduser(reference[len("file://") :])
         value = _read_secret_file(Path(raw), secrets) if os.path.isabs(raw) else None
         if value is None:
             _warn_once(
                 "ref",
-                f"{config_path}:{key}",
+                subject,
                 "Ignoring %s in %s: its file reference is not a readable file inside secrets/.",
                 key,
                 config_path,
             )
-        return value
-    if reference.strip():
-        _warn_once(
-            "literal",
-            f"{config_path}:{key}",
-            "Ignoring %s in %s: use env://NAME or file://<path in secrets/>, not the key itself.",
-            key,
-            config_path,
-        )
-    return None
+            return None, "The file:// reference must name a readable file inside secrets/."
+        return value, None
+    if reference.startswith(KEYCHAIN_PREFIX):
+        provider = reference[len(KEYCHAIN_PREFIX) :]
+        if _NAME.match(provider):
+            return KeychainRef(provider), None
+        _warn_once("ref", subject, "Ignoring %s in %s: bad keychain name.", key, config_path)
+        return None, "The keychain:// reference needs a provider name."
+    if not reference.strip():
+        return None, None
+    _warn_once(
+        "literal",
+        subject,
+        "Ignoring %s in %s: use env://NAME, file://<path in secrets/> or keychain://<provider>, "
+        "not the key itself.",
+        key,
+        config_path,
+    )
+    return None, REFERENCE_RULE
 
 
-def _int_values(data: dict[str, Any], config_path: Path) -> dict[str, str]:
-    """Return the whole-number keys of *data* that are in range, as text.
+#: The rule for a key field. It never repeats the value that broke it.
+REFERENCE_RULE = (
+    "A key field must hold env://NAME, file://<path in secrets/> or keychain://<provider>, "
+    "not the key itself."
+)
 
-    A number or a string of digits counts. Any other value, or one outside the
-    range, is ignored with one warning that names the key and not the value.
+
+def reference_problem(reference: str, secrets: Path) -> str | None:
+    """Return the rule that key *reference* breaks, or ``None`` when its form is valid.
+
+    This checks the form only, so a save can refuse a literal key without
+    reading anything. Reading re-checks the file itself (links, size, type).
+    The result never contains *reference*.
     """
-    found: dict[str, str] = {}
-    for key, (low, high) in INT_KEY_BOUNDS.items():
-        if key not in data:
-            continue
-        raw = data[key]
-        if isinstance(raw, str) and raw.strip().isascii() and raw.strip().isdigit():
-            raw = int(raw.strip())
-        if isinstance(raw, int) and not isinstance(raw, bool) and low <= raw <= high:
-            found[key] = str(raw)
-            continue
-        _warn_once(
-            "int",
-            f"{config_path}:{key}",
-            "Ignoring %s in %s: it must be a whole number from %d to %d.",
-            key,
-            config_path,
-            low,
-            high,
-        )
-    return found
+    if reference.startswith("env://"):
+        ok = bool(_ENV_NAME.match(reference[len("env://") :]))
+    elif reference.startswith(KEYCHAIN_PREFIX):
+        ok = bool(_NAME.match(reference[len(KEYCHAIN_PREFIX) :]))
+    elif reference.startswith("file://"):
+        raw = os.path.expanduser(reference[len("file://") :])
+        root = os.path.normpath(secrets)
+        ok = os.path.isabs(raw) and os.path.normpath(raw).startswith(root + os.sep)
+    else:
+        return REFERENCE_RULE
+    return None if ok else REFERENCE_RULE
 
 
-def _jsonc_values(data: dict[str, Any], secrets: Path, config_path: Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    for key in _ADDRESS_KEYS:
-        if str(data.get(key, "")).strip():
-            values[key] = data[key].strip()
-    for key in _TEXT_KEYS:
-        if str(data.get(key, "")).strip():
-            values[key] = data[key].strip()
-    values.update(_int_values(data, config_path))
-    for key in _SECRET_KEYS:
-        if isinstance(data.get(key), str):
-            resolved = _resolve_reference(key, data[key], secrets, config_path)
-            if resolved:
-                values[key] = resolved
-    answer = data.get("answer") or {}
-    for part in ("provider", "model"):
-        if str(answer.get(part, "")).strip():
-            values[f"answer.{part}"] = answer[part].strip()
-    return values
-
-
-def _key_files(secrets: Path) -> dict[str, str]:
+def key_files(secrets: Path) -> dict[str, str]:
+    """Return the keys from ``secrets/<provider>.key``, by ``Settings`` field name."""
     found: dict[str, str] = {}
     for key in _SECRET_KEYS:
         provider = key.removesuffix("_api_key")
@@ -332,25 +305,3 @@ def _key_files(secrets: Path) -> dict[str, str]:
         if value:
             found[key] = value
     return found
-
-
-def load_user_config() -> UserConfig:
-    """Read the user config folder. Nothing is created or changed.
-
-    Returns:
-        The values from ``omrg.jsonc`` and the key files. A missing folder or
-        a broken file gives empty values (a broken file logs one warning).
-    """
-    directory = user_config_dir()
-    secrets = directory / SECRETS_DIR
-    config_path = directory / CONFIG_FILE
-    values: dict[str, str] = {}
-    data = _load_json(config_path)
-    if data is not None:
-        if _typed(data):
-            values = _jsonc_values(data, secrets, config_path)
-        else:
-            _warn_once(
-                "broken", str(config_path), "Ignoring %s: a field has the wrong type.", config_path
-            )
-    return UserConfig(directory, values, _key_files(secrets))

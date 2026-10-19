@@ -6,19 +6,23 @@ Where settings live, which one wins, and what every setting does.
 
 ## The short version
 
-Settings come from five places. Each beats the one above it:
+Settings come from six places. Each beats the one above it:
 
 | # | Source | What belongs here |
 |---|---|---|
 | 1 | Model defaults, in the code | Last resort. You never edit these directly. |
 | 2 | `src/omrg/config/defaults.yaml` | Project-wide defaults. Committed. Shared by everyone. |
 | 3 | Profile YAML (`config/profiles/*.yaml`) | Per-collection behaviour |
-| 4 | `.env` | Your machine: tokens, URLs, paths |
-| 5 | Environment variables | Highest. Wins over everything. |
+| 4 | `omrg.jsonc` in the [user config folder](#user-config-folder) | Your settings. Edit it by hand or on the Settings page. |
+| 5 | `.env` | Your machine: tokens, URLs, paths |
+| 6 | Environment variables | Highest. Wins over everything. |
+
+The Settings page shows the source of each value: `env`, `dotenv`, `config-file`, `yaml` or `default`. Only `env` and `dotenv` lock a field on the page. A value in `omrg.jsonc` does not lock it.
 
 **Rule of thumb:**
 
 - Sensible default for everyone → `defaults.yaml`
+- Your own settings, kept in one file you can edit or the page can edit → `omrg.jsonc`
 - Secret, or specific to your machine → `.env`
 - Different for one collection → its profile
 - Just for this one command → an environment variable
@@ -33,8 +37,8 @@ being silently ignored.
 
 ### The trap worth knowing
 
-`.env` sits **above** profiles. Put a tuning value there and it overrides every
-profile silently.
+`.env` and `omrg.jsonc` sit **above** profiles. Put a tuning value in either and it
+overrides every profile silently.
 
 Real example: `RETRIEVAL__TOP_K=5` in `.env` meant the `documents` profile
 (top_k 10) and the `codebase` profile (top_k 20) both returned 5 results.
@@ -422,26 +426,26 @@ Connection details for each: [Providers](providers.md).
 
 #### Change provider values in the web workspace
 
-In `omrg web`, Settings > Providers can save these values: `OLLAMA_BASE_URL`, `OLLAMA_CONTEXT_WINDOW`, `LLAMACPP_CHAT_URL`, `LLAMACPP_SERVER_BINARY`, `LLAMACPP_SERVER_MODEL`, `LLAMACPP_CONTEXT_WINDOW`, `LLAMACPP_IDLE_SLEEP_SECONDS`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`. The server uses the first source it finds, highest first:
+In `omrg web`, Settings > Providers saves these values in `omrg.jsonc`: `OLLAMA_BASE_URL`, `OLLAMA_CONTEXT_WINDOW`, `LLAMACPP_CHAT_URL`, `LLAMACPP_SERVER_BINARY`, `LLAMACPP_SERVER_MODEL`, `LLAMACPP_CONTEXT_WINDOW`, `LLAMACPP_IDLE_SLEEP_SECONDS`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`. The server uses the first source it finds, highest first:
 
 | Rank | Source | Shown as | Locks the field |
 |---|---|---|---|
 | 1 | Process environment | `env` | yes |
-| 2 | `.env` | `env` | yes |
-| 3 | `omrg.jsonc` in the [user config folder](#user-config-folder) | `config-file` | yes |
-| 4 | A value saved in Settings (database address or keychain key) | `saved`, `keychain` | no |
-| 5 | A key file `secrets/<provider>.key` (keys only) | `key-file` | no |
-| 6 | The default | `default` | no |
+| 2 | `.env` | `dotenv` | yes |
+| 3 | `omrg.jsonc` in the [user config folder](#user-config-folder). A key field holds a reference: `env://` shows `config-file`, `file://` shows `key-file`, `keychain://` shows `keychain`. | `config-file`, `key-file`, `keychain` | no |
+| 4 | A key file `secrets/<provider>.key` (keys only) | `key-file` | no |
+| 5 | YAML defaults and the profile bundle | `yaml` | no |
+| 6 | The code default | `default` | no |
 
-A locked field shows "Set from environment (read-only here)" or "Set from config file (read-only here)". Remove the variable or edit the file to change it. A key file does not lock: a key saved in the keychain overrides it, and removing the saved key falls back to the file.
+A locked field shows the variable name and where it is set. Remove the variable from the environment or `.env` to edit the field here. A value in `omrg.jsonc`, a key file or a key reference does not lock. A save on the page replaces it.
 
-A saved address goes in the workspace database. A saved key goes in the system keychain (service `omrg`, user name equal to the provider name). The app never writes a key to `.env`, to the database or to a file. If no keychain exists, set the key variable (for example `OPENROUTER_API_KEY`) in the environment instead.
+The page writes `omrg.jsonc`. It changes only the key you save. Comments, key order and the other keys stay. A key saved on the page goes in the system keychain (service `omrg`, user name equal to the provider name), and the file gets `keychain://<provider>`. The app never writes a key to `.env`, to the workspace database or to a file. If no keychain exists, set the key variable (for example `OPENROUTER_API_KEY`) in the environment, or use a key file.
 
-A saved value applies at once to new requests, with no restart. The Ollama address stays locked while embeddings use Ollama. Embedding providers and models are not editable there. Saved values reach `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts do not see saved values. They read the environment, `.env` and the user config folder. See [Web workspace](web-workspace.md#provider-settings).
+A saved or hand-edited value applies at once to new requests, with no restart. The Ollama address stays locked while embeddings use Ollama. Embedding providers and models are not editable on the page. The stdio MCP server and the CLI read `omrg.jsonc` when they start, so they see a page save at their next launch. See [Web workspace](web-workspace.md#provider-settings).
 
 #### User config folder
 
-Operators can set provider values in files, without the web page. The folder is read-only for the app. The app never writes, creates or changes the permissions of anything in it. The CLI, the stdio MCP server and `omrg web` all read it. This mirrors the OMMS layout (`~/.config/omms/omms.jsonc`).
+The user config folder holds `omrg.jsonc`. You can edit the file by hand. The Settings page also writes it. The CLI, the stdio MCP server and `omrg web` all read it. This mirrors the OMMS layout (`~/.config/omms/omms.jsonc`).
 
 The folder is the first of these:
 
@@ -449,12 +453,26 @@ The folder is the first of these:
 2. `$XDG_CONFIG_HOME/omrg`.
 3. `~/.config/omrg`.
 
-It can hold two things:
+A missing folder or file gives no values and no warning. The folder can hold two things:
 
-- `omrg.jsonc`: JSON with comments and trailing commas. Optional keys: `ollama_base_url`, `ollama_context_window`, `llamacpp_chat_url`, `llamacpp_server_binary`, `llamacpp_server_model`, `llamacpp_context_window`, `llamacpp_idle_sleep_seconds`, `openai_compatible_base_url` and `answer` (`provider`, `model`). A secret field holds only a reference: `env://NAME` or `file://<absolute path inside secrets/>`.
-- `secrets/<provider>.key`: one key for each provider. The file name is the provider name (`openrouter`, `openai_compatible`, `anthropic`).
+- `omrg.jsonc`: JSON with comments and trailing commas. It accepts every setting that the environment accepts.
+- `secrets/<provider>.key`: one key for each provider. The file name is the provider name (`openrouter`, `openai_compatible`, `anthropic`). The page never writes it.
+
+##### Key names
+
+A file key is the environment name in lower case. A double underscore (`__`) nests one level. One rule covers every setting, so there is no mapping table:
+
+```text
+RETRIEVAL__TOP_K     →  { "retrieval": { "top_k": 7 } }
+CHUNKING__CHUNK_SIZE →  { "chunking": { "chunk_size": 512 } }
+EMBED_PROVIDER       →  { "embed_provider": "local" }
+ANSWER__MODEL        →  { "answer": { "model": "qwen3:8b" } }
+```
+
+Three keys exist only in the file: `web_port`, `web_max_upload_mib` and `mcp_http_enabled`. `web_max_upload_mib` also has a launch twin, `WEB_MAX_UPLOAD_MIB`, which locks it.
 
 Example `omrg.jsonc` (fake values):
+
 
 ```jsonc
 {
@@ -462,14 +480,24 @@ Example `omrg.jsonc` (fake values):
   "ollama_base_url": "http://gpu-box.local:11434",
   "openai_compatible_base_url": "https://api.together.xyz/v1",
   "answer": { "provider": "openrouter", "model": "openai/gpt-4o-mini" },
+  "retrieval": { "top_k": 7 },
+  "web_port": 9100,
 
-  // Secret fields hold references only
-  "openrouter_api_key": "env://MY_OPENROUTER_KEY",
-  "anthropic_api_key": "file:///home/me/.config/omrg/secrets/anthropic.key",
+  // Key fields hold references only
+  "openrouter_api_key": "keychain://openrouter",
+  "anthropic_api_key": "env://MY_ANTHROPIC_KEY",
 }
 ```
 
+
+A key field takes one of three references:
+
+- `env://NAME`: the value of the environment variable `NAME`.
+- `file://<path>`: a file inside `secrets/`. A leading `~` is the home folder.
+- `keychain://<provider>`: the system keychain entry `omrg` / `<provider>`. Every process resolves it: the web server, the CLI and the stdio MCP server. The first read can make macOS ask you to allow access. Use `env://` or `file://` to avoid the prompt.
+
 Example layout and permissions:
+
 
 ```text
 ~/.config/omrg/
@@ -485,26 +513,41 @@ chmod 600 ~/.config/omrg/secrets/*.key
 ```
 
 Rules the server applies:
-
 - A literal key in `omrg.jsonc` is ignored. The log names the field and never shows the value.
 - A `file://` path must resolve inside `secrets/`. Any other path is refused.
 - A key file holds at most 4 KiB. The server strips surrounding whitespace.
-- The server refuses a symlink that leaves the folder and any file that is not a regular file.
-- A key file looser than 0600, or a `secrets/` folder looser than 0700, is still read. The log shows one warning with the path and the mode, never the content. Windows skips this check.
-- A broken `omrg.jsonc` gives no values and one warning.
-- The server reads both files at launch. Edit the file, then restart.
+- The server refuses a symlink that leaves the folder, and a file that is not a regular file.
+- A key file looser than 0600, or a `secrets/` folder looser than 0700, is still read. The log shows one warning with the path and mode, never the content. Windows skips the check.
+- A new `omrg.jsonc` gets mode 0600 and a new folder gets mode 0700. A page save keeps the mode of an existing file.
+- A page save goes to a temporary file that replaces the original, so a stop during a save never leaves half a file.
+- The server notices a hand edit before the next request that reads settings. A save from the page that was open before your edit is refused (409), and your edit stays. Reload the page to see it.
 
-`omrg.jsonc` locks its field in Settings, as the environment does. A key file does not lock. See the precedence table above.
+##### Problems in the file
 
-**Limit.** These files are plaintext. File permissions do not stop another process of the same user, and an AI coding agent runs as that user. The folder gives no security gain over `.env`. Use it on headless machines and in containers with a mounted folder. On a desktop, save keys in the keychain. The page cannot write this folder.
+A problem never stops the server. The server starts and lists each problem by key, never by value. `omrg config show` and `GET /v1/settings/configuration` show the list.
+
+| Kind | When | What the server does |
+|---|---|---|
+| `broken` | The file is not valid JSON with comments. | Reads no value from the file. Logs one warning. A page save is refused (409) until you fix the file. |
+| `invalid` | A value breaks its rule: the wrong type, out of range, a name that is not accepted, an address that is not `http` or `https`, or a literal key. | Ignores that value. The next source applies. The other values stay. |
+| `unknown` | A key names no setting (a typo such as `retreival`). | Ignores the key. |
+| `retired` | A key is an old flat name such as `top_k`. | Ignores the key. The message names the new key, here `retrieval.top_k`. |
+
+An ignored value falls back to the next source. A typo in `embed_provider` therefore falls back to the default embedder. A collection that holds vectors from another model refuses to search until you restore the old model (ADR-051).
+
+##### Settings that need a restart
+
+`omrg web` applies these hand edits at once: provider addresses and keys, the Chat provider and model, context windows, llama.cpp server values, `web_max_upload_mib` and `mcp_http_enabled`. `web_port` and the engine settings (embedding, vector store, chunking, ingestion, retrieval, metadata, OCR and the other `answer` keys) apply at the next launch. `omrg web` keeps the values it started with and marks each changed key "Restart to apply".
+
+**Limit.** These files are plaintext. File permissions do not stop another process of the same user, and an AI coding agent runs as that user. A `file://` or `env://` reference gives no security gain over `.env`. Use them on headless machines and in containers with a mounted folder. On a desktop, save keys in the keychain.
 
 ### Context windows
 
 Ollama chat calls need an explicit context window. Without one, LlamaIndex read the model maximum (262,144 tokens for `qwen3:4b`) and sent it as `num_ctx`. Ollama then reserved about 43 GB, ran out of GPU memory and returned empty replies (TDR-036).
 
 - `OLLAMA_CONTEXT_WINDOW` (or `ollama_context_window` in `omrg.jsonc`) sets the window. The default is 16,384 tokens. The range is 2,048 to 262,144.
-- The first source wins, highest first: environment and `.env` (lock), `omrg.jsonc` (lock), the value saved in Settings, the default.
-- The Chat answer model and metadata extraction use it. A saved value applies to the next call. Ollama reloads the model at the new size.
+- The first source wins, highest first: environment and `.env` (both lock), `omrg.jsonc`, the default. A page save writes `omrg.jsonc`.
+- The Chat answer model and metadata extraction use it. A saved or hand-edited value applies to the next call. Ollama reloads the model at the new size.
 - Embedding models are not covered. A different window can change how text is cut, and so the vectors.
 - `LLAMACPP_CONTEXT_WINDOW` has the same range and default. It applies only to the llama.cpp server that `omrg web` starts.
 
@@ -675,7 +718,7 @@ into the configured judge while a `codebase` collection stays
 speed-first. The default judge provider is the cloud backend (the only
 tested path); a local judge can be selected but is unmeasured.
 
-In `omrg web`, Settings > Chat can save `provider` and `model` for Chat and for MCP clients of that server that cannot supply their own model. `ANSWER__PROVIDER` or `ANSWER__MODEL` in the environment or `.env` wins and locks the choice. A saved choice applies at once, with no restart. Metadata extraction and the judge keep their own settings. The stdio MCP server and the CLI do not read the saved choice.
+In `omrg web`, Settings > Chat can save `provider` and `model` for Chat and for MCP clients of that server that cannot supply their own model. `ANSWER__PROVIDER` or `ANSWER__MODEL` in the environment or `.env` wins and locks the choice. A saved choice goes in `omrg.jsonc` as `answer.provider` and `answer.model`, and applies at once, with no restart. Metadata extraction and the judge keep their own settings. The stdio MCP server and the CLI read the choice from `omrg.jsonc` when they start.
 Environment variables still win over the profile:
 
 ```yaml
@@ -953,14 +996,14 @@ The server uses the first upload limit it finds in this order:
 
 1. `--max-upload-mib`.
 2. `WEB_MAX_UPLOAD_MIB`, from the environment or `.env`.
-3. The limit saved in Settings > Workspace.
+3. `web_max_upload_mib` in `omrg.jsonc`, which the page writes from Settings > Workspace.
 4. 50 MiB.
 
-A launch value (step 1 or 2) locks the limit for that run. Settings then shows the limit and cannot change it. Any other value stops `omrg web` with exit code 2 before it binds a port. The name is flat, because `omrg web` options are not engine settings.
+A launch value (step 1 or 2) locks the limit for that run. Settings then shows the limit and cannot change it. A hand edit of `web_max_upload_mib` in `omrg.jsonc` applies to the next upload. Any other value stops `omrg web` with exit code 2 before it binds a port. The name is flat, because `omrg web` options are not engine settings.
 
 ### Provider and Chat values
 
-`omrg web` also lets you save LLM provider addresses, API keys and the Chat model in Settings. The order is environment, `.env`, the config file, the saved value, the key file, then the default. The environment, `.env` and the config file lock the field (see [User config folder](#user-config-folder)). A saved key lives in the system keychain only. A saved value applies at once with no restart. Details: [Providers](#providers), [Answering](#answering--answer__) and [Web workspace](web-workspace.md#provider-settings).
+`omrg web` also lets you save LLM provider addresses, API keys and the Chat model in Settings. The order is environment, `.env`, `omrg.jsonc`, the key file, then the default. Only the environment and `.env` lock the field (see [User config folder](#user-config-folder)). A saved key lives in the system keychain only, and `omrg.jsonc` holds a `keychain://` reference to it. A saved value applies at once with no restart. Details: [Providers](#providers), [Answering](#answering--answer__) and [Web workspace](web-workspace.md#provider-settings).
 
 ---
 

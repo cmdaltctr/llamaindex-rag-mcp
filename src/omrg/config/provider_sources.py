@@ -1,9 +1,15 @@
-"""Which editable provider values an operator set explicitly (design D2).
+"""Which source set each setting, and the key references (design D2, D3, D6).
 
 The web workspace may save an address, a key or the Chat model. A value that
 the process environment or ``.env`` sets wins and locks its field, so this
 module records those fields at resolution time, the way ``storage`` records
-``vector_store_provenance``. YAML and ``defaults.yaml`` count as defaults.
+``vector_store_provenance``. A value from ``omrg.jsonc`` does not lock. YAML
+and ``defaults.yaml`` count as defaults.
+
+``omrg.jsonc`` values arrive through ``UserConfigSource``. Key fields do not:
+their ``env://`` and ``file://`` references, and the implicit
+``secrets/<provider>.key`` files, apply after validation, and a
+``keychain://`` reference is only recorded (``compose_providers`` resolves it).
 """
 
 from __future__ import annotations
@@ -14,7 +20,10 @@ from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import PydanticBaseSettingsSource
 
 from ..core.settings import PROVIDER_ADDRESS_FIELDS, PROVIDER_SECRET_FIELDS
-from .user_config import INT_KEY_BOUNDS, load_user_config, user_config_dir
+from .provenance import SOURCE_ORDER, leaf_paths, merge_layers, split_environment
+from .rules import FILE_ONLY, SECRET_FIELDS, provider_of
+from .settings_file import SettingsFile, UserConfigSource, read_settings_file, setting_blocks
+from .user_config import INT_KEY_BOUNDS, SECRETS_DIR
 
 if TYPE_CHECKING:
     from . import Settings
@@ -85,6 +94,30 @@ def explicit_provider_fields(*sources: PydanticBaseSettingsSource) -> frozenset[
     return frozenset(found)
 
 
+def source_layers(
+    settings_cls: type[Any],
+    init: PydanticBaseSettingsSource,
+    env: PydanticBaseSettingsSource,
+    dotenv: PydanticBaseSettingsSource,
+    user: UserConfigSource,
+    *defaults: PydanticBaseSettingsSource,
+) -> dict[str, frozenset[str]]:
+    """Return the setting paths each source word supplies (see ``provenance``).
+
+    The environment source also holds the ``.env`` names that ``load_dotenv``
+    copied into the environment, so they move to the ``dotenv`` layer.
+    """
+    blocks = setting_blocks(settings_cls)
+    shell, from_dotenv = split_environment(leaf_paths(_safe_values(env), blocks))
+    return {
+        "init": leaf_paths(_safe_values(init), blocks),
+        "env": shell,
+        "dotenv": leaf_paths(_safe_values(dotenv), blocks) | from_dotenv,
+        "config-file": frozenset(p for p in user.file.values if p not in FILE_ONLY),
+        "yaml": frozenset().union(*(leaf_paths(_safe_values(s), blocks) for s in defaults)),
+    }
+
+
 class ProviderSourceMixin(BaseModel):
     """Chat provider connection fields, and :attr:`Settings.provider_explicit`.
 
@@ -106,34 +139,62 @@ class ProviderSourceMixin(BaseModel):
     llamacpp_server_binary: str = ""
     llamacpp_server_model: str = ""
 
-    #: Fields ``omrg.jsonc`` set (they also appear in ``provider_explicit``).
+    #: Fields ``omrg.jsonc`` set (an ``env://`` key reference counts).
     config_file_fields: frozenset[str] = frozenset()
-    #: Secret fields that only a key file set (a saved keychain key overrides them).
+    #: Secret fields that a key file set (a saved keychain key overrides them).
     key_file_fields: frozenset[str] = frozenset()
+    #: Where each key-file key was read, as a full path.
+    key_file_paths: dict[str, str] = {}
+    #: ``keychain://`` references in ``omrg.jsonc``: field name to provider name.
+    #: ``compose_providers.resolve_keychain_references`` turns them into keys.
+    keychain_refs: dict[str, str] = {}
+    #: Source word of every setting that a source set, by dotted path
+    #: (``init``, ``env``, ``dotenv``, ``config-file``, ``yaml``, ``key-file``).
+    #: A path that is missing here came from the code default.
+    setting_sources: dict[str, str] = {}
     #: The user config folder in use, as a full path.
     user_config_dir: str = ""
 
     @model_validator(mode="after")
     def _record_provider_sources(self) -> Settings:
         cls = self.__class__
-        taken = cls._explicit_provider_sources | cls._init_provider_fields
-        config = load_user_config()
-        from_config = {p: v for p, v in config.values.items() if p not in taken}
-        from_keys = {
-            p: v
-            for p, v in config.key_file.items()
-            if p not in taken and p not in from_config and not str(getattr(self, p, "")).strip()
-        }
-        answer = {p.removeprefix("answer."): v for p, v in from_config.items() if "." in p}
-        for path, value in {**from_config, **from_keys}.items():
-            if "." not in path:
-                object.__setattr__(self, path, coerce_field(path, value))
-        if answer:
-            object.__setattr__(self, "answer", self.answer.model_copy(update=answer))
+        parsed: SettingsFile = getattr(cls, "_user_file", None) or read_settings_file()
+        layers: dict[str, frozenset[str]] = getattr(cls, "_source_layers", {})
+        sources = merge_layers([(word, layers.get(word, ())) for word in SOURCE_ORDER])
+        held = layers.get("init", frozenset()) | layers.get("env", frozenset())
+        held = held | layers.get("dotenv", frozenset())
+        refs: dict[str, str] = {}
+        paths: dict[str, str] = {}
+        for name in SECRET_FIELDS:
+            if name in held:
+                continue
+            if name in parsed.references:
+                refs[name] = parsed.references[name]
+                continue
+            if name in parsed.secrets:
+                value, word = parsed.secrets[name], "config-file"
+                if name in parsed.key_paths:
+                    word, paths[name] = "key-file", parsed.key_paths[name]
+            elif name in parsed.key_file:
+                value, word = parsed.key_file[name], "key-file"
+                paths[name] = str(parsed.directory / SECRETS_DIR / f"{provider_of(name)}.key")
+            else:
+                continue
+            object.__setattr__(self, name, value)
+            sources[name] = word
+        object.__setattr__(self, "provider_explicit", cls._explicit_provider_sources)
+        object.__setattr__(self, "setting_sources", sources)
+        object.__setattr__(self, "keychain_refs", refs)
+        object.__setattr__(self, "key_file_paths", paths)
         object.__setattr__(
-            self, "provider_explicit", cls._explicit_provider_sources | frozenset(from_config)
+            self,
+            "config_file_fields",
+            frozenset(p for p, w in sources.items() if w == "config-file"),
         )
-        object.__setattr__(self, "config_file_fields", frozenset(from_config))
-        object.__setattr__(self, "key_file_fields", frozenset(from_keys))
-        object.__setattr__(self, "user_config_dir", str(user_config_dir()))
+        object.__setattr__(
+            self,
+            "key_file_fields",
+            frozenset(p for p, w in sources.items() if w == "key-file"),
+        )
+        object.__setattr__(self, "user_config_dir", str(parsed.directory))
         return self

@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import logging
 
-from dotenv import find_dotenv, load_dotenv
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
@@ -32,66 +31,22 @@ from ..core.ingestion.settings import IngestionSettings
 from ..core.metadata.settings import MetadataSettings
 from ..core.retrieval.settings import RetrievalSettings
 from ..core.settings import OCR_ROUTING_UNITS, EmbeddingSettings
+from . import provenance  # noqa: E402
 
-load_dotenv(find_dotenv(usecwd=True))  # the working directory's .env, as env_file reads
+provenance.load_project_dotenv()  # the working directory's .env, as env_file reads
 
 from .ocr_routes import OcrRouteSettingsMixin  # noqa: E402
-from .provider_sources import ProviderSourceMixin, explicit_provider_fields  # noqa: E402
+from .provider_sources import (  # noqa: E402
+    ProviderSourceMixin,
+    explicit_provider_fields,
+    source_layers,
+)
+from .rules import ACCEPTED, _validate_provider_value  # noqa: E402,F401
+from .settings_file import UserConfigSource  # noqa: E402
 from .sources import LegacyBool  # noqa: E402
 from .storage import StorageValidationMixin, source_keys  # noqa: E402
 
 logger = logging.getLogger(__name__)
-
-_METADATA_EXTRACTION_MODES = (
-    "disabled",
-    "keyword",
-    "local",
-    "llamaindex",
-    "ollama",
-    "llamacpp",
-    "openrouter",
-)
-
-
-# ── Provider-selection validation helper ──────────────────────────────
-
-
-def _validate_provider_value(
-    obj: object,
-    field: str,
-    accepted: tuple[str, ...],
-    env_name: str,
-) -> None:
-    """Strip whitespace, reset empty to default, raise on unrecognised value.
-
-    An empty or whitespace-only value (``SETTING=`` in .env) is how operators
-    unset a knob, so it resets to the field's declared default rather than
-    raising.  A non-empty value not in ``accepted`` raises ValueError naming
-    the offending value and the accepted set.  The stripped value is stored
-    so that padded input like ``" auto "`` resolves to ``"auto"``.
-
-    Args:
-        obj: The model instance owning the field (``self`` or a nested block).
-        field: The field name on ``obj``.
-        accepted: The recognised values.
-        env_name: The environment variable name for the error message.
-    """
-    raw = getattr(obj, field)
-    if not isinstance(raw, str):
-        return
-    stripped = raw.strip()
-    if not stripped:
-        # Empty after strip = operator unset the knob.  Reset to the
-        # declared default so "" does not reach runtime code that would
-        # probe it (e.g. resolve_sparse_backend on "").
-        object.__setattr__(obj, field, type(obj).model_fields[field].default)
-        return
-    if stripped not in accepted:
-        raise ValueError(
-            f"{env_name}={raw!r} is not recognised. Accepted values: {', '.join(accepted)}."
-        )
-    # Store the stripped value so " auto " becomes "auto".
-    object.__setattr__(obj, field, stripped)
 
 
 # ── Root Settings model ─────────────────────────────────────────────
@@ -272,22 +227,22 @@ class Settings(StorageValidationMixin, OcrRouteSettingsMixin, ProviderSourceMixi
         handling is also unchanged (governed by the pdf-reader capability).
         """
         _validate_provider_value(
-            self,
-            "embed_provider",
-            ("local", "cloud", "ollama", "llamacpp", "openrouter"),
-            "EMBED_PROVIDER",
+            self, "embed_provider", ACCEPTED["embed_provider"], "EMBED_PROVIDER"
         )
         _validate_provider_value(
-            self, "metadata_llm_provider", ("local", "cloud"), "METADATA_LLM_PROVIDER"
+            self,
+            "metadata_llm_provider",
+            ACCEPTED["metadata_llm_provider"],
+            "METADATA_LLM_PROVIDER",
         )
         _validate_provider_value(
             self.metadata,
             "extraction_mode",
-            _METADATA_EXTRACTION_MODES,
+            ACCEPTED["metadata.extraction_mode"],
             "METADATA__EXTRACTION_MODE",
         )
-        _validate_provider_value(self, "local_backend", ("llamacpp", "ollama"), "LOCAL_BACKEND")
-        _validate_provider_value(self, "cloud_backend", ("openrouter",), "CLOUD_BACKEND")
+        _validate_provider_value(self, "local_backend", ACCEPTED["local_backend"], "LOCAL_BACKEND")
+        _validate_provider_value(self, "cloud_backend", ACCEPTED["cloud_backend"], "CLOUD_BACKEND")
         # Sparse backend names are registry-owned: compose validates
         # RETRIEVAL__HYBRID_SPARSE_BACKEND against the concrete
         # sparse-backend registry at startup and fails listing ``auto``
@@ -304,7 +259,7 @@ class Settings(StorageValidationMixin, OcrRouteSettingsMixin, ProviderSourceMixi
         _validate_provider_value(
             self.retrieval,
             "rerank_backend",
-            ("onnx", "torch"),
+            ACCEPTED["retrieval.rerank_backend"],
             "RETRIEVAL__RERANK_BACKEND",
         )
         # Document backend names are registry-owned: compose validates
@@ -316,7 +271,7 @@ class Settings(StorageValidationMixin, OcrRouteSettingsMixin, ProviderSourceMixi
         object.__setattr__(self, "document_backend", self.document_backend.strip() or "local")
         # Chroma deployment mode is an explicit selector: API-key presence
         # must NEVER switch storage silently (design decision 1).
-        _validate_provider_value(self, "chroma_mode", ("local", "cloud"), "CHROMA_MODE")
+        _validate_provider_value(self, "chroma_mode", ACCEPTED["chroma_mode"], "CHROMA_MODE")
 
         # Azure credential check — deliberate graceful degradation.
         # DOCUMENT_BACKEND=azure is a valid selection, but without
@@ -395,27 +350,42 @@ class Settings(StorageValidationMixin, OcrRouteSettingsMixin, ProviderSourceMixi
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
-        """Layer sources: field defaults < YAML < profile < .env < env < explicit.
+        """Layer sources: defaults < YAML < profile < omrg.jsonc < .env < env < explicit.
 
         The profile source (Phase 4) sits between defaults.yaml and env, so env wins.
+        ``omrg.jsonc`` sits between ``.env`` and the YAML sources (ADR-087).
 
         Also records which explicit (operator) sources set ``vector_store``
-        (task 2.4, design D6) and the editable provider fields (design D2).
+        (task 2.4, design D6), the editable provider fields (design D2) and the
+        source of every setting (``provider_sources.source_layers``).
         """
+        user_source = UserConfigSource(settings_cls)
         yaml_source = _YamlDefaultsSource(settings_cls)
-        profile_source = _ProfileYamlSettingsSource(settings_cls)
+        profile_source = _ProfileYamlSettingsSource(
+            settings_cls, user_source.file.values.get("rag_profile")
+        )
         cls._explicit_vector_store_sources = {
             "vector_store"
-            for source in (init_settings, env_settings, dotenv_settings)
+            for source in (init_settings, env_settings, dotenv_settings, user_source)
             for key in source_keys(source)
             if key.lower() == "vector_store"
         }
         cls._explicit_provider_sources = explicit_provider_fields(env_settings, dotenv_settings)
-        cls._init_provider_fields = explicit_provider_fields(init_settings)
+        cls._user_file = user_source.file
+        cls._source_layers = source_layers(
+            settings_cls,
+            init_settings,
+            env_settings,
+            dotenv_settings,
+            user_source,
+            profile_source,
+            yaml_source,
+        )
         return (
             init_settings,  # explicit args (highest)
             env_settings,  # env vars
             dotenv_settings,  # .env file
+            user_source,  # omrg.jsonc in the user config folder
             profile_source,  # config/profiles/<RAG_PROFILE>.yaml
             yaml_source,  # defaults.yaml
             file_secret_settings,  # unused (lowest)

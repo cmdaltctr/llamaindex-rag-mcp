@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from typing import Any
+
+import pytest
 
 from omrg import compose
 from omrg.compose_providers import (
@@ -167,3 +171,152 @@ def test_ollama_address_locks_when_a_profile_uses_ollama_embeddings() -> None:
     values = ProviderValues({"ollama_base_url": "http://other:11434"})
     result = apply_provider_values(base, values, frozenset(), profiles_ollama=True)
     assert result.ollama_base_url == base.ollama_base_url
+
+
+# ── Locks (move-settings-to-config-file, task 2.5) ────────────────────────
+
+
+def test_a_config_file_value_does_not_lock() -> None:
+    base = make_settings(embed_provider="openrouter")
+    object.__setattr__(base, "config_file_fields", frozenset({"llamacpp_chat_url"}))
+    object.__setattr__(base, "setting_sources", {"llamacpp_chat_url": "config-file"})
+    assert "llamacpp_chat_url" not in locked_fields(base, frozenset())
+    saved = ProviderValues({"llamacpp_chat_url": "http://saved:8081/v1"})
+    assert apply_provider_values(base, saved).llamacpp_chat_url == "http://saved:8081/v1"
+
+
+def test_the_chat_choice_locks_as_a_unit_when_the_environment_sets_one() -> None:
+    base = make_settings(embed_provider="openrouter")
+    assert locked_fields(base, frozenset({"answer.model"})) == {
+        "answer.provider": "environment",
+        "answer.model": "environment",
+    }
+
+
+# ── Keychain references (task 3.3) ────────────────────────────────────────
+
+
+class FakeSecret:
+    def __init__(self, value: str) -> None:
+        self._value = value
+
+    def reveal(self) -> str:
+        return self._value
+
+
+class FakeKeychain:
+    def __init__(self, entries: dict[str, str] | None = None, *, available: bool = True) -> None:
+        self.entries = entries or {}
+        self.available = available
+        self.reads: list[str] = []
+
+    def read(self, provider: str) -> FakeSecret | None:
+        self.reads.append(provider)
+        return FakeSecret(self.entries[provider]) if provider in self.entries else None
+
+
+def settings_with_reference(provider: str = "openrouter") -> Settings:
+    base = make_settings(embed_provider="openrouter")
+    object.__setattr__(base, "keychain_refs", {"openrouter_api_key": provider})
+    return base
+
+
+def test_a_keychain_reference_resolves_to_the_saved_key() -> None:
+    from omrg.compose_providers import resolve_keychain_references
+
+    store = FakeKeychain({"openrouter": SECRET})
+    resolved, problems = resolve_keychain_references(settings_with_reference(), store=store)
+    assert resolved.openrouter_api_key == SECRET
+    assert resolved.setting_sources["openrouter_api_key"] == "keychain"
+    assert problems == {}
+    assert store.reads == ["openrouter"]
+
+
+def test_a_missing_keychain_entry_says_so_and_leaves_no_key() -> None:
+    from omrg.compose_providers import resolve_keychain_references
+
+    resolved, problems = resolve_keychain_references(
+        settings_with_reference(), store=FakeKeychain({})
+    )
+    assert resolved.openrouter_api_key == ""
+    assert problems == {"openrouter": "keychain-missing"}
+
+
+def test_no_usable_keychain_is_unreadable_and_reads_nothing() -> None:
+    from omrg.compose_providers import resolve_keychain_references
+
+    store = FakeKeychain({"openrouter": SECRET}, available=False)
+    resolved, problems = resolve_keychain_references(settings_with_reference(), store=store)
+    assert resolved.openrouter_api_key == ""
+    assert problems == {"openrouter": "keychain-unreadable"}
+    assert store.reads == []
+
+
+def test_a_failing_keychain_call_is_unreadable() -> None:
+    from omrg.compose_providers import resolve_keychain_references
+    from omrg.integrations.keychain import KeychainUnavailableError
+
+    class Failing(FakeKeychain):
+        def read(self, provider: str) -> FakeSecret | None:
+            raise KeychainUnavailableError("The system keychain did not answer in time.")
+
+    _, problems = resolve_keychain_references(settings_with_reference(), store=Failing())
+    assert problems == {"openrouter": "keychain-unreadable"}
+
+
+def test_the_input_settings_are_not_changed_by_resolving() -> None:
+    from omrg.compose_providers import resolve_keychain_references
+
+    base = settings_with_reference()
+    resolve_keychain_references(base, store=FakeKeychain({"openrouter": SECRET}))
+    assert base.openrouter_api_key == ""
+
+
+def test_no_reference_means_no_keychain_and_no_keyring_import(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A CLI run without ``keychain://`` must not load keyring or build a store."""
+    from omrg.compose_providers import resolve_keychain_references
+    from omrg.integrations import keychain
+
+    monkeypatch.setitem(sys.modules, "keyring", None)  # an import now raises ImportError
+
+    def boom(*_a: Any, **_k: Any) -> None:
+        raise AssertionError("a keychain store was built without a reference")
+
+    monkeypatch.setattr(keychain, "KeychainStore", boom)
+    base = make_settings(embed_provider="openrouter")
+    resolved, problems = resolve_keychain_references(base)
+    assert resolved is base
+    assert problems == {}
+
+
+def test_the_default_store_reports_unreadable_when_keyring_cannot_load(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from omrg.compose_providers import resolve_keychain_references
+
+    monkeypatch.setitem(sys.modules, "keyring", None)
+    resolved, problems = resolve_keychain_references(settings_with_reference())
+    assert resolved.openrouter_api_key == ""
+    assert problems == {"openrouter": "keychain-unreadable"}
+
+
+def test_a_reference_from_the_file_resolves_end_to_end(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The CLI path: omrg.jsonc holds the reference, the resolver reads the keychain."""
+    from omrg.compose_providers import resolve_keychain_references
+
+    folder = tmp_path / "omrg-config"
+    folder.mkdir()
+    (folder / "omrg.jsonc").write_text(
+        '{"openrouter_api_key": "keychain://openrouter"}', encoding="utf-8"
+    )
+    monkeypatch.setenv("OMRG_CONFIG_DIR", str(folder))
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    settings = Settings(_env_file=None)
+    resolved, problems = resolve_keychain_references(
+        settings, store=FakeKeychain({"openrouter": SECRET})
+    )
+    assert (resolved.openrouter_api_key, problems) == (SECRET, {})
