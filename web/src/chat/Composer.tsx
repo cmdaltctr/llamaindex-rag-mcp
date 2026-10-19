@@ -10,18 +10,20 @@ export const MAX_QUESTION = 4096;
 interface ComposerProps {
   collection: string;
   busy: boolean;
+  /** True while Chat has no ready model. Send stays off. */
+  unavailable?: boolean;
   onSend: (question: string) => void;
 }
 
 /** The question field, docked at the bottom of the column. It sends on the Send action or Enter. */
-export function Composer({ collection, busy, onSend }: ComposerProps) {
+export function Composer({ collection, busy, unavailable = false, onSend }: ComposerProps) {
   const id = useId();
   const [text, setText] = useState("");
 
   function submit(event: FormEvent) {
     event.preventDefault();
     const question = text.trim();
-    if (question === "" || busy) return;
+    if (question === "" || busy || unavailable) return;
     setText("");
     onSend(question);
   }
@@ -40,7 +42,7 @@ export function Composer({ collection, busy, onSend }: ComposerProps) {
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <Button type="submit" disabled={busy || text.trim() === ""}>
+        <Button type="submit" disabled={busy || unavailable || text.trim() === ""}>
           <SendHorizontal aria-hidden="true" />
           Send
         </Button>

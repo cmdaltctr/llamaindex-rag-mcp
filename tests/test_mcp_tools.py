@@ -1312,7 +1312,7 @@ async def test_ingest_error_envelope_redacts_openrouter_key(caplog, form: str) -
     key = "sk-or-" + "4" * 12
     leaked = key if form == "full" else key[:12]
     result = await _ingest_failure_result(
-        f"OpenAI error 401: invalid api_key={leaked}", openrouter_api_key=key
+        f"OpenAI error 401: invalid api_key={leaked}", provider_keys=(key,)
     )
 
     data = _extract_result(result)

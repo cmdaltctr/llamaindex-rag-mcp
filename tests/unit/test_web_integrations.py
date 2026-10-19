@@ -38,6 +38,7 @@ DECLARED = (
     "azure",
     "llamacpp",
     "openrouter",
+    "anthropic",
     "torch",
     "web",
 )

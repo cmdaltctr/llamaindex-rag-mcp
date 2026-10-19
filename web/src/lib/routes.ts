@@ -9,7 +9,7 @@ export const PURPOSES = ["ingest", "search", "answer"] as const;
 export type Purpose = (typeof PURPOSES)[number];
 
 /** The Settings sections, in the order the chips show them. */
-export const SETTINGS_SECTIONS = ["appearance", "connections", "mcp", "log", "runtime", "workspace"] as const;
+export const SETTINGS_SECTIONS = ["appearance", "providers", "chat", "mcp", "log", "runtime", "workspace"] as const;
 
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 

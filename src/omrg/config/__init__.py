@@ -36,6 +36,7 @@ from ..core.settings import OCR_ROUTING_UNITS, EmbeddingSettings
 load_dotenv(find_dotenv(usecwd=True))  # the working directory's .env, as env_file reads
 
 from .ocr_routes import OcrRouteSettingsMixin  # noqa: E402
+from .provider_sources import ProviderSourceMixin, explicit_provider_fields  # noqa: E402
 from .sources import LegacyBool  # noqa: E402
 from .storage import StorageValidationMixin, source_keys  # noqa: E402
 
@@ -96,7 +97,7 @@ def _validate_provider_value(
 # ── Root Settings model ─────────────────────────────────────────────
 
 
-class Settings(StorageValidationMixin, OcrRouteSettingsMixin, BaseSettings):
+class Settings(StorageValidationMixin, OcrRouteSettingsMixin, ProviderSourceMixin, BaseSettings):
     """Resolved configuration for OMRG — Opinionated Modular RAG.
 
     Composes the per-subpackage settings models by **nesting** (PROPOSAL
@@ -147,11 +148,10 @@ class Settings(StorageValidationMixin, OcrRouteSettingsMixin, BaseSettings):
     # LanceDB is the qualified base-install backend (ADR-049); Chroma is a
     # supported but quarantined optional extra.
     vector_store: str = "lancedb"
-    # Records whether VECTOR_STORE came from an explicit operator source
-    # (constructor/CLI, environment, .env) or from shipped defaults. This
-    # is internal configuration data, not another backend selector
-    # (design D6) — the fail-closed legacy-Chroma gate reads it.
+    # Whether VECTOR_STORE came from an explicit operator source or shipped
+    # defaults (design D6); the fail-closed legacy-Chroma gate reads it.
     vector_store_provenance: str = "default"
+    provider_explicit: frozenset[str] = frozenset()  # fields env/.env set (D2)
     # Parent directory for LanceDB tables when VECTOR_STORE=lancedb.
     lancedb_uri: str = "./lancedb"
 
@@ -397,12 +397,10 @@ class Settings(StorageValidationMixin, OcrRouteSettingsMixin, BaseSettings):
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         """Layer sources: field defaults < YAML < profile < .env < env < explicit.
 
-        The profile source (Phase 4) sits between defaults.yaml and the
-        environment sources so env vars still win over profile bundles.
+        The profile source (Phase 4) sits between defaults.yaml and env, so env wins.
 
-        Also records whether an explicit (operator) source resolves
-        ``vector_store`` so the provenance validator can distinguish
-        operator selection from shipped defaults (task 2.4, design D6).
+        Also records which explicit (operator) sources set ``vector_store``
+        (task 2.4, design D6) and the editable provider fields (design D2).
         """
         yaml_source = _YamlDefaultsSource(settings_cls)
         profile_source = _ProfileYamlSettingsSource(settings_cls)
@@ -412,6 +410,8 @@ class Settings(StorageValidationMixin, OcrRouteSettingsMixin, BaseSettings):
             for key in source_keys(source)
             if key.lower() == "vector_store"
         }
+        cls._explicit_provider_sources = explicit_provider_fields(env_settings, dotenv_settings)
+        cls._init_provider_fields = explicit_provider_fields(init_settings)
         return (
             init_settings,  # explicit args (highest)
             env_settings,  # env vars

@@ -25,6 +25,7 @@ from omrg.transports.api.security import (  # noqa: E402
     BEARER_SCOPES,
     AccessPolicy,
     RedactingFilter,
+    redact,
     require_scope,
     validate_bind_host,
 )
@@ -325,6 +326,19 @@ def test_redacting_filter_removes_every_credential_form() -> None:
     assert "omrg_bt_***" in text
 
 
+def test_two_keys_sharing_a_prefix_leave_no_fragment_of_either() -> None:
+    old = "sk-or-v1-" + "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8"
+    new = "sk-or-v1-" + "z9y8x7w6v5u4t3s2r1q0p9o8n7m6l5k4j3i2"
+    for secret in (old, new):
+        for cut in (12, 20, 30, len(secret) - 1):
+            fragment = secret[:cut]
+            text = redact(f"upstream echoed {fragment} here", [old, new])
+            tail = fragment[9:]
+            assert tail[:4] not in text, (cut, text)
+            assert text == "upstream echoed *** here", (cut, text)
+        assert secret not in redact(f"key={secret}", [old, new])
+
+
 def test_redacting_filter_scrubs_tracebacks() -> None:
     try:
         raise RuntimeError("failed with omrg_bt_abc123.secretpart")
@@ -440,3 +454,30 @@ def test_policy_lists_approved_origin_for_the_mcp_sdk(tmp_path: Path) -> None:
 def test_policy_refuses_a_non_loopback_extra_origin() -> None:
     with pytest.raises(ValueError, match="loopback"):
         AccessPolicy.for_launch("127.0.0.1", 8765, extra_origins=["http://example.com"])
+
+
+# ── SecretSet (design D7; task 6.2) ──────────────────────────────────────
+
+
+def test_secret_set_is_append_only_and_hides_values_in_repr() -> None:
+    from omrg.transports.api.security import RedactingFilter, SecretSet
+
+    secrets = SecretSet(["first-secret-value", ""])
+    secrets.add("second-secret-value")
+    secrets.add("first-secret-value")
+    secrets.add("")
+    assert list(secrets) == ["first-secret-value", "second-secret-value"]
+    assert "secret-value" not in repr(secrets)
+    assert not hasattr(secrets, "remove") and not hasattr(secrets, "discard")
+    log_filter = RedactingFilter(secrets)
+    record = logging.LogRecord(
+        "x", logging.INFO, __file__, 1, "key %s", ("late-added-secret-value",), None
+    )
+    log_filter.filter(record)
+    assert "late-added-secret-value" in record.getMessage()
+    secrets.add("late-added-secret-value")
+    record = logging.LogRecord(
+        "x", logging.INFO, __file__, 1, "key %s", ("late-added-secret-value",), None
+    )
+    log_filter.filter(record)
+    assert record.getMessage() == "key ***"

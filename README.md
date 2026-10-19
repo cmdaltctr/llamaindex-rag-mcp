@@ -70,11 +70,11 @@ Both collections then behave correctly in the same running engine. See
 
 You need [uv](https://docs.astral.sh/uv/) and one of
 [llama.cpp](https://github.com/ggml-org/llama.cpp) (default),
-[Ollama](https://ollama.com), or an [OpenRouter](https://openrouter.ai) key.
+[Ollama](https://ollama.com), or an [OpenRouter](https://openrouter.ai) key. `omrg web` can also start and stop its own llama.cpp chat server and set the Ollama context window (see [Configuration](docs/guides/configuration.md#local-llamacpp-server)).
 
 ```bash
 cp .env.example .env      # then edit it — see below
-uv sync --extra llamacpp
+uv sync                   # the llama.cpp backend needs no extra
 
 # start llama-server (downloads the GGUF models automatically)
 llama-server -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 --port 8080 --embeddings &
@@ -213,11 +213,13 @@ LOCAL_BACKEND=ollama
 EMBED_MODEL=qwen3-embedding:0.6b
 ```
 
-**OpenRouter for cloud embeddings or LLM** — no local model servers.
+**OpenRouter for cloud embeddings or LLM** — no local model servers. It needs no extra.
 
 ```bash
-uv sync --extra openrouter
+uv sync
 ```
+
+Chat answers can also use any OpenAI-compatible server (OpenAI, Together, vLLM, LM Studio) with no extra, or Anthropic with `uv sync --extra anthropic`. Set them in `omrg web` under Settings > Providers, or in the read-only user config folder (`~/.config/omrg/omrg.jsonc` and `secrets/<provider>.key`, also read by the CLI and the stdio server; see [Configuration](docs/guides/configuration.md#user-config-folder)). See also [Providers](docs/guides/providers.md).
 
 ```bash
 # .env

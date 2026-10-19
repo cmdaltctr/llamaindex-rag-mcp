@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..engine_access import ReadScope, RuntimeDep, admitted, engine_store, failure_text
 from ..errors import error_response
-from ..security import redact
+from ..security import SecretSet, redact
 
 logger = logging.getLogger(__name__)
 
@@ -179,17 +179,27 @@ def _answer_failure(query: str, exc: BaseException) -> dict[str, Any]:
     }
 
 
+def _redact_error(result: Any, secrets: SecretSet | None) -> Any:
+    """Return *result* with its ``error`` text cleaned of saved keys."""
+    if secrets is None or not isinstance(result, dict) or not isinstance(result.get("error"), str):
+        return result
+    return {**result, "error": redact(result["error"], secrets)}
+
+
 @router.post("/collections/{collection}/answer", operation_id="answerCollection")
 async def answer_collection(
     collection: str,
     body: AnswerBody,
+    request: Request,
     runtime: RuntimeDep,
     _: ReadScope,
 ) -> Response:
     """Answer a question with deterministic citations through the owning Engine.
 
     Retrieval and generation failures come back inside the answer result
-    (``failure_stage``), not as HTTP errors, as in the MCP tool.
+    (``failure_stage``), not as HTTP errors, as in the MCP tool. The result's
+    ``error`` text is run through the launch's secret set, so a provider error
+    that echoes a saved key never reaches the browser.
     """
     async with admitted(runtime):
         try:
@@ -208,4 +218,4 @@ async def answer_collection(
         except Exception as exc:
             logger.warning("Web answer failed: %s", redact(repr(exc)))
             result = _answer_failure(body.query, exc)
-    return _json(result)
+    return _json(_redact_error(result, getattr(request.app.state, "secrets", None)))

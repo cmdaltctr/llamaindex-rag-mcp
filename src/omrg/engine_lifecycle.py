@@ -99,7 +99,10 @@ def graph_host(engine: Engine, collection: str | None) -> Any:
         engine: The Engine.
         collection: Default collection for nodes that name none.
     """
-    answer_llm = engine._get_answer_llm if engine._answer_llm_factory is not None else None
+    # Bind to the generation current now, so a run that started keeps its model
+    # when a provider update replaces the generation (design D3).
+    generation = engine._gen
+    answer_llm = generation.get_answer_llm if generation.answer_llm_factory is not None else None
     embedder, choice = embedding_for(engine, collection)
     resources = {
         "store": engine._store,
@@ -108,7 +111,7 @@ def graph_host(engine: Engine, collection: str | None) -> Any:
         "reranker": engine._reranker,
         "ocr": engine._ocr_client,
         "answer_llm": answer_llm,
-        "verify_llm": engine._pipelines.judge(engine._verify_llm_factory),
+        "verify_llm": engine._pipelines.judge(generation.verify_llm_factory),
     }
     from dataclasses import replace
 

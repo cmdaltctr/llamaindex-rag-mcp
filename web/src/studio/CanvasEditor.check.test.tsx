@@ -207,12 +207,15 @@ describe("the Embed chunks card names the embedding model", () => {
 
   const provider = (roles: Connection["roles"]): Connection => ({
     provider: "ollama",
-    urls: [],
-    models: [
-      { label: "embeddings", name: "nomic-embed-text" },
-      { label: "answers", name: "qwen3" },
+    display_name: "Ollama",
+    locality: "local",
+    installed: true,
+    install_hint: null,
+    fields: [],
+    read_only: [
+      { label: "Embedding model", value: "nomic-embed-text" },
+      { label: "Chat model", value: "qwen3" },
     ],
-    key_set: false,
     roles,
   });
 

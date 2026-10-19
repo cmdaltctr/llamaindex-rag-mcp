@@ -20,14 +20,30 @@ from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
+from pydantic import ValidationError as PydanticValidationError
+
 from .citations import build_citations, parse_citation_ordinals
 from .evidence import _evidence_rows, _labelled_nodes
-from .synthesis import CompletionSeam, run_synthesis
+from .synthesis import CompletionSeam, SeamCompletionError, run_synthesis
 from .verify import VerificationFields, run_verification_stage
 
 #: Failure-stage labels carried in ``failure_stage`` (spec contract).
 FAILURE_STAGE_RETRIEVAL = "retrieval"
 FAILURE_STAGE_GENERATION = "generation"
+
+#: Error for a provider reply that its client library could not parse, such as
+#: Ollama's empty ``role`` when the model runs out of memory (TDR-036). The
+#: parser's own message (pydantic field paths) would mean nothing to a reader.
+MALFORMED_REPLY_ERROR = (
+    "Generation failed: the answer model sent a malformed reply. "
+    "This often means it ran out of memory. Check the model, then ask again."
+)
+
+#: Error for a synthesis whose model replies carried no text.
+EMPTY_REPLY_ERROR = (
+    "Generation failed: the answer model returned an empty reply. "
+    "Check that the model is running and has enough memory, then ask again."
+)
 
 #: Shared no-op outcome for the disabled or skipped verification path.
 NO_VERIFICATION = VerificationFields()
@@ -47,7 +63,8 @@ def safe_error_detail(exc: BaseException, settings: Any) -> str:
     helpers the MCP transport applies to tool errors are applied here so
     the error strings embedded in core results cannot bypass them.
     """
-    from ..vectordb.identity import redact_cloud_secrets, redact_secret
+    from ..settings import provider_secret_values
+    from ..vectordb.identity import redact_cloud_secrets, redact_secrets
 
     detail = str(exc)
     detail = redact_cloud_secrets(
@@ -56,7 +73,7 @@ def safe_error_detail(exc: BaseException, settings: Any) -> str:
         getattr(settings, "chroma_cloud_tenant", ""),
         getattr(settings, "chroma_cloud_database", ""),
     )
-    return redact_secret(detail, getattr(settings, "openrouter_api_key", ""))
+    return redact_secrets(detail, provider_secret_values(settings))
 
 
 def error_detail_for(settings: Any) -> ErrorDetail:
@@ -152,11 +169,27 @@ async def synthesise_answer(
         # ``except Exception`` also catches an asyncio ``ExceptionGroup``
         # (a plain-``Exception`` subgroup), so a client seam that dies
         # mid-flight still maps to a generation failure.
+        if isinstance(exc, SeamCompletionError) and exc.__cause__ is not None:
+            exc = exc.__cause__  # Report the provider's own error.
+        malformed = isinstance(exc, PydanticValidationError)
         return SynthesisOutcome(
             text=None,
             completion_calls=attempts,
             ms=(time.perf_counter() - start) * 1000.0,
-            error=f"Generation failed: {type(exc).__name__}: {error_detail(exc)}",
+            error=(
+                MALFORMED_REPLY_ERROR
+                if malformed
+                else f"Generation failed: {type(exc).__name__}: {error_detail(exc)}"
+            ),
+        )
+    if not text.strip():
+        # Spec: ``generation_unverified`` needs a non-empty answer, so
+        # an empty reply is a generation failure (TDR-036).
+        return SynthesisOutcome(
+            text=None,
+            completion_calls=completion_calls,
+            ms=(time.perf_counter() - start) * 1000.0,
+            error=EMPTY_REPLY_ERROR,
         )
     return SynthesisOutcome(
         text=text,

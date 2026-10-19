@@ -12,22 +12,127 @@ Lets the user set language model (LLM) provider addresses, API keys and the Chat
 
 #### Scenario: Registered providers only
 
-- **WHEN** the registry holds `ollama`, `llamacpp` and `openrouter`
-- **THEN** the response MUST hold exactly three entries, for those three providers
+- **WHEN** the registry holds `ollama`, `llamacpp`, `openrouter`, `openai_compatible` and `anthropic`
+- **THEN** the response MUST hold exactly five entries, for those five providers, in that order
 
 #### Scenario: Optional package missing
 
-- **WHEN** the package that the `llamacpp` provider needs is not installed
-- **THEN** the `llamacpp` entry MUST report it as not installed and MUST give the install command `uv sync --extra llamacpp`
+- **WHEN** the package that the `anthropic` provider needs is not installed
+- **THEN** the `anthropic` entry MUST report it as not installed and MUST give the install command `uv sync --extra anthropic`
+
+#### Scenario: OpenAI-like package is in the base install
+
+- **WHEN** the base install has no extra and the response holds the `llamacpp`, `openrouter` and `openai_compatible` entries
+- **THEN** each of the three entries MUST report the provider as installed, because the LlamaIndex OpenAI-like packages are base dependencies
 
 #### Scenario: Cloud provider marked
 
-- **WHEN** the response holds the `openrouter` entry
+- **WHEN** the response holds the `openrouter`, `openai_compatible` or `anthropic` entry
 - **THEN** the entry MUST mark the provider as cloud
+
+#### Scenario: A new provider needs no other change
+
+- **WHEN** a test registers a fake provider module with a descriptor and one registry line
+- **THEN** the response MUST hold an entry for it, and no route, summary function or web file MUST need a change
+
+### Requirement: The registry lists the OpenAI-compatible and Anthropic Chat providers
+
+The LLM provider registry SHALL hold two Chat providers in addition to `ollama`, `llamacpp` and `openrouter`, each as one provider module, one `register()` line and one connection descriptor. `openai_compatible` (display name "OpenAI-compatible") SHALL serve the answers role only. It SHALL have an editable address field (`OPENAI_COMPATIBLE_BASE_URL`, default `https://api.openai.com/v1`) and an optional secret field (`OPENAI_COMPATIBLE_API_KEY`). `anthropic` (display name "Anthropic") SHALL serve the answers role only. It SHALL have one required secret field (`ANTHROPIC_API_KEY`) and the fixed address `https://api.anthropic.com`. Neither provider SHALL appear in the embeddings or metadata roles.
+
+#### Scenario: OpenAI-compatible entry
+
+- **WHEN** the response holds the `openai_compatible` entry
+- **THEN** the entry MUST list the roles as answers only, an editable address with the default `https://api.openai.com/v1`, and a secret field that is marked optional
+
+#### Scenario: Anthropic entry
+
+- **WHEN** the response holds the `anthropic` entry
+- **THEN** the entry MUST list the roles as answers only, one secret field that is marked required, and no editable address
+
+#### Scenario: Remote or loopback address
+
+- **WHEN** the user saves the `openai_compatible` address `http://localhost:1234/v1` and later saves `https://api.together.xyz/v1`
+- **THEN** the server MUST accept both, the second entry MUST be treated as not on this machine, and the card MUST state that text leaves this machine
+
+### Requirement: An optional key does not block Chat
+
+A secret field marked optional SHALL NOT make Chat not ready when it is empty. The `openai_compatible` key SHALL be optional because servers such as LM Studio and vLLM need none. The server SHALL send a bearer credential to that provider only when a key is set, and SHALL send it only to the address saved or typed for that provider.
+
+#### Scenario: Chat ready without a key
+
+- **WHEN** the Chat provider is `openai_compatible`, the address is `http://localhost:1234/v1` and no key is set
+- **THEN** `GET /v1/settings/chat` MUST report ready true
+
+#### Scenario: Key sent only to its own address
+
+- **WHEN** an `openai_compatible` key is set and the user tests the provider
+- **THEN** the request MUST go only to the `openai_compatible` address, and no request to another provider MUST carry that key
+
+### Requirement: A required key blocks Chat
+
+A secret field that is not marked optional SHALL make Chat not ready while it is empty. For `anthropic`, `GET /v1/settings/chat` SHALL report ready false with the reason `not-configured` while no Anthropic key is set. The server SHALL send no request to Anthropic while the key is missing.
+
+#### Scenario: Anthropic without a key
+
+- **WHEN** the Chat provider is `anthropic` and no Anthropic key is set
+- **THEN** `GET /v1/settings/chat` MUST report ready false with the reason `not-configured`
+
+#### Scenario: Anthropic package missing
+
+- **WHEN** the Chat provider is `anthropic` and the `anthropic` extra is not installed
+- **THEN** `GET /v1/settings/chat` MUST report ready false with the reason `not-installed`
+
+### Requirement: Provider tests send the right credentials
+
+The connection test and the model list SHALL use the descriptor of the provider. For `openai_compatible` they SHALL send `GET {base_url}/models` and SHALL add an `Authorization: Bearer` header only when a key is set. For `anthropic` they SHALL send `GET https://api.anthropic.com/v1/models` with the headers `x-api-key` and `anthropic-version: 2023-06-01`, and SHALL send no request when no key is set; the result SHALL then report the reason `not-configured`.
+
+#### Scenario: OpenAI-compatible test with a key
+
+- **WHEN** an `openai_compatible` key is set and the user tests the provider
+- **THEN** the request MUST be `GET {base_url}/models` with the bearer header
+
+#### Scenario: OpenAI-compatible test without a key
+
+- **WHEN** no `openai_compatible` key is set and the user tests the provider
+- **THEN** the request MUST be `GET {base_url}/models` with no `Authorization` header
+
+#### Scenario: Anthropic test headers
+
+- **WHEN** an Anthropic key is set and the user tests the provider
+- **THEN** the request MUST be `GET /v1/models` on `https://api.anthropic.com` with the headers `x-api-key` and `anthropic-version: 2023-06-01`
+
+#### Scenario: Anthropic test without a key
+
+- **WHEN** no Anthropic key is set and the user tests the provider
+- **THEN** the server MUST send no request and the result MUST report not reachable with the reason `not-configured`
+
+### Requirement: Secret rules apply to every secret field
+
+The rules for keychain storage, the environment lock, redaction, the last four characters and live application SHALL apply to every secret field of every registered provider, driven by the descriptors. A new provider SHALL NOT need a change to the redaction set, the editable-field set, the locking code or the readiness check beyond its own descriptor. This SHALL include `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`.
+
+#### Scenario: Anthropic key in the keychain
+
+- **WHEN** a keychain is available and the user saves an Anthropic key
+- **THEN** the keychain MUST hold it under the service `omrg` and the user name `anthropic`, and no file or database row MUST contain it
+
+#### Scenario: Anthropic key redacted
+
+- **WHEN** the user saves an Anthropic key whose text starts with `sk-ant-` and a later log message contains it
+- **THEN** the buffered record, `GET /v1/logs` and the log stream MUST show the message with the key removed
+
+#### Scenario: OpenAI-compatible key from the environment
+
+- **WHEN** `OPENAI_COMPATIBLE_API_KEY` is set in the environment
+- **THEN** the key field MUST report the source `env` and locked, and a save or delete of the key MUST return 409
+
+#### Scenario: OpenAI-compatible key applies at once
+
+- **WHEN** the Chat provider is `openai_compatible` and the user saves a new key
+- **THEN** the next answer MUST send the new key to the saved address, and an answer that started before the save MUST finish with the old key
 
 ### Requirement: Each provider value has one source
 
-Each editable address and the Chat choice SHALL come from the first of: the process environment or `.env` (source `env`), the value saved in the workspace (`saved`), the default (`default`). An API key SHALL come from the environment or `.env` (`env`), then the system keychain (`keychain`), else none (`none`). A value from `env` SHALL lock its field: a write SHALL return 409 naming the variable to remove, and SHALL change nothing.
+Each editable address and the Chat choice SHALL come from the first of these sources, highest first: the process environment or `.env` (source `env`), `omrg.jsonc` in the user config folder (`config-file`), the value saved in the workspace (`saved`), the default (`default`). An API key SHALL come from the first of: the environment or `.env` (`env`), `omrg.jsonc` through an `env://` or `file://` reference (`config-file`), the system keychain (`keychain`), the key file `secrets/<provider>.key` (`key-file`), else none (`none`). A value from `env` or `config-file` SHALL lock its field: a write SHALL return 409 naming the variable to remove or the file to edit, and SHALL change nothing. A value from `keychain` or `key-file` SHALL NOT lock its field.
 
 #### Scenario: Environment wins and locks
 
@@ -137,7 +242,7 @@ A provider address SHALL be an absolute `http` or `https` URL with a host, at mo
 
 ### Requirement: Saved values apply at once in the web server
 
-A saved address, key or Chat choice SHALL apply in the `omrg web` process with no restart: to the answer model, the claim-verification judge and metadata extraction, including for MCP clients served over HTTP. Calls that already started SHALL finish with the old client; later calls SHALL use the new one. Embedding identity SHALL NOT change. `omrg` over stdio, the CLI and experiment contexts SHALL read `.env` only.
+A saved address, key or Chat choice SHALL apply in the `omrg web` process with no restart: to the answer model, the claim-verification judge and metadata extraction, including for MCP clients served over HTTP. Calls that already started SHALL finish with the old client; later calls SHALL use the new one. Embedding identity SHALL NOT change. `omrg` over stdio, the CLI and experiment contexts SHALL NOT see saved values; they SHALL read the environment, `.env` and the user config folder only.
 
 #### Scenario: Answer uses the new address at once
 
@@ -151,7 +256,7 @@ A saved address, key or Chat choice SHALL apply in the `omrg web` process with n
 
 #### Scenario: Stdio server unchanged
 
-- **WHEN** the user saves an OpenRouter key in the web workspace and starts `omrg` over stdio with no key in `.env`
+- **WHEN** the user saves an OpenRouter key in the web workspace and starts `omrg` over stdio with no key in `.env` or the user config folder
 - **THEN** the stdio server MUST report no OpenRouter key
 
 ### Requirement: The Ollama address is locked while Ollama makes embeddings
@@ -165,12 +270,17 @@ When any embedding use of the server names Ollama, the Ollama address SHALL be l
 
 ### Requirement: The Chat status says whether Chat is ready
 
-`GET /v1/settings/chat` SHALL return the Chat provider, the model name, their source, whether the choice is locked, and whether Chat is ready. When Chat is not ready, it SHALL give a reason from a fixed set: `disabled`, `unknown-provider`, `not-installed`, `not-configured`. The server SHALL NOT contact a provider for this route.
+`GET /v1/settings/chat` SHALL return the Chat provider, the model name, their source, whether the choice is locked, and whether Chat is ready. When Chat is not ready, it SHALL give a reason from a fixed set: `disabled`, `unknown-provider`, `not-installed`, `not-configured` (a required value, such as a key that the provider needs, is missing). The server SHALL NOT contact a provider for this route.
 
 #### Scenario: Not ready without a key
 
 - **WHEN** the Chat provider is `openrouter` and no OpenRouter key is set
 - **THEN** `GET /v1/settings/chat` MUST report ready false with the reason `not-configured`
+
+#### Scenario: Registry providers other than the first three
+
+- **WHEN** the Chat provider is `anthropic` or `openai_compatible`
+- **THEN** `GET /v1/settings/chat` MUST decide readiness from the descriptor of that provider, with no branch on the provider name
 
 #### Scenario: Answering turned off
 
@@ -228,3 +338,300 @@ When any embedding use of the server names Ollama, the Ollama address SHALL be l
 
 - **WHEN** the user asks for the llama.cpp models and nothing listens at the chat address
 - **THEN** the result MUST report not reachable with the reason `refused`
+
+### Requirement: The user config folder is read-only
+
+The server, the CLI and the stdio MCP server SHALL read the user config folder: `$OMRG_CONFIG_DIR` when set, else `$XDG_CONFIG_HOME/omrg` when set, else `~/.config/omrg`. The folder MAY hold `omrg.jsonc` and `secrets/<provider>.key`. The code SHALL NOT write, create, move, delete or change the permissions of the folder or any file in it. A missing folder or file SHALL give no value and no warning. Both files SHALL be read at launch; a change SHALL need a restart.
+
+#### Scenario: Folder from OMRG_CONFIG_DIR
+
+- **WHEN** `OMRG_CONFIG_DIR` names a folder that holds `omrg.jsonc` and `XDG_CONFIG_HOME` is also set
+- **THEN** the server MUST read `omrg.jsonc` from the `OMRG_CONFIG_DIR` folder
+
+#### Scenario: Folder from XDG_CONFIG_HOME
+
+- **WHEN** `OMRG_CONFIG_DIR` is not set and `XDG_CONFIG_HOME` names a folder
+- **THEN** the server MUST read the `omrg` subfolder of it
+
+#### Scenario: Default folder
+
+- **WHEN** neither variable is set
+- **THEN** the server MUST read `~/.config/omrg`
+
+#### Scenario: Missing folder
+
+- **WHEN** the folder does not exist
+- **THEN** the server MUST start, MUST log no warning, and MUST NOT create the folder
+
+#### Scenario: Nothing is written
+
+- **WHEN** the server starts and a user saves addresses and keys in the web page
+- **THEN** no file or folder under the user config folder MUST be created, changed or have its mode changed
+
+#### Scenario: Restart needed
+
+- **WHEN** the user edits `omrg.jsonc` while the server runs
+- **THEN** the server MUST keep the values it read at launch
+
+### Requirement: omrg.jsonc holds non-secret values and key references
+
+`omrg.jsonc` SHALL accept JSON with comments and trailing commas. It MAY hold the keys `ollama_base_url`, `llamacpp_chat_url`, `openai_compatible_base_url` and `answer` with the members `provider` and `model`. It MAY hold a reference for each secret field, and a reference SHALL be `env://NAME` or `file://<absolute path>`. `env://NAME` SHALL read the environment variable `NAME`. A value in `omrg.jsonc` SHALL be validated by the same rules as a saved value (provider addresses are validated). A file that cannot be parsed SHALL give no values and one warning.
+
+#### Scenario: Address from the config file
+
+- **WHEN** `omrg.jsonc` sets `ollama_base_url` and neither the environment nor `.env` sets `OLLAMA_BASE_URL`
+- **THEN** the Ollama address field MUST report the source `config-file`, MUST be locked, and a save MUST return 409
+
+#### Scenario: Chat choice from the config file
+
+- **WHEN** `omrg.jsonc` holds `answer` with a provider and a model
+- **THEN** `GET /v1/settings/chat` MUST report the source `config-file` and locked, and `PUT /v1/settings/chat` MUST return 409
+
+#### Scenario: Comments and trailing commas
+
+- **WHEN** `omrg.jsonc` holds comments and a trailing comma and is otherwise valid
+- **THEN** the server MUST read the values
+
+#### Scenario: env reference
+
+- **WHEN** `omrg.jsonc` sets the OpenRouter key to `env://MY_ROUTER_KEY` and that variable holds a key
+- **THEN** the OpenRouter key field MUST report the source `config-file` and set, and the key MUST be used
+
+#### Scenario: env reference to an empty variable
+
+- **WHEN** the reference names a variable that is not set
+- **THEN** the field MUST give no value from the config file and the server MUST log no key text
+
+#### Scenario: Broken file
+
+- **WHEN** `omrg.jsonc` is not valid JSONC
+- **THEN** the server MUST read no value from it, MUST log one warning, and MUST start
+
+#### Scenario: Invalid address
+
+- **WHEN** `omrg.jsonc` sets `ollama_base_url` to `file:///etc/passwd`
+- **THEN** the server MUST ignore that value and MUST log one warning that names the field and not the value
+
+### Requirement: A literal key in omrg.jsonc is ignored
+
+A secret field in `omrg.jsonc` that holds a value which is not an `env://` or `file://` reference SHALL be ignored. The server SHALL log one warning that names the field and SHALL NOT log the value. The server SHALL NOT use the value.
+
+#### Scenario: Literal key ignored
+
+- **WHEN** `omrg.jsonc` sets the OpenRouter key to a literal string
+- **THEN** the OpenRouter key field MUST NOT report the source `config-file`, the key MUST NOT be used, and the log MUST name the field and MUST NOT hold any part of the string
+
+### Requirement: A file reference stays inside secrets
+
+A `file://` reference SHALL resolve, after symlinks are followed, to a path inside the `secrets/` folder of the user config folder. A reference that resolves elsewhere SHALL be refused: the field SHALL give no value from the config file and the server SHALL log one warning that names the field.
+
+#### Scenario: Reference inside secrets
+
+- **WHEN** `omrg.jsonc` sets a key to `file://` followed by the absolute path of `secrets/router.key`
+- **THEN** the server MUST read the key from that file
+
+#### Scenario: Reference outside secrets
+
+- **WHEN** the reference is `file:///etc/passwd` or uses `..` to leave `secrets/`
+- **THEN** the server MUST NOT read the file and MUST log one warning that names the field
+
+#### Scenario: Symlink leaves the folder
+
+- **WHEN** the referenced file is a symlink to a path outside `secrets/`
+- **THEN** the server MUST NOT read the file
+
+### Requirement: Key files follow safety rules
+
+`secrets/<provider>.key` SHALL hold one key for the provider whose registry name is the file name. The server SHALL read at most 4 KiB and SHALL strip surrounding whitespace. The server SHALL refuse a symlink that resolves outside the user config folder and SHALL refuse a path that is not a regular file. When a key file has a mode looser than 0600, or the `secrets/` folder has a mode looser than 0700, the server SHALL still read the key and SHALL log one warning with the path and the mode, and SHALL NOT log the content. The permission check SHALL be skipped on Windows. A key file SHALL apply to secret fields only.
+
+#### Scenario: Key file read
+
+- **WHEN** `secrets/openrouter.key` holds a key with a trailing newline and no other source sets the OpenRouter key
+- **THEN** the OpenRouter key field MUST report set with the source `key-file`, and the key MUST be used without the newline
+
+#### Scenario: File too large
+
+- **WHEN** a key file holds more than 4 KiB
+- **THEN** the server MUST NOT use it and MUST log one warning that names the path
+
+#### Scenario: Symlink out of the folder
+
+- **WHEN** `secrets/openrouter.key` is a symlink to a file outside the user config folder
+- **THEN** the server MUST refuse it and MUST log one warning
+
+#### Scenario: Not a regular file
+
+- **WHEN** `secrets/openrouter.key` is a folder or a device
+- **THEN** the server MUST refuse it
+
+#### Scenario: Loose permissions
+
+- **WHEN** a key file has mode 0644 on macOS or Linux
+- **THEN** the server MUST use the key, and MUST log one warning that holds the path and the mode and no part of the key
+
+#### Scenario: Unknown file name
+
+- **WHEN** `secrets/` holds a file whose name is not a registered provider
+- **THEN** the server MUST ignore it
+
+### Requirement: The key file does not lock the key field
+
+A key from a key file SHALL rank below the system keychain. A key saved in the keychain SHALL override it. Removing the saved key SHALL make the key file apply again. `PUT` and `DELETE /v1/connections/{provider}/key` SHALL NOT return 409 only because a key file exists. A value from `omrg.jsonc` SHALL lock its field in the same way as the environment.
+
+#### Scenario: Keychain overrides the key file
+
+- **WHEN** `secrets/openrouter.key` holds a key and the user saves a different key in the keychain
+- **THEN** the OpenRouter key field MUST report the source `keychain` and the saved key MUST be used
+
+#### Scenario: Removing the saved key falls back
+
+- **WHEN** the user removes the saved OpenRouter key and `secrets/openrouter.key` exists
+- **THEN** the OpenRouter key field MUST report the source `key-file`
+
+#### Scenario: Config file locks
+
+- **WHEN** `omrg.jsonc` references an OpenRouter key
+- **THEN** `PUT /v1/connections/openrouter/key` MUST return 409 and the lock text MUST read "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it."
+
+### Requirement: The CLI and the stdio server read the user config folder
+
+The `config/` package SHALL read the user config folder, so the CLI, the stdio MCP server and the web server SHALL use the same values from it. Saved web values (database addresses and keychain keys) SHALL stay visible to the web server only.
+
+#### Scenario: Stdio uses the config folder
+
+- **WHEN** `omrg.jsonc` sets `ollama_base_url` and the user starts `omrg` over stdio
+- **THEN** the stdio server MUST use that address
+
+#### Scenario: CLI uses a key file
+
+- **WHEN** `secrets/openrouter.key` exists and the user runs a CLI command that needs the OpenRouter key
+- **THEN** the CLI MUST use that key
+
+#### Scenario: Saved web value stays web-only
+
+- **WHEN** the user saves an address in the web workspace and starts the CLI
+- **THEN** the CLI MUST NOT use the saved address
+
+### Requirement: Keys from the user config folder are redacted
+
+A key that comes from the user config folder (a key file, or an `env://` or `file://` reference) SHALL join the redaction set exactly like a key from the environment. From the moment the server reads it, the server log, log panel, log stream and error text of answer results SHALL NOT contain it. A response SHALL hold at most the last four characters of it, and only when it has 16 or more characters.
+
+#### Scenario: Key file key in a log line
+
+- **WHEN** the server reads a key from `secrets/openrouter.key` and a later log message contains it
+- **THEN** the buffered record, `GET /v1/logs` and the log stream MUST show the message with the key removed
+
+#### Scenario: Only the last four characters
+
+- **WHEN** a 64-character key comes from a key file and the user reads `GET /v1/connections`
+- **THEN** no response body MUST contain any five consecutive characters of the key
+
+### Requirement: Tests never read the real config folder
+
+The test suite SHALL set `OMRG_CONFIG_DIR` to a temporary folder before any settings are resolved, so no test reads or depends on the real user config folder.
+
+#### Scenario: Suite isolates the folder
+
+- **WHEN** a test resolves settings while `~/.config/omrg/omrg.jsonc` exists on the machine
+- **THEN** the test MUST NOT see any value from it
+
+### Requirement: The connections summary names the config folder
+
+`GET /v1/connections` SHALL return a top-level `user_config_dir` that names the user config folder with `~` for the home folder. The field `source` SHALL take one of `env`, `config-file`, `saved`, `keychain`, `key-file`, `default` and `none`. The response SHALL NOT contain a key from the folder beyond the last four characters.
+
+#### Scenario: Folder named
+
+- **WHEN** the user reads `GET /v1/connections` with the default folder
+- **THEN** `user_config_dir` MUST read `~/.config/omrg`
+
+#### Scenario: Source values
+
+- **WHEN** an address comes from `omrg.jsonc` and a key from a key file
+- **THEN** the address `source` MUST be `config-file` and the key `source` MUST be `key-file`
+
+### Requirement: Ollama context window is a setting
+
+The server SHALL have a setting `ollama_context_window`, an integer number of tokens. The default SHALL be 16,384. The allowed range SHALL be 2,048 to 262,144. The value SHALL come from the first source that holds one, highest first: environment `OLLAMA_CONTEXT_WINDOW` and `.env`, key `ollama_context_window` in `omrg.jsonc`, a value saved in the web workspace, the default. A value from the environment, `.env` or `omrg.jsonc` SHALL lock the field. A value outside the range SHALL be rejected with a message that names the rule and not the value. The setting SHALL NOT apply to embedding models.
+
+#### Scenario: Default
+
+- **WHEN** no source sets the Ollama context window
+- **THEN** the effective value MUST be 16,384 and the source MUST be `default`
+
+#### Scenario: Range
+
+- **WHEN** the user saves 1,024 or 300,000
+- **THEN** the server MUST return 400, MUST save nothing and MUST NOT repeat the value in the message
+
+#### Scenario: Range edges
+
+- **WHEN** the user saves 2,048 and then 262,144
+- **THEN** the server MUST accept both
+
+#### Scenario: Environment locks the field
+
+- **WHEN** `OLLAMA_CONTEXT_WINDOW=8192` is in the environment and the user saves another value
+- **THEN** the server MUST return 409 and name the variable, and the effective value MUST stay 8,192
+
+#### Scenario: Config file locks the field
+
+- **WHEN** `omrg.jsonc` holds `ollama_context_window` and the user saves another value
+- **THEN** the server MUST return 409, and the source MUST be `config-file`
+
+#### Scenario: Saved value used
+
+- **WHEN** no environment or file value exists and the user saves 32,768
+- **THEN** the effective value MUST be 32,768 and the source MUST be `saved`
+
+#### Scenario: Invalid file value
+
+- **WHEN** `omrg.jsonc` holds `ollama_context_window` of 100
+- **THEN** the server MUST ignore the value, MUST log one warning that names the field and not the value, and MUST use the next source
+
+### Requirement: The Ollama context window is sent on every Ollama call
+
+The Chat answer model for Ollama SHALL pass the effective context window as `context_window` to the LlamaIndex Ollama client. The server SHALL NOT call `/api/show` to read the model maximum. Metadata extraction through Ollama SHALL send the effective context window as `options.num_ctx` on `POST /api/generate`. A saved value SHALL apply live: the next call SHALL use the new value, and a call already started SHALL finish with the old value.
+
+#### Scenario: No model-maximum lookup
+
+- **WHEN** Chat builds an Ollama answer model
+- **THEN** the client MUST receive `context_window` equal to the effective value and the server MUST send no request to `/api/show`
+
+#### Scenario: Large model maximum ignored
+
+- **WHEN** the model reports a maximum of 262,144 tokens and the effective value is 16,384
+- **THEN** the request to Ollama MUST carry `num_ctx` of 16,384
+
+#### Scenario: Metadata extraction
+
+- **WHEN** metadata extraction uses Ollama with an effective value of 8,192
+- **THEN** the `POST /api/generate` body MUST hold `options.num_ctx` of 8,192
+
+#### Scenario: Live apply
+
+- **WHEN** the user saves 32,768 while Chat is open
+- **THEN** the next answer MUST send `num_ctx` of 32,768 with no restart
+
+#### Scenario: Embeddings unchanged
+
+- **WHEN** the user saves a new Ollama context window
+- **THEN** the embedding requests and the embedding identity of every collection MUST stay unchanged
+
+### Requirement: Integer fields are a descriptor kind
+
+A provider descriptor SHALL be able to declare an integer field with a minimum, a maximum and a default. The summary, the save route, the test route and the OpenAPI contract SHALL handle the field with no provider-name branch. `GET /v1/connections` SHALL return an integer field with `kind` `int`, the `value`, `min`, `max`, `source`, `locked` and `lock_reason`.
+
+#### Scenario: Summary shape
+
+- **WHEN** the user reads `GET /v1/connections`
+- **THEN** the Ollama entry MUST hold a field `context_window` with `kind` `int`, `min` 2048, `max` 262144 and `value` 16384
+
+#### Scenario: Non-integer refused
+
+- **WHEN** the user saves `"abc"` or `16384.5` as the context window
+- **THEN** the server MUST return 400
+
+#### Scenario: Fake provider with an integer field
+
+- **WHEN** a test registers a fake provider with an integer field
+- **THEN** the card, the save route and the lock rules MUST work with no change outside the descriptor

@@ -16,6 +16,7 @@ pure helpers that redact configured Chroma Cloud connection values.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
@@ -119,6 +120,30 @@ def redact_secret(message: str, secret: str | None) -> str:
     return message
 
 
+def redact_secrets(message: str, secrets: Iterable[str | None]) -> str:
+    """Redact every secret in *secrets* from *message*.
+
+    Every full value and every prefix of six or more characters goes into one
+    list, longest piece first. Two keys of one provider often share a prefix
+    such as ``sk-ant-api03-``. Removing one key's short prefix first would
+    leave the rest of a cut-off piece of the other key in the text.
+
+    Args:
+        message: Raw message text.
+        secrets: Secret values. Blank and ``None`` entries are skipped.
+
+    Returns:
+        The redacted message.
+    """
+    pieces: set[str] = set()
+    for secret in {s for s in secrets if s}:
+        pieces.add(secret)
+        pieces.update(secret[:length] for length in range(_MIN_REDACTED_PREFIX_LEN, len(secret)))
+    for piece in sorted(pieces, key=len, reverse=True):
+        message = message.replace(piece, "***")
+    return message
+
+
 def redact_cloud_secrets(
     message: str,
     api_key: str | None,
@@ -142,13 +167,18 @@ class RedactionSecrets:
         chroma_cloud_api_key: Chroma Cloud API key.
         chroma_cloud_tenant: Chroma Cloud tenant identifier.
         chroma_cloud_database: Chroma Cloud database name.
-        openrouter_api_key: OpenRouter API key.
+        provider_keys: The LLM provider API keys in use (OpenRouter, the
+            OpenAI-compatible server, Anthropic and any later provider).
+        retired_provider_keys: Earlier provider keys. A call that began
+            with an old key can still fail with it in the error text, so
+            the Engine keeps every key it has held (append-only).
     """
 
     chroma_cloud_api_key: str = ""
     chroma_cloud_tenant: str = ""
     chroma_cloud_database: str = ""
-    openrouter_api_key: str = ""
+    provider_keys: tuple[str, ...] = ()
+    retired_provider_keys: tuple[str, ...] = ()
 
     def redact(self, text: str) -> str:
         """Remove each value and each prefix of six or more characters."""
@@ -158,7 +188,7 @@ class RedactionSecrets:
             self.chroma_cloud_tenant,
             self.chroma_cloud_database,
         )
-        return redact_secret(text, self.openrouter_api_key)
+        return redact_secrets(text, (*self.retired_provider_keys, *self.provider_keys))
 
 
 def read_stored_identity(collection: Any) -> tuple[str | None, str | None, str | None]:

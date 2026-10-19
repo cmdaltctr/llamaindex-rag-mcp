@@ -307,3 +307,51 @@ describe("knowledge base panel and New chat", () => {
     expect(await screen.findByPlaceholderText("Ask documents a question")).toBeInTheDocument();
   });
 });
+
+describe("Chat model status", () => {
+  const NOT_READY = { status: "ok", provider: null, model: null, source: "default", locked: false, lock_reason: null, enabled: true, ready: false, reason: "not-configured" };
+
+  it("shows one line with a link to the Chat settings and disables Send when no model is connected", async () => {
+    const { user } = setup({ "GET /v1/settings/chat": () => NOT_READY });
+    const field = await screen.findByRole("textbox", { name: "Question" });
+    const notice = await screen.findByRole("alert");
+    expect(notice).toHaveTextContent("Chat has no model connected.");
+    expect(within(notice).getByRole("link", { name: "Connect a model" })).toHaveAttribute("href", "#/settings/chat");
+    await user.type(field, "What is kept?");
+    expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
+  });
+
+  it("says answering is turned off for the reason disabled, with no server text", async () => {
+    setup({ "GET /v1/settings/chat": () => ({ ...NOT_READY, enabled: false, reason: "disabled", detail: "ANSWER__ENABLED=false in /srv/.env" }) });
+    const notice = await screen.findByRole("alert");
+    expect(notice).toHaveTextContent("Answering is turned off on the server.");
+    expect(document.body.textContent).not.toContain("/srv/.env");
+  });
+
+  it("shows no notice and enables Send when Chat is ready", async () => {
+    const { user } = setup();
+    await user.type(await screen.findByRole("textbox", { name: "Question" }), "q");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send" })).toBeEnabled();
+  });
+
+  it("puts the settings link beside Retry when an answer fails at the generation stage", async () => {
+    const { user } = setup({
+      "POST /v1/collections/documents/answer": () => answer({ status: "error", answer: null, citations: [], evidence: [], failure_stage: "generation", error: "401 from provider at /srv/x" }),
+    });
+    await ask(user);
+    const alert = await screen.findByRole("alert");
+    expect(within(alert).getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(within(alert).getByRole("link", { name: "Check the Chat model" })).toHaveAttribute("href", "#/settings/chat");
+    expect(alert).not.toHaveTextContent("/srv/x");
+  });
+
+  it("gives a retrieval failure no settings link", async () => {
+    const { user } = setup({
+      "POST /v1/collections/documents/answer": () => answer({ status: "error", answer: null, citations: [], evidence: [], failure_stage: "retrieval", error: "offline" }),
+    });
+    await ask(user);
+    const alert = await screen.findByRole("alert");
+    expect(within(alert).queryByRole("link")).toBeNull();
+  });
+});

@@ -7,6 +7,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from .connection import (
+    ConnectionDescriptor,
+    ConnectionField,
+    ConnectionTarget,
+    ReadOnlyValue,
+    join_url,
+    models_from,
+)
+
 if TYPE_CHECKING:
     from ....config import Settings
 
@@ -39,7 +48,43 @@ def build(
     return Ollama(
         model=model,
         base_url=settings.ollama_base_url,
+        # An explicit window stops LlamaIndex reading the model maximum from
+        # ``/api/show`` and sending it as ``num_ctx`` (TDR-036: 262,144 tokens
+        # ran a 4B model out of GPU memory).
+        context_window=settings.ollama_context_window,
         # Ollama genuinely accepts ``request_timeout`` — unlike OpenAILike,
         # which names it ``timeout`` and silently drops this spelling.
         request_timeout=(timeout if timeout is not None else settings.metadata.classify_timeout),
     )
+
+
+def _tags(settings: Any) -> ConnectionTarget:
+    return ConnectionTarget(join_url(settings.ollama_base_url, "/api/tags"))
+
+
+#: Card data for the Ollama provider (design D5).
+CONNECTION = ConnectionDescriptor(
+    display_name="Ollama",
+    locality="local",
+    requires_module="llama_index.llms.ollama",
+    extra=None,
+    fields=(
+        ConnectionField("base_url", "Address", "url", "ollama_base_url", "OLLAMA_BASE_URL"),
+        ConnectionField(
+            "context_window",
+            "Context window (tokens)",
+            "int",
+            "ollama_context_window",
+            "OLLAMA_CONTEXT_WINDOW",
+            minimum=2048,
+            maximum=262144,
+        ),
+    ),
+    read_only=lambda s: [
+        ReadOnlyValue("Embedding model", s.embed_model),
+        ReadOnlyValue("Metadata model", s.metadata.ollama_classify_model),
+    ],
+    test_targets=_tags,
+    models_target=_tags,
+    parse_models=lambda payload: models_from(payload, "models", "name"),
+)

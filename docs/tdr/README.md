@@ -61,6 +61,7 @@ architecture), see the [ADR index](../adr/).
 | 033 | [The collection name was the only project title, so add an editable display name and keep the collection name fixed](033-the-collection-name-was-the-only-project-title-so-add-an-editable-display-name.md) | Accepted | 2026-10-15 |
 | 034 | [The clean-base tripwire ran a serial suite, so run it in parallel and stop pinning the skipped count](034-the-clean-base-tripwire-ran-a-serial-suite-so-run-it-in-parallel-and-stop-pinning-skips.md) | Accepted | 2026-10-15 |
 | 035 | [Built-in profiles skipped the model check on the MCP endpoint, so route every bind through the profile service](035-built-in-profiles-skipped-the-model-check-on-the-mcp-endpoint.md) | Proposed | 2026-10-18 |
+| 036 | [Ollama failures became an "Empty Response" answer, so carry seam errors past refine](036-ollama-failures-became-an-empty-response-answer-so-carry-seam-errors-past-refine.md) | Proposed | 2026-10-18 |
 
 ## Status values
 

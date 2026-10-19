@@ -147,6 +147,13 @@ CATALOGUE: tuple[Integration, ...] = (
         _modules("llama_index.embeddings.openai_like", "llama_index.llms.openai_like"),
     ),
     Integration(
+        "anthropic",
+        "Anthropic provider",
+        "Chat answers from Anthropic models.",
+        "anthropic",
+        _modules("llama_index.llms.anthropic"),
+    ),
+    Integration(
         "torch",
         "PyTorch reranker",
         "Optional PyTorch backend for the cross-encoder reranker.",

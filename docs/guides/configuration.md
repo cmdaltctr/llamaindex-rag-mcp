@@ -375,6 +375,14 @@ so an older release cannot select Chroma and make LanceDB data appear missing.
 
 ### Providers
 
+Two Chat providers serve answering only. They are not valid for `EMBED_PROVIDER`, `LOCAL_BACKEND` or `CLOUD_BACKEND`. Set them with `ANSWER__PROVIDER=openai_compatible` or `ANSWER__PROVIDER=anthropic`, or choose them in Settings > Chat.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `OPENAI_COMPATIBLE_BASE_URL` | `https://api.openai.com/v1` | Address of any server that speaks the OpenAI chat API (OpenAI, Together, vLLM, LM Studio). It can be on this machine or remote |
+| `OPENAI_COMPATIBLE_API_KEY` | unset | Optional. LM Studio and vLLM need none. The key goes only to the address above |
+| `ANTHROPIC_API_KEY` | unset | Required for the `anthropic` provider. Address fixed at `https://api.anthropic.com`. Needs `uv sync --extra anthropic` |
+
 | Variable | Default | What it does |
 |---|---|---|
 | `EMBED_PROVIDER` | `local` | `local`, `cloud`, `ollama`, `llamacpp`, or `openrouter` |
@@ -383,6 +391,11 @@ so an older release cannot select Chroma and make LanceDB data appear missing.
 | `CLOUD_BACKEND` | `openrouter` | `openrouter` |
 | `EMBED_MODEL` | — | Model name for embeddings |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint |
+| `OLLAMA_CONTEXT_WINDOW` | `16384` | Ollama context window in tokens, 2,048 to 262,144. See [Context windows](#context-windows) |
+| `LLAMACPP_CONTEXT_WINDOW` | `16384` | Context window (`-c`) for the llama.cpp chat server that `omrg web` starts, 2,048 to 262,144 |
+| `LLAMACPP_IDLE_SLEEP_SECONDS` | `300` | Idle seconds before that server frees its model (`--sleep-idle-seconds`), 0 to 86,400. 0 turns sleep off |
+| `LLAMACPP_SERVER_BINARY` | unset | Absolute path to `llama-server`, for the server that `omrg web` starts. See [Local llama.cpp server](#local-llamacpp-server) |
+| `LLAMACPP_SERVER_MODEL` | unset | Absolute `.gguf` path or Hugging Face id `org/name[:tag]` for that server |
 
 An unrecognised value for any of the four provider selections above
 (`EMBED_PROVIDER`, `METADATA_LLM_PROVIDER`, `LOCAL_BACKEND`,
@@ -400,11 +413,144 @@ as unset and resets to the default.
 Optional dependencies:
 
 ```bash
-uv sync --extra llamacpp     # llama.cpp backend
-uv sync --extra openrouter   # OpenRouter backend
+uv sync --extra anthropic    # Anthropic Chat provider (about 40 MB of SDKs)
 ```
 
+The LlamaIndex OpenAI-like packages are in the base install. The llama.cpp, OpenRouter and OpenAI-compatible providers need no extra. `uv sync --extra llamacpp` and `uv sync --extra openrouter` still work and install nothing more.
+
 Connection details for each: [Providers](providers.md).
+
+#### Change provider values in the web workspace
+
+In `omrg web`, Settings > Providers can save these values: `OLLAMA_BASE_URL`, `OLLAMA_CONTEXT_WINDOW`, `LLAMACPP_CHAT_URL`, `LLAMACPP_SERVER_BINARY`, `LLAMACPP_SERVER_MODEL`, `LLAMACPP_CONTEXT_WINDOW`, `LLAMACPP_IDLE_SLEEP_SECONDS`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`. The server uses the first source it finds, highest first:
+
+| Rank | Source | Shown as | Locks the field |
+|---|---|---|---|
+| 1 | Process environment | `env` | yes |
+| 2 | `.env` | `env` | yes |
+| 3 | `omrg.jsonc` in the [user config folder](#user-config-folder) | `config-file` | yes |
+| 4 | A value saved in Settings (database address or keychain key) | `saved`, `keychain` | no |
+| 5 | A key file `secrets/<provider>.key` (keys only) | `key-file` | no |
+| 6 | The default | `default` | no |
+
+A locked field shows "Set from environment (read-only here)" or "Set from config file (read-only here)". Remove the variable or edit the file to change it. A key file does not lock: a key saved in the keychain overrides it, and removing the saved key falls back to the file.
+
+A saved address goes in the workspace database. A saved key goes in the system keychain (service `omrg`, user name equal to the provider name). The app never writes a key to `.env`, to the database or to a file. If no keychain exists, set the key variable (for example `OPENROUTER_API_KEY`) in the environment instead.
+
+A saved value applies at once to new requests, with no restart. The Ollama address stays locked while embeddings use Ollama. Embedding providers and models are not editable there. Saved values reach `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts do not see saved values. They read the environment, `.env` and the user config folder. See [Web workspace](web-workspace.md#provider-settings).
+
+#### User config folder
+
+Operators can set provider values in files, without the web page. The folder is read-only for the app. The app never writes, creates or changes the permissions of anything in it. The CLI, the stdio MCP server and `omrg web` all read it. This mirrors the OMMS layout (`~/.config/omms/omms.jsonc`).
+
+The folder is the first of these:
+
+1. `$OMRG_CONFIG_DIR`.
+2. `$XDG_CONFIG_HOME/omrg`.
+3. `~/.config/omrg`.
+
+It can hold two things:
+
+- `omrg.jsonc`: JSON with comments and trailing commas. Optional keys: `ollama_base_url`, `ollama_context_window`, `llamacpp_chat_url`, `llamacpp_server_binary`, `llamacpp_server_model`, `llamacpp_context_window`, `llamacpp_idle_sleep_seconds`, `openai_compatible_base_url` and `answer` (`provider`, `model`). A secret field holds only a reference: `env://NAME` or `file://<absolute path inside secrets/>`.
+- `secrets/<provider>.key`: one key for each provider. The file name is the provider name (`openrouter`, `openai_compatible`, `anthropic`).
+
+Example `omrg.jsonc` (fake values):
+
+```jsonc
+{
+  // Non-secret values
+  "ollama_base_url": "http://gpu-box.local:11434",
+  "openai_compatible_base_url": "https://api.together.xyz/v1",
+  "answer": { "provider": "openrouter", "model": "openai/gpt-4o-mini" },
+
+  // Secret fields hold references only
+  "openrouter_api_key": "env://MY_OPENROUTER_KEY",
+  "anthropic_api_key": "file:///home/me/.config/omrg/secrets/anthropic.key",
+}
+```
+
+Example layout and permissions:
+
+```text
+~/.config/omrg/
+  omrg.jsonc
+  secrets/
+    openrouter.key      one line: the key
+    anthropic.key
+```
+
+```bash
+chmod 700 ~/.config/omrg/secrets
+chmod 600 ~/.config/omrg/secrets/*.key
+```
+
+Rules the server applies:
+
+- A literal key in `omrg.jsonc` is ignored. The log names the field and never shows the value.
+- A `file://` path must resolve inside `secrets/`. Any other path is refused.
+- A key file holds at most 4 KiB. The server strips surrounding whitespace.
+- The server refuses a symlink that leaves the folder and any file that is not a regular file.
+- A key file looser than 0600, or a `secrets/` folder looser than 0700, is still read. The log shows one warning with the path and the mode, never the content. Windows skips this check.
+- A broken `omrg.jsonc` gives no values and one warning.
+- The server reads both files at launch. Edit the file, then restart.
+
+`omrg.jsonc` locks its field in Settings, as the environment does. A key file does not lock. See the precedence table above.
+
+**Limit.** These files are plaintext. File permissions do not stop another process of the same user, and an AI coding agent runs as that user. The folder gives no security gain over `.env`. Use it on headless machines and in containers with a mounted folder. On a desktop, save keys in the keychain. The page cannot write this folder.
+
+### Context windows
+
+Ollama chat calls need an explicit context window. Without one, LlamaIndex read the model maximum (262,144 tokens for `qwen3:4b`) and sent it as `num_ctx`. Ollama then reserved about 43 GB, ran out of GPU memory and returned empty replies (TDR-036).
+
+- `OLLAMA_CONTEXT_WINDOW` (or `ollama_context_window` in `omrg.jsonc`) sets the window. The default is 16,384 tokens. The range is 2,048 to 262,144.
+- The first source wins, highest first: environment and `.env` (lock), `omrg.jsonc` (lock), the value saved in Settings, the default.
+- The Chat answer model and metadata extraction use it. A saved value applies to the next call. Ollama reloads the model at the new size.
+- Embedding models are not covered. A different window can change how text is cut, and so the vectors.
+- `LLAMACPP_CONTEXT_WINDOW` has the same range and default. It applies only to the llama.cpp server that `omrg web` starts.
+
+### Local llama.cpp server
+
+`omrg web` can start, stop and restart its own `llama-server` for Chat. Use the llama.cpp card in Settings > Providers, or set the values in the environment or in `omrg.jsonc`.
+
+| Setting | Env | `omrg.jsonc` key |
+|---|---|---|
+| Program path | `LLAMACPP_SERVER_BINARY` | `llamacpp_server_binary` |
+| Model | `LLAMACPP_SERVER_MODEL` | `llamacpp_server_model` |
+| Context window | `LLAMACPP_CONTEXT_WINDOW` | `llamacpp_context_window` |
+| Idle sleep | `LLAMACPP_IDLE_SLEEP_SECONDS` | `llamacpp_idle_sleep_seconds` |
+| Port | `LLAMACPP_CHAT_URL` | `llamacpp_chat_url` |
+
+The sources and locks are the same as for other provider values.
+
+Guardrails:
+
+1. The program is an absolute path to an executable file named exactly `llama-server`. The server checks it at save and before every launch.
+2. The model is an existing `.gguf` file or a Hugging Face id `org/name[:tag]`. It never starts with `-`.
+3. The port comes from `llamacpp_chat_url`. The URL must be `http` on a loopback host. The server binds to `127.0.0.1`.
+4. The arguments are fixed: `-m` or `-hf`, `--host 127.0.0.1`, `--port` and `-c`. No shell runs. You cannot add other arguments.
+5. The process gets a minimal environment with no API key.
+6. omrg starts and stops only this server. It never touches a server you started yourself. It never finds or stops a process by name or port.
+7. The output of the server goes to `llamacpp-server.log` in the workspace folder. The page and the routes never show it.
+
+States are `stopped`, `starting`, `running` and `failed`. A failed start gives one reason: `binary-invalid`, `model-invalid`, `not-loopback`, `port-in-use`, `exited`, `timeout` or `not-configured`. The start waits up to 180 seconds for `GET /health`. Stop sends SIGTERM, waits 10 seconds, then sends SIGKILL. The server stops when `omrg web` exits. A save does not restart a running server. The card then says "Restart to apply".
+
+Example `omrg.jsonc`:
+
+```jsonc
+{
+  "llamacpp_chat_url": "http://localhost:8081/v1",
+  "llamacpp_server_binary": "/opt/homebrew/bin/llama-server",
+  "llamacpp_server_model": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+  "llamacpp_context_window": 16384,
+  "llamacpp_idle_sleep_seconds": 300,
+}
+```
+
+Idle sleep. With the default of 300, the server frees the model after five idle minutes and reloads it on the next request, so that answer is slower. The process keeps running. Set 0 to keep the model loaded, or to run a `llama-server` build that has no sleep mode.
+
+Limits. The program path is editable in the GUI by choice. The guardrails limit what can run to a file named `llama-server`. Anyone with the browser session and the `credentials` scope can still point the setting at any file with that name. The llama.cpp embedding server is not managed. The stdio MCP server and the CLI never start or stop the server.
+
+Tests set `OMRG_CONFIG_DIR` to a temporary folder, so they never read your real folder.
 
 ### Chunking — `CHUNKING__*`
 
@@ -511,7 +657,7 @@ query time. See [MCP tools](mcp-tools.md#answer_documents) and
 | Field | Default | What it does |
 |---|---|---|
 | `enabled` | `true` | Master switch. `false` makes the server model resolve to `None`; the answering tools then return an actionable error |
-| `provider` | `ollama` | LLM provider, resolved through the same registry as metadata extraction. Unknown names fail startup |
+| `provider` | `ollama` | LLM provider, resolved through the same registry as metadata extraction. Unknown names fail startup. Besides `ollama`, `llamacpp` and `openrouter`, the registry holds `openai_compatible` and `anthropic` for answering only |
 | `model` | `qwen3:4b` | Model tag, passed to the provider builder as an `answer_model` override so answering never reuses the small metadata-classification model |
 | `timeout` | `120.0` | Seconds to wait for one completion round |
 | `max_rounds` | `4` | Maximum COMPACT refinement rounds (1–8; the client-sampling path caps at 4). Later rounds widen the per-round budget up to a hard character ceiling (262,144); overflow evidence is dropped lowest-ranked first |
@@ -528,6 +674,8 @@ bundle may override per collection — a `documents` collection can opt
 into the configured judge while a `codebase` collection stays
 speed-first. The default judge provider is the cloud backend (the only
 tested path); a local judge can be selected but is unmeasured.
+
+In `omrg web`, Settings > Chat can save `provider` and `model` for Chat and for MCP clients of that server that cannot supply their own model. `ANSWER__PROVIDER` or `ANSWER__MODEL` in the environment or `.env` wins and locks the choice. A saved choice applies at once, with no restart. Metadata extraction and the judge keep their own settings. The stdio MCP server and the CLI do not read the saved choice.
 Environment variables still win over the profile:
 
 ```yaml
@@ -795,7 +943,7 @@ explicit algorithm selection is an operator contract. See
 
 ## Web workspace settings
 
-`omrg web` reads one `.env` setting, `WEB_MAX_UPLOAD_MIB`. Its other options are command-line flags only: `--workspace`, `--port`, `--host`, `--root` and `--experiment-root`. The server builds its Engine from the same settings sources as the other commands. See [Web workspace](web-workspace.md).
+`omrg web` has one setting of its own in `.env`, `WEB_MAX_UPLOAD_MIB`. It also reads the engine settings that other commands read. Its other options are command-line flags only: `--workspace`, `--port`, `--host`, `--root` and `--experiment-root`. The server builds its Engine from the same settings sources as the other commands. See [Web workspace](web-workspace.md).
 
 | Variable | Default | Use |
 |---|---|---|
@@ -809,6 +957,10 @@ The server uses the first upload limit it finds in this order:
 4. 50 MiB.
 
 A launch value (step 1 or 2) locks the limit for that run. Settings then shows the limit and cannot change it. Any other value stops `omrg web` with exit code 2 before it binds a port. The name is flat, because `omrg web` options are not engine settings.
+
+### Provider and Chat values
+
+`omrg web` also lets you save LLM provider addresses, API keys and the Chat model in Settings. The order is environment, `.env`, the config file, the saved value, the key file, then the default. The environment, `.env` and the config file lock the field (see [User config folder](#user-config-folder)). A saved key lives in the system keychain only. A saved value applies at once with no restart. Details: [Providers](#providers), [Answering](#answering--answer__) and [Web workspace](web-workspace.md#provider-settings).
 
 ---
 

@@ -33,7 +33,7 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
 )
 from tests.unit.test_web_openapi_conformance_support import FAMILIES, ContractChecker  # noqa: E402
 
-import omrg.compose_connections as compose_connections  # noqa: E402
+import omrg.core.providers.llm.openrouter as openrouter_llm  # noqa: E402
 from omrg import compose  # noqa: E402
 from omrg.transports.api import connection_probe  # noqa: E402
 
@@ -144,8 +144,16 @@ def test_connections_response_shape(setup: Any, configure: Any) -> None:
     body = response.json()
     assert body["status"] == "ok"
     assert body["config_dir"] == str(Path.cwd())
-    assert [c["provider"] for c in body["connections"]] == ["ollama", "llamacpp", "openrouter"]
-    assert body["connections"][2]["key_set"] is True
+    assert [c["provider"] for c in body["connections"]] == [
+        "ollama",
+        "llamacpp",
+        "openrouter",
+        "openai_compatible",
+        "anthropic",
+    ]
+    key = next(f for f in body["connections"][2]["fields"] if f["id"] == "api_key")
+    assert key["set"] is True and key["source"] == "keychain"
+    assert body["keychain"] == "unavailable"
 
 
 def test_no_key_value_in_any_response(setup: Any, configure: Any, fake: FakeProvider) -> None:
@@ -276,12 +284,12 @@ def test_openrouter_sends_the_key_to_the_fixed_base_and_never_returns_it(
 ) -> None:
     client, _ = setup
     configure(openrouter_api_key=SECRET)
-    monkeypatch.setattr(compose_connections, "OPENROUTER_BASE_URL", fake.url + "/api/v1")
-    fake.responses["/api/v1/models"] = (200, 0.0)
+    monkeypatch.setattr(openrouter_llm, "_OPENROUTER_API_BASE", fake.url + "/api/v1")
+    fake.responses["/api/v1/key"] = (200, 0.0)
     response = run_test(client, "openrouter")
     assert response.json() == {"status": "ok", "reachable": True, "reason": None}
-    assert fake.seen == [("/api/v1/models", f"Bearer {SECRET}")]
-    fake.responses["/api/v1/models"] = (401, 0.0)
+    assert fake.seen == [("/api/v1/key", f"Bearer {SECRET}")]
+    fake.responses["/api/v1/key"] = (401, 0.0)
     rejected = run_test(client, "openrouter")
     assert rejected.json()["reason"] == "unauthorised"
     assert SECRET not in rejected.text
@@ -371,6 +379,19 @@ def test_connection_responses_conform(setup: Any, configure: Any, fake: FakeProv
     check.check(run_test(client, "ollama"), 200)
     check.check(run_test(client, "openrouter"), 200)
     check.check(run_test(client, "mystery"), 404)
+    # Default settings let Ollama make embeddings, so its address is locked.
+    body = {"fields": {"base_url": "http://gpu.test:11434"}}
+    check.check(client.put("/v1/connections/ollama", json=body, headers=ORIGIN), 409)
+    check.check(client.put("/v1/connections/mystery", json=body, headers=ORIGIN), 404)
+    check.check(
+        client.put("/v1/connections/ollama", json={"fields": {"base_url": "x"}}, headers=ORIGIN),
+        400,
+    )
+    key = {"api_key": "k" * 20}
+    check.check(client.put("/v1/connections/openrouter/key", json=key, headers=ORIGIN), 409)
+    check.check(client.delete("/v1/connections/openrouter/key", headers=ORIGIN), 409)
+    models = client.post("/v1/connections/ollama/models", headers=ORIGIN)
+    check.check(models, 200)
     client.cookies.clear()
     read = bearer(policy, "read")
     check.check(client.get("/v1/connections", headers=read), 200)

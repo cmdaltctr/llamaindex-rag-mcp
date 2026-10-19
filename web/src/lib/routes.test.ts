@@ -48,9 +48,15 @@ describe("routes", () => {
     expect(parseRoute(formatRoute({ area: "experiments", runId: "a/b" }))).toEqual({ area: "experiments", runId: "a/b" });
   });
 
-  it("knows the three purposes and today's Settings sections", () => {
+  it("knows the three purposes and the seven Settings sections", () => {
     expect(PURPOSES).toEqual(["ingest", "search", "answer"]);
-    expect(SETTINGS_SECTIONS).toEqual(["appearance", "connections", "mcp", "log", "runtime", "workspace"]);
+    expect(SETTINGS_SECTIONS).toEqual(["appearance", "providers", "chat", "mcp", "log", "runtime", "workspace"]);
+  });
+
+  it("parses the Providers and Chat sections", () => {
+    expect(parseRoute("#/settings/providers")).toEqual({ area: "settings", section: "providers" });
+    expect(parseRoute("#/settings/chat")).toEqual({ area: "settings", section: "chat" });
+    expect(parseRoute("#/settings/connections")).toEqual({ area: "home" });
   });
 
   it("leaves out the purpose when no profile is named", () => {

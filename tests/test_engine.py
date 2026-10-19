@@ -1013,7 +1013,7 @@ def test_engine_answer_verify_failure_degrades_with_redacted_reason() -> None:
         store=MagicMock(cache_identity="verify-fail"),
         embed_model=MagicMock(),
         verify_llm_factory=failing_verify_factory,
-        redaction=RedactionSecrets(openrouter_api_key="sk-SECRET123"),
+        redaction=RedactionSecrets(provider_keys=("sk-SECRET123",)),
     )
     with patch("omrg.core.answer.pipeline.answer", side_effect=fake_core_answer):
         result = asyncio.run(engine.answer("question"))

@@ -62,7 +62,6 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # isolation suite (tasks 4.8/4.9) with engine-level profile-isolation
 # cases (2468 -> 2508 executed, and the two new chroma-gated
 # write-contract cases add 2 base skips: 127 -> 129).
-_OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
 # Re-baselined at add-vector-store-label-to-knowledge-base: two registry label
@@ -82,7 +81,24 @@ _OPENAI_LIKE_ADAPTER_CASES = 9
 # the 14 route cases need the web extra.
 # Two layout direction cases (GraphLayout model) add 2 more (5775 -> 5777 with the web extra).
 # Five chat route error-branch cases (codecov patch gap) add 5 more (5784 -> 5789).
-_BASE_EXECUTED = 5789
+# Re-baselined at add-llm-provider-settings (2026-10-18): descriptor, value-source, keychain,
+# engine-provider, redaction, connection and Chat settings route cases add 261 (5789 -> 6050).
+# Re-baselined at the openai_compatible and anthropic providers (2026-10-18): 43 descriptor,
+# value-source, redaction and Engine cases, 31 route cases (they need the web extra) and 62
+# extra role-by-provider parameter cases add 136 (6050 -> 6186). The Anthropic build case uses
+# a stub module, so it runs with or without the anthropic extra.
+# 6197 = 6190 measured here + 3 tokenizer + 4 ground-truth cases that skip on a clean runner.
+# The last four cases are the shared-prefix redaction and no-environment-key tests.
+# +5 (2026-10-18, TDR-036): empty-reply and refine-swallow cases in test_answer_empty_reply.py.
+# +52 (2026-10-18, user config folder): test_user_config.py and the key-route log test.
+# +206 (2026-10-18, context windows and the managed llama.cpp server): settings, launch rules,
+# lifecycle with a fake server, routes, Ollama call payloads.
+# 6460 = 6453 measured with the web extra + 3 tokenizer + 4 ground-truth cases.
+# +2 (2026-10-18): the own-group signal guard tests in test_llamacpp_server_lifecycle.py.
+# +15 (2026-10-18, task 17.9): llama.cpp idle sleep rule, route, settings and lock cases.
+# +1 (2026-10-18): status read during a timed-out start never says exited.
+# +1 (2026-10-19): the fake llama-server answers without a reverse DNS lookup.
+_BASE_EXECUTED = 6479
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -289,11 +305,9 @@ _HISTORICAL_GT = (
 )
 if not _HISTORICAL_GT.exists():
     _BASE_EXECUTED -= 4
-# The Exp25 installed-adapter cases run when the optional OpenAI-like
-# embedding package exists. They otherwise skip, so both supported
-# dependency sets keep an exact, documented manifest.
-if find_spec("llama_index.embeddings.openai_like") is not None:
-    _BASE_EXECUTED += _OPENAI_LIKE_ADAPTER_CASES
+# The nine Exp25 installed-adapter cases always run now:
+# the OpenAI-like packages moved into the base dependencies (ADR-083), so the
+# pin below includes them and there is no conditional adjustment.
 # Three model-token chunking cases use a cached Qwen3-Embedding-4B tokenizer
 # when it is present in the HuggingFace hub cache. They skip on a clean CI
 # runner, so both supported environments keep an exact, documented manifest.
@@ -334,7 +348,11 @@ if not _has_qwen_tokenizer:
 # Re-measured at add-profile-embedding-model (2026-10-18) in two clean venvs:
 # 5731 executed with the web extra, 5081 without, so 26 more (650).
 # add-chat-history-and-canvas-view-controls: the 14 chat route cases need fastapi (664).
-_WEB_EXTRA_CASES = 669
+# Re-measured at the openai_compatible and anthropic providers: 31 route cases (700).
+# Re-measured 2026-10-18 on a base install with no web extra (floors, Python 3.12): the provider
+# settings routes, Chat settings, llama.cpp server, config folder and key-route cases all need
+# fastapi, so 5771 expected vs 5488 run gave 283 more (983).
+_WEB_EXTRA_CASES = 983
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)

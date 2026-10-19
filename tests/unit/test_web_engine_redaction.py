@@ -44,7 +44,7 @@ def _engine(cls: type, tmp_path: Path, effective_settings: Any) -> Any:
         embed_model=object(),
         redaction=RedactionSecrets(
             chroma_cloud_tenant=_TENANT,
-            openrouter_api_key=_OPENROUTER,
+            provider_keys=(_OPENROUTER,),
         ),
     )
 

@@ -228,6 +228,7 @@ jobs:
           - azure
           - llamacpp
           - openrouter
+          - anthropic
           - chroma
           - web
     steps:
@@ -471,16 +472,17 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies
-        # community-leiden, llamacpp, and openrouter included so patch
-        # coverage exercises the optional Leiden strategies and the
-        # OpenAILikeEmbedding adapters (their tests skipif-guard without
-        # the extra). chroma and hybrid join for the same reason: this is
+        # community-leiden and anthropic included so patch coverage
+        # exercises the optional Leiden strategies and the Anthropic Chat
+        # provider (its tests skipif-guard without the extra). llamacpp and
+        # openrouter stay as empty extras so the old command still works:
+        # the OpenAI-like packages are now in the base install. chroma and hybrid join for the same reason: this is
         # the sole coverage upload, and the chroma adapter plus the
         # chroma-gated suites must count towards patch coverage of
         # vector-store diffs. web joins so the web transport tests count
         # towards coverage too. The base-only absence assertions live in
         # the floors job instead.
-        run: uv sync --frozen --extra community-leiden --extra llamacpp --extra openrouter --extra chroma --extra hybrid --extra web
+        run: uv sync --frozen --extra community-leiden --extra llamacpp --extra openrouter --extra anthropic --extra chroma --extra hybrid --extra web
 
       - name: Run tests with coverage
         env:

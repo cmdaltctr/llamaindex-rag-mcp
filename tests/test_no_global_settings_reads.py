@@ -62,6 +62,7 @@ _PERMITTED_PATHS = frozenset(
         "compose_answer.py",
         "compose_embedding.py",
         "compose_engine.py",
+        "compose_providers.py",
         "compose_settings.py",
     }
 )

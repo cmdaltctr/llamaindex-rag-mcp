@@ -91,11 +91,15 @@ def _serve(application: Any, sock: socket.socket) -> bool:
     import uvicorn
 
     from ..api.lifespan import request_shutdown
-    from ..api.security import RedactingFilter, install_log_redaction
+    from ..api.security import RedactingFilter, SecretSet, install_log_redaction
 
     # Uvicorn logs request lines and startup tracebacks; scrub credentials
-    # (including configured provider secrets) before any handler writes.
-    install_log_redaction(RedactingFilter(_redaction_values()))
+    # (including configured and saved provider secrets) before any handler
+    # writes. The filter reads the app's live set, so later saves count.
+    live = getattr(getattr(application, "state", None), "secrets", None)
+    install_log_redaction(
+        RedactingFilter(live if live is not None else SecretSet(_redaction_values()))
+    )
 
     config = uvicorn.Config(
         application,
@@ -131,15 +135,16 @@ def _redaction_values() -> list[str]:
         return []
 
 
-def _install_log_buffer() -> Any:
+def _install_log_buffer(secrets: Any = None) -> Any:
     """Attach the in-memory server log buffer to the root logger.
 
     The buffer keeps the last 1,000 records for Settings > Server log. Its
-    redacting filter removes configured provider keys and credentials.
+    redacting filter removes configured provider keys and credentials. Pass
+    the launch ``SecretSet`` so keys saved later are removed too.
     """
     from ..api.log_buffer import LogBuffer
 
-    buffer = LogBuffer(_redaction_values())
+    buffer = LogBuffer(_redaction_values() if secrets is None else secrets)
     logging.getLogger().addHandler(buffer)
     return buffer
 
@@ -230,7 +235,7 @@ def web(
     from ..api.lifespan import WebConfig, WorkspaceLock, WorkspaceLocked
     from ..api.origins import parse_extra_origin
     from ..api.runs_wiring import run_service_factory
-    from ..api.security import AccessPolicy, validate_bind_host
+    from ..api.security import AccessPolicy, SecretSet, validate_bind_host
 
     try:
         bind_host = validate_bind_host(host)
@@ -280,9 +285,16 @@ def web(
         experiment_roots=experiment_roots,
         launch_upload_limit_mib=None if max_upload_mib is None else int(max_upload_mib),
     )
-    log_buffer = _install_log_buffer()
+    # One append-only set for the launch: environment keys now, keychain keys
+    # and keys saved later are added to it. Logs and answer errors read it.
+    secrets = SecretSet(_redaction_values())
+    log_buffer = _install_log_buffer(secrets)
     application = create_app(
-        config, policy=policy, run_service_factory=run_service_factory, log_buffer=log_buffer
+        config,
+        policy=policy,
+        run_service_factory=run_service_factory,
+        log_buffer=log_buffer,
+        secrets=secrets,
     )
 
     for origin in extra_origins:

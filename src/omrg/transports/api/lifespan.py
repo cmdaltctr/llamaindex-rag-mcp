@@ -36,6 +36,7 @@ from ...core.ingestion.settings import DEFAULT_INGEST_EXTENSIONS
 from ...core.workspace import WorkspaceLayout
 from ...integrations.workspace_sqlite.schema import make_private_dirs
 from .grants import RootGrants
+from .provider_state import build_engine, load_providers
 from .uploads import DEFAULT_MAX_UPLOAD_BYTES, MIB, UploadStore
 
 logger = logging.getLogger(__name__)
@@ -258,20 +259,23 @@ class WebRuntime:
     plugins: PluginHost | None = None
     profiles: Any | None = None
     chats: Any | None = None
+    providers: Any | None = None
     upload_limit_source: str = "default"
     _shut_down: bool = False
 
 
-def default_engine_factory(catalogue: Any = None) -> Any:
+def default_engine_factory(catalogue: Any = None, provider_source: Any = None) -> Any:
     """Build the Engine through the composition root (no process default).
 
     Args:
         catalogue: Where user profile tags resolve. ``omrg web`` passes the
             catalogue of its own workspace.
+        provider_source: Returns saved LLM provider values (design D3), or ``None``.
     """
     from ... import compose
 
-    return compose.build_engine(catalogue=catalogue)
+    extra = {} if provider_source is None else {"provider_source": provider_source}
+    return compose.build_engine(catalogue=catalogue, **extra)
 
 
 def default_experiments_factory(config: WebConfig) -> Any | None:
@@ -364,14 +368,15 @@ def _revoke_editor_credentials(plugins: PluginHost) -> None:
 def build_lifespan(
     config: WebConfig,
     *,
-    engine_factory: Callable[[], Any],
+    engine_factory: Callable[..., Any],
     run_service_factory: RunServiceFactory | None = None,
 ) -> Callable[[FastAPI], Any]:
     """Return the lifespan context that owns the web runtime.
 
     Args:
         config: Launch options.
-        engine_factory: Builds the Engine; tests pass a fake.
+        engine_factory: Builds the Engine; tests pass a fake. A ``provider_source``
+            parameter receives the saved values.
         run_service_factory: Optional run-service hook (see :class:`RunServiceHook`).
 
     Returns:
@@ -405,7 +410,7 @@ def _upload_limit(config: WebConfig, mcp_http: Any) -> tuple[int, str]:
 async def _owned_runtime(
     app: FastAPI,
     config: WebConfig,
-    engine_factory: Callable[[], Any],
+    engine_factory: Callable[..., Any],
     run_service_factory: RunServiceFactory | None,
 ) -> AsyncIterator[None]:
     """Build, publish and finally shut down the runtime of one launch."""
@@ -413,12 +418,14 @@ async def _owned_runtime(
     mcp_http = getattr(app.state, "mcp_http", None)
     if mcp_http is not None:
         mcp_http.prepare()
+    providers = await asyncio.to_thread(load_providers, app, mcp_http)
     max_bytes, source = _upload_limit(config, mcp_http)
     uploads = UploadStore(layout.uploads, max_bytes=max_bytes)
     uploads.prepare()
     grants = RootGrants.from_paths(config.roots).with_root(uploads.directory, "managed")
-    runtime = WebRuntime(config, engine_factory(), grants, uploads, upload_limit_source=source)
-    runtime.loop = asyncio.get_running_loop()
+    engine = build_engine(engine_factory, providers.source if providers else None)
+    runtime = WebRuntime(config, engine, grants, uploads, upload_limit_source=source)
+    runtime.providers, runtime.loop = providers, asyncio.get_running_loop()
     try:
         runtime.experiments = (config.experiments_factory or default_experiments_factory)(config)
         runtime.plugins = (config.plugins_factory or default_plugins_factory)(config)

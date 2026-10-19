@@ -1,13 +1,21 @@
 """Typed workspace settings in the ``workspace_settings`` table (design D6).
 
 Only the keys named in :data:`SETTING_KEYS` exist. A stored value that does
-not parse reads as unset, so a damaged row never stops the server. Provider
-settings stay in ``.env``; this table holds web-server choices only.
+not parse reads as unset, so a damaged row never stops the server.
+
+Besides the fixed web-server keys, the table holds the LLM provider choices
+of design D1 and D6: ``chat.provider``, ``chat.model``,
+``provider.<name>.<field>`` (a saved address or model) and
+``provider.<name>.key_saved_at`` (when this workspace saved a key). An API
+key never enters this table; it lives in the system keychain
+(:mod:`omrg.integrations.keychain`).
 """
 
 from __future__ import annotations
 
+import re
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 
 from omrg.integrations.workspace_sqlite.schema import connect
@@ -15,8 +23,36 @@ from omrg.integrations.workspace_sqlite.schema import connect
 MCP_HTTP_ENABLED = "mcp_http_enabled"
 WEB_PORT = "web_port"
 UPLOAD_LIMIT_MIB = "upload_limit_mib"
-#: The only keys the table may hold.
-SETTING_KEYS: frozenset[str] = frozenset({MCP_HTTP_ENABLED, WEB_PORT, UPLOAD_LIMIT_MIB})
+CHAT_PROVIDER = "chat.provider"
+CHAT_MODEL = "chat.model"
+KEY_SAVED_AT = "key_saved_at"
+#: The fixed keys the table may hold. Provider keys follow :data:`PROVIDER_KEY_PATTERN`.
+SETTING_KEYS: frozenset[str] = frozenset(
+    {MCP_HTTP_ENABLED, WEB_PORT, UPLOAD_LIMIT_MIB, CHAT_PROVIDER, CHAT_MODEL}
+)
+#: The only fields a provider row may hold: addresses and whole numbers (the
+#: ``url`` and ``int`` fields of the provider connection descriptors), the
+#: managed llama.cpp server's program, model and window, and the save time. A secret-looking
+#: field such as ``api_key`` is never allowed. A test in ``tests/`` checks this
+#: list against the descriptors, because integrations may not import ``core``.
+PROVIDER_FIELD_IDS: frozenset[str] = frozenset(
+    {
+        "base_url",
+        "chat_url",
+        "context_window",
+        "idle_sleep",
+        "server_binary",
+        "server_model",
+        KEY_SAVED_AT,
+    }
+)
+#: ``provider.<name>.<field>``: lower-case provider id, one allowed field id.
+PROVIDER_KEY_PATTERN = re.compile(
+    r"provider\.[a-z][a-z0-9_-]{0,63}\.(?:" + "|".join(sorted(PROVIDER_FIELD_IDS)) + ")"
+)
+_IDENTIFIER = re.compile(r"[a-z][a-z0-9_-]{0,63}")
+#: Longest stored text for a chat or provider value.
+MAX_VALUE_CHARS = 2048
 
 #: Saved ports must be unprivileged.
 MIN_WEB_PORT = 1024
@@ -28,7 +64,45 @@ MAX_UPLOAD_LIMIT_MIB = 2048
 
 
 class UnknownSettingError(KeyError):
-    """A key outside :data:`SETTING_KEYS` was read or written."""
+    """A key outside the allowed set was read or written."""
+
+
+def is_known_key(key: str) -> bool:
+    """Return whether *key* is a fixed key or a ``provider.<name>.<field>`` key."""
+    return key in SETTING_KEYS or PROVIDER_KEY_PATTERN.fullmatch(key) is not None
+
+
+def provider_key(provider: str, field: str) -> str:
+    """Return the settings key for *field* of *provider*.
+
+    Raises:
+        UnknownSettingError: The result is not an allowed key.
+    """
+    key = f"provider.{provider}.{field}"
+    if not is_known_key(key):
+        raise UnknownSettingError(key)
+    return key
+
+
+def _clean_text(value: str | None) -> str | None:
+    """Return *value* when it is short printable single-line text, else ``None``."""
+    if value is None or not value.strip() or len(value) > MAX_VALUE_CHARS:
+        return None
+    if not value.isprintable():
+        return None
+    return value
+
+
+def _parse_timestamp(value: str | None) -> str | None:
+    """Return *value* when it is an ISO 8601 timestamp, else ``None``."""
+    text = _clean_text(value)
+    if text is None or len(text) > 64:
+        return None
+    try:
+        datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return text
 
 
 def _parse_bounded(value: str | None, low: int, high: int) -> int | None:
@@ -60,7 +134,7 @@ class WorkspaceSettings:
         Raises:
             UnknownSettingError: *key* is not a known setting.
         """
-        if key not in SETTING_KEYS:
+        if not is_known_key(key):
             raise UnknownSettingError(key)
         conn = connect(self.path)
         try:
@@ -76,7 +150,7 @@ class WorkspaceSettings:
         Raises:
             UnknownSettingError: *key* is not a known setting.
         """
-        if key not in SETTING_KEYS:
+        if not is_known_key(key):
             raise UnknownSettingError(key)
         conn = connect(self.path)
         try:
@@ -95,6 +169,49 @@ class WorkspaceSettings:
             raise
         finally:
             conn.close()
+
+    def get_valid(self, key: str) -> str | None:
+        """Return the stored text for *key*, or ``None`` when unset or damaged.
+
+        Damaged means empty, too long, or not printable single-line text.
+        """
+        return _clean_text(self.get(key))
+
+    def get_chat_provider(self) -> str | None:
+        """Return the saved Chat provider name, or ``None`` when unset or damaged."""
+        value = self.get_valid(CHAT_PROVIDER)
+        return value if value is not None and _IDENTIFIER.fullmatch(value) else None
+
+    def get_chat_model(self) -> str | None:
+        """Return the saved Chat model name, or ``None`` when unset or damaged."""
+        return self.get_valid(CHAT_MODEL)
+
+    def set_chat_choice(self, provider: str | None, model: str | None) -> None:
+        """Save the Chat provider and model; ``None`` clears each.
+
+        Raises:
+            ValueError: A value is not a provider id or printable model text.
+        """
+        if provider is not None and not _IDENTIFIER.fullmatch(provider):
+            raise ValueError("The Chat provider is not a valid provider name.")
+        if model is not None and _clean_text(model) is None:
+            raise ValueError("The Chat model must be short printable text.")
+        self.set(CHAT_PROVIDER, provider)
+        self.set(CHAT_MODEL, model)
+
+    def get_key_saved_at(self, provider: str) -> str | None:
+        """Return when this workspace saved a key for *provider*, or ``None``."""
+        return _parse_timestamp(self.get(provider_key(provider, KEY_SAVED_AT)))
+
+    def set_key_saved_at(self, provider: str, when: str | None) -> None:
+        """Record when a key was saved for *provider*; ``None`` clears the record.
+
+        Raises:
+            ValueError: *when* is not an ISO 8601 timestamp.
+        """
+        if when is not None and _parse_timestamp(when) is None:
+            raise ValueError("The saved time must be an ISO 8601 timestamp.")
+        self.set(provider_key(provider, KEY_SAVED_AT), when)
 
     def get_mcp_http_enabled(self) -> bool:
         """Return whether MCP over HTTP is on. Off when unset or unreadable."""

@@ -19,6 +19,9 @@ import os
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from .compose_providers import ProviderValues
     from .config import Settings
 
 #: Profile Tier 2 levers whose environment overrides are captured once,
@@ -45,7 +48,12 @@ def _snapshot_profile_env() -> dict[str, str]:
     return {key: os.environ[key] for key in _PROFILE_ENV_OVERRIDE_KEYS if key in os.environ}
 
 
-def build_engine(settings: Settings | None = None, *, catalogue: Any = None) -> Any:
+def build_engine(
+    settings: Settings | None = None,
+    *,
+    catalogue: Any = None,
+    provider_source: Callable[[], ProviderValues] | None = None,
+) -> Any:
     """Construct an :class:`Engine` from resolved settings.
 
     The single production construction path. Resolves ``Settings`` from
@@ -67,6 +75,13 @@ def build_engine(settings: Settings | None = None, *, catalogue: Any = None) -> 
             for processes that only read the workspace). ``None`` means the
             process found no workspace: a tag that is not built-in is refused
             with an explanation.
+        provider_source: Returns the saved LLM provider values (the web
+            workspace passes one). ``None`` changes nothing. With a source,
+            the embedder, store and Engine settings start from the values it
+            returns, and the answer, judge and profile-resolver factories
+            call it again at build time, so a later
+            ``Engine.use_provider_settings()`` takes effect through them.
+            Environment and ``.env`` values still win (design D2).
 
     Returns:
         An :class:`omrg.Engine` owning its composed dependencies.
@@ -124,6 +139,26 @@ def build_engine(settings: Settings | None = None, *, catalogue: Any = None) -> 
     # constructed (shared validation, not installer-only).
     _resolve_active_strategies(settings)
 
+    base = settings
+    if provider_source is not None:
+        from .compose_providers import apply_provider_values
+        from .core.profiles.catalogue import uses_ollama_embeddings
+
+        settings = apply_provider_values(
+            base, provider_source(), profiles_ollama=uses_ollama_embeddings(catalogue)
+        )
+
+    def current() -> Any:
+        """Return the settings a new generation freezes (design D3)."""
+        if provider_source is None:
+            return settings
+        from .compose_providers import apply_provider_values
+        from .core.profiles.catalogue import uses_ollama_embeddings
+
+        return apply_provider_values(
+            base, provider_source(), profiles_ollama=uses_ollama_embeddings(catalogue)
+        )
+
     embed_model = build_embed_model(settings)
     store = build_vector_store(settings)
     effective = settings_to_effective(settings)
@@ -148,7 +183,7 @@ def build_engine(settings: Settings | None = None, *, catalogue: Any = None) -> 
     # subprocesses. No process starts until a route's first dispatch.
     from .capabilities import build_ocr_routes
     from .core.providers.embeddings import registry as embed_registry
-    from .core.vectordb.identity import RedactionSecrets, embedding_identity_from_settings
+    from .core.vectordb.identity import embedding_identity_from_settings
     from .engine import Engine
     from .engine_embedders import EngineEmbedders
 
@@ -162,18 +197,15 @@ def build_engine(settings: Settings | None = None, *, catalogue: Any = None) -> 
             lambda provider, model: embed_registry.get(provider)(settings, model=model),
         ),
         reranker=reranker,
-        profile_resolver_factory=lambda: build_profile_resolver(
-            settings, store=store, env_overrides=profile_env, catalogue=catalogue
+        # Each factory receives the generation's frozen settings (design D3).
+        snapshot_source=current,
+        profile_resolver_factory=lambda snap: build_profile_resolver(
+            snap, store=store, env_overrides=profile_env, catalogue=catalogue
         ),
-        answer_llm_factory=lambda: _build_answer_llm(settings),
-        verify_llm_factory=lambda block: _build_verify_llm(settings, block),
+        answer_llm_factory=_build_answer_llm,
+        verify_llm_factory=lambda block, snap: _build_verify_llm(snap, block),
         ocr_client=build_ocr_routes(settings),
-        redaction=RedactionSecrets(
-            chroma_cloud_api_key=settings.chroma_cloud_api_key,
-            chroma_cloud_tenant=settings.chroma_cloud_tenant,
-            chroma_cloud_database=settings.chroma_cloud_database,
-            openrouter_api_key=settings.openrouter_api_key,
-        ),
+        redaction=build_redaction(settings),
     )
 
 
@@ -199,6 +231,19 @@ def experiment_base_settings() -> Settings:
     from .config import get_settings
 
     return get_settings()
+
+
+def build_redaction(settings: Any) -> Any:
+    """Return the credential values an Engine removes from error text."""
+    from .core.settings import provider_secret_values
+    from .core.vectordb.identity import RedactionSecrets
+
+    return RedactionSecrets(
+        chroma_cloud_api_key=settings.chroma_cloud_api_key,
+        chroma_cloud_tenant=settings.chroma_cloud_tenant,
+        chroma_cloud_database=settings.chroma_cloud_database,
+        provider_keys=provider_secret_values(settings),
+    )
 
 
 def _build_answer_llm(settings: Any) -> Any:

@@ -123,7 +123,26 @@ FAMILIES: dict[str, frozenset[str]] = {
     ),
     "templates": frozenset({"listPipelineTemplates"}),
     "integrations": frozenset({"listIntegrations"}),
-    "connections": frozenset({"getConnections", "testConnection"}),
+    "connections": frozenset(
+        {
+            "getConnections",
+            "testConnection",
+            "saveProviderFields",
+            "saveProviderKey",
+            "removeProviderKey",
+            "listProviderModels",
+        }
+    ),
+    "chat_settings": frozenset({"getChatSettings", "setChatSettings", "testChatModel"}),
+    "llamacpp_server": frozenset(
+        {
+            "getLlamacppServer",
+            "saveLlamacppServer",
+            "startLlamacppServer",
+            "stopLlamacppServer",
+            "restartLlamacppServer",
+        }
+    ),
     "logs": frozenset({"getLogs", "streamLogs"}),
     "experiments": frozenset(
         {

@@ -387,6 +387,36 @@ def _patch_embed_model(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureR
 
 
 @pytest.fixture(autouse=True)
+def _no_real_keychain(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point ``keyring`` at the fail backend so no test reads the real keychain.
+
+    Tests that need a keychain install their own backend with
+    ``keyring.set_keyring``; this patch is undone after each test.
+    """
+    try:
+        import keyring.core
+        from keyring.backends import fail
+    except ImportError:
+        return
+    monkeypatch.setattr(keyring.core, "_keyring_backend", fail.Keyring())
+    # The adapter detects a backend once per process; that would replace the
+    # fail backend with the real keychain.
+    from omrg.integrations import keychain
+
+    monkeypatch.setattr(keychain, "_BACKEND_READY", True)
+
+
+@pytest.fixture(autouse=True)
+def _isolated_user_config_dir(monkeypatch: pytest.MonkeyPatch, tmp_path_factory) -> None:
+    """Point the user config folder at an empty temporary folder.
+
+    No test may read the real ``~/.config/omrg``. Tests of the folder itself
+    set ``OMRG_CONFIG_DIR`` again.
+    """
+    monkeypatch.setenv("OMRG_CONFIG_DIR", str(tmp_path_factory.mktemp("omrg-config") / "omrg"))
+
+
+@pytest.fixture(autouse=True)
 def _isolate_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Set deterministic environment variables for every test.
 
