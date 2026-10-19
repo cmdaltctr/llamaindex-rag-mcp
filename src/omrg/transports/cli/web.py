@@ -359,6 +359,14 @@ def web(
         log_buffer=log_buffer,
         secrets=secrets,
     )
+    if login_item:
+        # Only the login item may signal its own launchd job (power menu, design D3).
+        import os
+
+        from ..api.power_control import PowerControl
+        from ._web_login_item import LABEL
+
+        application.state.power_control = PowerControl(label=LABEL, uid=os.getuid())
 
     for origin in extra_origins:
         console.print(f"Approved extra origin: {origin}", markup=False, highlight=False)

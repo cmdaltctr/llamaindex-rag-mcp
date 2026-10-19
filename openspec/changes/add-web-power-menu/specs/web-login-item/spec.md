@@ -6,9 +6,9 @@
 
 The app SHALL offer `GET /v1/server/power` and `POST /v1/server/power`. Both routes SHALL need the browser session with the `manage` scope. A bearer credential SHALL receive 403.
 
-`GET /v1/server/power` SHALL answer `{"managed": true}` when the running app is the login item and `{"managed": false}` otherwise.
+`GET /v1/server/power` SHALL answer `{"status": "ok", "managed": true}` when the running app is the login item and `{"status": "ok", "managed": false}` otherwise.
 
-`POST /v1/server/power` SHALL take the body `{"action": "restart"}` or `{"action": "off"}`. Any other body SHALL receive 422. When the app is not the login item, the route SHALL answer 409 and change nothing. When a run, an ingestion or a map call is in progress, the route SHALL answer 409 and change nothing. In every other case the route SHALL answer 202 and SHALL then act after the response has been sent.
+`POST /v1/server/power` SHALL take the body `{"action": "restart"}` or `{"action": "off"}`. A body with any other action SHALL receive 422. A body that is not that shape (a missing or extra field) SHALL receive 400, as every other route does. Neither SHALL signal any process. When the app is not the login item, the route SHALL answer 409 and change nothing. When a run, an ingestion or a map call is in progress, the route SHALL answer 409 and change nothing. In every other case the route SHALL answer 202 and SHALL then act after the response has been sent.
 
 The `restart` action SHALL ask launchd to send `SIGTERM` to the app, so launchd starts it again. The `off` action SHALL ask launchd to unload the agent. After `off` the app SHALL stay stopped until the next login or until `omrg web start` runs. The plist file SHALL stay in place.
 
@@ -20,7 +20,7 @@ The `restart` action SHALL ask launchd to send `SIGTERM` to the app, so launchd 
 #### Scenario: A foreground server is not managed
 
 - **WHEN** the app runs in a terminal through `omrg web` and `GET /v1/server/power` is called
-- **THEN** the answer MUST be `{"managed": false}`
+- **THEN** the answer MUST be `{"status": "ok", "managed": false}`
 - **AND** a `POST` with either action MUST answer 409 and MUST NOT signal any process
 
 #### Scenario: Work in progress blocks the action
@@ -47,6 +47,11 @@ The `restart` action SHALL ask launchd to send `SIGTERM` to the app, so launchd 
 
 - **WHEN** the session posts `{"action": "sleep"}`
 - **THEN** the route MUST answer 422 and MUST NOT signal any process
+
+#### Scenario: Malformed body
+
+- **WHEN** the session posts `{"verb": "off"}` or `{"action": "off", "force": true}`
+- **THEN** the route MUST answer 400 and MUST NOT signal any process
 
 ### Requirement: Start the login item
 

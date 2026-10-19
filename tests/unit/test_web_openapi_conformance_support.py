@@ -144,6 +144,7 @@ FAMILIES: dict[str, frozenset[str]] = {
         }
     ),
     "logs": frozenset({"getLogs", "streamLogs"}),
+    "power": frozenset({"getServerPower", "requestServerPower"}),
     "experiments": frozenset(
         {
             "createExperiment",

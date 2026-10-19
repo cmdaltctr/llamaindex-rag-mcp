@@ -37,6 +37,7 @@ from .routes.llamacpp_server import router as llamacpp_server_router
 from .routes.logs import router as logs_router
 from .routes.mcp import router as mcp_router
 from .routes.plugins import router as plugins_router
+from .routes.power import router as power_router
 from .routes.profiles import router as profiles_router
 from .routes.runs import router as runs_router
 from .routes.templates import router as templates_router
@@ -64,6 +65,7 @@ API_ROUTERS: tuple[APIRouter, ...] = (
     connections_router,
     llamacpp_server_router,
     logs_router,
+    power_router,
 )
 
 

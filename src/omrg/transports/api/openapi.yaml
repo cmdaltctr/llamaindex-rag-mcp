@@ -3688,6 +3688,82 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
+  # ── Power control (session only) ────────────────────────────────────
+  /server/power:
+    get:
+      operationId: getServerPower
+      summary: Report whether the app can restart or turn itself off
+      description: >
+        `managed` is true when the running app is the macOS login item
+        (`omrg web install`, started with `--login-item`), and false for a
+        server started in a terminal with `omrg web`. Session only: a bearer
+        credential gets 403.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      responses:
+        "200":
+          description: The power state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PowerStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    post:
+      operationId: requestServerPower
+      summary: Restart the app or turn it off
+      description: >
+        `restart` asks launchd to send `SIGTERM` to the app, so launchd starts
+        it again. `off` asks launchd to unload the agent, so the app stays
+        stopped until the next login or until `omrg web start` runs; the plist
+        stays in place. The route answers 202 and acts about half a second
+        later, after the response has been sent. Either action ends the
+        browser session, because sessions stay in memory. The body is a closed
+        choice of the two actions: another action name gets 422 and a body
+        of the wrong shape gets 400. The route answers
+        409 and changes nothing when the app is not the login item or when an
+        ingestion, a run or a map call is in progress. Session only: a bearer
+        credential gets 403.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PowerRequest"
+      responses:
+        "202":
+          description: The action was accepted and runs after this response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PowerAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -3837,8 +3913,9 @@ components:
         The request conflicts with the current state: a stale, used or
         expired confirmation (preview again), a reserved job pipeline, a
         run in the wrong state, a profile that collections use, a pipeline
-        of a deleted profile, or a save that would make a profile in use not
-        ready.
+        of a deleted profile, a save that would make a profile in use not
+        ready, or a power action while the app is not the login item or work
+        is running.
       content:
         application/json:
           schema:
@@ -3858,7 +3935,9 @@ components:
     ValidationFailed:
       description: >
         Core validation rejected the graph, inputs or selector. The body
-        lists every structured issue.
+        lists every structured issue. A power request with any body other
+        than one of the two actions gets this status with the plain error
+        envelope.
       content:
         application/json:
           schema:
@@ -7633,6 +7712,45 @@ components:
         message:
           type: string
           description: Redacted. Cut at 10,000 characters.
+
+    PowerStatus:
+      type: object
+      additionalProperties: false
+      required: [status, managed]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        managed:
+          type: boolean
+          description: >
+            True when the running app is the login item, so Restart and Turn
+            off can act on it.
+
+    PowerRequest:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action:
+          type: string
+          maxLength: 32
+          enum: [restart, "off"]
+          description: >
+            `restart` signals the app so launchd starts it again. `off` unloads
+            the agent. Any other value gets 422.
+
+    PowerAccepted:
+      type: object
+      additionalProperties: false
+      required: [status, action]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        action:
+          type: string
+          enum: [restart, "off"]
 
     LogList:
       type: object
