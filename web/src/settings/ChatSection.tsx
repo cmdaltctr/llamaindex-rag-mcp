@@ -3,24 +3,13 @@ import { useState } from "react";
 import { useApi } from "../api/ApiProvider";
 import { chatSettingsQuery, connectionsQuery } from "../api/queries";
 import type { ChatSettings, Connection } from "../api/settings";
+import { useSetChatSettings } from "../api/settingsMutations";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Button } from "../components/ui/button";
 import { ChatModelForm } from "./ChatModelForm";
-import { isEnvironmentSource, sourceText } from "./connectionWords";
-
-const SOURCE = "text-meta text-muted-foreground";
-
-function ChoiceRow({ label, value, source }: { label: string; value: string; source: string }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <p className={SOURCE}>{label}</p>
-      <code dir="ltr" className="text-code font-mono [overflow-wrap:anywhere]">
-        {value}
-      </code>
-      <p className={SOURCE}>{sourceText(source)}</p>
-    </div>
-  );
-}
+import { ChoiceRow, SOURCE } from "./ChoiceRow";
+import { isEnvironmentSource } from "./connectionWords";
+import { JudgeBlock } from "./JudgeBlock";
 
 /** The provider and the model as two rows with their source, and Edit unless the environment or `.env` sets them. */
 function Choice({ settings, connections, onEdit }: { settings: ChatSettings; connections: Connection[]; onEdit: () => void }) {
@@ -40,6 +29,22 @@ function Choice({ settings, connections, onEdit }: { settings: ChatSettings; con
         </div>
       )}
     </div>
+  );
+}
+
+/** The Chat form with its own save, so a failed save does not outlive the form. */
+function ChatForm({ settings, connections, onClose }: { settings: ChatSettings; connections: Connection[]; onClose: () => void }) {
+  const save = useSetChatSettings();
+  return (
+    <ChatModelForm
+      initial={{ provider: settings.provider ?? "", model: settings.model ?? "" }}
+      connections={connections}
+      save={save}
+      label="Chat provider and model"
+      cloudNote={(host) => `Questions and retrieved passages are sent to ${host}.`}
+      canClear={settings.source === "config-file"}
+      onClose={onClose}
+    />
   );
 }
 
@@ -68,17 +73,19 @@ export function ChatSection() {
       ) : (
         <>
           {editing ? (
-            <ChatModelForm key={`${settings.provider}|${settings.model}|${settings.source}`} settings={settings} connections={connections} onClose={() => setEditing(false)} />
+            <ChatForm key={`${settings.provider}|${settings.model}|${settings.source}`} settings={settings} connections={connections} onClose={() => setEditing(false)} />
           ) : (
             <Choice settings={settings} connections={connections} onEdit={() => setEditing(true)} />
           )}
           <ul className="list-disc ps-5 text-meta text-muted-foreground">
             <li>The choice also answers MCP clients of this web server that cannot supply their own model.</li>
             <li>Metadata extraction keeps its own model.</li>
+            <li>The claim check judge has its own choice in the block below.</li>
             <li>
               <code className="font-mono text-code">omrg</code> over stdio and the CLI read the same omrg.jsonc at their next launch.
             </li>
           </ul>
+          <JudgeBlock connections={connections} />
         </>
       )}
     </section>

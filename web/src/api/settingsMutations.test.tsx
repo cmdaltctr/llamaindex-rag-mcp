@@ -12,6 +12,7 @@ import {
   useSaveProviderFields,
   useSaveProviderKey,
   useSetChatSettings,
+  useSetJudgeSettings,
   useSetMcpEnabled,
   useSetUploadLimit,
   useSetWebPort,
@@ -104,5 +105,21 @@ describe("settings mutations", () => {
     act(() => result.current.mutate(null));
     await waitFor(() => expect(queryClient.getQueryState(queryKeys.chatSettings())?.isInvalidated).toBe(true));
     expect(server.find("PUT", "/v1/settings/chat")).toHaveLength(1);
+  });
+  it("refreshes the judge status after a save or a clear", async () => {
+    const { wrapper, queryClient, server } = setup({ "PUT /v1/settings/judge": () => ({ status: "ok", revision: "r2" }) });
+    await queryClient.prefetchQuery({ queryKey: queryKeys.judgeSettings(), queryFn: () => ({}) });
+    const { result } = renderHook(() => useSetJudgeSettings(), { wrapper });
+    act(() => result.current.mutate({ provider: "openrouter", model: "openai/gpt-5-mini" }));
+    await waitFor(() => expect(queryClient.getQueryState(queryKeys.judgeSettings())?.isInvalidated).toBe(true));
+    expect(server.find("PUT", "/v1/settings/judge")).toHaveLength(1);
+  });
+
+  it("refreshes the judge status after a provider write, because a key can make the judge ready", async () => {
+    const { wrapper, queryClient } = setup({ "PUT /v1/connections/openrouter/key": () => ({ status: "ok" }) });
+    await queryClient.prefetchQuery({ queryKey: queryKeys.judgeSettings(), queryFn: () => ({}) });
+    const { result } = renderHook(() => useSaveProviderKey("openrouter"), { wrapper });
+    act(() => result.current.mutate("sk-or-typed-0001"));
+    await waitFor(() => expect(queryClient.getQueryState(queryKeys.judgeSettings())?.isInvalidated).toBe(true));
   });
 });

@@ -26,10 +26,10 @@ Prepare the feature worktree with `uv sync --frozen --extra web`. Each task writ
 
 ## 3. Web Settings judge block
 
-- [ ] 3.1 Add `JudgeSettings`, `getJudgeSettings` and `setJudgeSettings` to `web/src/api/settings.ts`, the query to `web/src/api/queries.ts` and `useSetJudgeSettings` to `web/src/api/settingsMutations.ts`, with a failing test in `web/src/api/settings.test.ts` first. Verify `npm test` passes in `web/`.
-- [ ] 3.2 Write failing tests in `web/src/settings/ChatSection.test.tsx` for every scenario in the `workspace-settings` delta: default judge shown, Edit opens filled, pick from list, Remove, locked judge, and the "where the choice applies" text. Add judge fixtures to `web/src/settings/test/fixtures.ts`. Confirm they fail.
-- [ ] 3.3 Make `ChatModelForm.tsx` take its save mutation, labels and initial values as props, with Save disabled for an empty model. Keep all existing `ChatSection.test.tsx` tests green.
-- [ ] 3.4 Add the "Claim check judge" block to `web/src/settings/ChatSection.tsx` (rows, Edit, Remove, lock note, profile note, cloud note). Verify 3.2 passes, then run `npm run lint`, `npm run typecheck` and `npm test` in `web/`.
+- [x] 3.1 Add `JudgeSettings`, `getJudgeSettings` and `setJudgeSettings` to `web/src/api/settings.ts`, the query to `web/src/api/queries.ts` and `useSetJudgeSettings` to `web/src/api/settingsMutations.ts`, with a failing test in `web/src/api/settings.test.ts` first. Verify `npm test` passes in `web/`.
+- [x] 3.2 Write failing tests in `web/src/settings/ChatSection.test.tsx` for every scenario in the `workspace-settings` delta: default judge shown, Edit opens filled, pick from list, Remove, locked judge, and the "where the choice applies" text. Add judge fixtures to `web/src/settings/test/fixtures.ts`. Confirm they fail.
+- [x] 3.3 Make `ChatModelForm.tsx` take its save mutation, labels and initial values as props, with Save disabled for an empty model. Keep all existing `ChatSection.test.tsx` tests green.
+- [x] 3.4 Add the "Claim check judge" block to `web/src/settings/ChatSection.tsx` (rows, Edit, Remove, lock note, profile note, cloud note). Verify 3.2 passes, then run `npm run lint`, `npm run typecheck` and `npm test` in `web/`.
 - [ ] 3.5 Rebuild the static bundle in `src/omrg/transports/api/static/` with the project's web build command. Verify `omrg web` serves the new block.
 
 ## 4. Documentation

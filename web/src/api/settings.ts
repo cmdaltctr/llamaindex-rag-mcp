@@ -2,7 +2,7 @@
  * Typed client for the Settings routes: health, provider connections, the
  * server log and MCP access. Shapes follow `openapi.yaml` (`getConnections`,
  * `testConnection`, `listProviderModels`, `saveProviderFields`, `saveProviderKey`,
- * `removeProviderKey`, `getChatSettings`, `setChatSettings`, `testChatModel`, `getLogs`, `streamLogs`, `getMcpState`, `setMcpEnabled`,
+ * `removeProviderKey`, `getChatSettings`, `setChatSettings`, `testChatModel`, `getJudgeSettings`, `setJudgeSettings`, `getLogs`, `streamLogs`, `getMcpState`, `setMcpEnabled`,
  * `rotateMcpToken`, `revokeMcpToken`, `getWebPort`, `setWebPort`,
  * `getUploadLimit`, `setUploadLimit`).
  * No response here ever holds a provider key; the MCP token appears once, in
@@ -118,6 +118,25 @@ export interface ChatSettings {
   enabled: boolean;
   ready: boolean;
   /** `disabled`, `unknown-provider`, `not-installed` or `not-configured` when not ready. */
+  reason: string | null;
+}
+
+/** The claim check judge. A profile decides per collection whether claims are checked, so this holds no on/off state. */
+export interface JudgeSettings {
+  status: "ok";
+  revision: string;
+  /** The provider as set: a registry name, or the alias `cloud` or `local`. */
+  provider: string;
+  /** The registry provider the alias resolves to, such as `openrouter`. */
+  resolved_provider: string;
+  /** `""` when no judge model is set. */
+  model: string;
+  source: "env" | "dotenv" | "config-file" | "default";
+  locked: boolean;
+  lock_reason: string | null;
+  enabled: boolean;
+  ready: boolean;
+  /** `disabled`, `unknown-provider`, `not-installed`, `not-configured` or `no-model` when not ready. */
   reason: string | null;
 }
 
@@ -251,6 +270,15 @@ export function setChatSettings(api: ApiClient, choice: ChatChoice | null, optio
 /** Sends one short prompt to the typed choice, or to the saved choice when none is given. Nothing is saved. */
 export function testChatModel(api: ApiClient, choice: ChatChoice | null = null, options: CallOptions = {}): Promise<ChatTestResult> {
   return api.request<ChatTestResult>("POST", "/v1/settings/chat/test", { body: choice ?? {}, signal: options.signal });
+}
+
+export function getJudgeSettings(api: ApiClient, options: CallOptions = {}): Promise<JudgeSettings> {
+  return api.request<JudgeSettings>("GET", "/v1/settings/judge", { signal: options.signal });
+}
+
+/** Saves the judge provider and model as one unit, or clears both with `null`. A save never writes an alias. */
+export function setJudgeSettings(api: ApiClient, choice: ChatChoice | null, options: SaveOptions = {}): Promise<unknown> {
+  return api.request<unknown>("PUT", "/v1/settings/judge", { body: chatBody(choice, options.revision), signal: options.signal });
 }
 
 export function getLogs(api: ApiClient, after = 0, options: CallOptions = {}): Promise<LogList> {

@@ -1,9 +1,8 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, type UseMutationResult } from "@tanstack/react-query";
 import { List, Plug } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { useApi } from "../api/ApiProvider";
-import { listProviderModels, testChatModel, type ChatSettings, type Connection } from "../api/settings";
-import { useSetChatSettings } from "../api/settingsMutations";
+import { listProviderModels, testChatModel, type ChatChoice, type Connection } from "../api/settings";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -20,24 +19,34 @@ function notReady(connection: Connection): string | null {
   return key !== undefined && key.required && !key.set ? "no key" : null;
 }
 
+/** A write of a provider and model choice, or a clear with `null`. */
+export type ChoiceSave = UseMutationResult<unknown, Error, ChatChoice | null>;
+
 interface ChatModelFormProps {
-  settings: ChatSettings;
+  /** The values the form opens with. */
+  initial: ChatChoice;
   connections: Connection[];
+  save: ChoiceSave;
+  /** The label above the provider select, such as "Chat provider and model". */
+  label: string;
+  /** The sentence shown when the selected provider is cloud, given the host the text goes to. */
+  cloudNote: (host: string) => string;
+  /** Offers Clear, which sends `null`. */
+  canClear: boolean;
   /** Called after a good Save or Clear, and on Cancel. */
   onClose: () => void;
 }
 
 /** The provider select, the model name, List models, Test, Save, Cancel and Clear. Only Save and Clear write. */
-export function ChatModelForm({ settings, connections, onClose }: ChatModelFormProps) {
+export function ChatModelForm({ initial, connections, save, label, cloudNote, canClear, onClose }: ChatModelFormProps) {
   const api = useApi();
   const modelId = useId();
-  const [provider, setProvider] = useState(settings.provider ?? "");
-  const [model, setModel] = useState(settings.model ?? "");
+  const [provider, setProvider] = useState(initial.provider);
+  const [model, setModel] = useState(initial.model);
   const choice = { provider, model: model.trim() };
   const ready = provider !== "" && choice.model !== "";
   const selected = connections.find((connection) => connection.provider === provider);
 
-  const save = useSetChatSettings();
   const list = useMutation({ mutationFn: () => listProviderModels(api, provider), gcTime: 0 });
   const test = useMutation({ mutationFn: () => testChatModel(api, choice), gcTime: 0 });
   const names = list.data?.reachable ? list.data.models : [];
@@ -59,7 +68,7 @@ export function ChatModelForm({ settings, connections, onClose }: ChatModelFormP
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
-        <Label>Chat provider and model</Label>
+        <Label>{label}</Label>
         <Select value={provider} onValueChange={changeProvider}>
           <SelectTrigger aria-label="Provider" className="max-w-xs">
             <SelectValue placeholder="Choose a provider" />
@@ -96,7 +105,7 @@ export function ChatModelForm({ settings, connections, onClose }: ChatModelFormP
         <Button type="button" variant="outline" size="sm" onClick={onClose}>
           Cancel
         </Button>
-        {settings.source === "config-file" ? (
+        {canClear ? (
           <Button type="button" variant="outline" size="sm" disabled={save.isPending} onClick={() => save.mutate(null, { onSuccess: onClose })}>
             Clear
           </Button>
@@ -140,7 +149,7 @@ export function ChatModelForm({ settings, connections, onClose }: ChatModelFormP
         ) : null}
       </div>
       {selected?.locality === "cloud" ? (
-        <p className="text-meta text-muted-foreground">{`Questions and retrieved passages are sent to ${cloudHost(selected)}.`}</p>
+        <p className="text-meta text-muted-foreground">{cloudNote(cloudHost(selected))}</p>
       ) : null}
       {save.isError ? <SaveErrorNotice error={save.error} onRetry={() => save.reset()} /> : null}
       {list.isError ? <ErrorNotice error={list.error} onRetry={() => list.mutate()} /> : null}

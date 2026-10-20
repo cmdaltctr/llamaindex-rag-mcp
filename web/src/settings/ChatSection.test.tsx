@@ -1,10 +1,10 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import type { ChatSettings, Connection, ConnectionList, ProviderField } from "../api/settings";
+import type { ChatSettings, Connection, ConnectionList, JudgeSettings, ProviderField } from "../api/settings";
 import { json } from "../test/fakeDocumentsServer";
 import { startApp } from "../test/startApp";
-import { CHAT_READY, CONNECTIONS, LLAMACPP, OLLAMA, OPENROUTER, settingsServer, urlField } from "./test/fixtures";
+import { CHAT_READY, CONNECTIONS, JUDGE_DEFAULT, JUDGE_SAVED, LLAMACPP, OLLAMA, OPENROUTER, settingsServer, urlField } from "./test/fixtures";
 
 const UNSET: ChatSettings = { ...CHAT_READY, provider: null, model: null, source: "default", ready: false, reason: "not-configured" };
 
@@ -256,5 +256,130 @@ describe("Chat section", () => {
   it("shows a friendly line with Retry when Chat settings cannot load", async () => {
     startApp("#/settings/chat", settingsServer({ "GET /v1/settings/chat": () => json({ status: "error", message: "boom" }, 500) }));
     expect(await screen.findByRole("button", { name: "Retry" })).toBeInTheDocument();
+  });
+});
+
+async function openJudge(handlers = {}) {
+  const opened = await openChat(handlers);
+  await within(section()).findByRole("region", { name: "Claim check judge" });
+  return opened;
+}
+
+function judge() {
+  return within(section()).getByRole("region", { name: "Claim check judge" });
+}
+
+async function pickInJudge(user: ReturnType<typeof userEvent.setup>, name: string, option: string | RegExp) {
+  await user.click(within(judge()).getByRole("combobox", { name }));
+  await user.click(await screen.findByRole("option", { name: option }));
+}
+
+describe("Claim check judge", () => {
+  it("shows the default judge with the alias, Not set, the skipped-checks sentence and Edit, and no Remove", async () => {
+    await openJudge();
+    const block = judge();
+    expect(within(block).getByText("cloud (OpenRouter)")).toBeInTheDocument();
+    expect(within(block).getByText("Not set")).toBeInTheDocument();
+    expect(within(block).getAllByText("default")).toHaveLength(2);
+    expect(block).toHaveTextContent("Claim checks are skipped until you set a judge model.");
+    expect(within(block).getByRole("button", { name: "Edit claim check judge" })).toBeInTheDocument();
+    expect(within(block).queryByRole("button", { name: /remove/i })).toBeNull();
+  });
+
+  it("opens Edit filled with the saved provider and model", async () => {
+    const { user } = await openJudge({ "GET /v1/settings/judge": () => JUDGE_SAVED });
+    expect(within(judge()).getByText("OpenRouter")).toBeInTheDocument();
+    expect(within(judge()).getAllByText("from omrg.jsonc")).toHaveLength(2);
+    expect(judge()).not.toHaveTextContent("Claim checks are skipped");
+    await user.click(within(judge()).getByRole("button", { name: "Edit claim check judge" }));
+    expect(within(judge()).getByRole("combobox", { name: "Provider" })).toHaveTextContent("OpenRouter");
+    expect(within(judge()).getByRole("textbox", { name: "Model name" })).toHaveValue("openai/gpt-5-mini");
+    expect(within(judge()).queryByRole("button", { name: "Clear" })).toBeNull();
+  });
+
+  it("preselects the provider an alias resolves to and keeps Save disabled while the model is empty", async () => {
+    const { user, server } = await openJudge();
+    await user.click(within(judge()).getByRole("button", { name: "Edit claim check judge" }));
+    expect(within(judge()).getByRole("combobox", { name: "Provider" })).toHaveTextContent("OpenRouter");
+    expect(within(judge()).getByRole("textbox", { name: "Model name" })).toHaveValue("");
+    expect(within(judge()).getByRole("button", { name: "Save" })).toBeDisabled();
+    await user.type(within(judge()).getByRole("textbox", { name: "Model name" }), "   {Enter}");
+    expect(server.find("PUT", "/v1/settings/judge")).toHaveLength(0);
+  });
+
+  it("fills the judge model from List models, saves nothing until Save, then saves both as one unit", async () => {
+    const { user, server } = await openJudge({
+      "POST /v1/connections/ollama/models": () => ({ status: "ok", reachable: true, reason: null, models: ["llama3.2", "qwen3:4b"], truncated: false }),
+      "PUT /v1/settings/judge": () => ({ status: "ok", revision: "r2" }),
+    });
+    await user.click(within(judge()).getByRole("button", { name: "Edit claim check judge" }));
+    await pickInJudge(user, "Provider", "Ollama");
+    await user.click(within(judge()).getByRole("button", { name: "List models" }));
+    await pickInJudge(user, "Models", "qwen3:4b");
+    expect(within(judge()).getByRole("textbox", { name: "Model name" })).toHaveValue("qwen3:4b");
+    expect(server.find("PUT", "/v1/settings/judge")).toHaveLength(0);
+    expect(server.find("PUT", "/v1/settings/chat")).toHaveLength(0);
+    await user.click(within(judge()).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(server.find("PUT", "/v1/settings/judge")).toHaveLength(1));
+    expect(server.find("PUT", "/v1/settings/judge")[0]?.body).toEqual({ provider: "ollama", model: "qwen3:4b", revision: "r1" });
+  });
+
+  it("tests the typed judge choice through the Chat test route and saves nothing", async () => {
+    const { user, server } = await openJudge({
+      "GET /v1/settings/judge": () => JUDGE_SAVED,
+      "POST /v1/settings/chat/test": () => ({ status: "ok", ok: true, reason: null, elapsed_ms: 420 }),
+    });
+    await user.click(within(judge()).getByRole("button", { name: "Edit claim check judge" }));
+    await user.click(within(judge()).getByRole("button", { name: "Test" }));
+    expect(await within(judge()).findByText("Working")).toHaveAttribute("data-slot", "badge");
+    expect(server.find("POST", "/v1/settings/chat/test")[0]?.body).toEqual({ provider: "openrouter", model: "openai/gpt-5-mini" });
+    expect(server.find("PUT", "/v1/settings/judge")).toHaveLength(0);
+  });
+
+  it("removes a judge from omrg.jsonc with the clear request and shows the default again", async () => {
+    let state: JudgeSettings = JUDGE_SAVED;
+    const { user, server } = await openJudge({
+      "GET /v1/settings/judge": () => state,
+      "PUT /v1/settings/judge": () => {
+        state = JUDGE_DEFAULT;
+        return { status: "ok", revision: "r2" };
+      },
+    });
+    await user.click(within(judge()).getByRole("button", { name: "Remove claim check judge" }));
+    expect(await within(judge()).findByText("cloud (OpenRouter)")).toBeInTheDocument();
+    expect(within(judge()).getAllByText("default")).toHaveLength(2);
+    expect(server.find("PUT", "/v1/settings/judge")[0]?.body).toEqual({ revision: "r1" });
+  });
+
+  it("shows a judge locked by .env with the variable named and offers no Edit or Remove", async () => {
+    const locked: JudgeSettings = { ...JUDGE_SAVED, source: "dotenv", locked: true, lock_reason: "Set by ANSWER__VERIFY_PROVIDER in .env. Remove it to edit here." };
+    await openJudge({ "GET /v1/settings/judge": () => locked });
+    const block = judge();
+    expect(block).toHaveTextContent("ANSWER__VERIFY_PROVIDER");
+    expect(block).toHaveTextContent("Set in .env. Change it there.");
+    expect(block).toHaveTextContent("openai/gpt-5-mini");
+    expect(within(block).queryByRole("button", { name: "Edit claim check judge" })).toBeNull();
+    expect(within(block).queryByRole("button", { name: "Remove claim check judge" })).toBeNull();
+  });
+
+  it("states where the judge applies and that a profile judge overrides it", async () => {
+    await openJudge();
+    expect(section()).toHaveTextContent(/the claim check judge has its own choice in the block below/i);
+    expect(judge()).toHaveTextContent(/only for collections whose profile turns on "Check claims"/i);
+    expect(judge()).toHaveTextContent(/a profile that sets its own judge overrides this choice/i);
+  });
+
+  it("states that claims leave this machine only for a cloud judge", async () => {
+    const { user } = await openJudge();
+    expect(judge()).toHaveTextContent(/claims and cited passages are sent off this machine/i);
+    await user.click(within(judge()).getByRole("button", { name: "Edit claim check judge" }));
+    await pickInJudge(user, "Provider", "Ollama");
+    expect(judge()).not.toHaveTextContent(/claims and cited passages are sent off this machine/i);
+  });
+
+  it("shows no cloud statement for a local judge", async () => {
+    await openJudge({ "GET /v1/settings/judge": () => ({ ...JUDGE_SAVED, provider: "ollama", resolved_provider: "ollama", model: "qwen3:4b" }) });
+    expect(within(judge()).getByText("Ollama")).toBeInTheDocument();
+    expect(judge()).not.toHaveTextContent(/sent off this machine/i);
   });
 });
