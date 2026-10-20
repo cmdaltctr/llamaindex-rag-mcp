@@ -28,6 +28,7 @@ const FIELD_LABELS: Record<string, string> = {
   collection: "Collection",
   fetch_k: "Candidates to fetch",
   metadata_filter: "Metadata filter",
+  pdf_reader: "PDF reader",
   expand_window: "Neighbour chunks to add",
   include_diagnostics: "Include diagnostics",
 };

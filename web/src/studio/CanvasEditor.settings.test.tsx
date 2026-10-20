@@ -208,10 +208,10 @@ describe("revision, run and cancellation", () => {
   it("offers PDF readers: disables an uninstalled one, writes the choice and names the inherited reader", async () => {
     const { server, user } = await setup({ catalogue: [...CATALOGUE, ...CATALOGUE_INGEST] });
     await addWithKeyboard(user, "Read document", "read.document");
-    const reader = group("Pdf reader");
+    const reader = group("PDF reader");
     expect(reader).toHaveTextContent("Inherit uses the host value: pdf_inspector.");
 
-    await user.click(within(reader).getByRole("combobox", { name: "Pdf reader value" }));
+    await user.click(within(reader).getByRole("combobox", { name: "PDF reader value" }));
     const missing = await screen.findByRole("option", { name: /pypdfium2 \(not installed\)/ });
     expect(missing).toHaveAttribute("aria-disabled", "true");
     await user.click(await screen.findByRole("option", { name: "liteparse" }));
@@ -221,7 +221,7 @@ describe("revision, run and cancellation", () => {
   it("shows why a PDF reader is unavailable", async () => {
     const { user } = await setup({ catalogue: [...CATALOGUE, ...CATALOGUE_INGEST] });
     await addWithKeyboard(user, "Read document", "read.document");
-    await user.click(within(group("Pdf reader")).getByRole("combobox", { name: "Pdf reader value" }));
+    await user.click(within(group("PDF reader")).getByRole("combobox", { name: "PDF reader value" }));
     await screen.findByRole("option", { name: /pypdfium2/ });
     expect(screen.getByText("The package 'pypdfium2' is not installed.")).toBeInTheDocument();
   });

@@ -39,6 +39,16 @@ describe("StepSettingsFields", () => {
     expect(within(screen.getByRole("group", { name: "Number of results" })).getByText("Value in use: 10 (from profile)")).toBeInTheDocument();
   });
 
+  it("writes a metadata filter to the draft and clears it", async () => {
+    const { seen, user } = setup({ id: "pq", operation: "retrieve.prepare_query", version: 1 });
+    const field = screen.getByRole("textbox", { name: "Metadata filter value" });
+    await user.click(field);
+    await user.paste('{"file_type": "pdf"}');
+    expect(seen.draft.graph.nodes[0]?.params).toEqual({ metadata_filter: { file_type: "pdf" } });
+    await user.clear(field);
+    expect(seen.draft.graph.nodes[0]).not.toHaveProperty("params.metadata_filter");
+  });
+
   it("offers the bypass switch for Cross-encoder rerank and writes it to the draft", async () => {
     const { seen, user } = setup({ id: "rr", operation: "select.rerank", version: 1 });
     await user.click(screen.getByRole("checkbox", { name: "Bypass this step" }));

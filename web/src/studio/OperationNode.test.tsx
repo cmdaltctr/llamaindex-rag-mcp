@@ -143,7 +143,7 @@ describe("Step cards show what each step does", () => {
     expect(card("pq1")).toHaveTextContent("Number of results: From profile");
     expect(card("pq1")).toHaveTextContent("Minimum similarity: From profile");
     expect(card("pq1")).toHaveTextContent("Reranker: From profile");
-    expect(card("pq1")).toHaveTextContent("+2 more settings");
+    expect(card("pq1")).toHaveTextContent("+3 more settings");
     expect(card("pq1")).not.toHaveTextContent("Candidates to fetch");
   });
 
@@ -352,7 +352,7 @@ describe("Step settings sit in a mini card that expands in place", () => {
 
   it("shows a +N more settings button that starts folded", async () => {
     await renderCards([node("pq1", "retrieve.prepare_query")]);
-    expect(more("pq1")).toHaveTextContent("+2 more settings");
+    expect(more("pq1")).toHaveTextContent("+3 more settings");
     expect(more("pq1")).toHaveAttribute("aria-expanded", "false");
     expect(miniCard("pq1")).not.toHaveTextContent("Candidates to fetch");
   });
@@ -364,9 +364,10 @@ describe("Step settings sit in a mini card that expands in place", () => {
     expect(more("pq1")).toHaveAttribute("aria-expanded", "true");
     expect(miniCard("pq1")).toHaveTextContent("Candidates to fetch: Default");
     expect(miniCard("pq1")).toHaveTextContent("Collection: Server default");
-    expect(miniCard("pq1").querySelectorAll("li")).toHaveLength(5);
+    expect(miniCard("pq1")).toHaveTextContent("Metadata filter: Default");
+    expect(miniCard("pq1").querySelectorAll("li")).toHaveLength(6);
     fireEvent.click(more("pq1"));
-    expect(more("pq1")).toHaveTextContent("+2 more settings");
+    expect(more("pq1")).toHaveTextContent("+3 more settings");
     expect(miniCard("pq1").querySelectorAll("li")).toHaveLength(3);
   });
 
