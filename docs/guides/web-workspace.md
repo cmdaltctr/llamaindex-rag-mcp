@@ -413,7 +413,7 @@ Each row shows the value in force, where it comes from and the default. To chang
 
 Save writes the key to `omrg.jsonc`. It does not change the value in force. The changes apply after a restart of `omrg web`. Until the restart, the row shows the saved value and "Restart to apply". After the save, the restart dialog opens. Select "Restart now", or select Later and restart yourself.
 
-Select "Use default" to remove the key from `omrg.jsonc`. The default then applies at the next launch. A blank engine name is refused. To use no fallback engine, set `OCR_ENGINE_FALLBACK=` in `.env`. A saved empty fallback shows as "None (no fallback)".
+Select "Use default" to remove the key from `omrg.jsonc`. The default then applies at the next launch. A blank engine name is refused. To use no fallback engine, set `OCR_ENGINE_FALLBACK=` in the environment or `.env`. The row is then locked and shows "None (no fallback)". A blank value in `omrg.jsonc` reads as not set, so the row shows "Not set".
 
 These rules also apply:
 

@@ -1022,7 +1022,7 @@ Settings > Document reading edits nine keys in `omrg.jsonc`: `pdf_reader`, `ocr_
 - The page refuses blank text. "Use default" removes the key from the file.
 - These checks run only when the page saves. At startup, an unknown `pdf_reader` from any source still logs a warning and falls back to `auto`.
 
-The page cannot set "no fallback engine" yet. To turn the fallback route off, set `OCR_ENGINE_FALLBACK=` in `.env`.
+The page cannot set "no fallback engine" yet. To turn the fallback route off, set `OCR_ENGINE_FALLBACK=` in the environment or `.env`. A blank `"ocr_engine_fallback": ""` in `omrg.jsonc` does not turn it off: the file reader treats blank text as not set, and the row shows "Not set".
 
 ---
 

@@ -51,7 +51,10 @@ export function readingChoices(kind: ReadingKind, state: DocumentReadingState): 
   return [];
 }
 
-/** A value as the row shows it. A saved empty engine name means no fallback (design D8). */
+/**
+ * A value as the row shows it. An empty engine name can only be in force from `OCR_ENGINE_FALLBACK=`
+ * in the environment or `.env`, and means no fallback. The route never sends `""` as a saved value (design D8).
+ */
 export function readingText(value: DocumentReadingValue | null): string {
   if (value === null) return "Not set";
   if (typeof value === "boolean") return value ? "On" : "Off";

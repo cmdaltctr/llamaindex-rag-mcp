@@ -214,10 +214,11 @@ def test_saved_is_null_for_a_value_that_breaks_its_rule(harness: Harness) -> Non
     assert found["ocr_maths_page_fraction"]["saved"] is None
 
 
-def test_a_hand_written_blank_fallback_comes_back_as_blank(harness: Harness) -> None:
+def test_a_hand_written_blank_fallback_comes_back_as_not_set(harness: Harness) -> None:
+    # The file reader treats blank text as not set, so the engine keeps paddleocr-vl (D8).
     harness.write('{ "ocr_engine_fallback": "" }')
     harness.launch()
-    assert harness.rows()["ocr_engine_fallback"]["saved"] == ""
+    assert harness.rows()["ocr_engine_fallback"]["saved"] is None
 
 
 def test_a_missing_state_uses_the_launch_settings_and_nothing_is_pending(

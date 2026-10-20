@@ -8133,8 +8133,9 @@ components:
           type: [string, boolean, number, "null"]
           description: >
             The valid value `omrg.jsonc` holds now. Null when the file does not
-            set the key or holds a value that breaks its rule. For
-            `ocr_engine_fallback`, a hand-written `""` comes back as `""`.
+            set the key or holds a value that breaks its rule. A blank text
+            value also comes back as null, because the file reader treats it
+            as not set.
         source:
           type: string
           enum: [env, dotenv, config-file, default]

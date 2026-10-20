@@ -157,6 +157,14 @@ def test_value_saved_but_not_yet_in_force(harness: Harness, client: TestClient) 
     assert (row["value"], row["saved"], row["restart_pending"]) == ("auto", "liteparse", True)
 
 
+def test_blank_saved_fallback_shows_as_not_set(harness: Harness, client: TestClient) -> None:
+    # The file reader treats a blank value as not set, so the engine keeps its default.
+    harness.write('{ "ocr_engine_fallback": "" }')
+    harness.launch()
+    row = rows(client.get(URL).json())["ocr_engine_fallback"]
+    assert row["saved"] is None
+
+
 def test_key_locked_by_dotenv(
     harness: Harness, client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:

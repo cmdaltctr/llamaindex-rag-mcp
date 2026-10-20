@@ -126,8 +126,8 @@ describe("Document reading", () => {
     expect(row("Fallback engine")).not.toHaveTextContent("OCR_WORKER_COMMAND");
   });
 
-  it("shows a saved empty fallback engine as no fallback", async () => {
-    await openSection({ "GET /v1/settings/document-reading": () => readingState({ ocr_engine_fallback: { value: "", saved: "", source: "config-file" } }) });
+  it("shows an empty fallback engine set in .env as no fallback", async () => {
+    await openSection({ "GET /v1/settings/document-reading": () => readingState({ ocr_engine_fallback: { value: "", saved: null, source: "dotenv", locked: true, lock_reason: "Remove OCR_ENGINE_FALLBACK from the environment or .env to edit it here." } }) });
     expect(within(row("Fallback engine")).getByText("None (no fallback)")).toBeInTheDocument();
   });
 

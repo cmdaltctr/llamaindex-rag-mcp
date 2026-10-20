@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Any
 from ... import capabilities
 from ...config.rules import DOCUMENT_READING_KEYS, document_reading_problem
 from ...config.settings_file import SettingsFile, read_settings_file
-from ...config.user_config import display_path, parse_jsonc
+from ...config.user_config import display_path
 from ..settings_view import plain, source_word
 from .restart_snapshot import capture, pending
 
@@ -35,7 +35,6 @@ logger = logging.getLogger(__name__)
 #: Source words a row may show. ``init`` and ``yaml`` read ``default``.
 _SHOWN_SOURCES = frozenset({"env", "dotenv", "config-file"})
 _LOCKING_SOURCES = frozenset({"env", "dotenv"})
-_BLANK_KEEPS = "ocr_engine_fallback"  # a hand-written "" comes back as "" (D10)
 NOT_A_READING_KEY = "{key} is not a document reading setting."
 READER_NOT_INSTALLED = (
     "pdf_reader: This PDF reader is not installed. Install its package, then save again."
@@ -86,13 +85,7 @@ def _saved(file: SettingsFile, key: str) -> Any:
     if key in file.values:
         value = file.values[key]
         return None if document_reading_problem(key, value) is not None else value
-    if key != _BLANK_KEEPS or file.state != "ok":
-        return None
-    try:
-        raw = parse_jsonc(file.path.read_text(encoding="utf-8")).get(key)
-    except (OSError, ValueError, AttributeError):
-        return None
-    return "" if isinstance(raw, str) and not raw.strip() else None
+    return None
 
 
 def _rows(launch: Settings, file: SettingsFile, snapshot: Mapping[str, Any]) -> list[dict]:

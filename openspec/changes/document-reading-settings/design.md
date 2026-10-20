@@ -81,7 +81,7 @@ The writer reads a blank string as "remove the key". For `ocr_engine_fallback` a
 
 ### D8. Deferral: "no fallback engine"
 
-The page cannot set `ocr_engine_fallback` to empty, because the writer removes a blank key. A later change can add an explicit value (for example `"none"`) with its own rule in `routes.py`. Until then, a user who wants no fallback sets `OCR_ENGINE_FALLBACK=` in `.env` (the row is then locked) or writes `"ocr_engine_fallback": ""` in the file by hand. The page shows a saved empty value as "None (no fallback)".
+The page cannot set `ocr_engine_fallback` to empty, because the writer removes a blank key. A later change can add an explicit value (for example `"none"`) with its own rule in `routes.py`. Until then, a user who wants no fallback sets `OCR_ENGINE_FALLBACK=` in the environment or `.env` (the row is then locked and shows the value in force as "None (no fallback)"). A hand-written `"ocr_engine_fallback": ""` in `omrg.jsonc` does not turn the fallback off: the file reader treats blank text as not set, so the engine stays `paddleocr-vl`. The route therefore returns that saved value as `null` and the page shows "Not set". (Corrected 2026-10-20: the first draft said the page showed a saved `""` as "None (no fallback)", which claimed a state the engine did not have.)
 
 ### D9. Index identity note and docs
 
@@ -177,7 +177,7 @@ The example shows two of the nine `settings` entries. A real response always hol
 | `settings` | array of 9 objects | One per key, in the key order |
 | `settings[].key` | string | One of the nine keys |
 | `settings[].value` | per value-type table | The value in force since this launch (launch `Settings`). For `pdf_reader` this is the configured name, which can be `auto` |
-| `settings[].saved` | per value-type table, or `null` | The valid value `omrg.jsonc` holds now. `null` when the file does not set the key, or holds a value that breaks its rule (the Configuration section lists that problem). For `ocr_engine_fallback`, a hand-written `""` comes back as `""` |
+| `settings[].saved` | per value-type table, or `null` | The valid value `omrg.jsonc` holds now. `null` when the file does not set the key, or holds a value that breaks its rule (the Configuration section lists that problem). A blank text value also comes back as `null`, because the file reader treats it as not set (D8) |
 | `settings[].source` | `"env"` \| `"dotenv"` \| `"config-file"` \| `"default"` | Source of `value` at launch. `yaml` and `init` read `default` |
 | `settings[].locked` | boolean | `true` when `source` is `env` or `dotenv` |
 | `settings[].lock_reason` | string or `null` | `"Remove <ENV_NAME> from the environment or .env to edit it here."` when locked, else `null` |
