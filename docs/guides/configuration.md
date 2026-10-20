@@ -37,14 +37,20 @@ being silently ignored.
 
 ### The trap worth knowing
 
-`.env` and `omrg.jsonc` sit **above** profiles. Put a tuning value in either and it
+`.env` and environment variables sit **above** profiles. Put a profile lever
+(`retrieval.top_k`, `retrieval.rerank_enabled`, `retrieval.hybrid_enabled`,
+`chunking.strategy_fallback`, `metadata.taxonomy_mode`) in either and it
 overrides every profile silently.
 
 Real example: `RETRIEVAL__TOP_K=5` in `.env` meant the `documents` profile
 (top_k 10) and the `codebase` profile (top_k 20) both returned 5 results.
 Profiles looked broken. Nothing warned about it.
 
-**Keep `.env` for connection details and secrets only.**
+The same lever in `omrg.jsonc` does the opposite: each collection's profile
+replaces it, so it changes nothing. `omrg config show` still lists it with
+source `config-file`, so it looks in force (ADR-087 addendum).
+
+**Keep the profile levers out of `.env` and `omrg.jsonc`. Keep `.env` for connection details and secrets only.**
 
 ---
 

@@ -73,3 +73,14 @@ OMMS keeps every setting in one `omms.jsonc` that its own page also writes. That
 - `src/omrg/transports/cli/config.py` and `src/omrg/transports/cli/config_template.py` (`omrg config`)
 - `src/omrg/transports/api/settings_handover.py` and `src/omrg/transports/api/routes/configuration.py`
 - `docs/guides/configuration.md`, `docs/guides/cli-reference.md`, `.env.example`
+
+## Addendum (2026-10-20): Profile Levers and Key Precedence
+
+On 2026-10-20 the live app moved to `omrg.jsonc`. All 34 keys in `~/.omrg/.env` moved to the file. The OpenRouter key moved to `~/.config/omrg/secrets/openrouter.key`, with a `file://` reference. Then `~/.omrg/.env` was removed. The move and a code check found two facts that decision 3 does not state.
+
+1. **A collection's profile replaces the profile levers of `omrg.jsonc`.** Decision 3 gives the order of the server settings. Each collection operation then resolves its profile (`_bundle_to_effective` in `core/profiles/resolver.py`). For the five levers `retrieval.top_k`, `retrieval.rerank_enabled`, `retrieval.hybrid_enabled`, `chunking.strategy_fallback` and `metadata.taxonomy_mode`, the resolver reads the process environment, then the profile bundle, then a fixed fallback. It never reads the server value. `.env` is loaded into the process environment at startup, so it counts as environment.
+   - A lever in `.env` or the environment overrides every profile, with no warning.
+   - A lever in `omrg.jsonc` changes no search and no ingest. `omrg config show` and the Settings page still show it with source `config-file`, so it looks in force. A check with `retrieval.top_k: 5` in the file gave a server value of 5, but 10 for `documents` and 20 for `codebase`.
+   - `ingestion.ingest_extensions` and the three `answer.verify_*` fields are different. The resolver uses the server value when the bundle does not set the field, so a file value applies there.
+   - **Rule:** keep the five levers out of `omrg.jsonc` and `.env`. Change a lever in the profile, or with an environment variable for one command. The live migration followed this rule.
+2. **A shell key outranks the key file.** An `OPENROUTER_API_KEY` exported in a shell (for example in `~/.zshrc`) is `env`. It wins over the `file://` reference in each process that starts from that shell. The login item does not read `~/.zshrc`. The CLI and the web app can then use different keys. Remove the export to make every process use the key file.

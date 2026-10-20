@@ -112,3 +112,11 @@ token, because a browser does not let a page read a cross-origin response.
 - `tests/unit/test_web_page_secret.py`, `web/src/api/session.test.ts`
 - [Web workspace guide: Browser session](../guides/web-workspace.md#browser-session)
 - OMMS reference: `src/services/auth-token.ts`, `src/services/web-server.ts`, `src/services/cors.ts`
+
+## Addendum (2026-10-20): Verification on the Live Login Item
+
+The user reinstalled the login item from `v3` at `fcb4f1c` and checked it on port 8765.
+
+- The plain address signed in with no launch link.
+- After `omrg web restart`, an open tab kept working with no reload. The first request got 401, the page signed in again by itself, and the repeated request got 200.
+- A tab loaded before the upgrade has the old page code. It needs one reload.

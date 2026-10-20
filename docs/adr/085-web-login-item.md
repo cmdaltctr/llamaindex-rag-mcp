@@ -119,3 +119,5 @@ Added alternative: **wait for health to stop, then kickstart.** Rejected. launch
 Addendum (2026-10-19, [ADR-086](086-web-power-menu.md)): Turn off in the power panel is a second way to stop the app. It unloads the agent and keeps the plist, so decision 2 holds and `uninstall` is no longer the only way to stop the app. `omrg web start` loads the agent again.
 
 Addendum (2026-10-20, [ADR-088](088-persistent-workspace-sign-in-secret.md)): the consequence "A restart signs the browser out" no longer holds. Sessions still stay in memory, but the page signs in again by itself with a persistent workspace sign-in secret in `<workspace>/.auth-token`. The link file and `omrg web open` are unchanged.
+
+Addendum (2026-10-20, [ADR-087](087-settings-live-in-omrg-jsonc.md)): decision 6 no longer holds as written. The login item reads `omrg.jsonc` in the user config folder. `~/.omrg/.env` is optional, and a value in it overrides the file. The `install` plan names the file and suggests `omrg config init`.
