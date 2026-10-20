@@ -40,6 +40,8 @@ notebook plugin.
 | `app.py` | `create_app()`: builds the application and registers every router |
 | `lifespan.py` | Owns one Engine and the run service; drains them at shutdown |
 | `security.py`, `middleware.py` | Session, bearer credentials, scopes, Host and Origin checks, redaction |
+| `page_secret.py` | The persistent workspace sign-in secret (`<workspace>/.auth-token`) and the rule for which page load gets it |
+| `bind_address.py` | The loopback-only bind address check |
 | `grants.py`, `uploads.py` | Approved roots and managed uploads |
 | `routes/` | Route groups, one module each. They validate, delegate and format only |
 | `integrations_catalogue.py` | The integration catalogue and its availability probes (`GET /v1/integrations`) |

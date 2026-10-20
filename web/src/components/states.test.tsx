@@ -109,7 +109,7 @@ describe("ErrorNotice", () => {
 
   it("offers a reload for a refused session", () => {
     notice(new ApiError("http", RAW, "/v1/session", 401));
-    expect(screen.getByRole("alert")).toHaveTextContent(/open the workspace again/i);
+    expect(screen.getByRole("alert")).toHaveTextContent(/reload the page\. if that fails, run omrg web open/i);
     expect(screen.getByRole("button", { name: "Reload the page" })).toBeInTheDocument();
   });
 });

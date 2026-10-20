@@ -117,3 +117,5 @@ Added consequence: a stop signal always restarts the app.
 Added alternative: **wait for health to stop, then kickstart.** Rejected. launchd restarts the app by itself after the signal, so the command waited for a stop that never lasted.
 
 Addendum (2026-10-19, [ADR-086](086-web-power-menu.md)): Turn off in the power panel is a second way to stop the app. It unloads the agent and keeps the plist, so decision 2 holds and `uninstall` is no longer the only way to stop the app. `omrg web start` loads the agent again.
+
+Addendum (2026-10-20, [ADR-088](088-persistent-workspace-sign-in-secret.md)): the consequence "A restart signs the browser out" no longer holds. Sessions still stay in memory, but the page signs in again by itself with a persistent workspace sign-in secret in `<workspace>/.auth-token`. The link file and `omrg web open` are unchanged.

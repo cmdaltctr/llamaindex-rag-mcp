@@ -5,6 +5,10 @@
  * missing API route can come back as HTML. `request` checks the response
  * content type and raises `ApiError` instead of parsing HTML as JSON. Every
  * `api/*.ts` module is a thin typed layer over this function.
+ *
+ * After a server restart the session cookie is unknown and requests get 401.
+ * With a session renewer, `request` signs in again once and sends the request
+ * once more.
  */
 
 export type ApiErrorKind = "invalid-path" | "network" | "not-json" | "invalid-json" | "http";
@@ -39,6 +43,14 @@ export class ApiError extends Error {
 }
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
+
+/** Signs in again after a 401; `createSessionRenewer` in `bootstrap.ts` builds one. */
+export interface SessionRenewal {
+  /** How many sign-ins have succeeded. A 401 for a request sent before the latest one needs only a retry. */
+  readonly signIns: number;
+  /** Resolves `true` when the server accepted the secret. */
+  renew(): Promise<boolean>;
+}
 
 export type QueryValue = string | number | boolean | null | undefined;
 
@@ -99,8 +111,14 @@ function withQuery(path: string, query: Record<string, QueryValue> | undefined):
   return text === "" ? path : `${path}${path.includes("?") ? "&" : "?"}${text}`;
 }
 
-/** Builds the client. `fetchImpl` is set once here; components never receive it. */
-export function createApiClient(fetchImpl: FetchLike = (input, init) => fetch(input, init)): ApiClient {
+/**
+ * Builds the client. `fetchImpl` is set once here; components never receive it.
+ * `renewSession` signs in again after a 401 (see `createSessionRenewer`).
+ */
+export function createApiClient(
+  fetchImpl: FetchLike = (input, init) => fetch(input, init),
+  renewSession?: SessionRenewal,
+): ApiClient {
   async function request<T>(method: string, path: string, input: RequestInput = {}): Promise<T> {
     const url = withQuery(path, input.query);
     if (!isApiPath(url)) {
@@ -116,12 +134,21 @@ export function createApiClient(fetchImpl: FetchLike = (input, init) => fetch(in
       body = JSON.stringify(input.body);
     }
 
-    let response: Response;
-    try {
-      response = await fetchImpl(url, { method, headers, credentials: "same-origin", body, signal: input.signal });
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      throw new ApiError("network", `Could not reach the local server: ${detail}`, path);
+    async function send(): Promise<Response> {
+      try {
+        return await fetchImpl(url, { method, headers, credentials: "same-origin", body, signal: input.signal });
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new ApiError("network", `Could not reach the local server: ${detail}`, path);
+      }
+    }
+
+    const signInsBefore = renewSession?.signIns;
+    let response = await send();
+    if (response.status === 401 && renewSession !== undefined) {
+      // A sign-in that finished while this request was out already gave a new cookie.
+      const renewed = renewSession.signIns !== signInsBefore || (await renewSession.renew());
+      if (renewed) response = await send();
     }
 
     const contentType = response.headers.get("content-type");

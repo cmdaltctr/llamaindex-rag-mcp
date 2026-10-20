@@ -55,9 +55,9 @@ export function RestartDialog({ change, plural = false, onLater }: RestartDialog
         </DialogHeader>
         {restart.isSuccess ? (
           <p className="text-ui">
-            {"Restarting. This browser is signed out. Run "}
+            {"Restarting. This page signs in again by itself when OMRG is back. If the port changed, run "}
             <Command>omrg web open</Command>
-            {" in a terminal to sign in again."}
+            {" in a terminal."}
           </p>
         ) : null}
         {terminal && !restart.isSuccess ? (

@@ -158,10 +158,12 @@ The agent SHALL run with the working folder `~/.omrg`. The app SHALL read `omrg.
 - **WHEN** the user installs a newer `omrg` and runs `omrg web restart`
 - **THEN** `omrg web status` MUST report the new version as running
 
-#### Scenario: Restart signs the browser out
+#### Scenario: Restart keeps open tabs signed in
 
-- **WHEN** the app restarts
-- **THEN** earlier browser sessions MUST stop working and `omrg web open` MUST give a new sign-in link
+- **WHEN** the app restarts with the same workspace and port
+- **THEN** earlier browser sessions MUST stop working
+- **AND** an open tab MUST sign in again with the workspace sign-in secret, with no user action
+- **AND** `omrg web open` MUST still give a sign-in link
 
 ### Requirement: Web login item removal
 
@@ -241,6 +243,7 @@ The `restart` action SHALL ask launchd to send `SIGTERM` to the app, so launchd 
 - **THEN** the route MUST answer 202
 - **AND** the app MUST shut down in the normal way and launchd MUST start it again
 - **AND** the browser session MUST end, because sessions stay in memory
+- **AND** the open tab MUST sign in again with the workspace sign-in secret once the app answers
 
 #### Scenario: Turn off
 

@@ -94,6 +94,7 @@ development of OMRG — Opinionated Modular RAG.
 | [085](./085-web-login-item.md) | Web Login Item | 2026-10-19 | Proposed |
 | [086](./086-web-power-menu.md) | Web Power Menu | 2026-10-19 | Proposed |
 | [087](./087-settings-live-in-omrg-jsonc.md) | Settings Live in omrg.jsonc | 2026-10-19 | Accepted |
+| [088](./088-persistent-workspace-sign-in-secret.md) | Persistent Workspace Sign-in Secret | 2026-10-20 | Accepted |
 
 ## Convention
 

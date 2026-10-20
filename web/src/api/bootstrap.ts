@@ -1,17 +1,23 @@
 /**
- * One-time bootstrap exchange for the local session.
+ * Sign-in for the local session.
  *
- * `omrg web` prints a launch link `http://127.0.0.1:<port>/#bootstrap=<secret>`.
- * A fragment never reaches the server or its access log. On load the page
- * reads the secret, removes it from the address bar and history with
- * `history.replaceState`, and only then exchanges it with `POST /v1/session`.
- * The server answers with an HttpOnly, SameSite=Strict session cookie.
+ * Two secrets can open a session, and both go to `POST /v1/session`, which
+ * answers with an HttpOnly, SameSite=Strict session cookie:
+ *
+ * - The one-time launch link `http://127.0.0.1:<port>/#bootstrap=<secret>`.
+ *   A fragment never reaches the server or its access log. On load the page
+ *   reads the secret, removes it from the address bar and history with
+ *   `history.replaceState`, and only then exchanges it.
+ * - The workspace sign-in secret, which the server puts into its own page in
+ *   a `<meta name="omrg-page-secret">` tag. It lasts across server restarts,
+ *   so the page uses it on load and again whenever a request gets 401.
  */
 
-import type { FetchLike } from "./client";
+import type { FetchLike, SessionRenewal } from "./client";
 
 const FRAGMENT_KEY = "bootstrap";
 const SESSION_PATH = "/v1/session";
+const PAGE_SECRET_META = "omrg-page-secret";
 
 export type BootstrapOutcome = "none" | "ok" | "failed";
 
@@ -34,6 +40,30 @@ export function takeBootstrapSecret(location: Location, history: History): strin
   return secret === "" ? null : secret;
 }
 
+/** Reads the workspace secret from the page and removes its tag, or returns `null`. */
+export function takePageSecret(doc: Document = document): string | null {
+  const meta = doc.querySelector<HTMLMetaElement>(`meta[name="${PAGE_SECRET_META}"]`);
+  if (meta === null) return null;
+  const secret = meta.content;
+  meta.remove();
+  return secret === "" ? null : secret;
+}
+
+/** Posts *secret* to the session route. The secret is never logged. */
+async function postSecret(secret: string, fetchImpl: FetchLike = (input, init) => fetch(input, init)): Promise<boolean> {
+  try {
+    const response = await fetchImpl(SESSION_PATH, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ bootstrap: secret }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Exchanges a bootstrap secret from the fragment for a session cookie.
  *
@@ -43,16 +73,34 @@ export function takeBootstrapSecret(location: Location, history: History): strin
 export async function exchangeBootstrap(options: BootstrapOptions = {}): Promise<BootstrapOutcome> {
   const secret = takeBootstrapSecret(options.location ?? window.location, options.history ?? window.history);
   if (secret === null) return "none";
-  const fetchImpl = options.fetchImpl ?? ((input, init) => fetch(input, init));
-  try {
-    const response = await fetchImpl(SESSION_PATH, {
-      method: "POST",
-      headers: { Accept: "application/json", "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({ bootstrap: secret }),
-    });
-    return response.ok ? "ok" : "failed";
-  } catch {
-    return "failed";
-  }
+  return (await postSecret(secret, options.fetchImpl)) ? "ok" : "failed";
+}
+
+/** Builds the renewer for the workspace secret. Calls made while one is in flight share it. */
+export function createSessionRenewer(secret: string, fetchImpl?: FetchLike): SessionRenewal {
+  let pending: Promise<boolean> | null = null;
+  let signIns = 0;
+  return {
+    get signIns() {
+      return signIns;
+    },
+    renew() {
+      pending ??= postSecret(secret, fetchImpl).then((ok) => {
+        pending = null;
+        if (ok) signIns += 1;
+        return ok;
+      });
+      return pending;
+    },
+  };
+}
+
+/**
+ * Signs in on load: with the launch link when the address has one, else,
+ * or when the link is refused, with the workspace secret.
+ */
+export async function startSession(renew: SessionRenewal | null, options: BootstrapOptions = {}): Promise<BootstrapOutcome> {
+  const outcome = await exchangeBootstrap(options);
+  if (outcome === "ok" || renew === null) return outcome;
+  return (await renew.renew()) ? "ok" : "failed";
 }

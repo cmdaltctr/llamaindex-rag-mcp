@@ -100,7 +100,7 @@ A login item has no terminal, so it signs you in in a different way:
 - **Who can read it.** Only your macOS user can read the file (mode `0600`). Any program that runs as you can read it and sign in, including AI agents on your Mac. This is the same trust level as `workspace.db`, which these programs can already read.
 - **The link renews.** The server writes a new link after each sign-in and after 20 wrong guesses. It removes the file when it stops, also after a stop signal.
 - **A stop signal restarts the app.** The login item starts again after a stop signal, because launchd treats it as a crash. Turn off in the power panel unloads it until the next login or `omrg web start`. Run `omrg web uninstall` to remove it for good.
-- **A restart signs the browser out.** Browser sessions live in memory only. Run `omrg web open` to sign in again.
+- **A restart keeps the open tab signed in.** Browser sessions live in memory only, so a restart ends them. The page then signs in again by itself with the workspace sign-in secret. See [Browser session](#browser-session). Run `omrg web open` only to open a new tab, or after a restart that changes the port.
 - **The access log is off.** The log files of the login item have no rotation, so the server writes only start-up and error lines.
 - **Settings come from `omrg.jsonc`.** The login item reads `omrg.jsonc` in the user config folder (`~/.config/omrg/omrg.jsonc` by default). It also reads `~/.omrg/.env` when that file exists. That `.env` is optional and overrides the file. A hand-run `omrg web` reads the `.env` file of the folder where you run it. Shell variables do not reach the login item. Run `omrg config init` to write a starter `omrg.jsonc`. The install command never copies or reads a `.env` file.
 
@@ -110,11 +110,27 @@ The browser uses a session. A notebook or a script uses a bearer credential.
 
 ### Browser session
 
-1. The launch link carries a one-time secret in its `#bootstrap=` fragment. The browser does not send a fragment to the server, so the secret stays out of the access log.
-2. The page reads the fragment, removes it from the address bar, and sends it to `POST /v1/session`.
-3. The server sets the cookie `omrg_session_<port>`. The cookie is HttpOnly and SameSite=Strict.
+Two secrets open a browser session. Both go to `POST /v1/session`.
 
-The link works once. After 20 wrong guesses, the secret stops working. To get a new link, restart `omrg web`.
+**The workspace sign-in secret.** This secret keeps the page signed in across restarts.
+
+1. On its first start, the server writes a new secret to `<workspace>/.auth-token`. Only your macOS user can read the file (mode `0600`). Every later start with the same workspace uses the same secret.
+2. The server puts the secret into the page that it serves, in a `<meta name="omrg-page-secret">` tag. It does this only for a page load from its own address, or from an address that you approved with `--allow-origin`. A request with a foreign `Host` gets 400. A request with a foreign `Origin`, or a cross-site fetch, gets the page without the secret.
+3. The page reads the secret, removes the tag and sends the secret to `POST /v1/session`.
+4. When a request gets 401, for example after a restart, the page sends the secret again once and repeats the request once.
+
+The server never writes the secret to a log, an API response, an error message or a URL. If the file has a looser mode than `0600`, the server logs a warning and sets the mode to `0600`. To change the secret, stop the server, delete `<workspace>/.auth-token` and start the server again. Then reload each open tab.
+
+Any program that runs as you can read the file and sign in, including AI agents on your Mac. This is the same trust level as `workspace.db` and the login-item link file. See [ADR-088](../adr/088-persistent-workspace-sign-in-secret.md).
+
+**The one-time launch link.** The link that `omrg web` prints and `omrg web open` opens still works.
+
+1. The launch link carries a one-time secret in its `#bootstrap=` fragment. The browser does not send a fragment to the server, so the secret stays out of the access log.
+2. The page reads the fragment, removes it from the address bar, and sends it to `POST /v1/session`. If the link was already used, the page uses the workspace secret instead.
+
+The link works once. After 20 wrong guesses, the link stops working. Wrong guesses do not stop the workspace secret.
+
+Both secrets give the same session. The server sets the cookie `omrg_session_<port>`. The cookie is HttpOnly and SameSite=Strict.
 
 The session holds every scope. A `POST`, `PUT`, `PATCH` or `DELETE` request with the cookie must also carry the application `Origin`.
 
@@ -463,10 +479,10 @@ The side navigation ends with four icon buttons. In the collapsed navigation the
 
 Each button opens a confirmation dialog first. Nothing happens until you confirm.
 
-- **Restart.** The app shuts down and launchd starts it again. The page then shows "Restarting. Run `omrg web open` to sign in."
-- **Turn off.** The app shuts down and stays off. The plist stays in place, so the app starts again at the next login. The page then shows "Turned off. Run `omrg web start` to turn it on."
+- **Restart.** The app shuts down and launchd starts it again. The page then says that it signs in again by itself when OMRG is back, and names `omrg web open` in case it does not.
+- **Turn off.** The app shuts down and stays off. The plist stays in place, so the app starts again at the next login. The page then shows "Turned off. Run `omrg web start` in a terminal to turn it on."
 
-Both actions end your browser session, because sessions live in server memory. To sign in again, run `omrg web open` in a terminal. The page cannot sign itself in again, because the sign-in link is private to the Mac.
+Both actions end your browser session, because sessions live in server memory. When the app answers again, the page signs in again by itself with the workspace sign-in secret. If the port changed, the open tab cannot follow it. Run `omrg web open` in a terminal.
 
 The buttons work only when the app runs as the login item. For a foreground `omrg web` server, both buttons stay disabled and the panel states the reason. Press Ctrl+C in its terminal to stop it.
 
