@@ -48,9 +48,14 @@ describe("routes", () => {
     expect(parseRoute(formatRoute({ area: "experiments", runId: "a/b" }))).toEqual({ area: "experiments", runId: "a/b" });
   });
 
-  it("knows the three purposes and the eight Settings sections", () => {
+  it("knows the three purposes and the nine Settings sections", () => {
     expect(PURPOSES).toEqual(["ingest", "search", "answer"]);
-    expect(SETTINGS_SECTIONS).toEqual(["appearance", "providers", "chat", "mcp", "log", "runtime", "workspace", "configuration"]);
+    expect(SETTINGS_SECTIONS).toEqual(["appearance", "providers", "chat", "mcp", "log", "runtime", "workspace", "document-reading", "configuration"]);
+  });
+
+  it("parses and formats the Document reading section", () => {
+    expect(parseRoute("#/settings/document-reading")).toEqual({ area: "settings", section: "document-reading" });
+    expect(formatRoute({ area: "settings", section: "document-reading" })).toBe("#/settings/document-reading");
   });
 
   it("parses the Providers and Chat sections", () => {

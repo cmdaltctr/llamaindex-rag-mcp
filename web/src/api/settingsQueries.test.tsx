@@ -12,6 +12,7 @@ describe("settings query keys", () => {
     expect(queryKeys.mcp()).toEqual(["mcp"]);
     expect(queryKeys.webPort()).toEqual(["settings", "web-port"]);
     expect(queryKeys.uploadLimit()).toEqual(["settings", "upload-limit"]);
+    expect(queryKeys.documentReading()).toEqual(["settings", "document-reading"]);
     expect(queryKeys.health()).toEqual(["health"]);
   });
 });

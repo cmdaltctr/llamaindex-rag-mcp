@@ -2,11 +2,11 @@ import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
-import { settingsServer } from "../settings/test/fixtures";
+import { DOCUMENT_READING, settingsServer } from "../settings/test/fixtures";
 import { ApiProvider, useApi } from "./ApiProvider";
-import { chatSettingsQuery, connectionsQuery, createQueryClient, mcpQuery, uploadLimitQuery, webPortQuery } from "./queries";
+import { chatSettingsQuery, connectionsQuery, createQueryClient, documentReadingQuery, mcpQuery, queryKeys, uploadLimitQuery, webPortQuery } from "./queries";
 import { currentRevision, reloadSettings, rememberRevision } from "./settingsRevision";
-import { useSaveProviderFields, useSetChatSettings, useSetMcpEnabled, useSetUploadLimit, useSetWebPort } from "./settingsMutations";
+import { useSaveDocumentReading, useSaveProviderFields, useSetChatSettings, useSetMcpEnabled, useSetUploadLimit, useSetWebPort } from "./settingsMutations";
 
 function setup(handlers = {}) {
   const server = settingsServer(handlers);
@@ -35,7 +35,7 @@ describe("settings revision", () => {
     const connections = renderHook(() => useQuery(connectionsQuery(useApi())), { wrapper });
     await waitFor(() => expect(connections.result.current.data).toBeDefined());
     expect(currentRevision(queryClient)).toBe("r1");
-    for (const make of [chatSettingsQuery, mcpQuery, webPortQuery, uploadLimitQuery]) {
+    for (const make of [chatSettingsQuery, mcpQuery, webPortQuery, uploadLimitQuery, documentReadingQuery]) {
       queryClient.removeQueries({ queryKey: ["settings-revision"] });
       const read = renderHook(() => useQuery(make(useApi()) as never), { wrapper });
       await waitFor(() => expect(read.result.current.isSuccess).toBe(true));
@@ -49,6 +49,7 @@ describe("settings revision", () => {
     ["MCP switch", "PUT /v1/mcp", () => useSetMcpEnabled(), (m: ReturnType<typeof useSetMcpEnabled>) => m.mutate(true), { enabled: true, revision: "r1" }],
     ["web port", "PUT /v1/settings/web-port", () => useSetWebPort(), (m: ReturnType<typeof useSetWebPort>) => m.mutate(9100), { port: 9100, revision: "r1" }],
     ["upload limit", "PUT /v1/settings/upload-limit", () => useSetUploadLimit(), (m: ReturnType<typeof useSetUploadLimit>) => m.mutate(200), { max_mib: 200, revision: "r1" }],
+    ["document reading save", "PUT /v1/settings/document-reading", () => useSaveDocumentReading(), (m: ReturnType<typeof useSaveDocumentReading>) => m.mutate({ ocr_fallback_page_fraction: 0.2 }), { values: { ocr_fallback_page_fraction: 0.2 }, revision: "r1" }],
   ])("sends the remembered revision with a %s and remembers the one that comes back", async (_name, route, hook, run, body) => {
     const { queryClient, wrapper, server } = setup({ [route]: () => ({ status: "ok", revision: "r2" }) });
     rememberRevision(queryClient, { revision: "r1" });
@@ -56,6 +57,18 @@ describe("settings revision", () => {
     act(() => run(result.current as never));
     await waitFor(() => expect(currentRevision(queryClient)).toBe("r2"));
     expect(server.calls.filter((call) => call.method === "PUT")[0]?.body).toEqual(body);
+  });
+
+  it("puts a saved document reading state in the cache, keeps its revision and marks the Configuration listing stale", async () => {
+    const saved = { ...DOCUMENT_READING, revision: "r2" };
+    const { queryClient, wrapper } = setup({ "PUT /v1/settings/document-reading": () => saved });
+    rememberRevision(queryClient, { revision: "r1" });
+    await queryClient.prefetchQuery({ queryKey: ["settings", "configuration"], queryFn: () => ({ settings: [] }) });
+    const { result } = renderHook(() => useSaveDocumentReading(), { wrapper });
+    act(() => result.current.mutate({ pdf_reader: "liteparse" }));
+    await waitFor(() => expect(currentRevision(queryClient)).toBe("r2"));
+    expect(queryClient.getQueryData(queryKeys.documentReading())).toEqual(saved);
+    expect(queryClient.getQueryState(["settings", "configuration"])?.isInvalidated).toBe(true);
   });
 
   it("sends no revision before the page has read one", async () => {
