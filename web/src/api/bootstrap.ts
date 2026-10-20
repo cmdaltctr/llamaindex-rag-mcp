@@ -13,16 +13,13 @@
  *   so the page uses it on load and again whenever a request gets 401.
  */
 
-import type { FetchLike } from "./client";
+import type { FetchLike, SessionRenewal } from "./client";
 
 const FRAGMENT_KEY = "bootstrap";
 const SESSION_PATH = "/v1/session";
 const PAGE_SECRET_META = "omrg-page-secret";
 
 export type BootstrapOutcome = "none" | "ok" | "failed";
-
-/** Signs in again with the workspace secret. Resolves `true` when the server accepted it. */
-export type SessionRenewer = () => Promise<boolean>;
 
 export interface BootstrapOptions {
   location?: Location;
@@ -80,13 +77,21 @@ export async function exchangeBootstrap(options: BootstrapOptions = {}): Promise
 }
 
 /** Builds the renewer for the workspace secret. Calls made while one is in flight share it. */
-export function createSessionRenewer(secret: string, fetchImpl?: FetchLike): SessionRenewer {
+export function createSessionRenewer(secret: string, fetchImpl?: FetchLike): SessionRenewal {
   let pending: Promise<boolean> | null = null;
-  return () => {
-    pending ??= postSecret(secret, fetchImpl).finally(() => {
-      pending = null;
-    });
-    return pending;
+  let signIns = 0;
+  return {
+    get signIns() {
+      return signIns;
+    },
+    renew() {
+      pending ??= postSecret(secret, fetchImpl).then((ok) => {
+        pending = null;
+        if (ok) signIns += 1;
+        return ok;
+      });
+      return pending;
+    },
   };
 }
 
@@ -94,8 +99,8 @@ export function createSessionRenewer(secret: string, fetchImpl?: FetchLike): Ses
  * Signs in on load: with the launch link when the address has one, else,
  * or when the link is refused, with the workspace secret.
  */
-export async function startSession(renew: SessionRenewer | null, options: BootstrapOptions = {}): Promise<BootstrapOutcome> {
+export async function startSession(renew: SessionRenewal | null, options: BootstrapOptions = {}): Promise<BootstrapOutcome> {
   const outcome = await exchangeBootstrap(options);
   if (outcome === "ok" || renew === null) return outcome;
-  return (await renew()) ? "ok" : "failed";
+  return (await renew.renew()) ? "ok" : "failed";
 }

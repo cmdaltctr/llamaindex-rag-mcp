@@ -29,6 +29,6 @@ Run every command from the worktree root. Check `git branch --show-current` firs
 
 ## 5. Checks
 
-- [ ] 5.1 Start `omrg web` from the worktree on a free port with a throwaway workspace. Sign in once, restart the server, and confirm that the open tab keeps working with no sign-in step. Stop the server.
+- [x] 5.1 Start `omrg web` from the worktree on a free port with a throwaway workspace. Sign in once, restart the server, and confirm that the open tab keeps working with no sign-in step. Stop the server.
 - [ ] 5.2 Run `env -u OPENROUTER_API_KEY -u ANTHROPIC_API_KEY ./scripts/local_ci.sh`. Verify: it ends with `== local CI passed ==`.
 - [ ] 5.3 Archive the change and sync the specs. Verify: `openspec validate --all --strict` passes.

@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { createApiClient, type ApiClient, type FetchLike } from "./client";
+import { createApiClient, type ApiClient, type FetchLike, type SessionRenewal } from "./client";
 
 const ApiContext = createContext<ApiClient | null>(null);
 
@@ -7,7 +7,7 @@ interface ApiProviderProps {
   /** Set once at the root. Tests pass a fixture server's fetch here; components never receive it. */
   fetchImpl?: FetchLike;
   /** Signs in again after a 401. The root passes the renewer for the page's workspace secret. */
-  renewSession?: () => Promise<boolean>;
+  renewSession?: SessionRenewal;
   children: ReactNode;
 }
 

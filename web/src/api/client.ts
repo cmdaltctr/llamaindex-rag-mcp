@@ -44,6 +44,14 @@ export class ApiError extends Error {
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
+/** Signs in again after a 401; `createSessionRenewer` in `bootstrap.ts` builds one. */
+export interface SessionRenewal {
+  /** How many sign-ins have succeeded. A 401 for a request sent before the latest one needs only a retry. */
+  readonly signIns: number;
+  /** Resolves `true` when the server accepted the secret. */
+  renew(): Promise<boolean>;
+}
+
 export type QueryValue = string | number | boolean | null | undefined;
 
 export interface RequestInput {
@@ -109,7 +117,7 @@ function withQuery(path: string, query: Record<string, QueryValue> | undefined):
  */
 export function createApiClient(
   fetchImpl: FetchLike = (input, init) => fetch(input, init),
-  renewSession?: () => Promise<boolean>,
+  renewSession?: SessionRenewal,
 ): ApiClient {
   async function request<T>(method: string, path: string, input: RequestInput = {}): Promise<T> {
     const url = withQuery(path, input.query);
@@ -135,9 +143,12 @@ export function createApiClient(
       }
     }
 
+    const signInsBefore = renewSession?.signIns;
     let response = await send();
-    if (response.status === 401 && renewSession !== undefined && (await renewSession())) {
-      response = await send();
+    if (response.status === 401 && renewSession !== undefined) {
+      // A sign-in that finished while this request was out already gave a new cookie.
+      const renewed = renewSession.signIns !== signInsBefore || (await renewSession.renew());
+      if (renewed) response = await send();
     }
 
     const contentType = response.headers.get("content-type");

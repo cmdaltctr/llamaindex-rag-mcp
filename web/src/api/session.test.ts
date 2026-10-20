@@ -60,7 +60,7 @@ describe("page secret", () => {
 describe("session renewal", () => {
   it("posts the page secret to the session route", async () => {
     const server = fakeServer();
-    await expect(createSessionRenewer(PAGE_SECRET, server.fetchImpl)()).resolves.toBe(true);
+    await expect(createSessionRenewer(PAGE_SECRET, server.fetchImpl).renew()).resolves.toBe(true);
     expect(server.fetchImpl).toHaveBeenCalledWith(
       "/v1/session",
       expect.objectContaining({ method: "POST", credentials: "same-origin", body: JSON.stringify({ bootstrap: PAGE_SECRET }) }),
@@ -69,19 +69,23 @@ describe("session renewal", () => {
 
   it("shares one request between calls made at the same time", async () => {
     const server = fakeServer();
-    const renew = createSessionRenewer(PAGE_SECRET, server.fetchImpl);
-    await expect(Promise.all([renew(), renew(), renew()])).resolves.toEqual([true, true, true]);
+    const renewer = createSessionRenewer(PAGE_SECRET, server.fetchImpl);
+    await expect(Promise.all([renewer.renew(), renewer.renew(), renewer.renew()])).resolves.toEqual([true, true, true]);
     expect(server.posts()).toHaveLength(1);
-    await renew();
+    expect(renewer.signIns).toBe(1);
+    await renewer.renew();
     expect(server.posts()).toHaveLength(2);
+    expect(renewer.signIns).toBe(2);
   });
 
   it("reports a refused or unreachable sign-in as false", async () => {
-    await expect(createSessionRenewer(PAGE_SECRET, fakeServer({ acceptSecret: null }).fetchImpl)()).resolves.toBe(false);
+    const refused = createSessionRenewer(PAGE_SECRET, fakeServer({ acceptSecret: null }).fetchImpl);
+    await expect(refused.renew()).resolves.toBe(false);
+    expect(refused.signIns).toBe(0);
     const offline = vi.fn<FetchLike>(async () => {
       throw new TypeError("Failed to fetch");
     });
-    await expect(createSessionRenewer(PAGE_SECRET, offline)()).resolves.toBe(false);
+    await expect(createSessionRenewer(PAGE_SECRET, offline).renew()).resolves.toBe(false);
   });
 });
 
@@ -138,6 +142,34 @@ describe("api client after a server restart", () => {
     expect(server.posts()).toHaveLength(1);
   });
 
+  it("does not sign in twice when a late 401 arrives after a sign-in finished", async () => {
+    // Seen in a real browser: requests sent with the old cookie got their 401
+    // after the first sign-in had finished, and each started another one.
+    const server = fakeServer();
+    let releaseLate!: () => void;
+    const held = new Promise<void>((resolve) => {
+      releaseLate = resolve;
+    });
+    let lateSent = false;
+    const fetchImpl = vi.fn<FetchLike>(async (input, init) => {
+      if (input === "/v1/late" && !lateSent) {
+        lateSent = true;
+        const refused = await server.fetchImpl(input, init);
+        await held;
+        return refused;
+      }
+      return server.fetchImpl(input, init);
+    });
+    const api = createApiClient(fetchImpl, createSessionRenewer(PAGE_SECRET, fetchImpl));
+
+    const late = api.request("GET", "/v1/late");
+    await expect(api.request("GET", "/v1/early")).resolves.toEqual({ name: "ok" });
+    releaseLate();
+
+    await expect(late).resolves.toEqual({ name: "ok" });
+    expect(server.posts()).toHaveLength(1);
+  });
+
   it("retries only once and then reports the 401", async () => {
     const server = fakeServer({ acceptSecret: null });
     const api = createApiClient(server.fetchImpl, createSessionRenewer(PAGE_SECRET, server.fetchImpl));
@@ -151,7 +183,7 @@ describe("api client after a server restart", () => {
   it("does not sign in again for other failures", async () => {
     const fetchImpl = vi.fn<FetchLike>(async () => json(403));
     const renew = vi.fn(async () => true);
-    const api = createApiClient(fetchImpl, renew);
+    const api = createApiClient(fetchImpl, { signIns: 0, renew });
     await expect(api.request("GET", "/v1/collections")).rejects.toBeInstanceOf(ApiError);
     expect(renew).not.toHaveBeenCalled();
     expect(fetchImpl).toHaveBeenCalledTimes(1);
