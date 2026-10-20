@@ -583,7 +583,7 @@ On a pipeline canvas (`#/studio/<profile-id>/<purpose>`), the flow surface fills
 
 One panel floats over the right side of the canvas. It holds six sections. Each section has its own icon.
 
-1. Pipeline settings (Base profile and Collection). The base profile shows as text. The section has no Title field and no Profile list.
+1. Pipeline settings (Base profile, Collection, Hybrid retrieval and the pipeline-wide settings). The base profile shows as text. The section has no Title field and no Profile list.
 2. Operations.
 3. Steps and connections.
 4. Connect ports.
@@ -597,6 +597,26 @@ Select "Collapse panel" to shrink the panel to a narrow icon rail. Each rail but
 ![Studio canvas with the panel collapsed to the icon rail](images/web-workspace/studio-canvas-rail-light-1280.png)
 
 On a window narrower than 1024 px, the panel sits under the flow surface and shows its sections. The icon rail is not available.
+
+#### Hybrid retrieval and pipeline-wide settings
+
+On the Search and Answer pipelines, Pipeline settings shows a "Hybrid retrieval" switch. Hybrid retrieval adds keyword (sparse) search and merges it with vector search.
+
+1. Select the switch to turn it on. The canvas adds a Sparse retrieval step and a Reciprocal rank fusion step. Prepare query feeds Sparse retrieval. Dense retrieval and Sparse retrieval feed the fusion step. The fusion step feeds the step that Dense retrieval fed before.
+2. Select the switch again to turn it off. The canvas removes the two steps and connects Dense retrieval to that step again.
+3. Select "Save revision" in Revision and run to keep the change. The switch changes only the draft.
+
+The switch keeps the settings and the positions of the other steps. Sparse retrieval gets the collection of Dense retrieval when Dense retrieval has one. The Search and Answer pipelines each have their own switch. The Ingest pipeline has no switch.
+
+The switch is off and you cannot use it in these cases. A line under it gives the reason.
+
+1. The profile is built in. Duplicate the profile to change it.
+2. The server cannot run Sparse retrieval or Reciprocal rank fusion. The line gives the reason from the operation catalogue.
+3. The retrieval steps do not have the standard shape, for example two Dense retrieval steps. The line reads "This pipeline has a custom retrieval shape. Change it with the steps on the canvas."
+
+Under the switch, "Pipeline-wide settings" lists each setting that the pipeline graph sets for all of its steps, for example "Number of results: 25". These settings can come from the HTTP API. Select "Remove" to delete one from the draft. The step cards then stop showing "(from pipeline settings)" for it after the next check.
+
+On the Search and Answer pipelines, "Rerank candidate factor" sets how many candidates the reranker reads, as a multiple of the number of results. Select "Set value" and enter a whole number of 1 or more. Select "Inherit" to use the value of the profile or the server. Open "Details" to see the path of each setting, for example `retrieval.rerank_fetch_multiplier`.
 
 #### View controls
 

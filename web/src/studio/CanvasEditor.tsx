@@ -150,7 +150,7 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
           selectedNode={selectedNode}
           runStarts={runStarts}
           sections={{
-            "pipeline-settings": <PipelineBar draft={draft} onChange={update} readOnly={readOnly} />,
+            "pipeline-settings": <PipelineBar draft={draft} onChange={update} purpose={purpose} catalogue={catalogue} readOnly={readOnly} />,
             operations: <Palette operations={session.operations.data} error={session.operations.error} onRetry={() => void session.operations.refetch()} onAdd={add} readOnly={readOnly} />,
             nodes: <GraphOutline draft={draft} issues={session.issues} onChange={update} onSelect={pickStep} onAnnounce={announce} readOnly={readOnly} />,
             connect: <ConnectionMenu draft={draft} catalogue={catalogue} onConnect={connect} readOnly={readOnly} />,

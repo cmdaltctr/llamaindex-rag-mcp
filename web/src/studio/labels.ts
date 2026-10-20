@@ -17,6 +17,7 @@ const FIELD_LABELS: Record<string, string> = {
   "retrieval.similarity_threshold": "Minimum similarity",
   "retrieval.rerank_enabled": "Reranker",
   "retrieval.hybrid_rrf_k": "Fusion constant (k)",
+  "retrieval.rerank_fetch_multiplier": "Rerank candidate factor",
   "chunking.chunk_size": "Chunk size",
   "chunking.chunk_overlap": "Chunk overlap",
   "chunking.markdown_chunk_size": "Markdown chunk size",
