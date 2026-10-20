@@ -19,9 +19,9 @@ Run every command from the worktree root. Check `git branch --show-current` firs
 
 ## 3. Front end
 
-- [ ] 3.1 Test first: `web/src/api/session.test.ts` covers `takePageSecret`, `createSessionRenewer` (one shared request), `startSession` (link first, then the page secret) and the client retry (one sign-in, one retry, no retry on 403, no change without a renewer). Verify: the new cases fail before the code exists.
-- [ ] 3.2 Add the page-secret functions to `api/bootstrap.ts`, the renewer argument to `createApiClient`, the `renewSession` prop to `ApiProvider`, and wire `main.tsx`. Verify: task 3.1 passes.
-- [ ] 3.3 Change the copy that said the browser is signed out: `PowerMenu.tsx`, `RestartDialog.tsx`, and the 401 message in `lib/errors.ts`. Update their tests. Verify: `npm run lint`, `npm run typecheck` and `npm test` pass in `web/`.
+- [x] 3.1 Test first: `web/src/api/session.test.ts` covers `takePageSecret`, `createSessionRenewer` (one shared request), `startSession` (link first, then the page secret) and the client retry (one sign-in, one retry, no retry on 403, no change without a renewer). Verify: the new cases fail before the code exists.
+- [x] 3.2 Add the page-secret functions to `api/bootstrap.ts`, the renewer argument to `createApiClient`, the `renewSession` prop to `ApiProvider`, and wire `main.tsx`. Verify: task 3.1 passes.
+- [x] 3.3 Change the copy that said the browser is signed out: `PowerMenu.tsx`, `RestartDialog.tsx`, and the 401 message in `lib/errors.ts`. Update their tests. Verify: `npm run lint`, `npm run typecheck` and `npm test` pass in `web/`.
 
 ## 4. Docs
 

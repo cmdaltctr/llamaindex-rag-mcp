@@ -31,7 +31,8 @@ describe("PowerMenu", () => {
     const { user, server, panel } = await openPanel({ ...MANAGED, "POST /v1/server/power": ACCEPTED("off") });
     await user.click(await ready(panel, "Turn off"));
     const dialog = await screen.findByRole("dialog", { name: "Turn off OMRG?" });
-    expect(dialog).toHaveTextContent(/signed out/i);
+    expect(dialog).toHaveTextContent(/stays off/i);
+    expect(dialog).not.toHaveTextContent(/signed out/i);
     expect(within(dialog).getByText("omrg web start")).toBeInTheDocument();
     expect(server.find("POST", "/v1/server/power")).toHaveLength(0);
 
@@ -47,7 +48,8 @@ describe("PowerMenu", () => {
     const { user, server, panel } = await openPanel({ ...MANAGED, "POST /v1/server/power": ACCEPTED("restart") });
     await user.click(await ready(panel, "Restart"));
     const dialog = await screen.findByRole("dialog", { name: "Restart OMRG?" });
-    expect(dialog).toHaveTextContent(/signed out/i);
+    expect(dialog).toHaveTextContent(/signs in again by itself/i);
+    expect(dialog).not.toHaveTextContent(/signed out/i);
     expect(within(dialog).getByText("omrg web open")).toBeInTheDocument();
     expect(server.find("POST", "/v1/server/power")).toHaveLength(0);
 
@@ -55,7 +57,7 @@ describe("PowerMenu", () => {
     await waitFor(() => expect(server.find("POST", "/v1/server/power")).toHaveLength(1));
     expect(server.find("POST", "/v1/server/power")[0]?.body).toEqual({ action: "restart" });
     const done = await screen.findByText(/^Restarting\./);
-    expect(done.parentElement).toHaveTextContent(/signed out/i);
+    expect(done.parentElement).toHaveTextContent(/signs in again by itself/i);
     expect(screen.getAllByText("omrg web open").length).toBeGreaterThan(0);
   });
 

@@ -318,7 +318,7 @@ describe("Restart dialog after a port save", () => {
     expect(within(dialog).getByRole("button", { name: "Later" })).toBeInTheDocument();
   });
 
-  it("sends the power menu restart on Restart now and tells the user to sign in again", async () => {
+  it("sends the power menu restart on Restart now and names omrg web open", async () => {
     const { user, server } = await savePort({
       "GET /v1/server/power": () => ({ status: "ok", managed: true }),
       "POST /v1/server/power": () => ({ status: "ok", accepted: "restart" }),
