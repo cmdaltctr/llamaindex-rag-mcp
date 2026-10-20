@@ -1,15 +1,12 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
-import type { AnswerResult, Citation, Evidence } from "../api/documents";
+import { useEffect, useRef } from "react";
+import type { AnswerResult } from "../api/documents";
 import { useAnswer } from "../api/mutations";
 import { AlertNotice } from "../components/AlertNotice";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { AnswerText } from "./AnswerText";
+import { AnswerText, ClaimList } from "./AnswerText";
 import { answerStatus, failureLine } from "./answerStatus";
-import { CitationPopover } from "./CitationPopover";
-import { scoreText, sourceName } from "./citationText";
 
 interface AssistantTurnProps {
   collection: string;
@@ -75,7 +72,6 @@ export function AssistantTurn({ collection, question, saved = null, onResult, on
 
 function AnswerBody({ result, collection, onShowChunk }: { result: AnswerResult; collection: string; onShowChunk: AssistantTurnProps["onShowChunk"] }) {
   const status = answerStatus(result);
-  const show = (chunkId: string) => onShowChunk(collection, chunkId);
   return (
     <>
       <div className="flex flex-col items-start gap-1">
@@ -89,96 +85,8 @@ function AnswerBody({ result, collection, onShowChunk }: { result: AnswerResult;
       ) : null}
       {result.answer !== null ? <AnswerText text={result.answer} citations={result.citations} evidence={result.evidence} collection={collection} onShowChunk={onShowChunk} /> : null}
       {result.unverified_claims && result.unverified_claims.length > 0 ? (
-        <ul aria-label="Claims that failed verification" className="flex flex-col gap-1 text-meta">
-          {result.unverified_claims.map((claim, index) => (
-            <li key={index} className="break-words">
-              {claim.claim} ({claim.verdict}, cites {claim.ordinals.map((n) => `[${n}]`).join(" ")})
-            </li>
-          ))}
-        </ul>
+        <ClaimList claims={result.unverified_claims} citations={result.citations} evidence={result.evidence} collection={collection} onShowChunk={onShowChunk} />
       ) : null}
-      <Citations citations={result.citations} evidence={result.evidence} collection={collection} onShowChunk={onShowChunk} />
-      <EvidenceSection evidence={result.evidence} onShowChunk={show} />
     </>
-  );
-}
-
-interface CitationsProps {
-  citations: Citation[];
-  evidence: Evidence[];
-  collection: string;
-  onShowChunk: (collection: string, chunkId: string) => void;
-}
-
-/** Only entries in `citations` become chips: markers in the answer text stay plain text, so no citation is invented. */
-function Citations({ citations, evidence, collection, onShowChunk }: CitationsProps) {
-  if (citations.length === 0) return <p className="text-meta text-muted-foreground">The server returned no citations.</p>;
-  return (
-    <ul aria-label="Citations" className="flex flex-wrap gap-2">
-      {citations.map((citation) => (
-        <li key={citation.ordinal}>
-          {citation.chunk_id !== null ? (
-            <CitationPopover
-              citation={citation}
-              evidence={evidence.find((e) => e.ordinal === citation.ordinal)}
-              collection={collection}
-              onShowChunk={onShowChunk}
-              trigger={(props) => (
-                <Button variant="chip" size="sm" dir="ltr" {...props}>
-                  <span>[{citation.ordinal}]</span>
-                  <span className="truncate">{sourceName(citation.source)}</span>
-                </Button>
-              )}
-            />
-          ) : (
-            <span className="text-meta text-muted-foreground">
-              [{citation.ordinal}] {sourceName(citation.source)}: No stored chunk ID, so this citation cannot be opened.
-            </span>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function EvidenceSection({ evidence, onShowChunk }: { evidence: Evidence[]; onShowChunk: (chunkId: string) => void }) {
-  const id = useId();
-  const [open, setOpen] = useState(false);
-  if (evidence.length === 0) return null;
-  const Chevron = open ? ChevronDown : ChevronRight;
-  return (
-    <div className="flex flex-col gap-2">
-      <div>
-        <Button variant="ghost" size="sm" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
-          <Chevron aria-hidden="true" />
-          Evidence ({evidence.length})
-        </Button>
-      </div>
-      {open ? (
-        <ol id={id} aria-label="Evidence supplied to the model" className="flex flex-col gap-2">
-          {evidence.map((item) => (
-            <li key={item.ordinal} className="flex flex-col gap-1 rounded-small border border-border bg-card p-3">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-muted-foreground">
-                <span className="font-semibold text-foreground">[{item.ordinal}]</span>
-                <span dir="ltr" className="break-all font-mono text-code">
-                  {item.source ?? "Unknown source"}
-                </span>
-                {scoreText(item) ? <span>{scoreText(item)}</span> : null}
-              </div>
-              <p className="whitespace-pre-wrap break-words">{item.text}</p>
-              <div>
-                {item.chunk_id !== null ? (
-                  <Button variant="outline" size="sm" aria-label={`Show chunk for evidence ${item.ordinal}`} onClick={() => onShowChunk(item.chunk_id!)}>
-                    Show chunk
-                  </Button>
-                ) : (
-                  <span className="text-meta text-muted-foreground">No stored chunk ID, so this row cannot be opened.</span>
-                )}
-              </div>
-            </li>
-          ))}
-        </ol>
-      ) : null}
-    </div>
   );
 }

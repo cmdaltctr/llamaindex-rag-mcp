@@ -58,11 +58,13 @@ Versions are from `web/package-lock.json` on 2026-10-14. Update this list when a
 | `d3-zoom` | 3.0.0 | ISC | Copyright 2010-2021 Mike Bostock |
 | `d3-ease` | 3.0.1 | BSD-3-Clause | Copyright 2010-2021 Mike Bostock; Copyright 2001 Robert Penner |
 | `@radix-ui/react-accordion` | 1.3.1 | MIT | Copyright (c) 2022 WorkOS |
+| `@radix-ui/react-context-menu` | 2.4.1 | MIT | Copyright (c) 2022 WorkOS |
 | `@radix-ui/react-dialog` | 1.3.1 | MIT | Copyright (c) 2022 WorkOS |
 | `@radix-ui/react-label` | 2.1.17 | MIT | Copyright (c) 2022 WorkOS |
 | `@radix-ui/react-select` | 2.4.1 | MIT | Copyright (c) 2022 WorkOS |
 | `@radix-ui/react-separator` | 1.2.0 | MIT | Copyright (c) 2022 WorkOS |
 | `@radix-ui/react-slot` | 1.5.0 | MIT | Copyright (c) 2022 WorkOS |
+| `@radix-ui/react-tabs` | 1.2.1 | MIT | Copyright (c) 2022 WorkOS |
 | `@radix-ui/react-tooltip` | 1.4.1 | MIT | Copyright (c) 2022 WorkOS |
 | `@radix-ui/*` (other packages pulled in by the seven above: `primitive`, `number`, `rect`, `react-arrow`, `react-collapsible`, `react-collection`, `react-compose-refs`, `react-context`, `react-direction`, `react-dismissable-layer`, `react-focus-guards`, `react-focus-scope`, `react-id`, `react-popper`, `react-portal`, `react-presence`, `react-primitive`, `react-use-*`, `react-visually-hidden`) | see `package-lock.json` | MIT | Copyright (c) 2022 WorkOS |
 | `@floating-ui/core`, `@floating-ui/dom`, `@floating-ui/react-dom`, `@floating-ui/utils` | 1.8.0, 1.8.0, 2.1.9, 0.2.12 | MIT | Copyright (c) 2021-present Floating UI contributors |
@@ -79,6 +81,13 @@ Versions are from `web/package-lock.json` on 2026-10-14. Update this list when a
 | `tailwind-merge` | 3.7.0 | MIT | Copyright (c) 2021 Dany Castillo |
 | `lucide-react` | 1.57.0 | ISC (MIT for icons derived from Feather) | Copyright (c) 2026 Lucide Icons and Contributors; Copyright (c) 2013-present Cole Bemis (Feather icons) |
 | `@tanstack/react-query`, `@tanstack/query-core` | 5.104.2, 5.104.2 | MIT | Copyright (c) 2021-present Tanner Linsley |
+| `react-markdown` | 10.1.0 | MIT | Copyright (c) Espen Hovlandsdal |
+| `remark-gfm` and the unified family it loads: `remark-parse`, `remark-rehype`, `unified`, `vfile`, `vfile-message`, `trough`, `bail`, `devlop`, `ccount`, `markdown-table`, `longest-streak`, `trim-lines`, `stringify-entities`, `parse-entities`, `property-information`, `decode-named-character-reference`, `character-entities`, `character-entities-html4`, `character-entities-legacy`, `character-reference-invalid`, `comma-separated-tokens`, `space-separated-tokens`, `is-alphabetical`, `is-alphanumerical`, `is-decimal`, `is-hexadecimal`, `estree-util-is-identifier-name`, `html-url-attributes`, `hast-util-*`, `mdast-util-*`, `micromark*`, `unist-util-*` | 4.0.1 and the versions in `web/package-lock.json` | MIT | Copyright (c) 2014-2023 Titus Wormer |
+| `is-plain-obj`, `escape-string-regexp` | 4.1.0, 5.0.0 | MIT | Copyright (c) Sindre Sorhus |
+| `extend` | 3.0.2 | MIT | Copyright (c) 2014 Stefan Thomas |
+| `style-to-js`, `style-to-object` | 1.1.21, 1.0.14 | MIT | Copyright (c) 2017-2020 Menglin "Mark" Xu |
+| `inline-style-parser` | 0.2.7 | MIT | Copyright (c) 2012 TJ Holowaychuk |
+| `@ungap/structured-clone` | 1.4.0 | ISC | Copyright (c) 2021, Andrea Giammarchi, @WebReflection |
 
 The canvas keeps the React Flow attribution link that `@xyflow/react` shows by default.
 

@@ -426,7 +426,7 @@ Every area has its own address. Back and forward move between them. An address t
 | Area | Address | What you can do |
 |---|---|---|
 | Home | `#/home` | See every project as a card with its title, profile, counts and database. Open a project. |
-| Chat | `#/chat/<collection>` | Pick a knowledge base by its title and ask it a question. Read the answer, its citations and the evidence. Each question answers on its own. Chats are stored: see Chat history. |
+| Chat | `#/chat/<collection>` | Pick a knowledge base by its title and ask it a question. Read the answer, the passages it cites and the passages the model was given. Each question answers on its own. Chats are stored: see Chat history. |
 | Knowledge Base | `#/knowledge-base/<collection>` | Rename the project title with the pencil. See the database that holds the project (logo and name in the header, name in the project list and in the Sources table). List sources, upload and ingest files, ingest from an approved folder, search, preview and confirm a deletion or a profile change. The upload panel shows the server's per-file limit and refuses a larger file before it is sent. Change the limit in Settings › Workspace. |
 | Studio | `#/studio`, `#/studio/<profile-id>`, `#/studio/<profile-id>/<purpose>` | Open a gallery of profiles. Duplicate a profile, start an empty one, rename it or delete it. Open the Ingest, Search or Answer pipeline of a profile. Add operations, connect ports, save a revision, validate, run and cancel. |
 | Experiments | `#/experiments`, `#/experiments/runs/<run-id>` | Create experiment folders and sub-experiments, issue a bound credential, register and open the notebook editor, and read pipeline runs. A preview that is cut offers Open full output, which shows the redacted value as text and downloads it. |
@@ -520,17 +520,18 @@ Chat stores every finished answer in the workspace database, so a reload shows t
 2. Chat skips an answer with an error status. A Retry that works is saved.
 3. Choose New chat to start an empty chat. The old chat stays in the history list.
 4. On a screen 1024 px wide or more, the history list sits at the left of the transcript. On a narrow screen, choose History to open it.
+5. On a screen 1024 px wide or more, the history list and the knowledge base list each sit in a card. Choose the chevron on a card to hide it. A narrow strip with a show button stays in its place, and the chat grows into the free room. The cards show again after you reload the page, and they are always shown on a narrower screen.
 
 Group chats in folders. A folder holds chats and no other folder.
 
 1. Choose New folder, type a name and press Enter.
 2. Drag a chat onto a folder to move it. Drag it onto No folder to take it out.
-3. Open Move to on a chat to do the same move with the keyboard or by touch.
+3. Right-click a chat, or choose the more button (three dots) on it, then choose Move to a folder. A side menu lists No folder and each folder, with a tick on the current one. The more button also works with the keyboard and by touch.
 4. Choose Rename on a folder to change its name.
 
 Delete chats and folders. Each delete asks first and says how many chats it removes. A delete is permanent and cannot be undone.
 
-1. Choose the bin on a chat to delete one chat.
+1. Right-click a chat, or choose its more button (three dots), then choose Delete. A chat has no bin button, so a stray click cannot delete it.
 2. Choose Select, tick the chats, then choose Delete selected. All the chats go, or none.
 3. Choose the bin on a folder to delete the folder and every chat inside it.
 4. If you delete the open chat, Chat shows a new empty chat.
@@ -541,7 +542,24 @@ Only the browser session of `omrg web` reads, changes or deletes chats. A bearer
 
 On a phone, History opens the list above the transcript: [open list at 390 px](images/web-workspace/chat-history-open-dark-390.png).
 
-Press a citation chip or a `[n]` marker in an answer to open a popover. It shows the evidence text, the lineage of the chunk (source ID, source version, position, page and every chunk ID of a merged citation) and the stored metadata. Choose Open full chunk to read the chunk in the chunk viewer. The index does not record which keys a chunk got from its document, so the popover lists the stored keys without labels. If the source was deleted, the popover keeps the saved evidence text and says the stored chunk is not available.
+The right-hand card has three icon tabs: Knowledge base, Citations and Evidence. Citations and Evidence show the newest answer of the open chat, so nothing sits under the answer text. Hover a tab to see its name.
+
+The answer text renders as Markdown (GitHub flavour): bold, italic, headings, ordered and unordered lists, inline code, fenced code blocks, tables, quotes and links. The app never renders raw HTML from the model, so a tag in the answer shows as text. A link opens in a new tab, and a link with an unsafe scheme such as `javascript:` shows as plain text. A `[n]` marker stays a citation button inside any of these elements, but not inside code.
+
+Citations are the passages the answer cites. Evidence is every passage the model was given, so the Evidence tab usually has more rows than the Citations tab has chips.
+
+In the Citations tab, each citation is a chip such as `[1] configuration.md`. Press the chip to open a popover with the passage text and the button Open full chunk. A `[n]` marker in the answer text opens the same popover. That popover shows no lineage and no metadata.
+
+Next to each chip is a small "i" button (tooltip "Lineage and metadata"). Press it to open a popover with two sections:
+
+- Lineage: source ID, source version, position (with the page, when the chunk has one) and every chunk ID of a merged citation.
+- Metadata: the stored keys of the chunk.
+
+The index does not record which keys a chunk got from its document, so the popover lists the stored keys without labels.
+
+The Evidence tab shows one compact row for each passage the model was given. A row shows `[n]`, the source path and the score, and it shows no passage text. Every row carries a label: a green Cited for a passage the answer cited, and a red Not cited for the others. Above the rows, the buttons Cited and Not cited filter the list. Press Cited to show only the cited rows, or Not cited to show only the others. Press the pressed button again to show all rows. Press Show passage on a row to open a popover with the exact text the model read. The server merges adjacent chunks of one source, so this text can be longer than one stored chunk.
+
+Choose Open full chunk in any of these popovers to read the chunk in the chunk viewer. If the source was deleted, the popover keeps the saved passage text and says the stored chunk is not available.
 
 ### Studio canvas layout
 

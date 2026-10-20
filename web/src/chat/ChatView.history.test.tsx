@@ -142,7 +142,7 @@ describe("history list in the view", () => {
     startApp("#/chat/notes/stored-1", server);
     expect(await screen.findByText("A saved answer.")).toBeInTheDocument();
     const panel = screen.getByRole("list", { name: "Knowledge bases" });
-    await user.click(within(panel).getByRole("button", { name: /documents/ }));
+    await user.click(within(panel).getByRole("button", { name: /^documents/ }));
     await waitFor(() => expect(window.location.hash).toBe("#/chat/documents/stored-1"));
     expect(screen.getByText("A saved answer.")).toBeInTheDocument();
   });
@@ -174,7 +174,8 @@ describe("deleting the open chat", () => {
     const { server, user, store } = setup({ chats: [STORED] });
     startApp("#/chat/notes/stored-1", server);
     await screen.findByText("A saved answer.");
-    await user.click(await screen.findByRole("button", { name: "Delete Stored question" }));
+    await user.click(await screen.findByRole("button", { name: "More actions for Stored question" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Delete" }));
     await user.click(await screen.findByRole("button", { name: "Delete chat" }));
     await waitFor(() => expect(store.chats.size).toBe(0));
     await waitFor(() => expect(screen.queryByText("A saved answer.")).not.toBeInTheDocument());
@@ -247,7 +248,7 @@ describe("review findings: knowledge base choice", () => {
     await ask(user);
     expect(await screen.findByText(/Lineage is kept/)).toBeInTheDocument();
     const panel = screen.getByRole("list", { name: "Knowledge bases" });
-    await user.click(within(panel).getByRole("button", { name: /notes/ }));
+    await user.click(within(panel).getByRole("button", { name: /^notes/ }));
     await waitFor(() => expect(window.location.hash).toBe("#/chat/notes"));
     await act(async () => release(json({ status: "ok", chat: { chat_id: "made", folder_id: null, title: "t", created_at: "t", updated_at: "t" } }, 201)));
     await waitFor(() => expect(window.location.hash).toBe("#/chat/notes/made"));

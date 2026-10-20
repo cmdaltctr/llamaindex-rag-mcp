@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { FolderPlus, Trash2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useApi } from "../api/ApiProvider";
 import { useCreateChatFolder, useDeleteChat, useDeleteChatFolder, useDeleteChats, useMoveChat, useRenameChatFolder } from "../api/chatMutations";
 import type { ChatFolder, ChatSummary } from "../api/chats";
@@ -17,12 +17,14 @@ interface ChatHistoryProps {
   onOpen: (chat: ChatSummary) => void;
   /** Called with the ids of the chats a confirmed delete removed, so the view can leave an open chat. */
   onRemoved: (chatIds: string[]) => void;
+  /** Shown at the end of the New folder row, for the card's hide chevron. */
+  trailing?: ReactNode;
 }
 
 const plural = (count: number) => `${count} ${count === 1 ? "chat" : "chats"}`;
 
-/** The stored chats, grouped by folder. Chats move by drag and drop or by the Move to menu. */
-export function ChatHistory({ activeChatId, onOpen, onRemoved }: ChatHistoryProps) {
+/** The stored chats, grouped by folder. Chats move by drag and drop or by the right-click menu. */
+export function ChatHistory({ activeChatId, onOpen, onRemoved, trailing }: ChatHistoryProps) {
   const api = useApi();
   const listing = useQuery(chatsQuery(api));
   const createFolder = useCreateChatFolder();
@@ -35,6 +37,7 @@ export function ChatHistory({ activeChatId, onOpen, onRemoved }: ChatHistoryProp
   const [selected, setSelected] = useState<string[]>([]);
   const [request, setRequest] = useState<DeleteRequest | null>(null);
   const dragged = useRef<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const [naming, setNaming] = useState(false);
 
   if (listing.isError) return <ErrorNotice error={listing.error} onRetry={() => void listing.refetch()} />;
@@ -44,11 +47,14 @@ export function ChatHistory({ activeChatId, onOpen, onRemoved }: ChatHistoryProp
   const moveChat = (chatId: string, folderId: string | null) => move.mutate({ chatId, folderId });
   const onDragStart = (chatId: string, event: React.DragEvent) => {
     dragged.current = chatId;
+    setDraggingId(chatId);
     event.dataTransfer?.setData("text/plain", chatId);
   };
+  const onDragEnd = () => setDraggingId(null);
   const onDropChat = (folderId: string | null, event: React.DragEvent) => {
     const chatId = dragged.current ?? event.dataTransfer?.getData("text/plain") ?? "";
     dragged.current = null;
+    setDraggingId(null);
     const chat = chats.find((c) => c.chat_id === chatId);
     if (chat !== undefined && chat.folder_id !== folderId) moveChat(chatId, folderId);
   };
@@ -85,34 +91,35 @@ export function ChatHistory({ activeChatId, onOpen, onRemoved }: ChatHistoryProp
       run: () => removed(inside)(deleteFolder.mutateAsync(folder.folder_id)),
     });
   };
+  // An empty No folder group stays hidden, except while a filed chat is dragged: then it is the drop target that takes the chat out.
+  const draggedChat = chats.find((chat) => chat.chat_id === draggingId);
+  const showNoFolder = chats.some((chat) => chat.folder_id === null) || (draggedChat !== undefined && draggedChat.folder_id !== null);
   const toggle = (chatId: string) => setSelected((current) => (current.includes(chatId) ? current.filter((id) => id !== chatId) : [...current, chatId]));
   const rows = (folderId: string | null) =>
     chats
       .filter((chat) => chat.folder_id === folderId)
       .map((chat) => (
-        <ChatRow key={chat.chat_id} chat={chat} folders={folders} active={chat.chat_id === activeChatId} onOpen={onOpen} onMove={moveChat} onDragStart={onDragStart} onDelete={askDeleteChat} selectMode={selectMode} selected={selected.includes(chat.chat_id)} onToggle={toggle} />
+        <ChatRow key={chat.chat_id} chat={chat} folders={folders} active={chat.chat_id === activeChatId} onOpen={onOpen} onMove={moveChat} onDragStart={onDragStart} onDragEnd={onDragEnd} onDelete={askDeleteChat} selectMode={selectMode} selected={selected.includes(chat.chat_id)} onToggle={toggle} />
       ));
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-subsection-title font-semibold">History</h2>
-        <div className="flex gap-1">
-          <Button variant="outline" size="xs" onClick={() => setNaming(true)}>
-            <FolderPlus aria-hidden="true" />
-            New folder
-          </Button>
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={() => {
-              setSelectMode(!selectMode);
-              setSelected([]);
-            }}
-          >
-            {selectMode ? "Done" : "Select"}
-          </Button>
-        </div>
+      <div className="flex items-center gap-1">
+        <Button variant="outline" size="xs" onClick={() => setNaming(true)}>
+          <FolderPlus aria-hidden="true" />
+          New folder
+        </Button>
+        <Button
+          variant="outline"
+          size="xs"
+          onClick={() => {
+            setSelectMode(!selectMode);
+            setSelected([]);
+          }}
+        >
+          {selectMode ? "Done" : "Select"}
+        </Button>
+        {trailing === undefined ? null : <span className="ms-auto">{trailing}</span>}
       </div>
       {selectMode ? (
         <Button variant="destructive" size="sm" disabled={selected.length === 0} onClick={askDeleteSelected}>
@@ -131,9 +138,11 @@ export function ChatHistory({ activeChatId, onOpen, onRemoved }: ChatHistoryProp
         />
       ) : null}
       {chats.length === 0 && folders.length === 0 ? <p className="text-meta text-muted-foreground">No chats yet. Ask a question to start one.</p> : null}
-      <ChatFolderSection folder={null} onDropChat={onDropChat}>
-        {rows(null)}
-      </ChatFolderSection>
+      {showNoFolder ? (
+        <ChatFolderSection folder={null} onDropChat={onDropChat}>
+          {rows(null)}
+        </ChatFolderSection>
+      ) : null}
       {folders.map((folder) => (
         <ChatFolderSection key={folder.folder_id} folder={folder} onDropChat={onDropChat} onRename={(folderId, name) => renameFolder.mutate({ folderId, name })}
           actions={

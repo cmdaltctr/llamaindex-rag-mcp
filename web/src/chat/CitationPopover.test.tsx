@@ -5,6 +5,8 @@ import type { AnswerResult } from "../api/documents";
 import { documentsServer, json } from "../test/fakeDocumentsServer";
 import { renderWithProviders } from "../test/providers";
 import { AssistantTurn } from "./AssistantTurn";
+import { TooltipProvider } from "../components/ui/tooltip";
+import { CitationList } from "./SourcesPanel";
 
 function cite(ordinal: number, chunkIds: string[], source = "/srv/docs/paper.pdf") {
   return {
@@ -36,34 +38,50 @@ function setup(handlers: Record<string, () => unknown> = {}) {
   });
   const onShowChunk = vi.fn();
   renderWithProviders(
-    <ul>
-      <AssistantTurn collection="documents" question="q" saved={RESULT} onShowChunk={onShowChunk} />
-    </ul>,
+    <TooltipProvider>
+      <ul>
+        <AssistantTurn collection="documents" question="q" saved={RESULT} onShowChunk={onShowChunk} />
+      </ul>
+      {/* The chips live in the chat's Citations tab, not under the answer. */}
+      <CitationList citations={RESULT.citations} evidence={RESULT.evidence} collection="documents" onShowChunk={onShowChunk} />
+    </TooltipProvider>,
     { fetchImpl: server.fetchImpl },
   );
   return { server, onShowChunk, user: userEvent.setup() };
 }
 
+const details = (n: number) => within(screen.getByRole("list", { name: "Citations" })).getByRole("button", { name: `Lineage and metadata of citation ${n}` });
 const chip = (n: number) => within(screen.getByRole("list", { name: "Citations" })).getByRole("button", { name: new RegExp(`\\[${n}\\]`) });
 
 describe("citation popover", () => {
-  it("opens from a chip with the evidence, the lineage and the stored metadata", async () => {
+  it("opens from a chip with the passage text and its source, without lineage or metadata", async () => {
     const { user } = setup();
     await user.click(chip(1));
     const panel = document.querySelector("[data-slot='citation-popover-content']") as HTMLElement;
     expect(within(panel).getByText("Evidence one")).toBeInTheDocument();
     expect(within(panel).getByText("paper.pdf")).toBeInTheDocument();
     expect(within(panel).getByText(/Score 0\.5000/)).toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: "Open full chunk" })).toBeInTheDocument();
+    expect(within(panel).queryByRole("region", { name: "Lineage" })).not.toBeInTheDocument();
+    expect(within(panel).queryByRole("region", { name: "Metadata" })).not.toBeInTheDocument();
+  });
+
+  it("opens the lineage and the stored metadata from the details button, without the passage text", async () => {
+    const { user } = setup();
+    await user.click(details(1));
+    const panel = document.querySelector("[data-slot='citation-popover-content']") as HTMLElement;
     expect(within(panel).getByRole("region", { name: "Lineage" })).toHaveTextContent("sid-1");
     const metadata = await within(panel).findByRole("region", { name: "Metadata" });
     expect(within(metadata).getByText("title")).toBeInTheDocument();
     expect(within(metadata).getByText("A paper")).toBeInTheDocument();
     expect(within(metadata).getByText("file_name")).toBeInTheDocument();
+    expect(within(panel).queryByText("Evidence one")).not.toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: "Open full chunk" })).toBeInTheDocument();
   });
 
   it("lists both chunk ids of a merged citation", async () => {
     const { user } = setup();
-    await user.click(chip(2));
+    await user.click(details(2));
     const lineage = await screen.findByRole("region", { name: "Lineage" });
     expect(within(lineage).getByText("c-2, c-3")).toBeInTheDocument();
   });
@@ -77,6 +95,16 @@ describe("citation popover", () => {
     expect(answer).toHaveTextContent("not [7].");
     await user.click(within(answer).getByRole("button", { name: "Citation 1" }));
     expect(await screen.findByText("Evidence one")).toBeInTheDocument();
+  });
+
+  it("opens the text view, without lineage or metadata, from a [n] marker in the answer", async () => {
+    const { user } = setup();
+    await user.click(within(screen.getByText(/Lineage matters/)).getByRole("button", { name: "Citation 1" }));
+    const panel = document.querySelector("[data-slot='citation-popover-content']") as HTMLElement;
+    expect(await within(panel).findByText("Evidence one")).toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: "Open full chunk" })).toBeInTheDocument();
+    expect(within(panel).queryByRole("region", { name: "Lineage" })).not.toBeInTheDocument();
+    expect(within(panel).queryByRole("region", { name: "Metadata" })).not.toBeInTheDocument();
   });
 
   it("closes on Escape and returns focus to the chip", async () => {

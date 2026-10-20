@@ -107,7 +107,8 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # against 6663 before (6670 less the 7 optional cases above).
 # +2 (2026-10-19, fix/settings-file-test-isolation): a working-folder .env must not leak into
 # tests, one case per leak path (os.environ at import, Settings env_file). No fastapi needed.
-_BASE_EXECUTED = 7171
+# +6 (2026-10-19, answer layout prompt): the layout and slack cases of test_answer_prompt_format.py.
+_BASE_EXECUTED = 7177
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
