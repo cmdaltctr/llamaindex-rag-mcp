@@ -37,16 +37,20 @@ Work in the sibling worktree `llamaindex-rag-mcp-feat-studio-full-settings` on `
 
 ## 6. Browser check on a throwaway server
 
-- [ ] 6.1 Build the web (`npm run build` in `web/`). Start `omrg web` from the worktree venv on a free port (not 8765), with `--workspace` and `HOME` under the scratch folder and `OMRG_CONFIG_DIR` in that folder. Never use the login item, `~/.omrg`, `~/.config/omrg` or `uv tool install`. Verify: the launch link opens in a new Orca tab.
-- [ ] 6.2 At 1280 px wide: duplicate `documents`, open Search, turn hybrid on, check the canvas shows Sparse retrieval and fusion with the right connections, save a revision, reload and check the switch shows on. Open Answer and repeat. Turn hybrid off and save. Verify: screenshots show each state, and `GET /v1/pipelines/{id}` holds the expected shape.
-- [ ] 6.3 At 1280 px wide: open the card settings panel on Prepare query, set "Number of results" and a metadata filter, bypass Cross-encoder rerank, use "Open in Step settings", and set "Rerank candidate factor". Verify: the cards show "(set here)" values, the panel fits on screen, and the draft check shows no issue.
-- [ ] 6.4 At 390 px wide: repeat a short pass of 6.2 and 6.3. Verify: no horizontal page scroll, the card panel stays inside the viewport, and the switch and the overrides list are usable.
-- [ ] 6.5 Stop the server and close the tab. Verify: the port is free again.
+Finding from task 6.2: on Answer, Sparse retrieval covered Prepare evidence. `enableHybrid` now puts each new step in the nearest free slot below Dense retrieval (test "places the new steps clear of every other step" in `hybrid.test.ts`).
+
+- [x] 6.1 Build the web (`npm run build` in `web/`). Start `omrg web` from the worktree venv on a free port (not 8765), with `--workspace` and `HOME` under the scratch folder and `OMRG_CONFIG_DIR` in that folder. Never use the login item, `~/.omrg`, `~/.config/omrg` or `uv tool install`. Verify: the launch link opens in a new Orca tab.
+- [x] 6.2 At 1280 px wide: duplicate `documents`, open Search, turn hybrid on, check the canvas shows Sparse retrieval and fusion with the right connections, save a revision, reload and check the switch shows on. Open Answer and repeat. Turn hybrid off and save. Verify: screenshots show each state, and `GET /v1/pipelines/{id}` holds the expected shape.
+- [x] 6.3 At 1280 px wide: open the card settings panel on Prepare query, set "Number of results" and a metadata filter, bypass Cross-encoder rerank, use "Open in Step settings", and set "Rerank candidate factor". Verify: the cards show "(set here)" values, the panel fits on screen, and the draft check shows no issue.
+- [x] 6.4 At 390 px wide: repeat a short pass of 6.2 and 6.3. Verify: no horizontal page scroll, the card panel stays inside the viewport, and the switch and the overrides list are usable.
+- [x] 6.5 Stop the server and close the tab. Verify: the port is free again.
 
 ## 7. Integration and merge
 
-- [ ] 7.1 Run `npm run lint`, `npm run typecheck` and `npm test` in `web/`. Verify: all pass, and every changed file stays under 500 lines.
+Tasks 7.2, 7.4 and 7.5 belong to the integrator. Do not archive the change before they pass.
+
+- [x] 7.1 Run `npm run lint`, `npm run typecheck` and `npm test` in `web/`. Verify: all pass, and every changed file stays under 500 lines.
 - [ ] 7.2 Merge `v3` into the feature branch if `v3` moved (for example after `persistent-web-auth-token` lands). Resolve `tests/test_clean_base_tripwire.py` and `docs/guides/web-workspace.md` by hand, then set the tripwire count from a fresh measurement. Verify: `git status` is clean after the merge commit.
-- [ ] 7.3 Run `openspec validate studio-full-settings --strict` and `openspec validate --all --strict`. Verify: both pass.
+- [x] 7.3 Run `openspec validate studio-full-settings --strict` and `openspec validate --all --strict`. Verify: both pass.
 - [ ] 7.4 Run `env -u OPENROUTER_API_KEY -u ANTHROPIC_API_KEY ./scripts/local_ci.sh`. Verify: every step passes.
 - [ ] 7.5 Merge into `v3` from the `v3` worktree with `git merge --no-ff feat/studio-full-settings`. Verify: `git log --oneline -1` in the `v3` worktree shows the merge commit, and the fast suite passes there.
