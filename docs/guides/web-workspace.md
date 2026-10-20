@@ -389,6 +389,42 @@ The server keeps the last 1,000 log records in memory and writes no log file. Th
 
 `POST /v1/experiment-folders` (scope `manage`) creates a directory below an approved experiment root. `GET /v1/experiments` returns the folder tree of each root in `folders`.
 
+### Document reading
+
+Settings > Document reading (`#/settings/document-reading`) sets how OMRG reads documents. It has one row for each of these nine keys:
+
+| Row | Key | Control |
+| --- | --- | --- |
+| PDF reader | `pdf_reader` | A select. A reader that is not installed shows the reason and you cannot choose it. |
+| OCR fallback | `ocr_fallback_enabled` | A switch. |
+| Lowest text confidence | `ocr_fallback_min_confidence` | A number from 0 to 1. |
+| OCR page fraction | `ocr_fallback_page_fraction` | A number from 0 to 1. |
+| OCR routing unit | `ocr_routing_unit` | A select of `document` and `page`. |
+| Primary engine | `ocr_engine_primary` | A select of the engines that the server finds. |
+| Fallback engine | `ocr_engine_fallback` | A select of the engines that the server finds. |
+| Maths routing | `ocr_maths_routing_enabled` | A switch. |
+| Maths page fraction | `ocr_maths_page_fraction` | A number from 0 to 1. |
+
+Each row shows the value in force, where it comes from and the default. To change a value:
+
+1. Select Edit on the row.
+2. Choose or type the new value.
+3. Select Save.
+
+Save writes the key to `omrg.jsonc`. It does not change the value in force. The changes apply after a restart of `omrg web`. Until the restart, the row shows the saved value and "Restart to apply". After the save, the restart dialog opens. Select "Restart now", or select Later and restart yourself.
+
+Select "Use default" to remove the key from `omrg.jsonc`. The default then applies at the next launch. A blank engine name is refused. To use no fallback engine, set `OCR_ENGINE_FALLBACK=` in `.env`. A saved empty fallback shows as "None (no fallback)".
+
+These rules also apply:
+
+- A key set in the environment or `.env` is read-only. The row names the variable to remove.
+- An engine that is not provisioned shows the reason. You can still choose it, for example before you provision it.
+- When `OCR_WORKER_COMMAND` is set, the Primary engine row says that the command replaces the primary engine.
+- When `auto` or a missing reader resolves to another reader, the PDF reader row shows the reader in use.
+- A Read document step in a pipeline can choose its own reader.
+
+The nine keys are part of the index identity. After a restart, the next ingest can read existing files again. A failed save shows the server message. When `omrg.jsonc` changed on disk, select Reload to read the new values, then save again.
+
 ### Embedding model of a profile
 
 A user profile can choose its own embedding provider and model (ADR-081). The embedding routes follow. Both `manage` routes need the browser session.
@@ -447,7 +483,7 @@ Every area has its own address. Back and forward move between them. An address t
 | Studio | `#/studio`, `#/studio/<profile-id>`, `#/studio/<profile-id>/<purpose>` | Open a gallery of profiles. Duplicate a profile, start an empty one, rename it or delete it. Open the Ingest, Search or Answer pipeline of a profile. Add operations, connect ports, save a revision, validate, run and cancel. |
 | Experiments | `#/experiments`, `#/experiments/runs/<run-id>` | Create experiment folders and sub-experiments, issue a bound credential, register and open the notebook editor, and read pipeline runs. A preview that is cut offers Open full output, which shows the redacted value as text and downloads it. |
 | Integrations | `#/integrations` | See which optional parts are installed and copy the command that installs the rest. The page never installs anything. |
-| Settings | `#/settings`, `#/settings/<section>` | Seven sections: Appearance, Providers, Chat, MCP, Server log, Runtime and Workspace. Set provider addresses and keys and test them, choose the Chat model, read the server log, copy the MCP client configuration, manage MCP access over HTTP, and set the per-file upload limit. |
+| Settings | `#/settings`, `#/settings/<section>` | Nine sections: Appearance, Providers, Chat, MCP, Server log, Runtime, Workspace, Document reading and Configuration. Set provider addresses and keys and test them, choose the Chat model, read the server log, copy the MCP client configuration, manage MCP access over HTTP, set the per-file upload limit, choose the PDF reader and the OCR settings for the next launch, and read every setting in force. |
 
 The screenshots show a local server with small Markdown sources. The run output screenshot shows a search result passage that is longer than the 4 KiB preview.
 
