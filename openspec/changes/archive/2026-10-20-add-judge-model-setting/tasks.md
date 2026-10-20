@@ -30,7 +30,7 @@ Prepare the feature worktree with `uv sync --frozen --extra web`. Each task writ
 - [x] 3.2 Write failing tests in `web/src/settings/ChatSection.test.tsx` for every scenario in the `workspace-settings` delta: default judge shown, Edit opens filled, pick from list, Remove, locked judge, and the "where the choice applies" text. Add judge fixtures to `web/src/settings/test/fixtures.ts`. Confirm they fail.
 - [x] 3.3 Make `ChatModelForm.tsx` take its save mutation, labels and initial values as props, with Save disabled for an empty model. Keep all existing `ChatSection.test.tsx` tests green.
 - [x] 3.4 Add the "Claim check judge" block to `web/src/settings/ChatSection.tsx` (rows, Edit, Remove, lock note, profile note, cloud note). Verify 3.2 passes, then run `npm run lint`, `npm run typecheck` and `npm test` in `web/`.
-- [ ] 3.5 Rebuild the static bundle in `src/omrg/transports/api/static/` with the project's web build command. Verify `omrg web` serves the new block.
+- [x] 3.5 Rebuild the static bundle in `src/omrg/transports/api/static/` with the project's web build command. Verify `omrg web` serves the new block.
 
 ## 4. Documentation
 
@@ -40,8 +40,8 @@ Prepare the feature worktree with `uv sync --frozen --extra web`. Each task writ
 
 ## 5. Integration checks
 
-- [ ] 5.1 Run `./scripts/local_ci.sh` and `openspec validate add-judge-model-setting --strict`. Both must pass.
-- [ ] 5.2 Ask the user before starting a server (heavy-run warning). Then start `omrg web` from the feature worktree with `OMRG_CONFIG_DIR` set to a scratch folder, never `~/.config/omrg` or `~/.omrg`.
-- [ ] 5.3 In the browser at 1280 px wide, open `#/settings/chat`. Save a judge, see the `config-file` source, Remove it, and see the default return. Take a screenshot.
-- [ ] 5.4 Repeat 5.3 at 390 px wide. Verify there is no horizontal page scroll and every button can be reached. Take a screenshot.
-- [ ] 5.5 With a profile that turns on "Check claims", ask one question in Chat after a judge save. Verify the answer reports verification with no restart, or `verification_skipped` with a plain reason when the provider has no key.
+- [x] 5.1 Run `./scripts/local_ci.sh` and `openspec validate add-judge-model-setting --strict`. Both must pass.
+- [x] 5.2 Ask the user before starting a server (heavy-run warning). Then start `omrg web` from the feature worktree with `OMRG_CONFIG_DIR` set to a scratch folder, never `~/.config/omrg` or `~/.omrg`.
+- [x] 5.3 In the browser at 1280 px wide, open `#/settings/chat`. Save a judge, see the `config-file` source, Remove it, and see the default return. Take a screenshot.
+- [x] 5.4 Repeat 5.3 at 390 px wide. Verify there is no horizontal page scroll and every button can be reached. Take a screenshot.
+- [x] 5.5 With a profile that turns on "Check claims", ask one question in Chat after a judge save. Verify the answer reports verification with no restart, or `verification_skipped` with a plain reason when the provider has no key.
