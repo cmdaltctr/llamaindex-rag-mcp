@@ -19,8 +19,8 @@ from rich.markup import escape
 from ...config.settings_file import SettingsFile, read_settings_file
 from ...config.user_config import CONFIG_FILE, display_path, user_config_dir
 from ..settings_view import SettingView, describe_settings
-from . import app, console
-from .config_template import build_template, today
+from . import app, config_template, console
+from .config_template import build_template
 
 config_app = typer.Typer(
     name="config",
@@ -42,7 +42,8 @@ def _fail(message: str) -> NoReturn:
 
 def _backup_path(target: Path) -> Path:
     """Return a free ``omrg.jsonc.<date>.bak`` name beside *target*."""
-    stem = f"{target.name}.{today()}"
+    # Look ``today`` up on its module so a test can fix the date there.
+    stem = f"{target.name}.{config_template.today()}"
     candidate = target.with_name(f"{stem}.bak")
     number = 2
     while candidate.exists():
