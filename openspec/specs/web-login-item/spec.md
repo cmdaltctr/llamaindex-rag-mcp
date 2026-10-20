@@ -243,6 +243,7 @@ The `restart` action SHALL ask launchd to send `SIGTERM` to the app, so launchd 
 - **THEN** the route MUST answer 202
 - **AND** the app MUST shut down in the normal way and launchd MUST start it again
 - **AND** the browser session MUST end, because sessions stay in memory
+- **AND** the open tab MUST sign in again with the workspace sign-in secret once the app answers
 
 #### Scenario: Turn off
 
