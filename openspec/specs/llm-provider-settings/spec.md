@@ -308,7 +308,7 @@ When any embedding use of the server names Ollama, the Ollama address SHALL be l
 #### Scenario: Choose a cloud model
 
 - **WHEN** the user saves the provider `openrouter` and the model `openai/gpt-4o-mini` and an OpenRouter key is set
-- **THEN** `GET /v1/settings/chat` MUST report that choice with the source `saved` and ready true, and the next answer MUST use that model
+- **THEN** `GET /v1/settings/chat` MUST report that choice with the source `config-file` and ready true, and the next answer MUST use that model
 
 #### Scenario: Unknown provider refused
 

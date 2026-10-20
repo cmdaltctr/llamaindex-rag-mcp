@@ -7,7 +7,7 @@ A Settings area that holds the workspace-wide controls and information that belo
 
 ### Requirement: Settings is split into sections
 
-The Settings view SHALL offer the sections Appearance, Providers, Chat, MCP, Server log, Runtime and Workspace, switched with chip buttons, with one section shown at a time. Each section SHALL have the address `#/settings/<section>` (`appearance`, `providers`, `chat`, `mcp`, `log`, `runtime`, `workspace`). Selecting a chip SHALL rewrite the address. `#/settings` SHALL show Appearance.
+The Settings view SHALL offer the sections Appearance, Providers, Chat, MCP, Server log, Runtime, Workspace and Configuration, switched with chip buttons, with one section shown at a time. Each section SHALL have the address `#/settings/<section>` (`appearance`, `providers`, `chat`, `mcp`, `log`, `runtime`, `workspace`, `configuration`). Selecting a chip SHALL rewrite the address. `#/settings` SHALL show Appearance.
 
 #### Scenario: Switch section
 
@@ -151,7 +151,7 @@ The Chat section SHALL show the Chat provider and model from `GET /v1/settings/c
 
 ### Requirement: The Chat section says where the choice applies
 
-The Chat section SHALL state that the choice also answers MCP clients of this web server that cannot supply their own model, that metadata extraction keeps its own model, and that `omrg` over stdio and the CLI read the environment, `.env` and the user config folder, and do not see saved values. When the selected provider is cloud, the section SHALL state that questions and retrieved passages leave this machine.
+The Chat section SHALL state that the choice also answers MCP clients of this web server that cannot supply their own model, that metadata extraction keeps its own model, and that `omrg` over stdio and the CLI read the same `omrg.jsonc` at their next launch. When the selected provider is cloud, the section SHALL state that questions and retrieved passages leave this machine.
 
 #### Scenario: Cloud choice warns
 
