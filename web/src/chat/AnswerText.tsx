@@ -1,4 +1,4 @@
-import { Children, createContext, useContext, type ReactNode } from "react";
+import { Children, createContext, Fragment, useContext, type ReactNode } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Citation, Evidence } from "../api/documents";
@@ -18,9 +18,30 @@ type CitationTarget = Omit<AnswerTextProps, "text">;
 
 const CitationContext = createContext<CitationTarget | null>(null);
 
+/** A citation button that shows `label`, or null when no returned citation has `ordinal`. */
+function citationButton(target: CitationTarget, ordinal: number, label: string, key: number): ReactNode {
+  const citation = target.citations.find((c) => c.ordinal === ordinal);
+  if (citation === undefined) return null;
+  return (
+    <CitationPopover
+      key={key}
+      citation={citation}
+      evidence={target.evidence.find((e) => e.ordinal === citation.ordinal)}
+      collection={target.collection}
+      onShowChunk={target.onShowChunk}
+      trigger={(props) => (
+        <Button variant="link" size="inline" dir="ltr" aria-label={`Citation ${citation.ordinal}`} className="select-text px-0 align-baseline" {...props}>
+          {label}
+        </Button>
+      )}
+    />
+  );
+}
+
 /**
- * Splits a text run on `[n]`. A marker becomes a button only when `n` is the
- * ordinal of a returned citation, so no citation is invented. Any other marker
+ * Splits a text run on `[n]` and on grouped markers such as `[1, 3, 5]`, the
+ * same groups the backend parses. Each `n` becomes a button only when it is the
+ * ordinal of a returned citation, so no citation is invented. Any other ordinal
  * stays text.
  */
 function CitedText({ children }: { children: ReactNode }) {
@@ -29,23 +50,15 @@ function CitedText({ children }: { children: ReactNode }) {
     <>
       {Children.map(children, (child) => {
         if (typeof child !== "string" || target === null) return child;
-        return child.split(/\[(\d+)\]/).map((part, index) => {
+        return child.split(/\[(\d+(?:\s*,\s*\d+)*)\]/).map((part, index) => {
           if (index % 2 === 0) return part;
-          const citation = target.citations.find((c) => c.ordinal === Number(part));
-          if (citation === undefined) return `[${part}]`;
+          // Ordinals sit at even indices, the original separators at odd ones.
+          const pieces = part.split(/(\s*,\s*)/);
+          if (pieces.length === 1) return citationButton(target, Number(part), `[${part}]`, index) ?? `[${part}]`;
           return (
-            <CitationPopover
-              key={index}
-              citation={citation}
-              evidence={target.evidence.find((e) => e.ordinal === citation.ordinal)}
-              collection={target.collection}
-              onShowChunk={target.onShowChunk}
-              trigger={(props) => (
-                <Button variant="link" size="inline" dir="ltr" aria-label={`Citation ${citation.ordinal}`} className="select-text px-0 align-baseline" {...props}>
-                  [{part}]
-                </Button>
-              )}
-            />
+            <Fragment key={index}>
+              [{pieces.map((piece, i) => (i % 2 === 1 ? piece : (citationButton(target, Number(piece), piece, i) ?? piece)))}]
+            </Fragment>
           );
         });
       })}

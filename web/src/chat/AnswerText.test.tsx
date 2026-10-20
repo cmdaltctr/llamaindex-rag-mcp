@@ -91,6 +91,14 @@ describe("AnswerText citations inside markdown", () => {
     expect(screen.getByText(/unknown \[7\]/)).toBeInTheDocument();
   });
 
+  it("turns each ordinal of a grouped marker [1, 3] into its own citation button", () => {
+    const { container } = show("Shown in two papers [1, 3, 7].", [cite(1), cite(2), cite(3)]);
+    expect(screen.getByRole("button", { name: "Citation 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Citation 3" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toHaveLength(2);
+    expect(container).toHaveTextContent("papers [1, 3, 7].");
+  });
+
   it("does not turn [n] inside inline code or a code block into a button", () => {
     show("Index `a[1]` here.\n\n```\nb[2]\n```");
     expect(screen.queryByRole("button")).toBeNull();
