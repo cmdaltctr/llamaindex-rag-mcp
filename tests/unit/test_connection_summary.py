@@ -234,7 +234,8 @@ def test_key_from_the_environment_locks(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 def test_short_key_shows_no_characters(monkeypatch: pytest.MonkeyPatch) -> None:
-    short = "sk-short-key"  # fewer than 16 characters
+    # Fewer than 16 characters; the ending must not occur in a folder path.
+    short = "sk-short-Qz9x"
     settings = make_settings(openrouter_api_key=short, explicit=frozenset({"openrouter_api_key"}))
     result = summary(monkeypatch, settings)
     key = field(by_provider(result)["openrouter"], "api_key")
