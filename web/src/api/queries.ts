@@ -15,7 +15,7 @@ import { getPower } from "./power";
 import { getChat, listChats } from "./chats";
 import { getProfile, listProfiles } from "./profiles";
 import { getRunArtefact, getRunRecord, getRunResult, listRuns } from "./runs";
-import { getChatSettings, getConnections, getHealth, getMcpState, getUploadLimit, getWebPort } from "./settings";
+import { getChatSettings, getConnections, getHealth, getJudgeSettings, getMcpState, getUploadLimit, getWebPort } from "./settings";
 import { getDocumentReadingSettings } from "./settingsDocumentReading";
 import { rememberRevision } from "./settingsRevision";
 
@@ -59,6 +59,7 @@ export const queryKeys = {
   power: () => ["server", "power"] as const,
   connections: () => ["connections"] as const,
   chatSettings: () => ["settings", "chat"] as const,
+  judgeSettings: () => ["settings", "judge"] as const,
   mcp: () => ["mcp"] as const,
   webPort: () => ["settings", "web-port"] as const,
   uploadLimit: () => ["settings", "upload-limit"] as const,
@@ -177,6 +178,10 @@ export const connectionsQuery = (api: ApiClient) =>
 /** The Chat provider and model, and whether Chat is ready. Sends no request to any provider. */
 export const chatSettingsQuery = (api: ApiClient) =>
   queryOptions({ queryKey: queryKeys.chatSettings(), queryFn: ({ client, signal }) => getChatSettings(api, { signal }).then((data) => rememberRevision(client, data)) });
+
+/** The claim check judge provider and model, and whether the judge is ready. Sends no request to any provider. */
+export const judgeSettingsQuery = (api: ApiClient) =>
+  queryOptions({ queryKey: queryKeys.judgeSettings(), queryFn: ({ client, signal }) => getJudgeSettings(api, { signal }).then((data) => rememberRevision(client, data)) });
 
 /**
  * The draft check of one graph document, given as JSON text, read for the

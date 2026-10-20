@@ -17,6 +17,7 @@ import importlib.util
 import logging
 import time
 import unicodedata
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Annotated, Any
 
@@ -131,9 +132,12 @@ def _not_ready_reason(settings: Any, provider: str, model: str) -> str | None:
     return None
 
 
-def _chat_source(settings: Any, locked: bool) -> str:
-    """Return the Chat choice source: ``env``/``dotenv`` (locks), ``config-file`` or ``default``."""
-    words = [settings.setting_sources.get(p, "default") for p in _VARIABLES]
+def _chat_source(settings: Any, locked: bool, paths: Iterable[str] = _VARIABLES) -> str:
+    """Return the source of the choice at *paths* (default: Chat).
+
+    ``env``/``dotenv`` (locks), ``config-file`` or ``default``.
+    """
+    words = [settings.setting_sources.get(p, "default") for p in paths]
     if locked:
         return "dotenv" if "dotenv" in words and "env" not in words else "env"
     return "config-file" if "config-file" in words else "default"

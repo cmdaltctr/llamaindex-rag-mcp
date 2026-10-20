@@ -1,5 +1,5 @@
 import type { LlamacppServerStatus, ServerField } from "../../api/llamacppServer";
-import type { ChatSettings, Connection, ConnectionList, LogRecord, McpState, ProviderField, WebPortState } from "../../api/settings";
+import type { ChatSettings, Connection, ConnectionList, JudgeSettings, LogRecord, McpState, ProviderField, WebPortState } from "../../api/settings";
 import { DOCUMENT_READING_KEYS, type DocumentReadingKey, type DocumentReadingSetting, type DocumentReadingState } from "../../api/settingsDocumentReading";
 import { documentsServer, type Handler } from "../../test/fakeDocumentsServer";
 
@@ -99,6 +99,24 @@ export const CHAT_READY: ChatSettings = {
   reason: null,
 };
 
+/** The claim check judge when no source sets it: the `cloud` alias with no model. */
+export const JUDGE_DEFAULT: JudgeSettings = {
+  status: "ok",
+  revision: "r1",
+  provider: "cloud",
+  resolved_provider: "openrouter",
+  model: "",
+  source: "default",
+  locked: false,
+  lock_reason: null,
+  enabled: true,
+  ready: false,
+  reason: "no-model",
+};
+
+/** A judge saved in `omrg.jsonc`, with an OpenRouter key set. */
+export const JUDGE_SAVED: JudgeSettings = { ...JUDGE_DEFAULT, provider: "openrouter", model: "openai/gpt-5-mini", source: "config-file", ready: true, reason: null };
+
 export const MCP_OFF: McpState = {
   status: "ok",
   revision: "r1",
@@ -178,6 +196,7 @@ export function settingsServer(handlers: Record<string, Handler> = {}) {
     "GET /v1/connections": () => CONNECTIONS,
     "GET /v1/llamacpp/server": () => SERVER_STOPPED,
     "GET /v1/settings/chat": () => CHAT_READY,
+    "GET /v1/settings/judge": () => JUDGE_DEFAULT,
     "GET /v1/logs": () => ({ status: "ok", records: [], last_seq: 0 }),
     "GET /v1/mcp": () => MCP_OFF,
     "GET /v1/settings/web-port": () => WEB_PORT,

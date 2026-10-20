@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createApiClient } from "./client";
 import {
   getChatSettings,
   getConnections,
   getHealth,
+  getJudgeSettings,
   getLogs,
   getMcpState,
   getUploadLimit,
@@ -16,11 +17,13 @@ import {
   saveProviderFields,
   saveProviderKey,
   setChatSettings,
+  setJudgeSettings,
   setMcpEnabled,
   setUploadLimit,
   setWebPort,
   testChatModel,
   testConnection,
+  type JudgeSettings,
 } from "./settings";
 import { documentsServer } from "../test/fakeDocumentsServer";
 
@@ -131,6 +134,23 @@ describe("settings API", () => {
     await setChatSettings(api, { provider: "ollama", model: "qwen3:4b" }, { revision: "r1" });
     await setChatSettings(api, null, { revision: "r1" });
     expect(server.calls.map((call) => call.body)).toEqual([{ provider: "ollama", model: "qwen3:4b", revision: "r1" }, { revision: "r1" }]);
+  });
+
+  it("reads, saves and clears the claim check judge with the revision", async () => {
+    const { api, server } = setup({
+      "GET /v1/settings/judge": () => ({ status: "ok", revision: "r1", provider: "cloud", resolved_provider: "openrouter", model: "", source: "default", locked: false, lock_reason: null, enabled: true, ready: false, reason: "no-model" }),
+      "PUT /v1/settings/judge": () => ({ status: "ok", revision: "r2" }),
+    });
+    await expect(getJudgeSettings(api)).resolves.toMatchObject({ provider: "cloud", resolved_provider: "openrouter", model: "", ready: false, reason: "no-model" });
+    await setJudgeSettings(api, { provider: "openrouter", model: "openai/gpt-5-mini" }, { revision: "r1" });
+    await setJudgeSettings(api, null, { revision: "r1" });
+    await setJudgeSettings(api, null);
+    expect(server.calls.map((call) => `${call.method} ${call.path}`)).toEqual(["GET /v1/settings/judge", "PUT /v1/settings/judge", "PUT /v1/settings/judge", "PUT /v1/settings/judge"]);
+    expect(server.calls.slice(1).map((call) => call.body)).toEqual([{ provider: "openrouter", model: "openai/gpt-5-mini", revision: "r1" }, { revision: "r1" }, null]);
+  });
+
+  it("types the judge reason as the fixed set the route sends", () => {
+    expectTypeOf<JudgeSettings["reason"]>().toEqualTypeOf<"disabled" | "unknown-provider" | "not-installed" | "not-configured" | "no-model" | null>();
   });
 
   it("reads logs after a sequence", async () => {

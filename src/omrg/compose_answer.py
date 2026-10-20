@@ -83,6 +83,28 @@ def build_answer_llm(settings: Settings | None = None) -> Any:
         return None
 
 
+def resolve_verify_provider(settings: Settings, raw_provider: str | None) -> str:
+    """Return the registry name that the judge provider *raw_provider* stands for.
+
+    ``cloud`` or a blank value resolves to ``settings.cloud_backend`` and
+    ``local`` to ``settings.local_backend``. Any other value is returned
+    stripped, unchecked: the caller decides what an unknown name means.
+
+    Args:
+        settings: Resolved settings that hold the two backends.
+        raw_provider: ``answer.verify_provider`` as a source set it.
+
+    Returns:
+        The provider name to look up in the LLM registry.
+    """
+    raw = str(raw_provider or "cloud").strip()
+    if raw in ("", "cloud"):
+        return settings.cloud_backend
+    if raw == "local":
+        return settings.local_backend
+    return raw
+
+
 def validate_verify_provider(settings: Settings) -> None:
     """Fail fast at startup on an unknown verify-provider name (ADR-059).
 
@@ -107,13 +129,7 @@ def validate_verify_provider(settings: Settings) -> None:
     from .core.providers.llm import registry as llm_registry
 
     def _validate(raw_provider: str, origin: str) -> None:
-        raw = str(raw_provider or "cloud").strip()
-        if raw in ("", "cloud"):
-            name = settings.cloud_backend
-        elif raw == "local":
-            name = settings.local_backend
-        else:
-            name = raw
+        name = resolve_verify_provider(settings, raw_provider)
         if name not in llm_registry.available():
             raise ValueError(
                 f"{origin} names verify provider {raw_provider!r}, which is not a "
@@ -200,14 +216,8 @@ def build_verify_llm(
     if not (getattr(block, "enabled", True) and getattr(block, "verify_claims", False)):
         return None
 
-    raw = str(getattr(block, "verify_provider", "cloud") or "cloud").strip()
+    name = resolve_verify_provider(settings, getattr(block, "verify_provider", "cloud"))
     verify_model = str(getattr(block, "verify_model", "") or "").strip()
-    if raw in ("", "cloud"):
-        name = settings.cloud_backend
-    elif raw == "local":
-        name = settings.local_backend
-    else:
-        name = raw
     if name not in llm_registry.available():
         raise ValueError(
             f"ANSWER__VERIFY_PROVIDER={getattr(block, 'verify_provider', '')!r} is not a "

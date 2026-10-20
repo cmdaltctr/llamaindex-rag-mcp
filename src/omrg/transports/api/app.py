@@ -38,6 +38,7 @@ from .routes.graphs import router as graphs_router
 from .routes.inspection import router as inspect_router
 from .routes.integrations import router as integrations_router
 from .routes.jobs import router as jobs_router
+from .routes.judge_settings import router as judge_settings_router
 from .routes.llamacpp_server import router as llamacpp_server_router
 from .routes.logs import router as logs_router
 from .routes.mcp import router as mcp_router
@@ -60,6 +61,7 @@ API_ROUTERS: tuple[APIRouter, ...] = (
     profiles_router,
     chats_router,
     chat_settings_router,
+    judge_settings_router,
     configuration_router,
     document_reading_router,
     embedding_router,

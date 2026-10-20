@@ -14,6 +14,7 @@ import {
   saveProviderFields,
   saveProviderKey,
   setChatSettings,
+  setJudgeSettings,
   setMcpEnabled,
   setUploadLimit,
   setWebPort,
@@ -88,7 +89,7 @@ export function useSetUploadLimit() {
   });
 }
 
-/** A provider write changes the cards and can change whether Chat is ready, so both reads refresh. */
+/** A provider write changes the cards and can change whether Chat and the judge are ready, so all three reads refresh. */
 function useRefreshProviders() {
   const queryClient = useQueryClient();
   const { remember } = useRevision();
@@ -97,6 +98,7 @@ function useRefreshProviders() {
     return Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.connections() }),
       queryClient.invalidateQueries({ queryKey: queryKeys.chatSettings() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.judgeSettings() }),
     ]);
   };
 }
@@ -141,6 +143,20 @@ export function useSetChatSettings() {
     onSuccess: (response) => {
       remember(response);
       return queryClient.invalidateQueries({ queryKey: queryKeys.chatSettings() });
+    },
+  });
+}
+
+/** Saves the claim check judge provider and model, or clears both with `null`. */
+export function useSetJudgeSettings() {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const { options, remember } = useRevision();
+  return useMutation({
+    mutationFn: (choice: ChatChoice | null) => setJudgeSettings(api, choice, options()),
+    onSuccess: (response) => {
+      remember(response);
+      return queryClient.invalidateQueries({ queryKey: queryKeys.judgeSettings() });
     },
   });
 }

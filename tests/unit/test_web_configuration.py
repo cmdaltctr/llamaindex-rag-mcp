@@ -192,6 +192,8 @@ def test_applies_is_live_for_provider_fields_and_restart_for_the_engine(
     live = (
         "answer.model",
         "answer.provider",
+        "answer.verify_provider",
+        "answer.verify_model",
         "ollama_base_url",
         "openrouter_api_key",
         "ollama_context_window",
@@ -206,6 +208,7 @@ def test_applies_is_live_for_provider_fields_and_restart_for_the_engine(
         "metadata.extraction_mode",
         "web_port",
         "answer.enabled",
+        "answer.verify_claims",
     )
     assert {key: found[key]["applies"] for key in live} == dict.fromkeys(live, "live")
     assert {key: found[key]["applies"] for key in restart} == dict.fromkeys(restart, "restart")
@@ -232,6 +235,23 @@ def test_hand_edit_of_the_chat_model_applies_live(harness: Harness, client: Test
     harness.write('{ "answer": { "model": "two" } }')
     row = rows(get(client))["answer.model"]
     assert (row["value"], row["source"], row["restart_pending"]) == ("two", "config-file", False)
+
+
+def test_hand_edit_of_the_judge_model_applies_live(harness: Harness, client: TestClient) -> None:
+    harness.write('{ "answer": { "verify_model": "one" } }')
+    harness.launch()
+    harness.write('{ "answer": { "verify_model": "two" } }')
+    row = rows(get(client))["answer.verify_model"]
+    assert (row["value"], row["source"], row["restart_pending"]) == ("two", "config-file", False)
+
+
+def test_hand_edit_of_verify_claims_still_needs_a_restart(
+    harness: Harness, client: TestClient
+) -> None:
+    harness.write('{ "answer": { "verify_claims": false } }')
+    harness.launch()
+    harness.write('{ "answer": { "verify_claims": true } }')
+    assert rows(get(client))["answer.verify_claims"]["restart_pending"] is True
 
 
 def test_only_the_edited_restart_key_is_pending(harness: Harness, client: TestClient) -> None:

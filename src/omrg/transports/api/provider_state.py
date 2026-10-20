@@ -266,6 +266,20 @@ class ProviderState:
             engine, {"answer.provider": provider, "answer.model": model}, revision
         )
 
+    def save_judge(
+        self, engine: Any, choice: tuple[str, str] | None, revision: str | None
+    ) -> WriteResult:
+        """Save or clear the claim check judge provider and model and apply them.
+
+        Raises:
+            SettingsFileError: The write was refused.
+            EngineRefused: The Engine refused; the file is put back.
+        """
+        provider, model = choice if choice is not None else (None, None)
+        return self.save_fields(
+            engine, {"answer.verify_provider": provider, "answer.verify_model": model}, revision
+        )
+
     def save_key(
         self, engine: Any, provider: str, field: str, key: str, revision: str | None
     ) -> WriteResult:

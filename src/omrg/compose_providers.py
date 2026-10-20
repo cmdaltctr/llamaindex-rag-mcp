@@ -75,6 +75,16 @@ class ProviderValues:
 
 #: The Chat choice locks as one unit (design D2).
 _CHAT_FIELDS = ("answer.provider", "answer.model")
+#: The claim check judge choice locks as one unit too (add-judge-model-setting D1).
+_JUDGE_FIELDS = ("answer.verify_provider", "answer.verify_model")
+
+
+def _widen_lock_units(explicit: frozenset[str]) -> frozenset[str]:
+    """Return *explicit* with every lock unit that holds one of its fields added whole."""
+    for unit in (_CHAT_FIELDS, _JUDGE_FIELDS):
+        if explicit & set(unit):
+            explicit = explicit | frozenset(unit)
+    return explicit
 
 
 def locked_fields(
@@ -85,7 +95,8 @@ def locked_fields(
     Args:
         settings: Settings as the environment and ``.env`` resolved them.
         explicit: Fields that the environment or ``.env`` set. The Chat
-            provider and model lock together when either is set.
+            provider and model lock together when either is set, and so do
+            the judge provider and model.
         profiles_ollama: Whether any profile selects Ollama embeddings
             (see ``uses_ollama_embeddings``).
 
@@ -95,8 +106,7 @@ def locked_fields(
         (``env`` or ``dotenv``) is in ``settings.setting_sources``. A value
         from ``omrg.jsonc`` is not a reason.
     """
-    if any(path in explicit for path in _CHAT_FIELDS):
-        explicit = explicit | frozenset(_CHAT_FIELDS)
+    explicit = _widen_lock_units(explicit)
     locked = {path: "environment" for path in PROVIDER_FIELDS if path in explicit}
     uses_ollama = profiles_ollama or _resolve_effective_embed_provider(settings) == "ollama"
     if "ollama_base_url" not in locked and uses_ollama:
@@ -136,7 +146,10 @@ def apply_provider_values(
         if path in locked:
             continue
         if path in values.unset:
-            top[path] = ""
+            if path.startswith("answer."):  # an answer field lives in the nested block
+                answer[path.removeprefix("answer.")] = ""
+            else:
+                top[path] = ""
             sources.pop(path, None)
             key_paths.pop(path, None)
             continue
@@ -278,7 +291,6 @@ def resolve_launch_settings(base: Settings) -> Settings:
 
 #: Source words of a value that came from the file layer (the file, a key file or the keychain).
 FILE_SOURCES = frozenset({"config-file", "key-file", "keychain"})
-_CHAT_FIELDS = ("answer.provider", "answer.model")
 _NO_KEYCHAIN = "No system keychain is available."
 
 
@@ -305,8 +317,7 @@ def _secret_from_file(path: str, file: SettingsFile) -> tuple[str, str, str | No
 
 
 def _explicit(base: Settings) -> frozenset[str]:
-    explicit = frozenset(getattr(base, "provider_explicit", ()))
-    return explicit | frozenset(_CHAT_FIELDS) if explicit & set(_CHAT_FIELDS) else explicit
+    return _widen_lock_units(frozenset(getattr(base, "provider_explicit", ())))
 
 
 def provider_values_from_file(

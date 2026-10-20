@@ -276,7 +276,9 @@ Configuration: `ANSWER__VERIFY_CLAIMS` (default `false`),
 `ANSWER__VERIFY_PROVIDER` (default `cloud`; aliases `cloud`/`local`
 resolve to the configured backends, anything else is a literal registry
 name validated at startup). Profile bundles may override the three keys
-per collection; environment variables still win over the profile. See
+per collection; environment variables still win over the profile. In
+`omrg web`, Settings > Chat can also set the judge provider and model; see
+[Web workspace](web-workspace.md#claim-check-judge). See
 [Configuration](configuration.md#answering--answer__).
 
 Configuration: the `ANSWER__*` variables. See

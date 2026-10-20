@@ -50,6 +50,19 @@ def test_a_hand_edit_of_the_chat_model_applies_at_the_next_request(harness: Any)
         assert chat["revision"] == read_settings_file().revision
 
 
+def test_a_hand_edit_of_the_judge_model_applies_at_the_next_request(harness: Any) -> None:
+    with harness() as h:
+        hand_edit({"answer.verify_provider": "llamacpp", "answer.verify_model": "judge-by-hand"})
+        judge = h.client.get("/v1/settings/judge").json()
+        assert (judge["provider"], judge["model"], judge["source"]) == (
+            "llamacpp",
+            "judge-by-hand",
+            "config-file",
+        )
+        block = h.engines[0]._effective_settings.answer
+        assert (block.verify_provider, block.verify_model) == ("llamacpp", "judge-by-hand")
+
+
 def test_removing_a_key_by_hand_returns_the_value_to_its_default(harness: Any) -> None:
     with harness() as h:
         hand_edit({"ollama_base_url": edit.NEW_URL})
