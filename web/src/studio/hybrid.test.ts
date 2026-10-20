@@ -129,6 +129,18 @@ describe("enableHybrid", () => {
     expect(on.layout.positions.fuse).toBeDefined();
   });
 
+  it("places the new steps clear of every other step", () => {
+    // The Answer graph in the grid of drafts.ts: Prepare evidence sits right below Dense retrieval.
+    const grid = Object.fromEntries(ANSWER.nodes.map((node, index) => [node.id, { x: 40 + 260 * (index % 4), y: 40 + 280 * Math.floor(index / 4) }]));
+    const on = enableHybrid(fromDocument(ANSWER, { positions: grid }));
+    const positions = Object.entries(on.layout.positions);
+    for (const id of ["sparse", "fuse"]) {
+      const at = on.layout.positions[id]!;
+      const overlaps = positions.filter(([other, there]) => other !== id && Math.abs(there.x - at.x) < 260 && Math.abs(there.y - at.y) < 280);
+      expect(overlaps.map(([other]) => other)).toEqual([]);
+    }
+  });
+
   it("uses sparse_2 and fuse_2 when sparse and fuse are taken", () => {
     const document = {
       ...SEARCH,

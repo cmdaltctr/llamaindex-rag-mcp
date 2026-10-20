@@ -105,10 +105,21 @@ export function enableHybrid(draft: Draft, catalogue: readonly OperationDescript
   const moved = moveSource(draft, port(ids, shape.move.from), port(ids, shape.move.to));
   const edges = shape.edges.map((edge): EdgeSpec => ({ source: port(ids, edge.source), target: port(ids, edge.target) }));
   const next = withGraph(moved, { nodes: [...moved.graph.nodes, ...nodes], edges: [...moved.graph.edges, ...edges] });
-  // New steps go beside Dense retrieval, across the flow: below it in a horizontal layout. Arrange tidies the rest.
+  // New steps go beside Dense retrieval, across the flow (below it in a horizontal layout),
+  // in the nearest slots that no other step covers. Arrange tidies the rest.
   const at = draft.layout.positions[ids.dense] ?? { x: 0, y: 0 };
   const step = (n: number) => (draft.layout.direction === "vertical" ? { x: at.x + 280 * n, y: at.y } : { x: at.x, y: at.y + 300 * n });
-  return withLayout(next, { positions: { ...next.layout.positions, [ids.sparse]: step(1), [ids.fuse]: step(2) } });
+  const positions = { ...next.layout.positions };
+  for (const id of [ids.sparse, ids.fuse]) positions[id] = freeStep(Object.values(positions), step);
+  return withLayout(next, { positions });
+}
+
+/** The first slot `step(n)`, n from 1, that is at least one card away from every position in `taken`. */
+function freeStep(taken: { x: number; y: number }[], step: (n: number) => { x: number; y: number }): { x: number; y: number } {
+  for (let n = 1; ; n += 1) {
+    const slot = step(n);
+    if (taken.every((other) => Math.abs(other.x - slot.x) >= 260 || Math.abs(other.y - slot.y) >= 280)) return slot;
+  }
 }
 
 /** Removes Sparse retrieval and fusion and reconnects Dense retrieval. Returns the draft unchanged when the shape is not known. */

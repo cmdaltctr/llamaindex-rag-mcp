@@ -84,7 +84,7 @@ State is "on" when the graph has one enabled `retrieve.sparse` step, as `core/pr
 - Turn off needs: one Sparse retrieval fed by Prepare query, one fusion step fed only by Dense and Sparse. It removes both steps and moves every connection that left fusion `evidence` back to Dense retrieval `evidence`.
 - Any other shape is "custom". The switch is disabled and one line tells the user to change the steps on the canvas.
 - When `retrieve.sparse` or `combine.rrf` is unavailable on the host, the switch is disabled and shows the catalogue reason.
-- New steps go below Dense retrieval. Existing steps keep their positions. Arrange tidies the layout when the user wants.
+- New steps go below Dense retrieval, in the nearest free slots, so they never cover another step. Existing steps keep their positions. Arrange tidies the layout when the user wants.
 
 ### D3. The card panel reuses the Step settings controls
 
