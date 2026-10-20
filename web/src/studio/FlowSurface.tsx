@@ -15,6 +15,7 @@ import { edgeKey, moveNode, removeEdge, removeNode, removeSelection, setSelectio
 import { OperationNode, type OperationFlowNode } from "./OperationNode";
 import { FocusStep, type FocusRequest } from "./FocusStep";
 import { ViewToolbar } from "./ViewToolbar";
+import { StepEditContext, type StepEdit } from "./StepCardSettings";
 import { cardLines } from "./stepSummary";
 import { edgeRunStyle, type NodeRunState } from "../runs/runState";
 
@@ -42,6 +43,8 @@ interface FlowSurfaceProps {
   focusRequest?: FocusRequest | null;
   /** The X button of canvas full screen lives in the toolbar; this ref lets the editor focus it. */
   exitRef?: Ref<HTMLButtonElement>;
+  /** "Open in Step settings" in a card settings panel: selects the step and opens Step settings. */
+  onOpenStepSettings?: (nodeId: string) => void;
 }
 
 type Size = { width: number; height: number };
@@ -81,11 +84,13 @@ export function FlowSurface({
   readOnly = false,
   focusRequest = null,
   exitRef,
+  onOpenStepSettings,
 }: FlowSurfaceProps) {
   const [measured, setMeasured] = useState<Record<string, Size>>({});
   const selected = useMemo(() => new Set(draft.layout.selection), [draft.layout.selection]);
 
   const { collection, overrides } = draft.graph;
+  const stepEdit = useMemo<StepEdit>(() => ({ draft, controls, onChange, readOnly, onOpenStepSettings }), [draft, controls, onChange, readOnly, onOpenStepSettings]);
   const { edges: graphEdges } = draft.graph;
 
   // The ports that have an edge, per node. An input and an output of one name are two ports.
@@ -215,28 +220,30 @@ export function FlowSurface({
   }
 
   return (
-    <div className="h-full min-h-64 overflow-hidden rounded-panel border border-border" onKeyDown={handleKeyDown}>
-      <ReactFlow<OperationFlowNode>
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={NODE_TYPES}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={handleConnect}
-        onConnectEnd={handleConnectEnd}
-        isValidConnection={readOnly ? refuseAll : connectionGuard(draft, catalogue)}
-        onMoveEnd={(_, viewport) => onChange((current) => setViewport(current, viewport))}
-        defaultViewport={draft.layout.viewport}
-        deleteKeyCode={null}
-        nodesDraggable={!readOnly}
-        nodesConnectable={!readOnly}
-        minZoom={0.25}
-      >
-        <Background gap={20} />
-        <Controls showInteractive={false} />
-        <FocusStep request={focusRequest} reducedMotion={reducedMotion} />
-        <ViewToolbar exitRef={exitRef} draft={draft} sizes={measured} onChange={onChange} reducedMotion={reducedMotion} />
-      </ReactFlow>
-    </div>
+    <StepEditContext.Provider value={stepEdit}>
+      <div className="h-full min-h-64 overflow-hidden rounded-panel border border-border" onKeyDown={handleKeyDown}>
+        <ReactFlow<OperationFlowNode>
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={NODE_TYPES}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={handleConnect}
+          onConnectEnd={handleConnectEnd}
+          isValidConnection={readOnly ? refuseAll : connectionGuard(draft, catalogue)}
+          onMoveEnd={(_, viewport) => onChange((current) => setViewport(current, viewport))}
+          defaultViewport={draft.layout.viewport}
+          deleteKeyCode={null}
+          nodesDraggable={!readOnly}
+          nodesConnectable={!readOnly}
+          minZoom={0.25}
+        >
+          <Background gap={20} />
+          <Controls showInteractive={false} />
+          <FocusStep request={focusRequest} reducedMotion={reducedMotion} />
+          <ViewToolbar exitRef={exitRef} draft={draft} sizes={measured} onChange={onChange} reducedMotion={reducedMotion} />
+        </ReactFlow>
+      </div>
+    </StepEditContext.Provider>
   );
 }

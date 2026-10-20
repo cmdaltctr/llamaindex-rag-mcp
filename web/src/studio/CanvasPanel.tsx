@@ -14,6 +14,8 @@ interface CanvasPanelProps {
   sections: Record<SectionId, ReactNode>;
   /** In canvas full screen the panel floats over the whole window, above the full screen canvas. */
   fullScreen?: boolean;
+  /** Counts "Open in Step settings" requests from the card panels. A change opens Step settings and moves focus to it. */
+  settingsOpens?: number;
 }
 
 const add = (open: string[], id: SectionId) => (open.includes(id) ? open : [...open, id]);
@@ -26,11 +28,12 @@ const add = (open: string[], id: SectionId) => (open.includes(id) ? open : [...o
  * content stays mounted state-wise and no effect resets it. Mount with the
  * canvas, so state starts fresh for each pipeline.
  */
-export function CanvasPanel({ selectedNode, runStarts, sections, fullScreen = false }: CanvasPanelProps) {
+export function CanvasPanel({ selectedNode, runStarts, sections, fullScreen = false, settingsOpens = 0 }: CanvasPanelProps) {
   const [open, setOpen] = useState<string[]>(() => (selectedNode === null ? ["pipeline-settings"] : ["pipeline-settings", "node-settings"]));
   const [collapsed, setCollapsed] = useState(false);
   const [seenSelection, setSeenSelection] = useState(selectedNode);
   const [seenRuns, setSeenRuns] = useState(runStarts);
+  const [seenSettingsOpens, setSeenSettingsOpens] = useState(settingsOpens);
   const layer = useRef<HTMLElement>(null);
   const focusTarget = useRef<string | null>(null);
 
@@ -44,6 +47,15 @@ export function CanvasPanel({ selectedNode, runStarts, sections, fullScreen = fa
     setSeenRuns(runStarts);
     setOpen((current) => add(current, "run"));
   }
+  if (settingsOpens !== seenSettingsOpens) {
+    setSeenSettingsOpens(settingsOpens);
+    setOpen((current) => add(current, "node-settings"));
+    setCollapsed(false);
+  }
+
+  useEffect(() => {
+    if (settingsOpens > 0) layer.current?.querySelector<HTMLElement>('[data-focus="section:node-settings"]')?.focus();
+  }, [settingsOpens]);
 
   useEffect(() => {
     const target = focusTarget.current;

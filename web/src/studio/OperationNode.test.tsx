@@ -185,11 +185,12 @@ describe("Step cards show what each step does", () => {
     expect(handles.map((handle) => handle.getAttribute("title"))).toEqual(["evidence", "evidence"]);
   });
 
-  it("shows a settings icon that assistive technology skips", async () => {
+  it("shows a settings button named after the step, with an icon that assistive technology skips", async () => {
     await renderCards([node("thr1", "select.threshold")]);
-    const icon = card("thr1").querySelector("svg.lucide-settings-2, svg.lucide-settings2");
-    expect(icon).not.toBeNull();
-    expect(icon).toHaveAttribute("aria-hidden", "true");
+    const button = within(card("thr1")).getByRole("button", { name: "Settings for Threshold and top-k" });
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(button).toHaveClass("nodrag");
+    expect(button.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 });
 

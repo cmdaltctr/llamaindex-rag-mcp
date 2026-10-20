@@ -643,7 +643,7 @@ Click the panel-top icon at the right end of the title row ("Hide header") to sl
 
 Each step on the canvas has a card. A card shows these items, from top to bottom:
 
-1. The step name, the family badge and a settings icon.
+1. The step name, the family badge and a settings button.
 2. The node ID in muted text. It shows only when two steps have the same name.
 3. A one-line summary of what the step does. Click the summary to read the whole sentence on the card, and click it again to fold it. Using the summary does not select the card.
 4. A mini card with the settings of the step. It shows up to three main settings with their values, for example "Number of results: 10 (from profile)". When the step has more settings, the mini card ends with a button "+2 more settings". Click it to show the other settings in the same mini card, and click "Show fewer settings" to fold them. The button does not select the card. An expanded card can grow taller than its grid row, so it moves above the cards around it.
@@ -663,6 +663,17 @@ The text in brackets after a value tells you where the value comes from:
 Values show without a press on Validate. The canvas checks the draft by itself when the pipeline opens. It checks again 500 ms after you stop editing the graph. Moving a step or changing the selection starts no check. While a check runs, a setting that the profile supplies shows "From profile" with no number. After you edit the graph, the values disappear until the new check returns. The automatic check never changes the issue list. Only "Validate" changes it.
 
 Select a card to open Step settings for that step. With the keyboard, move focus to the card and press Enter or Space. The accessible name of a card is the step name followed by "step", for example "Threshold and top-k step". The node ID is added when two steps have the same name.
+
+#### Card settings panel
+
+The settings button on a card has the accessible name "Settings for <step name>", for example "Settings for Prepare query". Select it to open a small panel next to the card. The button does not select the card or start a drag.
+
+1. The panel shows the same controls as Step settings for that step: "Bypass this step" when the step can be bypassed, and one control for each setting.
+2. A change in the panel changes the draft in the same way as Step settings. The card shows the new value at once, for example "Number of results: 20 (set here)".
+3. Select "Open in Step settings" to select the step and open Step settings.
+4. Press Escape, click outside the panel or select the button again to close the panel. Escape returns focus to the button.
+
+Typing in the panel does not remove or move the step, also when you press Backspace. On a built-in profile the panel shows the values and every control is disabled. The Embed chunks panel shows the model line and "Open in Step settings". Change the embedding model in Step settings.
 
 #### Connection lines
 
