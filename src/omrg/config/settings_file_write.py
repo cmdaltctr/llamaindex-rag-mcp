@@ -36,7 +36,7 @@ from typing import Any
 
 from .jsonc_edit import JsoncEditError, remove_value, set_value
 from .provider_sources import PROVIDER_FIELDS
-from .rules import FILE_ONLY, SECRET_FIELDS
+from .rules import DOCUMENT_READING_KEYS, FILE_ONLY, SECRET_FIELDS, document_reading_problem
 from .settings_file import ABSENT, check_setting
 from .user_config import (
     CONFIG_FILE,
@@ -47,8 +47,9 @@ from .user_config import (
     user_config_dir,
 )
 
-#: The keys the Settings page may write: the provider fields plus the file-only keys.
-ALLOWED_KEYS: tuple[str, ...] = (*PROVIDER_FIELDS, *FILE_ONLY)
+#: The keys the Settings page may write: the provider fields, the file-only keys
+#: and the document-reading keys.
+ALLOWED_KEYS: tuple[str, ...] = (*PROVIDER_FIELDS, *FILE_ONLY, *DOCUMENT_READING_KEYS)
 
 CONFLICT_CHANGED = "omrg.jsonc changed on disk. Reload to see the new values."
 CONFLICT_BROKEN = "omrg.jsonc could not be read. Fix it, then save again."
@@ -107,6 +108,9 @@ def _plan(changes: Mapping[str, Any], secrets: Path) -> dict[str, Any]:
     for key, value in changes.items():
         if key not in ALLOWED_KEYS:
             raise SettingsFileRefused(f"{key} is not a setting that can be changed here.")
+        reading_rule = document_reading_problem(key, value)  # blank text is refused here
+        if reading_rule is not None:
+            raise SettingsFileRefused(f"{key}: {reading_rule}")
         if value is None or (isinstance(value, str) and not value.strip()):
             plan[key] = None
         elif key in SECRET_FIELDS:

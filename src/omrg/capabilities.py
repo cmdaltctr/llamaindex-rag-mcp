@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import logging
 import subprocess
+from collections.abc import Iterable
 from importlib.util import find_spec
+from pathlib import Path
 from typing import Any
 
 from .config import Settings
@@ -25,10 +27,13 @@ from .integrations.ocr_worker.fingerprint import (
 )
 
 __all__ = [
+    "ENGINE_NOT_A_FOLDER",
+    "ENGINE_WORKERS_UNSET",
     "UNAVAILABLE_OCR_WORKER_FINGERPRINT",
     "build_ocr_routes",
     "magika_available",
     "module_installed",
+    "ocr_engine_options",
     "pdf_reader_installed",
     "probe_ocr_worker",
     "reset_ocr_fingerprint_cache",
@@ -439,3 +444,49 @@ def build_ocr_routes(settings: Any) -> Any:
     from .integrations.ocr_worker.routes import build_route_clients
 
     return build_route_clients(settings, probe=probe_ocr_worker)
+
+
+# ── OCR engine list for Settings > Document reading (design D5) ──────────
+
+ENGINE_WORKERS_UNSET = "OCR_WORKERS_DIR is not set, so no OCR engine can run."
+ENGINE_NOT_A_FOLDER = "The name is not a folder name."
+
+
+def ocr_engine_options(workers_dir: str, names: Iterable[str]) -> list[dict[str, Any]]:
+    """List the known OCR engines and whether each one can run now.
+
+    The list joins each valid folder name under ``<workers_dir>/engines/`` with
+    the non-blank *names*, sorted and without repeats. Each entry is probed now
+    with ``resolve_engine_command``.
+
+    Args:
+        workers_dir: The launch value of ``ocr_workers_dir``.
+        names: The engine names in force and saved.
+
+    Returns:
+        ``{"name", "available", "reason"}`` per engine. ``reason`` is ``None``
+        when the engine can run.
+    """
+    from .integrations.ocr_worker.routes import _ENGINE_NAME_RE, resolve_engine_command
+
+    root = workers_dir.strip()
+    found = {name.strip() for name in names if name.strip()}
+    engines = Path(root).expanduser() / "engines"
+    if root and engines.is_dir():
+        found |= {
+            item.name
+            for item in engines.iterdir()
+            if item.is_dir() and _ENGINE_NAME_RE.fullmatch(item.name)
+        }
+    options = []
+    for name in sorted(found):
+        if not _ENGINE_NAME_RE.fullmatch(name):
+            reason: str | None = ENGINE_NOT_A_FOLDER
+        elif not root:
+            reason = ENGINE_WORKERS_UNSET
+        elif resolve_engine_command(name, root).command:
+            reason = None
+        else:
+            reason = f"Not provisioned. Run python3 ocr-workers/provision.py {name}."
+        options.append({"name": name, "available": reason is None, "reason": reason})
+    return options
