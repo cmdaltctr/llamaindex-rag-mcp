@@ -87,7 +87,7 @@ On 2026-10-20 the live app moved to `omrg.jsonc`. All 34 keys in `~/.omrg/.env` 
 
 ## Addendum (2026-10-20): Document Reading Keys Become Page-Editable
 
-Change: `openspec/changes/document-reading-settings/` (design D1 to D11). Neutral consequence 2 said that a later change can add edit rows for engine settings. This change adds rows for nine keys in Settings > Document reading: `pdf_reader`, `ocr_fallback_enabled`, `ocr_fallback_min_confidence`, `ocr_fallback_page_fraction`, `ocr_routing_unit`, `ocr_engine_primary`, `ocr_engine_fallback`, `ocr_maths_routing_enabled` and `ocr_maths_page_fraction`.
+Change: `openspec/changes/archive/2026-10-20-document-reading-settings/` (design D1 to D11). Neutral consequence 2 said that a later change can add edit rows for engine settings. This change adds rows for nine keys in Settings > Document reading: `pdf_reader`, `ocr_fallback_enabled`, `ocr_fallback_min_confidence`, `ocr_fallback_page_fraction`, `ocr_routing_unit`, `ocr_engine_primary`, `ocr_engine_fallback`, `ocr_maths_routing_enabled` and `ocr_maths_page_fraction`.
 
 1. **The page writes the nine keys through the same writer.** `ALLOWED_KEYS` grows from 16 to 25 keys. A dedicated route pair, `GET` and `PUT /v1/settings/document-reading`, accepts only these nine keys. A generic write route for every setting was rejected, because each setting has its own restart and identity effects.
 2. **Each key applies at the next launch only.** Decision 7 still holds: `EffectiveSettings` stays frozen (ADR-037). A save leaves the value in force unchanged and marks the row "Restart to apply". The page then offers the restart dialog (ADR-086). Each key is part of the index identity, so the next ingest after the restart can read existing files again.
