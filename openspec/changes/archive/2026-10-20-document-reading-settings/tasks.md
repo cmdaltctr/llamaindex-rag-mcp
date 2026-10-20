@@ -27,8 +27,8 @@ The Backend and Web groups run in parallel on their own branches. Each builds ag
 
 ## 3. Integration
 
-- [ ] 3.1 Merge the Backend and Web branches into `feat/document-reading-settings`. Verify: no conflict outside the owned files, and the web types match `openapi.yaml`.
-- [ ] 3.2 Re-measure the tripwire and update `_BASE_EXECUTED` (and `_BASE_DESELECTED` if a slow test was added) in `tests/test_clean_base_tripwire.py` with a dated comment. Verify: `uv run --no-sync pytest tests/test_clean_base_tripwire.py -q` passes.
-- [ ] 3.3 Run `./scripts/local_ci.sh`. Verify: every job passes.
-- [ ] 3.4 Run `openspec validate document-reading-settings --strict` and the verify workflow. Verify: no errors and no open findings.
-- [ ] 3.5 After user approval, merge into `v3` and archive the change with the archive workflow. Verify: `openspec/specs/workspace-settings/spec.md` lists nine sections.
+- [x] 3.1 Merge the Backend and Web branches into `feat/document-reading-settings`. Verify: no conflict outside the owned files, and the web types match `openapi.yaml`. Evidence (2026-10-20): merged `feat/document-reading-web` (cdc518a, no conflict) and `feat/studio-full-settings` (810e949, conflict only in `tests/test_clean_base_tripwire.py`); `v3` was already in. Web types in `web/src/api/settingsDocumentReading.ts` match the `DocumentReading*` schemas in `openapi.yaml`; the conformance tests and `npm run typecheck` pass. Fix fe09525: a blank saved `ocr_engine_fallback` now comes back as `null` (D8 corrected).
+- [x] 3.2 Re-measure the tripwire and update `_BASE_EXECUTED` (and `_BASE_DESELECTED` if a slow test was added) in `tests/test_clean_base_tripwire.py` with a dated comment. Verify: `uv run --no-sync pytest tests/test_clean_base_tripwire.py -q` passes. Evidence (2026-10-20): 1de0ad9 sets `_BASE_EXECUTED = 7325` (+106) and `_WEB_EXTRA_CASES = 1188` (+33); no slow test added. The tripwire passed (5 passed) in local CI.
+- [x] 3.3 Run `./scripts/local_ci.sh`. Verify: every job passes. Evidence (2026-10-20): `./scripts/local_ci.sh` passed: fast suite 7318 passed, 152 skipped; tripwire 5 passed; front end 1693 tests passed; "local CI passed".
+- [x] 3.4 Run `openspec validate document-reading-settings --strict` and the verify workflow. Verify: no errors and no open findings. Evidence (2026-10-20): `openspec validate --all --strict` passed (84 items); the fallback finding is fixed in fe09525.
+- [x] 3.5 After user approval, merge into `v3` and archive the change with the archive workflow. Verify: `openspec/specs/workspace-settings/spec.md` lists nine sections. Evidence (2026-10-20): user approved the merge; archived with the spec sync, then merged into `v3` with `git merge --no-ff feat/document-reading-settings`.
