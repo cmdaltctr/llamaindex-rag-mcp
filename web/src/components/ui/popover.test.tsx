@@ -18,6 +18,9 @@ function setup() {
         <p>Inside the panel.</p>
       </Popover>
       <button type="button">Elsewhere</button>
+      <div data-slot="select-content">
+        <button type="button">A select option</button>
+      </div>
     </div>,
   );
   return user;
@@ -42,6 +45,16 @@ describe("Popover primitive", () => {
     await user.keyboard("{Escape}");
     expect(screen.queryByText("Inside the panel.")).not.toBeInTheDocument();
     expect(trigger()).toHaveFocus();
+  });
+
+  it("treats a select list on the page body as part of the panel", async () => {
+    const user = setup();
+    await user.click(trigger());
+    await user.click(screen.getByRole("button", { name: "A select option" }));
+    expect(screen.getByText("Inside the panel.")).toBeInTheDocument();
+    screen.getByRole("button", { name: "A select option" }).focus();
+    await user.keyboard("{Escape}");
+    expect(screen.getByText("Inside the panel.")).toBeInTheDocument();
   });
 
   it("closes on a click outside and on a second click of the trigger", async () => {

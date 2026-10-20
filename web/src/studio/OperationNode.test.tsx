@@ -143,7 +143,7 @@ describe("Step cards show what each step does", () => {
     expect(card("pq1")).toHaveTextContent("Number of results: From profile");
     expect(card("pq1")).toHaveTextContent("Minimum similarity: From profile");
     expect(card("pq1")).toHaveTextContent("Reranker: From profile");
-    expect(card("pq1")).toHaveTextContent("+2 more settings");
+    expect(card("pq1")).toHaveTextContent("+3 more settings");
     expect(card("pq1")).not.toHaveTextContent("Candidates to fetch");
   });
 
@@ -185,11 +185,12 @@ describe("Step cards show what each step does", () => {
     expect(handles.map((handle) => handle.getAttribute("title"))).toEqual(["evidence", "evidence"]);
   });
 
-  it("shows a settings icon that assistive technology skips", async () => {
+  it("shows a settings button named after the step, with an icon that assistive technology skips", async () => {
     await renderCards([node("thr1", "select.threshold")]);
-    const icon = card("thr1").querySelector("svg.lucide-settings-2, svg.lucide-settings2");
-    expect(icon).not.toBeNull();
-    expect(icon).toHaveAttribute("aria-hidden", "true");
+    const button = within(card("thr1")).getByRole("button", { name: "Settings for Threshold and top-k" });
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(button).toHaveClass("nodrag");
+    expect(button.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 });
 
@@ -351,7 +352,7 @@ describe("Step settings sit in a mini card that expands in place", () => {
 
   it("shows a +N more settings button that starts folded", async () => {
     await renderCards([node("pq1", "retrieve.prepare_query")]);
-    expect(more("pq1")).toHaveTextContent("+2 more settings");
+    expect(more("pq1")).toHaveTextContent("+3 more settings");
     expect(more("pq1")).toHaveAttribute("aria-expanded", "false");
     expect(miniCard("pq1")).not.toHaveTextContent("Candidates to fetch");
   });
@@ -363,9 +364,10 @@ describe("Step settings sit in a mini card that expands in place", () => {
     expect(more("pq1")).toHaveAttribute("aria-expanded", "true");
     expect(miniCard("pq1")).toHaveTextContent("Candidates to fetch: Default");
     expect(miniCard("pq1")).toHaveTextContent("Collection: Server default");
-    expect(miniCard("pq1").querySelectorAll("li")).toHaveLength(5);
+    expect(miniCard("pq1")).toHaveTextContent("Metadata filter: Default");
+    expect(miniCard("pq1").querySelectorAll("li")).toHaveLength(6);
     fireEvent.click(more("pq1"));
-    expect(more("pq1")).toHaveTextContent("+2 more settings");
+    expect(more("pq1")).toHaveTextContent("+3 more settings");
     expect(miniCard("pq1").querySelectorAll("li")).toHaveLength(3);
   });
 

@@ -46,8 +46,11 @@ export interface ProfileCreateInput {
   title: string;
 }
 
+/** Send a title, a description or both. The server keeps the field you leave out. */
 export interface ProfileUpdateInput {
-  title: string;
+  title?: string;
+  /** At most 1000 characters. */
+  description?: string;
 }
 
 const profilePath = (profileId: string): string => `/v1/profiles/${encodeURIComponent(profileId)}`;

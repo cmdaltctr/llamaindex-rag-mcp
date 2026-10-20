@@ -27,12 +27,12 @@ describe("mainSettings", () => {
   it("takes three settings in catalogue order, puts the collection last and counts the rest", () => {
     const { shown, more } = mainSettings(operation("retrieve.prepare_query"));
     expect(shown.map((entry) => entry.name)).toEqual(["top_k", "similarity_threshold", "rerank"]);
-    expect(more).toBe(2);
+    expect(more).toBe(3);
   });
 
   it("also returns the left-over settings, in order, as rest", () => {
     const { rest } = mainSettings(operation("retrieve.prepare_query"));
-    expect(rest.map((entry) => entry.name)).toEqual(["fetch_k", "collection"]);
+    expect(rest.map((entry) => entry.name)).toEqual(["fetch_k", "metadata_filter", "collection"]);
     expect(mainSettings(operation("retrieve.dense")).rest).toEqual([]);
   });
 
@@ -46,10 +46,16 @@ describe("mainSettings", () => {
     expect(mainSettings(operation("select.threshold"))).toEqual({ shown: [], rest: [], more: 0 });
   });
 
-  it("does not count a setting that the canvas cannot edit", () => {
-    // Prepare query has six parameters; Metadata filter is unsupported, so five are editable: three shown, two more.
+  it("counts the metadata filter as editable", () => {
+    // Prepare query has six parameters, and the canvas edits all six: three shown, three more.
     expect(paramFields(operation("retrieve.prepare_query"))).toHaveLength(6);
-    expect(mainSettings(operation("retrieve.prepare_query")).more).toBe(2);
+    expect(mainSettings(operation("retrieve.prepare_query")).more).toBe(3);
+  });
+
+  it("shows a metadata filter as compact JSON", () => {
+    const filter = field("retrieve.prepare_query", "metadata_filter");
+    const node = { ...NODE, params: { metadata_filter: { file_type: "pdf", year: 2026 } } };
+    expect(settingValue(filter, node, undefined, NO_OVERRIDES)).toBe('{"file_type":"pdf","year":2026} (set here)');
   });
 });
 
@@ -118,9 +124,10 @@ describe("firstSentence", () => {
 describe("cardLines", () => {
   it("gives the extra settings with their values, and counts them", () => {
     const lines = cardLines(operation("retrieve.prepare_query"), NODE, undefined, { collection: "docs", overrides: {} });
-    expect(lines.moreSettings).toBe(2);
+    expect(lines.moreSettings).toBe(3);
     expect(lines.extraSettings).toEqual([
       { label: "Candidates to fetch", value: "Default" },
+      { label: "Metadata filter", value: "Default" },
       { label: "Collection", value: "docs (from pipeline settings)" },
     ]);
   });

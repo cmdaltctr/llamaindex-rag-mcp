@@ -354,4 +354,20 @@ describe("canvas catalogue and editing", () => {
     expect(screen.queryByLabelText("Profile")).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "Profile" })).not.toBeInTheDocument();
   });
+
+  it("turns hybrid retrieval on from Pipeline settings and saves it as a revision", async () => {
+    const { server, user } = setup({}, "p1");
+    const toggle = await screen.findByRole("switch", { name: "Hybrid retrieval" });
+    await waitFor(() => expect(toggle).toBeEnabled());
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+    await openSections(user, "Revision and run");
+    await user.click(within(runPanel()).getByRole("button", { name: "Save revision" }));
+    await waitFor(() => expect(server.last("POST", "/v1/pipelines/p1/revisions")).toBeDefined());
+    const saved = savedDocument(server.last("POST", "/v1/pipelines/p1/revisions"));
+    expect(saved.nodes.map((node) => node.operation)).toEqual(expect.arrayContaining(["retrieve.sparse", "combine.rrf"]));
+    const edges = (saved.edges ?? []).map((e) => `${e.source.node}.${e.source.port}->${e.target.node}.${e.target.port}`);
+    expect(edges).toEqual(expect.arrayContaining(["prepare.query->sparse.query", "dense.evidence->fuse.ranked", "sparse.evidence->fuse.ranked", "fuse.evidence->rerank.evidence"]));
+    expect(edges).not.toContain("dense.evidence->rerank.evidence");
+  });
 });

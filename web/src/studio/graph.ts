@@ -133,11 +133,11 @@ export function sameDocument(a: DraftGraph, b: DraftGraph): boolean {
   return canonical(doc(a)) === canonical(doc(b));
 }
 
-function withGraph(draft: Draft, graph: Partial<DraftGraph>): Draft {
+export function withGraph(draft: Draft, graph: Partial<DraftGraph>): Draft {
   return { ...draft, graph: { ...draft.graph, ...graph } };
 }
 
-function withLayout(draft: Draft, layout: Partial<DraftLayout>): Draft {
+export function withLayout(draft: Draft, layout: Partial<DraftLayout>): Draft {
   return { ...draft, layout: { ...draft.layout, ...layout } };
 }
 
