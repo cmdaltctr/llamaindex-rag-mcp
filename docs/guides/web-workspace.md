@@ -687,6 +687,8 @@ The label comes from the vector-store registry (`register(..., label=...)`). A b
 
 The Profile tab shows the stored profile as a badge. When a collection has no stored profile, the badge reads "No profile". The "New profile" list has two groups, "Built-in profiles" and "Your profiles". Each option shows the profile title and its ID. A profile that is not ready does not appear in the list. A line under the list names each hidden profile and says why it is not ready. The list starts on the stored profile. When none is stored, it starts empty and "Preview profile change" stays disabled until you choose a profile.
 
+The preview table compares the search settings of the two profiles. For one of your profiles, the table reads its saved Search pipeline. A "Sparse retrieval" step turns hybrid on. A missing or bypassed "Cross-encoder rerank" step turns the reranker off. Values on the "Prepare query" step change the number of results and the reranker.
+
 ### Display name and collection name
 
 A project has two names. The collection name is the storage address. MCP tools, the CLI, the API and the address bar use it, so it never changes. The display name is a label for the workspace.

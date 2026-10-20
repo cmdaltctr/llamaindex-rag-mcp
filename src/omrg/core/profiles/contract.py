@@ -16,12 +16,21 @@ mutates only on re-invocation with ``confirm=True`` (spec M6, design D4).
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
+from ..pipelines.levers import apply_levers
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
 from .catalogue import SLOT_CONTRACTS, ProfileCatalogue, no_workspace_message
 from .resolver import OPERATIONAL_PROFILES, ProfileResolver
+
+#: Query levers that the Search graph's prepare node can set. A test checks this
+#: against the ``retrieve.prepare_query`` descriptor.
+_PREPARE_QUERY_LEVERS: tuple[tuple[str, str], ...] = (
+    ("top_k", "retrieval.top_k"),
+    ("rerank", "retrieval.rerank_enabled"),
+)
 
 _USER_PROFILE_NOTES: tuple[str, ...] = (
     "Search and answers follow the profile's Search and Answer pipelines at once.",
@@ -38,6 +47,52 @@ def _base_profile(profile: str | None, catalogue: ProfileCatalogue | None) -> st
         return profile
     record = catalogue.get_profile(profile) if catalogue is not None else None
     return str(record["base_profile"]) if record else None
+
+
+def _effective(
+    profile: str | None, catalogue: ProfileCatalogue | None, resolver: ProfileResolver
+) -> Any | None:
+    """Return the settings a collection on ``profile`` searches with, if known.
+
+    A user profile starts from its base profile. Its saved Search graph then
+    decides what runs, so the graph is laid over the base settings.
+    """
+    base = _base_profile(profile, catalogue)
+    if base is None:
+        return None
+    try:
+        effective = resolver._load_effective(base)
+    except Exception:
+        return None
+    if profile in OPERATIONAL_PROFILES or catalogue is None:
+        return effective
+    return _apply_search_graph(effective, catalogue.slot_document(str(profile), "search"))
+
+
+def _apply_search_graph(effective: Any, document: Mapping[str, Any] | None) -> Any:
+    """Lay a Search graph's levers and shape over ``effective``.
+
+    Graph-wide overrides and prepare-node values set top_k and the reranker
+    lever. An enabled sparse node turns hybrid retrieval on. The reranker runs
+    only when its lever is on and an enabled rerank node is present.
+    """
+    if not document or not document.get("nodes"):
+        return effective
+    nodes = [node for node in document["nodes"] if node.get("enabled", True)]
+    values: dict[str, Any] = dict(document.get("overrides") or {})
+    for node in nodes:
+        if node.get("operation") == "retrieve.prepare_query":
+            params = node.get("params") or {}
+            values.update({lever: params[p] for p, lever in _PREPARE_QUERY_LEVERS if p in params})
+    settings = apply_levers(effective, values)
+    operations = {node.get("operation") for node in nodes}
+    return apply_levers(
+        settings,
+        {
+            "retrieval.hybrid_enabled": "retrieve.sparse" in operations,
+            "retrieval.rerank_enabled": settings.reranker_enabled and "select.rerank" in operations,
+        },
+    )
 
 
 def _pipeline_summary(profile: str, catalogue: ProfileCatalogue) -> list[dict[str, Any]]:
@@ -138,21 +193,8 @@ def generate_safety_contract(
         pass
 
     # Load both profiles' effective settings for comparison.
-    old_effective = None
-    old_base = _base_profile(old_profile, resolved_catalogue)
-    if old_base is not None:
-        try:
-            old_effective = resolved_resolver._load_effective(old_base)
-        except Exception:  # noqa: S110
-            pass
-
-    new_base = _base_profile(new_profile, resolved_catalogue)
-    try:
-        new_effective = (
-            resolved_resolver._load_effective(new_base) if new_base is not None else None
-        )
-    except Exception:
-        new_effective = None
+    old_effective = _effective(old_profile, resolved_catalogue, resolved_resolver)
+    new_effective = _effective(new_profile, resolved_catalogue, resolved_resolver)
 
     lever_impacts = _build_lever_impacts(old_effective, new_effective)
 
