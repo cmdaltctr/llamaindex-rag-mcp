@@ -107,6 +107,52 @@ function NumberInput({ field, value, onChange, disabled, name }: ParamFieldProps
   );
 }
 
+/** Parses the text of a JSON object field. Empty text means Inherit (`null`). */
+export function checkJsonObject(text: string): { value: JsonValue } | { error: string } {
+  if (text.trim() === "") return { value: null };
+  try {
+    const value = JSON.parse(text) as JsonValue;
+    if (value !== null && typeof value === "object" && !Array.isArray(value)) return { value };
+  } catch {
+    // Falls through to the same message as a value that is not an object.
+  }
+  return { error: "Enter a JSON object." };
+}
+
+function JsonInput({ field, value, onChange, disabled, name }: ParamFieldProps & { name: string }) {
+  const [text, setText] = useState(() => (value == null ? "" : JSON.stringify(value)));
+  const [error, setError] = useState<string | null>(null);
+  const errorId = `${name}-error`;
+
+  function update(next: string) {
+    setText(next);
+    const result = checkJsonObject(next);
+    setError("error" in result ? result.error : null);
+    if ("value" in result) onChange(result.value);
+  }
+
+  return (
+    <>
+      <Input
+        aria-label={`${field.label} value`}
+        value={text}
+        placeholder={field.nullable ? "Inherit" : undefined}
+        disabled={disabled}
+        spellCheck={false}
+        className="font-mono"
+        aria-invalid={error !== null}
+        aria-describedby={error ? errorId : undefined}
+        onChange={(event) => update(event.target.value)}
+      />
+      {error && (
+        <p id={errorId} className="text-meta text-status-error-label">
+          {error}
+        </p>
+      )}
+    </>
+  );
+}
+
 function EnumSelect({ field, value, onChange, disabled }: ParamFieldProps) {
   const current = value == null ? INHERIT : String(value);
   return (
@@ -141,6 +187,7 @@ export function ParamField(props: ParamFieldProps) {
     );
   } else if (field.kind === "integer" || field.kind === "number") control = <NumberInput {...props} name={name} />;
   else if (field.kind === "enum") control = <EnumSelect {...props} />;
+  else if (field.kind === "json") control = <JsonInput {...props} name={name} />;
   else if (field.kind === "string") {
     control = (
       <Input

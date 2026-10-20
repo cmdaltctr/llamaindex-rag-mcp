@@ -1,5 +1,5 @@
 import { Workflow } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { OperationDescriptor, PortRef } from "../api/pipelines";
 import type { ProfileRecord } from "../api/profiles";
 import { ACTIVE_RUN_STATUSES } from "../api/runs";
@@ -75,6 +75,15 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
 
   // Counts runs started from the panel, so the panel opens Revision and run for them and not for a run that existed at load.
   const [runStarts, setRunStarts] = useState(0);
+  // Counts "Open in Step settings" in the card panels. It opens Step settings even when the step is already selected.
+  const [settingsOpens, setSettingsOpens] = useState(0);
+  const openStepSettings = useCallback(
+    (id: string) => {
+      update((current) => setSelection(current, [id]));
+      setSettingsOpens((count) => count + 1);
+    },
+    [update],
+  );
   // A profile in use asks first: the save changes how its collections work.
   const [confirmingSave, setConfirmingSave] = useState(false);
   const inUse = readOnly ? [] : profile.used_by;
@@ -126,6 +135,7 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
           if (reason) refuse(`Cannot connect: ${reason}`);
         }}
         onRefused={refuse}
+        onOpenStepSettings={openStepSettings}
         runNodes={runNodes}
         reducedMotion={reducedMotion}
         finishedNodes={finishedNodes}
@@ -149,8 +159,9 @@ export function CanvasEditor({ profile, purpose, source, onDuplicate }: CanvasEd
           fullScreen={fullScreen}
           selectedNode={selectedNode}
           runStarts={runStarts}
+          settingsOpens={settingsOpens}
           sections={{
-            "pipeline-settings": <PipelineBar draft={draft} onChange={update} readOnly={readOnly} />,
+            "pipeline-settings": <PipelineBar draft={draft} onChange={update} purpose={purpose} catalogue={catalogue} readOnly={readOnly} />,
             operations: <Palette operations={session.operations.data} error={session.operations.error} onRetry={() => void session.operations.refetch()} onAdd={add} readOnly={readOnly} />,
             nodes: <GraphOutline draft={draft} issues={session.issues} onChange={update} onSelect={pickStep} onAnnounce={announce} readOnly={readOnly} />,
             connect: <ConnectionMenu draft={draft} catalogue={catalogue} onConnect={connect} readOnly={readOnly} />,

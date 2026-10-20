@@ -4,11 +4,10 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { findOperation } from "./connections";
 import { EmbeddingModelSection } from "./EmbeddingModelSection";
-import { removeNode, setEnabled, setParam, toggleGraphInput, toggleGraphOutput, type Draft } from "./graph";
+import { removeNode, toggleGraphInput, toggleGraphOutput, type Draft } from "./graph";
 import { NodeDetails } from "./NodeDetails";
-import { ParamField } from "./ParamField";
-import { paramFields } from "./schema";
-import { controlFor, firstSentence, valueNote } from "./stepSummary";
+import { firstSentence } from "./stepSummary";
+import { Check, StepSettingsFields } from "./StepSettingsFields";
 
 interface NodeInspectorProps {
   draft: Draft;
@@ -23,15 +22,6 @@ interface NodeInspectorProps {
   profile?: ProfileRecord;
 }
 
-function Check({ checked, onChange, disabled, children }: { checked: boolean; onChange: (checked: boolean) => void; disabled: boolean; children: string }) {
-  return (
-    <label className="flex items-center gap-2 text-ui">
-      <input type="checkbox" checked={checked} disabled={disabled} className="size-4 accent-primary" onChange={(event) => onChange(event.target.checked)} />
-      {children}
-    </label>
-  );
-}
-
 /** Settings for the selected node, generated from its operation's catalogue entry. */
 export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onChange, readOnly = false, profile }: NodeInspectorProps) {
   const node = draft.graph.nodes.find((candidate) => candidate.id === nodeId);
@@ -43,6 +33,7 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
   const nodeIssues = issues.filter((issue) => issue.node_id === id);
   const isInput = (port: string) => draft.graph.inputs.some((i) => i.targets.some((t) => t.node === id && t.port === port));
   const isOutput = (port: string) => draft.graph.outputs.some((o) => o.source.node === id && o.source.port === port);
+  const embedding = profile !== undefined && node.operation === "embed.chunks" ? <EmbeddingModelSection profile={profile} /> : null;
 
   return (
     <>
@@ -66,28 +57,13 @@ export function NodeInspector({ draft, nodeId, catalogue, issues, controls, onCh
           ))}
         </ul>
       )}
-      {operation?.bypass && (
-        <>
-          <Check disabled={readOnly} checked={node.enabled === false} onChange={(checked) => onChange((current) => setEnabled(current, id, !checked))}>
-            Bypass this step
-          </Check>
-          <p className="text-meta text-muted-foreground">
-            A bypassed node passes its <code className="font-mono text-code">{operation.bypass.input_port}</code> input through unchanged.
-          </p>
-        </>
+      {operation ? (
+        <StepSettingsFields draft={draft} nodeId={id} operation={operation} controls={controls} onChange={onChange} readOnly={readOnly}>
+          {embedding}
+        </StepSettingsFields>
+      ) : (
+        embedding
       )}
-      {profile !== undefined && node.operation === "embed.chunks" && <EmbeddingModelSection profile={profile} />}
-      {operation &&
-        paramFields(operation).map((field) => (
-          <ParamField
-            key={`${id}:${field.name}`}
-            field={field}
-            disabled={readOnly}
-            value={node.params?.[field.name]}
-            note={valueNote(field, node, controlFor(field, controls[id]), draft.graph)}
-            onChange={(value) => onChange((current) => setParam(current, id, field.name, value))}
-          />
-        ))}
       {operation && (operation.inputs.length > 0 || operation.outputs.length > 0) && (
         <fieldset className="flex min-w-0 flex-col gap-2 rounded-control border border-border p-3">
           <legend className="px-1 text-ui font-medium">Graph inputs and outputs</legend>

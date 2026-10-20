@@ -65,8 +65,10 @@ export function Popover({ trigger, children, slot = "popover-content", width = 2
   useEffect(() => {
     if (!open) return;
     const close = () => setPosition(null);
+    // A select list opened from the panel is drawn on the page body too. It counts as inside the panel.
+    const inLayer = (target: EventTarget | null) => target instanceof Element && target.closest('[data-slot="select-content"]') !== null;
     const outside = (target: EventTarget | null) =>
-      target instanceof Node && !button.current?.contains(target) && !panel.current?.contains(target);
+      target instanceof Node && !button.current?.contains(target) && !panel.current?.contains(target) && !inLayer(target);
     const onPointerDown = (event: PointerEvent) => {
       if (outside(event.target)) close();
     };
@@ -75,7 +77,8 @@ export function Popover({ trigger, children, slot = "popover-content", width = 2
       if (!(target instanceof Node) || target === document || outside(target)) close();
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
+      // Escape in an open select list closes that list only.
+      if (event.key !== "Escape" || inLayer(event.target)) return;
       close();
       button.current?.focus();
     };

@@ -553,6 +553,8 @@ To start with no steps, select "New empty profile" and give it a title.
 
 To rename one of your profiles, select the pencil next to its title. Enter the new title and select "Save".
 
+To describe one of your profiles, open it in Studio. Select the pencil next to the description under the title, enter the text and press Enter or select "Save". Press Escape or select "Cancel" to close the field with no change. A description has at most 1000 characters. The gallery card shows the new description. A built-in profile shows its description with no pencil.
+
 To delete one of your profiles:
 
 1. Select "Delete" on its card.
@@ -619,7 +621,7 @@ On a pipeline canvas (`#/studio/<profile-id>/<purpose>`), the flow surface fills
 
 One panel floats over the right side of the canvas. It holds six sections. Each section has its own icon.
 
-1. Pipeline settings (Base profile and Collection). The base profile shows as text. The section has no Title field and no Profile list.
+1. Pipeline settings (Base profile, Collection, Hybrid retrieval and the pipeline-wide settings). The base profile shows as text. The section has no Title field and no Profile list.
 2. Operations.
 3. Steps and connections.
 4. Connect ports.
@@ -633,6 +635,26 @@ Select "Collapse panel" to shrink the panel to a narrow icon rail. Each rail but
 ![Studio canvas with the panel collapsed to the icon rail](images/web-workspace/studio-canvas-rail-light-1280.png)
 
 On a window narrower than 1024 px, the panel sits under the flow surface and shows its sections. The icon rail is not available.
+
+#### Hybrid retrieval and pipeline-wide settings
+
+On the Search and Answer pipelines, Pipeline settings shows a "Hybrid retrieval" switch. Hybrid retrieval adds keyword (sparse) search and merges it with vector search.
+
+1. Select the switch to turn it on. The canvas adds a Sparse retrieval step and a Reciprocal rank fusion step. Prepare query feeds Sparse retrieval. Dense retrieval and Sparse retrieval feed the fusion step. The fusion step feeds the step that Dense retrieval fed before.
+2. Select the switch again to turn it off. The canvas removes the two steps and connects Dense retrieval to that step again.
+3. Select "Save revision" in Revision and run to keep the change. The switch changes only the draft.
+
+The switch keeps the settings and the positions of the other steps. Sparse retrieval gets the collection of Dense retrieval when Dense retrieval has one. The Search and Answer pipelines each have their own switch. The Ingest pipeline has no switch.
+
+The switch is off and you cannot use it in these cases. A line under it gives the reason.
+
+1. The profile is built in. Duplicate the profile to change it.
+2. The server cannot run Sparse retrieval or Reciprocal rank fusion. The line gives the reason from the operation catalogue.
+3. The retrieval steps do not have the standard shape, for example two Dense retrieval steps. The line reads "This pipeline has a custom retrieval shape. Change it with the steps on the canvas."
+
+Under the switch, "Pipeline-wide settings" lists each setting that the pipeline graph sets for all of its steps, for example "Number of results: 25". These settings can come from the HTTP API. Select "Remove" to delete one from the draft. The step cards then stop showing "(from pipeline settings)" for it after the next check.
+
+On the Search and Answer pipelines, "Rerank candidate factor" sets how many candidates the reranker reads, as a multiple of the number of results. Select "Set value" and enter a whole number of 1 or more. Select "Inherit" to use the value of the profile or the server. Open "Details" to see the path of each setting, for example `retrieval.rerank_fetch_multiplier`.
 
 #### View controls
 
@@ -659,7 +681,7 @@ Click the panel-top icon at the right end of the title row ("Hide header") to sl
 
 Each step on the canvas has a card. A card shows these items, from top to bottom:
 
-1. The step name, the family badge and a settings icon.
+1. The step name, the family badge and a settings button.
 2. The node ID in muted text. It shows only when two steps have the same name.
 3. A one-line summary of what the step does. Click the summary to read the whole sentence on the card, and click it again to fold it. Using the summary does not select the card.
 4. A mini card with the settings of the step. It shows up to three main settings with their values, for example "Number of results: 10 (from profile)". When the step has more settings, the mini card ends with a button "+2 more settings". Click it to show the other settings in the same mini card, and click "Show fewer settings" to fold them. The button does not select the card. An expanded card can grow taller than its grid row, so it moves above the cards around it.
@@ -679,6 +701,17 @@ The text in brackets after a value tells you where the value comes from:
 Values show without a press on Validate. The canvas checks the draft by itself when the pipeline opens. It checks again 500 ms after you stop editing the graph. Moving a step or changing the selection starts no check. While a check runs, a setting that the profile supplies shows "From profile" with no number. After you edit the graph, the values disappear until the new check returns. The automatic check never changes the issue list. Only "Validate" changes it.
 
 Select a card to open Step settings for that step. With the keyboard, move focus to the card and press Enter or Space. The accessible name of a card is the step name followed by "step", for example "Threshold and top-k step". The node ID is added when two steps have the same name.
+
+#### Card settings panel
+
+The settings button on a card has the accessible name "Settings for <step name>", for example "Settings for Prepare query". Select it to open a small panel next to the card. The button does not select the card or start a drag.
+
+1. The panel shows the same controls as Step settings for that step: "Bypass this step" when the step can be bypassed, and one control for each setting.
+2. A change in the panel changes the draft in the same way as Step settings. The card shows the new value at once, for example "Number of results: 20 (set here)".
+3. Select "Open in Step settings" to select the step and open Step settings.
+4. Press Escape, click outside the panel or select the button again to close the panel. Escape returns focus to the button.
+
+Typing in the panel does not remove or move the step, also when you press Backspace. On a built-in profile the panel shows the values and every control is disabled. The Embed chunks panel shows the model line and "Open in Step settings". Change the embedding model in Step settings.
 
 #### Connection lines
 
@@ -700,6 +733,8 @@ The Step settings section shows the selected step. Its heading is the step name.
 4. A note under each control that says which value is in use, for example "Value in use: 10 (from profile)". The text in brackets follows the same words as the step card.
 5. "Graph inputs and outputs" and "Remove step".
 6. A closed "Details" area.
+
+A setting that takes a JSON object, for example "Metadata filter" on Prepare query, shows a text field. Enter a JSON object, for example `{"file_type": "pdf"}`. Text that is not a JSON object shows "Enter a JSON object." and does not change the draft. Clear the field to inherit the value. The step card shows the value as compact JSON.
 
 While the automatic check runs, a setting that the profile supplies shows "Comes from the profile. The value shows when the check finishes." The value disappears again each time you edit the graph. It comes back when the next check returns. Moving a step or changing the selection keeps the value.
 

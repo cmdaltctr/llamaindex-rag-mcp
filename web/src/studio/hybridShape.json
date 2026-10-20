@@ -1,0 +1,16 @@
+{
+  "about": "The steps and connections that the Studio hybrid switch adds. Step keys are the ids in src/omrg/pipeline_templates.py. tests/unit/test_hybrid_shape_parity.py pins this file to that template.",
+  "steps": {
+    "prepare": "retrieve.prepare_query",
+    "dense": "retrieve.dense",
+    "sparse": "retrieve.sparse",
+    "fuse": "combine.rrf"
+  },
+  "added": ["sparse", "fuse"],
+  "edges": [
+    { "source": { "node": "prepare", "port": "query" }, "target": { "node": "sparse", "port": "query" } },
+    { "source": { "node": "dense", "port": "evidence" }, "target": { "node": "fuse", "port": "ranked" } },
+    { "source": { "node": "sparse", "port": "evidence" }, "target": { "node": "fuse", "port": "ranked" } }
+  ],
+  "move": { "from": { "node": "dense", "port": "evidence" }, "to": { "node": "fuse", "port": "evidence" } }
+}

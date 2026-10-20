@@ -114,7 +114,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # the page rule, restart acceptance and redaction. All 24 need fastapi.
 # +3 (2026-10-20, fix/shell-key-test-isolation): a provider key exported in the shell must not
 # leak into tests, one case per provider key. No fastapi needed.
-_BASE_EXECUTED = 7213
+# +6 (2026-10-20, studio-full-settings): test_hybrid_shape_parity.py pins the Studio hybrid
+# switch shape file to the search and answer templates. No fastapi needed.
+_BASE_EXECUTED = 7219
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
