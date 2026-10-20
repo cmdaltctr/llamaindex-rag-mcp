@@ -359,11 +359,11 @@ The server saves a key with the `keyring` package. The service name is `omrg` an
 
 The server uses the macOS Keychain, Windows Credential Manager or the Secret Service on a Linux desktop (GNOME Keyring, or KWallet through Secret Service). It does not use a plaintext backend.
 
-If the database records a saved key and the keychain entry is gone, the card shows that the saved key is missing. If the keychain cannot be read, the card shows that the keychain is unreadable. In both cases the provider has no key.
+If `omrg.jsonc` holds a `keychain://` reference and the keychain entry is gone, the card shows that the saved key is missing. If the keychain cannot be read, the card shows that the keychain is unreadable. In both cases the provider has no key.
 
 #### No keychain
 
-In a container, in WSL without a keyring or on a headless server, no usable keychain exists. A key save returns 409 and the server stores nothing. The card says that no system keychain was found and names the variable to set, for example `OPENROUTER_API_KEY`. Set the variable in the environment or in `.env`, then start `omrg web`. Addresses still save in the workspace database.
+In a container, in WSL without a keyring or on a headless server, no usable keychain exists. A key save returns 409 and the server stores nothing. The card says that no system keychain was found and names the variable to set, for example `OPENROUTER_API_KEY`. Set the variable in the environment or in `.env`, then start `omrg web`. Addresses still save in `omrg.jsonc`.
 
 #### Remove keys from the keychain
 
@@ -375,7 +375,7 @@ Remove the key in Settings > Providers with Remove key. To remove an entry by ha
 
 #### What other processes do not see
 
-Saved addresses, saved keys and the saved Chat model apply to `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts do not read them. They read the environment, `.env` and the user config folder. To give those processes a value, put it in `.env` or in `omrg.jsonc`.
+Saved addresses and saved keys apply to `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts do not read them. The saved Chat model and the saved claim check judge go in `omrg.jsonc`. The stdio MCP server and the CLI read them at their next launch. They read the environment, `.env` and the user config folder. To give those processes a value, put it in `.env` or in `omrg.jsonc`.
 
 ### Local llama.cpp server
 
@@ -388,6 +388,31 @@ Settings > Chat sets the provider and model that Chat uses. The same choice answ
 The server keeps the last 1,000 log records in memory and writes no log file. The filter that removes provider keys and credentials runs before a record is stored.
 
 `POST /v1/experiment-folders` (scope `manage`) creates a directory below an approved experiment root. `GET /v1/experiments` returns the folder tree of each root in `folders`.
+
+### Claim check judge
+
+Settings > Chat has a "Claim check judge" block below the Chat choice. The judge checks each cited claim in an answer against its cited passage ([ADR-059](../adr/059-claim-verification-stage.md)). The block shows the judge provider and the judge model, each with its source. An alias shows with the provider it resolves to, for example "cloud (OpenRouter)".
+
+The judge model is empty by default. The default provider, OpenRouter, has no default model. The block then shows "Not set" and says: "Claim checks are skipped until you set a judge model."
+
+To set the judge:
+
+1. Open Settings > Chat.
+2. In the "Claim check judge" block, press Edit.
+3. Select the provider.
+4. Type the model name, or press List models and pick one.
+5. Optional: press Test to check the choice. Test saves nothing.
+6. Press Save. Save stays disabled while the model name is empty.
+
+The page writes `answer.verify_provider` and `answer.verify_model` together in `omrg.jsonc`. It writes a registry name only, never the alias `cloud` or `local`. The new judge applies at once in `omrg web`, with no restart. An answer that is running keeps its old judge. Press Remove to clear both keys and return to the default. Remove shows only when the source is `config-file`. The stdio MCP server and the CLI read the same `omrg.jsonc` at their next launch.
+
+The block locks when `ANSWER__VERIFY_PROVIDER` or `ANSWER__VERIFY_MODEL` is set in the environment or `.env`. A locked block names the variable and where it is set, and offers no Edit or Remove.
+
+The block sets which judge runs. It does not turn claim checks on. The profile lever "Check claims" in Studio does that, per collection. The judge runs only for collections whose profile turns on "Check claims". A profile that sets its own judge overrides this choice.
+
+A cloud judge sends each claim and its cited passages off this machine. The block says so when the selected provider is cloud.
+
+`GET /v1/settings/judge` (read scope) returns the choice, its source and whether the judge is ready. It never contacts the provider. When the model in force is empty, it reports `ready: false` with the reason `no-model`. `PUT /v1/settings/judge` needs a browser session with the `manage` scope. It returns 400 for an empty model, an unknown provider or a body with one field only. It returns 409 when the choice is locked or the file revision is stale.
 
 ### Embedding model of a profile
 

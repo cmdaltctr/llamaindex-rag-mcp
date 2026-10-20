@@ -201,7 +201,7 @@ The server model and the sampling preferences are configured with the
 `ANSWER__*` variables. See [Configuration](configuration.md#answering--answer__).
 
 A collection can follow a user profile. `omrg answer` then runs the Answer pipeline of that
-profile, with the answer model and the judge that the process builds from `ANSWER__*`. The command
+profile, with the answer model and the judge that the process builds from the `answer` settings (`ANSWER__*` or `omrg.jsonc`). The command
 reads the profile from the default workspace file, read-only. Without that file the command exits
 with code 1 and names the profile and the path.
 

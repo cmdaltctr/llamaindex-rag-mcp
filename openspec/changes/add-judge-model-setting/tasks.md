@@ -34,9 +34,9 @@ Prepare the feature worktree with `uv sync --frozen --extra web`. Each task writ
 
 ## 4. Documentation
 
-- [ ] 4.1 Update `docs/guides/configuration.md` (answer block, around lines 715 to 740): Settings > Chat now sets the judge; both keys apply at once; an empty model with the default cloud provider cannot work. Verify with `grep -n "judge keep their own settings" docs/guides/configuration.md` that the old sentence is gone.
-- [ ] 4.2 Add a "Claim check judge" subsection after "Chat model" in `docs/guides/web-workspace.md`. Verify it names the lock variables, the "Check claims" profile lever and the cloud statement.
-- [ ] 4.3 Grep `docs/guides/` for "Restart to apply" text about `verify_model` or `verify_provider` and fix any hit (documentation drift check).
+- [x] 4.1 Update `docs/guides/configuration.md` (answer block, around lines 715 to 740): Settings > Chat now sets the judge; both keys apply at once; an empty model with the default cloud provider cannot work. Verify with `grep -n "judge keep their own settings" docs/guides/configuration.md` that the old sentence is gone.
+- [x] 4.2 Add a "Claim check judge" subsection after "Chat model" in `docs/guides/web-workspace.md`. Verify it names the lock variables, the "Check claims" profile lever and the cloud statement.
+- [x] 4.3 Grep `docs/guides/` for "Restart to apply" text about `verify_model` or `verify_provider` and fix any hit (documentation drift check).
 
 ## 5. Integration checks
 
