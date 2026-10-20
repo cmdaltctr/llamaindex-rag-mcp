@@ -4,9 +4,9 @@ Work in the sibling worktree `llamaindex-rag-mcp-feat-studio-full-settings` on `
 
 ## 1. Hybrid shape file and parity test
 
-- [ ] 1.1 Test first: add `tests/unit/test_hybrid_shape_parity.py`. It builds `_search_graph(None, hybrid=True, rerank=True)` and `_search_graph(None, hybrid=False, rerank=True)` from `src/omrg/pipeline_templates.py` and compares their node and edge difference with `web/src/studio/hybridShape.json`. Verify: `uv run --no-sync pytest tests/unit/test_hybrid_shape_parity.py -q` fails because the JSON file does not exist.
-- [ ] 1.2 Add `web/src/studio/hybridShape.json` with the two added steps, the three connections into and between them, and the rule that moves each Dense retrieval `evidence` connection to fusion `evidence`. Verify: task 1.1 passes. Change one port name in the JSON file and confirm the test fails, then restore it.
-- [ ] 1.3 Raise the executed count in `tests/test_clean_base_tripwire.py` by the new case count, with a comment line in the existing style. Verify: `uv run --no-sync pytest tests/test_clean_base_tripwire.py -q` passes.
+- [x] 1.1 Test first: add `tests/unit/test_hybrid_shape_parity.py`. It builds `_search_graph(None, hybrid=True, rerank=True)` and `_search_graph(None, hybrid=False, rerank=True)` from `src/omrg/pipeline_templates.py` and compares their node and edge difference with `web/src/studio/hybridShape.json`. Verify: `uv run --no-sync pytest tests/unit/test_hybrid_shape_parity.py -q` fails because the JSON file does not exist.
+- [x] 1.2 Add `web/src/studio/hybridShape.json` with the two added steps, the three connections into and between them, and the rule that moves each Dense retrieval `evidence` connection to fusion `evidence`. Verify: task 1.1 passes. Change one port name in the JSON file and confirm the test fails, then restore it.
+- [x] 1.3 Raise the executed count in `tests/test_clean_base_tripwire.py` by the new case count, with a comment line in the existing style. Verify: `uv run --no-sync pytest tests/test_clean_base_tripwire.py -q` passes.
 
 ## 2. Hybrid switch logic
 

@@ -112,7 +112,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # +9 (2026-10-20, profile preview): test_profile_contract_search_graph.py. No fastapi needed.
 # +24 (2026-10-20, persistent-web-auth-token): test_web_page_secret.py covers the secret file,
 # the page rule, restart acceptance and redaction. All 24 need fastapi.
-_BASE_EXECUTED = 7210
+# +6 (2026-10-20, studio-full-settings): test_hybrid_shape_parity.py pins the Studio hybrid
+# switch shape file to the search and answer templates. No fastapi needed.
+_BASE_EXECUTED = 7216
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
