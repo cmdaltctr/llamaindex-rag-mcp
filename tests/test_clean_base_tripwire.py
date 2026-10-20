@@ -116,7 +116,13 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # leak into tests, one case per provider key. No fastapi needed.
 # +48 (2026-10-20, add-judge-model-setting): judge lock unit, live judge fields, alias rule,
 # handover guard and the judge settings routes. 32 of them need fastapi.
-_BASE_EXECUTED = 7261
+# +6 (2026-10-20, studio-full-settings): test_hybrid_shape_parity.py pins the Studio hybrid
+# switch shape file to the search and answer templates. No fastapi needed.
+# +106 (2026-10-20, document-reading-settings with studio-full-settings): the write rules (51),
+# reading body (16), OCR engine options (6) and document-reading route (33) cases. Measured
+# 7318 executed in the joined worktree with no ground truth and no tokenizer cache (+4 +3).
+# Merge of v3 into add-judge-model-setting (2026-10-20): 7213 at the merge base, +48 +112.
+_BASE_EXECUTED = 7373
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -395,8 +401,11 @@ if not _has_qwen_tokenizer:
 # +24 (2026-10-20, persistent-web-auth-token): test_web_page_secret.py has a module-level
 # importorskip of fastapi (1155).
 # +32 (2026-10-20, add-judge-model-setting): test_web_judge_settings.py (29) and three
-# cases in test_web_configuration.py and test_web_settings_file.py (1187).
-_WEB_EXTRA_CASES = 1187
+# cases in test_web_configuration.py and test_web_settings_file.py.
+# +33 (2026-10-20, document-reading-settings): test_web_document_reading.py has a module-level
+# importorskip of fastapi.
+# Merge of v3 into add-judge-model-setting (2026-10-20): 1155 at the merge base, +32 +33 (1220).
+_WEB_EXTRA_CASES = 1220
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)

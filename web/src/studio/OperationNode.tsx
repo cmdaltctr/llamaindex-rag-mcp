@@ -1,11 +1,11 @@
 import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/react";
-import { Settings2 } from "lucide-react";
 import { useEffect, useState, type KeyboardEvent, type MouseEvent } from "react";
 import type { LayoutDirection, OperationDescriptor, PortDescriptor, ValidationIssue } from "../api/pipelines";
 import { Badge } from "../components/ui/badge";
 import { cn } from "../lib/utils";
 import type { NodeRunState } from "../runs/runState";
 import { NodeRunStatus } from "./NodeRunStatus";
+import { StepCardSettings } from "./StepCardSettings";
 
 export type OperationNodeData = {
   nodeId: string;
@@ -189,7 +189,7 @@ export function OperationNode({ data, selected, isConnectable }: NodeProps<Opera
       {operation && vertical && inputs}
       <div className="flex items-start justify-between gap-2">
         <span className="font-semibold">{data.title}</span>
-        <Settings2 aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+        <StepCardSettings nodeId={data.nodeId} title={data.title} operation={operation} model={data.model} />
       </div>
       <div className="flex flex-wrap items-center gap-1">
         {operation && <Badge variant="hue">{operation.family}</Badge>}

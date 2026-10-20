@@ -41,7 +41,7 @@ from .provider_sources import (  # noqa: E402
     explicit_provider_fields,
     source_layers,
 )
-from .rules import ACCEPTED, _validate_provider_value  # noqa: E402,F401
+from .rules import ACCEPTED, PDF_READER_NAMES, _validate_provider_value  # noqa: E402,F401
 from .settings_file import UserConfigSource  # noqa: E402
 from .sources import LegacyBool  # noqa: E402
 from .storage import StorageValidationMixin, source_keys  # noqa: E402
@@ -296,7 +296,7 @@ class Settings(StorageValidationMixin, OcrRouteSettingsMixin, ProviderSourceMixi
 
         # PDF reader — governed by the pdf-reader capability spec, which
         # has its own warn-and-fallback contract.  Unchanged here.
-        if self.pdf_reader not in ("auto", "liteparse", "pdf_inspector", "pypdfium2", "pypdf"):
+        if self.pdf_reader not in PDF_READER_NAMES:
             logger.warning("Unknown PDF_READER=%r; falling back to auto", self.pdf_reader)
             object.__setattr__(self, "pdf_reader", "auto")
 

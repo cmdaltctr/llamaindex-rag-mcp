@@ -16,6 +16,7 @@ import { getChat, listChats } from "./chats";
 import { getProfile, listProfiles } from "./profiles";
 import { getRunArtefact, getRunRecord, getRunResult, listRuns } from "./runs";
 import { getChatSettings, getConnections, getHealth, getJudgeSettings, getMcpState, getUploadLimit, getWebPort } from "./settings";
+import { getDocumentReadingSettings } from "./settingsDocumentReading";
 import { rememberRevision } from "./settingsRevision";
 
 declare module "@tanstack/react-query" {
@@ -62,6 +63,7 @@ export const queryKeys = {
   mcp: () => ["mcp"] as const,
   webPort: () => ["settings", "web-port"] as const,
   uploadLimit: () => ["settings", "upload-limit"] as const,
+  documentReading: () => ["settings", "document-reading"] as const,
   integrations: () => ["integrations"] as const,
   job: (id: string) => ["jobs", id] as const,
 };
@@ -208,6 +210,10 @@ export const webPortQuery = (api: ApiClient) =>
 /** The per-file upload limit in force. Settings and the Knowledge Base read the same entry. */
 export const uploadLimitQuery = (api: ApiClient) =>
   queryOptions({ queryKey: queryKeys.uploadLimit(), queryFn: ({ client, signal }) => getUploadLimit(api, { signal }).then((data) => rememberRevision(client, data)) });
+
+/** The PDF reader and OCR settings for the next launch, with the reader and engine availability. */
+export const documentReadingQuery = (api: ApiClient) =>
+  queryOptions({ queryKey: queryKeys.documentReading(), queryFn: ({ client, signal }) => getDocumentReadingSettings(api, { signal }).then((data) => rememberRevision(client, data)) });
 
 export const integrationsQuery = (api: ApiClient) =>
   queryOptions({ queryKey: queryKeys.integrations(), queryFn: ({ signal }) => listIntegrations(api, { signal }) });

@@ -20,6 +20,7 @@ import {
   setWebPort,
   type ChatChoice,
 } from "./settings";
+import { saveDocumentReadingSettings, type DocumentReadingValues } from "./settingsDocumentReading";
 
 /**
  * The options every Settings write sends (the revision last seen) and what it
@@ -157,5 +158,16 @@ export function useSetJudgeSettings() {
       remember(response);
       return queryClient.invalidateQueries({ queryKey: queryKeys.judgeSettings() });
     },
+  });
+}
+
+/** Saves document reading keys for the next launch (`null` resets one). The section shows the state the server returned. */
+export function useSaveDocumentReading() {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const { options, remember } = useRevision();
+  return useMutation({
+    mutationFn: (values: DocumentReadingValues) => saveDocumentReadingSettings(api, values, options()),
+    onSuccess: (state) => queryClient.setQueryData(queryKeys.documentReading(), remember(state)),
   });
 }

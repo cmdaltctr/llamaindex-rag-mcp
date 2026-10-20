@@ -17,7 +17,7 @@ describe("parameter schema", () => {
     expect(prepare.similarity_threshold).toMatchObject({ kind: "number", minimum: 0, maximum: 1 });
     expect(prepare.rerank).toMatchObject({ kind: "boolean", nullable: true, lever: "retrieval.rerank_enabled" });
     expect(prepare.collection).toMatchObject({ kind: "string", nullable: true });
-    expect(prepare.metadata_filter?.kind).toBe("unsupported");
+    expect(prepare.metadata_filter).toMatchObject({ kind: "json", nullable: true, label: "Metadata filter" });
   });
 
   it("reads enums", () => {
@@ -80,6 +80,16 @@ describe("plain labels", () => {
     expect(prepare.rerank!.label).toBe("Reranker");
     expect(fields("select.rerank").enabled!.label).toBe("Reranker");
     expect(fields("combine.rrf").rrf_k!.label).toBe("Fusion constant (k)");
+  });
+
+  it("gives an array parameter no control", () => {
+    const [field] = paramFields({ ...CATALOGUE[0]!, lever_params: {}, parameters: { type: "object", properties: { tags: { type: "array", title: "Tags" } } } });
+    expect(field!.kind).toBe("unsupported");
+  });
+
+  it("names the PDF reader in plain words", () => {
+    const reader = paramFields(CATALOGUE_INGEST.find((op) => op.operation_id === "read.document")!).find((field) => field.name === "pdf_reader");
+    expect(reader!.label).toBe("PDF reader");
   });
 
   it("keeps the schema title on the field", () => {

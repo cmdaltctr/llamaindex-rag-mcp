@@ -3832,6 +3832,91 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /settings/document-reading:
+    get:
+      operationId: getDocumentReadingSettings
+      summary: Read the document-reading settings, the PDF readers and the OCR engines
+      description: >
+        Lists the nine document-reading keys in a fixed order (`pdf_reader`,
+        `ocr_fallback_enabled`, `ocr_fallback_min_confidence`,
+        `ocr_fallback_page_fraction`, `ocr_routing_unit`, `ocr_engine_primary`,
+        `ocr_engine_fallback`, `ocr_maths_routing_enabled`,
+        `ocr_maths_page_fraction`). Each row has the value in force since
+        launch, the valid value `omrg.jsonc` holds now (`saved`), the source,
+        the lock state, whether a restart is pending and the code default. Every
+        key applies at the next launch only, and every key is part of the index
+        identity. `pdf_readers` lists `auto` first, then each registered reader
+        with its availability. `ocr` lists the OCR workers folder, whether
+        `OCR_WORKER_COMMAND` replaces the primary engine, and each known engine
+        with its availability now. The route reads the file and probes packages
+        and folders; it writes nothing.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The document-reading settings.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentReadingState"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: setDocumentReadingSettings
+      summary: Save document-reading settings to omrg.jsonc for the next launch
+      description: >
+        Writes one to nine of the nine keys to `omrg.jsonc`, all in one write
+        or none. `null` removes a key, so the default applies. The value in
+        force does not change until a restart. The checks run in this order
+        and stop at the first failure: body shape (400, `Invalid request. …`);
+        a key outside the nine (400, "<key> is not a document reading
+        setting."); a key that the environment or `.env` sets (409, "Remove
+        <ENV_NAME> from the environment or .env to edit it here.", first locked
+        key in key order); a value that breaks its rule, including blank text
+        (400, "<key>: <rule>"); a PDF reader that is not installed (400,
+        "pdf_reader: This PDF reader is not installed. Install its package,
+        then save again."); a stale `revision` (409, "omrg.jsonc changed on
+        disk. Reload to see the new values."); a file that cannot be parsed or
+        holds a key twice (409, "omrg.jsonc could not be read. Fix it, then
+        save again."); a disk error (500, "omrg.jsonc could not be written.").
+        An OCR engine name that is valid but not provisioned is allowed. No
+        message holds a submitted value. Session only: a bearer credential
+        gets 403.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentReadingUpdate"
+      responses:
+        "200":
+          description: The document-reading settings after the write, with the new revision.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentReadingState"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   # ── Power control (session only) ────────────────────────────────────
   /server/power:
     get:
@@ -8114,6 +8199,174 @@ components:
         folder:
           type: [string, "null"]
           description: The config folder to name in the notice, when `pending`.
+
+    DocumentReadingState:
+      type: object
+      additionalProperties: false
+      required: [status, revision, settings, pdf_readers, pdf_reader_in_use, ocr]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        revision:
+          type: string
+          description: >
+            SHA-256 of the `omrg.jsonc` bytes, or `absent` when there is no file.
+            Send it back on a save; a file that changed since gives 409.
+        settings:
+          type: array
+          minItems: 9
+          maxItems: 9
+          description: One row per key, in the fixed key order.
+          items:
+            $ref: "#/components/schemas/DocumentReadingSetting"
+        pdf_readers:
+          type: array
+          description: >
+            `auto` first (always available), then each registered reader in
+            registry order.
+          items:
+            $ref: "#/components/schemas/ReaderOption"
+        pdf_reader_in_use:
+          type: [string, "null"]
+          description: >
+            The reader the running engine uses after resolution (`auto`
+            resolved, an uninstalled choice replaced by `pypdf`). Computed once
+            per process. Null only when it cannot be computed.
+        ocr:
+          type: object
+          additionalProperties: false
+          required: [workers_dir, worker_command_set, engines]
+          properties:
+            workers_dir:
+              type: [string, "null"]
+              description: Launch `ocr_workers_dir` with the home folder as `~`, or null when unset.
+            worker_command_set:
+              type: boolean
+              description: >
+                True when the launch `ocr_worker_command` is not empty, so it
+                replaces the primary engine.
+            engines:
+              type: array
+              description: >
+                The folder names under `<ocr_workers_dir>/engines/` joined with
+                the in-force and saved engine names, sorted by name.
+              items:
+                $ref: "#/components/schemas/OcrEngineOption"
+
+    DocumentReadingSetting:
+      type: object
+      additionalProperties: false
+      required: [key, value, saved, source, locked, lock_reason, restart_pending, default]
+      properties:
+        key:
+          type: string
+          enum:
+            - pdf_reader
+            - ocr_fallback_enabled
+            - ocr_fallback_min_confidence
+            - ocr_fallback_page_fraction
+            - ocr_routing_unit
+            - ocr_engine_primary
+            - ocr_engine_fallback
+            - ocr_maths_routing_enabled
+            - ocr_maths_page_fraction
+        value:
+          type: [string, boolean, number]
+          description: >
+            The value in force since launch. For `pdf_reader` this is the
+            configured name, which can be `auto`.
+        saved:
+          type: [string, boolean, number, "null"]
+          description: >
+            The valid value `omrg.jsonc` holds now. Null when the file does not
+            set the key or holds a value that breaks its rule. A blank text
+            value also comes back as null, because the file reader treats it
+            as not set.
+        source:
+          type: string
+          enum: [env, dotenv, config-file, default]
+          description: Source of `value` at launch. An explicit option or a YAML default reads `default`.
+        locked:
+          type: boolean
+          description: True when `source` is `env` or `dotenv`. A save of a locked key gets 409.
+        lock_reason:
+          type: [string, "null"]
+          description: >
+            "Remove <ENV_NAME> from the environment or .env to edit it here."
+            when locked, else null.
+        restart_pending:
+          type: boolean
+          description: The file value differs from the value captured at launch, and the key is not locked.
+        default:
+          type: [string, boolean, number]
+          description: The code default from the `Settings` model.
+
+    ReaderOption:
+      type: object
+      additionalProperties: false
+      required: [name, available, reason]
+      properties:
+        name:
+          type: string
+          enum: [auto, liteparse, pdf_inspector, pypdfium2, pypdf]
+        available:
+          type: boolean
+          description: The reader's package imports. `auto` is always available.
+        reason:
+          type: [string, "null"]
+          description: Why the reader cannot run (names the missing package), or null.
+
+    OcrEngineOption:
+      type: object
+      additionalProperties: false
+      required: [name, available, reason]
+      properties:
+        name:
+          type: string
+          description: Engine folder name.
+        available:
+          type: boolean
+          description: The engine resolves to a worker command now.
+        reason:
+          type: [string, "null"]
+          description: >
+            Null when available. Otherwise "OCR_WORKERS_DIR is not set, so no
+            OCR engine can run.", "The name is not a folder name." or "Not
+            provisioned. Run python3 ocr-workers/provision.py <name>."
+
+    DocumentReadingUpdate:
+      type: object
+      additionalProperties: false
+      required: [values, revision]
+      properties:
+        values:
+          type: object
+          minProperties: 1
+          maxProperties: 9
+          description: >
+            One to nine of the nine keys. Each value has the key's JSON type, or
+            is null to remove the key so the default applies. A key outside the
+            nine gets 400.
+          propertyNames:
+            enum:
+              - pdf_reader
+              - ocr_fallback_enabled
+              - ocr_fallback_min_confidence
+              - ocr_fallback_page_fraction
+              - ocr_routing_unit
+              - ocr_engine_primary
+              - ocr_engine_fallback
+              - ocr_maths_routing_enabled
+              - ocr_maths_page_fraction
+          additionalProperties:
+            type: [string, boolean, number, "null"]
+        revision:
+          type: string
+          maxLength: 128
+          description: >
+            The `revision` last read. A file that changed since gives 409 and
+            nothing is written.
 
     PowerStatus:
       type: object

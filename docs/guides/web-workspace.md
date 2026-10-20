@@ -414,6 +414,42 @@ A cloud judge sends each claim and its cited passages off this machine. The bloc
 
 `GET /v1/settings/judge` (read scope) returns the choice, its source and whether the judge is ready. It never contacts the provider. When the model in force is empty, it reports `ready: false` with the reason `no-model`. `PUT /v1/settings/judge` needs a browser session with the `manage` scope. It returns 400 for an empty model, an unknown provider or a body with one field only. It returns 409 when the choice is locked or the file revision is stale.
 
+### Document reading
+
+Settings > Document reading (`#/settings/document-reading`) sets how OMRG reads documents. It has one row for each of these nine keys:
+
+| Row | Key | Control |
+| --- | --- | --- |
+| PDF reader | `pdf_reader` | A select. A reader that is not installed shows the reason and you cannot choose it. |
+| OCR fallback | `ocr_fallback_enabled` | A switch. |
+| Lowest text confidence | `ocr_fallback_min_confidence` | A number from 0 to 1. |
+| OCR page fraction | `ocr_fallback_page_fraction` | A number from 0 to 1. |
+| OCR routing unit | `ocr_routing_unit` | A select of `document` and `page`. |
+| Primary engine | `ocr_engine_primary` | A select of the engines that the server finds. |
+| Fallback engine | `ocr_engine_fallback` | A select of the engines that the server finds. |
+| Maths routing | `ocr_maths_routing_enabled` | A switch. |
+| Maths page fraction | `ocr_maths_page_fraction` | A number from 0 to 1. |
+
+Each row shows the value in force, where it comes from and the default. To change a value:
+
+1. Select Edit on the row.
+2. Choose or type the new value.
+3. Select Save.
+
+Save writes the key to `omrg.jsonc`. It does not change the value in force. The changes apply after a restart of `omrg web`. Until the restart, the row shows the saved value and "Restart to apply". After the save, the restart dialog opens. Select "Restart now", or select Later and restart yourself.
+
+Select "Use default" to remove the key from `omrg.jsonc`. The default then applies at the next launch. A blank engine name is refused. To use no fallback engine, set `OCR_ENGINE_FALLBACK=` in the environment or `.env`. The row is then locked and shows "None (no fallback)". A blank value in `omrg.jsonc` reads as not set, so the row shows "Not set".
+
+These rules also apply:
+
+- A key set in the environment or `.env` is read-only. The row names the variable to remove.
+- An engine that is not provisioned shows the reason. You can still choose it, for example before you provision it.
+- When `OCR_WORKER_COMMAND` is set, the Primary engine row says that the command replaces the primary engine.
+- When `auto` or a missing reader resolves to another reader, the PDF reader row shows the reader in use.
+- A Read document step in a pipeline can choose its own reader.
+
+The nine keys are part of the index identity. After a restart, the next ingest can read existing files again. A failed save shows the server message. When `omrg.jsonc` changed on disk, select Reload to read the new values, then save again.
+
 ### Embedding model of a profile
 
 A user profile can choose its own embedding provider and model (ADR-081). The embedding routes follow. Both `manage` routes need the browser session.
@@ -472,7 +508,7 @@ Every area has its own address. Back and forward move between them. An address t
 | Studio | `#/studio`, `#/studio/<profile-id>`, `#/studio/<profile-id>/<purpose>` | Open a gallery of profiles. Duplicate a profile, start an empty one, rename it or delete it. Open the Ingest, Search or Answer pipeline of a profile. Add operations, connect ports, save a revision, validate, run and cancel. |
 | Experiments | `#/experiments`, `#/experiments/runs/<run-id>` | Create experiment folders and sub-experiments, issue a bound credential, register and open the notebook editor, and read pipeline runs. A preview that is cut offers Open full output, which shows the redacted value as text and downloads it. |
 | Integrations | `#/integrations` | See which optional parts are installed and copy the command that installs the rest. The page never installs anything. |
-| Settings | `#/settings`, `#/settings/<section>` | Seven sections: Appearance, Providers, Chat, MCP, Server log, Runtime and Workspace. Set provider addresses and keys and test them, choose the Chat model, read the server log, copy the MCP client configuration, manage MCP access over HTTP, and set the per-file upload limit. |
+| Settings | `#/settings`, `#/settings/<section>` | Nine sections: Appearance, Providers, Chat, MCP, Server log, Runtime, Workspace, Document reading and Configuration. Set provider addresses and keys and test them, choose the Chat model, read the server log, copy the MCP client configuration, manage MCP access over HTTP, set the per-file upload limit, choose the PDF reader and the OCR settings for the next launch, and read every setting in force. |
 
 The screenshots show a local server with small Markdown sources. The run output screenshot shows a search result passage that is longer than the 4 KiB preview.
 
@@ -542,6 +578,8 @@ To start with no steps, select "New empty profile" and give it a title.
 
 To rename one of your profiles, select the pencil next to its title. Enter the new title and select "Save".
 
+To describe one of your profiles, open it in Studio. Select the pencil next to the description under the title, enter the text and press Enter or select "Save". Press Escape or select "Cancel" to close the field with no change. A description has at most 1000 characters. The gallery card shows the new description. A built-in profile shows its description with no pencil.
+
 To delete one of your profiles:
 
 1. Select "Delete" on its card.
@@ -608,7 +646,7 @@ On a pipeline canvas (`#/studio/<profile-id>/<purpose>`), the flow surface fills
 
 One panel floats over the right side of the canvas. It holds six sections. Each section has its own icon.
 
-1. Pipeline settings (Base profile and Collection). The base profile shows as text. The section has no Title field and no Profile list.
+1. Pipeline settings (Base profile, Collection, Hybrid retrieval and the pipeline-wide settings). The base profile shows as text. The section has no Title field and no Profile list.
 2. Operations.
 3. Steps and connections.
 4. Connect ports.
@@ -622,6 +660,26 @@ Select "Collapse panel" to shrink the panel to a narrow icon rail. Each rail but
 ![Studio canvas with the panel collapsed to the icon rail](images/web-workspace/studio-canvas-rail-light-1280.png)
 
 On a window narrower than 1024 px, the panel sits under the flow surface and shows its sections. The icon rail is not available.
+
+#### Hybrid retrieval and pipeline-wide settings
+
+On the Search and Answer pipelines, Pipeline settings shows a "Hybrid retrieval" switch. Hybrid retrieval adds keyword (sparse) search and merges it with vector search.
+
+1. Select the switch to turn it on. The canvas adds a Sparse retrieval step and a Reciprocal rank fusion step. Prepare query feeds Sparse retrieval. Dense retrieval and Sparse retrieval feed the fusion step. The fusion step feeds the step that Dense retrieval fed before.
+2. Select the switch again to turn it off. The canvas removes the two steps and connects Dense retrieval to that step again.
+3. Select "Save revision" in Revision and run to keep the change. The switch changes only the draft.
+
+The switch keeps the settings and the positions of the other steps. Sparse retrieval gets the collection of Dense retrieval when Dense retrieval has one. The Search and Answer pipelines each have their own switch. The Ingest pipeline has no switch.
+
+The switch is off and you cannot use it in these cases. A line under it gives the reason.
+
+1. The profile is built in. Duplicate the profile to change it.
+2. The server cannot run Sparse retrieval or Reciprocal rank fusion. The line gives the reason from the operation catalogue.
+3. The retrieval steps do not have the standard shape, for example two Dense retrieval steps. The line reads "This pipeline has a custom retrieval shape. Change it with the steps on the canvas."
+
+Under the switch, "Pipeline-wide settings" lists each setting that the pipeline graph sets for all of its steps, for example "Number of results: 25". These settings can come from the HTTP API. Select "Remove" to delete one from the draft. The step cards then stop showing "(from pipeline settings)" for it after the next check.
+
+On the Search and Answer pipelines, "Rerank candidate factor" sets how many candidates the reranker reads, as a multiple of the number of results. Select "Set value" and enter a whole number of 1 or more. Select "Inherit" to use the value of the profile or the server. Open "Details" to see the path of each setting, for example `retrieval.rerank_fetch_multiplier`.
 
 #### View controls
 
@@ -648,7 +706,7 @@ Click the panel-top icon at the right end of the title row ("Hide header") to sl
 
 Each step on the canvas has a card. A card shows these items, from top to bottom:
 
-1. The step name, the family badge and a settings icon.
+1. The step name, the family badge and a settings button.
 2. The node ID in muted text. It shows only when two steps have the same name.
 3. A one-line summary of what the step does. Click the summary to read the whole sentence on the card, and click it again to fold it. Using the summary does not select the card.
 4. A mini card with the settings of the step. It shows up to three main settings with their values, for example "Number of results: 10 (from profile)". When the step has more settings, the mini card ends with a button "+2 more settings". Click it to show the other settings in the same mini card, and click "Show fewer settings" to fold them. The button does not select the card. An expanded card can grow taller than its grid row, so it moves above the cards around it.
@@ -668,6 +726,17 @@ The text in brackets after a value tells you where the value comes from:
 Values show without a press on Validate. The canvas checks the draft by itself when the pipeline opens. It checks again 500 ms after you stop editing the graph. Moving a step or changing the selection starts no check. While a check runs, a setting that the profile supplies shows "From profile" with no number. After you edit the graph, the values disappear until the new check returns. The automatic check never changes the issue list. Only "Validate" changes it.
 
 Select a card to open Step settings for that step. With the keyboard, move focus to the card and press Enter or Space. The accessible name of a card is the step name followed by "step", for example "Threshold and top-k step". The node ID is added when two steps have the same name.
+
+#### Card settings panel
+
+The settings button on a card has the accessible name "Settings for <step name>", for example "Settings for Prepare query". Select it to open a small panel next to the card. The button does not select the card or start a drag.
+
+1. The panel shows the same controls as Step settings for that step: "Bypass this step" when the step can be bypassed, and one control for each setting.
+2. A change in the panel changes the draft in the same way as Step settings. The card shows the new value at once, for example "Number of results: 20 (set here)".
+3. Select "Open in Step settings" to select the step and open Step settings.
+4. Press Escape, click outside the panel or select the button again to close the panel. Escape returns focus to the button.
+
+Typing in the panel does not remove or move the step, also when you press Backspace. On a built-in profile the panel shows the values and every control is disabled. The Embed chunks panel shows the model line and "Open in Step settings". Change the embedding model in Step settings.
 
 #### Connection lines
 
@@ -689,6 +758,8 @@ The Step settings section shows the selected step. Its heading is the step name.
 4. A note under each control that says which value is in use, for example "Value in use: 10 (from profile)". The text in brackets follows the same words as the step card.
 5. "Graph inputs and outputs" and "Remove step".
 6. A closed "Details" area.
+
+A setting that takes a JSON object, for example "Metadata filter" on Prepare query, shows a text field. Enter a JSON object, for example `{"file_type": "pdf"}`. Text that is not a JSON object shows "Enter a JSON object." and does not change the draft. Clear the field to inherit the value. The step card shows the value as compact JSON.
 
 While the automatic check runs, a setting that the profile supplies shows "Comes from the profile. The value shows when the check finishes." The value disappears again each time you edit the graph. It comes back when the next check returns. Moving a step or changing the selection keeps the value.
 

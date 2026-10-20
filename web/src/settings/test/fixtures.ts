@@ -1,5 +1,6 @@
 import type { LlamacppServerStatus, ServerField } from "../../api/llamacppServer";
 import type { ChatSettings, Connection, ConnectionList, JudgeSettings, LogRecord, McpState, ProviderField, WebPortState } from "../../api/settings";
+import { DOCUMENT_READING_KEYS, type DocumentReadingKey, type DocumentReadingSetting, type DocumentReadingState } from "../../api/settingsDocumentReading";
 import { documentsServer, type Handler } from "../../test/fakeDocumentsServer";
 
 /** Fixtures built from the `openapi.yaml` schemas for the Settings routes. */
@@ -127,6 +128,55 @@ export const MCP_OFF: McpState = {
 
 export const WEB_PORT: WebPortState = { status: "ok", revision: "r1", saved: null, bound: 8765 };
 
+const READING_DEFAULTS: Record<DocumentReadingKey, DocumentReadingSetting["value"]> = {
+  pdf_reader: "pdf_inspector",
+  ocr_fallback_enabled: true,
+  ocr_fallback_min_confidence: 0.5,
+  ocr_fallback_page_fraction: 0.1,
+  ocr_routing_unit: "document",
+  ocr_engine_primary: "dots-mocr",
+  ocr_engine_fallback: "paddleocr-vl",
+  ocr_maths_routing_enabled: true,
+  ocr_maths_page_fraction: 0.1,
+};
+
+/** `GET /v1/settings/document-reading` with every key at its default, nothing saved and one engine not provisioned. */
+export const DOCUMENT_READING: DocumentReadingState = {
+  status: "ok",
+  revision: "r1",
+  settings: DOCUMENT_READING_KEYS.map((key) => ({
+    key,
+    value: READING_DEFAULTS[key],
+    saved: null,
+    source: "default",
+    locked: false,
+    lock_reason: null,
+    restart_pending: false,
+    default: READING_DEFAULTS[key],
+  })),
+  pdf_readers: [
+    { name: "auto", available: true, reason: null },
+    { name: "pypdf", available: true, reason: null },
+    { name: "pypdfium2", available: false, reason: "The package 'pypdfium2' is not installed." },
+    { name: "liteparse", available: true, reason: null },
+    { name: "pdf_inspector", available: true, reason: null },
+  ],
+  pdf_reader_in_use: "pdf_inspector",
+  ocr: {
+    workers_dir: "~/ocr-workers",
+    worker_command_set: false,
+    engines: [
+      { name: "dots-mocr", available: true, reason: null },
+      { name: "paddleocr-vl", available: false, reason: "Not provisioned. Run python3 ocr-workers/provision.py paddleocr-vl." },
+    ],
+  },
+};
+
+/** The default document reading state with changed rows and top-level parts. */
+export function readingState(rows: Partial<Record<DocumentReadingKey, Partial<DocumentReadingSetting>>> = {}, change: Partial<DocumentReadingState> = {}): DocumentReadingState {
+  return { ...DOCUMENT_READING, ...change, settings: DOCUMENT_READING.settings.map((row) => ({ ...row, ...rows[row.key] })) };
+}
+
 export function logRecord(seq: number, level: LogRecord["level"], message: string, logger = "omrg.server"): LogRecord {
   return { seq, time: `2026-10-14T09:30:${String(seq).padStart(2, "0")}Z`, level, logger, message };
 }
@@ -150,6 +200,7 @@ export function settingsServer(handlers: Record<string, Handler> = {}) {
     "GET /v1/logs": () => ({ status: "ok", records: [], last_seq: 0 }),
     "GET /v1/mcp": () => MCP_OFF,
     "GET /v1/settings/web-port": () => WEB_PORT,
+    "GET /v1/settings/document-reading": () => DOCUMENT_READING,
     ...handlers,
   });
 }

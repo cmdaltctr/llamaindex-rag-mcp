@@ -232,6 +232,18 @@ describe("the profile header on the canvas page", () => {
 });
 
 describe("renaming from the canvas header", () => {
+  it("describes a user profile in place and the gallery card shows the new description", async () => {
+    const { server, user } = openStudio("#/studio/search-copy/search", FIXTURES);
+    await findPalette();
+    await user.click(await screen.findByRole("button", { name: "Edit the description of Search copy" }));
+    await user.type(screen.getByRole("textbox", { name: "Profile description" }), "Papers for the fellowship review{Enter}");
+    await waitFor(() => expect(server.last("PATCH", "/v1/profiles/search-copy")?.body).toEqual({ description: "Papers for the fellowship review" }));
+    expect(await screen.findByText("Papers for the fellowship review")).toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "All profiles" }));
+    const card = await screen.findByRole("group", { name: "Search copy" });
+    expect(card).toHaveTextContent("Papers for the fellowship review");
+  });
+
   it("updates the heading and the gallery card from one PATCH", async () => {
     const { server, user } = openStudio("#/studio/search-copy/search", FIXTURES);
     // The header is rebuilt when the pipeline finishes loading, so wait for the canvas first.
