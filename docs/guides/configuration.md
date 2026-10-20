@@ -1011,6 +1011,19 @@ A launch value (step 1 or 2) locks the limit for that run. Settings then shows t
 
 `omrg web` also lets you save LLM provider addresses, API keys and the Chat model in Settings. The order is environment, `.env`, `omrg.jsonc`, the key file, then the default. Only the environment and `.env` lock the field (see [User config folder](#user-config-folder)). A saved key lives in the system keychain only, and `omrg.jsonc` holds a `keychain://` reference to it. A saved value applies at once with no restart. Details: [Providers](#providers), [Answering](#answering--answer__) and [Web workspace](web-workspace.md#provider-settings).
 
+### Document reading values
+
+Settings > Document reading edits nine keys in `omrg.jsonc`: `pdf_reader`, `ocr_fallback_enabled`, `ocr_fallback_min_confidence`, `ocr_fallback_page_fraction`, `ocr_routing_unit`, `ocr_engine_primary`, `ocr_engine_fallback`, `ocr_maths_routing_enabled` and `ocr_maths_page_fraction`. See [PDF reading](#pdf-reading) and [OCR fallback and isolated engines](#ocr-fallback-and-isolated-engines).
+
+- Each key applies after a restart only. Until then, the row shows the value in force and the saved value with "Restart to apply".
+- Each key is part of the [index identity](#index-identity-and-re-ingestion). After the restart, the next ingest can read existing files again.
+- A key in the environment or `.env` is locked. The row tells you which variable to remove.
+- The page refuses a PDF reader that is not installed. It allows an OCR engine name that is valid but not provisioned yet, and marks it "Not provisioned".
+- The page refuses blank text. "Use default" removes the key from the file.
+- These checks run only when the page saves. At startup, an unknown `pdf_reader` from any source still logs a warning and falls back to `auto`.
+
+The page cannot set "no fallback engine" yet. To turn the fallback route off, set `OCR_ENGINE_FALLBACK=` in `.env`.
+
 ---
 
 ## Index identity and re-ingestion
@@ -1023,6 +1036,7 @@ These settings are part of the index identity:
 
 | What | Why it counts |
 | --- | --- |
+| `PDF_READER`, as the **resolved** reader | It decides which reader produced the text. The resolved name is recorded, so `auto` counts as the reader it resolved to, and an uninstalled choice counts as `pypdf` |
 | `EMBEDDING__TOKENIZER_MODEL` and `EMBEDDING__TOKENIZER_REVISION` | They set the Markdown token budget, so chunk boundaries move |
 | The **resolved** Markdown splitter | Model-token-aware or legacy fallback. The resolved value is recorded, not the configured one, so a corpus chunked under the fallback does not stay "matching" forever once the tokenizer becomes loadable |
 | `OCR_FALLBACK_ENABLED`, `OCR_FALLBACK_MIN_CONFIDENCE`, `OCR_FALLBACK_PAGE_FRACTION` | They decide which reader produced the text |
