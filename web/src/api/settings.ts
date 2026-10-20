@@ -121,6 +121,9 @@ export interface ChatSettings {
   reason: string | null;
 }
 
+/** Why the claim check judge is not ready (`GET /v1/settings/judge`). `no-model`: the judge model in force is empty. */
+export type JudgeNotReadyReason = "disabled" | "unknown-provider" | "not-installed" | "not-configured" | "no-model";
+
 /** The claim check judge. A profile decides per collection whether claims are checked, so this holds no on/off state. */
 export interface JudgeSettings {
   status: "ok";
@@ -136,8 +139,8 @@ export interface JudgeSettings {
   lock_reason: string | null;
   enabled: boolean;
   ready: boolean;
-  /** `disabled`, `unknown-provider`, `not-installed`, `not-configured` or `no-model` when not ready. */
-  reason: string | null;
+  /** Why the judge is not ready, or `null` when it is ready. */
+  reason: JudgeNotReadyReason | null;
 }
 
 export interface ChatTestResult {

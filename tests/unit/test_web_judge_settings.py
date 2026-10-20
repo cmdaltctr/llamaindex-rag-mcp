@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 
 pytest.importorskip("fastapi")
@@ -151,7 +152,12 @@ def test_get_sends_no_provider_request(setup: Any, monkeypatch: pytest.MonkeyPat
     def forbidden(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("a provider request was sent by GET")
 
+    async def forbidden_async(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("a provider request was sent by GET")
+
     monkeypatch.setattr(llm_registry, "get", forbidden)
+    monkeypatch.setattr(httpx.Client, "send", forbidden)
+    monkeypatch.setattr(httpx.AsyncClient, "send", forbidden_async)
     assert setup.get(URL).status_code == 200
 
 
@@ -281,4 +287,6 @@ def test_judge_settings_responses_conform(setup: Any) -> None:
     check.check(put(setup, {"provider": "openrouter", "model": ""}), 400)
     check.check(put(setup, {"provider": "ollama", "model": "m", "revision": "stale"}), 409)
     check.check(put(setup, None), 200)
+    setup.app.state.runtime.providers = None  # provider settings not loaded
+    check.check(put(setup, {"provider": "ollama", "model": "m"}), 404)
     assert check.operations >= FAMILIES["judge_settings"]

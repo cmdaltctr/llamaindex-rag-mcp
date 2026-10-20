@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createApiClient } from "./client";
 import {
   getChatSettings,
@@ -23,6 +23,7 @@ import {
   setWebPort,
   testChatModel,
   testConnection,
+  type JudgeSettings,
 } from "./settings";
 import { documentsServer } from "../test/fakeDocumentsServer";
 
@@ -146,6 +147,10 @@ describe("settings API", () => {
     await setJudgeSettings(api, null);
     expect(server.calls.map((call) => `${call.method} ${call.path}`)).toEqual(["GET /v1/settings/judge", "PUT /v1/settings/judge", "PUT /v1/settings/judge", "PUT /v1/settings/judge"]);
     expect(server.calls.slice(1).map((call) => call.body)).toEqual([{ provider: "openrouter", model: "openai/gpt-5-mini", revision: "r1" }, { revision: "r1" }, null]);
+  });
+
+  it("types the judge reason as the fixed set the route sends", () => {
+    expectTypeOf<JudgeSettings["reason"]>().toEqualTypeOf<"disabled" | "unknown-provider" | "not-installed" | "not-configured" | "no-model" | null>();
   });
 
   it("reads logs after a sequence", async () => {

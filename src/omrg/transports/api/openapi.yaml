@@ -3623,7 +3623,8 @@ paths:
         no restart. Returns 400 for an unknown provider, an alias, an empty or bad model
         name or only one of the two, and 409 when `ANSWER__VERIFY_PROVIDER` or
         `ANSWER__VERIFY_MODEL` comes from the environment or `.env`, `omrg.jsonc` changed
-        since `revision`, or the Engine refuses it. Browser session only.
+        since `revision`, or the Engine refuses it. Returns 404 when the provider
+        settings are not loaded. Browser session only.
       security:
         - sessionCookie: [manage]
       x-omrg-scopes: [manage]
@@ -3646,6 +3647,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
         "500":

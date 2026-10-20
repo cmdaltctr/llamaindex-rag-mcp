@@ -40,6 +40,7 @@ interface ChatModelFormProps {
 /** The provider select, the model name, List models, Test, Save, Cancel and Clear. Only Save and Clear write. */
 export function ChatModelForm({ initial, connections, save, label, cloudNote, canClear, onClose }: ChatModelFormProps) {
   const api = useApi();
+  const providerId = useId();
   const modelId = useId();
   const [provider, setProvider] = useState(initial.provider);
   const [model, setModel] = useState(initial.model);
@@ -68,9 +69,9 @@ export function ChatModelForm({ initial, connections, save, label, cloudNote, ca
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
-        <Label>{label}</Label>
+        <Label htmlFor={providerId}>{label}</Label>
         <Select value={provider} onValueChange={changeProvider}>
-          <SelectTrigger aria-label="Provider" className="max-w-xs">
+          <SelectTrigger id={providerId} className="max-w-xs">
             <SelectValue placeholder="Choose a provider" />
           </SelectTrigger>
           <SelectContent>

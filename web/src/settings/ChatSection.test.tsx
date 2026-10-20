@@ -42,7 +42,7 @@ describe("Chat section", () => {
     expect(within(chat).getAllByText("from omrg.jsonc")).toHaveLength(2);
     expect(within(chat).queryByRole("combobox")).toBeNull();
     await edit(user);
-    expect(within(chat).getByRole("combobox", { name: "Provider" })).toHaveTextContent("Ollama");
+    expect(within(chat).getByRole("combobox", { name: "Chat provider and model" })).toHaveTextContent("Ollama");
     expect(within(chat).getByRole("textbox", { name: "Model name" })).toHaveValue("qwen3:4b");
   });
 
@@ -66,7 +66,7 @@ describe("Chat section", () => {
     const noKey = { ...OPENROUTER, fields: [{ ...OPENROUTER.fields[0]!, set: false, last4: null, source: "none" as const }] };
     const { user } = await openChat({ "GET /v1/connections": () => list(OLLAMA, { ...LLAMACPP, installed: false, install_hint: "uv sync --extra llamacpp" }, noKey) });
     await edit(user);
-    await user.click(within(section()).getByRole("combobox", { name: "Provider" }));
+    await user.click(within(section()).getByRole("combobox", { name: "Chat provider and model" }));
     expect(await screen.findByRole("option", { name: /llama\.cpp.*not installed/i })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("option", { name: /OpenRouter.*no key/i })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("option", { name: "Ollama" })).not.toHaveAttribute("aria-disabled", "true");
@@ -99,7 +99,7 @@ describe("Chat section", () => {
     };
     const { user } = await openChat({ "GET /v1/connections": () => list(OLLAMA, openAiCompatible, anthropic) });
     await edit(user);
-    await user.click(within(section()).getByRole("combobox", { name: "Provider" }));
+    await user.click(within(section()).getByRole("combobox", { name: "Chat provider and model" }));
     const optionalKey = await screen.findByRole("option", { name: /OpenAI-compatible/ });
     expect(optionalKey).not.toHaveAttribute("aria-disabled", "true");
     expect(optionalKey).not.toHaveTextContent(/no key/i);
@@ -111,7 +111,7 @@ describe("Chat section", () => {
       "POST /v1/connections/ollama/models": () => ({ status: "ok", reachable: true, reason: null, models: ["llama3.2", "qwen3:4b"], truncated: false }),
     });
     await edit(user);
-    await pick(user, "Provider", "Ollama");
+    await pick(user, "Chat provider and model", "Ollama");
     await user.click(within(section()).getByRole("button", { name: "List models" }));
     await pick(user, "Models", "qwen3:4b");
     expect(within(section()).getByRole("textbox", { name: "Model name" })).toHaveValue("qwen3:4b");
@@ -123,7 +123,7 @@ describe("Chat section", () => {
       "POST /v1/connections/ollama/models": () => ({ status: "ok", reachable: false, reason: "refused", models: [], truncated: false }),
     });
     await edit(user);
-    await pick(user, "Provider", "Ollama");
+    await pick(user, "Chat provider and model", "Ollama");
     await user.click(within(section()).getByRole("button", { name: "List models" }));
     expect(await within(section()).findByText(/connection was refused/i)).toBeInTheDocument();
     expect(within(section()).queryByRole("combobox", { name: "Models" })).toBeNull();
@@ -134,7 +134,7 @@ describe("Chat section", () => {
       "POST /v1/connections/ollama/models": () => ({ status: "ok", reachable: true, reason: null, models: ["llama3.2"], truncated: true }),
     });
     await edit(user);
-    await pick(user, "Provider", "Ollama");
+    await pick(user, "Chat provider and model", "Ollama");
     await user.click(within(section()).getByRole("button", { name: "List models" }));
     expect(await within(section()).findByText(/the list was cut/i)).toBeInTheDocument();
   });
@@ -142,7 +142,7 @@ describe("Chat section", () => {
   it("disables Save and sends nothing while the model name is empty", async () => {
     const { user, server } = await openChat();
     await edit(user);
-    await pick(user, "Provider", "Ollama");
+    await pick(user, "Chat provider and model", "Ollama");
     const save = within(section()).getByRole("button", { name: "Save" });
     expect(save).toBeDisabled();
     await user.type(within(section()).getByRole("textbox", { name: "Model name" }), "{Enter}");
@@ -159,7 +159,7 @@ describe("Chat section", () => {
       },
     });
     await edit(user);
-    await pick(user, "Provider", "OpenRouter");
+    await pick(user, "Chat provider and model", "OpenRouter");
     await user.type(within(section()).getByRole("textbox", { name: "Model name" }), "openai/gpt-4o-mini");
     await user.click(within(section()).getByRole("button", { name: "Save" }));
     expect(await within(section()).findAllByText("from omrg.jsonc")).toHaveLength(2);
@@ -247,9 +247,9 @@ describe("Chat section", () => {
   it("states that text leaves this machine only for a cloud provider", async () => {
     const { user } = await openChat();
     await edit(user);
-    await pick(user, "Provider", "Ollama");
+    await pick(user, "Chat provider and model", "Ollama");
     expect(section()).not.toHaveTextContent(/openrouter\.ai/i);
-    await pick(user, "Provider", "OpenRouter");
+    await pick(user, "Chat provider and model", "OpenRouter");
     expect(section()).toHaveTextContent(/questions and retrieved passages are sent to openrouter\.ai/i);
   });
 
@@ -292,7 +292,7 @@ describe("Claim check judge", () => {
     expect(within(judge()).getAllByText("from omrg.jsonc")).toHaveLength(2);
     expect(judge()).not.toHaveTextContent("Claim checks are skipped");
     await user.click(within(judge()).getByRole("button", { name: "Edit claim check judge" }));
-    expect(within(judge()).getByRole("combobox", { name: "Provider" })).toHaveTextContent("OpenRouter");
+    expect(within(judge()).getByRole("combobox", { name: "Judge provider and model" })).toHaveTextContent("OpenRouter");
     expect(within(judge()).getByRole("textbox", { name: "Model name" })).toHaveValue("openai/gpt-5-mini");
     expect(within(judge()).queryByRole("button", { name: "Clear" })).toBeNull();
   });
@@ -300,7 +300,7 @@ describe("Claim check judge", () => {
   it("preselects the provider an alias resolves to and keeps Save disabled while the model is empty", async () => {
     const { user, server } = await openJudge();
     await user.click(within(judge()).getByRole("button", { name: "Edit claim check judge" }));
-    expect(within(judge()).getByRole("combobox", { name: "Provider" })).toHaveTextContent("OpenRouter");
+    expect(within(judge()).getByRole("combobox", { name: "Judge provider and model" })).toHaveTextContent("OpenRouter");
     expect(within(judge()).getByRole("textbox", { name: "Model name" })).toHaveValue("");
     expect(within(judge()).getByRole("button", { name: "Save" })).toBeDisabled();
     await user.type(within(judge()).getByRole("textbox", { name: "Model name" }), "   {Enter}");
@@ -313,7 +313,7 @@ describe("Claim check judge", () => {
       "PUT /v1/settings/judge": () => ({ status: "ok", revision: "r2" }),
     });
     await user.click(within(judge()).getByRole("button", { name: "Edit claim check judge" }));
-    await pickInJudge(user, "Provider", "Ollama");
+    await pickInJudge(user, "Judge provider and model", "Ollama");
     await user.click(within(judge()).getByRole("button", { name: "List models" }));
     await pickInJudge(user, "Models", "qwen3:4b");
     expect(within(judge()).getByRole("textbox", { name: "Model name" })).toHaveValue("qwen3:4b");
@@ -357,6 +357,7 @@ describe("Claim check judge", () => {
     const block = judge();
     expect(block).toHaveTextContent("ANSWER__VERIFY_PROVIDER");
     expect(block).toHaveTextContent("Set in .env. Change it there.");
+    expect(block).toHaveTextContent("Either variable locks both judge fields here, and the other field can still come from omrg.jsonc, where a hand edit applies only at the next launch.");
     expect(block).toHaveTextContent("openai/gpt-5-mini");
     expect(within(block).queryByRole("button", { name: "Edit claim check judge" })).toBeNull();
     expect(within(block).queryByRole("button", { name: "Remove claim check judge" })).toBeNull();
@@ -369,11 +370,24 @@ describe("Claim check judge", () => {
     expect(judge()).toHaveTextContent(/a profile that sets its own judge overrides this choice/i);
   });
 
+  it("names the Chat and judge provider selects by their own labels when both forms are open", async () => {
+    const { user } = await openJudge({ "GET /v1/settings/chat": () => CHAT_READY, "GET /v1/settings/judge": () => JUDGE_SAVED });
+    await edit(user);
+    await user.click(within(judge()).getByRole("button", { name: "Edit claim check judge" }));
+    const chatSelect = screen.getByRole("combobox", { name: "Chat provider and model" });
+    const judgeSelect = screen.getByRole("combobox", { name: "Judge provider and model" });
+    expect(chatSelect).not.toBe(judgeSelect);
+    expect(chatSelect).toHaveTextContent("Ollama");
+    expect(judge()).toContainElement(judgeSelect);
+    expect(judgeSelect).toHaveTextContent("OpenRouter");
+    expect(screen.queryByRole("combobox", { name: "Provider" })).toBeNull();
+  });
+
   it("states that claims leave this machine only for a cloud judge", async () => {
     const { user } = await openJudge();
     expect(judge()).toHaveTextContent(/claims and cited passages are sent off this machine/i);
     await user.click(within(judge()).getByRole("button", { name: "Edit claim check judge" }));
-    await pickInJudge(user, "Provider", "Ollama");
+    await pickInJudge(user, "Judge provider and model", "Ollama");
     expect(judge()).not.toHaveTextContent(/claims and cited passages are sent off this machine/i);
   });
 

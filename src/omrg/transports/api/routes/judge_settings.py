@@ -32,6 +32,7 @@ from ..provider_state import EngineRefused
 from ..settings_store import refusal_response
 from .chat_settings import (
     MAX_MODEL_CHARS,
+    _chat_source,
     _not_ready_reason,
     _valid_model,
     provider_values_of,
@@ -62,14 +63,6 @@ class JudgeSaveBody(BaseModel):
     provider: Annotated[str, Field(min_length=1, max_length=64)] | None = None
     model: Annotated[str, Field(min_length=1, max_length=MAX_MODEL_CHARS)] | None = None
     revision: Annotated[str, Field(max_length=128)] | None = None
-
-
-def _source(settings: Any, locked: bool) -> str:
-    """Return the judge source: ``env``/``dotenv`` (locks), ``config-file`` or ``default``."""
-    words = [settings.setting_sources.get(p, "default") for p in _VARIABLES]
-    if locked:
-        return "dotenv" if "dotenv" in words and "env" not in words else "env"
-    return "config-file" if "config-file" in words else "default"
 
 
 def _lock_reason(env_vars: list[str]) -> str | None:
@@ -103,7 +96,7 @@ def _status(runtime: WebRuntime) -> dict[str, Any]:
         "provider": provider,
         "resolved_provider": resolved,
         "model": model,
-        "source": _source(settings, bool(env_vars)),
+        "source": _chat_source(settings, bool(env_vars), _VARIABLES),
         "locked": bool(env_vars),
         "lock_reason": _lock_reason(env_vars),
         "enabled": settings.answer.enabled,
