@@ -9,13 +9,13 @@ Run every command from the worktree root. Check `git branch --show-current` firs
 
 ## 2. Server
 
-- [ ] 2.1 Test first: `tests/unit/test_web_page_secret.py` covers the secret file (0600, folder 0700, reuse, loose mode, broken file), the page rule (own origin, approved origin, foreign `Host`, foreign `Origin`, cross-site fetch), restart acceptance with a new app on the same workspace, the failure limit, the unused login-item link, and the secret in no log, body or terminal. Verify: the module fails to import before `page_secret.py` exists.
-- [ ] 2.2 Move `validate_bind_host` to `transports/api/bind_address.py`. Update the imports in `app.py`, `cli/web.py` and `tests/unit/test_web_security.py`. Verify: `tests/unit/test_web_security.py` passes.
-- [ ] 2.3 Add `AccessPolicy.open_session()` and use it in `exchange_bootstrap`. Verify: `security.py` stays under 500 lines and the security and launch-link tests pass.
-- [ ] 2.4 Add `transports/api/page_secret.py` with `PageSecret`, `page_may_carry_secret` and `inject_page_secret`. Wire it into `FrontendFallback`, `create_app` (`page_secret=`), `POST /v1/session` and `omrg web`. Verify: task 2.1 passes.
-- [ ] 2.5 Check that each new test fails when the code it covers is broken: drop the `Host` and `Origin` rule, drop the 401 retry, route the page secret through `exchange_bootstrap`. Verify: the matching tests fail, then pass again after the revert.
-- [ ] 2.6 Change the `omrg web restart` message and docstring. Update the `POST /v1/session` description in `openapi.yaml`. Verify: the OpenAPI conformance tests pass.
-- [ ] 2.7 Add the new fast cases to `_BASE_EXECUTED` and `_WEB_EXTRA_CASES` in `tests/test_clean_base_tripwire.py`, with a dated comment.
+- [x] 2.1 Test first: `tests/unit/test_web_page_secret.py` covers the secret file (0600, folder 0700, reuse, loose mode, broken file), the page rule (own origin, approved origin, foreign `Host`, foreign `Origin`, cross-site fetch), restart acceptance with a new app on the same workspace, the failure limit, the unused login-item link, and the secret in no log, body or terminal. Verify: the module fails to import before `page_secret.py` exists.
+- [x] 2.2 Move `validate_bind_host` to `transports/api/bind_address.py`. Update the imports in `app.py`, `cli/web.py` and `tests/unit/test_web_security.py`. Verify: `tests/unit/test_web_security.py` passes.
+- [x] 2.3 Add `AccessPolicy.open_session()` and use it in `exchange_bootstrap`. Verify: `security.py` stays under 500 lines and the security and launch-link tests pass.
+- [x] 2.4 Add `transports/api/page_secret.py` with `PageSecret`, `page_may_carry_secret` and `inject_page_secret`. Wire it into `FrontendFallback`, `create_app` (`page_secret=`), `POST /v1/session` and `omrg web`. Verify: task 2.1 passes.
+- [x] 2.5 Check that each new test fails when the code it covers is broken: drop the `Host` and `Origin` rule, drop the 401 retry, route the page secret through `exchange_bootstrap`. Verify: the matching tests fail, then pass again after the revert.
+- [x] 2.6 Change the `omrg web restart` message and docstring. Update the `POST /v1/session` description in `openapi.yaml`. Verify: the OpenAPI conformance tests pass.
+- [x] 2.7 Add the new fast cases to `_BASE_EXECUTED` and `_WEB_EXTRA_CASES` in `tests/test_clean_base_tripwire.py`, with a dated comment.
 
 ## 3. Front end
 

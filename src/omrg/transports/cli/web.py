@@ -295,12 +295,14 @@ def web(
         raise typer.Exit(code=2)
     _require_web_extra()
     from ..api.app import create_app
+    from ..api.bind_address import validate_bind_host
     from ..api.grants import RootGrants
     from ..api.launch_link import LINK_FILE_NAME, RearmingAccessPolicy
     from ..api.lifespan import WebConfig, WorkspaceLock, WorkspaceLocked
     from ..api.origins import parse_extra_origin
+    from ..api.page_secret import PageSecret
     from ..api.runs_wiring import run_service_factory
-    from ..api.security import AccessPolicy, SecretSet, validate_bind_host
+    from ..api.security import AccessPolicy, SecretSet
 
     try:
         bind_host = validate_bind_host(host)
@@ -337,6 +339,15 @@ def web(
         sock.close()
         console.print(f"[red]Error:[/red] {escape(str(exc))}", soft_wrap=True)
         raise typer.Exit(code=1) from None
+    try:
+        page_secret = PageSecret.load_or_create(workspace_dir)
+    except OSError as exc:
+        sock.close()
+        console.print(
+            f"[red]Error:[/red] Cannot read or write the sign-in secret file: {escape(str(exc))}",
+            soft_wrap=True,
+        )
+        raise typer.Exit(code=1) from None
 
     bound_port = sock.getsockname()[1]
     policy: AccessPolicy
@@ -367,6 +378,7 @@ def web(
         run_service_factory=run_service_factory,
         log_buffer=log_buffer,
         secrets=secrets,
+        page_secret=page_secret,
     )
     if login_item:
         # Only the login item may signal its own launchd job (power menu, design D3).

@@ -109,7 +109,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # +2 (2026-10-19, fix/settings-file-test-isolation): a working-folder .env must not leak into
 # tests, one case per leak path (os.environ at import, Settings env_file). No fastapi needed.
 # +6 (2026-10-19, answer layout prompt): the layout and slack cases of test_answer_prompt_format.py.
-_BASE_EXECUTED = 7177
+# +24 (2026-10-20, persistent-web-auth-token): test_web_page_secret.py covers the secret file,
+# the page rule, restart acceptance and redaction. All 24 need fastapi.
+_BASE_EXECUTED = 7201
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -385,7 +387,9 @@ if not _has_qwen_tokenizer:
 # cases needs fastapi (1056).
 # +75 (2026-10-19, move-settings-to-config-file): measured by hiding fastapi behind an
 # import shim, 6031 executed without it against 7162 with it (1131).
-_WEB_EXTRA_CASES = 1131
+# +24 (2026-10-20, persistent-web-auth-token): test_web_page_secret.py has a module-level
+# importorskip of fastapi (1155).
+_WEB_EXTRA_CASES = 1155
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)

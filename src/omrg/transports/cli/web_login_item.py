@@ -437,7 +437,7 @@ def status(
 def restart() -> None:
     """Restart the login item, for example after installing a newer copy.
 
-    A restart signs the browser out. Run 'omrg web open' to sign in again.
+    Open tabs sign in again by themselves when the app is back.
     """
     _, plan = _installed_plan()
     if plan is None:
@@ -461,7 +461,7 @@ def restart() -> None:
         )
     version = escape(str(body.get("version", "?")))
     console.print(f"[green]✓[/green] The app is running (version {version}).")
-    _say("The browser is signed out. Run 'omrg web open' to sign in.")
+    _say("Open tabs sign in again by themselves. Run 'omrg web open' to open a new one.")
 
 
 @web_app.command(name="open")

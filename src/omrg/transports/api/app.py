@@ -15,6 +15,7 @@ from fastapi import APIRouter, FastAPI
 
 from ... import __version__
 from ...integrations.keychain import KeychainStore
+from .bind_address import validate_bind_host
 from .errors import install_error_handlers
 from .lifespan import RunServiceFactory, WebConfig, build_lifespan, default_engine_factory
 from .live_settings import LiveSettingsMiddleware
@@ -22,6 +23,7 @@ from .llamacpp_server import LlamacppServer, owning_lifespan
 from .log_buffer import LogBuffer
 from .mcp_http import build_mcp_http
 from .middleware import GuardMiddleware
+from .page_secret import PageSecret
 from .routes.admin import router as admin_router
 from .routes.chat_settings import router as chat_settings_router
 from .routes.chats import router as chats_router
@@ -43,7 +45,7 @@ from .routes.power import router as power_router
 from .routes.profiles import router as profiles_router
 from .routes.runs import router as runs_router
 from .routes.templates import router as templates_router
-from .security import AccessPolicy, SecretSet, validate_bind_host
+from .security import AccessPolicy, SecretSet
 from .static import FrontendFallback
 
 #: Route groups registered on every application, in order.
@@ -100,6 +102,7 @@ def create_app(
     log_buffer: LogBuffer | None = None,
     secrets: SecretSet | None = None,
     keychain: Any | None = None,
+    page_secret: PageSecret | None = None,
 ) -> FastAPI:
     """Build the web application for one launch.
 
@@ -118,6 +121,8 @@ def create_app(
             pass a fake so no real keychain is read.
         log_buffer: The ring buffer ``omrg web`` attached to the root logger.
             Without one the log routes serve an empty log.
+        page_secret: The workspace sign-in secret that the page carries.
+            Without one the page signs in only with a launch link.
 
     Returns:
         The configured FastAPI application.
@@ -145,6 +150,7 @@ def create_app(
         openapi_url=None,
     )
     app.state.access_policy = policy
+    app.state.page_secret = page_secret
     app.state.runtime = None
     app.state.log_buffer = (
         log_buffer if log_buffer is not None else LogBuffer(secrets if secrets is not None else ())
@@ -156,7 +162,7 @@ def create_app(
     for router in API_ROUTERS:
         app.include_router(router)
     app.state.mcp_http = build_mcp_http(app, config, policy)
-    app.router.default = FrontendFallback(config.static_dir)
+    app.router.default = FrontendFallback(config.static_dir, policy=policy, page_secret=page_secret)
     app.add_middleware(LiveSettingsMiddleware)  # inside the guard: only allowed requests reload
     app.add_middleware(GuardMiddleware, policy=policy)
     return app
