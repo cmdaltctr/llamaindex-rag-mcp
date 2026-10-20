@@ -5,7 +5,7 @@ Run every command from the worktree root. Check `git branch --show-current` firs
 ## 1. Planning
 
 - [x] 1.1 Write the proposal, design, spec deltas and tasks. Fix the baseline `web-login-item` scenario "Restart signs the browser out", which this change makes wrong. Verify: `openspec validate persistent-web-auth-token --strict` passes.
-- [ ] 1.2 Write ADR-088 and add it to the ADR index. Add an amendment note to ADR-085. Verify: the ADR index links resolve.
+- [x] 1.2 Write ADR-088 and add it to the ADR index. Add an amendment note to ADR-085. Verify: the ADR index links resolve.
 
 ## 2. Server
 
@@ -25,7 +25,7 @@ Run every command from the worktree root. Check `git branch --show-current` firs
 
 ## 4. Docs
 
-- [ ] 4.1 Update `docs/guides/web-workspace.md` (sign-in, login item, power menu), `docs/guides/cli-reference.md` (restart) and the module table in `src/omrg/transports/api/README.md`. Verify: `tests/unit/test_web_workspace_guide.py` passes.
+- [x] 4.1 Update `docs/guides/web-workspace.md` (sign-in, login item, power menu), `docs/guides/cli-reference.md` (restart) and the module table in `src/omrg/transports/api/README.md`. Verify: `tests/unit/test_web_workspace_guide.py` passes.
 
 ## 5. Checks
 
