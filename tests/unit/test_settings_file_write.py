@@ -73,7 +73,18 @@ def test_the_allowed_keys_are_the_ones_the_page_edits() -> None:
         "web_port",
         "web_max_upload_mib",
         "mcp_http_enabled",
+        # document-reading-settings: Settings > Document reading
+        "pdf_reader",
+        "ocr_fallback_enabled",
+        "ocr_fallback_min_confidence",
+        "ocr_fallback_page_fraction",
+        "ocr_routing_unit",
+        "ocr_engine_primary",
+        "ocr_engine_fallback",
+        "ocr_maths_routing_enabled",
+        "ocr_maths_page_fraction",
     }
+    assert len(ALLOWED_KEYS) == 25
 
 
 def test_a_key_outside_the_list_is_refused_and_changes_nothing(existing: Path) -> None:
