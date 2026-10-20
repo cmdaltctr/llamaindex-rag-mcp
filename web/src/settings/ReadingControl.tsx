@@ -1,6 +1,5 @@
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import type { ReadingChoice, ReadingKind } from "./documentReadingWords";
 
@@ -18,13 +17,12 @@ interface ReadingControlProps {
   onChange: (text: string) => void;
 }
 
-/** The control that edits one document reading value. Nothing is saved until the row's Save. */
+/** The control that edits one document reading value. The row shows the visible label; the control carries it as its name. Nothing is saved until the row's Save. */
 export function ReadingControl({ id, label, kind, draft, choices, refusal, onChange }: ReadingControlProps) {
   if (kind === "switch") {
     const on = draft === "true";
     return (
       <div className="flex flex-col gap-1.5">
-        <p className={META}>{label}</p>
         <div>
           <Button type="button" variant="outline" role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(on ? "false" : "true")}>
             {on ? "On" : "Off"}
@@ -37,9 +35,9 @@ export function ReadingControl({ id, label, kind, draft, choices, refusal, onCha
   if (kind === "fraction") {
     return (
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor={id}>{label}</Label>
         <Input
           id={id}
+          aria-label={label}
           dir="ltr"
           type="number"
           inputMode="decimal"
@@ -67,7 +65,6 @@ export function ReadingControl({ id, label, kind, draft, choices, refusal, onCha
   const blocked = choices.filter((choice) => choice.disabled);
   return (
     <div className="flex flex-col gap-1.5">
-      <p className={META}>{label}</p>
       {choices.length === 0 ? (
         <p className="text-ui">No OCR engine is known. Set OCR_WORKERS_DIR to the ocr-workers folder and provision an engine.</p>
       ) : (

@@ -70,13 +70,11 @@ export function ReadingSettingRow({ setting, words, choices, notes, onSaved }: R
 
   return (
     <div role="group" aria-label={label} className="flex flex-col gap-1.5">
+      <p className={META}>{label}</p>
       {draft === null ? (
-        <>
-          <p className={META}>{label}</p>
-          <code dir="ltr" className={CODE}>
-            {readingText(setting.value)}
-          </code>
-        </>
+        <code dir="ltr" className={CODE}>
+          {readingText(setting.value)}
+        </code>
       ) : null}
       <p className={META}>{words.help}</p>
       <p className={META}>
