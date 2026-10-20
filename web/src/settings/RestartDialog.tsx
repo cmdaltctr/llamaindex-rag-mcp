@@ -21,6 +21,8 @@ export interface RestartDialogProps {
   change: string | null;
   /** True when `change` names several settings, so the sentence says "apply". */
   plural?: boolean;
+  /** One more line under the sentence, such as what the restart changes for existing files. */
+  note?: string;
   /** Called on "Later", on Escape and on Close. The row stays marked "Restart to apply". */
   onLater: () => void;
 }
@@ -31,7 +33,7 @@ export interface RestartDialogProps {
  * a terminal, or the power route does not answer, the dialog shows the command
  * instead, because the page cannot restart that server.
  */
-export function RestartDialog({ change, plural = false, onLater }: RestartDialogProps) {
+export function RestartDialog({ change, plural = false, note, onLater }: RestartDialogProps) {
   const api = useApi();
   const returnFocus = useReturnFocus();
   const open = change !== null;
@@ -53,6 +55,7 @@ export function RestartDialog({ change, plural = false, onLater }: RestartDialog
           <DialogTitle>Restart to apply?</DialogTitle>
           <DialogDescription>{`${change ?? ""} ${plural ? "apply" : "applies"} after a restart.`}</DialogDescription>
         </DialogHeader>
+        {note ? <p className="text-ui">{note}</p> : null}
         {restart.isSuccess ? (
           <p className="text-ui">
             {"Restarting. This page signs in again by itself when OMRG is back. If the port changed, run "}

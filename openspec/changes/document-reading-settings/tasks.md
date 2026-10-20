@@ -18,12 +18,12 @@ The Backend and Web groups run in parallel on their own branches. Each builds ag
 
 ## 2. Web
 
-- [ ] 2.1 Add `document-reading` to `SETTINGS_SECTIONS` in `web/src/lib/routes.ts`, before `configuration`. Verify: `web/src/lib/routes.test.ts` parses and formats `#/settings/document-reading` and keeps the section order.
-- [ ] 2.2 Add the D10 types (`DocumentReadingState`, `DocumentReadingSetting`, `ReaderOption`, `OcrEngineOption`) and the `getDocumentReadingSettings` and `saveDocumentReadingSettings` calls to `web/src/api/settings.ts` (or a new `web/src/api/settingsDocumentReading.ts`). The save sends `{ values, revision }`. Verify: an API test checks the method, path and body of each call.
-- [ ] 2.3 Add the query `["settings", "document-reading"]` to `web/src/api/queries.ts` through `rememberRevision`, and a mutation that calls `settingsWritten`. Verify: a test shows a save updates the remembered revision and marks the Configuration listing stale.
-- [ ] 2.4 Add `web/src/settings/DocumentReadingSection.tsx` (with small child files if it nears 200 lines) and add the chip "Document reading" to `SettingsView.tsx` before Configuration. Use `SettingRow`, `SaveErrorNotice` and `RestartDialog` (design D11). Verify: component tests with a fake server cover a pending value, a locked row, a disabled uninstalled reader, an unprovisioned engine, the worker-command notice, "Use default" sending `null`, a 400 message, a 409 with Reload, and the restart dialog after a save.
-- [ ] 2.5 Update the Settings part of `docs/guides/web-workspace.md`: replace "Seven sections: …" with the nine sections, and describe Document reading, the restart and the re-ingest note. Verify: `grep -n "Seven sections" docs/guides/web-workspace.md` finds nothing.
-- [ ] 2.6 Run `npm run lint`, `npm run typecheck` and `npm test` in `web/`. Verify: all three pass.
+- [x] 2.1 Add `document-reading` to `SETTINGS_SECTIONS` in `web/src/lib/routes.ts`, before `configuration`. Verify: `web/src/lib/routes.test.ts` parses and formats `#/settings/document-reading` and keeps the section order.
+- [x] 2.2 Add the D10 types (`DocumentReadingState`, `DocumentReadingSetting`, `ReaderOption`, `OcrEngineOption`) and the `getDocumentReadingSettings` and `saveDocumentReadingSettings` calls to `web/src/api/settings.ts` (or a new `web/src/api/settingsDocumentReading.ts`). The save sends `{ values, revision }`. Verify: an API test checks the method, path and body of each call.
+- [x] 2.3 Add the query `["settings", "document-reading"]` to `web/src/api/queries.ts` through `rememberRevision`, and a mutation that calls `settingsWritten`. Verify: a test shows a save updates the remembered revision and marks the Configuration listing stale.
+- [x] 2.4 Add `web/src/settings/DocumentReadingSection.tsx` (with small child files if it nears 200 lines) and add the chip "Document reading" to `SettingsView.tsx` before Configuration. Use `SettingRow`, `SaveErrorNotice` and `RestartDialog` (design D11). Verify: component tests with a fake server cover a pending value, a locked row, a disabled uninstalled reader, an unprovisioned engine, the worker-command notice, "Use default" sending `null`, a 400 message, a 409 with Reload, and the restart dialog after a save.
+- [x] 2.5 Update the Settings part of `docs/guides/web-workspace.md`: replace "Seven sections: …" with the nine sections, and describe Document reading, the restart and the re-ingest note. Verify: `grep -n "Seven sections" docs/guides/web-workspace.md` finds nothing.
+- [x] 2.6 Run `npm run lint`, `npm run typecheck` and `npm test` in `web/`. Verify: all three pass.
 
 ## 3. Integration
 
