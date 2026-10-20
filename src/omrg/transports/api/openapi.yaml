@@ -3577,6 +3577,82 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
+  # ── Claim check judge choice ────────────────────────────────────────
+  /settings/judge:
+    get:
+      operationId: getJudgeSettings
+      summary: Read the claim check judge provider and model
+      description: >
+        Returns the judge provider as set (a registry name, or the alias `cloud` or
+        `local`), the registry provider it resolves to (`resolved_provider`), the judge
+        model, where the choice comes from (`env`, `dotenv`, `config-file` or `default`),
+        whether the environment locks it and why, whether answering is `enabled`, and
+        whether the judge is `ready`. When it is not ready, `reason` is `disabled`,
+        `unknown-provider`, `not-installed`, `not-configured` or `no-model` (the judge
+        model in force is empty). It does not say whether claim checks are on: a profile
+        decides that per collection. This route sends no request to any provider.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      responses:
+        "200":
+          description: The judge choice.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JudgeSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    put:
+      operationId: setJudgeSettings
+      summary: Save or clear the claim check judge provider and model
+      description: >
+        Body `{provider, model, revision?}` writes `answer.verify_provider` and
+        `answer.verify_model` to `omrg.jsonc` as one unit. `provider` is a registry name;
+        an alias (`cloud`, `local`) is refused. A body with only `revision`, an empty body
+        or `null` clears both keys. The Engine uses the choice from the next answer, with
+        no restart. Returns 400 for an unknown provider, an alias, an empty or bad model
+        name or only one of the two, and 409 when `ANSWER__VERIFY_PROVIDER` or
+        `ANSWER__VERIFY_MODEL` comes from the environment or `.env`, `omrg.jsonc` changed
+        since `revision`, or the Engine refuses it. Browser session only.
+      security:
+        - sessionCookie: [manage]
+      x-omrg-scopes: [manage]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JudgeSaveRequest"
+      responses:
+        "200":
+          description: The judge choice after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JudgeSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
   /settings/chat/test:
     post:
       operationId: testChatModel
@@ -7633,6 +7709,74 @@ components:
         reason:
           type: [string, "null"]
           enum: [disabled, unknown-provider, not-installed, not-configured, null]
+
+    JudgeSaveRequest:
+      type: [object, "null"]
+      additionalProperties: false
+      properties:
+        provider:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 64
+          description: A registered LLM provider name. The aliases `cloud` and `local` are refused.
+        model:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 200
+        revision:
+          type: [string, "null"]
+          maxLength: 128
+          description: >
+            The `revision` last read. A file that changed since gives 409 with
+            "omrg.jsonc changed on disk. Reload to see the new values." and nothing is written.
+
+    JudgeSettings:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - revision
+        - provider
+        - resolved_provider
+        - model
+        - source
+        - locked
+        - lock_reason
+        - enabled
+        - ready
+        - reason
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        revision:
+          type: string
+          description: >
+            Stamp of `omrg.jsonc` (SHA-256 of its bytes, or `absent`). A save may send it back;
+            a file that changed since gives 409.
+        provider:
+          type: string
+          description: The judge provider as set, a registry name or the alias `cloud` or `local`.
+        resolved_provider:
+          type: string
+          description: The registry provider that `provider` resolves to.
+        model:
+          type: string
+          description: The judge model in force. `""` when none is set.
+        source:
+          type: string
+          enum: [env, dotenv, config-file, default]
+        locked:
+          type: boolean
+        lock_reason:
+          type: [string, "null"]
+        enabled:
+          type: boolean
+        ready:
+          type: boolean
+        reason:
+          type: [string, "null"]
+          enum: [disabled, unknown-provider, not-installed, not-configured, no-model, null]
 
     ChatTestResult:
       type: object

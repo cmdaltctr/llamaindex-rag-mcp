@@ -254,6 +254,26 @@ def test_any_other_difference_is_refused_and_the_message_holds_no_value(
     assert "secret-collection" not in str(caught.value)
 
 
+def test_judge_provider_and_model_change_is_accepted(effective_settings) -> None:
+    engine = build_engine(effective_settings())
+    engine.use_provider_settings(
+        effective_settings(
+            answer=AnswerBlock(verify_provider="openrouter", verify_model="openai/gpt-5-mini")
+        )
+    )
+    block = engine.resolve_settings().answer
+    assert (block.verify_provider, block.verify_model) == ("openrouter", "openai/gpt-5-mini")
+
+
+def test_verify_claims_change_is_still_refused(effective_settings) -> None:
+    engine = build_engine(effective_settings())
+    before = engine.resolve_settings()
+    with pytest.raises(ValueError, match="answer") as caught:
+        engine.use_provider_settings(effective_settings(answer=AnswerBlock(verify_claims=True)))
+    assert "judge" in str(caught.value)  # the message names the editable judge fields
+    assert engine.resolve_settings() is before
+
+
 def test_embedder_store_and_reranker_stay_the_same_objects(effective_settings) -> None:
     reranker = object()
     engine = build_engine(effective_settings(), reranker=reranker)

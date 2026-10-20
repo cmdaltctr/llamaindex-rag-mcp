@@ -114,7 +114,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # the page rule, restart acceptance and redaction. All 24 need fastapi.
 # +3 (2026-10-20, fix/shell-key-test-isolation): a provider key exported in the shell must not
 # leak into tests, one case per provider key. No fastapi needed.
-_BASE_EXECUTED = 7213
+# +48 (2026-10-20, add-judge-model-setting): judge lock unit, live judge fields, alias rule,
+# handover guard and the judge settings routes. 32 of them need fastapi.
+_BASE_EXECUTED = 7261
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -392,7 +394,9 @@ if not _has_qwen_tokenizer:
 # import shim, 6031 executed without it against 7162 with it (1131).
 # +24 (2026-10-20, persistent-web-auth-token): test_web_page_secret.py has a module-level
 # importorskip of fastapi (1155).
-_WEB_EXTRA_CASES = 1155
+# +32 (2026-10-20, add-judge-model-setting): test_web_judge_settings.py (29) and three
+# cases in test_web_configuration.py and test_web_settings_file.py (1187).
+_WEB_EXTRA_CASES = 1187
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)

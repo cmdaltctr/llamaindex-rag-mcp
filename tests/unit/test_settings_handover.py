@@ -320,3 +320,20 @@ def test_no_other_process_imports_the_handover() -> None:
         if "settings_handover" in path.read_text(encoding="utf-8")
     ]
     assert offenders == []
+
+
+# ── The judge choice has no workspace row (add-judge-model-setting 1.8) ──
+
+
+def test_the_handover_writes_no_judge_key(rows: WorkspaceSettings, folder: Path) -> None:
+    from omrg.transports.api.settings_handover import _plan
+
+    judge = {"answer.verify_provider", "answer.verify_model", "answer.verify_claims"}
+    plan = _plan()
+    assert not judge & {row.file_key for row in plan}
+    for row in plan:  # fill every text row the old page could save, then move them
+        if row.kind == "text":
+            rows.set(row.row_key, "x")
+    handover(rows, folder)
+    written = set(read_settings_file(folder).values)
+    assert written and not judge & written

@@ -243,7 +243,12 @@ def test_provider_fields_match_the_descriptors() -> None:
     from omrg.core.settings import PROVIDER_INT_FIELDS
 
     managed_server = {f.settings_field for f in LLAMACPP_SERVER_FIELDS}  # not in any descriptor
-    assert set(PROVIDER_FIELDS) == declared | managed_server | {"answer.provider", "answer.model"}
+    assert set(PROVIDER_FIELDS) == declared | managed_server | {
+        "answer.provider",
+        "answer.model",
+        "answer.verify_provider",
+        "answer.verify_model",
+    }
     ints = {
         f.settings_field
         for d in registry.describe_all().values()

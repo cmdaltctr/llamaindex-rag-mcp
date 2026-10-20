@@ -8,21 +8,21 @@ Prepare the feature worktree with `uv sync --frozen --extra web`. Each task writ
 
 ## 1. Live judge fields in config and the Engine
 
-- [ ] 1.1 Write failing tests: `answer.verify_provider` and `answer.verify_model` are in `ALLOWED_KEYS` (`tests/unit/test_settings_file_write.py`) and in `LIVE_KEYS` (`tests/unit/test_web_configuration.py`); update the exact-set assertion in `tests/unit/test_llm_new_providers.py:246`. Confirm they fail on the current code.
-- [ ] 1.2 Add both paths to `PROVIDER_FIELDS` in `src/omrg/config/provider_sources.py`. Verify the 1.1 tests pass.
-- [ ] 1.3 Write a failing test in `tests/unit/test_engine_provider_update.py`: `use_provider_settings` accepts a change of `answer.verify_model` and `answer.verify_provider`, and still refuses a change of `answer.verify_claims`. Confirm it fails.
-- [ ] 1.4 Add `verify_provider` and `verify_model` to `_EDITABLE_ANSWER` in `src/omrg/engine_providers.py` and update the refusal message. Verify 1.3 passes.
-- [ ] 1.5 Write a failing test in `tests/unit/test_compose_providers.py`: `ANSWER__VERIFY_MODEL` in the environment locks both judge fields. Confirm it fails.
-- [ ] 1.6 Add the `_JUDGE_FIELDS` lock unit in `src/omrg/compose_providers.py`. Verify 1.5 passes.
-- [ ] 1.7 Write a failing test in `tests/test_answer_verify.py` (or a new unit file): after a judge save, the next answer builds the judge with the new model, and an answer that started earlier keeps the old judge. Make it pass; no change to the build path is expected (design D2).
-- [ ] 1.8 Write a test in `tests/unit/test_settings_handover.py` that the handover writes no `answer.verify_*` key. Verify it passes with and without the 1.2 change, then break the handover plan on purpose to confirm the test can fail.
+- [x] 1.1 Write failing tests: `answer.verify_provider` and `answer.verify_model` are in `ALLOWED_KEYS` (`tests/unit/test_settings_file_write.py`) and in `LIVE_KEYS` (`tests/unit/test_web_configuration.py`); update the exact-set assertion in `tests/unit/test_llm_new_providers.py:246`. Confirm they fail on the current code.
+- [x] 1.2 Add both paths to `PROVIDER_FIELDS` in `src/omrg/config/provider_sources.py`. Verify the 1.1 tests pass.
+- [x] 1.3 Write a failing test in `tests/unit/test_engine_provider_update.py`: `use_provider_settings` accepts a change of `answer.verify_model` and `answer.verify_provider`, and still refuses a change of `answer.verify_claims`. Confirm it fails.
+- [x] 1.4 Add `verify_provider` and `verify_model` to `_EDITABLE_ANSWER` in `src/omrg/engine_providers.py` and update the refusal message. Verify 1.3 passes.
+- [x] 1.5 Write a failing test in `tests/unit/test_compose_providers.py`: `ANSWER__VERIFY_MODEL` in the environment locks both judge fields. Confirm it fails.
+- [x] 1.6 Add the `_JUDGE_FIELDS` lock unit in `src/omrg/compose_providers.py`. Verify 1.5 passes.
+- [x] 1.7 Write a failing test in `tests/test_answer_verify.py` (or a new unit file): after a judge save, the next answer builds the judge with the new model, and an answer that started earlier keeps the old judge. Make it pass; no change to the build path is expected (design D2).
+- [x] 1.8 Write a test in `tests/unit/test_settings_handover.py` that the handover writes no `answer.verify_*` key. Verify it passes with and without the 1.2 change, then break the handover plan on purpose to confirm the test can fail.
 
 ## 2. Judge settings routes and contract
 
-- [ ] 2.1 Move the alias rule (`cloud`, `local`, registry name) out of `build_verify_llm` into one function in `src/omrg/compose_answer.py`. Write a failing unit test for the function first. Verify `tests/test_answer_verify.py` still passes.
-- [ ] 2.2 Write failing route tests in a new `tests/unit/test_web_judge_settings.py` for every scenario in the `llm-provider-settings` delta: default `no-model`, ready judge, no provider request, save, empty model 400, unknown provider 400, one field only 400, clear, `.env` lock 409, stale revision 409, Engine refusal 409 with the file unchanged. Confirm they fail.
-- [ ] 2.3 Add `ProviderState.save_judge` in `src/omrg/transports/api/provider_state.py` and the routes in `src/omrg/transports/api/routes/judge_settings.py` (`getJudgeSettings`, `setJudgeSettings`). Register the router. Verify 2.2 passes and the file stays under 500 lines.
-- [ ] 2.4 Add both operations and the `JudgeSettings` and `JudgeSaveRequest` schemas to `src/omrg/transports/api/openapi.yaml`. Verify `uv run pytest tests/unit/test_web_openapi_conformance*.py` passes.
+- [x] 2.1 Move the alias rule (`cloud`, `local`, registry name) out of `build_verify_llm` into one function in `src/omrg/compose_answer.py`. Write a failing unit test for the function first. Verify `tests/test_answer_verify.py` still passes.
+- [x] 2.2 Write failing route tests in a new `tests/unit/test_web_judge_settings.py` for every scenario in the `llm-provider-settings` delta: default `no-model`, ready judge, no provider request, save, empty model 400, unknown provider 400, one field only 400, clear, `.env` lock 409, stale revision 409, Engine refusal 409 with the file unchanged. Confirm they fail.
+- [x] 2.3 Add `ProviderState.save_judge` in `src/omrg/transports/api/provider_state.py` and the routes in `src/omrg/transports/api/routes/judge_settings.py` (`getJudgeSettings`, `setJudgeSettings`). Register the router. Verify 2.2 passes and the file stays under 500 lines.
+- [x] 2.4 Add both operations and the `JudgeSettings` and `JudgeSaveRequest` schemas to `src/omrg/transports/api/openapi.yaml`. Verify `uv run pytest tests/unit/test_web_openapi_conformance*.py` passes.
 
 ## 3. Web Settings judge block
 

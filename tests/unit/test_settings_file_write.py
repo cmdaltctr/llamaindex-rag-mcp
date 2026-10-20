@@ -70,6 +70,8 @@ def test_the_allowed_keys_are_the_ones_the_page_edits() -> None:
         "llamacpp_server_model",
         "answer.provider",
         "answer.model",
+        "answer.verify_provider",
+        "answer.verify_model",
         "web_port",
         "web_max_upload_mib",
         "mcp_http_enabled",
