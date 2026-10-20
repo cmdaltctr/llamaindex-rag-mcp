@@ -1,8 +1,9 @@
 """Foundation routes: health, session, bearer credentials, roots and uploads.
 
 Public routes are ``GET /v1/health`` and ``POST /v1/session`` (the
-bootstrap exchange). Every other route declares its scope through
-:func:`.security.require_scope`. Routes validate, delegate and format only.
+bootstrap exchange, which also takes the workspace sign-in secret). Every
+other route declares its scope through :func:`.security.require_scope`.
+Routes validate, delegate and format only.
 """
 
 from __future__ import annotations
@@ -73,11 +74,19 @@ async def health(request: Request) -> dict[str, Any]:
 
 @router.post("/session")
 async def create_session(body: BootstrapRequest, request: Request) -> JSONResponse:
-    """Exchange the one-time bootstrap secret for a session cookie."""
+    """Exchange the workspace sign-in secret or the one-time secret for a session cookie.
+
+    The workspace secret is checked first and never spends the one-time
+    link, so a silent sign-in does not renew the login-item link file.
+    """
     policy = _policy(request)
     if not policy.origin_allowed(request.headers.get("origin")):
         raise HTTPException(403, "Cross-origin request rejected.")
-    token = policy.exchange_bootstrap(body.bootstrap)
+    page_secret = getattr(request.app.state, "page_secret", None)
+    if page_secret is not None and page_secret.matches(body.bootstrap):
+        token: str | None = policy.open_session()
+    else:
+        token = policy.exchange_bootstrap(body.bootstrap)
     if token is None:
         raise HTTPException(
             401,

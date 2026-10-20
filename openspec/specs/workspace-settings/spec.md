@@ -290,7 +290,7 @@ After the user saves a setting that applies only after a restart, the page SHALL
 #### Scenario: Restart now
 
 - **WHEN** the user presses "Restart now"
-- **THEN** the page MUST send the power menu restart request and MUST tell the user to sign in again with `omrg web open`
+- **THEN** the page MUST send the power menu restart request and MUST say that the page signs in again by itself, and MUST name `omrg web open` for a restart that moves the app to a new port
 
 #### Scenario: Foreground server
 

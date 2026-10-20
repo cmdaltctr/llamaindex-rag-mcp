@@ -25,18 +25,18 @@ const COPY: Record<PowerAction, { label: string; title: string; ask: string; com
   off: {
     label: "Turn off",
     title: "Turn off OMRG?",
-    ask: "OMRG stops and this browser is signed out. It stays off until you log in again or run",
+    ask: "OMRG stops. It stays off until you log in again or run",
     command: "omrg web start",
-    done: "Turned off. This browser is signed out. Run",
+    done: "Turned off. Run",
     next: "in a terminal to turn it on.",
   },
   restart: {
     label: "Restart",
     title: "Restart OMRG?",
-    ask: "OMRG restarts and this browser is signed out. When it is back, run",
+    ask: "OMRG restarts. This page signs in again by itself when it is back. If it does not, run",
     command: "omrg web open",
-    done: "Restarting. This browser is signed out. Run",
-    next: "in a terminal to sign in again.",
+    done: "Restarting. This page signs in again by itself when OMRG is back. If it does not, run",
+    next: "in a terminal.",
   },
 };
 

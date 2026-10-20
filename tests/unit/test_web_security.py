@@ -20,6 +20,7 @@ from fastapi.responses import StreamingResponse  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from omrg.transports.api.app import create_app  # noqa: E402
+from omrg.transports.api.bind_address import validate_bind_host  # noqa: E402
 from omrg.transports.api.lifespan import WebConfig  # noqa: E402
 from omrg.transports.api.security import (  # noqa: E402
     BEARER_SCOPES,
@@ -27,7 +28,6 @@ from omrg.transports.api.security import (  # noqa: E402
     RedactingFilter,
     redact,
     require_scope,
-    validate_bind_host,
 )
 
 BASE = "http://127.0.0.1:8765"

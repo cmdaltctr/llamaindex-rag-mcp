@@ -32,9 +32,10 @@ info:
     Credentials in the query string get 400.
 
 
-    Two credentials exist. The browser exchanges the one-time bootstrap
-    secret from the launch URL fragment for an HttpOnly, SameSite=Strict
-    session cookie (`POST /v1/session`). Notebook clients send a revocable
+    Two credentials exist. The browser exchanges a secret for an HttpOnly,
+    SameSite=Strict session cookie (`POST /v1/session`): the one-time
+    bootstrap secret from the launch URL fragment, or the workspace sign-in
+    secret that the server puts into its own page. Notebook clients send a revocable
     per-launch bearer credential (`Authorization: Bearer omrg_bt_<id>.<secret>`).
     Each operation names its scope in `x-omrg-scopes`. An operation whose
     `security` lists only `sessionCookie` is session only: a bearer
@@ -129,12 +130,15 @@ paths:
   /session:
     post:
       operationId: createSession
-      summary: Exchange the bootstrap secret for a session cookie
+      summary: Exchange the bootstrap or workspace secret for a session cookie
       description: >
         Public, but constrained. The request must carry the application
-        Origin. The bootstrap secret works once. After 20 wrong guesses it
-        stops working. Success sets the cookie `omrg_session_<port>`
-        (HttpOnly, SameSite=Strict, Path=/).
+        Origin. The body holds the one-time bootstrap secret or the
+        workspace sign-in secret. The bootstrap secret works once, and
+        after 20 wrong guesses it stops working. The workspace secret
+        lasts across restarts and does not spend the bootstrap secret.
+        Success sets the cookie `omrg_session_<port>` (HttpOnly,
+        SameSite=Strict, Path=/).
       security: []
       x-omrg-scopes: []
       requestBody:
@@ -3834,7 +3838,8 @@ components:
       description: >
         Browser session cookie `omrg_session_<port>` (the example name uses
         port 8765). HttpOnly, SameSite=Strict, Path=/. `POST /v1/session`
-        sets it from the one-time bootstrap secret. The session holds every
+        sets it from the one-time bootstrap secret or the workspace sign-in
+        secret. The session holds every
         scope. State-changing requests must carry the application Origin.
     bearerToken:
       type: http
@@ -3942,8 +3947,10 @@ components:
             $ref: "#/components/schemas/Error"
     BootstrapRejected:
       description: >
-        The bootstrap secret is wrong, was already used, or stopped working
-        after too many wrong guesses. Restart `omrg web` to get a new link.
+        The secret is not the workspace sign-in secret, and as a bootstrap
+        secret it is wrong, was already used, or stopped working after too
+        many wrong guesses. Reload the page, or restart `omrg web` to get a
+        new link.
       content:
         application/json:
           schema:
@@ -4156,7 +4163,9 @@ components:
           type: string
           minLength: 1
           maxLength: 256
-          description: The secret from the `#bootstrap=` fragment of the launch URL.
+          description: >
+            The secret from the `#bootstrap=` fragment of the launch URL, or
+            the workspace sign-in secret from the page.
 
     SessionCreated:
       type: object

@@ -1,16 +1,18 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { createApiClient, type ApiClient, type FetchLike } from "./client";
+import { createApiClient, type ApiClient, type FetchLike, type SessionRenewal } from "./client";
 
 const ApiContext = createContext<ApiClient | null>(null);
 
 interface ApiProviderProps {
   /** Set once at the root. Tests pass a fixture server's fetch here; components never receive it. */
   fetchImpl?: FetchLike;
+  /** Signs in again after a 401. The root passes the renewer for the page's workspace secret. */
+  renewSession?: SessionRenewal;
   children: ReactNode;
 }
 
-export function ApiProvider({ fetchImpl, children }: ApiProviderProps) {
-  const client = useMemo(() => createApiClient(fetchImpl), [fetchImpl]);
+export function ApiProvider({ fetchImpl, renewSession, children }: ApiProviderProps) {
+  const client = useMemo(() => createApiClient(fetchImpl, renewSession), [fetchImpl, renewSession]);
   return <ApiContext.Provider value={client}>{children}</ApiContext.Provider>;
 }
 
