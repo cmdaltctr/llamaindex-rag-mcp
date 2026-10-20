@@ -86,7 +86,9 @@ export function createFakeProfiles(initial: ProfileDetail[], pipelines: Map<stri
     }
     const title = typeof body.title === "string" ? body.title.trim() : profile.title;
     if (title === "" || title.length > 80) return refusal("A title holds 1 to 80 characters.", 400);
+    if (typeof body.description === "string" && body.description.length > 1000) return refusal("A description holds at most 1000 characters.", 400);
     profile.title = title;
+    if (typeof body.description === "string") profile.description = body.description;
     return reply({ status: "ok", profile: asItem(profile) });
   }
 

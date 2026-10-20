@@ -31,9 +31,9 @@ Work in the sibling worktree `llamaindex-rag-mcp-feat-studio-full-settings` on `
 
 - [x] 5.1 Test first: in `schema.test.ts`, `stepSummary.test.ts` and a new `ParamField.test.tsx`, cover the scenarios of "Object settings are edited as JSON text": kind `json` for `metadata_filter`, a valid object saved, "Enter a JSON object." for invalid text with no draft change, empty text removes the parameter, compact JSON on the card, and Prepare query now counts six editable settings. Also check the label "PDF reader". Verify: the tests fail before the change.
 - [x] 5.2 Add the `json` kind in `schema.ts`, the JSON text control in `ParamField.tsx`, compact JSON in `stepSummary.ts`, and the label "PDF reader" in `labels.ts`. Verify: task 5.1 passes, and every existing `web/src/studio` test passes.
-- [ ] 5.3 Test first: add `web/src/studio/ProfileDescriptionEditor.test.tsx` for "User profiles can be described in place": Enter sends `{description}` to `PATCH /v1/profiles/{id}`, Escape sends nothing, over 1000 characters is refused, a failure keeps the old text and shows a Retry line, and a built-in profile shows no pencil. Verify: the tests fail before the change.
-- [ ] 5.4 Add `description?: string` to `ProfileUpdateInput` in `web/src/api/profiles.ts`, add `ProfileDescriptionEditor.tsx` and show it in `ProfileHeader.tsx`. Verify: task 5.3 passes, and `ProfileHeader.test.tsx` and `ProfileTitleEditor.test.tsx` still pass.
-- [ ] 5.5 Update `docs/guides/web-workspace.md` ("Profiles in Studio") for the metadata filter and the description editor. Verify: the guide no longer says that object settings cannot be edited, if it said so.
+- [x] 5.3 Test first: add `web/src/studio/ProfileDescriptionEditor.test.tsx` for "User profiles can be described in place": Enter sends `{description}` to `PATCH /v1/profiles/{id}`, Escape sends nothing, over 1000 characters is refused, a failure keeps the old text and shows a Retry line, and a built-in profile shows no pencil. Verify: the tests fail before the change.
+- [x] 5.4 Add `description?: string` to `ProfileUpdateInput` in `web/src/api/profiles.ts`, add `ProfileDescriptionEditor.tsx` and show it in `ProfileHeader.tsx`. Verify: task 5.3 passes, and `ProfileHeader.test.tsx` and `ProfileTitleEditor.test.tsx` still pass.
+- [x] 5.5 Update `docs/guides/web-workspace.md` ("Profiles in Studio") for the metadata filter and the description editor. Verify: the guide no longer says that object settings cannot be edited, if it said so.
 
 ## 6. Browser check on a throwaway server
 

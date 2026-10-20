@@ -6,6 +6,7 @@ import { cn } from "../lib/utils";
 import { formatRoute, PURPOSES, type Purpose } from "../lib/routes";
 import { InfoPopover } from "./InfoPopover";
 import { CANVAS_INTRO, PURPOSE_LABELS, PURPOSE_LINES, READ_ONLY_NOTICE } from "./profileCopy";
+import { ProfileDescriptionEditor } from "./ProfileDescriptionEditor";
 import { ProfileTitleEditor } from "./ProfileTitleEditor";
 
 interface ProfileHeaderProps {
@@ -39,6 +40,7 @@ export function ProfileHeader({ profile, purpose, onDuplicate, collapsed = false
             {!profile.ready && <Badge variant="warning">Not ready</Badge>}
             {builtin && <span className="font-mono text-code text-muted-foreground [overflow-wrap:anywhere]">{profile.profile_id}</span>}
           </div>
+          <ProfileDescriptionEditor profile={profile} />
           {!profile.ready && (
             <ul className="flex flex-col gap-0.5">
               {profile.not_ready_reasons.map((reason) => (

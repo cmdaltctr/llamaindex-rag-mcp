@@ -517,6 +517,8 @@ To start with no steps, select "New empty profile" and give it a title.
 
 To rename one of your profiles, select the pencil next to its title. Enter the new title and select "Save".
 
+To describe one of your profiles, open it in Studio. Select the pencil next to the description under the title, enter the text and press Enter or select "Save". Press Escape or select "Cancel" to close the field with no change. A description has at most 1000 characters. The gallery card shows the new description. A built-in profile shows its description with no pencil.
+
 To delete one of your profiles:
 
 1. Select "Delete" on its card.
@@ -695,6 +697,8 @@ The Step settings section shows the selected step. Its heading is the step name.
 4. A note under each control that says which value is in use, for example "Value in use: 10 (from profile)". The text in brackets follows the same words as the step card.
 5. "Graph inputs and outputs" and "Remove step".
 6. A closed "Details" area.
+
+A setting that takes a JSON object, for example "Metadata filter" on Prepare query, shows a text field. Enter a JSON object, for example `{"file_type": "pdf"}`. Text that is not a JSON object shows "Enter a JSON object." and does not change the draft. Clear the field to inherit the value. The step card shows the value as compact JSON.
 
 While the automatic check runs, a setting that the profile supplies shows "Comes from the profile. The value shows when the check finishes." The value disappears again each time you edit the graph. It comes back when the next check returns. Moving a step or changing the selection keeps the value.
 
