@@ -9,6 +9,7 @@ extra IS installed — the chroma-extra CI job runs the complement suite.
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -315,6 +316,16 @@ _HISTORICAL_GT = (
 )
 if not _HISTORICAL_GT.exists():
     _BASE_EXECUTED -= 4
+# The pin counts the real-eq01 case in test_maths_pages.py as a skip. It runs
+# when the gitignored Experiment 34 copy (or OMRG_EQ01_PDF) is on disk, as in
+# the v3 worktree (2026-10-20).
+_EQ01_COPIES = (
+    Path(os.environ.get("OMRG_EQ01_PDF", "/nonexistent")),
+    Path(__file__).resolve().parents[1]
+    / "experiments/34-worker-sample-review-2026-09-19/corpus/eq01.pdf",
+)
+if any(path.is_file() for path in _EQ01_COPIES):
+    _BASE_EXECUTED += 1
 # The nine Exp25 installed-adapter cases always run now:
 # the OpenAI-like packages moved into the base dependencies (ADR-083), so the
 # pin below includes them and there is no conditional adjustment.
