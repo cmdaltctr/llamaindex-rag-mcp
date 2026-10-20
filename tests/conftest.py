@@ -446,6 +446,11 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     for name in provenance.DOTENV_KEYS:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setitem(OmrgSettings.model_config, "env_file", None)
+    # A provider key exported in the developer's shell would make "no key"
+    # tests fail locally while CI, which has none, passes. Tests that need a
+    # key set a fake one themselves.
+    for name in [name for name in os.environ if name.endswith("_API_KEY")]:
+        monkeypatch.delenv(name)
 
     monkeypatch.setenv("VECTOR_STORE", "lancedb")
     monkeypatch.setenv("LANCEDB_URI", str(tmp_path / "lancedb"))
