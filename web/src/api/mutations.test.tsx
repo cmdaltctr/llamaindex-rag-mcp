@@ -1,10 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useIsMutating, useQuery } from "@tanstack/react-query";
 import { act, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { documentsServer, json } from "../test/fakeDocumentsServer";
+import { controlledStream, sseFrame, stageFrame, streamResponse } from "../test/fakeStream";
 import { renderHookWithProviders } from "../test/providers";
 import { useApi } from "./ApiProvider";
+import type { FetchLike } from "./client";
 import {
+  ANSWER_MUTATION_KEY,
   useAnswer,
   useChangeProfile,
   useCreateProfile,
@@ -225,8 +228,85 @@ describe("answers and searches", () => {
     await act(() => result.current.hook.answer.mutateAsync({ query: "q" }));
     await act(() => result.current.hook.answer.mutateAsync({ query: "q" }));
     await act(() => result.current.hook.search.mutateAsync({ query: "q" }));
-    expect(server.find("POST", "/v1/collections/documents/answer")).toHaveLength(2);
+    expect(server.exact("POST", "/v1/collections/documents/answer")).toHaveLength(2);
     expect(server.find("POST", "/v1/collections/documents/search")).toHaveLength(1);
     expect(collectionReads(server)).toBe(1);
+  });
+});
+
+const ANSWER = { status: "ok", query: "q", answer: "a", citations: [], evidence: [], failure_stage: null, error: null, completion_source: "server" };
+const STREAM = "/v1/collections/documents/answer/stream";
+
+/** A fetch that serves each stream request from the next response factory and records its signal. */
+function streamServer(responses: (() => Response)[]) {
+  const signals: AbortSignal[] = [];
+  const fetchImpl = vi.fn<FetchLike>(async (path, init) => {
+    if (path !== STREAM) return json({ status: "error", message: "no route" }, 404);
+    signals.push(init!.signal!);
+    return responses.shift()!();
+  });
+  return { fetchImpl, signals };
+}
+
+function mountAnswer(fetchImpl: FetchLike) {
+  return renderHookWithProviders(() => ({ answer: useAnswer("documents"), pending: useIsMutating({ mutationKey: ANSWER_MUTATION_KEY }) }), { fetchImpl });
+}
+
+describe("useAnswer stage progress", () => {
+  it("collects the stages in order, drops duplicates and keeps the answer mutation key", async () => {
+    const stream = controlledStream();
+    const { fetchImpl } = streamServer([() => stream.response]);
+    const { result } = mountAnswer(fetchImpl);
+    expect(result.current.answer.progress.stages).toEqual([]);
+    act(() => result.current.answer.mutate({ query: "q" }));
+    await waitFor(() => expect(result.current.pending).toBe(1));
+    act(() => stream.push(stageFrame("searching", 1) + stageFrame("searching", 2) + stageFrame("writing", 3)));
+    await waitFor(() => expect(result.current.answer.progress.stages).toEqual(["searching", "writing"]));
+    act(() => stream.push(sseFrame("result", ANSWER)));
+    await waitFor(() => expect(result.current.answer.data).toEqual(ANSWER));
+    expect(result.current.pending).toBe(0);
+  });
+
+  it("resets the stages when a new answer starts", async () => {
+    const second = controlledStream();
+    const { fetchImpl } = streamServer([() => streamResponse([stageFrame("searching", 1), sseFrame("result", ANSWER)]), () => second.response]);
+    const { result } = mountAnswer(fetchImpl);
+    await act(() => result.current.answer.mutateAsync({ query: "q" }));
+    expect(result.current.answer.progress.stages).toEqual(["searching"]);
+    act(() => result.current.answer.mutate({ query: "q" }));
+    expect(result.current.answer.progress.stages).toEqual([]);
+    second.close();
+  });
+
+  it("aborts the open request when the hook unmounts", async () => {
+    const stream = controlledStream();
+    const { fetchImpl, signals } = streamServer([() => stream.response]);
+    const { result, unmount } = mountAnswer(fetchImpl);
+    act(() => result.current.answer.mutate({ query: "q" }));
+    await waitFor(() => expect(signals).toHaveLength(1));
+    unmount();
+    await waitFor(() => expect(signals[0]!.aborted).toBe(true));
+  });
+
+  it("aborts the open request before a new one, and the aborted request sets no error", async () => {
+    const first = controlledStream();
+    const second = controlledStream();
+    const { fetchImpl, signals } = streamServer([() => first.response, () => second.response]);
+    const { result } = mountAnswer(fetchImpl);
+    act(() => result.current.answer.mutate({ query: "q" }));
+    await waitFor(() => expect(signals).toHaveLength(1));
+    act(() => first.push(stageFrame("searching", 1)));
+    await waitFor(() => expect(result.current.answer.progress.stages).toEqual(["searching"]));
+    act(() => result.current.answer.mutate({ query: "q" }));
+    expect(signals[0]!.aborted).toBe(true);
+    await waitFor(() => expect(signals).toHaveLength(2));
+    // The abort cancels the old body; a late frame of it never reaches the new progress.
+    await waitFor(() => expect(first.cancelled).toBe(true));
+    act(() => first.push(stageFrame("writing", 2)));
+    act(() => second.push(sseFrame("result", ANSWER)));
+    await waitFor(() => expect(result.current.answer.data).toEqual(ANSWER));
+    expect(result.current.answer.isError).toBe(false);
+    expect(result.current.answer.progress.stages).toEqual([]);
+    expect(signals[1]!.aborted).toBe(false);
   });
 });

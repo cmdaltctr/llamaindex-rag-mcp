@@ -148,7 +148,7 @@ describe("turns", () => {
     expect(items[0]).toHaveTextContent("You");
     expect(items[0]).toHaveTextContent("What is kept?");
     expect(await within(transcript()).findByText(/Lineage is kept/)).toBeInTheDocument();
-    expect(server.find("POST", "/v1/collections/documents/answer")[0]?.body).toEqual({
+    expect(server.exact("POST", "/v1/collections/documents/answer")[0]?.body).toEqual({
       query: "What is kept?", top_k: null, rerank: null, hybrid: null, metadata_filter: null,
     });
     expect(screen.getByRole("textbox", { name: "Question" })).toHaveValue("");
@@ -303,8 +303,8 @@ describe("knowledge base panel and New chat", () => {
 
     await ask(user, "third");
     expect(await screen.findByText("From notes.")).toBeInTheDocument();
-    expect(server.find("POST", "/v1/collections/notes/answer")).toHaveLength(1);
-    expect(server.find("POST", "/v1/collections/documents/answer")).toHaveLength(2);
+    expect(server.exact("POST", "/v1/collections/notes/answer")).toHaveLength(1);
+    expect(server.exact("POST", "/v1/collections/documents/answer")).toHaveLength(2);
     expect(within(transcript()).getByText("first")).toBeInTheDocument();
   });
 

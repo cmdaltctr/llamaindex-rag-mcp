@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { documentsServer, json, type Handler } from "../test/fakeDocumentsServer";
 import { fakeChats, type FakeChatSeed } from "../test/fakeChats";
+import { sseFrame, stageFrame, streamResponse } from "../test/fakeStream";
 import { startApp } from "../test/startApp";
 
 function answer(overrides: Record<string, unknown> = {}) {
@@ -28,10 +29,35 @@ async function ask(user: ReturnType<typeof userEvent.setup>, question = "What is
   await user.click(screen.getByRole("button", { name: "Send" }));
 }
 
-const answers = (server: ReturnType<typeof setup>["server"]) => server.find("POST", "/v1/collections/documents/answer").length;
+const answers = (server: ReturnType<typeof setup>["server"]) => server.exact("POST", "/v1/collections/documents/answer").length;
 const turnPosts = (server: ReturnType<typeof setup>["server"]) => server.calls.filter((c) => c.method === "POST" && c.path.endsWith("/turns"));
 
 describe("stored chats", () => {
+  it("stores only the question, the collection and the answer of a streamed turn, and reopens it with no stage line", async () => {
+    const { store, server, user } = setup({}, {
+      "POST /v1/collections/documents/answer/stream": () =>
+        streamResponse([stageFrame("searching", 1), stageFrame("writing", 2), stageFrame("citing", 3), sseFrame("result", answer())]),
+    });
+    startApp("#/chat/documents", server);
+    await ask(user);
+    expect(await screen.findByText("Lineage is kept.")).toBeInTheDocument();
+    await waitFor(() => expect(turnPosts(server)).toHaveLength(1));
+    expect(answers(server)).toBe(0);
+    const stored = turnPosts(server)[0]!.body as Record<string, unknown>;
+    expect(Object.keys(stored).sort()).toEqual(["answer", "collection", "question"]);
+    expect(stored.answer).toEqual(answer());
+    const chatWrites = server.calls.filter((c) => c.method !== "GET" && c.path.startsWith("/v1/chats"));
+    expect(JSON.stringify(chatWrites.map((c) => c.body))).not.toMatch(/searching|elapsed_ms|sequence|stages/);
+    const [chat] = [...store.chats.values()];
+
+    cleanup();
+    startApp(`#/chat/documents/${chat!.chat_id}`, server);
+    expect(await screen.findByText("Lineage is kept.")).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Answer progress" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Searching")).not.toBeInTheDocument();
+    expect(server.find("POST", "/v1/collections/documents/answer/stream")).toHaveLength(1);
+  });
+
   it("creates the chat on the first usable answer, then reloads it without asking again", async () => {
     const { store, server, user } = setup();
     startApp("#/chat/documents", server);
@@ -134,7 +160,7 @@ describe("history list in the view", () => {
     expect(await screen.findByText("A saved answer.")).toBeInTheDocument();
     await waitFor(() => expect(window.location.hash).toBe("#/chat/notes/stored-1"));
     expect(answers(server)).toBe(0);
-    expect(server.find("POST", "/v1/collections/notes/answer")).toHaveLength(0);
+    expect(server.exact("POST", "/v1/collections/notes/answer")).toHaveLength(0);
   });
 
   it("keeps the open chat when another knowledge base is selected", async () => {

@@ -3,17 +3,19 @@
  * are mutations too, because each submission is a fresh request, but they
  * change nothing on the server and invalidate nothing.
  */
-import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type MutateOptions, type QueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useApi } from "./ApiProvider";
+import { answerCollectionStreaming, type AnswerStage } from "./answerStream";
 import type { ApiClient } from "./client";
 import {
-  answerCollection,
   changeProfile,
   deleteDocuments,
   ingestPath,
   searchCollection,
   setDisplayName,
   uploadFile,
+  type AnswerResult,
   type ConfirmStep,
   type DeleteSelector,
   type Profile,
@@ -124,9 +126,61 @@ export function useSetDisplayName(collection: string) {
 /** Marks answer mutations, so a view can ask whether any answer is still pending. */
 export const ANSWER_MUTATION_KEY = ["answer"] as const;
 
+/** One answer request: the controls, plus the abort signal and stage sink of that request alone. */
+interface AnswerRequest {
+  controls: QueryControls;
+  signal: AbortSignal;
+  onStage: (stage: AnswerStage) => void;
+}
+
+/**
+ * Asks one collection through the stream route and keeps the stages seen so
+ * far in `progress.stages`. Each `mutate` aborts the request still open and
+ * starts a fresh stage list; unmounting aborts too, so a turn that leaves or
+ * retries never keeps a paid answer running. An aborted request is replaced
+ * or gone, so its error never shows. Stages stay in hook state only.
+ */
 export function useAnswer(collection: string) {
   const api = useApi();
-  return useMutation({ mutationKey: ANSWER_MUTATION_KEY, mutationFn: (controls: QueryControls) => answerCollection(api, collection, controls) });
+  const [stages, setStages] = useState<AnswerStage[]>([]);
+  const controller = useRef<AbortController | null>(null);
+  const mounted = useRef(false);
+  const mutation = useMutation({
+    mutationKey: ANSWER_MUTATION_KEY,
+    mutationFn: ({ controls, signal, onStage }: AnswerRequest) => answerCollectionStreaming(api, collection, controls, { signal, onStage }),
+  });
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      // Strict mode remounts at once; only a real unmount leaves `mounted` false.
+      queueMicrotask(() => {
+        if (!mounted.current) controller.current?.abort();
+      });
+    };
+  }, []);
+
+  const start = useCallback((controls: QueryControls): AnswerRequest => {
+    controller.current?.abort();
+    const own = new AbortController();
+    controller.current = own;
+    setStages([]);
+    const onStage = (stage: AnswerStage) => {
+      if (controller.current !== own) return;
+      setStages((seen) => (seen.includes(stage) ? seen : [...seen, stage]));
+    };
+    return { controls, signal: own.signal, onStage };
+  }, []);
+
+  const { mutate: send, mutateAsync: sendAsync } = mutation;
+  const mutate = useCallback(
+    (controls: QueryControls, options?: MutateOptions<AnswerResult, Error, AnswerRequest>) => send(start(controls), options),
+    [send, start],
+  );
+  const mutateAsync = useCallback((controls: QueryControls) => sendAsync(start(controls)), [sendAsync, start]);
+
+  return { ...mutation, mutate, mutateAsync, progress: { stages } };
 }
 
 export function useSearch(collection: string) {

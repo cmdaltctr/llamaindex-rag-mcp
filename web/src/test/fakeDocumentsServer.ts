@@ -93,5 +93,9 @@ export function documentsServer(handlers: Record<string, Handler> = {}) {
     find(method: string, prefix: string): Call[] {
       return calls.filter((c) => c.method === method && c.path.startsWith(prefix));
     },
+    /** Calls to exactly one path, ignoring the query string, so `.../answer` does not count `.../answer/stream`. */
+    exact(method: string, path: string): Call[] {
+      return calls.filter((c) => c.method === method && c.path.split("?")[0] === path);
+    },
   };
 }

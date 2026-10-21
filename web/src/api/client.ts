@@ -64,8 +64,17 @@ export interface RequestInput {
   signal?: AbortSignal;
 }
 
+export type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
 export interface ApiClient {
-  request<T>(method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", path: string, input?: RequestInput): Promise<T>;
+  request<T>(method: Method, path: string, input?: RequestInput): Promise<T>;
+  /**
+   * Opens a server-sent event stream. Resolves with the response when the
+   * status is OK and the body is `text/event-stream`. Every other answer
+   * throws `ApiError` with the same kinds as `request`; an OK status with
+   * another content type throws kind `not-json` with that status.
+   */
+  stream(method: Method, path: string, input?: RequestInput): Promise<Response>;
 }
 
 /** The part of a query that an API function accepts from a caller. */
@@ -88,10 +97,13 @@ function isApiPath(path: string): boolean {
   return url.origin === PATH_BASE && url.pathname.startsWith(API_PREFIX) && url.pathname + url.search === path;
 }
 
+function mediaType(contentType: string | null): string {
+  return contentType?.split(";")[0]?.trim().toLowerCase() ?? "";
+}
+
 function isJsonType(contentType: string | null): boolean {
-  if (contentType === null) return false;
-  const mediaType = contentType.split(";")[0]?.trim().toLowerCase() ?? "";
-  return mediaType === "application/json" || mediaType.endsWith("+json");
+  const type = mediaType(contentType);
+  return type === "application/json" || type.endsWith("+json");
 }
 
 function envelopeMessage(body: unknown): string | null {
@@ -119,13 +131,14 @@ export function createApiClient(
   fetchImpl: FetchLike = (input, init) => fetch(input, init),
   renewSession?: SessionRenewal,
 ): ApiClient {
-  async function request<T>(method: string, path: string, input: RequestInput = {}): Promise<T> {
+  /** Sends the request, signs in again once after a 401, and returns the final response. */
+  async function exchange(method: string, path: string, input: RequestInput, accept: string): Promise<Response> {
     const url = withQuery(path, input.query);
     if (!isApiPath(url)) {
       throw new ApiError("invalid-path", `Refused a request outside ${API_PREFIX}: ${path}`, path);
     }
 
-    const headers: Record<string, string> = { Accept: "application/json", ...input.headers };
+    const headers: Record<string, string> = { Accept: accept, ...input.headers };
     let body: BodyInit | undefined;
     if (input.body instanceof Blob) {
       body = input.body;
@@ -150,7 +163,11 @@ export function createApiClient(
       const renewed = renewSession.signIns !== signInsBefore || (await renewSession.renew());
       if (renewed) response = await send();
     }
+    return response;
+  }
 
+  /** Parses a JSON body, and throws the error envelope of a failed status. */
+  async function parseJson<T>(path: string, response: Response): Promise<T> {
     const contentType = response.headers.get("content-type");
     if (!isJsonType(contentType)) {
       throw new ApiError(
@@ -175,5 +192,23 @@ export function createApiClient(
     return parsed as T;
   }
 
-  return { request };
+  async function request<T>(method: string, path: string, input: RequestInput = {}): Promise<T> {
+    return parseJson<T>(path, await exchange(method, path, input, "application/json"));
+  }
+
+  async function stream(method: string, path: string, input: RequestInput = {}): Promise<Response> {
+    const response = await exchange(method, path, input, "text/event-stream");
+    const contentType = response.headers.get("content-type");
+    if (response.ok && mediaType(contentType) === "text/event-stream") return response;
+    if (!response.ok) await parseJson(path, response);
+    await response.body?.cancel().catch(() => undefined);
+    throw new ApiError(
+      "not-json",
+      `Expected an event stream from ${path} but received ${contentType ?? "no content type"} (status ${response.status}).`,
+      path,
+      response.status,
+    );
+  }
+
+  return { request, stream };
 }

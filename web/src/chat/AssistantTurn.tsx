@@ -5,6 +5,7 @@ import { AlertNotice } from "../components/AlertNotice";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
+import { AnswerProgress } from "./AnswerProgress";
 import { AnswerText, ClaimList } from "./AnswerText";
 import { answerStatus, failureLine } from "./answerStatus";
 
@@ -60,11 +61,7 @@ export function AssistantTurn({ collection, question, saved = null, onResult, on
           ) : null}
         </AlertNotice>
       ) : null}
-      {waiting ? (
-        <p role="status" className="text-meta text-muted-foreground">
-          Waiting for the answer.
-        </p>
-      ) : null}
+      {waiting ? <AnswerProgress stages={answer.progress.stages} /> : null}
       {result && result.status !== "error" ? <AnswerBody result={result} collection={collection} onShowChunk={onShowChunk} /> : null}
     </li>
   );

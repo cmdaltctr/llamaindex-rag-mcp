@@ -214,7 +214,7 @@ function segment(value: string): string {
   return encodeURIComponent(value);
 }
 
-function collectionPath(collection: string, rest = ""): string {
+export function collectionPath(collection: string, rest = ""): string {
   return `/v1/collections/${segment(collection)}${rest}`;
 }
 
@@ -262,7 +262,7 @@ export function getSession(api: ApiClient, options: CallOptions = {}): Promise<S
 
 // ── Search and answer ───────────────────────────────────────────────────
 
-function controlsBody(controls: QueryControls) {
+export function controlsBody(controls: QueryControls) {
   return {
     query: controls.query,
     top_k: controls.top_k ?? null,
