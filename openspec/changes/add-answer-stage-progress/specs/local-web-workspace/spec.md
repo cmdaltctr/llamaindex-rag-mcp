@@ -4,7 +4,7 @@
 
 ### Requirement: The answer route can stream its stage
 
-The app SHALL offer `POST /v1/collections/{collection}/answer/stream`. It SHALL take the body of `POST /v1/collections/{collection}/answer`, SHALL need the `read` scope, and SHALL follow the same authentication, Host and Origin rules. A valid request SHALL get `text/event-stream` with `stage` frames, then exactly one `result` frame, then the end. A request that fails before the stream opens SHALL get an ordinary HTTP error.
+The app SHALL offer `POST /v1/collections/{collection}/answer/stream`. It SHALL take the body of `POST /v1/collections/{collection}/answer`, SHALL need the `read` scope, and SHALL follow the same authentication, Host and Origin rules. A valid request SHALL get `text/event-stream` with `stage` frames, then exactly one `result` frame, then the end. The route SHALL open the stream only when the first stage or the result is ready. A request that fails before the stream opens SHALL get an ordinary HTTP error. A request the Engine rejects as invalid SHALL get the same 400 response as the blocking route.
 
 #### Scenario: Stages then result
 
@@ -39,11 +39,11 @@ The app SHALL offer `POST /v1/collections/{collection}/answer/stream`. It SHALL 
 - **WHEN** the server has stopped admitting work
 - **THEN** the route MUST answer 503 and MUST NOT open a stream
 
-#### Scenario: The Engine rejects the request after the stream opened
+#### Scenario: The Engine rejects the request
 
-- **WHEN** the Engine raises a validation error after the first byte was sent
-- **THEN** the stream MUST end with one `failure` frame that holds a status and a message
-- **AND** it MUST NOT hold a `result` frame
+- **WHEN** the Engine raises a validation error, for example because the user profile has no saved Answer graph
+- **THEN** the route MUST answer 400 with the same body as the blocking route
+- **AND** it MUST NOT open a stream
 
 ### Requirement: Stage frames carry no content
 
@@ -67,13 +67,19 @@ A `stage` frame SHALL hold only a stage name, a sequence number that starts at 1
 
 ### Requirement: A stream follows its client
 
-The streaming answer SHALL hold runtime admission from before the first byte until the answer ends or is cancelled. When the client leaves before the `result` frame, the server SHALL cancel the answer and SHALL release admission. A cancelled answer SHALL write nothing. Each stream SHALL have its own frames. A stream SHALL keep no state after it ends.
+The streaming answer SHALL hold runtime admission from before the first byte until the answer ends or is cancelled. When the client leaves before the `result` frame, the server SHALL cancel the answer and SHALL release admission. The route SHALL watch the client itself, so that a client that leaves while no frame is due is noticed whatever ASGI spec version the server reports. A cancelled answer SHALL write nothing. Each stream SHALL have its own frames. A stream SHALL keep no state after it ends.
 
 #### Scenario: Browser tab closes mid-answer
 
 - **WHEN** the client drops the connection while the answer runs
 - **THEN** the server MUST cancel the answer
 - **AND** the admission count MUST return to its value before the request
+
+#### Scenario: Client leaves during a long model call
+
+- **WHEN** the client drops the connection while the model call runs and no frame is due
+- **THEN** the server MUST cancel the answer within a few seconds
+- **AND** it MUST NOT wait for the next frame to notice
 
 #### Scenario: Two answers at once
 

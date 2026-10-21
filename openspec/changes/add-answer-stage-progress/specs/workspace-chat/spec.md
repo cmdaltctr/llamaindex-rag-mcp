@@ -65,6 +65,21 @@ Stage progress SHALL be a convenience and SHALL NOT be a dependency of the answe
 - **WHEN** the stream route answers 403 or 503
 - **THEN** Chat MUST show the friendly failure line and MUST NOT call the blocking route
 
+### Requirement: Leaving a turn stops its answer
+
+When a turn that waits for its answer leaves the page, or the user presses Retry on it, Chat SHALL abort the request for the old answer. An aborted request SHALL NOT show an error.
+
+#### Scenario: User leaves the chat mid-answer
+
+- **WHEN** the user opens another chat while an answer runs
+- **THEN** Chat MUST abort the stream request of the running answer
+- **AND** no failure line MUST appear for it
+
+#### Scenario: Retry replaces the running request
+
+- **WHEN** the user presses Retry
+- **THEN** Chat MUST abort any request still open for that turn before it sends the new one
+
 ### Requirement: Stage progress is never stored
 
 A chat SHALL store the finished answer result only. Stage names, sequence numbers and timings SHALL NOT enter the workspace database, the chat list or an exported chat. A reopened chat SHALL show no progress.
