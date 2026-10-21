@@ -113,6 +113,17 @@ export interface Evidence extends Citation {
   text: string;
 }
 
+/** Per-stage timings and call counts, sent only when the request asked for diagnostics. */
+export interface AnswerDiagnostics {
+  retrieval_ms: number;
+  generation_ms: number;
+  completion_calls: number;
+  /** Present only when claim verification ran. */
+  verification_ms?: number;
+  /** Judge completions, one per cited sentence. Present only when claim verification ran. */
+  verification_calls?: number;
+}
+
 export type AnswerStatus = "ok" | "no_evidence" | "generation_unverified" | "unverified_claims" | "error";
 
 export interface AnswerResult {
@@ -127,6 +138,7 @@ export interface AnswerResult {
   verified?: boolean;
   unverified_claims?: { claim: string; verdict: string; ordinals: number[] }[];
   verification_skipped?: string;
+  diagnostics?: AnswerDiagnostics;
 }
 
 export interface ChunkView {
@@ -291,7 +303,8 @@ export async function answerCollection(
   options: CallOptions = {},
 ): Promise<AnswerResult> {
   return api.request<AnswerResult>("POST", collectionPath(collection, "/answer"), {
-    body: controlsBody(controls),
+    // Chat shows the judge call count, so it always asks for diagnostics.
+    body: { ...controlsBody(controls), diagnostics: true },
     signal: options.signal,
   });
 }

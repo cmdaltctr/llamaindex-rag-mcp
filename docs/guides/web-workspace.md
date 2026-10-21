@@ -649,6 +649,8 @@ On a phone, History opens the list above the transcript: [open list at 390 px](i
 
 The right-hand card has three icon tabs: Knowledge base, Citations and Evidence. Citations and Evidence show the newest answer of the open chat, so nothing sits under the answer text. Hover a tab to see its name.
 
+A badge above each answer gives its status. A green "Cited and verified" badge means the claim check judge passed every cited prose sentence. A blue "Cited" badge means the answer has a valid citation, but no judge checked it. An amber badge means unverified claims or no valid citation. When the judge ran, a line below the badge gives the number of cited sentences it checked and the time it took, for example "The judge checked 3 cited sentences in 2.4 s." Chat asks the answer route for `diagnostics: true` to get these numbers. A chat saved before this change shows no judge line.
+
 The answer text renders as Markdown (GitHub flavour): bold, italic, headings, ordered and unordered lists, inline code, fenced code blocks, tables, quotes and links. The app never renders raw HTML from the model, so a tag in the answer shows as text. A link opens in a new tab, and a link with an unsafe scheme such as `javascript:` shows as plain text. A `[n]` marker stays a citation button inside any of these elements, but not inside code.
 
 Citations are the passages the answer cites. Evidence is every passage the model was given, so the Evidence tab usually has more rows than the Citations tab has chips.

@@ -149,7 +149,7 @@ describe("turns", () => {
     expect(items[0]).toHaveTextContent("What is kept?");
     expect(await within(transcript()).findByText(/Lineage is kept/)).toBeInTheDocument();
     expect(server.exact("POST", "/v1/collections/documents/answer")[0]?.body).toEqual({
-      query: "What is kept?", top_k: null, rerank: null, hybrid: null, metadata_filter: null,
+      query: "What is kept?", top_k: null, rerank: null, hybrid: null, metadata_filter: null, diagnostics: true,
     });
     expect(screen.getByRole("textbox", { name: "Question" })).toHaveValue("");
   });
@@ -253,6 +253,27 @@ describe("turns", () => {
     await ask(user);
     expect(await screen.findByRole("list", { name: "Claims that failed verification" })).toHaveTextContent("Lineage is optional (unsupported, cites [1])");
     expect(screen.getByText(/Claim verification skipped: judge provider unavailable/)).toBeInTheDocument();
+  });
+
+  it("asks for diagnostics and shows how many sentences the judge checked", async () => {
+    const { server, user } = setup({
+      "POST /v1/collections/documents/answer": () =>
+        answer({ verified: true, diagnostics: { retrieval_ms: 12, generation_ms: 900, completion_calls: 1, verification_ms: 2350, verification_calls: 3 } }),
+    });
+    await ask(user);
+    const badge = await screen.findByText("Cited and verified", { selector: "[data-slot=badge]" });
+    expect(badge.closest("li")).toHaveTextContent("The judge checked 3 cited sentences in 2.4 s.");
+    expect(server.exact("POST", "/v1/collections/documents/answer")[0]?.body).toMatchObject({ diagnostics: true });
+  });
+
+  it.each([
+    ["no diagnostics", {}],
+    ["no judge calls", { diagnostics: { retrieval_ms: 12, generation_ms: 900, completion_calls: 1, verification_ms: 0, verification_calls: 0 } }],
+  ])("shows no judge line for an answer with %s", async (_, overrides) => {
+    const { user } = setup({ "POST /v1/collections/documents/answer": () => answer(overrides) });
+    await ask(user);
+    const badge = await screen.findByText("Cited", { selector: "[data-slot=badge]" });
+    expect(badge.closest("li")).not.toHaveTextContent(/The judge checked/);
   });
 });
 

@@ -69,11 +69,13 @@ export function AssistantTurn({ collection, question, saved = null, onResult, on
 
 function AnswerBody({ result, collection, onShowChunk }: { result: AnswerResult; collection: string; onShowChunk: AssistantTurnProps["onShowChunk"] }) {
   const status = answerStatus(result);
+  const judge = judgeLine(result);
   return (
     <>
       <div className="flex flex-col items-start gap-1">
         <Badge variant={status.variant}>{status.label}</Badge>
         <p className="text-meta text-muted-foreground">{status.meaning}</p>
+        {judge ? <p className="text-meta text-muted-foreground">{judge}</p> : null}
       </div>
       {result.verification_skipped ? (
         <p className="text-meta text-status-warning-label">
@@ -86,4 +88,12 @@ function AnswerBody({ result, collection, onShowChunk }: { result: AnswerResult;
       ) : null}
     </>
   );
+}
+
+/** One line on the claim check work, or null when the judge made no call. */
+function judgeLine(result: AnswerResult): string | null {
+  const calls = result.diagnostics?.verification_calls ?? 0;
+  if (calls === 0) return null;
+  const seconds = ((result.diagnostics?.verification_ms ?? 0) / 1000).toFixed(1);
+  return `The judge checked ${calls} cited ${calls === 1 ? "sentence" : "sentences"} in ${seconds} s.`;
 }

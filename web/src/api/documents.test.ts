@@ -81,7 +81,7 @@ describe("search and answer", () => {
       "documents",
       { query: "q", top_k: 4, rerank: false, hybrid: true, metadata_filter: { lang: "ar" } },
     );
-    expect(bodyOf(sent[0]!)).toEqual({ query: "q", top_k: 4, rerank: false, hybrid: true, metadata_filter: { lang: "ar" } });
+    expect(bodyOf(sent[0]!)).toEqual({ query: "q", top_k: 4, rerank: false, hybrid: true, metadata_filter: { lang: "ar" }, diagnostics: true });
   });
 
   it("reads a stored chunk with a neighbour window", async () => {
