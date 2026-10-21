@@ -85,6 +85,16 @@ def test_result_frame_equals_blocking_response(tmp_path: Path, engine: StagedEng
     assert stream_kwargs == blocking_call[2]
 
 
+def test_the_diagnostics_flag_reaches_the_engine(tmp_path: Path, engine: StagedEngine) -> None:
+    app, policy = build_app(tmp_path, engine)
+    with TestClient(app, base_url=BASE) as client:
+        login(client, policy)
+        default = client.post(STREAM, json={"query": "q"}, headers=ORIGIN)
+        asked = client.post(STREAM, json={"query": "q", "diagnostics": True}, headers=ORIGIN)
+    assert (default.status_code, asked.status_code) == (200, 200)
+    assert [kwargs["include_diagnostics"] for _, _, kwargs in engine.calls] == [False, True]
+
+
 def test_any_other_engine_error_ends_with_the_failure_result(
     tmp_path: Path, engine: StagedEngine
 ) -> None:

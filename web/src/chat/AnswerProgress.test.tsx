@@ -122,6 +122,20 @@ describe("AssistantTurn with a streamed answer", () => {
     expect(blockingCalls()).toBe(0);
   });
 
+  it("asks the stream for diagnostics and shows the judge line from its result", async () => {
+    const stream = controlledStream();
+    const { fetchImpl, blockingCalls } = server([() => stream.response]);
+    renderTurn(fetchImpl);
+    act(() => stream.push(stageFrame("searching", 1) + stageFrame("verifying", 2)));
+    const diagnostics = { retrieval_ms: 9, generation_ms: 800, completion_calls: 1, verification_ms: 1260, verification_calls: 2 };
+    act(() => stream.push(sseFrame("result", answer({ verified: true, diagnostics }))));
+    expect(await screen.findByText("The judge checked 2 cited sentences in 1.3 s.")).toBeInTheDocument();
+    const [path, init] = fetchImpl.mock.calls[0]!;
+    expect(path).toBe(STREAM);
+    expect(JSON.parse(init!.body as string)).toMatchObject({ diagnostics: true });
+    expect(blockingCalls()).toBe(0);
+  });
+
   it("never shows Writing the answer for a no-evidence run", async () => {
     const stream = controlledStream();
     const { fetchImpl } = server([() => stream.response]);

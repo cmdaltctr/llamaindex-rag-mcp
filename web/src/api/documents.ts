@@ -274,7 +274,7 @@ export function getSession(api: ApiClient, options: CallOptions = {}): Promise<S
 
 // ── Search and answer ───────────────────────────────────────────────────
 
-export function controlsBody(controls: QueryControls) {
+function controlsBody(controls: QueryControls) {
   return {
     query: controls.query,
     top_k: controls.top_k ?? null,
@@ -282,6 +282,11 @@ export function controlsBody(controls: QueryControls) {
     hybrid: controls.hybrid ?? null,
     metadata_filter: controls.metadata_filter ?? null,
   };
+}
+
+/** The body of both answer routes. Chat shows the judge call count, so it always asks for diagnostics. */
+export function answerBody(controls: QueryControls) {
+  return { ...controlsBody(controls), diagnostics: true };
 }
 
 export async function searchCollection(
@@ -303,8 +308,7 @@ export async function answerCollection(
   options: CallOptions = {},
 ): Promise<AnswerResult> {
   return api.request<AnswerResult>("POST", collectionPath(collection, "/answer"), {
-    // Chat shows the judge call count, so it always asks for diagnostics.
-    body: { ...controlsBody(controls), diagnostics: true },
+    body: answerBody(controls),
     signal: options.signal,
   });
 }

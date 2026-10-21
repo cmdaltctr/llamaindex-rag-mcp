@@ -85,7 +85,7 @@ describe("answerCollectionStreaming", () => {
     expect(calls(BLOCKING_PATH)).toBe(0);
     const init = fetchImpl.mock.calls[0]![1]!;
     expect(init.method).toBe("POST");
-    expect(JSON.parse(init.body as string)).toEqual({ query: "q", top_k: null, rerank: null, hybrid: null, metadata_filter: null });
+    expect(JSON.parse(init.body as string)).toEqual({ query: "q", top_k: null, rerank: null, hybrid: null, metadata_filter: null, diagnostics: true });
     expect(new Headers(init.headers).get("Accept")).toBe("text/event-stream");
   });
 

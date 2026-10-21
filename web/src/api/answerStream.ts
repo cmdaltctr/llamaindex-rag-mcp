@@ -8,7 +8,7 @@
  * only repeat there, and a second request would start a second paid answer.
  */
 import { ApiError, type ApiClient } from "./client";
-import { answerCollection, collectionPath, controlsBody, type AnswerResult, type QueryControls } from "./documents";
+import { answerBody, answerCollection, collectionPath, type AnswerResult, type QueryControls } from "./documents";
 
 /** The stages of one answer, in the order the server reports them. */
 export const ANSWER_STAGES = ["searching", "writing", "citing", "verifying"] as const;
@@ -110,7 +110,7 @@ export async function answerCollectionStreaming(
   try {
     let response: Response;
     try {
-      response = await api.stream("POST", path, { body: controlsBody(controls), signal: local.signal });
+      response = await api.stream("POST", path, { body: answerBody(controls), signal: local.signal });
     } catch (error) {
       if (signal?.aborted) throw abortError(signal);
       if (!canFallBack(error)) throw error;

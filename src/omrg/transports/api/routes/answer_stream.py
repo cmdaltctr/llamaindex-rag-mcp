@@ -121,6 +121,7 @@ class _AnswerStream:
                 expand_window=body.expand_window,
                 collection_name=self._collection,
                 metadata_filter=body.metadata_filter,
+                include_diagnostics=body.diagnostics,
                 on_stage=self._on_stage,
             )
         except asyncio.CancelledError:
