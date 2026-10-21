@@ -219,8 +219,10 @@ def test_early_exit_is_reported_and_cleaned(launcher, tool, notebook) -> None:
 
 def test_ready_timeout_stops_the_process(tmp_path, tool, notebook) -> None:
     (tool.parent / "never_listen").write_text("")
+    # The fake writes its record before it waits. Under parallel load a 1 s
+    # limit could stop it before that write, so the limit leaves room for it.
     owned = OwnedProcessLauncher(
-        tmp_path / "rt", grace_seconds=0.5, kill_wait_seconds=2.0, ready_timeout=1.0
+        tmp_path / "rt", grace_seconds=0.5, kill_wait_seconds=2.0, ready_timeout=5.0
     )
     with pytest.raises(LaunchError, match="did not listen"):
         start(owned, tool, notebook, free_port())
@@ -245,11 +247,13 @@ def test_launcher_runs_without_shell(tmp_path) -> None:
         tmp_path / "t", "echoargs",
         "import sys, json, pathlib\n"
         "pathlib.Path(sys.argv[0]).with_name('args.json').write_text(json.dumps(sys.argv[1:]))\n"
-        "import time\ntime.sleep(30)\n",
+        "sys.exit(3)\n",
     )  # fmt: skip
-    owned = OwnedProcessLauncher(tmp_path / "rt2", ready_timeout=0.5, grace_seconds=0.2)
+    # The script exits after it writes args.json, so the launch fails only
+    # after that write. A ready timeout could stop it before the write.
+    owned = OwnedProcessLauncher(tmp_path / "rt2", ready_timeout=30.0, grace_seconds=0.2)
     payload = f"; touch {marker}"
-    with pytest.raises(LaunchError):
+    with pytest.raises(LaunchError, match="code 3"):
         owned.start(
             argv=[str(script), payload], workdir=owned.create_launch_dir(), host=HOST,
             port=free_port(), files={}, secrets=[],
