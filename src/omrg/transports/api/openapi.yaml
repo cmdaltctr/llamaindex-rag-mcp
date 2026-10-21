@@ -5061,6 +5061,13 @@ components:
           description: >
             Neighbours merged into each evidence chunk during context
             assembly.
+        diagnostics:
+          type: boolean
+          default: false
+          description: >
+            When true, include per-stage timings and completion counts in
+            the response `diagnostics` object, including the judge calls
+            of claim verification when that stage ran.
         metadata_filter:
           type:
             - object

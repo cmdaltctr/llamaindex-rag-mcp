@@ -285,6 +285,38 @@ def test_answer_forwards_controls_and_validates_bounds(
     assert too_long.status_code == 400
 
 
+def test_answer_forwards_the_diagnostics_flag(
+    tmp_path: Path, store: Any, effective_settings
+) -> None:
+    engine = RecordingEngine(effective_settings(), store=store, embed_model=object())
+    engine.answer_result = {"status": "ok"}
+    app, policy = build_app(tmp_path, engine)
+    with TestClient(app, base_url=BASE) as client:
+        login(client, policy)
+        default = client.post(ANSWER, json={"query": "q"}, headers=ORIGIN)
+        asked = client.post(ANSWER, json={"query": "q", "diagnostics": True}, headers=ORIGIN)
+    assert (default.status_code, asked.status_code) == (200, 200)
+    flags = [kwargs["include_diagnostics"] for _, _, kwargs in engine.calls]
+    assert flags == [False, True]
+
+
+def test_answer_diagnostics_reach_the_response_only_when_asked(
+    tmp_path: Path, store: Any, effective_settings
+) -> None:
+    llm = FakeLLM()
+    engine = make_engine(store, effective_settings(), answer_llm_factory=lambda: llm)
+    app, policy = build_app(tmp_path, engine)
+    request = {"query": "first?", "rerank": False, "hybrid": False, "similarity_threshold": 0.0}
+    with TestClient(app, base_url=BASE) as client:
+        login(client, policy)
+        plain = client.post(ANSWER, json=request, headers=ORIGIN).json()
+        detailed = client.post(ANSWER, json={**request, "diagnostics": True}, headers=ORIGIN).json()
+    assert "diagnostics" not in plain
+    assert_conforms("/collections/{collection}/answer", "post", 200, detailed)
+    assert detailed["status"] == "ok"
+    assert detailed["diagnostics"]["completion_calls"] == 1
+
+
 def test_answer_engine_failure_keeps_answer_error_shape(
     tmp_path: Path, store: Any, effective_settings
 ) -> None:

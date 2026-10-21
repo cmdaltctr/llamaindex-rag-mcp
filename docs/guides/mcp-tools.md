@@ -181,7 +181,9 @@ Every result carries `query`, `answer`, `citations[]`, `evidence[]`,
 `completion_source`. With `diagnostics: true`, a `diagnostics` object adds
 `retrieval_ms`, `generation_ms`, and `completion_calls`; when claim
 verification ran, it also adds `verification_ms` and `verification_calls`,
-kept separate from retrieval and generation timings. When verification
+kept separate from retrieval and generation timings. The HTTP answer
+route (`POST /v1/collections/{collection}/answer`) takes the same
+`diagnostics` flag and returns the same object. When verification
 ran and passed, the result carries `verified: true`; when the judge could
 not run or had no cited prose sentence to check, the result carries
 `verification_skipped` with the reason (see

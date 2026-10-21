@@ -54,6 +54,7 @@ class AnswerBody(BaseModel):
     rerank: bool | None = None
     hybrid: bool | None = None
     expand_window: int = Field(default=0, ge=0, le=10)
+    diagnostics: bool = False
     metadata_filter: dict[str, Any] | None = None
 
 
@@ -212,6 +213,7 @@ async def answer_collection(
                 expand_window=body.expand_window,
                 collection_name=collection,
                 metadata_filter=body.metadata_filter,
+                include_diagnostics=body.diagnostics,
             )
         except ValueError as exc:
             return error_response(400, str(exc), error_type="validation")
