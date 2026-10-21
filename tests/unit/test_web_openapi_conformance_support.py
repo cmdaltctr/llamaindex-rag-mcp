@@ -56,6 +56,7 @@ FAMILIES: dict[str, frozenset[str]] = {
             "listDocuments",
             "searchCollection",
             "answerCollection",
+            "streamAnswer",
             "getChunk",
             "deleteDocuments",
             "changeCollectionProfile",
@@ -368,9 +369,18 @@ class ContractChecker:
 
     @staticmethod
     def _check_frames(operation: dict[str, Any], frames: list[dict[str, Any]]) -> None:
-        """Validate every event frame against ``x-omrg-sse-events``."""
+        """Validate every event frame against ``x-omrg-sse-events``.
+
+        A GET stream reconnects, so it must open with a ``retry`` hint. A
+        stream answering a request body (``streamAnswer``) never reconnects
+        and sends no hint.
+        """
         schemas = operation["x-omrg-sse-events"]
-        assert frames and frames[0].get("retry"), "the stream must open with a retry hint"
-        for frame in frames[1:]:
-            name = schemas.get(frame["event"], schemas["*"])
+        assert frames, "the stream sent no frame"
+        if "requestBody" not in operation:
+            assert frames[0].get("retry"), "the stream must open with a retry hint"
+            frames = frames[1:]
+        for frame in frames:
+            assert "event" in frame and "data" in frame, frame
+            name = schemas.get(frame["event"]) or schemas["*"]
             validate({"$ref": f"#/components/schemas/{name}"}, frame["data"])

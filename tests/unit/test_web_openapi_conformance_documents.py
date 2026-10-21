@@ -172,6 +172,15 @@ def test_document_and_destructive_responses_conform(
         )
         answer = check.check(client.post(f"{base}/answer", json=query, headers=ORIGIN), 200)
         assert answer["status"] == "ok"
+        streamed = check.check(
+            client.post(f"{base}/answer/stream", json=query, headers=ORIGIN), 200
+        )
+        assert [frame["event"] for frame in streamed][-1] == "result"
+        assert streamed[-1]["data"]["status"] == "ok"
+        check.check(
+            client.post(f"{base}/answer/stream", json={"query": "q", "top_k": 0}, headers=ORIGIN),
+            400,
+        )
         chunk = check.check(client.get(f"{base}/chunks/{rows[0]['chunk_id']}"), 200)
         assert chunk["text_format"] == "plain"
         check.check(client.get(f"{base}/chunks/nope"), 404)

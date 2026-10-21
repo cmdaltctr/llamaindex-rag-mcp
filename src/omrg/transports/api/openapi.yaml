@@ -750,6 +750,60 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
+  /collections/{collection}/answer/stream:
+    post:
+      operationId: streamAnswer
+      summary: Answer a question and stream its stages as server-sent events
+      description: >
+        Takes the body of `answerCollection` and follows its scope, Origin
+        and validation rules. The response is `text/event-stream`: one
+        `event: stage` frame for each stage the answer enters, in the order
+        searching, writing, citing, verifying, then exactly one
+        `event: result` frame with the result `answerCollection` returns,
+        then the end. A stage that does not run is not sent. There is no
+        `retry` line, no heartbeat and no replay. Stage frames hold only the
+        stage name, a sequence number and the elapsed milliseconds since
+        admission. The stream opens only when the first stage or the result
+        is ready, so a request the Engine rejects gets the same 400 as
+        `answerCollection`. A client that leaves cancels the answer.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrg-scopes: [read]
+      x-omrg-sse-events:
+        stage: AnswerStageEvent
+        result: AnswerResponse
+      parameters:
+        - $ref: "#/components/parameters/CollectionName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnswerRequest"
+      responses:
+        "200":
+          description: Event stream of stage frames, then one result frame.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum: [no-store]
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
   /collections/{collection}/chunks/{chunk_id}:
     get:
       operationId: getChunk
@@ -6897,6 +6951,27 @@ components:
       properties:
         reason:
           type: string
+
+    AnswerStageEvent:
+      type: object
+      additionalProperties: false
+      required: [stage, sequence, elapsed_ms]
+      description: >
+        Data of one `stage` server-sent event of `streamAnswer`. It never
+        holds question, passage or answer text, model or provider names,
+        keys, paths or error text.
+      properties:
+        stage:
+          type: string
+          enum: [searching, writing, citing, verifying]
+        sequence:
+          type: integer
+          minimum: 1
+          description: Starts at 1 and rises by 1 for each stage frame.
+        elapsed_ms:
+          type: integer
+          minimum: 0
+          description: Milliseconds since the request was admitted.
 
     # ── Workspace cleanup ──────────────────────────────────────────────
     CleanupSelector:

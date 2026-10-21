@@ -25,6 +25,7 @@ from .mcp_http import build_mcp_http
 from .middleware import GuardMiddleware
 from .page_secret import PageSecret
 from .routes.admin import router as admin_router
+from .routes.answer_stream import router as answer_stream_router
 from .routes.chat_settings import router as chat_settings_router
 from .routes.chats import router as chats_router
 from .routes.configuration import router as configuration_router
@@ -54,6 +55,7 @@ from .static import FrontendFallback
 API_ROUTERS: tuple[APIRouter, ...] = (
     foundation_router,
     documents_router,
+    answer_stream_router,
     jobs_router,
     inspect_router,
     admin_router,
