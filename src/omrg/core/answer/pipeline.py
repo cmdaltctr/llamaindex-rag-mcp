@@ -26,6 +26,7 @@ from typing import Any
 
 from ..settings import resolve_effective_settings
 from .evidence import _evidence_rows, _labelled_nodes
+from .progress import AnswerStage, report_stage
 from .results import (
     answered_result,
     base_result,
@@ -215,6 +216,7 @@ async def answer(
     if not answer_block.enabled:
         return disabled_result(query, completion_source)
 
+    report_stage(AnswerStage.SEARCHING)
     retrieval_start = time.perf_counter()
     preflight: ResolvedRetrieval | None = None
     if rows is not None:

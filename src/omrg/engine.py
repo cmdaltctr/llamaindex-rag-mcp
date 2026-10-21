@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from llama_index.core.embeddings import BaseEmbedding
 
     from .core.answer.pipeline import ResolvedRetrieval
+    from .core.answer.progress import StageCallback
     from .core.pipelines import (
         AdmissionSnapshot,
         CancellationToken,
@@ -268,6 +269,7 @@ class Engine(EngineProviders):
         include_diagnostics: bool = False,
         client_completion: ClientCompletion | None = None,
         rows: list[dict] | ResolvedRetrieval | None = None,
+        on_stage: StageCallback | None = None,
     ) -> dict:
         """Answer a question from retrieved evidence with verifiable citations.
 
@@ -286,58 +288,63 @@ class Engine(EngineProviders):
                 server-side. ``None`` keeps the server model.
             rows: Pre-retrieved rows (or a :class:`ResolvedRetrieval`); the
                 Engine skips retrieval and answers from them.
+            on_stage: Called with each answer stage as its work starts. It
+                receives stage names only and never changes the result.
         """
         self._check_open()
         from .core.answer.pipeline import answer as core_answer
+        from .core.answer.progress import reporting
 
-        effective, binding = self._resolve_bound(collection_name)
-        if binding is not None and binding.user:
-            engine_profiles.refuse_caller_inputs(binding, client_completion, rows)
-            return await engine_profiles.answer(
-                self,
-                binding,
-                question,
-                collection_name,
-                values={
-                    "top_k": top_k,
-                    "similarity_threshold": similarity_threshold,
-                    "rerank": rerank,
-                    "hybrid": hybrid,
-                    "expand_window": expand_window or None,
-                    "metadata_filter": metadata_filter,
-                    "include_diagnostics": include_diagnostics or None,
-                },
+        with reporting(on_stage):
+            effective, binding = self._resolve_bound(collection_name)
+            if binding is not None and binding.user:
+                engine_profiles.refuse_caller_inputs(binding, client_completion, rows)
+                return await engine_profiles.answer(
+                    self,
+                    binding,
+                    question,
+                    collection_name,
+                    values={
+                        "top_k": top_k,
+                        "similarity_threshold": similarity_threshold,
+                        "rerank": rerank,
+                        "hybrid": hybrid,
+                        "expand_window": expand_window or None,
+                        "metadata_filter": metadata_filter,
+                        "include_diagnostics": include_diagnostics or None,
+                    },
+                    settings=effective,
+                )
+            embed_model, identity = embedding_for(self, collection_name, binding)
+            complete, effective, source = select_completion(
+                effective, client_completion, self._get_answer_llm
             )
-        embed_model, identity = embedding_for(self, collection_name, binding)
-        complete, effective, source = select_completion(
-            effective, client_completion, self._get_answer_llm
-        )
-        verify_complete, verify_unavailable_reason = build_verifier(
-            effective, self._verify_llm_factory, self.redact
-        )
+            verify_complete, verify_unavailable_reason = build_verifier(
+                effective, self._verify_llm_factory, self.redact
+            )
 
-        return await core_answer(
-            question,
-            top_k=top_k,
-            similarity_threshold=similarity_threshold,
-            rerank=rerank,
-            hybrid=hybrid,
-            expand_window=expand_window,
-            collection_name=collection_name,
-            metadata_filter=metadata_filter,
-            include_diagnostics=include_diagnostics,
-            complete=complete,
-            verify_complete=verify_complete,
-            verify_unavailable_reason=verify_unavailable_reason,
-            completion_source=source,
-            rows=rows,
-            reranker=self._reranker,
-            store=self._store,
-            effective_settings=effective,
-            embed_model=embed_model,
-            embedding_identity=identity,
-            query_cache=self._query_cache,
-        )
+            return await core_answer(
+                question,
+                top_k=top_k,
+                similarity_threshold=similarity_threshold,
+                rerank=rerank,
+                hybrid=hybrid,
+                expand_window=expand_window,
+                collection_name=collection_name,
+                metadata_filter=metadata_filter,
+                include_diagnostics=include_diagnostics,
+                complete=complete,
+                verify_complete=verify_complete,
+                verify_unavailable_reason=verify_unavailable_reason,
+                completion_source=source,
+                rows=rows,
+                reranker=self._reranker,
+                store=self._store,
+                effective_settings=effective,
+                embed_model=embed_model,
+                embedding_identity=identity,
+                query_cache=self._query_cache,
+            )
 
     def list_collections(self) -> list[str]:
         """Return every collection name in the engine's store."""

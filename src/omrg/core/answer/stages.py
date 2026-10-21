@@ -24,6 +24,7 @@ from pydantic import ValidationError as PydanticValidationError
 
 from .citations import build_citations, parse_citation_ordinals
 from .evidence import _evidence_rows, _labelled_nodes
+from .progress import AnswerStage, report_stage
 from .synthesis import CompletionSeam, SeamCompletionError, run_synthesis
 from .verify import VerificationFields, run_verification_stage
 
@@ -145,6 +146,7 @@ async def synthesise_answer(
         The :class:`SynthesisOutcome`.  This seam never raises for a
         model failure; it reports ``failure_stage="generation"``.
     """
+    report_stage(AnswerStage.WRITING)
     nodes = _labelled_nodes(evidence)
     attempts = 0
 
@@ -237,6 +239,7 @@ def resolve_citations(
     Returns:
         The :class:`CitationOutcome`.
     """
+    report_stage(AnswerStage.CITING)
     try:
         ordinals = parse_citation_ordinals(text, len(evidence))
         citations = build_citations(evidence, ordinals)
@@ -281,6 +284,9 @@ async def verify_answer(
     """
     if not (grounded and getattr(answer_block, "verify_claims", False)):
         return NO_VERIFICATION
+    if verify_complete is not None:
+        # No judge model means no judge call, so no stage (design D3).
+        report_stage(AnswerStage.VERIFYING)
     return await run_verification_stage(
         text,
         evidence,

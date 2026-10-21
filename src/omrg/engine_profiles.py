@@ -20,11 +20,13 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from .core.pipelines import RunStatus
+from .core.answer.progress import AnswerStage, report_stage
+from .core.pipelines import EventKind, RunStatus
 from .core.profiles.readiness import slot_title
 
 if TYPE_CHECKING:
-    from .core.pipelines import PipelineResult
+    from .core.pipelines import PipelineEvent, PipelineResult
+    from .core.pipelines.events import EventSink
     from .core.profiles.catalogue import ProfileBinding
 
 T = TypeVar("T")
@@ -158,10 +160,12 @@ async def _run_async(
     inputs: Mapping[str, Any],
     collection: str,
     values: Mapping[str, Any],
+    on_event: EventSink | None = None,
 ) -> tuple[PipelineResult, list[str]]:
     graph = slot_graph(engine._resolver(), binding, slot)
     graph, unused = apply_request(graph, collection, values, engine._pipelines.catalogue())
-    return await engine.run_pipeline({"graph": graph}, inputs=dict(inputs)), unused
+    result = await engine.run_pipeline({"graph": graph}, inputs=dict(inputs), on_event=on_event)
+    return result, unused
 
 
 def _failure(binding: ProfileBinding, slot: str, result: PipelineResult) -> ProfileRunError:
@@ -223,6 +227,16 @@ def refuse_caller_inputs(binding: ProfileBinding, client_completion: Any, rows: 
         )
 
 
+async def _report_searching(event: PipelineEvent) -> None:
+    """Report ``searching`` when the first graph step starts (design D4).
+
+    Later stages come from the shared steps the answer adapters call, so the
+    sink reads no node id and keeps no node-to-stage map.
+    """
+    if event.kind is EventKind.NODE_STARTED:
+        report_stage(AnswerStage.SEARCHING)
+
+
 async def answer(
     engine: Any,
     binding: ProfileBinding,
@@ -230,15 +244,27 @@ async def answer(
     collection: str,
     *,
     values: Mapping[str, Any],
+    settings: Any = None,
 ) -> dict[str, Any]:
     """Answer through the Answer pipeline of a user profile.
+
+    Args:
+        engine: The Engine that runs the graph.
+        binding: The user-profile binding of the collection.
+        question: The question.
+        collection: The collection to answer from.
+        values: Request values; ``None`` means "not set".
+        settings: The collection's resolved settings. With answering
+            switched off no stage is reported, as on the direct path.
 
     Returns:
         The result dict of ``Engine.answer``. With diagnostics it lists the
         request values that had no effect under ``unused_request_values``.
     """
+    block = getattr(settings, "answer", None)
+    sink = None if block is not None and not block.enabled else _report_searching
     result, unused = await _run_async(
-        engine, binding, "answer", {"query": question}, collection, values
+        engine, binding, "answer", {"query": question}, collection, values, sink
     )
     _require_success(binding, "answer", result)
     answer_result = dict(result.outputs["answer"])
