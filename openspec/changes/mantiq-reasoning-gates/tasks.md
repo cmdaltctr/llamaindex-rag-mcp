@@ -42,7 +42,7 @@
 - [ ] 8.1 Add `compose_answer.build_reasoning_judge(answer_block)` returning the seam for `judge="seam"` and lazily importing `integrations/decision_onnx.py` or `integrations/nli.py` otherwise; verify a missing runtime raises at composition with the message naming `ANSWER__REASONING__JUDGE` and the extra, in `tests/test_answer_compose.py`.
 - [ ] 8.2 Implement `integrations/decision_onnx.py` (Julia 1 adapter: closed-choice request → option index and probabilities → text protocol reply with `judge_confidence`) behind an optional extra; verify with a fake ONNX session that the adapter emits a parseable four-way reply.
 - [ ] 8.3 Implement `integrations/nli.py` (cross-encoder adapter mapping entailment / contradiction / neutral to the four-way verdict with an `uncertain` band) behind an optional extra; verify the mapping table and band with unit tests.
-- [ ] 8.4 Smoke-test the Julia 1 ONNX export under ONNX Runtime in Python from a scratch script and record the outcome in the 39A protocol; verify by a recorded run log (pass or documented failure).
+- [ ] 8.4 Smoke-test the Julia 1 ONNX export under ONNX Runtime in Python from a scratch script and record the outcome in the 44A protocol; verify by a recorded run log (pass or documented failure).
 
 ## 9. Transports and docs
 
@@ -51,14 +51,14 @@
 
 ## 10. Experiments (design D9)
 
-- [ ] 10.1 Create `experiments/39a-tasdiq-judge-comparison-<date>/` from the protocol template: freeze the 120 Experiment 20 triples plus 60 new modal-qualifier triples, define cells (seam, `onnx_decision`, `nli`, lexical) and gates; verify `protocol.md` passes the experiment validity checklist before any run.
-- [ ] 10.2 Run 39A with checkpoint/resume and write `results.md`; verify all gate values are reported with the decision (which judges are viable locally).
-- [ ] 10.3 Create `experiments/39b-inference-form-benchmark-<date>/`: build the 150 to 200 item set (per form: valid, matching fallacy, non-exhaustive disjunction, strengthened qualifier, surplus content), with a development / test split; verify the item counts per category and the split are recorded in `ground-truth.json`.
-- [ ] 10.4 Run 39B and write `results.md` reporting labelling accuracy, per-check precision and recall, invalid rejection rate and valid false rejection rate against the gates; verify the report names the failing check classes if any gate fails.
-- [ ] 10.5 Create and run `experiments/39c-concept-frame-ablation-<date>/` (raw, multi-query, HyDE-style, concept frame) on the Experiment 35A subset plus the 40-question ambiguity set; verify `results.md` reports recall@10 and nDCG@10 per cell and the ambiguity-set delta against the 5-point gate.
+- [ ] 10.1 Create `experiments/44a-tasdiq-judge-comparison-<date>/` from the protocol template: freeze the 120 Experiment 20 triples plus 60 new modal-qualifier triples, define cells (seam, `onnx_decision`, `nli`, lexical) and gates; verify `protocol.md` passes the experiment validity checklist before any run.
+- [ ] 10.2 Run 44A with checkpoint/resume and write `results.md`; verify all gate values are reported with the decision (which judges are viable locally).
+- [ ] 10.3 Create `experiments/44b-inference-form-benchmark-<date>/`: build the 150 to 200 item set (per form: valid, matching fallacy, non-exhaustive disjunction, strengthened qualifier, surplus content), with a development / test split; verify the item counts per category and the split are recorded in `ground-truth.json`.
+- [ ] 10.4 Run 44B and write `results.md` reporting labelling accuracy, per-check precision and recall, invalid rejection rate and valid false rejection rate against the gates; verify the report names the failing check classes if any gate fails.
+- [ ] 10.5 Create and run `experiments/44c-concept-frame-ablation-<date>/` (raw, multi-query, HyDE-style, concept frame) on the Experiment 35A subset plus the 40-question ambiguity set; verify `results.md` reports recall@10 and nDCG@10 per cell and the ambiguity-set delta against the 5-point gate.
 
 ## 11. Decision record and close-out
 
-- [ ] 11.1 Write the ADR for the reasoning gates (decision on default state per profile, chosen judge, and what the 39C null or positive result means for the concept frame) in `docs/adr/`; verify it links the three results files and is listed in `ADR_README.md`.
+- [ ] 11.1 Write the ADR for the reasoning gates (decision on default state per profile, chosen judge, and what the 44C null or positive result means for the concept frame) in `docs/adr/`; verify it links the three results files and is listed in `ADR_README.md`.
 - [ ] 11.2 Apply any `documents.yaml` override the ADR authorises; verify the profile test asserts the override and `codebase.yaml` remains off.
 - [ ] 11.3 Run `./scripts/local_ci.sh` and `openspec validate --change mantiq-reasoning-gates --strict`; verify both pass before the PR to `v4`.

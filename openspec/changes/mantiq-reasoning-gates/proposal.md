@@ -52,8 +52,8 @@ also work without Paper 1, over unlabelled evidence.
   are closed-choice tasks. The completion seam stays the default judge; the
   design allows a local ONNX decision model (Julia 1) or a Natural Language
   Inference (NLI) cross-encoder to be injected through the same seam type.
-  Choice is settled by Experiment 39A, not by this proposal.
-- Three experiments (39A, 39B, 39C) and one ADR after the experiments.
+  Choice is settled by Experiment 44A, not by this proposal.
+- Three experiments (44A, 44B, 44C) and one ADR after the experiments.
 - **No breaking change.** With both flags off the answer result, prompts and
   status schema are unchanged.
 
@@ -86,7 +86,7 @@ behaviour.
 - **Settings / env**: `ANSWER__REASONING__CONCEPT_FRAME_ENABLED`,
   `ANSWER__REASONING__INFERENCE_GATE_ENABLED`, `ANSWER__REASONING__JUDGE`
   (`seam` | `onnx_decision` | `nli`). Profile YAML may override them; the
-  `documents` profile may enable them after Experiment 39.
+  `documents` profile may enable them after Experiment 44.
 - **Dependencies**: none in the base install. An ONNX decision model and an
   NLI cross-encoder are optional runtime downloads behind the `onnx_decision`
   and `nli` judge names, loaded lazily in `compose_answer.py`.
@@ -100,10 +100,10 @@ behaviour.
   ignore entries.
 - **Tests**: new `tests/test_reasoning_*.py` at the Core + MCP coverage tier
   (95 percent).
-- **Experiments**: `experiments/39a-tasdiq-judge-comparison-<date>/`,
-  `experiments/39b-inference-form-benchmark-<date>/`,
-  `experiments/39c-concept-frame-ablation-<date>/`. Experiment 37 is claimed
-  by `modular-ocr-workers-dots-mocr`; 38 is reserved for Paper 1.
+- **Experiments**: `experiments/44a-tasdiq-judge-comparison-<date>/`,
+  `experiments/44b-inference-form-benchmark-<date>/`,
+  `experiments/44c-concept-frame-ablation-<date>/`. Experiments 36 to 39, 41 and 42
+  are taken; 43 is reserved for Paper 1.
 - **Docs**: `docs/guides/reasoning-gates.md`, an update to
   `docs/guides/mcp-tools.md` for the new result block, and ADR-0xx once the
   experiments report.

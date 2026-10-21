@@ -31,7 +31,7 @@ See proposal.md, "Why". The relevant current state:
   byte-identical disabled path.
 - Reuse the ADR-059 stage as the Taṣdīq gate rather than adding a second
   judge loop.
-- Make the judge swappable so Experiment 39A can compare the cloud seam, a
+- Make the judge swappable so Experiment 44A can compare the cloud seam, a
   local ONNX decision model and an NLI cross-encoder on the same inputs.
 - Keep every reasoning object a frozen dataclass so results are serialisable
   and testable without a model.
@@ -99,7 +99,7 @@ runs in Python over those labels:
 Rationale: the reviewer objection to any "logic gate" run by an LLM is that
 the LLM grades its own homework. Putting the checks in deterministic code and
 confining the model to labelling keeps the gate auditable and gives Experiment
-39B a clean split between labelling accuracy and check correctness.
+44B a clean split between labelling accuracy and check correctness.
 Alternative considered: ask the judge "is this inference valid?" directly.
 Rejected for the reason above.
 
@@ -113,7 +113,7 @@ concept plus narrower concepts), exclude terms, and scope. They are passed to
 the existing search call as query text augmentation and a metadata filter
 hint; no new retrieval parameter is introduced in this change. Alternative
 considered: a graph of concepts with the five universals. Rejected as scope
-creep; the ablation in 39C decides whether the frame earns more machinery.
+creep; the ablation in 44C decides whether the frame earns more machinery.
 
 ### D5. Premise eligibility reads `authority_status` as an optional row field
 
@@ -156,10 +156,10 @@ keeps profile override behaviour identical to `verify_claims`.
 
 ### D9. Experiment numbering and gates
 
-Experiment 37 is claimed by `modular-ocr-workers-dots-mocr`; 38 is reserved
-for Paper 1. This change claims 39A, 39B, 39C.
+Experiments 36 to 39, 41 and 42 are taken; 43 is reserved
+for Paper 1. This change claims 44A, 44B, 44C.
 
-- **39A Taṣdīq judge comparison.** Inputs: the frozen 120 Experiment 20
+- **44A Taṣdīq judge comparison.** Inputs: the frozen 120 Experiment 20
   triples plus 60 new triples with modal qualifiers (so `conditions` is
   measured). Cells: GLM-5.3 seam (reference), Julia 1 via `onnx_decision`,
   an NLI cross-encoder via `nli`, lexical baseline. Metrics: four-way
@@ -167,7 +167,7 @@ for Paper 1. This change claims 39A, 39B, 39C.
   P95 latency, cost per claim. Gate for a local judge to be recommended:
   unsupported recall ≥ 0.90 and false rejection ≤ 0.10 on the 120-triple
   subset.
-- **39B Inference-form benchmark.** 150 to 200 items built from retrieved
+- **44B Inference-form benchmark.** 150 to 200 items built from retrieved
   premises over the quality corpus and the Paper 1 authority corpus: for
   each of the five forms, valid instances, the matching fallacy, a
   non-exhaustive disjunction, a strengthened qualifier, and a surplus-content
@@ -175,7 +175,7 @@ for Paper 1. This change claims 39A, 39B, 39C.
   recall per check, end-to-end invalid-inference rejection rate, valid
   inference false-rejection rate. Gate: invalid rejection ≥ 0.85 with valid
   false rejection ≤ 0.15.
-- **39C Concept-frame ablation.** Cells: raw query, multi-query rewrite,
+- **44C Concept-frame ablation.** Cells: raw query, multi-query rewrite,
   HyDE-style hypothetical passage, concept frame. Metrics: recall@10 and
   nDCG@10 on the Experiment 35A document subset plus a 40-question
   ambiguity set (terms with two corpus senses). Gate for keeping the frame
@@ -184,28 +184,28 @@ for Paper 1. This change claims 39A, 39B, 39C.
 
 ## Risks / Trade-offs
 
-- [The labeller mislabels the inference form] → 39B reports labelling
+- [The labeller mislabels the inference form] → 44B reports labelling
   accuracy separately from check correctness; `unclassified` maps to
   `unverifiable`, never `valid`, so a mislabel cannot admit a bad inference.
 - [Deterministic checks are too strict and reject sound prose] → the gate
-  reports rejected sentences with their failing checks; 39B measures valid
+  reports rejected sentences with their failing checks; 44B measures valid
   false rejection with a 0.15 ceiling; `no_surplus_content` uses normalised
-  token match with a stop-list, tuned on the 39B development split only.
-- [Four-way judge is worse than two-way on the original task] → 39A runs the
+  token match with a stop-list, tuned on the 44B development split only.
+- [Four-way judge is worse than two-way on the original task] → 44A runs the
   original two-way metrics on the same 120 triples under both prompts; if
   four-way regresses unsupported recall below 0.90 the prompt is revised
   before the gate is offered in any profile.
-- [The concept frame is just query rewriting] → 39C is designed to answer
+- [The concept frame is just query rewriting] → 44C is designed to answer
   exactly this; if the frame does not clear its gate it stays as an optional
   diagnostic and the paper reports the null result.
 - [Latency: one frame call plus one judge call per claim and per inference]
   → disclosed in the tool description; the `documents` profile is the only
-  candidate for a default-on and only after 39A/39B; the `codebase` profile
+  candidate for a default-on and only after 44A/44B; the `codebase` profile
   stays off.
 - [`pipeline.py` refactor introduces a regression] → done first, on its own
   commit, with the existing answer test files as the oracle.
-- [Julia 1 ONNX Python path is unverified] → a smoke task precedes 39A; if
-  the export does not run under ONNX Runtime in Python, 39A keeps the NLI
+- [Julia 1 ONNX Python path is unverified] → a smoke task precedes 44A; if
+  the export does not run under ONNX Runtime in Python, 44A keeps the NLI
   and seam cells and records the gap.
 
 ## Migration Plan
@@ -213,7 +213,7 @@ for Paper 1. This change claims 39A, 39B, 39C.
 1. Land D7 (results extraction) with tests green.
 2. Land `core/reasoning/` with settings default off and unit tests.
 3. Land the judge builder and adapters behind the `judge` setting.
-4. Run 39A, 39B, 39C; write the ADR.
+4. Run 44A, 44B, 44C; write the ADR.
 5. Only then consider `documents.yaml` overrides.
 
 Rollback: set both flags to `false` (the default). No data migration; no
@@ -221,9 +221,9 @@ stored artefacts change.
 
 ## Open Questions
 
-- Which NLI cross-encoder to use in 39A (a DeBERTa-v3 NLI checkpoint is the
+- Which NLI cross-encoder to use in 44A (a DeBERTa-v3 NLI checkpoint is the
   default candidate). Deferrable: the adapter interface does not depend on
   the checkpoint.
-- Whether the 40-question ambiguity set for 39C is drawn from the codebase
+- Whether the 40-question ambiguity set for 44C is drawn from the codebase
   corpus, the documents corpus, or both. Deferrable: it changes the
   experiment protocol, not the specs or tasks.

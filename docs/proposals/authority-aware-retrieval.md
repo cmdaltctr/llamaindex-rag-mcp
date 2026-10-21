@@ -157,7 +157,7 @@ search ──► dense + sparse ──► RRF ──► [authority resolver] ─
 
 ## Evaluation plan
 
-### Experiment 38: five cases, five metrics
+### Experiment 43: five cases, five metrics
 
 A synthetic corpus of fifteen documents, three per case type, with about sixty
 questions labelled with controlling, qualifying and superseded sources, an
@@ -237,7 +237,7 @@ Sixteen weeks from October 2026 to the end of January 2027.
 |---|---|
 | 1 to 2 | OpenSpec change reviewed, synthetic corpus and questions built, metrics frozen |
 | 3 to 6 | `core/authority/` extractor, sidecar, resolver, registry wiring, tests at the 95 percent tier |
-| 7 to 9 | Experiment 38 on the synthetic corpus, then the UK statute corpus |
+| 7 to 9 | Experiment 43 on the synthetic corpus, then the UK statute corpus |
 | 10 to 12 | Ablations, relation-typing model comparison, ADR, write-up |
 | 13 to 16 | Paper draft, reproducibility package, arXiv preprint, venue submission |
 

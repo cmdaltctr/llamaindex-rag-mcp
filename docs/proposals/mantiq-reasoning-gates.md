@@ -136,9 +136,9 @@ are byte-identical to today.
 
 ## Evaluation plan
 
-Three experiments. Numbers 37 and 38 are taken, so these are 39A to 39C.
+Three experiments. Numbers up to 43 are taken, so these are 44A to 44C.
 
-**39A. Which judge?** Rerun the 120 Experiment 20 triples, plus 60 new triples
+**44A. Which judge?** Rerun the 120 Experiment 20 triples, plus 60 new triples
 with modal qualifiers, under four cells: the cloud seam, Julia 1 (a 144M
 parameter open-weight decision model, ONNX), an NLI cross-encoder, and the
 lexical baseline. Metrics: four-way macro-F1, unsupported recall, false
@@ -147,7 +147,7 @@ judge is recommended only if it reaches unsupported recall ≥ 0.90 with false
 rejection ≤ 0.10 on the original 120. A positive result removes the cloud
 dependency that ADR-059 accepted.
 
-**39B. Does the inference gate catch bad reasoning?** Build 150 to 200 items
+**44B. Does the inference gate catch bad reasoning?** Build 150 to 200 items
 from retrieved premises. For each of the five forms: valid instances, the
 matching fallacy, a non-exhaustive disjunction, a strengthened qualifier, and
 a conclusion with surplus content. Metrics: labelling accuracy per form,
@@ -155,7 +155,7 @@ precision and recall per check, invalid-inference rejection rate, and
 valid-inference false-rejection rate. Gate: reject ≥ 85 percent of invalid
 inferences while wrongly rejecting ≤ 15 percent of valid ones.
 
-**39C. Is the concept frame more than query rewriting?** This is the objection
+**44C. Is the concept frame more than query rewriting?** This is the objection
 a reviewer will raise, so we answer it directly. Cells: raw query,
 multi-query rewrite, HyDE-style hypothetical passage, concept frame. Corpus:
 the Experiment 35A document subset plus 40 questions built around terms with
@@ -195,37 +195,37 @@ Paper 1, and runs about 14 weeks.
 | 2 to 3 | Four-way judge, condition capture, premise eligibility. Concept frame builder. |
 | 4 to 6 | Inference labeller, deterministic checks, answer gate, result block, transports. |
 | 6 | Judge adapters for the ONNX decision model and the NLI cross-encoder. Julia 1 ONNX smoke test. |
-| 7 to 8 | Experiment 39A. |
-| 8 to 10 | Build the 39B item set. Run 39B. |
-| 10 to 11 | Experiment 39C. |
+| 7 to 8 | Experiment 44A. |
+| 8 to 10 | Build the 44B item set. Run 44B. |
+| 10 to 11 | Experiment 44C. |
 | 12 to 14 | ADR, profile decision, paper draft, preprint. |
 
 ## Target venues
 
 - ACL or EMNLP findings, for the inference-validation framing.
 - SIGIR or ECIR, if the concept-frame ablation is strong.
-- JURIX or ICAIL, if the 39B item set leans on the legal corpus from Paper 1.
+- JURIX or ICAIL, if the 44B item set leans on the legal corpus from Paper 1.
 - The Muslims in ML workshop at NeurIPS as an early airing of the
   methodological framing.
 
 ## Risks and mitigations
 
 - **The labeller mislabels forms.** Mislabelled and unclassified items map to
-  `unverifiable`, never `valid`. 39B reports labelling accuracy on its own.
+  `unverifiable`, never `valid`. 44B reports labelling accuracy on its own.
 - **The checks are too strict.** Rejected sentences are reported with their
-  failing checks. 39B caps valid false rejection at 15 percent. The
+  failing checks. 44B caps valid false rejection at 15 percent. The
   surplus-content check uses normalised token match with a stop-list tuned on
   a development split only.
-- **The four-way prompt is worse than the two-way one.** 39A reruns the
+- **The four-way prompt is worse than the two-way one.** 44A reruns the
   original two-way metrics under both prompts. Below 0.90 unsupported recall,
   the prompt is revised before any profile turns the gate on.
-- **The concept frame adds nothing.** 39C is built to find that out. A null
+- **The concept frame adds nothing.** 44C is built to find that out. A null
   result is publishable and keeps the paper honest.
 - **Latency.** One frame call plus one judge call per claim and per inference.
   The tool description says so. Only the documents profile is a candidate for
-  default-on, and only after 39A and 39B.
+  default-on, and only after 44A and 44B.
 - **The Julia 1 ONNX path may not run in Python.** A smoke test comes first.
-  If it fails, 39A keeps the seam and NLI cells and records the gap.
+  If it fails, 44A keeps the seam and NLI cells and records the gap.
 
 ## Out of scope
 

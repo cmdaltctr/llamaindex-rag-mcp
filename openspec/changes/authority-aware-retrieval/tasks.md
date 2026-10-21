@@ -42,16 +42,16 @@
 - [ ] 6.3 Implement candidate-pair proposal from document-graph `similar` edges and untyped clause references with the per-source cap; verify a test that an all-pairs scan never happens (pair count ≤ cap × sources)
 - [ ] 6.4 Emit `relation_origin=model` edges with the model probability, and verify the resolver test that an `explicit_text` edge outranks a `model` edge for the same pair
 
-## 7. Experiment 38
+## 7. Experiment 43
 
-- [ ] 7.1 Create `experiments/38-authority-resolution-<date>/` from `EXP_PROTOCOL_TEMPLATE.md`, write the plan with the five pre-registered gates and the cell matrix, and verify the plan validator passes
+- [ ] 7.1 Create `experiments/43-authority-resolution-<date>/` from `EXP_PROTOCOL_TEMPLATE.md`, write the plan with the five pre-registered gates and the cell matrix, and verify the plan validator passes
 - [ ] 7.2 Build the synthetic corpus (15 documents, five case types) and ground truth (~60 questions with controlling / qualifying / superseded / `unresolved_conflict` / `as_of` labels); verify the ground-truth validator rejects a question missing the conflict label
 - [ ] 7.3 Assemble the real corpus: one UK Act plus at least three amending instruments from legislation.gov.uk with ~40 point-in-time questions; record source URLs and retrieval dates in `corpus/README.md`
 - [ ] 7.4 Build the relation-typing dataset (~200 labelled passage pairs) and verify inter-annotator spot check on 40 pairs is recorded
 - [ ] 7.5 Write `run_eval.py` with checkpoint/resume, per-stage JSONL traces, atomic `output/` writes, and `summarise_eval.py` computing the five authority metrics plus recall@k; verify a dry run on two questions produces a checkpoint and a summary
 - [ ] 7.6 Run all cells (baseline, deterministic, deterministic+nli, deterministic+onnx_decision if 6.1 passed, no-reconciliation ablation) paired by question; verify `output/` holds every cell's manifest with `authority.enabled` and `model_tier` recorded
 - [ ] 7.7 Run the relation-typing model comparison and record accuracy and macro-F1 per model in the report
-- [ ] 7.8 Write `report.md` separating measurements, explanations and decisions, and `analysis.py` (Jupytext percent format); verify `EXP_README.md` lists Experiment 38 with its verdict
+- [ ] 7.8 Write `report.md` separating measurements, explanations and decisions, and `analysis.py` (Jupytext percent format); verify `EXP_README.md` lists Experiment 43 with its verdict
 
 ## 8. Decision, docs and closure
 

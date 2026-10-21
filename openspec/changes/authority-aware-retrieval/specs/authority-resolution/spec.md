@@ -119,9 +119,9 @@ The resolver SHALL NOT change `score`, `score_kind`, or candidate order, and the
 - **WHEN** a row is `superseded` because of an `explicit_text` edge
 - **THEN** its `authority_reason` contains the relation, the origin `explicit_text` and the sentence that stated the supersession
 
-### Requirement: Experiment 38 pre-registers the authority metrics
-Before any default flip, the change SHALL run Experiment 38 with a synthetic corpus covering full supersession, general + specific, partial amendment, corroboration and unresolved conflict, then one real corpus of a UK statute and its amending instruments. It SHALL report stale authority rate, incorrect supersession rate, scope resolution accuracy, conflict detection recall and historical authority accuracy against a pre-registered gate for each, and SHALL report ablations for deterministic-only, model tier added, and resolver without the reconciliation step.
+### Requirement: Experiment 43 pre-registers the authority metrics
+Before any default flip, the change SHALL run Experiment 43 with a synthetic corpus covering full supersession, general + specific, partial amendment, corroboration and unresolved conflict, then one real corpus of a UK statute and its amending instruments. It SHALL report stale authority rate, incorrect supersession rate, scope resolution accuracy, conflict detection recall and historical authority accuracy against a pre-registered gate for each, and SHALL report ablations for deterministic-only, model tier added, and resolver without the reconciliation step.
 
 #### Scenario: Gate failure blocks promotion
-- **WHEN** Experiment 38 reports stale authority rate above its pre-registered gate
+- **WHEN** Experiment 43 reports stale authority rate above its pre-registered gate
 - **THEN** the `documents` profile keeps `authority.enabled: false` and the report records the failure as the reason

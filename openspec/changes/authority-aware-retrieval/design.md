@@ -10,7 +10,7 @@ See proposal.md, Why. The relevant current state:
 - `core/documents/doc_graph.py` builds a deterministic graph with `similar`, `category`, `keyword`, `heading_child` edges. Invariant 8: no LLM in graph construction.
 - ADR-057 and ADR-059 established the answer-side evidence/verdict shape and the injected-completion seam. The authority stage sits upstream of both.
 - Import-linter: `core-business-avoids-providers-transports` with `unmatched_ignore_imports_alerting = "error"`. Adding a source module and no ignore entry is the intended path.
-- Experiment numbering: 36 is used, 37 is claimed by `modular-ocr-workers-dots-mocr`. This change takes 38.
+- Experiment numbering: 36 to 39, 41 and 42 are taken. This change takes 43.
 
 ## Goals / Non-Goals
 
@@ -73,9 +73,9 @@ Alternatives: (a) encode dates in `metadata_filter`; (b) new parameter. (a) leak
 
 `core/authority/settings.py::AuthoritySettings` (pydantic, `extra="forbid"`) with `enabled: bool = False`, `model_tier: Literal["off","onnx_decision","nli"] = "off"`, `model: str = ""` (identity for the model tier), `max_candidate_pairs_per_source: int = 50`. Mirrored `AuthorityBlock` on `EffectiveSettings`. Profile overlay in `core/profiles/resolver.py` for `enabled` and `model_tier` only (the levers that differ per use case), env keys `AUTHORITY__ENABLED`, `AUTHORITY__MODEL_TIER`. `config/legacy.py` gains no entries (no renamed keys).
 
-### D7. Experiment 38 design
+### D7. Experiment 43 design
 
-- Synthetic corpus: 15 documents across the five case types (three per type), ~60 questions, each labelled with controlling / qualifying / superseded sources, an `as_of` where relevant, and an `unresolved_conflict` flag. Built by hand, checked in under `experiments/38-authority-resolution-<date>/corpus/`.
+- Synthetic corpus: 15 documents across the five case types (three per type), ~60 questions, each labelled with controlling / qualifying / superseded sources, an `as_of` where relevant, and an `unresolved_conflict` flag. Built by hand, checked in under `experiments/43-authority-resolution-<date>/corpus/`.
 - Real corpus: one UK Act with at least three amending statutory instruments from legislation.gov.uk, ~40 questions with point-in-time ground truth taken from the consolidated "changes to legislation" tables. Stored under `corpus/` with source URLs and retrieval dates.
 - Cells: baseline (authority off) × resolver on (deterministic only) × resolver on + `nli` × resolver on + `onnx_decision` × resolver on without the reconciliation step (ablation). Paired by question. Local hardware only for the deterministic and NLI cells; the ONNX decision-model cell runs locally if the export loads under ONNX Runtime Python, otherwise it is recorded as not run.
 - Gates (pre-registered, to be frozen in the plan file before any cell runs): stale authority rate ≤ 0.10 on synthetic and ≤ 0.20 on real; incorrect supersession rate ≤ 0.05; scope resolution accuracy ≥ 0.85; conflict detection recall ≥ 0.80; historical authority accuracy ≥ 0.85. Ordinary recall@k must not regress by more than 1 point (the resolver drops nothing, so this is a guard on the pipeline wiring).
