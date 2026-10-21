@@ -67,7 +67,15 @@ Tests of `split_claims` today: `tests/test_answer_verify.py:336` (cited sentence
 
 ### D1. Classify each line before the sentence split
 
-Walk the text line by line. Keep one flag for "inside a fenced block". A line that opens or closes a fence (three or more backticks or tildes after up to three spaces of indent, or deeper inside a list) toggles the flag and is skipped. Lines while the flag is on are skipped. Other structure lines are matched with small anchored patterns. The remaining lines go through the existing sentence split and attach logic unchanged.
+Walk the text line by line. Keep the open fence (its character and length), or none. The fence rules follow CommonMark:
+
+- An opening fence is three or more backticks or tildes at the start of the line, after any indent (lists indent fences deeper than three spaces). A backtick fence's info string must not contain a backtick. So the line ```` ```uv sync``` installs it [1]. ```` is prose, not a fence.
+- A closing fence uses the same character, at least as many of it as the opening fence, and nothing after it but spaces. So `~~~` inside a backtick block does not close it.
+- The opening line, the closing line and every line between them are skipped.
+
+Other structure lines are matched with small anchored patterns. The remaining lines go through the existing sentence split and attach logic unchanged.
+
+A plain toggle on any fence-like line is not enough. The probe on `1d7d212` shows the inline case above is a real claim today. A toggle would open a fence there and hide every claim after it.
 
 Alternative: use a markdown library (for example `markdown-it-py`). Rejected: a new core dependency needs approval, and the line rules are short and testable.
 
@@ -83,7 +91,9 @@ When the splitter skips a line, it clears `last_text`. A marker-only line after 
 
 ### D4. Zero judgeable claims reports `verification_skipped`
 
-After this fix, a grounded answer can have zero claims more often (for example, an answer whose only citation sits under a code block). Today zero claims gives `verified=true` after zero calls. That claims a check that did not happen. The fix: when `verify_claims` finds no claim, the stage returns `verification_skipped="no verifiable claims (cited lines are headings or code)"` with `verified` absent. The status stays `ok`. The web already shows `verification_skipped` (`web/src/chat/AssistantTurn.tsx:81-83`) and shows the blue "Cited" badge because `verified` is absent (`answerStatus.ts:19-29`). The field is an existing free-text string (`openapi.yaml:5119-5124`), so only its description changes. This replaces the assertion in `tests/test_answer_verify.py:606`.
+After this fix, a grounded answer can have zero claims more often (for example, an answer whose only citation sits under a code block). Zero claims also happens today when the only marker leads the answer (`[1]` then uncited text). Today zero claims gives `verified=true` after zero calls. That claims a check that did not happen. The fix: when `verify_claims` finds no claim, it sets `skipped_reason="no verifiable claims (no cited prose sentence)"`. The reason names no construct, because the leading-marker case has no heading or code. `run_verification_stage` already maps a `skipped_reason` to `verification_skipped` with `verified` absent (`verify.py:373-380`), so the stage needs no change. The diagnostics report `verification_calls=0`. The status stays `ok`. The web already shows `verification_skipped` (`web/src/chat/AssistantTurn.tsx:81-83`) and shows the blue "Cited" badge because `verified` is absent (`answerStatus.ts:19-29`). The field is an existing free-text string (`openapi.yaml:5119-5124`), so only its description changes. This replaces the assertion in `tests/test_answer_verify.py:606`.
+
+The main spec scenario "Verification enabled" says the result SHALL include a `verified` field whenever verification runs on a cited answer. That was already wrong: a failing run reports `unverified_claims` and a degraded run reports `verification_skipped`, and neither carries `verified` (`results.py:215-220`). D4 adds one more case without `verified`. So the delta spec modifies that requirement: the result reports exactly one outcome, `verified=true`, `unverified_claims` or `verification_skipped` (root gotcha 12: fix the baseline, do not work around it).
 
 ### D5. No new result field
 
@@ -108,7 +118,8 @@ The spec delta and tasks follow the recommendations below. If you choose another
 - [A model writes a real claim as a heading, for example `## Ollama needs 8 GB RAM [1]`] → The claim is not judged. Mitigation: the ordinal stays in `citations`; prose claims are the normal shape. Accept.
 - [A cited command inside a code block is no longer checked] → Mitigation: the explaining sentence is still judged. Accept, per open question 1.
 - [An unclosed fence hides the prose after it] → Mitigation: a test pins this; it matches CommonMark. If live answers show unclosed fences often, revisit.
-- [A line classifier misreads an edge case, for example `---` inside a YAML block in a fence] → Mitigation: the fence flag is checked first, so lines inside a fence are skipped before the rule check.
+- [A line classifier misreads an edge case, for example `---` inside a YAML block in a fence] → Mitigation: the fence state is checked first, so lines inside a fence are skipped before the rule check.
+- [A fence-like prose line hides later claims] → Mitigation: the CommonMark open and close rules in D1. Guard tests pin inline triple backticks and a tilde line inside a backtick block.
 - [`verification_skipped` for zero claims looks like a judge fault] → Mitigation: the reason text names the cause in plain words.
 
 ## Migration Plan

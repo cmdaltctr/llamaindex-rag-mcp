@@ -20,11 +20,11 @@ None.
 
 ### Modified Capabilities
 
-- `grounded-answer-synthesis`: adds requirements that state which answer segments are claims, how a citation on a non-claim line is handled, and what an answer with no judgeable claim reports.
+- `grounded-answer-synthesis`: adds requirements that state which answer segments are claims, how a citation on a non-claim line is handled, and what an answer with no judgeable claim reports. Modifies "Claim verification is an optional stage gated by configuration": its "Verification enabled" scenario said the result always has a `verified` field, which was already false for failing and degraded runs.
 
 ## Impact
 
-- Code: `src/omrg/core/answer/verify.py` (`split_claims`, `verify_claims`). No other module changes.
+- Code: `src/omrg/core/answer/verify.py` (`split_claims`, `verify_claims`, docstrings). `run_verification_stage` already maps a skip reason, so no other module changes.
 - Tests: `tests/test_answer_verify.py` (new failing-first tests per construct).
 - Contract: `src/omrg/transports/api/openapi.yaml` (`verification_skipped` description text only).
 - Docs: `docs/guides/mcp-tools.md` (Claim verification section), `docs/guides/configuration.md` (`verify_claims` row, if the per-claim cost text needs the word "prose").

@@ -49,10 +49,19 @@ When claim verification runs, the pipeline SHALL send to the judge only prose se
 - **WHEN** verification runs
 - **THEN** the judge SHALL receive that sentence as a claim
 
+#### Scenario: Fence delimiters follow CommonMark
+
+- **GIVEN** `ANSWER__VERIFY_CLAIMS=true`
+- **AND** the answer contains the line ```` ```uv sync``` installs it [1]. ```` followed by the cited sentence `Ollama needs 8 GB of memory [1].`
+- **AND** a later fenced block opens with `` ``` ``, holds the line `~~~`, and closes with `` ``` ``
+- **WHEN** verification runs
+- **THEN** the judge SHALL receive both cited sentences as claims, because a backtick line whose info string holds a backtick is not a fence
+- **AND** the line `~~~` SHALL NOT close the backtick block
+
 #### Scenario: A structure-only answer section does not change the status
 
 - **GIVEN** `ANSWER__VERIFY_CLAIMS=true` and the judge returns `unsupported` for any heading or fence line
-- **AND** every cited prose sentence of the answer is supported
+- **AND** the answer has at least one cited prose sentence, and every cited prose sentence is supported
 - **WHEN** verification completes
 - **THEN** the result SHALL have `status="ok"` and `verified=true`
 
@@ -87,3 +96,46 @@ When claim verification is enabled and the answer is grounded, but no cited pros
 - **THEN** no judge call SHALL be made
 - **AND** the result SHALL have `status="ok"` with `verification_skipped` naming that no claim could be verified
 - **AND** the result SHALL NOT have a `verified` field
+
+#### Scenario: The only marker leads the answer
+
+- **GIVEN** `ANSWER__VERIFY_CLAIMS=true`
+- **AND** the answer is a line that holds only `[1]`, followed by uncited prose
+- **WHEN** the answer pipeline runs
+- **THEN** no judge call SHALL be made
+- **AND** the result SHALL have `status="ok"` with `verification_skipped` and no `verified` field
+
+## MODIFIED Requirements
+
+### Requirement: Claim verification is an optional stage gated by configuration
+
+The pipeline SHALL provide an optional claim-verification stage that
+verifies each cited claim against its cited evidence before reporting `ok`.
+The stage SHALL be disabled by default and SHALL be enabled by the
+`ANSWER__VERIFY_CLAIMS` setting. When disabled, the existing referential-only
+`ok` guarantee SHALL remain unchanged.
+
+#### Scenario: Verification disabled by default
+
+- **GIVEN** the default configuration
+- **WHEN** an answer is produced with at least one valid citation
+- **THEN** the result SHALL have `status="ok"` with no `verified` field
+- **AND** no verification model call SHALL be made
+
+#### Scenario: Verification enabled
+
+- **GIVEN** `ANSWER__VERIFY_CLAIMS=true` and a verification provider is
+  configured
+- **WHEN** an answer is produced with at least one valid citation
+- **THEN** the pipeline SHALL verify each cited prose claim against its
+  cited evidence
+- **AND** the result SHALL report exactly one verification outcome:
+  `verified=true`, an `unverified_claims` list, or `verification_skipped`
+  with a reason
+
+#### Scenario: Verification enabled but no citations
+
+- **GIVEN** `ANSWER__VERIFY_CLAIMS=true`
+- **WHEN** an answer is produced with no valid citations
+- **THEN** the result SHALL have `status="generation_unverified"` as before
+- **AND** no verification model call SHALL be made
