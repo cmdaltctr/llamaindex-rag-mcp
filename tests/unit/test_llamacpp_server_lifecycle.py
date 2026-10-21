@@ -343,13 +343,21 @@ async def test_no_health_in_time_is_timeout_and_the_process_is_stopped(
     rig: Rig, tmp_path: Path
 ) -> None:
     rig.program.set_mode("hang")
+    children: list[subprocess.Popen[bytes]] = []
+
+    def spawn(argv: list[str], **kwargs: Any) -> subprocess.Popen[bytes]:
+        children.append(subprocess.Popen(argv, **kwargs))
+        return children[-1]
+
     quick = LlamacppServer(
-        rig.log, health_timeout=1.0, stop_grace=2.0, poll_interval=0.05, popen=subprocess.Popen
+        rig.log, health_timeout=1.0, stop_grace=2.0, poll_interval=0.05, popen=spawn
     )
     await quick.start(rig.config())
     await await_until(lambda: quick.status().state == "failed")
     assert quick.status().reason == "timeout"
-    pid = rig.last_pid()
+    # Take the pid from the spawn, not from starts.log: under load the 1 s
+    # health timeout can stop the fake before it writes its pid there.
+    pid = children[-1].pid
     await await_until(lambda: not rig.alive(pid))
     await quick.shutdown()
 
