@@ -124,7 +124,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # Merge of v3 into add-judge-model-setting (2026-10-20): 7213 at the merge base, +48 +112.
 # +52 (2026-10-21, fix-claim-splitter-non-claims): markdown-structure claim splitter cases
 # in test_answer_verify.py (34 -> 86 collected). No fastapi needed.
-_BASE_EXECUTED = 7425
+# +63 (2026-10-21, add-answer-stage-progress): stage reporter (7), direct-path stages (12),
+# Engine stages on both paths (29) and the streaming answer route (15). 15 need fastapi.
+_BASE_EXECUTED = 7488
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -407,7 +409,9 @@ if not _has_qwen_tokenizer:
 # +33 (2026-10-20, document-reading-settings): test_web_document_reading.py has a module-level
 # importorskip of fastapi.
 # Merge of v3 into add-judge-model-setting (2026-10-20): 1155 at the merge base, +32 +33 (1220).
-_WEB_EXTRA_CASES = 1220
+# +15 (2026-10-21, add-answer-stage-progress): test_web_answer_stream.py (10) and
+# test_web_answer_stream_live.py (5) import fastapi at module level (1235).
+_WEB_EXTRA_CASES = 1235
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)
