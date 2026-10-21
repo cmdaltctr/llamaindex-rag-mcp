@@ -591,6 +591,32 @@ The canvas of a built-in profile is read-only. The header shows "Built-in profil
 
 When a collection uses the profile that you edit, "Save revision" first opens the "Save this revision?" dialog. The dialog names the collections that the save changes. Select "Save revision" in the dialog to save. Select "Cancel" to save nothing. When no collection uses the profile, the save starts with no dialog. After a save, the status line names the collections that now use the new revision.
 
+### Answer progress
+
+An answer can take 30 to 60 seconds. While it runs, the turn shows the stage that is in progress and a seconds counter, for example "12 s". The counter starts when you send the question.
+
+| Stage | When it shows |
+|---|---|
+| Searching | Retrieval starts. |
+| Writing the answer | The answer model starts. It does not show when no passage was found or no model is ready. |
+| Checking citations | The `[n]` markers are matched to the passages. |
+| Verifying claims | Claim checks start. It shows only when claim checks are on and a judge model is set. |
+
+A finished stage keeps a tick. A stage that does not run never shows. A screen reader announces each new stage once, and it does not read the counter. Before the first stage, the turn shows "Waiting for the answer." and the counter. A user-profile collection runs one answer at a time, so a second answer can wait here.
+
+When the answer arrives, it replaces the progress. Chat stores the finished answer only. Stage names and times are never stored, so a reopened chat shows no progress.
+
+If you open another chat or press Retry while an answer runs, Chat stops the request, and the server cancels the answer. No failure line shows for it. On a user-profile collection, a step that has started finishes first.
+
+Chat reads the stages from a streamed route. It uses the blocking route only when the browser cannot read a streamed reply, or when the server has no stream route (404 or 405). Chat does not fall back after a refusal (400, 401, 403) or an outage (5xx). If the stream ends before the answer, the turn shows one failure line with Retry.
+
+| Route | Scope | Response |
+|---|---|---|
+| `POST /v1/collections/{collection}/answer` | `read` | The answer result as JSON. MCP clients and scripts use this route. |
+| `POST /v1/collections/{collection}/answer/stream` | `read` | The same body. `text/event-stream` with `stage` frames, then one `result` frame that holds the same JSON as the blocking route. |
+
+A `stage` frame holds only `stage`, `sequence` (from 1) and `elapsed_ms`. It never holds the question, passage text, answer text, a model name or an error. A request that the server refuses gets the same 400, 401, 403 or 503 as the blocking route, and no stream opens. The stream has no `retry:` line, and nothing reconnects. See [ADR-089](../adr/089-answer-stage-progress.md).
+
 ### Chat history
 
 Chat stores every finished answer in the workspace database, so a reload shows the chat again. Opening a stored chat does not call the model.
