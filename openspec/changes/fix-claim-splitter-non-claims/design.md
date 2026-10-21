@@ -103,9 +103,9 @@ The splitter leaves skipped lines out silently. `diagnostics.verification_calls`
 
 Experiment 20 judges frozen claim–evidence triples from `ground-truth.json` and never calls the answer pipeline or `split_claims` (`experiments/20-citation-faithfulness-2026-09-02/run_eval.py:18-22`). Its gates (recall, false rejection, latency) measure the judge, which this change does not touch. The change removes inputs that were never claims, so the gates stay valid.
 
-## Open questions for the user
+## Resolved questions
 
-The spec delta and tasks follow the recommendations below. If you choose another option, the delta spec and tasks change, so please answer before `apply`.
+On 2026-10-21 the user accepted the recommended option for all five questions. The spec delta and tasks follow these options.
 
 1. **What to skip.** Options: (a) headings and fence lines only; (b) also lines inside fences, horizontal rules, table separators and bare list markers. **Recommendation: (b).** The probe shows every one of these reaches the judge through the marker-only attach path, and none is a claim. A cited command inside a code block loses its check; the prose sentence that explains the command keeps its check.
 2. **A citation on a skipped line** (for example `## Installation [2]`). Options: (a) drop the line from the claims, keep the ordinal for grounding; (b) keep the heading text as a claim. **Recommendation: (a).** A heading names a topic, so the judge has nothing to entail. Same rule for a marker-only line after a skipped line (D3).

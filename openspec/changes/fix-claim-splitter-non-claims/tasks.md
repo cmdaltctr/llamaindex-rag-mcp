@@ -1,6 +1,6 @@
 # Tasks
 
-Before you start: get the user's answers to the open questions in design.md. These tasks follow the recommended options. Work in a feature worktree `llamaindex-rag-mcp-feat-fix-claim-splitter-non-claims` on branch `feat/fix-claim-splitter-non-claims`, forked from `v3`. Prepare it with `uv sync --frozen --extra web`.
+These tasks follow the options the user accepted on 2026-10-21 (design.md, Resolved questions). Work in a feature worktree `llamaindex-rag-mcp-feat-fix-claim-splitter-non-claims` on branch `feat/fix-claim-splitter-non-claims`, forked from `v3`. Prepare it with `uv sync --frozen --extra web`.
 
 Run every command below with `uv run --no-sync`. Plain `uv run` re-syncs the environment and removes the `web` extra. The OpenAPI and web tests then skip, and a skipped test looks like a pass.
 
