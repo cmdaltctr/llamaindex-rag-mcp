@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { json } from "./test/fakeServer";
 import { addWithKeyboard, choose, EMPTY_PIPELINE, findPalette, inspector, openAllSections, outline, runPanel, savedDocument, UNUSED_PROFILES } from "./test/helpers";
 import { CATALOGUE } from "./test/catalogueFixture";
@@ -8,6 +8,9 @@ import { mockReactFlow } from "./test/mockReactFlow";
 import { openStudio } from "./test/render";
 
 beforeAll(mockReactFlow);
+// Each test renders the whole canvas: up to 2 s on an idle machine and about three times
+// that while local CI runs the backend suite first, so the 5 s default is too tight.
+vi.setConfig({ testTimeout: 15_000 });
 
 async function setup(options: Parameters<typeof openStudio>[1] = {}) {
   const view = openStudio("#/studio/search-copy/ingest", { pipelines: [EMPTY_PIPELINE], profiles: UNUSED_PROFILES, ...options });
