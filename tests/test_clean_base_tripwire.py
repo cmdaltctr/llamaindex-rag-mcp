@@ -122,7 +122,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # reading body (16), OCR engine options (6) and document-reading route (33) cases. Measured
 # 7318 executed in the joined worktree with no ground truth and no tokenizer cache (+4 +3).
 # Merge of v3 into add-judge-model-setting (2026-10-20): 7213 at the merge base, +48 +112.
-_BASE_EXECUTED = 7373
+# +52 (2026-10-21, fix-claim-splitter-non-claims): markdown-structure claim splitter cases
+# in test_answer_verify.py (34 -> 86 collected). No fastapi needed.
+_BASE_EXECUTED = 7425
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.

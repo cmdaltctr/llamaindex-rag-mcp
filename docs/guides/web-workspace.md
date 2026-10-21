@@ -391,7 +391,7 @@ The server keeps the last 1,000 log records in memory and writes no log file. Th
 
 ### Claim check judge
 
-Settings > Chat has a "Claim check judge" block below the Chat choice. The judge checks each cited claim in an answer against its cited passage ([ADR-059](../adr/059-claim-verification-stage.md)). The block shows the judge provider and the judge model, each with its source. An alias shows with the provider it resolves to, for example "cloud (OpenRouter)".
+Settings > Chat has a "Claim check judge" block below the Chat choice. The judge checks each cited prose sentence in an answer against its cited passage ([ADR-059](../adr/059-claim-verification-stage.md)). The block shows the judge provider and the judge model, each with its source. An alias shows with the provider it resolves to, for example "cloud (OpenRouter)".
 
 The judge model is empty by default. The default provider, OpenRouter, has no default model. The block then shows "Not set" and says: "Claim checks are skipped until you set a judge model."
 

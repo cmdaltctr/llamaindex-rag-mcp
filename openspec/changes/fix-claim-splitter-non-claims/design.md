@@ -70,7 +70,7 @@ Tests of `split_claims` today: `tests/test_answer_verify.py:336` (cited sentence
 Walk the text line by line. Keep the open fence (its character and length), or none. The fence rules follow CommonMark:
 
 - An opening fence is three or more backticks or tildes at the start of the line, after any indent (lists indent fences deeper than three spaces). A backtick fence's info string must not contain a backtick. So the line ```` ```uv sync``` installs it [1]. ```` is prose, not a fence.
-- A closing fence uses the same character, at least as many of it as the opening fence, and nothing after it but spaces. So `~~~` inside a backtick block does not close it.
+- A closing fence uses the same character, at least as many of it as the opening fence, and nothing after it but spaces or citation markers. So `~~~` inside a backtick block does not close it. CommonMark does not allow the marker, but models often write ```` ``` [1] ````. If that line left the fence open, every later claim would be hidden.
 - The opening line, the closing line and every line between them are skipped.
 
 Other structure lines are matched with small anchored patterns. The remaining lines go through the existing sentence split and attach logic unchanged.

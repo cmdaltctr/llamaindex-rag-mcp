@@ -5120,9 +5120,9 @@ components:
           type: string
           description: >
             Present only when claim verification was enabled but could
-            not run (provider unavailable, call failure, or every
-            verdict unparseable). Names the reason; the referential-only
-            ok guarantee is retained.
+            not run (provider unavailable, call failure, every verdict
+            unparseable, or no cited prose sentence to check). Names the
+            reason; the referential-only ok guarantee is retained.
 
     AnswerCitation:
       type: object

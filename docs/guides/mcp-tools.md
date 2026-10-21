@@ -183,7 +183,8 @@ Every result carries `query`, `answer`, `citations[]`, `evidence[]`,
 verification ran, it also adds `verification_ms` and `verification_calls`,
 kept separate from retrieval and generation timings. When verification
 ran and passed, the result carries `verified: true`; when the judge could
-not run, the result carries `verification_skipped` with the reason (see
+not run or had no cited prose sentence to check, the result carries
+`verification_skipped` with the reason (see
 [Claim verification](#claim-verification-optional)).
 
 Citations and evidence rows carry `ordinal`, `chunk_id`, `chunk_ids`,
@@ -240,12 +241,29 @@ adds an LLM judge that closes this gap (security review F4; mitigated by
 
 The judge splits the answer into cited claims and evaluates each against
 the text of the evidence its citation references — one judge call **per
-cited claim**, to the **configured judge provider** (`ANSWER__VERIFY_PROVIDER`;
-default `cloud`, aliasing the configured cloud backend — experiment 20
+cited prose sentence**, to the **configured judge provider**
+(`ANSWER__VERIFY_PROVIDER`; default `cloud`, aliasing the configured cloud backend — experiment 20
 measured P95 ≈ 3.3 s per claim on the GLM-5.3 cloud judge, and a local
 `qwen3:4b` judge was infeasible, so the cloud path is the only tested
 one). This is an explicit opt-in against the local-first policy of
 ADR-024. Choose it knowingly.
+
+Only cited prose sentences are judged. The splitter skips these markdown
+structure lines and sends none of them to the judge:
+
+- ATX headings (`#` to `######`) and setext heading underlines.
+- Code-fence lines (```` ``` ```` or `~~~`) and every line inside a fenced
+  code block.
+- Horizontal rules (`---`, `***`, `* * *`).
+- Table separator rows (`|---|---|`).
+- Bare list markers (`-`, `1.`).
+
+A citation marker on a skipped line is not judged. A line that holds only
+a marker and follows a skipped line is not judged either, and the marker
+does not attach to an earlier sentence. The marker still counts for
+grounding and stays in `citations`. Prose next to a heading or a code block
+is judged as before. Structure-like text inside a sentence, such as
+``Use `## Title` syntax [1].``, is also judged.
 
 Outcomes:
 
@@ -261,6 +279,10 @@ Outcomes:
   unparseable → status stays `ok` (the referential-only guarantee) with a
   `verification_skipped` field naming the reason. The answer is never
   blocked behind an unconfigured cloud dependency.
+- No cited prose sentence to check (for example, the only citation sits
+  on a heading) → no judge call. Status stays `ok`, the result has no
+  `verified` field, and `verification_skipped` is
+  `no verifiable claims (no cited prose sentence)`.
 - Disabled (the default) → no judge calls, no new fields, no behavioural
   change.
 

@@ -1,10 +1,13 @@
 """Claim verification — the optional LLM judge stage (ADR-059).
 
-Splits a grounded answer into claim-level units (sentences carrying at
-least one valid citation ordinal), pairs each claim with the text of the
-evidence its ordinal cites, and asks an injected async completion seam
-to judge each pair in isolation.  The judge receives no answer context;
-its verdict is ``supported``, ``unsupported``, or ``unparseable``.
+Splits a grounded answer into claim-level units (prose sentences carrying
+at least one valid citation ordinal), pairs each claim with the text of
+the evidence its ordinal cites, and asks an injected async completion
+seam to judge each pair in isolation.  The judge receives no answer
+context; its verdict is ``supported``, ``unsupported``, or
+``unparseable``.  Markdown structure is never a claim: headings, setext
+underlines, code fences and the lines inside them, horizontal rules,
+table separator rows and bare list markers are skipped.
 
 Injection resistance (spec: grounded-answer-synthesis): evidence text is
 untrusted.  Every evidence block is wrapped in explicit ``<evidence>``
@@ -22,7 +25,7 @@ additive, injected design ADR-057 established for answering.
 from __future__ import annotations
 
 import re
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable, Iterator, Sequence
 from dataclasses import dataclass
 
 from .citations import parse_citation_ordinals
@@ -40,6 +43,27 @@ _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+|\n+")
 #: Bracket ordinal markers stripped from the claim text handed to the
 #: judge — the judge sees the claim, never the citation mechanics.
 _ORDINAL_MARKER = re.compile(r"\[[0-9,\s]*\]")
+
+#: Opening code fence (CommonMark): three or more backticks or tildes
+#: after any indent (list items indent fences), then the info string.
+_FENCE_OPEN = re.compile(r"^\s*(`{3,}|~{3,})(.*)$")
+
+#: Markdown structure lines that carry no claim, matched after citation
+#: markers are removed: ATX headings, setext underlines and horizontal
+#: rules, table separator rows, and bare list markers.
+_STRUCTURE_LINE = re.compile(
+    r"""^(?:
+        \#{1,6}(?:\s.*)?
+      | =+ | -+
+      | (?:-[ \t]*){3,} | (?:\*[ \t]*){3,} | (?:_[ \t]*){3,}
+      | (?=[^|]*\|)(?=[^-]*-)[|:\- \t]+
+      | [*+] | \d{1,9}[.)]
+    )$""",
+    re.VERBOSE,
+)
+
+#: ``skipped_reason`` when a grounded answer has no cited prose sentence.
+_NO_CLAIMS_REASON = "no verifiable claims (no cited prose sentence)"
 
 
 @dataclass(frozen=True)
@@ -70,8 +94,8 @@ class VerificationOutcome:
             unparseable — an unparseable claim is never silently
             passed).
         skipped_reason: Set when the run cannot count as either a pass
-            or a fail — currently only when every verdict was
-            unparseable.  The pipeline maps this to
+            or a fail: every verdict was unparseable, or no cited prose
+            sentence was left to judge.  The pipeline maps this to
             ``verification_skipped``.
         calls: Number of judge completions made.
     """
@@ -92,13 +116,71 @@ class VerificationOutcome:
         )
 
 
+def _fence_open(line: str) -> tuple[str, int] | None:
+    """Return the ``(character, length)`` of an opening code fence, else ``None``.
+
+    A backtick fence's info string cannot hold a backtick (CommonMark),
+    so a prose line with inline triple backticks is not a fence.
+    """
+    match = _FENCE_OPEN.match(line)
+    if match is None:
+        return None
+    fence, info = match.group(1), match.group(2)
+    if fence[0] == "`" and "`" in info:
+        return None
+    return fence[0], len(fence)
+
+
+def _fence_closes(line: str, fence: tuple[str, int]) -> bool:
+    """Return True when *line* closes the open *fence*.
+
+    A closing fence uses the same character, at least as many of it, and
+    nothing else.  A citation marker on the closing line is allowed.
+    """
+    char, length = fence
+    stripped = _ORDINAL_MARKER.sub("", line).strip()
+    return len(stripped) >= length and stripped == char * len(stripped)
+
+
+def _is_structure_line(line: str) -> bool:
+    """Return True when *line* is markdown structure, not prose."""
+    stripped = _ORDINAL_MARKER.sub("", line).strip()
+    return bool(stripped) and _STRUCTURE_LINE.match(stripped) is not None
+
+
+def _prose_segments(text: str) -> Iterator[str | None]:
+    """Yield the sentence segments of the prose lines in *text*.
+
+    Yields ``None`` for each skipped structure line (code fences, the
+    lines inside them, headings, rules, table separators, bare list
+    markers), so the caller can break the trailing-citation chain.  An
+    unclosed fence skips to the end, as in CommonMark.
+    """
+    fence: tuple[str, int] | None = None
+    for line in text.split("\n"):
+        if fence is not None:
+            if _fence_closes(line, fence):
+                fence = None
+            yield None
+            continue
+        fence = _fence_open(line)
+        if fence is not None or _is_structure_line(line):
+            yield None
+            continue
+        yield from _SENTENCE_SPLIT.split(line)
+
+
 def split_claims(text: str, evidence_count: int) -> list[tuple[str, tuple[int, ...]]]:
     """Split answer text into ``(claim, ordinals)`` pairs.
 
-    Only sentences carrying at least one in-range citation ordinal are
-    claims: an uncited sentence is not asserted as grounded, so the
-    judge never sees it.  Ordinal markers are stripped from the claim
-    text.
+    Only prose sentences carrying at least one in-range citation ordinal
+    are claims: an uncited sentence is not asserted as grounded, so the
+    judge never sees it.  Markdown structure lines (ATX headings, setext
+    underlines, code-fence lines and every line inside a fenced block,
+    horizontal rules, table separator rows and bare list markers) are
+    never claims, even when they carry a marker.  A marker-only line
+    after a skipped line attaches to nothing; its ordinal still counts
+    for grounding.  Ordinal markers are stripped from the claim text.
 
     Args:
         text: The synthesised answer text.
@@ -118,7 +200,12 @@ def split_claims(text: str, evidence_count: int) -> list[tuple[str, tuple[int, .
     # attach to the sentence it cites — even when that sentence itself
     # carried no ordinal and so was not yet a claim.
     last_text: str | None = None
-    for sentence in _SENTENCE_SPLIT.split(text or ""):
+    for sentence in _prose_segments(text or ""):
+        if sentence is None:
+            # A skipped structure line breaks the chain: a marker after
+            # it did not cite the sentence before it.
+            last_text = None
+            continue
         stripped = sentence.strip()
         if not stripped:
             continue
@@ -258,8 +345,10 @@ async def verify_claims(
         The aggregate :class:`VerificationOutcome`.  All supported →
         ``verified=True``; any unsupported or unparseable claim →
         ``verified=False`` with those claims in ``failing``; every
-        verdict unparseable → ``skipped_reason`` names the rate (the
-        pipeline reports ``verification_skipped``).
+        verdict unparseable → ``skipped_reason`` names the rate; no
+        cited prose sentence to judge → ``skipped_reason`` says so and
+        no judge call is made (the pipeline reports
+        ``verification_skipped`` for both).
 
     Raises:
         Exception: Whatever the seam raises (network/timeout errors).
@@ -284,7 +373,10 @@ async def verify_claims(
         )
     failing = tuple(v for v in verdicts if v.verdict != VERDICT_SUPPORTED)
     skipped_reason: str | None = None
-    if verdicts and all(v.verdict == VERDICT_UNPARSEABLE for v in verdicts):
+    if not verdicts:
+        # Zero judge calls is not a pass: report the skip honestly.
+        skipped_reason = _NO_CLAIMS_REASON
+    elif all(v.verdict == VERDICT_UNPARSEABLE for v in verdicts):
         skipped_reason = "unparseable verdict rate 100.0%"
     return VerificationOutcome(
         verified=not failing and not skipped_reason,
