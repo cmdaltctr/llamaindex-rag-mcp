@@ -2,118 +2,151 @@
 
 ## Purpose
 
-Defines the opt-in reasoning gates around grounded answering: a
-conceptualisation gate that fixes what the query means before retrieval, an
-extended four-way claim judgement that keeps the evidence's own conditions, an
-inference gate that admits only valid inference forms over supported premises,
-and an answer gate that lets only validated content through while reporting
-what it rejected.
+Defines the opt-in manṭiq reasoning gates as pipeline graph operations and a
+template: a concept frame before retrieval, a four-verdict claim judgement
+that keeps the evidence's own conditions, an inference gate that admits only
+valid inference forms over supported premises, and an answer gate that lets
+only validated content through and reports the rest in its own result block.
+The base answer path is unchanged.
 
 ## ADDED Requirements
 
-### Requirement: Reasoning gates are opt-in and off by default
+### Requirement: Manṭiq runs only in a graph that uses its operations
 
-The system SHALL expose two independent settings,
-`answer.reasoning.concept_frame_enabled` and
-`answer.reasoning.inference_gate_enabled`, both defaulting to `false`. When
-both are `false` the answer operation SHALL produce a result, prompts and
-status identical to the operation without this capability, and SHALL make no
-additional model calls.
+The system SHALL register three graph operations, `mantiq.concept_frame`,
+`mantiq.tasdiq` and `mantiq.qiyas`, and SHALL run them only when a saved
+graph uses them. When no user profile binds a graph that uses a manṭiq
+operation, the output of `Engine.answer`, of a profile graph answer and of
+the MCP `answer_documents` tool SHALL be identical to the output without
+this capability, timings excluded. Built-in profiles SHALL NOT run a manṭiq
+operation.
 
-#### Scenario: Both gates disabled
+#### Scenario: No profile binds a manṭiq graph
 
-- **GIVEN** the default configuration
+- **GIVEN** golden outputs recorded before this capability existed
+- **WHEN** the same questions run through `Engine.answer`, a canonical answer
+  graph and the MCP `answer_documents` tool
+- **THEN** every output SHALL equal its golden output with timing fields
+  removed
+- **AND** the completion-call count SHALL equal the golden count
+
+#### Scenario: Registration alone changes nothing
+
+- **GIVEN** the operation catalogue with the three manṭiq operations
+- **WHEN** a client lists the catalogue
+- **THEN** it SHALL list the three operations with their parameters, ports
+  and bypass
+- **AND** the canonical ingestion, search and answer templates SHALL be
+  unchanged
+
+#### Scenario: Built-in profile
+
+- **GIVEN** a collection bound to the built-in `documents` profile
 - **WHEN** an answer is produced
-- **THEN** the result SHALL contain no `concept_frame` key and no `reasoning`
-  key
-- **AND** the completion-call count SHALL equal the count without this
-  capability
+- **THEN** no manṭiq operation SHALL run
+- **AND** the result SHALL contain no `mantiq` key
 
-#### Scenario: Gates are independent
+#### Scenario: User profile bound to the manṭiq template
 
-- **GIVEN** `concept_frame_enabled=true` and `inference_gate_enabled=false`
+- **GIVEN** a collection bound to a user profile whose Answer pipeline was
+  built from the `answer-mantiq` template
 - **WHEN** an answer is produced
-- **THEN** the result SHALL contain a `concept_frame` key and no `reasoning`
-  key
+- **THEN** the three manṭiq operations SHALL run in graph order
+- **AND** the result SHALL contain a `mantiq` block
 
-#### Scenario: Profile overrides the global default
+#### Scenario: A disabled manṭiq node passes its value through
 
-- **GIVEN** a collection bound to a profile whose YAML sets
-  `answer.reasoning.inference_gate_enabled: true`
-- **WHEN** an answer is produced against that collection
-- **THEN** the inference gate SHALL run for that collection
-- **AND** a collection bound to a profile without the key SHALL use the global
-  default
+- **GIVEN** a graph in which a manṭiq node is disabled
+- **WHEN** the graph runs
+- **THEN** the node's input value SHALL reach its output unchanged
+- **AND** the node SHALL make no model call
 
-### Requirement: The concept frame is bounded structured data built before retrieval
+### Requirement: The manṭiq answer template is published
 
-When `concept_frame_enabled` is `true`, the system SHALL build one
-`ConceptFrame` from the query through the injected completion seam before
-retrieval. The frame SHALL contain: `key_terms`, `resolved_meanings`,
+The system SHALL publish one `answer-mantiq` pipeline template beside the
+canonical ingestion, search and answer templates. It SHALL be the canonical
+answer graph shaped for the Engine, with `mantiq.concept_frame` before
+retrieval, claim verification bypassed, and `mantiq.tasdiq` then
+`mantiq.qiyas` before the `answer` output. Each experiment comparison cell
+SHALL be a named graph built by the same transform.
+
+#### Scenario: Templates are listed
+
+- **WHEN** a client calls `GET /v1/pipeline-templates`
+- **THEN** the response SHALL list `ingestion`, `search` and `answer` with
+  documents unchanged, then `answer-mantiq`
+- **AND** the `answer-mantiq` document SHALL pass draft validation on the
+  same Engine
+
+#### Scenario: The synthesis step keeps the original question
+
+- **GIVEN** the `answer-mantiq` template
+- **WHEN** its graph is inspected
+- **THEN** the concept frame output SHALL feed only the retrieval chain
+- **AND** the synthesis step SHALL receive the graph's original `query` input
+
+#### Scenario: Experiment cell is reproducible
+
+- **GIVEN** a named experiment cell
+- **WHEN** its graph is built twice from the same base answer graph
+- **THEN** both documents SHALL be equal
+
+### Requirement: The concept frame is bounded data that only rewrites the query
+
+`mantiq.concept_frame` SHALL build one frame from the query with the answer
+model. The frame SHALL hold `key_terms`, `resolved_meanings`,
 `canonical_concept`, `broader_concepts`, `narrower_concepts`,
-`excluded_concepts`, `scope` (one of `universal`, `particular`), `divisions`
-(routing categories), `operational_definition` and `definition_checks`
-(`inclusive`, `exclusive`, `non_circular`, each a boolean). Every list field
-SHALL be capped at 12 items and every string field at 512 characters. A frame
-that fails to parse SHALL be recorded as `concept_frame_skipped` with a reason
-and SHALL NOT fail the answer.
+`excluded_concepts`, `scope` (`universal` or `particular`), `divisions`,
+`operational_definition` and `definition_checks` (`inclusive`, `exclusive`,
+`non_circular`). Lists SHALL hold at most 12 items and strings at most 512
+characters. The frame SHALL appear in the node summary.
 
-#### Scenario: Frame built and echoed
+#### Scenario: Frame built and recorded
 
-- **GIVEN** `concept_frame_enabled=true` and a completion seam is available
-- **WHEN** an answer is produced
-- **THEN** the result SHALL contain a `concept_frame` object with every field
-  above
-- **AND** the object SHALL respect the item and character caps
-
-#### Scenario: Frame guides retrieval without importing it
-
-- **GIVEN** a built frame with non-empty `excluded_concepts`
-- **WHEN** retrieval runs
-- **THEN** the retrieval call SHALL receive the frame's include terms, exclude
-  terms and scope as plain data
-- **AND** `core/reasoning` SHALL NOT import `core/retrieval` or
-  `core/ingestion`
+- **GIVEN** an answer model is available
+- **WHEN** the node runs
+- **THEN** the node summary SHALL contain a frame with every field above,
+  within the caps
+- **AND** with `augment_query` on, the emitted query SHALL be the original
+  text followed by the canonical and narrower concepts
 
 #### Scenario: Unparseable frame degrades gracefully
 
-- **GIVEN** `concept_frame_enabled=true` and the seam returns text that does
-  not parse as a frame
-- **WHEN** an answer is produced
-- **THEN** the result SHALL contain `concept_frame_skipped` naming the reason
-- **AND** retrieval and answering SHALL proceed on the raw query
+- **GIVEN** the model returns text that does not parse as a frame
+- **WHEN** the node runs
+- **THEN** the node summary SHALL contain `concept_frame_skipped` naming the
+  reason
+- **AND** the emitted query SHALL equal the input query
 
-#### Scenario: No seam available
+#### Scenario: No answer model
 
-- **GIVEN** `concept_frame_enabled=true` and no completion seam is injected
-- **WHEN** an answer is produced
-- **THEN** the result SHALL contain `concept_frame_skipped` with reason
-  `no completion seam`
-- **AND** no error status SHALL be raised for the frame alone
+- **GIVEN** no answer model resource is available
+- **WHEN** the node runs
+- **THEN** the node summary SHALL contain `concept_frame_skipped` with reason
+  `no answer model`
+- **AND** the run SHALL NOT fail for the frame alone
 
-### Requirement: Extended claim judgement keeps evidence conditions
+### Requirement: The Taṣdīq judgement uses four verdicts and keeps conditions
 
-When `inference_gate_enabled` is `true`, the claim-verification judge SHALL
-return one of exactly four verdicts per claim: `supported`, `contradicted`,
-`unsupported`, `uncertain`. The judge SHALL also return `conditions`: the
-modal or conditional qualifiers present in the cited evidence for that claim
-(for example `may`, `if`, `unless`, `only when`), as a list of strings capped
-at 8 items. When `inference_gate_enabled` is `false` the two-way judge and its
+`mantiq.tasdiq` SHALL judge each cited claim with its own prompt and SHALL
+return one of `supported`, `contradicted`, `unsupported`, `uncertain`, or
+`unparseable` when the reply cannot be read. It SHALL also return
+`conditions`: the qualifiers in the cited evidence (for example `may`, `if`,
+`unless`, `only when`), at most 8. The base claim-verification verdicts and
 prompt SHALL be unchanged.
 
-#### Scenario: Four-way verdict when gate enabled
+#### Scenario: Four-verdict judgement
 
-- **GIVEN** `inference_gate_enabled=true` and a judge is configured
-- **WHEN** a claim is judged
-- **THEN** its verdict SHALL be one of the four values
+- **GIVEN** a cited claim and a judge
+- **WHEN** the node runs
+- **THEN** `mantiq.claims` SHALL give the claim one of the verdicts above
 - **AND** `conditions` SHALL list the qualifiers found in the cited evidence
 
-#### Scenario: Two-way verdict when gate disabled
+#### Scenario: Base verification is untouched
 
-- **GIVEN** `inference_gate_enabled=false` and `verify_claims=true`
+- **GIVEN** a canonical answer graph with claim verification on
 - **WHEN** a claim is judged
-- **THEN** the judge prompt SHALL be byte-identical to the prompt without this
-  capability
+- **THEN** the judge prompt SHALL be byte-identical to the ADR-059 prompt
 - **AND** the verdict SHALL be `supported`, `unsupported` or `unparseable`
 
 #### Scenario: Unsupported is not false
@@ -123,14 +156,29 @@ prompt SHALL be unchanged.
 - **THEN** the result SHALL NOT describe the claim as false or contradicted
 - **AND** the claim SHALL be excluded from the premise set
 
+### Requirement: A gate without a judge skips and leaves the answer unchanged
+
+When `mantiq.tasdiq` or `mantiq.qiyas` has no judge (no resource, a factory
+that returns nothing, or a factory that raises), the node SHALL report a
+skipped outcome with a reason and SHALL return the answer text, citations
+and status unchanged. It SHALL NOT raise.
+
+#### Scenario: No judge resource
+
+- **GIVEN** an `answer-mantiq` graph and no judge available
+- **WHEN** the graph runs
+- **THEN** `mantiq.outcome` SHALL be `skipped` with `mantiq.skipped_reason`
+  naming the cause
+- **AND** `answer`, `citations` and `status` SHALL equal the values the node
+  received
+
 ### Requirement: Premise eligibility respects authority labels when present
 
 When evidence rows carry an `authority_status` field (supplied by the
 authority-aware retrieval capability), a claim whose cited evidence is all
-`superseded` or `conflicting` SHALL be marked `uncertain` with
-`uncertainty_reason` naming the label, regardless of the judge's verdict.
-When no row carries the field, every `supported` claim SHALL be an eligible
-premise.
+`superseded` or `conflicting` SHALL be `uncertain` with `uncertainty_reason`
+naming the label, whatever the judge said. When no row carries the field,
+every `supported` claim SHALL be a premise.
 
 #### Scenario: Superseded evidence cannot support a premise
 
@@ -145,19 +193,33 @@ premise.
 - **WHEN** the premise set is built
 - **THEN** every claim with verdict `supported` SHALL be in the premise set
 
-### Requirement: Inferences are typed, checked and validated before they reach the answer
+### Requirement: Inferences are typed, checked and validated
 
-When `inference_gate_enabled` is `true`, every answer sentence that carries
-citations to two or more evidence rows, or that the judge marks as not
-directly entailed by any single cited row, SHALL produce an `InferenceRecord`
-with: `inference_id`, `premise_claim_ids`, `inference_type` from the closed
-set {`iqtirani_hamli`, `iqtirani_sharti`, `istithnai_muttasil_affirm`,
-`istithnai_muttasil_deny`, `istithnai_munfasil`, `unclassified`},
-`conclusion`, `validity_status` from {`valid`, `invalid`, `unverifiable`},
-and `checks`, an object with boolean results for `premises_supported`,
-`form_valid`, `no_affirmed_consequent`, `no_denied_antecedent`,
-`alternatives_exhaustive`, `qualifiers_preserved`, `no_surplus_content`.
-The record SHALL be `valid` only when every applicable check passes.
+`mantiq.qiyas` SHALL produce an `InferenceRecord` for each answer sentence
+that carries an inference marker or cites two or more evidence rows, cited or
+not. A record SHALL hold `inference_id`, `premise_claim_ids`, an
+`inference_type` from a closed set, `conclusion`, `validity_status`
+(`valid`, `invalid`, `unverifiable`) and boolean `checks`. A record SHALL be
+`valid` only when every applicable check passes.
+
+#### Scenario: Closed sets
+
+- **WHEN** a record is produced
+- **THEN** `inference_type` SHALL be one of `iqtirani_hamli`,
+  `iqtirani_sharti`, `istithnai_muttasil_affirm`, `istithnai_muttasil_deny`,
+  `istithnai_munfasil`, `unclassified`
+- **AND** `checks` SHALL hold `premises_supported`, `form_valid`,
+  `no_affirmed_consequent`, `no_denied_antecedent`,
+  `alternatives_exhaustive`, `qualifiers_preserved`, `quantity_preserved`,
+  `no_surplus_content`
+
+#### Scenario: Uncited inference sentence
+
+- **GIVEN** an answer sentence "Therefore B." with no citation, after cited
+  claims "A" and "if A then B"
+- **WHEN** the inference gate runs
+- **THEN** an `InferenceRecord` SHALL exist for that sentence
+- **AND** its `premise_claim_ids` SHALL name the two cited claims
 
 #### Scenario: Valid conditional chain
 
@@ -199,10 +261,27 @@ The record SHALL be `valid` only when every applicable check passes.
 - **THEN** `checks.qualifiers_preserved` SHALL be `false`
 - **AND** `validity_status` SHALL be `invalid`
 
+#### Scenario: Categorical quantity may not be strengthened
+
+- **GIVEN** supported premises "some A are B" and "all B are C" and the
+  conclusion "all A are C"
+- **WHEN** the inference gate runs
+- **THEN** the record SHALL have `inference_type="iqtirani_hamli"`
+- **AND** `checks.quantity_preserved` SHALL be `false` and `validity_status`
+  SHALL be `invalid`
+
+#### Scenario: Valid categorical chain
+
+- **GIVEN** supported premises "all A are B" and "all B are C" and the
+  conclusion "all A are C"
+- **WHEN** the inference gate runs
+- **THEN** `checks.quantity_preserved` SHALL be `true`
+- **AND** `validity_status` SHALL be `valid`
+
 #### Scenario: An uncertain premise cannot license a conclusion
 
-- **GIVEN** an inference whose `premise_claim_ids` include a claim with verdict
-  `uncertain`
+- **GIVEN** an inference whose `premise_claim_ids` include a claim with
+  verdict `uncertain`
 - **WHEN** the inference gate runs
 - **THEN** `checks.premises_supported` SHALL be `false`
 - **AND** `validity_status` SHALL be `unverifiable`
@@ -215,101 +294,97 @@ The record SHALL be `valid` only when every applicable check passes.
 - **THEN** `checks.no_surplus_content` SHALL be `false`
 - **AND** `validity_status` SHALL be `invalid`
 
-### Requirement: The answer gate admits only validated content and reports the rest
+### Requirement: The answer gate reports in its own block and keeps base fields
 
-When `inference_gate_enabled` is `true`, the returned answer text SHALL
-contain only sentences that are either a claim with verdict `supported` or the
-conclusion of an inference with `validity_status="valid"`. Every removed
-sentence SHALL appear in `result["reasoning"]["rejected"]` with its text,
-the reason (`verdict` or `validity_status`) and the failing check names. The
-result SHALL also carry `reasoning.claims` and `reasoning.inferences`. If the
-gate removes every sentence, the status SHALL be `generation_unverified` and
-the original text SHALL be preserved under `reasoning.original_answer`.
+`mantiq.qiyas` SHALL record `mantiq.claims`, `mantiq.inferences`,
+`mantiq.rejected` (text, reason, failing checks) and `mantiq.outcome`
+(`all_admitted`, `some_rejected`, `nothing_admitted` or `skipped`). With
+`filter_answer` on and at least one admitted sentence, `answer` SHALL hold
+only supported claims and valid conclusions. A manṭiq node SHALL NOT change
+`status`, `citations`, `evidence` or the base verification fields.
 
 #### Scenario: Only validated sentences remain
 
 - **GIVEN** an answer with one supported claim and one invalid inference
-- **WHEN** the answer gate runs
-- **THEN** the returned `answer` SHALL contain the supported claim only
-- **AND** `reasoning.rejected` SHALL contain the invalid inference with its
-  failing checks
+- **WHEN** the answer gate runs with `filter_answer` on
+- **THEN** `answer` SHALL contain the supported claim only
+- **AND** `mantiq.rejected` SHALL list the invalid inference with its failing
+  checks, and `mantiq.original_answer` SHALL hold the text before the gate
 
 #### Scenario: Nothing survives
 
 - **GIVEN** an answer in which every sentence is rejected
 - **WHEN** the answer gate runs
-- **THEN** `status` SHALL be `generation_unverified`
-- **AND** `reasoning.original_answer` SHALL hold the pre-gate text
+- **THEN** `answer` SHALL equal the text the node received
+- **AND** `mantiq.outcome` SHALL be `nothing_admitted`
 
-#### Scenario: The status schema stays closed
+#### Scenario: The status and verdict schemas stay closed
 
 - **GIVEN** any combination of gate outcomes
 - **WHEN** the result is assembled
-- **THEN** `status` SHALL be one of the values already defined by the
-  grounded-answer-synthesis capability
-- **AND** no new status value SHALL be introduced
+- **THEN** `status` SHALL equal the status the first manṭiq answer node
+  received
+- **AND** no new status, verification verdict or answer stage value SHALL be
+  introduced
 
-### Requirement: The judge is injected and may be a decision model
+### Requirement: Manṭiq stays outside the base packages
 
-The judge used for the four-way verdict and for inference-form classification
-SHALL be injected through the composition root as an async callable. The
-setting `answer.reasoning.judge` SHALL select `seam` (the ADR-059 completion
-seam, the default), `onnx_decision` (a local ONNX decision model returning one
-option from a closed list with probabilities) or `nli` (a local NLI
-cross-encoder). `core/reasoning` SHALL NOT import a provider, a model runtime
-or a settings singleton. A judge name whose runtime is not installed SHALL
-fail at composition time with a message naming the setting and the missing
-extra.
-
-#### Scenario: Default judge is the completion seam
-
-- **GIVEN** `answer.reasoning.judge` unset
-- **WHEN** the inference gate runs
-- **THEN** the same async seam type used by claim verification SHALL be used
-- **AND** no ONNX or NLI runtime SHALL be imported
-
-#### Scenario: Decision model judge returns a closed choice
-
-- **GIVEN** `answer.reasoning.judge="onnx_decision"` with the runtime installed
-- **WHEN** a claim is judged
-- **THEN** the verdict SHALL be one of the four values
-- **AND** the record SHALL carry `judge_confidence` in the closed interval
-  0 to 1
-
-#### Scenario: Missing runtime fails at composition
-
-- **GIVEN** `answer.reasoning.judge="nli"` and the NLI runtime is not
-  installed
-- **WHEN** the engine is composed
-- **THEN** composition SHALL fail with a message naming
-  `ANSWER__REASONING__JUDGE` and the extra to install
-- **AND** `core/reasoning` SHALL NOT have imported the runtime
+No base package SHALL import the manṭiq package. Only the composition modules
+that register its operations and build its template SHALL import it. The
+manṭiq package SHALL NOT import a provider, a transport, the retrieval domain,
+the ingestion domain or a settings singleton. Import contracts SHALL enforce
+both rules with no ignore entry.
 
 #### Scenario: Layering enforced
 
 - **GIVEN** the import-linter contracts
 - **WHEN** they run
-- **THEN** `omrg.core.reasoning` SHALL be listed as a source module of the
-  core-business contract
-- **AND** it SHALL import nothing from `omrg.integrations`,
-  `omrg.transports`, `omrg.compose*` or `omrg.core.providers`
+- **THEN** a contract SHALL forbid every `omrg.core` package other than
+  `omrg.core.mantiq`, and `omrg.transports`, from importing
+  `omrg.core.mantiq`
+- **AND** `omrg.core.mantiq` SHALL import nothing from
+  `omrg.core.providers`, `omrg.transports`, `omrg.core.retrieval` or
+  `omrg.core.ingestion`
 
-### Requirement: Reasoning cost and timing are disclosed
+### Requirement: Manṭiq cost and timing are disclosed per node
 
-The answer tool description SHALL state that the concept frame adds one
-completion call and that the inference gate adds one judge call per claim and
-per inference. When diagnostics are requested and a gate ran, the result SHALL
-include `concept_frame_ms`, `inference_ms`, `concept_frame_calls` and
-`inference_calls`.
+Each manṭiq node SHALL record in its node summary its model call count, its
+elapsed milliseconds and its outcome. Gate options SHALL be node parameters
+in the saved graph. The system SHALL add no setting, environment variable or
+profile key for manṭiq.
 
-#### Scenario: Diagnostics when gates ran
+#### Scenario: Node summary after a run
 
-- **GIVEN** both gates enabled and `include_diagnostics=true`
-- **WHEN** an answer is produced
-- **THEN** `diagnostics` SHALL contain all four fields
+- **GIVEN** an `answer-mantiq` graph run with a judge
+- **WHEN** the run record is read
+- **THEN** each manṭiq node summary SHALL contain `calls`, `elapsed_ms` and
+  `outcome`
 
-#### Scenario: Diagnostics when gates did not run
+### Requirement: The workspace offers the manṭiq template and shows its results
 
-- **GIVEN** both gates disabled and `include_diagnostics=true`
-- **WHEN** an answer is produced
-- **THEN** `diagnostics` SHALL contain none of the four fields
+The Studio canvas SHALL let the user load the `answer-mantiq` template into a
+user profile's Answer pipeline draft. A built-in profile SHALL NOT offer it.
+The chat SHALL show the `mantiq` block of an answer: the outcome, each
+rejected sentence with its failing checks, and the skip reason when a gate
+skipped.
+
+#### Scenario: Load the template
+
+- **GIVEN** a user profile open on its Answer pipeline
+- **WHEN** the user picks "Use the manṭiq answer template"
+- **THEN** the draft SHALL hold the `answer-mantiq` graph
+- **AND** the user SHALL save it as a revision before it runs
+
+#### Scenario: Show gate results
+
+- **GIVEN** an answer whose result has a `mantiq` block with one rejected
+  sentence
+- **WHEN** the chat shows the answer
+- **THEN** the turn SHALL show the outcome and the rejected sentence with its
+  failing checks
+
+#### Scenario: Answer without a manṭiq block
+
+- **GIVEN** an answer whose result has no `mantiq` key
+- **WHEN** the chat shows the answer
+- **THEN** the turn SHALL look the same as it does without this capability

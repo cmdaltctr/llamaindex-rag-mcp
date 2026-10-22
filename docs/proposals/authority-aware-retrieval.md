@@ -15,12 +15,12 @@ hands the language model an obsolete rule and its replacement side by side and
 leaves the model to guess.
 
 This proposal adds an opt-in authority layer to OMRG, our modular RAG
-framework. At ingestion it extracts typed, evidence-bearing relations between
-documents: one corroborates, explains, specialises, restricts, amends or
-supersedes another, or conflicts with it. At query time a deterministic
+framework. After ingestion it extracts typed, evidence-bearing relations
+between documents: one corroborates, explains, specialises, restricts, amends
+or supersedes another, or conflicts with it. At query time a deterministic
 resolver reads those relations and tags each candidate as controlling,
-qualified, superseded, historical or in unresolved conflict. It never drops a
-passage. The reranker then orders the tagged passages as before.
+qualified, superseded, historical, not yet in force or in unresolved conflict.
+It never drops a passage. The reranker then orders the tagged passages as before.
 
 The resolution ordering comes from uṣūl al-fiqh, the Islamic science of legal
 method, and its treatment of apparently conflicting evidences. Reconcile
@@ -93,7 +93,7 @@ Seven directed relations, each stored with the evidence that produced it.
 
 Each edge records the source and target `source_id`, a scope (whole document,
 section or clause), effective dates, the chunk that supplied the evidence, the
-evidence text, its origin (explicit text, metadata or model) and a confidence.
+evidence text, its origin (explicit text or model) and a confidence.
 A user can ask "why did you ignore the 2024 policy?" and get "because the 2026
 policy states that it supersedes it" with the sentence quoted.
 
@@ -105,9 +105,14 @@ The resolver applies the uṣūl ordering, not a similarity score and not a date
 2. Can they both be true? If so, keep both, mark corroborates or explains.
 3. Is one more specific? Keep both, apply the specific within its scope.
 4. Does one add a condition? Keep both, apply the condition.
-5. Is there explicit evidence of amendment or supersession? Mark it, keep
-   the older text as historical.
+5. Is there explicit evidence of amendment or supersession? Mark the older
+   text superseded. It stays in the results.
 6. If none of the above, mark an unresolved conflict and surface it.
+
+Dates add two more labels. With an `as_of` date, the text in force on that
+date controls. A newer text that starts later is not yet in force. An older
+text that has stopped applying is historical. When one clause is amended
+several times, the latest amendment in force on the date controls.
 
 ### Two principles that shape everything
 
@@ -126,34 +131,31 @@ deterministic holds.
 
 ```
 ingest ──► chunk ──► embed ──► store
-              │
-              └──► [authority extractor]  ──► relation sidecar
-                   (opt-in, per profile)      authority/relations.jsonl
-                                              one record per edge
+                                 │
+              after ingestion ───┴──► [authority linker] ──► relation sidecar
+                                       (opt-in)               one record per edge
 
 search ──► dense + sparse ──► RRF ──► [authority resolver] ──► reranker ──► results
-                                       (opt-in, per profile)
+                                       (opt-in)
                                        loads the sidecar,
                                        tags each row,
                                        drops nothing
 ```
 
-- New package `core/authority/` with settings, relations, extract, resolve and
-  storage modules. It shares only settings with ingestion and retrieval.
-- Settings block `AuthorityBlock`, `enabled: false` by default, env prefix
-  `AUTHORITY__`. The `documents` profile may enable it. The `codebase` profile
-  keeps it off.
-- Registered as the `"authority"` retrieval strategy. When disabled the search
-  path is byte-identical to today.
+- The layer is opt-in and off by default. A built-in profile turns it on with
+  a setting. A user profile turns it on by adding the authority step to its
+  pipeline graph. When it is off, every search returns what it returns today.
+- Ingestion itself does not change. Relations are extracted in a pass after
+  ingestion, so the order in which files arrive does not matter.
 - Relations live in a per-collection sidecar, not in vector rows, so they
-  survive source replacement and work the same on LanceDB and Chroma.
-- `search_documents` gains an optional `as_of` date. With it, a superseded
-  passage becomes controlling for that date when the edge's effective window
-  covers it.
-- Each result row gains `authority_status` and `authority_reason`. The result
-  envelope gains a `conflicts` list when the resolver cannot decide.
-- The model tier is built in `compose.py` and injected as a callable, the same
-  pattern as the reranker and the verify judge. No PyTorch on the default path.
+  survive source replacement. The sidecar needs local disk, so Chroma Cloud is
+  not supported.
+- Search gains an optional `as_of` date for point-in-time questions.
+- Each result row gains a status, the reason for it and the rows it conflicts
+  with. Scores and order do not change. No PyTorch on the default path.
+
+The engineering design, including package layout, import rules and file
+locations, is in `openspec/changes/authority-aware-retrieval/design.md`.
 
 ## Evaluation plan
 
@@ -191,7 +193,7 @@ genuine partial amendment and point-in-time ground truth.
 ### Ablations
 
 - Baseline hybrid retrieval with no authority stage.
-- Newest-document-wins heuristic.
+- Newest-document-wins heuristic, the simple rule this paper argues against.
 - Deterministic tier only.
 - Deterministic plus model tier.
 - Resolver with the reconciliation step removed, to show that "reconcile
@@ -200,12 +202,13 @@ genuine partial amendment and point-in-time ground truth.
 ### Relation typing models
 
 Relation typing is a closed-choice task, so it suits small decision models. A
-separate set of about 200 labelled passage pairs will compare three options
-before any is adopted: Julia 1, a 144M-parameter open-weight decision model
-that runs on CPU through ONNX; an NLI cross-encoder mapped onto the vocabulary;
-and a small local language model. The comparison is a paper artefact in its
-own right. The published Julia 1 benchmarks are hundred-item pilots in other
-domains, so nothing is assumed until measured.
+separate set of about 200 labelled passage pairs will compare the candidates
+before any is adopted, beside a small local language model as a reference. The
+candidates are not chosen yet. Options include Julia 1 (144M parameters, ONNX
+on CPU), a Clef-flash class model through `llama-server` (ADR-074) and an NLI
+cross-encoder mapped onto the vocabulary. Our Experiment 38 found Julia 1
+weaker than Clef-flash on OCR junk detection. The choice is made before the
+model-tier work starts. The comparison is a paper artefact in its own right.
 
 ## Related work and how this differs
 
@@ -238,7 +241,7 @@ Sixteen weeks from October 2026 to the end of January 2027.
 | 1 to 2 | OpenSpec change reviewed, synthetic corpus and questions built, metrics frozen |
 | 3 to 6 | `core/authority/` extractor, sidecar, resolver, registry wiring, tests at the 95 percent tier |
 | 7 to 9 | Experiment 43 on the synthetic corpus, then the UK statute corpus |
-| 10 to 12 | Ablations, relation-typing model comparison, ADR, write-up |
+| 10 to 12 | Ablations, relation-typing model comparison, web status badge and `as_of` field, ADR, write-up |
 | 13 to 16 | Paper draft, reproducibility package, arXiv preprint, venue submission |
 
 Paper 2 starts its own proposal in parallel from about week 10, since it
@@ -268,9 +271,9 @@ airing for the methodological origin.
   exists to answer this. Report both.
 - **The field moves before publication.** Preprint by week 16. The
   benchmark and metrics are released regardless of venue outcome.
-- **The Julia 1 ONNX path may not run in Python.** A smoke test comes first.
-  If it fails, the model stays behind the optional `torch` extra and the
-  NLI cross-encoder becomes the default model tier candidate.
+- **The chosen decision model may not run locally.** A smoke test comes
+  first. The design names a fallback order, and the deterministic tier does
+  not depend on any model.
 
 ## Out of scope
 
