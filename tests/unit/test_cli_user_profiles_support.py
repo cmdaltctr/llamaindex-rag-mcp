@@ -1,7 +1,7 @@
 """Helpers for the CLI, watcher and installer tests on user-profile collections (task 8.10).
 
 A user profile lives in the workspace database of the default workspace
-(``<home>/.omrg/workspace/workspace.db``). The helpers build that database
+(``<home>/.omrs/workspace/workspace.db``). The helpers build that database
 with the profile service, link it into a temporary home folder, tag a
 collection of the test store and count graph runs on the Engine class. This
 module holds no tests.
@@ -17,7 +17,7 @@ import pytest
 from llama_index.core import Settings as LlamaIndexSettings
 from tests.unit.test_engine_profiles_support import PROFILE, make_env
 
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
 #: The collection that follows the user profile ``my-notes``.
 USER_COLLECTION = "notes"
@@ -29,7 +29,7 @@ __all__ = ["PROFILE", "USER_COLLECTION"]
 def link_workspace(tmp_path: Path, effective_settings: Any, home: Path) -> Path:
     """Create the workspace with ``my-notes`` and link it as the default workspace of ``home``."""
     env = make_env(tmp_path, effective_settings)
-    target = home / ".omrg" / "workspace"
+    target = home / ".omrs" / "workspace"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.symlink_to(env.workspace.path.parent, target_is_directory=True)
     return target
@@ -58,7 +58,7 @@ def tag_collection(tmp_path: Path, name: str, profile: str | None) -> None:
 
 def count_graph_runs(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     """Spy on ``Engine.run_pipeline`` and return a list with one entry per graph run."""
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     runs: list[str] = []
     original = Engine.run_pipeline
@@ -73,7 +73,7 @@ def count_graph_runs(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 
 def use_mock_embedder(monkeypatch: pytest.MonkeyPatch) -> None:
     """Make the composition root build the shared mock embedder instead of Ollama."""
-    from omrg.core.providers.embeddings import registry as embed_registry
+    from omrs.core.providers.embeddings import registry as embed_registry
 
     real_get = embed_registry.get
 

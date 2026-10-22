@@ -1,8 +1,8 @@
 """Restart-only snapshot (move-settings-to-config-file task 5.5, snapshot half).
 
-``omrg web`` keeps the restart-only file values it launched with and reports
-each key whose file value now differs. Every test points ``OMRG_CONFIG_DIR`` at
-a temporary folder. No test reads the real ``~/.config/omrg``.
+``omrs web`` keeps the restart-only file values it launched with and reports
+each key whose file value now differs. Every test points ``OMRS_CONFIG_DIR`` at
+a temporary folder. No test reads the real ``~/.config/omrs``.
 """
 
 from __future__ import annotations
@@ -11,23 +11,23 @@ from pathlib import Path
 
 import pytest
 
-from omrg.config import Settings
-from omrg.config.rules import FILE_ONLY, SECRET_FIELDS
-from omrg.config.settings_file import read_settings_file, setting_paths
-from omrg.transports.api.restart_snapshot import capture, pending
-from omrg.transports.settings_view import LIVE_KEYS, applies, restart_only_keys
+from omrs.config import Settings
+from omrs.config.rules import FILE_ONLY, SECRET_FIELDS
+from omrs.config.settings_file import read_settings_file, setting_paths
+from omrs.transports.api.restart_snapshot import capture, pending
+from omrs.transports.settings_view import LIVE_KEYS, applies, restart_only_keys
 
 
 @pytest.fixture
 def folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    root = tmp_path / "omrg-config"
+    root = tmp_path / "omrs-config"
     root.mkdir(mode=0o700)
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(root))
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(root))
     return root
 
 
 def write_config(root: Path, text: str) -> None:
-    (root / "omrg.jsonc").write_text(text, encoding="utf-8")
+    (root / "omrs.jsonc").write_text(text, encoding="utf-8")
 
 
 def test_restart_only_set_comes_from_the_model_not_a_hand_list() -> None:
@@ -127,7 +127,7 @@ def test_snapshot_never_holds_a_key(folder: Path) -> None:
     (folder / "secrets" / "openrouter.key").write_text(secret, encoding="utf-8")
     write_config(
         folder,
-        '{ "chroma_cloud_api_key": "env://OMRG_TEST_NO_SUCH_VARIABLE",'
+        '{ "chroma_cloud_api_key": "env://OMRS_TEST_NO_SUCH_VARIABLE",'
         ' "azure_doc_intelligence_key": "keychain://azure" }',
     )
     snapshot = capture(read_settings_file(folder))

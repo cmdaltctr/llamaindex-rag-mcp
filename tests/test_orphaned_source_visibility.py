@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.ingestion.loader import list_documents
-from omrg.core.ingestion.source_state import SOURCE_ID_KEY
+from omrs.core.ingestion.loader import list_documents
+from omrs.core.ingestion.source_state import SOURCE_ID_KEY
 
 
 class _FakeListingStore:

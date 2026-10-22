@@ -1,7 +1,7 @@
 """Tests for the dots-mocr engine that need no model (tasks 3.1 to 3.4).
 
 The layout converter, the patches, the hash check and the engine's
-parse loop are pure Python. They run here, in the main OMRG
+parse loop are pure Python. They run here, in the main OMRS
 environment, on the committed Experiment 34 fixtures and on stubs. No
 PyTorch, no weights, no network.
 
@@ -38,11 +38,11 @@ def dots(monkeypatch: pytest.MonkeyPatch) -> Iterator[Any]:
     monkeypatch.syspath_prepend(str(CORE_SRC))
     monkeypatch.syspath_prepend(str(DOTS_SRC))
     with isolated_worker_modules():
-        yield importlib.import_module("omrg_ocr_dots_mocr")
+        yield importlib.import_module("omrs_ocr_dots_mocr")
 
 
 def _layout(dots: Any) -> Any:
-    return importlib.import_module("omrg_ocr_dots_mocr.layout")
+    return importlib.import_module("omrs_ocr_dots_mocr.layout")
 
 
 def _raw(doc: str, page: int) -> str:
@@ -169,7 +169,7 @@ def _snapshot(folder: Path) -> dict[str, bytes]:
 
 def test_patches_apply_once_and_are_idempotent(dots: Any, tmp_path: Path) -> None:
     """The second patch run on a copied modeling_dots_vision.py changes nothing."""
-    patches = importlib.import_module("omrg_ocr_dots_mocr.patches")
+    patches = importlib.import_module("omrs_ocr_dots_mocr.patches")
     folder = _model_folder(tmp_path)
     assert patches.apply_patches(folder) == [
         "flash_attn import optional",
@@ -187,7 +187,7 @@ def test_fetch_twice_leaves_identical_files_and_hashes(
     dots: Any, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """Running the fetch steps twice leaves the same files and the same hashes."""
-    fetch = importlib.import_module("omrg_ocr_dots_mocr.fetch")
+    fetch = importlib.import_module("omrs_ocr_dots_mocr.fetch")
     folder = _model_folder(tmp_path)
     monkeypatch.setattr(fetch, "model_dir", lambda: folder)
     first = fetch.fetch(download=False)
@@ -201,7 +201,7 @@ def test_fetch_downloads_the_pinned_revision(
     dots: Any, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """The download names the pinned repository revision and the engine cache."""
-    fetch = importlib.import_module("omrg_ocr_dots_mocr.fetch")
+    fetch = importlib.import_module("omrs_ocr_dots_mocr.fetch")
     folder = _model_folder(tmp_path)
     monkeypatch.setattr(fetch, "model_dir", lambda: folder)
     calls: list[dict[str, Any]] = []
@@ -220,7 +220,7 @@ def test_fetch_downloads_the_pinned_revision(
 
 def test_hash_check_refuses_a_changed_code_file(dots: Any, tmp_path: Path) -> None:
     """Any change to a model code file after provisioning is refused."""
-    patches = importlib.import_module("omrg_ocr_dots_mocr.patches")
+    patches = importlib.import_module("omrs_ocr_dots_mocr.patches")
     folder = _model_folder(tmp_path)
     with pytest.raises(patches.CodeHashMismatchError, match="no code-hash record"):
         patches.verify_hashes(folder)
@@ -238,7 +238,7 @@ def test_hash_check_refuses_a_changed_code_file(dots: Any, tmp_path: Path) -> No
 
 def test_hash_record_from_another_patch_set_is_refused(dots: Any, tmp_path: Path) -> None:
     """A record written by another patch set forces re-provisioning."""
-    patches = importlib.import_module("omrg_ocr_dots_mocr.patches")
+    patches = importlib.import_module("omrs_ocr_dots_mocr.patches")
     folder = _model_folder(tmp_path)
     patches.record_hashes(folder)
     record = json.loads((folder / patches.HASH_FILE).read_text(encoding="utf-8"))
@@ -251,15 +251,15 @@ def test_hash_record_from_another_patch_set_is_refused(dots: Any, tmp_path: Path
 def test_patches_on_real_model_copy_when_present(dots: Any, tmp_path: Path) -> None:
     """On a real model copy (if named), a second patch run changes nothing.
 
-    Set ``OMRG_DOTS_MOCR_MODEL_DIR`` to a downloaded dots.mocr folder (for
+    Set ``OMRS_DOTS_MOCR_MODEL_DIR`` to a downloaded dots.mocr folder (for
     example the Experiment 34 copy) to run it; it skips otherwise, so the
     base-suite counts do not depend on the machine. Only the two small
     code files are copied, never the weights.
     """
-    source = Path(os.environ.get("OMRG_DOTS_MOCR_MODEL_DIR", "/nonexistent"))
+    source = Path(os.environ.get("OMRS_DOTS_MOCR_MODEL_DIR", "/nonexistent"))
     if not (source / "modeling_dots_vision.py").is_file():
-        pytest.skip("set OMRG_DOTS_MOCR_MODEL_DIR to a dots.mocr model folder")
-    patches = importlib.import_module("omrg_ocr_dots_mocr.patches")
+        pytest.skip("set OMRS_DOTS_MOCR_MODEL_DIR to a dots.mocr model folder")
+    patches = importlib.import_module("omrs_ocr_dots_mocr.patches")
     folder = tmp_path / "DotsMOCR"
     folder.mkdir()
     for name in ("modeling_dots_vision.py", "config.json"):
@@ -279,7 +279,7 @@ def test_engine_parse_converts_each_page_and_empties_bad_ones(
     dots: Any, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """``parse`` renders, generates and converts each page; bad pages give ""."""
-    engine_mod = importlib.import_module("omrg_ocr_dots_mocr.engine")
+    engine_mod = importlib.import_module("omrs_ocr_dots_mocr.engine")
     engine = engine_mod.DotsMocrEngine()
     outputs = {
         1: (_raw("eq01", 11), 1937),
@@ -298,12 +298,12 @@ def test_engine_parse_converts_each_page_and_empties_bad_ones(
 
 def test_engine_identity_fields(dots: Any) -> None:
     """The contract fields name the pinned model and the patch set."""
-    engine_mod = importlib.import_module("omrg_ocr_dots_mocr.engine")
+    engine_mod = importlib.import_module("omrs_ocr_dots_mocr.engine")
     engine = engine_mod.ENGINE
     assert engine.name == "dots-mocr"
     assert engine.backend_id == "dots_mocr"
     assert engine.model == ("rednote-hilab/dots.mocr", "e539fbb52280393adc081b289ec597430a0f9031")
-    assert "omrg-mps-1" in engine.pipeline[1]
+    assert "omrs-mps-1" in engine.pipeline[1]
     assert "torch" in engine.declared_packages
     assert engine_mod.RENDER_DPI == 200 and engine_mod.MIN_LONG_SIDE_PX == 1600
     assert engine_mod.MAX_NEW_TOKENS == 8192
@@ -311,10 +311,10 @@ def test_engine_identity_fields(dots: Any) -> None:
 
 def test_offline_env_is_forced(dots: Any, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Offline variables and HF_HOME are assigned, overriding inherited values."""
-    engine_mod = importlib.import_module("omrg_ocr_dots_mocr.engine")
+    engine_mod = importlib.import_module("omrs_ocr_dots_mocr.engine")
     monkeypatch.setenv("HF_HUB_OFFLINE", "0")
     monkeypatch.setenv("HF_HOME", "/elsewhere/hf")
-    monkeypatch.setenv("OMRG_OCR_MODEL_CACHE", str(tmp_path))
+    monkeypatch.setenv("OMRS_OCR_MODEL_CACHE", str(tmp_path))
     engine_mod.apply_offline_env()
     import os
 
@@ -327,10 +327,10 @@ def test_engine_refuses_missing_or_changed_model(
     dots: Any, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """Loading fails with a structured error before any PyTorch import."""
-    engine_mod = importlib.import_module("omrg_ocr_dots_mocr.engine")
-    from omrg_ocr_worker_core.engine import WorkerParseError
+    engine_mod = importlib.import_module("omrs_ocr_dots_mocr.engine")
+    from omrs_ocr_worker_core.engine import WorkerParseError
 
-    monkeypatch.setenv("OMRG_OCR_MODEL_CACHE", str(tmp_path))
+    monkeypatch.setenv("OMRS_OCR_MODEL_CACHE", str(tmp_path))
     engine = engine_mod.DotsMocrEngine()
     with pytest.raises(WorkerParseError) as missing:
         engine.generate(object())
@@ -347,11 +347,11 @@ def test_engine_reports_missing_runtime(
     dots: Any, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """With a verified model but no PyTorch, the error is runtime_unavailable."""
-    engine_mod = importlib.import_module("omrg_ocr_dots_mocr.engine")
-    patches = importlib.import_module("omrg_ocr_dots_mocr.patches")
-    from omrg_ocr_worker_core.engine import WorkerParseError
+    engine_mod = importlib.import_module("omrs_ocr_dots_mocr.engine")
+    patches = importlib.import_module("omrs_ocr_dots_mocr.patches")
+    from omrs_ocr_worker_core.engine import WorkerParseError
 
-    monkeypatch.setenv("OMRG_OCR_MODEL_CACHE", str(tmp_path))
+    monkeypatch.setenv("OMRS_OCR_MODEL_CACHE", str(tmp_path))
     folder = tmp_path / "dots-mocr" / "DotsMOCR"
     folder.mkdir(parents=True)
     (folder / "modeling_dots_ocr.py").write_text("# code\n", encoding="utf-8")
@@ -367,13 +367,13 @@ def test_manifest_declares_gate_fetch_and_entry_point() -> None:
     import tomllib
 
     manifest = tomllib.loads((DOTS_DIR / "pyproject.toml").read_text(encoding="utf-8"))
-    assert manifest["tool"]["omrg-ocr"] == {
+    assert manifest["tool"]["omrs-ocr"] == {
         "licence-file": "LICENCE-NOTES.md",
         "requires-acceptance": True,
     }
-    assert manifest["project"]["scripts"]["omrg-ocr-fetch"] == "omrg_ocr_dots_mocr.fetch:main"
-    assert manifest["project"]["entry-points"]["omrg.ocr_engine"] == {
-        "dots-mocr": "omrg_ocr_dots_mocr.engine:ENGINE"
+    assert manifest["project"]["scripts"]["omrs-ocr-fetch"] == "omrs_ocr_dots_mocr.fetch:main"
+    assert manifest["project"]["entry-points"]["omrs.ocr_engine"] == {
+        "dots-mocr": "omrs_ocr_dots_mocr.engine:ENGINE"
     }
     assert "transformers==4.57.6" in manifest["project"]["dependencies"]
     notes = (DOTS_DIR / "LICENCE-NOTES.md").read_text(encoding="utf-8")

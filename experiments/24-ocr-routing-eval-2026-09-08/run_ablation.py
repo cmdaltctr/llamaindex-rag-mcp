@@ -38,7 +38,7 @@ def _settings(cell: str) -> SimpleNamespace:
         "ocr_fallback_enabled": False,
         "ocr_fallback_min_confidence": 0.5,
         "ocr_fallback_page_fraction": 0.5,
-        "ocr_worker_command": f"{WORKER_PY} -m omrg_ocr_worker",
+        "ocr_worker_command": f"{WORKER_PY} -m omrs_ocr_worker",
         "ocr_worker_env_dir": str(REPO / "ocr-worker"),
         "ocr_worker_request_timeout": 600.0,
     }
@@ -58,12 +58,12 @@ def _markers(markdown: str) -> dict[str, int]:
 
 def _run_cell(cell: str) -> dict:
     """Run one cell over every evaluation fixture."""
-    from omrg.integrations.pdf.factory import build_pdf_reader
+    from omrs.integrations.pdf.factory import build_pdf_reader
 
     settings = _settings(cell)
     ocr_client = None
     if cell == "routed_worker_candidate":
-        from omrg.capabilities import build_managed_ocr_client
+        from omrs.capabilities import build_managed_ocr_client
 
         ocr_client = build_managed_ocr_client(settings)
 

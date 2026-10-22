@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from omrg.transports.api.origins import parse_extra_origin
+from omrs.transports.api.origins import parse_extra_origin
 
 
 @pytest.mark.parametrize(

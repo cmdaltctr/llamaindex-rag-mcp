@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createSessionRenewer, startSession, takePageSecret } from "./bootstrap";
 import { ApiError, createApiClient, type FetchLike } from "./client";
 
-const PAGE_SECRET = "omrg_bs_page123";
-const LINK_SECRET = "omrg_bs_link456";
+const PAGE_SECRET = "omrs_bs_page123";
+const LINK_SECRET = "omrs_bs_link456";
 
 function json(status: number, body: unknown = { status: status < 400 ? "ok" : "error" }) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -11,7 +11,7 @@ function json(status: number, body: unknown = { status: status < 400 ? "ok" : "e
 
 function addMeta(content: string) {
   const meta = document.createElement("meta");
-  meta.name = "omrg-page-secret";
+  meta.name = "omrs-page-secret";
   meta.content = content;
   document.head.append(meta);
 }
@@ -38,7 +38,7 @@ function fakeServer(options: { acceptSecret?: string | null } = {}) {
 }
 
 afterEach(() => {
-  document.head.querySelectorAll('meta[name="omrg-page-secret"]').forEach((meta) => meta.remove());
+  document.head.querySelectorAll('meta[name="omrs-page-secret"]').forEach((meta) => meta.remove());
   window.history.replaceState(null, "", "/");
 });
 
@@ -46,7 +46,7 @@ describe("page secret", () => {
   it("reads the secret from the page and removes the tag", () => {
     addMeta(PAGE_SECRET);
     expect(takePageSecret(document)).toBe(PAGE_SECRET);
-    expect(document.querySelector('meta[name="omrg-page-secret"]')).toBeNull();
+    expect(document.querySelector('meta[name="omrs-page-secret"]')).toBeNull();
     expect(takePageSecret(document)).toBeNull();
   });
 

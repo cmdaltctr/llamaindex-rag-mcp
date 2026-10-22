@@ -13,10 +13,10 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.ingestion import ingest_path_async
-from omrg.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock
-from omrg.core.vectordb import get_default_store, set_default_store
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.core.ingestion import ingest_path_async
+from omrs.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock
+from omrs.core.vectordb import get_default_store, set_default_store
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
 _COLLECTION = "markdown_chunking_pipeline"
 
@@ -33,7 +33,7 @@ def identity_store(request: pytest.FixtureRequest, tmp_path: Path):
 
 def _stored_identities(store, source: Path) -> list[str]:
     """Return the stored index identity of every row for one source."""
-    from omrg.core.ingestion.source_state import SOURCE_INDEX_IDENTITY_KEY
+    from omrs.core.ingestion.source_state import SOURCE_INDEX_IDENTITY_KEY
 
     return [
         metadata[SOURCE_INDEX_IDENTITY_KEY]
@@ -109,8 +109,8 @@ async def test_degraded_markdown_chunking_recovers_when_tokenizer_resolves(
     """A legacy-indexed Markdown source is replaced after tokenizer resolution."""
     from tokenizers import Tokenizer, models, pre_tokenizers
 
-    from omrg.core.chunking.model_token import MarkdownChunkingResolution
-    from omrg.core.ingestion import pipeline
+    from omrs.core.chunking.model_token import MarkdownChunkingResolution
+    from omrs.core.ingestion import pipeline
 
     source = tmp_path / "chunking-recovery.md"
     source.write_text("# Recovery\n\n" + "token-aware content " * 80, encoding="utf-8")
@@ -150,9 +150,9 @@ async def test_unfittable_markdown_fails_that_source_alone(
     """
     from tokenizers import Tokenizer, models, pre_tokenizers
 
-    from omrg.core.chunking.model_token import MarkdownChunkingResolution
-    from omrg.core.ingestion import pipeline
-    from omrg.core.settings import ChunkingBlock
+    from omrs.core.chunking.model_token import MarkdownChunkingResolution
+    from omrs.core.ingestion import pipeline
+    from omrs.core.settings import ChunkingBlock
 
     marker = "[UNK]"
     tokenizer = Tokenizer(models.WordLevel({marker: 0}, unk_token=marker))

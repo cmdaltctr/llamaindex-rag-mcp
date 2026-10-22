@@ -15,18 +15,18 @@ from types import SimpleNamespace
 
 import pytest
 
-from omrg.config import get_settings as _gs
-from omrg.core.chunking.markdown import (
+from omrs.config import get_settings as _gs
+from omrs.core.chunking.markdown import (
     apply_heading_prepend as _apply_heading_prepend,
 )
-from omrg.core.chunking.markdown import (
+from omrs.core.chunking.markdown import (
     drop_small_markdown_chunks as _drop_small_markdown_chunks,
 )
-from omrg.core.chunking.markdown import (
+from omrs.core.chunking.markdown import (
     ensure_heading_metadata as _ensure_heading_metadata,
 )
-from omrg.core.ingestion import read_and_chunk_file_async
-from omrg.core.settings import ChunkingBlock, EffectiveSettings
+from omrs.core.ingestion import read_and_chunk_file_async
+from omrs.core.settings import ChunkingBlock, EffectiveSettings
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -193,7 +193,7 @@ async def test_plain_reader_pdf_chunks_are_byte_for_byte_unchanged(
     from llama_index.core import SimpleDirectoryReader
     from llama_index.core.node_parser import SentenceSplitter
 
-    from omrg.integrations.pdf import get_pdf_reader
+    from omrs.integrations.pdf import get_pdf_reader
 
     pdf = fixtures_dir / "smoke_text.pdf"
     settings = effective_settings(pdf_reader="pypdf", extraction_mode="disabled")

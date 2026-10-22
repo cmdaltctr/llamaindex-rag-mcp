@@ -4,7 +4,7 @@ Intro paragraph with enough words to matter for the boundary probe run.
 
 ## Alpha Section
 
-Alpha body text mentions OMRG-ALPHA-77 as its identifier-heavy token.
+Alpha body text mentions OMRS-ALPHA-77 as its identifier-heavy token.
 
 ## Beta Section
 

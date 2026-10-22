@@ -16,8 +16,8 @@ import pytest
 
 pytest.importorskip("fastapi")
 
-from omrg.transports.api.routes import experiments as routes_experiments  # noqa: E402
-from omrg.transports.api.routes import plugins as routes_plugins  # noqa: E402
+from omrs.transports.api.routes import experiments as routes_experiments  # noqa: E402
+from omrs.transports.api.routes import plugins as routes_plugins  # noqa: E402
 
 _REPO = Path(__file__).resolve().parents[2]
 _FRONTEND_FIXTURE = _REPO / "web" / "src" / "experiments" / "test" / "experimentsServer.ts"

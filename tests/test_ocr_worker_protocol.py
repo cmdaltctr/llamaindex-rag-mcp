@@ -1,6 +1,6 @@
 """Wire-level tests for the duplicated OCR worker JSON Lines protocol.
 
-The worker core owns its protocol definitions and OMRG owns an
+The worker core owns its protocol definitions and OMRS owns an
 identical twin (OpenSpec change improve-rag-input-quality-5, task 2.2a;
 moved to the worker core by modular-ocr-workers-dots-mocr, task 1.4).
 The two modules never import each other, so these tests prove wire
@@ -19,12 +19,12 @@ from typing import Any
 
 import pytest
 
-from omrg.integrations.ocr_worker import protocol as omrg_protocol
+from omrs.integrations.ocr_worker import protocol as omrs_protocol
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 WORKER_SRC = REPO_ROOT / "ocr-workers" / "core" / "src"
-HOST_PACKAGE = REPO_ROOT / "src" / "omrg" / "integrations" / "ocr_worker"
-CORE_PACKAGE = WORKER_SRC / "omrg_ocr_worker_core"
+HOST_PACKAGE = REPO_ROOT / "src" / "omrs" / "integrations" / "ocr_worker"
+CORE_PACKAGE = WORKER_SRC / "omrs_ocr_worker_core"
 
 _MODULE_CACHE: dict[str, ModuleType] | None = None
 
@@ -36,10 +36,10 @@ def _modules() -> dict[str, ModuleType]:
         worker_src = str(WORKER_SRC)
         sys.path.insert(0, worker_src)
         try:
-            worker = importlib.import_module("omrg_ocr_worker_core.protocol")
+            worker = importlib.import_module("omrs_ocr_worker_core.protocol")
         finally:
             sys.path.remove(worker_src)
-        _MODULE_CACHE = {"omrg": omrg_protocol, "worker": worker}
+        _MODULE_CACHE = {"omrs": omrs_protocol, "worker": worker}
     return _MODULE_CACHE
 
 
@@ -54,7 +54,7 @@ def _success_payload(request_id: str, **overrides: Any) -> dict[str, Any]:
         "metadata": {
             "ocr_backend": "stub-worker",
             "page_count": 2,
-            "output_schema": {"id": "omrg.ocr.parse_output", "version": "1"},
+            "output_schema": {"id": "omrs.ocr.parse_output", "version": "1"},
         },
     }
     for key, value in overrides.items():
@@ -133,15 +133,15 @@ def test_one_byte_change_is_detected() -> None:
 
 def test_constants_agree_between_both_sides() -> None:
     """Twin modules must declare identical protocol identities."""
-    omrg, worker = _modules()["omrg"], _modules()["worker"]
-    assert omrg.PROTOCOL_VERSION == worker.PROTOCOL_VERSION
-    assert omrg.SUPPORTED_PROTOCOL_VERSIONS == worker.SUPPORTED_PROTOCOL_VERSIONS
-    assert omrg.PAGES_PROTOCOL_VERSION == worker.PAGES_PROTOCOL_VERSION
-    assert omrg.OUTPUT_SCHEMA_ID == worker.OUTPUT_SCHEMA_ID
-    assert omrg.OUTPUT_SCHEMA_VERSION == worker.OUTPUT_SCHEMA_VERSION
-    assert omrg.REQUEST_TYPE_PARSE == worker.REQUEST_TYPE_PARSE
-    assert omrg.RESPONSE_TYPE_PARSE_RESULT == worker.RESPONSE_TYPE_PARSE_RESULT
-    assert omrg.RESPONSE_TYPE_PARSE_ERROR == worker.RESPONSE_TYPE_PARSE_ERROR
+    omrs, worker = _modules()["omrs"], _modules()["worker"]
+    assert omrs.PROTOCOL_VERSION == worker.PROTOCOL_VERSION
+    assert omrs.SUPPORTED_PROTOCOL_VERSIONS == worker.SUPPORTED_PROTOCOL_VERSIONS
+    assert omrs.PAGES_PROTOCOL_VERSION == worker.PAGES_PROTOCOL_VERSION
+    assert omrs.OUTPUT_SCHEMA_ID == worker.OUTPUT_SCHEMA_ID
+    assert omrs.OUTPUT_SCHEMA_VERSION == worker.OUTPUT_SCHEMA_VERSION
+    assert omrs.REQUEST_TYPE_PARSE == worker.REQUEST_TYPE_PARSE
+    assert omrs.RESPONSE_TYPE_PARSE_RESULT == worker.RESPONSE_TYPE_PARSE_RESULT
+    assert omrs.RESPONSE_TYPE_PARSE_ERROR == worker.RESPONSE_TYPE_PARSE_ERROR
 
 
 def test_twin_validation_modules_are_importable_and_agree() -> None:
@@ -154,13 +154,13 @@ def test_twin_validation_modules_are_importable_and_agree() -> None:
     worker_src = str(WORKER_SRC)
     sys.path.insert(0, worker_src)
     try:
-        worker_validation = importlib.import_module("omrg_ocr_worker_core.validation")
+        worker_validation = importlib.import_module("omrs_ocr_worker_core.validation")
     finally:
         sys.path.remove(worker_src)
-    from omrg.integrations.ocr_worker import validation as omrg_validation
+    from omrs.integrations.ocr_worker import validation as omrs_validation
 
-    assert omrg_validation.OUTPUT_SCHEMA_ID == worker_validation.OUTPUT_SCHEMA_ID
-    assert omrg_validation.OUTPUT_SCHEMA_VERSION == worker_validation.OUTPUT_SCHEMA_VERSION
+    assert omrs_validation.OUTPUT_SCHEMA_ID == worker_validation.OUTPUT_SCHEMA_ID
+    assert omrs_validation.OUTPUT_SCHEMA_VERSION == worker_validation.OUTPUT_SCHEMA_VERSION
     for name in (
         "ERR_INVALID_JSON",
         "ERR_UNSUPPORTED_PROTOCOL_VERSION",
@@ -172,30 +172,30 @@ def test_twin_validation_modules_are_importable_and_agree() -> None:
         "ERR_MISMATCHED_ID",
         "ERR_OUTPUT_SCHEMA_MISMATCH",
     ):
-        assert getattr(omrg_validation, name) == getattr(worker_validation, name)
+        assert getattr(omrs_validation, name) == getattr(worker_validation, name)
     # The protocol modules must re-export the public validation names so
     # every existing importer keeps working.
-    assert omrg_protocol.ProtocolError is omrg_validation.ProtocolError
-    assert omrg_protocol.OUTPUT_SCHEMA_ID is omrg_validation.OUTPUT_SCHEMA_ID
+    assert omrs_protocol.ProtocolError is omrs_validation.ProtocolError
+    assert omrs_protocol.OUTPUT_SCHEMA_ID is omrs_validation.OUTPUT_SCHEMA_ID
 
 
 def test_request_encoding_is_byte_identical() -> None:
     """Both sides must emit the same request line for the same envelope."""
-    omrg, worker = _modules()["omrg"], _modules()["worker"]
-    omrg_line = omrg.encode_line(omrg.make_request("req-1", "/tmp/doc.pdf"))
+    omrs, worker = _modules()["omrs"], _modules()["worker"]
+    omrs_line = omrs.encode_line(omrs.make_request("req-1", "/tmp/doc.pdf"))
     worker_line = worker.encode_line(worker.make_request("req-1", "/tmp/doc.pdf"))
-    assert omrg_line == worker_line
-    assert "\n" not in omrg_line
-    assert json.loads(omrg_line)["type"] == "parse"
+    assert omrs_line == worker_line
+    assert "\n" not in omrs_line
+    assert json.loads(omrs_line)["type"] == "parse"
 
 
 def test_pages_request_encoding_is_byte_identical() -> None:
     """A page-listed request must encode identically on both sides."""
-    omrg, worker = _modules()["omrg"], _modules()["worker"]
-    omrg_line = omrg.encode_line(omrg.make_request("req-p", "/tmp/doc.pdf", pages=[3, 7]))
+    omrs, worker = _modules()["omrs"], _modules()["worker"]
+    omrs_line = omrs.encode_line(omrs.make_request("req-p", "/tmp/doc.pdf", pages=[3, 7]))
     worker_line = worker.encode_line(worker.make_request("req-p", "/tmp/doc.pdf", pages=[3, 7]))
-    assert omrg_line == worker_line
-    payload = json.loads(omrg_line)
+    assert omrs_line == worker_line
+    payload = json.loads(omrs_line)
     assert payload["pages"] == [3, 7]
     assert payload["protocol_version"] == "1.1"
 
@@ -208,8 +208,8 @@ def test_plain_request_speaks_the_minimum_version() -> None:
     minimum version keeps document-unit routing alive against a worker
     still on 1.0 during a rolling upgrade.
     """
-    omrg, worker = _modules()["omrg"], _modules()["worker"]
-    for mod in (omrg, worker):
+    omrs, worker = _modules()["omrs"], _modules()["worker"]
+    for mod in (omrs, worker):
         request = mod.make_request("req-min", "/tmp/doc.pdf")
         assert request.protocol_version == "1.0"
         payload = json.loads(mod.encode_line(request))
@@ -219,18 +219,18 @@ def test_plain_request_speaks_the_minimum_version() -> None:
 
 def test_success_encoding_is_byte_identical() -> None:
     """Both sides must emit the same success line for the same envelope."""
-    omrg, worker = _modules()["omrg"], _modules()["worker"]
-    omrg_envelope = omrg.make_success("req-2", "# Doc", ocr_backend="paddleocr-vl", page_count=3)
+    omrs, worker = _modules()["omrs"], _modules()["worker"]
+    omrs_envelope = omrs.make_success("req-2", "# Doc", ocr_backend="paddleocr-vl", page_count=3)
     worker_envelope = worker.make_success(
         "req-2", "# Doc", ocr_backend="paddleocr-vl", page_count=3
     )
-    assert omrg.encode_line(omrg_envelope) == worker.encode_line(worker_envelope)
+    assert omrs.encode_line(omrs_envelope) == worker.encode_line(worker_envelope)
 
 
 def test_pages_markdown_success_encoding_is_byte_identical() -> None:
     """A per-page success must encode identically on both sides."""
-    omrg, worker = _modules()["omrg"], _modules()["worker"]
-    omrg_envelope = omrg.make_success(
+    omrs, worker = _modules()["omrs"], _modules()["worker"]
+    omrs_envelope = omrs.make_success(
         "req-pm",
         "# P3\n\n# P7",
         ocr_backend="paddleocr-vl",
@@ -246,50 +246,50 @@ def test_pages_markdown_success_encoding_is_byte_identical() -> None:
         pages_markdown=["# P3", "# P7"],
         protocol_version="1.1",
     )
-    assert omrg.encode_line(omrg_envelope) == worker.encode_line(worker_envelope)
-    payload = json.loads(omrg.encode_line(omrg_envelope))
+    assert omrs.encode_line(omrs_envelope) == worker.encode_line(worker_envelope)
+    payload = json.loads(omrs.encode_line(omrs_envelope))
     assert payload["pages_markdown"] == ["# P3", "# P7"]
     assert payload["protocol_version"] == "1.1"
 
 
 def test_failure_encoding_is_byte_identical() -> None:
     """Both sides must emit the same error line for the same envelope."""
-    omrg, worker = _modules()["omrg"], _modules()["worker"]
-    omrg_envelope = omrg.make_failure("req-3", "stub_failure", "it failed")
+    omrs, worker = _modules()["omrs"], _modules()["worker"]
+    omrs_envelope = omrs.make_failure("req-3", "stub_failure", "it failed")
     worker_envelope = worker.make_failure("req-3", "stub_failure", "it failed")
-    assert omrg.encode_line(omrg_envelope) == worker.encode_line(worker_envelope)
+    assert omrs.encode_line(omrs_envelope) == worker.encode_line(worker_envelope)
 
 
-def test_worker_decodes_omrg_requests_and_responses() -> None:
-    """The worker copy must accept lines produced by the OMRG copy."""
-    omrg, worker = _modules()["omrg"], _modules()["worker"]
+def test_worker_decodes_omrs_requests_and_responses() -> None:
+    """The worker copy must accept lines produced by the OMRS copy."""
+    omrs, worker = _modules()["omrs"], _modules()["worker"]
     request = worker.decode_request_line(
-        omrg.encode_line(omrg.make_request("req-4", "/docs/a.pdf"))
+        omrs.encode_line(omrs.make_request("req-4", "/docs/a.pdf"))
     )
     assert (request.id, request.pdf_path) == ("req-4", "/docs/a.pdf")
 
-    success = omrg.make_success("req-5", "# M", ocr_backend="b", page_count=1)
-    decoded = worker.decode_response_line(omrg.encode_line(success))
+    success = omrs.make_success("req-5", "# M", ocr_backend="b", page_count=1)
+    decoded = worker.decode_response_line(omrs.encode_line(success))
     assert isinstance(decoded, worker.ParseSuccess)
     assert decoded.markdown == "# M"
 
-    failure = omrg.make_failure("req-6", "code_a", "boom")
-    decoded_failure = worker.decode_response_line(omrg.encode_line(failure))
+    failure = omrs.make_failure("req-6", "code_a", "boom")
+    decoded_failure = worker.decode_response_line(omrs.encode_line(failure))
     assert isinstance(decoded_failure, worker.ParseFailure)
     assert decoded_failure.error.code == "code_a"
 
 
-def test_omrg_decodes_worker_requests_and_responses() -> None:
-    """The OMRG copy must accept lines produced by the worker copy."""
-    omrg, worker = _modules()["omrg"], _modules()["worker"]
-    request = omrg.decode_request_line(
+def test_omrs_decodes_worker_requests_and_responses() -> None:
+    """The OMRS copy must accept lines produced by the worker copy."""
+    omrs, worker = _modules()["omrs"], _modules()["worker"]
+    request = omrs.decode_request_line(
         worker.encode_line(worker.make_request("req-7", "/docs/b.pdf"))
     )
     assert request.pdf_path == "/docs/b.pdf"
 
     success = worker.make_success("req-8", "# W", ocr_backend="b", page_count=9)
-    decoded = omrg.decode_response_line(worker.encode_line(success))
-    assert isinstance(decoded, omrg.ParseSuccess)
+    decoded = omrs.decode_response_line(worker.encode_line(success))
+    assert isinstance(decoded, omrs.ParseSuccess)
     assert decoded.metadata["page_count"] == 9
 
 
@@ -306,7 +306,7 @@ RESPONSE_CASES = [
 ]
 
 
-@pytest.mark.parametrize("side", ["omrg", "worker"])
+@pytest.mark.parametrize("side", ["omrs", "worker"])
 class TestProtocolValidation:
     """Strict validation rules, proven identical on both protocol copies."""
 

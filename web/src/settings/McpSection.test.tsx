@@ -7,7 +7,7 @@ import { startApp } from "../test/startApp";
 import { CONFIG_DIR, MCP_OFF, settingsServer, WEB_PORT } from "./test/fixtures";
 
 const MCP_ON: McpState = { ...MCP_OFF, enabled: true };
-const TOKEN = "omrg_mcp_Zq3xExampleTokenValue";
+const TOKEN = "omrs_mcp_Zq3xExampleTokenValue";
 
 /** A stateful stand-in for the MCP routes, so a refetch sees what a write changed. */
 function mcpRoutes(initial: McpState = MCP_OFF) {
@@ -56,9 +56,9 @@ describe("MCP stdio configuration", () => {
     const stdio = await screen.findByRole("region", { name: "Stdio client" });
     expect(within(stdio).getByText(/uv run --directory/)).toBeInTheDocument();
     await user.click(within(stdio).getByRole("button", { name: "Copy stdio configuration" }));
-    const copied = JSON.parse(await navigator.clipboard.readText()) as { mcpServers: { omrg: { command: string; args: string[] } } };
-    expect(copied.mcpServers.omrg.command).toBe("uv");
-    expect(copied.mcpServers.omrg.args).toEqual(["run", "--directory", CONFIG_DIR, "omrg"]);
+    const copied = JSON.parse(await navigator.clipboard.readText()) as { mcpServers: { omrs: { command: string; args: string[] } } };
+    expect(copied.mcpServers.omrs.command).toBe("uv");
+    expect(copied.mcpServers.omrs.args).toEqual(["run", "--directory", CONFIG_DIR, "omrs"]);
     expect(await within(stdio).findByText("Copied stdio configuration.")).toBeInTheDocument();
   });
 
@@ -101,7 +101,7 @@ describe("MCP over HTTP switch", () => {
     expect(await within(http).findByText("default")).toBeInTheDocument();
     await user.click(await screen.findByRole("switch", { name: "MCP over HTTP" }));
     expect(await screen.findByRole("switch", { name: "MCP over HTTP", checked: true })).toBeInTheDocument();
-    expect(within(http).getByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(within(http).getByText("from omrs.jsonc")).toBeInTheDocument();
   });
 
   it.each([
@@ -114,8 +114,8 @@ describe("MCP over HTTP switch", () => {
     expect(within(http).getByRole("switch", { name: "MCP over HTTP" })).toBeDisabled();
   });
 
-  it("shows the conflict with a Reload action when omrg.jsonc changed on disk", async () => {
-    const message = "omrg.jsonc changed on disk. Reload to see the new values.";
+  it("shows the conflict with a Reload action when omrs.jsonc changed on disk", async () => {
+    const message = "omrs.jsonc changed on disk. Reload to see the new values.";
     const { user } = await openMcp({ ...mcpRoutes(), "PUT /v1/mcp": () => json({ status: "error", message }, 409) });
     await user.click(await screen.findByRole("switch", { name: "MCP over HTTP" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
@@ -142,10 +142,10 @@ describe("MCP over HTTP switch", () => {
     const http = await screen.findByRole("region", { name: "MCP over HTTP" });
     expect(await within(http).findByText(MCP_ON.url, { exact: false, selector: "code" })).toBeInTheDocument();
     await user.click(within(http).getByRole("button", { name: "Copy HTTP configuration" }));
-    const copied = JSON.parse(await navigator.clipboard.readText()) as { mcpServers: { omrg: { type: string; url: string; headers: Record<string, string> } } };
-    expect(copied.mcpServers.omrg.type).toBe("http");
-    expect(copied.mcpServers.omrg.url).toBe(MCP_ON.url);
-    expect(copied.mcpServers.omrg.headers.Authorization).toBe("Bearer omrg_mcp_<token>");
+    const copied = JSON.parse(await navigator.clipboard.readText()) as { mcpServers: { omrs: { type: string; url: string; headers: Record<string, string> } } };
+    expect(copied.mcpServers.omrs.type).toBe("http");
+    expect(copied.mcpServers.omrs.url).toBe(MCP_ON.url);
+    expect(copied.mcpServers.omrs.headers.Authorization).toBe("Bearer omrs_mcp_<token>");
   });
 });
 
@@ -247,7 +247,7 @@ describe("Saved web port", () => {
     await user.clear(input);
     await user.type(input, "9000");
     await user.click(within(port).getByRole("button", { name: "Save" }));
-    expect(await within(port).findByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(await within(port).findByText("from omrs.jsonc")).toBeInTheDocument();
     expect(within(port).getByText("9000")).toBeInTheDocument();
     expect(within(port).getByText("Restart to apply")).toBeInTheDocument();
     expect(within(port).getByText(/applies on the next launch/i)).toBeInTheDocument();
@@ -284,8 +284,8 @@ describe("Saved web port", () => {
     expect(server.find("PUT", "/v1/settings/web-port").at(-1)?.body).toEqual({ port: null, revision: "r1" });
   });
 
-  it("shows the conflict with a Reload action when omrg.jsonc changed on disk", async () => {
-    const message = "omrg.jsonc changed on disk. Reload to see the new values.";
+  it("shows the conflict with a Reload action when omrs.jsonc changed on disk", async () => {
+    const message = "omrs.jsonc changed on disk. Reload to see the new values.";
     const { user } = await openMcp({ ...mcpRoutes(), "PUT /v1/settings/web-port": () => json({ status: "error", message }, 409) });
     const port = panel("Web port");
     await user.click(await within(port).findByRole("button", { name: "Edit Port for the next launch" }));
@@ -318,21 +318,21 @@ describe("Restart dialog after a port save", () => {
     expect(within(dialog).getByRole("button", { name: "Later" })).toBeInTheDocument();
   });
 
-  it("sends the power menu restart on Restart now and names omrg web open", async () => {
+  it("sends the power menu restart on Restart now and names omrs web open", async () => {
     const { user, server } = await savePort({
       "GET /v1/server/power": () => ({ status: "ok", managed: true }),
       "POST /v1/server/power": () => ({ status: "ok", accepted: "restart" }),
     });
     const dialog = await screen.findByRole("dialog");
     await user.click(await within(dialog).findByRole("button", { name: "Restart now" }));
-    expect(await within(dialog).findByText("omrg web open")).toBeInTheDocument();
+    expect(await within(dialog).findByText("omrs web open")).toBeInTheDocument();
     expect(server.find("POST", "/v1/server/power")[0]?.body).toEqual({ action: "restart" });
   });
 
   it("shows the restart command and no Restart now when the app runs in a terminal", async () => {
     await savePort({ "GET /v1/server/power": () => ({ status: "ok", managed: false }) });
     const dialog = await screen.findByRole("dialog");
-    expect(await within(dialog).findByText("omrg web")).toBeInTheDocument();
+    expect(await within(dialog).findByText("omrs web")).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: "Restart now" })).toBeNull();
   });
 

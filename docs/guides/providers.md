@@ -1,6 +1,6 @@
 # Providers
 
-OMRG supports multiple embedding and metadata LLM providers. Providers are selected independently via a two-tier system: category (`local`|`cloud`) + sub-provider — you can mix and match (e.g., cloud embeddings with a local LLM).
+OMRS supports multiple embedding and metadata LLM providers. Providers are selected independently via a two-tier system: category (`local`|`cloud`) + sub-provider — you can mix and match (e.g., cloud embeddings with a local LLM).
 
 > **Scope:** This guide covers embedding and metadata LLM providers, and the two Chat-only providers (OpenAI-compatible and Anthropic). Document parsing (`DOCUMENT_BACKEND=azure`, Azure Document Intelligence) is a separate orthogonal axis — see [ADR-024](../adr/024-dual-deployment-modes.md).
 
@@ -46,7 +46,7 @@ llama-server -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 --port 8080 --embeddings
 llama-server -hf Qwen/Qwen3-0.6B-GGUF:Q8_0 --port 8081
 ```
 
-**Managed server or your own.** You can start `llama-server` yourself, as above. `omrg web` can also start, stop and restart one chat server for you (Settings > Providers > llama.cpp > Local server). omrg manages only the server it started. It never touches a server you started yourself. It does not manage the embedding server. By default omrg passes `--sleep-idle-seconds 300`, so its server frees the model after five idle minutes, as Ollama does. See [Local llama.cpp server](configuration.md#local-llamacpp-server) for the settings and guardrails.
+**Managed server or your own.** You can start `llama-server` yourself, as above. `omrs web` can also start, stop and restart one chat server for you (Settings > Providers > llama.cpp > Local server). omrs manages only the server it started. It never touches a server you started yourself. It does not manage the embedding server. By default omrs passes `--sleep-idle-seconds 300`, so its server frees the model after five idle minutes, as Ollama does. See [Local llama.cpp server](configuration.md#local-llamacpp-server) for the settings and guardrails.
 
 ```bash
 # .env
@@ -61,7 +61,7 @@ See [ADR-025](../adr/025-pluggable-inference-backend.md) for the full rationale.
 
 ### Chat-only providers (OpenAI-compatible and Anthropic)
 
-These two providers serve the answers role only (`ANSWER__PROVIDER`, or Settings > Chat in `omrg web`). They are not valid for `EMBED_PROVIDER`, `LOCAL_BACKEND` or `CLOUD_BACKEND`.
+These two providers serve the answers role only (`ANSWER__PROVIDER`, or Settings > Chat in `omrs web`). They are not valid for `EMBED_PROVIDER`, `LOCAL_BACKEND` or `CLOUD_BACKEND`.
 
 | Provider | Env var | Default | Purpose |
 |---|---|---|---|
@@ -79,9 +79,9 @@ The connection test sends `GET {base_url}/models` for `openai_compatible`, with 
 
 ### Where provider values come from
 
-For each address and key, the server uses the first source it finds, highest first: process environment, `.env`, `omrg.jsonc` in the user config folder (the Settings page writes this file), a key file `secrets/<provider>.key` (keys only), the default. `GET /v1/connections` reports the source as `env`, `dotenv`, `config-file`, `keychain`, `key-file`, `default` or `none`, and the top-level `user_config_dir` (with `~` for home).
+For each address and key, the server uses the first source it finds, highest first: process environment, `.env`, `omrs.jsonc` in the user config folder (the Settings page writes this file), a key file `secrets/<provider>.key` (keys only), the default. `GET /v1/connections` reports the source as `env`, `dotenv`, `config-file`, `keychain`, `key-file`, `default` or `none`, and the top-level `user_config_dir` (with `~` for home).
 
-- The environment, `.env` and `omrg.jsonc` lock the field in Settings. The card shows "Set from environment (read-only here)" or "Set from config file (read-only here)".
+- The environment, `.env` and `omrs.jsonc` lock the field in Settings. The card shows "Set from environment (read-only here)" or "Set from config file (read-only here)".
 - A key file does not lock. The card shows "Set from key file (read-only here). Saving a key in the keychain overrides it."
 - The CLI and the stdio MCP server read the environment, `.env` and the user config folder. They do not see values saved in the web page.
 - The files in the user config folder are plaintext. The keychain stays the advice on a desktop. See [Configuration](configuration.md#user-config-folder).
@@ -96,7 +96,7 @@ For each address and key, the server uses the first source it finds, highest fir
 | `METADATA__OLLAMA_CLASSIFY_MODEL` | `qwen3:0.6b`             | Ollama model for metadata classification |
 | `INGESTION__EMBED_BATCH_SIZE`     | `100`                    | Ollama `/api/embed` batch size           |
 
-Context window. omrg sends `OLLAMA_CONTEXT_WINDOW` on every Chat and metadata call, so Ollama never reserves memory for the model maximum (TDR-036). Embedding models are not covered. See [Context windows](configuration.md#context-windows).
+Context window. omrs sends `OLLAMA_CONTEXT_WINDOW` on every Chat and metadata call, so Ollama never reserves memory for the model maximum (TDR-036). Embedding models are not covered. See [Context windows](configuration.md#context-windows).
 
 ### OpenRouter (cloud backend)
 
@@ -179,7 +179,7 @@ Registered LLM providers: `ollama`, `llamacpp`, `openrouter`, `openai_compatible
 ### Adding a new provider
 
 1. Add `core/providers/<kind>/<name>.py` exposing `build(settings)` (match the signature of `ollama.py` or `llamacpp.py`).
-2. Add one `register("<name>", "omrg.core.providers.<kind>.<name>:build")` line at the bottom of that registry.
+2. Add one `register("<name>", "omrs.core.providers.<kind>.<name>:build")` line at the bottom of that registry.
 3. Add the optional-dependency extra in `pyproject.toml` and, if it is an extra, an entry in `_PROVIDER_EXTRAS` (`core/providers/llm/registry.py`).
 4. Add env vars to `.env.example`.
 5. Add the name to the `<!-- registry-names -->` block above.
@@ -193,5 +193,5 @@ ChromaDB locks the vector dimension at collection creation time. Switching from 
 
 ```bash
 rm -rf chroma_db
-omrg ingest /path/to/docs/
+omrs ingest /path/to/docs/
 ```

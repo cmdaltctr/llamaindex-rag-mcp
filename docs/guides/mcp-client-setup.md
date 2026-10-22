@@ -9,7 +9,7 @@
 3. Fill in:
    - Name: `rag-docs`
    - Transport: **Local / stdio**
-   - Command (one token per line): `uv` / `run` / `--project` / `/absolute/path/to/llamaindex-rag-mcp` / `omrg`
+   - Command (one token per line): `uv` / `run` / `--project` / `/absolute/path/to/llamaindex-rag-mcp` / `omrs`
 4. Environment variables:
    - `EMBED_MODEL` = `nomic-embed-text`
    - `OLLAMA_BASE_URL` = `http://localhost:11434`
@@ -26,7 +26,7 @@ Add this block to `~/.opencode/opencode.json` (available in all projects) or `<p
   "mcp": {
     "rag-docs": {
       "type": "local",
-      "command": ["uv", "run", "--project", "/absolute/path/to/llamaindex-rag-mcp", "omrg"],
+      "command": ["uv", "run", "--project", "/absolute/path/to/llamaindex-rag-mcp", "omrs"],
       "environment": {
         "EMBED_MODEL": "nomic-embed-text",
         "OLLAMA_BASE_URL": "http://localhost:11434",
@@ -63,7 +63,7 @@ Put a per-project `opencode.json` inside each project with its own `LANCEDB_URI`
   "mcp": {
     "rag-docs": {
       "type": "local",
-      "command": ["uv", "run", "--project", "/absolute/path/to/llamaindex-rag-mcp", "omrg"],
+      "command": ["uv", "run", "--project", "/absolute/path/to/llamaindex-rag-mcp", "omrs"],
       "environment": {
         "EMBED_MODEL": "nomic-embed-text",
         "OLLAMA_BASE_URL": "http://localhost:11434",
@@ -89,11 +89,11 @@ Use the built-in `collection` parameter to keep different projects isolated as
 separate LanceDB tables:
 
 ```bash
-omrg ingest /path/to/project-a/docs/ --collection project-a
-omrg ingest /path/to/project-b/docs/ --collection project-b
+omrs ingest /path/to/project-a/docs/ --collection project-a
+omrs ingest /path/to/project-b/docs/ --collection project-b
 
-omrg search "quantum computing" --collection project-a
-omrg list-collections
+omrs search "quantum computing" --collection project-a
+omrs list-collections
 ```
 
 Collections are created automatically on first ingest. No extra directories or environment configs needed.
@@ -125,7 +125,7 @@ cp .env.example .env
 uv sync
 
 # Verify
-uv run omrg
+uv run omrs
 # No output = working. Ctrl-C to stop.
 ```
 

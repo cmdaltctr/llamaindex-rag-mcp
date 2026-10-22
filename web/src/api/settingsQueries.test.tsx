@@ -19,9 +19,9 @@ describe("settings query keys", () => {
 
 describe("settings queries", () => {
   it("read connections from GET /v1/connections and cache them under [connections]", async () => {
-    const server = documentsServer({ "GET /v1/connections": () => ({ status: "ok", config_dir: "/srv/omrg", connections: [] }) });
+    const server = documentsServer({ "GET /v1/connections": () => ({ status: "ok", config_dir: "/srv/omrs", connections: [] }) });
     const { result } = renderHookWithProviders(() => useQuery(connectionsQuery(useApi())), { fetchImpl: server.fetchImpl });
-    await waitFor(() => expect(result.current.data?.config_dir).toBe("/srv/omrg"));
+    await waitFor(() => expect(result.current.data?.config_dir).toBe("/srv/omrs"));
     expect(server.calls.map((call) => call.path)).toEqual(["/v1/connections"]);
   });
 

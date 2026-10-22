@@ -13,12 +13,12 @@ from unittest.mock import patch
 import pytest
 from typer.testing import CliRunner
 
-from omrg.config.legacy_install import (
+from omrs.config.legacy_install import (
     LegacyInstallError,
     ensure_no_legacy_install,
     find_legacy_signs,
 )
-from omrg.transports.cli import app
+from omrs.transports.cli import app
 
 runner = CliRunner()
 
@@ -102,7 +102,7 @@ def test_new_names_are_not_signs(home: Path) -> None:
 def test_keychain_alone_is_not_a_sign_and_is_never_read(home: Path) -> None:
     """Design D2a: no keychain call at startup."""
     with patch(
-        "omrg.integrations.keychain._current_backend",
+        "omrs.integrations.keychain._current_backend",
         side_effect=AssertionError("the startup check must not call the keychain"),
     ):
         assert find_legacy_signs(env={}, home=home) == []
@@ -130,7 +130,7 @@ def test_check_only_reads(home: Path) -> None:
 def test_variable_stops_web_start(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OMRG_CONFIG_DIR", str(home / "cfg"))
     with patch(
-        "omrg.transports.cli.web_login_item._installed_plan",
+        "omrs.transports.cli.web_login_item._installed_plan",
         side_effect=AssertionError("the command must not start"),
     ):
         result = runner.invoke(app, ["web", "start"])
@@ -143,7 +143,7 @@ def test_variable_stops_web_start(home: Path, monkeypatch: pytest.MonkeyPatch) -
 def test_data_folder_stops_the_stdio_server(home: Path) -> None:
     (home / ".omrg").mkdir()
     with patch(
-        "omrg.transports.mcp.main",
+        "omrs.transports.mcp.main",
         side_effect=AssertionError("the server must not start"),
     ):
         result = runner.invoke(app, [])
@@ -154,7 +154,7 @@ def test_data_folder_stops_the_stdio_server(home: Path) -> None:
 
 
 def test_direct_mcp_main_refuses_on_stderr(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    from omrg.transports import mcp
+    from omrs.transports import mcp
 
     (home / ".omrg").mkdir()
     with pytest.raises(SystemExit) as exit_info:
@@ -174,8 +174,8 @@ def test_old_login_item_stops_a_cli_command(home: Path) -> None:
 
 def test_clean_install_passes_the_check(home: Path) -> None:
     with (
-        patch("omrg.transports.cli.web_login_item._is_macos", return_value=True),
-        patch("omrg.transports.cli.web_login_item._installed_plan", return_value=(None, None)),
+        patch("omrs.transports.cli.web_login_item._is_macos", return_value=True),
+        patch("omrs.transports.cli.web_login_item._installed_plan", return_value=(None, None)),
     ):
         result = runner.invoke(app, ["web", "start"])
     # The command ran past the check and stopped for its own reason.
@@ -186,3 +186,23 @@ def test_help_and_version_skip_the_check(home: Path) -> None:
     (home / ".omrg").mkdir()
     assert runner.invoke(app, ["--help"]).exit_code == 0
     assert runner.invoke(app, ["--version"]).exit_code == 0
+
+
+# ── Watcher installer recognises the old label (design D2) ────────────
+
+
+def test_installer_finds_a_watcher_plist_with_the_old_label(home: Path) -> None:
+    """``install-login-watcher`` treats a ``com.omrg.watch.*`` plist as the same watcher."""
+    import plistlib
+
+    from omrs.transports.cli import _launchagent
+
+    watch = home / "docs"
+    watch.mkdir()
+    plan = _launchagent.build_plan(watch, "docs", 2.0, command_path="/bin/echo", home=home)
+    old = _plant_plist(home, "com.omrg.watch.docs-1a2b3c4d")
+    old.write_bytes(
+        plistlib.dumps({"ProgramArguments": ["/x/omrg", "watch", str(plan.watch_path)]})
+    )
+
+    assert _launchagent.find_existing_plist(plan) == old

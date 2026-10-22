@@ -1,7 +1,7 @@
 /**
  * Typed client for the profile routes of the local `/v1` API.
  *
- * Shapes follow `src/omrg/transports/api/routes/profiles.py` and the
+ * Shapes follow `src/omrs/transports/api/routes/profiles.py` and the
  * `Profile*` schemas in `openapi.yaml`. Every function takes the `ApiClient`
  * first. A refusal keeps its parsed body on `ApiError.body`, so a 409 delete
  * shows the collections in `used_by`.

@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.providers.llm import llamacpp_rules as rules
+from omrs.core.providers.llm import llamacpp_rules as rules
 
 POSIX = pytest.mark.skipif(sys.platform == "win32", reason="POSIX modes and links")
 HF_TOKEN = "hf_FAKE_TOKEN_FOR_TESTS"  # noqa: S105  # gitleaks:allow

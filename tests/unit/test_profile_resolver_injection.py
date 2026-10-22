@@ -17,8 +17,8 @@ from __future__ import annotations
 
 import pytest
 
-from omrg.core.profiles.resolver import ProfileResolver, _bundle_to_effective
-from omrg.core.settings import EffectiveSettings, RetrievalBlock
+from omrs.core.profiles.resolver import ProfileResolver, _bundle_to_effective
+from omrs.core.settings import EffectiveSettings, RetrievalBlock
 
 # ── H-7: overlay must inherit non-lever fields ──────────────────────────
 
@@ -99,7 +99,7 @@ def test_resolver_uses_injected_server_profile_without_touching_singleton(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """An injected server_profile must be used without reading config.settings."""
-    import omrg.config as config_module
+    import omrs.config as config_module
 
     def _boom(*args, **kwargs):  # pragma: no cover - must not be called
         raise AssertionError("ProfileResolver read the settings singleton despite injection")
@@ -121,7 +121,7 @@ def test_resolver_passes_base_through_to_resolved_settings() -> None:
 
 def test_build_profile_resolver_injects_both_dependencies() -> None:
     """compose.build_profile_resolver must supply server_profile AND base."""
-    from omrg import compose
+    from omrs import compose
 
     resolver = compose.build_profile_resolver()
     assert resolver._server_profile is not None, "server_profile was not injected"
@@ -182,7 +182,7 @@ def test_resolver_reads_tags_from_injected_store() -> None:
     Profile tags are read from the engine-owned store, never from the
     process-default store (which may belong to another engine).
     """
-    from omrg.core.settings import MetadataBlock
+    from omrs.core.settings import MetadataBlock
 
     base = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
     codebase_engine = ProfileResolver(
@@ -200,7 +200,7 @@ def test_resolver_uses_captured_env_not_live(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A resolver built with a snapshot ignores later environment changes."""
-    from omrg.core.settings import MetadataBlock
+    from omrs.core.settings import MetadataBlock
 
     base = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
     monkeypatch.setenv("RETRIEVAL__TOP_K", "5")  # the LATER environment
@@ -219,7 +219,7 @@ def test_resolver_uses_captured_env_not_live(
 
 def test_build_profile_resolver_forwards_store_and_env() -> None:
     """compose.build_profile_resolver passes store/env_overrides through."""
-    from omrg import compose
+    from omrs import compose
 
     store = _TagStore("codebase")
     resolver = compose.build_profile_resolver(store=store, env_overrides={})

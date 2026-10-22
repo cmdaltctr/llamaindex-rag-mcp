@@ -18,9 +18,9 @@ import sys
 
 import pytest
 
-from omrg.compose import build_embed_model
-from omrg.config import Settings
-from omrg.core.ingestion.settings import IngestionSettings
+from omrs.compose import build_embed_model
+from omrs.config import Settings
+from omrs.core.ingestion.settings import IngestionSettings
 
 # IDs an OpenRouter deployment actually uses: a third-party model and an
 # OpenAI model behind the provider prefix. Both sit outside OpenAI's

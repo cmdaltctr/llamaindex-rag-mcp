@@ -8,13 +8,13 @@ from pathlib import Path
 
 import pytest
 
-from omrg.integrations.workspace_sqlite import SCHEMA_MIGRATIONS, SqliteWorkspaceRepository
-from omrg.integrations.workspace_sqlite.settings import (
+from omrs.integrations.workspace_sqlite import SCHEMA_MIGRATIONS, SqliteWorkspaceRepository
+from omrs.integrations.workspace_sqlite.settings import (
     UnknownSettingError,
     WorkspaceSettings,
     read_saved_web_port,
 )
-from omrg.integrations.workspace_sqlite.tokens import MCP_TOKEN_PREFIX, McpTokenStore
+from omrs.integrations.workspace_sqlite.tokens import MCP_TOKEN_PREFIX, McpTokenStore
 
 
 def _tables(path: Path) -> set[str]:
@@ -196,7 +196,7 @@ def test_create_returns_a_prefixed_token_and_stores_only_its_hash(db: Path) -> N
     created = store.create()
 
     assert created.token.startswith(MCP_TOKEN_PREFIX)
-    assert MCP_TOKEN_PREFIX == "omrg_mcp_"  # noqa: S105
+    assert MCP_TOKEN_PREFIX == "omrs_mcp_"  # noqa: S105
     assert len(created.token) >= len(MCP_TOKEN_PREFIX) + 43  # token_urlsafe(32)
     conn = sqlite3.connect(db)
     rows = conn.execute("SELECT * FROM mcp_tokens").fetchall()
@@ -213,7 +213,7 @@ def test_verify_accepts_the_token_and_refuses_everything_else(db: Path) -> None:
     assert store.verify(created.token) is True
     assert store.verify(created.token + "x") is False
     assert store.verify("") is False
-    assert store.verify("omrg_mcp_wrong") is False
+    assert store.verify("omrs_mcp_wrong") is False
 
 
 def test_rotation_replaces_the_row_and_invalidates_the_old_token(db: Path) -> None:
@@ -259,7 +259,7 @@ def test_a_failed_rotation_keeps_the_old_token(db: Path, monkeypatch: pytest.Mon
     def _boom(*_a: object, **_k: object) -> str:
         raise RuntimeError("entropy source failed")
 
-    monkeypatch.setattr("omrg.integrations.workspace_sqlite.tokens.secrets.token_urlsafe", _boom)
+    monkeypatch.setattr("omrs.integrations.workspace_sqlite.tokens.secrets.token_urlsafe", _boom)
     with pytest.raises(RuntimeError):
         store.create()
     assert store.verify(first.token) is True

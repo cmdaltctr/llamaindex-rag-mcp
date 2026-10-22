@@ -11,17 +11,17 @@ from typing import Any
 
 import pytest
 
-from omrg.core.profiles.embedding_lock import (
+from omrs.core.profiles.embedding_lock import (
     binding_refusal,
     blocking_collections,
     collection_embedding_state,
 )
-from omrg.core.vectordb.identity import (
+from omrs.core.vectordb.identity import (
     IDENTITY_MODEL_KEY,
     IDENTITY_PROVIDER_KEY,
     EmbeddingIdentity,
 )
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
 A = EmbeddingIdentity("ollama", "model-a")
 B = EmbeddingIdentity("llamacpp", "model-b")
@@ -33,7 +33,7 @@ def store(request: pytest.FixtureRequest, tmp_path: Any) -> Any:
     if request.param == "chroma":
         if find_spec("chromadb") is None:
             pytest.skip("chromadb extra not installed")
-        from omrg.core.vectordb.chroma.store import ChromaVectorStore
+        from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
         return ChromaVectorStore()
     return LanceVectorStore(uri=str(tmp_path / "lancedb"))
@@ -118,7 +118,7 @@ def test_a_request_equal_to_the_stamp_does_not_block(store: Any) -> None:
 
 
 def test_blocking_keeps_the_given_order() -> None:
-    from omrg.core.profiles.embedding_lock import CollectionEmbeddingState as S
+    from omrs.core.profiles.embedding_lock import CollectionEmbeddingState as S
 
     first, second = S("one", "ollama", "model-a", 4), S("two", None, None, 9)
     assert blocking_collections([first, second], B) == [first, second]
@@ -171,7 +171,7 @@ def test_web_profile_service_uses_the_engine_host_model(tmp_path: Any) -> None:
     """The server default comes from the Engine, not from the process settings."""
     from types import SimpleNamespace
 
-    from omrg.compose_profile_setup import build_profile_service
+    from omrs.compose_profile_setup import build_profile_service
 
     engine = SimpleNamespace(
         _embedders=SimpleNamespace(host_identity=HOST),
@@ -221,7 +221,7 @@ class _StubService:
 
 
 def test_a_closed_engine_refuses_a_model_save_and_writes_nothing() -> None:
-    from omrg.compose_profile_embedding import ProfileEmbedding
+    from omrs.compose_profile_embedding import ProfileEmbedding
 
     service = _StubService()
     embedding = ProfileEmbedding(service, lambda: HOST)  # type: ignore[arg-type]
@@ -233,7 +233,7 @@ def test_a_closed_engine_refuses_a_model_save_and_writes_nothing() -> None:
 
 
 def test_a_closed_engine_refuses_a_binding_check() -> None:
-    from omrg.compose_profile_embedding import ProfileEmbedding
+    from omrs.compose_profile_embedding import ProfileEmbedding
 
     embedding = ProfileEmbedding(_StubService(), lambda: HOST)  # type: ignore[arg-type]
 

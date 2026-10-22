@@ -12,7 +12,7 @@ afterEach(() => {
   FakeEventSource.reset();
 });
 
-const BUFFERED = [logRecord(1, "info", "Server started"), logRecord(2, "warning", "Slow disk", "omrg.store"), logRecord(3, "error", "Query failed", "omrg.search")];
+const BUFFERED = [logRecord(1, "info", "Server started"), logRecord(2, "warning", "Slow disk", "omrs.store"), logRecord(3, "error", "Query failed", "omrs.search")];
 
 async function openLog(records: LogRecord[] = BUFFERED, handlers = {}) {
   FakeEventSource.reset();
@@ -42,7 +42,7 @@ describe("Server log panel", () => {
     expect(lines).toHaveLength(3);
     expect(lines[1]).toHaveTextContent("09:30:02");
     expect(within(lines[1]!).getByText("warning")).toHaveAttribute("data-slot", "badge");
-    expect(lines[1]).toHaveTextContent("omrg.store");
+    expect(lines[1]).toHaveTextContent("omrs.store");
     expect(lines[1]).toHaveTextContent("Slow disk");
   });
 
@@ -100,8 +100,8 @@ describe("Server log panel", () => {
     await user.click(screen.getByRole("button", { name: "Copy visible log lines" }));
     const copied = await navigator.clipboard.readText();
     expect(copied.split("\n")).toEqual([
-      "2026-10-14T09:30:02Z WARNING omrg.store Slow disk",
-      "2026-10-14T09:30:03Z ERROR omrg.search Query failed",
+      "2026-10-14T09:30:02Z WARNING omrs.store Slow disk",
+      "2026-10-14T09:30:03Z ERROR omrs.search Query failed",
     ]);
     expect(await screen.findByText("Copied visible log lines.")).toBeInTheDocument();
   });

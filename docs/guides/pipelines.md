@@ -1,8 +1,8 @@
 # Pipeline graphs
 
-A pipeline graph connects registered OMRG operations. The saved connections decide which operations run and in which order. This guide describes the graph document, the operation catalogue, the canonical templates, profiles, connections, validation errors, and how to run and cancel a graph from Python.
+A pipeline graph connects registered OMRS operations. The saved connections decide which operations run and in which order. This guide describes the graph document, the operation catalogue, the canonical templates, profiles, connections, validation errors, and how to run and cancel a graph from Python.
 
-The graph contracts live in `omrg.core.pipelines`. The domain packages register the operations. The Engine validates and runs graphs with `Engine.validate_pipeline` and `Engine.run_pipeline`. These methods need no web server and no notebook package.
+The graph contracts live in `omrs.core.pipelines`. The domain packages register the operations. The Engine validates and runs graphs with `Engine.validate_pipeline` and `Engine.run_pipeline`. These methods need no web server and no notebook package.
 
 ## Graph document and layout
 
@@ -15,7 +15,7 @@ A pipeline definition has two parts:
 
 Moving a node or changing the viewport does not change the execution identity. A new connection, parameter or operation version does.
 
-The current schema version is `1`. OMRG rejects other versions with the `unsupported_schema_version` code. Re-save an old graph with the current OMRG, or upgrade OMRG to read a newer graph.
+The current schema version is `1`. OMRS rejects other versions with the `unsupported_schema_version` code. Re-save an old graph with the current OMRS, or upgrade OMRS to read a newer graph.
 
 Each node has these fields:
 
@@ -81,7 +81,7 @@ What a step reader changes:
 
 ## Canonical templates
 
-`omrg.pipeline_templates` publishes three canonical graphs. Each graph reproduces one standard Engine operation:
+`omrs.pipeline_templates` publishes three canonical graphs. Each graph reproduces one standard Engine operation:
 
 | Template | Same result as | Graph input | Graph output |
 |---|---|---|---|
@@ -97,7 +97,7 @@ The node chains are:
 
 Graph outputs carry summaries and results only. No template returns chunks or vectors as a graph output.
 
-Use `omrg.compose_pipelines.pipeline_templates(engine, collection)` to get the templates for one Engine. It adds the sparse branch when the collection setting `retrieval.hybrid_enabled` is true. It bypasses the rerank node when the Engine has no reranker model. You can also call `search_template(collection, hybrid=..., rerank=...)` and the other template functions directly.
+Use `omrs.compose_pipelines.pipeline_templates(engine, collection)` to get the templates for one Engine. It adds the sparse branch when the collection setting `retrieval.hybrid_enabled` is true. It bypasses the rerank node when the Engine has no reranker model. You can also call `search_template(collection, hybrid=..., rerank=...)` and the other template functions directly.
 
 The ingestion template is the graph that `canonical_ingestion_definition()` returns. The ingestion index-shaping fingerprint reads the same graph, so the standard path and the template share one shaping identity.
 
@@ -162,7 +162,7 @@ Graph overrides accept these levers only:
 | `chunking.chunk_size`, `chunking.chunk_overlap`, `chunking.markdown_chunk_size`, `chunking.code_chunk_lines`, `chunking.strategy_fallback` | Yes |
 | `metadata.taxonomy_mode` | Yes |
 
-The host owns provider and model identity, secrets, storage locations and reader backends. A graph cannot change them (`host_owned_setting`). Change them in the environment and restart OMRG. The one exception is the PDF reader: the Read document step can choose an installed reader for itself (see "PDF reader on the Read document step"), but the host default stays host-owned.
+The host owns provider and model identity, secrets, storage locations and reader backends. A graph cannot change them (`host_owned_setting`). Change them in the environment and restart OMRS. The one exception is the PDF reader: the Read document step can choose an installed reader for itself (see "PDF reader on the Read document step"), but the host default stays host-owned.
 
 ## Profiles own pipelines
 
@@ -174,17 +174,17 @@ A user profile owns three pipelines. Each pipeline has one purpose, called a **s
 | Search | `query` (kind `query`) | `results` (kind `context`) | None |
 | Answer | `query` (kind `query`) | `answer` (kind `answer`) | None |
 
-Each slot graph names the base profile of the user profile as its `profile`. The code that checks this is in `src/omrg/compose_profiles.py`.
+Each slot graph names the base profile of the user profile as its `profile`. The code that checks this is in `src/omrs/compose_profiles.py`.
 
 ### Readiness
 
-A profile is **ready** when each pipeline has a saved revision, passes the draft check (`validatePipeline` without run inputs) and meets the contract in the table. A profile that is not ready cannot be bound to a collection. Each failure gives one plain line that names the pipeline, and the step when one step causes it. The check in `src/omrg/core/profiles/readiness.py` writes these lines.
+A profile is **ready** when each pipeline has a saved revision, passes the draft check (`validatePipeline` without run inputs) and meets the contract in the table. A profile that is not ready cannot be bound to a collection. Each failure gives one plain line that names the pipeline, and the step when one step causes it. The check in `src/omrs/core/profiles/readiness.py` writes these lines.
 
 When you bind a profile to a collection, the check also runs against that collection. It then includes the embedding model of the collection.
 
 ### What a request does
 
-A request runs the current revision of the slot graph. It uses the same `Engine.run_pipeline` call as Studio, but it makes no run record and does not use the run queue. The code is in `src/omrg/engine_profiles.py`.
+A request runs the current revision of the slot graph. It uses the same `Engine.run_pipeline` call as Studio, but it makes no run record and does not use the run queue. The code is in `src/omrs/engine_profiles.py`.
 
 - The graph names the collection of the request.
 - A value that the caller sets replaces the matching step setting. `top_k`, `similarity_threshold`, `rerank`, `fetch_k` and `metadata_filter` replace settings of `retrieve.prepare_query`. `expand_window` replaces the setting of `context.assemble`. `include_diagnostics` replaces the setting of `answer.synthesise`. `chunk_size` and `chunk_overlap` replace the settings of the steps that map to `chunking.chunk_size` and `chunking.chunk_overlap`.
@@ -205,7 +205,7 @@ A change to an Ingest pipeline does not start an ingestion. Each source is proce
 
 ### Concurrency
 
-Graph runs that only read run at the same time on one Engine. A graph with an enabled write step waits for other graphs that write. The reranker records its last failure on the shared instance, so `run_reranker` in `src/omrg/core/retrieval/operations.py` runs the rerank call and reads the failure reason as one locked step for each reranker.
+Graph runs that only read run at the same time on one Engine. A graph with an enabled write step waits for other graphs that write. The reranker records its last failure on the shared instance, so `run_reranker` in `src/omrs/core/retrieval/operations.py` runs the rerank call and reads the failure reason as one locked step for each reranker.
 
 ### Latency
 
@@ -367,7 +367,7 @@ Validation runs before any node, model call or store change. It reports every pr
 
 | Code | Cause | Action |
 |---|---|---|
-| `unsupported_schema_version` | The graph uses another schema version. | Re-save the graph with this OMRG. |
+| `unsupported_schema_version` | The graph uses another schema version. | Re-save the graph with this OMRS. |
 | `invalid_document` | The JSON does not match the graph document. | Correct the named field. |
 | `duplicate_node` | Two nodes use the same `id`. | Rename one node. |
 | `unknown_operation`, `unknown_operation_version` | The operation or pinned version is not registered. | Select an operation from the catalogue. |
@@ -380,7 +380,7 @@ Validation runs before any node, model call or store change. It reports every pr
 | `cycle` | The connections form a loop. | Remove one connection in the loop. |
 | `invalid_bypass` | A node without a bypass is disabled, or the bypass forwards an incompatible value. | Enable the node, or change the downstream connection. |
 | `capability_unavailable` | The host cannot supply a resource, for example the reranker model. | Follow the reason in the message, or disable the node when it has a bypass. |
-| `option_unavailable` | A node selects a choice the host cannot run, for example a PDF reader whose package is not installed. | Install the package and restart OMRG, or choose another value, or set the step to Inherit. |
+| `option_unavailable` | A node selects a choice the host cannot run, for example a PDF reader whose package is not installed. | Install the package and restart OMRS, or choose another value, or set the step to Inherit. |
 | `embedding_identity_mismatch` | The collection uses another embedding provider or model. Equal dimensions do not make two models compatible. | Select a collection built with the host model. |
 | `conflicting_commit`, `multiple_commit_destinations` | More than one commit node writes sources. | Keep one commit node per graph. |
 | `unsupported_profile` | The profile is not `documents` or `codebase`. | Use an operational profile, or omit it. |
@@ -398,8 +398,8 @@ The examples below use an `engine` that you built with `Engine.from_environment(
 
 <!-- pipeline-python: validate -->
 ```python
-from omrg.compose_pipelines import pipeline_templates
-from omrg.core.pipelines import PipelineValidationError
+from omrs.compose_pipelines import pipeline_templates
+from omrs.core.pipelines import PipelineValidationError
 
 templates = {template.name: template for template in pipeline_templates(engine)}
 definition = templates["search"].definition
@@ -454,7 +454,7 @@ Give a `RunCancellation` token to `run_pipeline`, then call `cancel()` on the ev
 
 <!-- pipeline-python: cancel -->
 ```python
-from omrg.core.pipelines import RunCancellation
+from omrs.core.pipelines import RunCancellation
 
 token = RunCancellation()
 
@@ -503,4 +503,4 @@ print(result.status)  # succeeded
 
 ### Lower-level functions
 
-`omrg.core.pipelines` also exports `parse_definition`, `preflight` and `admit_pipeline`. Use them when you build your own host. The Engine methods call them with the Engine catalogue, the host context and the Engine profile resolver. `omrg.compose_pipelines.build_operation_catalogue()` returns the same catalogue the Engine uses.
+`omrs.core.pipelines` also exports `parse_definition`, `preflight` and `admit_pipeline`. Use them when you build your own host. The Engine methods call them with the Engine catalogue, the host context and the Engine profile resolver. `omrs.compose_pipelines.build_operation_catalogue()` returns the same catalogue the Engine uses.

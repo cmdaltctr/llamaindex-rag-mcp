@@ -15,15 +15,15 @@ from pathlib import Path
 import pytest
 from tests.unit.test_process_launcher_support import make_fake_editor
 
-from omrg.core.plugins import (
+from omrs.core.plugins import (
     REQUIRED_LAUNCH_CAPABILITIES,
     NotebookEditorSupervisor,
     PluginLaunchError,
     PluginRegistry,
     parse_manifest,
 )
-from omrg.integrations.process_launcher import OwnedProcessLauncher, SubprocessProbeRunner
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.integrations.process_launcher import OwnedProcessLauncher, SubprocessProbeRunner
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
 ROOT = Path(__file__).resolve().parents[2]
 PLUGIN_DIR = ROOT / "plugins" / "marimo"
@@ -56,16 +56,16 @@ def test_shipped_manifest_is_valid_and_complete() -> None:
 
 def test_readme_documents_external_install_and_lifecycle() -> None:
     text = (PLUGIN_DIR / "README.md").read_text()
-    for phrase in ("uv tool install marimo", "outside OMRG", "Stop", "recheck", "0o600"):
+    for phrase in ("uv tool install marimo", "outside OMRS", "Stop", "recheck", "0o600"):
         assert phrase in text
     assert "—" not in text  # house style: no em dashes
 
 
 def test_plugin_payload_lives_outside_the_package() -> None:
-    assert not (ROOT / "src" / "omrg" / "plugins").exists()
+    assert not (ROOT / "src" / "omrs" / "plugins").exists()
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
     wheel = pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]
-    assert wheel["packages"] == ["src/omrg"]
+    assert wheel["packages"] == ["src/omrs"]
     included = [
         *wheel.get("force-include", {}),
         *wheel.get("include", []),
@@ -87,7 +87,7 @@ def test_built_wheel_excludes_plugins(tmp_path: Path) -> None:
     )  # fmt: skip
     (wheel,) = tmp_path.glob("*.whl")
     names = zipfile.ZipFile(wheel).namelist()
-    assert any(name.startswith("omrg/") for name in names)
+    assert any(name.startswith("omrs/") for name in names)
     assert not any("plugins/marimo" in name or name.startswith("plugins/") for name in names)
 
 
@@ -116,7 +116,7 @@ def test_external_version_change_triggers_recheck(host, tmp_path: Path) -> None:
     registry, launcher, exe, notebook = host
     registry.register(MANIFEST, exe, approved=True)
     assert registry.recheck("marimo").launchable
-    # Updated outside OMRG. The shim file is unchanged, as with a tool
+    # Updated outside OMRS. The shim file is unchanged, as with a tool
     # environment upgrade that keeps the same entry-point script.
     (exe.parent / "version.txt").write_text("0.26.0\n")
     assert registry.state("marimo").launchable  # cached result; no process run
@@ -125,7 +125,7 @@ def test_external_version_change_triggers_recheck(host, tmp_path: Path) -> None:
         supervisor.open("marimo", notebook, consent=True)
     assert registry.state("marimo").status == "incompatible"
     assert launcher.owned_ids() == []
-    # A supported version passes the next recheck without any OMRG change.
+    # A supported version passes the next recheck without any OMRS change.
     (exe.parent / "version.txt").write_text("0.25.9\n")
     assert registry.recheck("marimo").version == "0.25.9"
     assert registry.state("marimo").launchable

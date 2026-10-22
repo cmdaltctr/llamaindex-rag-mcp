@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.workspace.chats import ChatRepository
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
-from omrg.integrations.workspace_sqlite.chats import SqliteChatRepository
+from omrs.core.workspace.chats import ChatRepository
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.integrations.workspace_sqlite.chats import SqliteChatRepository
 
 ANSWER = {"status": "ok", "answer": "Yes [1]", "citations": [{"ordinal": 1}]}
 

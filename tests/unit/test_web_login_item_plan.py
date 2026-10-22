@@ -15,9 +15,9 @@ from typing import Any
 
 import pytest
 
-from omrg.transports.cli import _web_login_item as wli
-from omrg.transports.cli import _web_login_item_settings as login_settings
-from omrg.transports.cli._launchagent import InstallerError
+from omrs.transports.cli import _web_login_item as wli
+from omrs.transports.cli import _web_login_item_settings as login_settings
+from omrs.transports.cli._launchagent import InstallerError
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def home(tmp_path: Path) -> Path:
 
 
 def _plan(home: Path, **kwargs: Any) -> wli.WebLoginItemPlan:
-    kwargs.setdefault("command_path", "/opt/omrg/bin/omrg")
+    kwargs.setdefault("command_path", "/opt/omrs/bin/omrs")
     return wli.build_plan(home=home, **kwargs)
 
 
@@ -42,18 +42,18 @@ def _plist(plan: wli.WebLoginItemPlan) -> dict[str, Any]:
 def test_label_and_paths(home: Path) -> None:
     plan = _plan(home)
 
-    assert plan.label == "com.omrg.web"
-    assert plan.plist_path == home / "Library" / "LaunchAgents" / "com.omrg.web.plist"
-    assert plan.stdout_log == home / "Library" / "Logs" / "omrg" / "com.omrg.web.out.log"
-    assert plan.stderr_log == home / "Library" / "Logs" / "omrg" / "com.omrg.web.err.log"
+    assert plan.label == "com.omrs.web"
+    assert plan.plist_path == home / "Library" / "LaunchAgents" / "com.omrs.web.plist"
+    assert plan.stdout_log == home / "Library" / "Logs" / "omrs" / "com.omrs.web.out.log"
+    assert plan.stderr_log == home / "Library" / "Logs" / "omrs" / "com.omrs.web.err.log"
 
 
-def test_working_directory_is_the_absolute_omrg_folder(home: Path) -> None:
+def test_working_directory_is_the_absolute_omrs_folder(home: Path) -> None:
     plan = _plan(home)
 
-    assert plan.working_directory == home / ".omrg"
+    assert plan.working_directory == home / ".omrs"
     assert plan.working_directory.is_absolute()
-    assert _plist(plan)["WorkingDirectory"] == str(home / ".omrg")
+    assert _plist(plan)["WorkingDirectory"] == str(home / ".omrs")
 
 
 # ── Arguments ────────────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ def test_working_directory_is_the_absolute_omrg_folder(home: Path) -> None:
 def test_arguments_without_options(home: Path) -> None:
     plan = _plan(home)
 
-    assert wli.build_program_arguments(plan) == ["/opt/omrg/bin/omrg", "web", "--login-item"]
+    assert wli.build_program_arguments(plan) == ["/opt/omrs/bin/omrs", "web", "--login-item"]
 
 
 def test_workspace_option_reaches_the_arguments(home: Path, tmp_path: Path) -> None:
@@ -126,7 +126,7 @@ def test_workspace_is_absent_from_the_plist_when_not_given(home: Path) -> None:
 def test_plist_runs_at_load_and_restarts_only_after_a_crash(home: Path) -> None:
     data = _plist(_plan(home))
 
-    assert data["Label"] == "com.omrg.web"
+    assert data["Label"] == "com.omrs.web"
     assert data["RunAtLoad"] is True
     assert data["KeepAlive"] == {"SuccessfulExit": False}
     assert data["ThrottleInterval"] == 60
@@ -153,13 +153,13 @@ def test_plist_names_the_logs(home: Path) -> None:
 
 def test_relative_command_path_is_refused(home: Path) -> None:
     with pytest.raises(InstallerError, match="absolute"):
-        wli.build_plan(home=home, command_path="omrg")
+        wli.build_plan(home=home, command_path="omrs")
 
 
 def test_checkout_warning_fires_for_a_venv_in_a_git_checkout(tmp_path: Path) -> None:
     (tmp_path / "proj" / ".git").mkdir(parents=True)
 
-    warning = wli.checkout_warning(str(tmp_path / "proj" / ".venv" / "bin" / "omrg"))
+    warning = wli.checkout_warning(str(tmp_path / "proj" / ".venv" / "bin" / "omrs"))
 
     assert warning is not None
     assert "uv tool install" in warning
@@ -170,19 +170,19 @@ def test_checkout_warning_accepts_a_git_file(tmp_path: Path) -> None:
     (tmp_path / "proj").mkdir()
     (tmp_path / "proj" / ".git").write_text("gitdir: elsewhere", encoding="utf-8")
 
-    assert wli.checkout_warning(str(tmp_path / "proj" / ".venv" / "bin" / "omrg")) is not None
+    assert wli.checkout_warning(str(tmp_path / "proj" / ".venv" / "bin" / "omrs")) is not None
 
 
 def test_checkout_warning_is_silent_without_git(tmp_path: Path) -> None:
     (tmp_path / "proj").mkdir()
 
-    assert wli.checkout_warning(str(tmp_path / "proj" / ".venv" / "bin" / "omrg")) is None
+    assert wli.checkout_warning(str(tmp_path / "proj" / ".venv" / "bin" / "omrs")) is None
 
 
 def test_checkout_warning_is_silent_for_an_installed_tool(tmp_path: Path) -> None:
     (tmp_path / ".git").mkdir()
 
-    assert wli.checkout_warning(str(tmp_path / ".local" / "bin" / "omrg")) is None
+    assert wli.checkout_warning(str(tmp_path / ".local" / "bin" / "omrs")) is None
 
 
 # ── Settings file ────────────────────────────────────────────────────────
@@ -190,14 +190,14 @@ def test_checkout_warning_is_silent_for_an_installed_tool(tmp_path: Path) -> Non
 
 @pytest.fixture
 def config_file(tmp_path: Path) -> Path:
-    return tmp_path / "home" / ".config" / "omrg" / "omrg.jsonc"
+    return tmp_path / "home" / ".config" / "omrs" / "omrs.jsonc"
 
 
 def test_settings_rows_name_the_file_and_the_optional_dotenv(config_file: Path) -> None:
     rows = " ".join(login_settings.plan_rows(config_file, home=config_file.parents[2]))
 
-    assert "~/.config/omrg/omrg.jsonc" in rows
-    assert "~/.omrg/.env" in rows
+    assert "~/.config/omrs/omrs.jsonc" in rows
+    assert "~/.omrs/.env" in rows
     assert "optional" in rows
     assert "overrides" in rows
 
@@ -208,8 +208,8 @@ def test_missing_settings_file_suggests_config_init(config_file: Path, tmp_path:
     )
 
     assert len(messages) == 1
-    assert "~/.config/omrg/omrg.jsonc" in messages[0]
-    assert "omrg config init" in messages[0]
+    assert "~/.config/omrs/omrs.jsonc" in messages[0]
+    assert "omrs config init" in messages[0]
 
 
 def test_existing_settings_file_gives_no_warning(config_file: Path, tmp_path: Path) -> None:
@@ -236,7 +236,7 @@ def test_dotenv_in_the_working_folder_is_reported_as_not_read(
     assert len(messages) == 1
     assert "does not read" in messages[0]
     assert str(cwd / ".env") in messages[0]
-    assert "omrg config init" in messages[0]
+    assert "omrs config init" in messages[0]
     assert "sentinel-value" not in messages[0]
 
 
@@ -252,7 +252,7 @@ def test_settings_text_creates_nothing(config_file: Path, tmp_path: Path) -> Non
 
 def test_link_file_name_matches_the_server() -> None:
     pytest.importorskip("fastapi")
-    from omrg.transports.api.launch_link import LINK_FILE_NAME
+    from omrs.transports.api.launch_link import LINK_FILE_NAME
 
     assert wli.LINK_FILE_NAME == LINK_FILE_NAME
 
@@ -260,7 +260,7 @@ def test_link_file_name_matches_the_server() -> None:
 def test_default_workspace_matches_the_core_default(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from omrg.core.workspace import default_workspace
+    from omrs.core.workspace import default_workspace
 
     monkeypatch.setenv("HOME", str(home))
 
@@ -276,13 +276,13 @@ def test_workspace_dir_prefers_the_option(home: Path, tmp_path: Path) -> None:
 
 
 def test_parse_link_splits_the_address_from_the_secret() -> None:
-    info = wli.parse_link("http://127.0.0.1:8765/#bootstrap=omrg_bs_abc\n")
+    info = wli.parse_link("http://127.0.0.1:8765/#bootstrap=omrs_bs_abc\n")
 
     assert info is not None
     assert (info.host, info.port) == ("127.0.0.1", 8765)
     assert info.address == "http://127.0.0.1:8765/"
-    assert info.url == "http://127.0.0.1:8765/#bootstrap=omrg_bs_abc"
-    assert "omrg_bs_abc" not in info.address
+    assert info.url == "http://127.0.0.1:8765/#bootstrap=omrs_bs_abc"
+    assert "omrs_bs_abc" not in info.address
 
 
 def test_parse_link_reads_an_ipv6_host() -> None:
@@ -332,10 +332,10 @@ def test_installed_version_reads_the_executable_output() -> None:
 
     def run(cmd: list[str], **_: Any) -> subprocess.CompletedProcess[str]:
         calls.append(cmd)
-        return subprocess.CompletedProcess(cmd, 0, stdout="omrg 3.2.1\n", stderr="")
+        return subprocess.CompletedProcess(cmd, 0, stdout="omrs 3.2.1\n", stderr="")
 
-    assert wli.installed_version("/opt/omrg/bin/omrg", run=run) == "3.2.1"
-    assert calls == [["/opt/omrg/bin/omrg", "--version"]]
+    assert wli.installed_version("/opt/omrs/bin/omrs", run=run) == "3.2.1"
+    assert calls == [["/opt/omrs/bin/omrs", "--version"]]
 
 
 @pytest.mark.parametrize("outcome", ["missing", "failed", "garbled"])
@@ -347,7 +347,7 @@ def test_installed_version_is_none_when_it_cannot_be_read(outcome: str) -> None:
             return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="boom")
         return subprocess.CompletedProcess(cmd, 0, stdout="hello\n", stderr="")
 
-    assert wli.installed_version("/opt/omrg/bin/omrg", run=run) is None
+    assert wli.installed_version("/opt/omrs/bin/omrs", run=run) is None
 
 
 # ── Reading an installed plist back ──────────────────────────────────────
@@ -361,7 +361,7 @@ def test_read_installed_returns_what_install_wrote(home: Path, tmp_path: Path) -
     item = wli.read_installed(plan.plist_path)
 
     assert item == wli.InstalledItem(
-        command_path="/opt/omrg/bin/omrg", workspace=tmp_path / "ws", port=9000
+        command_path="/opt/omrs/bin/omrs", workspace=tmp_path / "ws", port=9000
     )
 
 

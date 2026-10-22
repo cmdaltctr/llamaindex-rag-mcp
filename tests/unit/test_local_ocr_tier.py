@@ -25,9 +25,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from omrg.core.ingestion.ocr_identity import ocr_routing_payload, resolved_routing_payload
-from omrg.integrations.pdf import page_routing
-from omrg.integrations.pdf.page_routing import local_ocr
+from omrs.core.ingestion.ocr_identity import ocr_routing_payload, resolved_routing_payload
+from omrs.integrations.pdf import page_routing
+from omrs.integrations.pdf.page_routing import local_ocr
 
 
 def _provenance(

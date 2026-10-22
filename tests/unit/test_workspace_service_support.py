@@ -13,7 +13,7 @@ from contextlib import aclosing
 from pathlib import Path
 from typing import Any
 
-from omrg.core.pipelines import (
+from omrs.core.pipelines import (
     CancellationToken,
     EventKind,
     NodeOutcome,
@@ -22,7 +22,7 @@ from omrg.core.pipelines import (
     PipelineResult,
     RunStatus,
 )
-from omrg.core.workspace import (
+from omrs.core.workspace import (
     Admission,
     ArtefactStore,
     RevisionRecord,
@@ -30,7 +30,7 @@ from omrg.core.workspace import (
     RunJob,
     RunService,
 )
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
 GRAPH = {"version": 1, "nodes": [{"id": "a", "op": "read"}], "edges": []}
 GRAPH_CHANGED = {"version": 1, "nodes": [{"id": "a", "op": "chunk"}], "edges": []}

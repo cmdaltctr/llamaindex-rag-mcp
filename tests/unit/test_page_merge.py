@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from omrg.integrations.pdf.page_routing import PageResult, merge_pages
+from omrs.integrations.pdf.page_routing import PageResult, merge_pages
 
 
 def _result(page: int, text: str, source: str) -> PageResult:

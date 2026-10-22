@@ -10,7 +10,7 @@ const WITHOUT_PLUGIN = "The workspace works without the plugin.";
 
 const STATES: PluginState[] = [
   MARIMO,
-  { ...MARIMO, name: "old", display_name: "Old editor", status: "incompatible", launchable: false, message: "old 0.1 is below the tested range. Update it outside OMRG, then recheck." },
+  { ...MARIMO, name: "old", display_name: "Old editor", status: "incompatible", launchable: false, message: "old 0.1 is below the tested range. Update it outside OMRS, then recheck." },
   { ...MARIMO, name: "fresh", display_name: null, status: "unchecked", launchable: false, message: "Recheck to probe the executable." },
   { ...MARIMO, name: "moved", display_name: null, status: "needs_approval", launchable: false, message: "The manifest changed. Register it again." },
   { ...MARIMO, name: "gone", display_name: null, status: "unavailable", launchable: false, message: "The executable is missing." },
@@ -33,7 +33,7 @@ describe("notebook plugins", () => {
     const table = await within(plugins).findByRole("table", { name: "Registered plugins" });
     const rows = within(table).getAllByRole("row").slice(1);
     expect(rows.map((row) => within(row).getAllByRole("cell")[1]!.textContent)).toEqual(["Compatible", "Incompatible", "Not checked", "Needs approval", "Unavailable"]);
-    expect(rows[1]).toHaveTextContent("old 0.1 is below the tested range. Update it outside OMRG, then recheck.");
+    expect(rows[1]).toHaveTextContent("old 0.1 is below the tested range. Update it outside OMRS, then recheck.");
     expect(within(plugins).getByText(INSTALL_HINT)).toBeInTheDocument();
     expect(within(screen.getByRole("region", { name: "Trust notice" })).getByText(TRUST)).toBeInTheDocument();
   });
@@ -41,7 +41,7 @@ describe("notebook plugins", () => {
   it("registers only after the approval box is ticked", async () => {
     const { server, user } = await openNotebooks({ plugins: [] });
     const form = await screen.findByRole("form", { name: "Register a plugin" });
-    await user.type(within(form).getByLabelText("Manifest path"), "/opt/omrg/plugins/marimo/manifest.json");
+    await user.type(within(form).getByLabelText("Manifest path"), "/opt/omrs/plugins/marimo/manifest.json");
     await user.type(within(form).getByLabelText("Executable path"), "/home/u/.local/bin/marimo");
     const button = within(form).getByRole("button", { name: "Register plugin" });
     expect(button).toBeDisabled();
@@ -51,7 +51,7 @@ describe("notebook plugins", () => {
     await user.click(button);
     await waitFor(() => expect(server.find("POST", "/v1/plugins")).toHaveLength(1));
     expect(server.find("POST", "/v1/plugins")[0]!.body).toEqual({
-      manifest_path: "/opt/omrg/plugins/marimo/manifest.json",
+      manifest_path: "/opt/omrs/plugins/marimo/manifest.json",
       executable_path: "/home/u/.local/bin/marimo",
       approved: true,
     });
@@ -99,7 +99,7 @@ describe("notebook plugins", () => {
   });
 
   it("keeps an incompatible plugin from opening an editor and shows its actionable message", async () => {
-    const message = "marimo 0.27.0 is outside the tested range 0.25.0 to below 0.26.0. Install a tested version outside OMRG, then recheck.";
+    const message = "marimo 0.27.0 is outside the tested range 0.25.0 to below 0.26.0. Install a tested version outside OMRS, then recheck.";
     await openNotebooks({ plugins: [{ ...MARIMO, status: "incompatible", launchable: false, version: "0.27.0", message }] });
     const editor = await panel("Notebook editor");
     expect(await within(editor).findByText(message)).toBeInTheDocument();

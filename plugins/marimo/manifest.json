@@ -3,7 +3,7 @@
   "plugin_id": "marimo",
   "plugin_version": "0.2.0",
   "display_name": "marimo notebook editor",
-  "description": "Opens a marimo notebook in a separate local browser tab. Install and update marimo outside OMRG. Qualified against marimo 0.25.1 (task 8.4).",
+  "description": "Opens a marimo notebook in a separate local browser tab. Install and update marimo outside OMRS. Qualified against marimo 0.25.1 (task 8.4).",
   "tool": {
     "name": "marimo",
     "executable": "marimo",

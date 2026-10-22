@@ -3,7 +3,7 @@
 The workspace starts and serves document and graph routes when no plugin
 is registered, and starts no process. Plugin routes then report "not
 registered" without an error. No source under ``web/src`` or
-``src/omrg/transports`` embeds the editor, and no document claims an
+``src/omrs/transports`` embeds the editor, and no document claims an
 embedded editor. Every path, route, port, variable and command that the
 notebook guide cites exists in the code it describes.
 """
@@ -38,11 +38,11 @@ from tests.unit.test_web_guides_support import (  # noqa: E402
     undeclared_routes,
 )
 
-from omrg.integrations import process_launcher  # noqa: E402
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import DEFAULT_PLUGIN_PORTS, WebConfig  # noqa: E402
-from omrg.transports.api.runs_wiring import run_service_factory  # noqa: E402
-from omrg.transports.api.security import AccessPolicy  # noqa: E402
+from omrs.integrations import process_launcher  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import DEFAULT_PLUGIN_PORTS, WebConfig  # noqa: E402
+from omrs.transports.api.runs_wiring import run_service_factory  # noqa: E402
+from omrs.transports.api.security import AccessPolicy  # noqa: E402
 
 GUIDE = GUIDES / "notebooks.md"
 PLUGIN = REPO / "plugins" / "marimo"
@@ -118,7 +118,7 @@ def _source_files() -> list[Path]:
     ]
     transports = [
         path
-        for path in (REPO / "src" / "omrg" / "transports").rglob("*")
+        for path in (REPO / "src" / "omrs" / "transports").rglob("*")
         if path.suffix in {".py", ".yaml", ".md"} and "static" not in path.parts
     ]
     return [*web, REPO / "web" / "index.html", *transports]
@@ -142,7 +142,7 @@ def _documents() -> list[Path]:
         *sorted(GUIDES.glob("*.md")),
         REPO / "README.md",
         PLUGIN / "README.md",
-        REPO / "src" / "omrg" / "transports" / "api" / "README.md",
+        REPO / "src" / "omrs" / "transports" / "api" / "README.md",
         *[path for path in (REPO / "web" / "src").rglob("*.tsx")],
     ]
 
@@ -180,14 +180,14 @@ def test_cited_ports_variables_and_range_match_the_code() -> None:
     ports = [int(port) for port in re.findall(r"\b(27\d\d)\b", text)]
     assert tuple(ports) == DEFAULT_PLUGIN_PORTS
     notebook = (PLUGIN / "starter_notebook.py").read_text(encoding="utf-8")
-    variables = {span for span in code_spans(text) if span.startswith("OMRG_")}
-    manual = {"OMRG_API_URL", "OMRG_TOKEN_FILE", "OMRG_TOKEN", "OMRG_EXPERIMENT_CONTEXT"}
-    assert variables == {*manual, "OMRG_CONNECTION_FILE"}
+    variables = {span for span in code_spans(text) if span.startswith("OMRS_")}
+    manual = {"OMRS_API_URL", "OMRS_TOKEN_FILE", "OMRS_TOKEN", "OMRS_EXPERIMENT_CONTEXT"}
+    assert variables == {*manual, "OMRS_CONNECTION_FILE"}
     assert all(name in notebook for name in variables)
     assert all(name not in process_launcher.ENV_ALLOWLIST for name in variables)
-    # OMRG delivers only the connection file path to the editor it starts.
-    assert process_launcher.LAUNCH_ENV_ALLOWLIST == ("OMRG_CONNECTION_FILE",)
-    assert "omrg_connection.json" in text and "omrg_connection.json" in notebook
+    # OMRS delivers only the connection file path to the editor it starts.
+    assert process_launcher.LAUNCH_ENV_ALLOWLIST == ("OMRS_CONNECTION_FILE",)
+    assert "omrs_connection.json" in text and "omrs_connection.json" in notebook
     assert "gap" not in text.lower()
     assert "chmod 600" in notebook and 'output" / "runs"' in notebook
     tested = json.loads((PLUGIN / "manifest.json").read_text(encoding="utf-8"))["tool"]
@@ -204,7 +204,7 @@ def test_cited_commands_match_the_plugin_and_the_cli() -> None:
     probe = manifest["recipes"]["probe"]
     assert f"marimo {' '.join(probe['version_args'])}" in text
     assert f"marimo {' '.join(probe['help_args'])}" in text
-    assert "omrg web --experiment-root" in text
+    assert "omrs web --experiment-root" in text
 
 
 def test_guide_is_linked_from_the_web_guide_and_the_plugin_readme() -> None:

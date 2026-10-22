@@ -20,8 +20,8 @@ from pathlib import Path
 import pytest
 
 _SRC = Path(__file__).resolve().parents[2] / "src"
-_OMRG = _SRC / "omrg"
-_VECTORDB = _OMRG / "core" / "vectordb"
+_OMRS = _SRC / "omrs"
+_VECTORDB = _OMRS / "core" / "vectordb"
 
 #: Modules shared by every backend (design D3).  Backend code goes in a folder.
 _VECTORDB_ROOT_MODULES = {
@@ -37,7 +37,7 @@ _VECTORDB_ROOT_MODULES = {
 }
 _VECTORDB_BACKEND_FOLDERS = {"chroma", "lancedb"}
 
-_API = _OMRG / "transports" / "api"
+_API = _OMRS / "transports" / "api"
 _API_ROUTES = _API / "routes"
 
 #: Folders whose relative imports must all resolve (design D6).
@@ -56,7 +56,7 @@ def _python_files(root: Path) -> list[Path]:
 
 
 def _module_file(dotted: str) -> Path | None:
-    """Return the file of ``omrg`` module *dotted*, or ``None`` when absent."""
+    """Return the file of ``omrs`` module *dotted*, or ``None`` when absent."""
     base = _SRC.joinpath(*dotted.split("."))
     for candidate in (base.with_suffix(".py"), base / "__init__.py"):
         if candidate.is_file():
@@ -73,7 +73,7 @@ def _defined_names(path: Path) -> set[str]:
     """Return every name a module binds or exports anywhere in its syntax tree.
 
     Names listed in ``__all__`` count, because a package can serve them through
-    a lazy module ``__getattr__`` (PEP 562), as ``omrg.__version__`` does.
+    a lazy module ``__getattr__`` (PEP 562), as ``omrs.__version__`` does.
     """
     names: set[str] = set()
     for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
@@ -105,13 +105,13 @@ def _unresolved_imports(path: Path) -> list[str]:
     for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name.startswith("omrg.") and _module_file(alias.name) is None:
+                if alias.name.startswith("omrs.") and _module_file(alias.name) is None:
                     problems.append(f"line {node.lineno}: import {alias.name}")
         elif isinstance(node, ast.ImportFrom):
             if node.level:
                 anchor = package[: len(package) - (node.level - 1)]
                 target = ".".join([*anchor, *(node.module.split(".") if node.module else [])])
-            elif node.module and node.module.startswith("omrg."):
+            elif node.module and node.module.startswith("omrs."):
                 target = node.module
             else:
                 continue
@@ -147,7 +147,7 @@ def test_vectordb_root_holds_only_shared_modules() -> None:
 
 
 @pytest.mark.parametrize(
-    "package", _IMPORT_FREE_PACKAGES, ids=lambda package: str(package.relative_to(_OMRG))
+    "package", _IMPORT_FREE_PACKAGES, ids=lambda package: str(package.relative_to(_OMRS))
 )
 def test_package_marker_imports_nothing(package: Path) -> None:
     """A backend or routes ``__init__.py`` holds a docstring only (no re-export shim)."""
@@ -162,10 +162,10 @@ def test_package_marker_imports_nothing(package: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "root", _RESOLVED_IMPORT_ROOTS, ids=lambda root: str(root.relative_to(_OMRG))
+    "root", _RESOLVED_IMPORT_ROOTS, ids=lambda root: str(root.relative_to(_OMRS))
 )
 def test_every_import_in_moved_folders_resolves(root: Path) -> None:
-    """Each relative or ``omrg.`` import, also inside a function, names a real module."""
+    """Each relative or ``omrs.`` import, also inside a function, names a real module."""
     findings = [
         f"  {path.relative_to(_SRC)} {problem}"
         for path in _python_files(root)
@@ -190,10 +190,10 @@ def test_unresolved_import_check_catches_function_level_imports() -> None:
 
 def test_lancedb_folder_does_not_shadow_the_sdk() -> None:
     """``import lancedb`` in ``lancedb/store.py`` finds the SDK, not the folder (design D2)."""
-    store = importlib.import_module("omrg.core.vectordb.lancedb.store")
+    store = importlib.import_module("omrs.core.vectordb.lancedb.store")
     sdk = store.lancedb
     assert sdk.__name__ == "lancedb"
-    assert Path(sdk.__file__).resolve().is_relative_to(_OMRG) is False
+    assert Path(sdk.__file__).resolve().is_relative_to(_OMRS) is False
 
 
 def test_chroma_paged_import_does_not_load_chromadb() -> None:
@@ -204,7 +204,7 @@ def test_chroma_paged_import_does_not_load_chromadb() -> None:
     """
     program = (
         "import sys\n"
-        "import omrg.core.vectordb.chroma.paged\n"
+        "import omrs.core.vectordb.chroma.paged\n"
         "loaded = sorted(m for m in sys.modules if m.split('.')[0] == 'chromadb')\n"
         "print(','.join(loaded))\n"
         "sys.exit(1 if loaded else 0)\n"

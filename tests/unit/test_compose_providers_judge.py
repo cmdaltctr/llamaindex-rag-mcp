@@ -10,14 +10,14 @@ from pathlib import Path
 
 import pytest
 
-from omrg.compose_providers import (
+from omrs.compose_providers import (
     ProviderValues,
     apply_provider_values,
     locked_fields,
     provider_values_from_file,
 )
-from omrg.config import Settings
-from omrg.config.settings_file import read_settings_file
+from omrs.config import Settings
+from omrs.config.settings_file import read_settings_file
 
 
 def make_settings(**extra: object) -> Settings:
@@ -27,7 +27,7 @@ def make_settings(**extra: object) -> Settings:
 def _file(tmp_path: Path, text: str) -> object:
     folder = tmp_path / "cfg"
     folder.mkdir(exist_ok=True)
-    (folder / "omrg.jsonc").write_text(text, encoding="utf-8")
+    (folder / "omrs.jsonc").write_text(text, encoding="utf-8")
     return read_settings_file(folder)
 
 

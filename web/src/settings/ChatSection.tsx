@@ -48,7 +48,7 @@ function ChatForm({ settings, connections, onClose }: { settings: ChatSettings; 
   );
 }
 
-/** Where Chat gets its model. A saved choice is written to `omrg.jsonc` and applies at once to this web server. */
+/** Where Chat gets its model. A saved choice is written to `omrs.jsonc` and applies at once to this web server. */
 export function ChatSection() {
   const api = useApi();
   const chat = useQuery(chatSettingsQuery(api));
@@ -82,7 +82,7 @@ export function ChatSection() {
             <li>Metadata extraction keeps its own model.</li>
             <li>The claim check judge has its own choice in the block below.</li>
             <li>
-              <code className="font-mono text-code">omrg</code> over stdio and the CLI read the same omrg.jsonc at their next launch.
+              <code className="font-mono text-code">omrs</code> over stdio and the CLI read the same omrs.jsonc at their next launch.
             </li>
           </ul>
           <JudgeBlock connections={connections} />

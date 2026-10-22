@@ -25,7 +25,7 @@ from tests.unit.test_retrieval_graph_adapters_support import (
     run_node,
 )
 
-from omrg.core.pipelines import (
+from omrs.core.pipelines import (
     SCORE_KIND_DENSE,
     SCORE_KIND_RERANK,
     SCORE_KIND_RRF,
@@ -38,8 +38,8 @@ from omrg.core.pipelines import (
     parse_definition,
     preflight,
 )
-from omrg.core.retrieval import graph_adapters as ga
-from omrg.core.retrieval import registry
+from omrs.core.retrieval import graph_adapters as ga
+from omrs.core.retrieval import registry
 
 _QUERY = "hybrid fusion rank reranker"
 _BM25 = {"retrieval.hybrid_sparse_backend": "bm25"}
@@ -398,9 +398,9 @@ def test_poisoned_process_defaults_are_never_read(monkeypatch, effective_setting
     """The full chain runs with every process default poisoned."""
     import llama_index.core
 
-    from omrg.core import settings as settings_mod
-    from omrg.core import vectordb
-    from omrg.core.retrieval import backend, pipeline
+    from omrs.core import settings as settings_mod
+    from omrs.core import vectordb
+    from omrs.core.retrieval import backend, pipeline
 
     def poisoned(*args, **kwargs):
         raise AssertionError("process default read")
@@ -443,9 +443,9 @@ def test_adapter_modules_have_no_default_accessor_reads() -> None:
 def test_importing_adapters_loads_no_concrete_strategy() -> None:
     """Registry contract: concrete strategy modules load only on use."""
     code = (
-        "import sys, omrg.core.retrieval.graph_adapters as g\n"
+        "import sys, omrs.core.retrieval.graph_adapters as g\n"
         "mods = ['dense', 'sparse', 'native_sparse', 'reranker', 'reranker_torch', 'fusion']\n"
-        "print([m for m in mods if f'omrg.core.retrieval.{m}' in sys.modules])\n"
+        "print([m for m in mods if f'omrs.core.retrieval.{m}' in sys.modules])\n"
     )
     result = subprocess.run(
         [sys.executable, "-c", code], capture_output=True, text=True, check=True

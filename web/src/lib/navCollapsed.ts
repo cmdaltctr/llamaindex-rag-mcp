@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { readStored, writeStored } from "./storage";
 
 /** Per-browser choice to show the workspace navigation as a narrow icon column. */
-export const NAV_COLLAPSED_KEY = "omrg-nav-collapsed";
+export const NAV_COLLAPSED_KEY = "omrs-nav-collapsed";
 
 function isBoolean(value: unknown): value is boolean {
   return typeof value === "boolean";

@@ -29,7 +29,7 @@ METADATA__EXTRACTION_MODE=local
 METADATA__EXTRACTION_MODE=disabled
 
 # Or inline for a single run
-METADATA__EXTRACTION_MODE=disabled uv run omrg ingest /path/to/docs/
+METADATA__EXTRACTION_MODE=disabled uv run omrs ingest /path/to/docs/
 ```
 
 ## LlamaIndex mode
@@ -74,7 +74,7 @@ The store comes from the caller. Metadata extraction never reads a process-defau
 Both entry points accept the store as an optional keyword-only argument. The existing positional arguments do not change:
 
 ```python
-from omrg.core.metadata.extractor import (
+from omrs.core.metadata.extractor import (
     extract_metadata_async,
     extract_metadata_with_status_async,
 )

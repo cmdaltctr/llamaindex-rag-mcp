@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Offline smoke test for the provisioned dots-mocr engine (tasks 3.4, 3.5).
 
-SEPARATE from the main OMRG pytest suite: it needs the provisioned engine
+SEPARATE from the main OMRS pytest suite: it needs the provisioned engine
 environment and the downloaded model. Provision first, with operator
 approval and licence acceptance::
 
@@ -66,14 +66,14 @@ def worker_command() -> list[str]:
         "-l",
         str(VENV_PYTHON),
         "-m",
-        "omrg_ocr_worker_core",
+        "omrs_ocr_worker_core",
     ]
 
 
 def run(cases: list[tuple[str, Path, int]]) -> int:
     """Probe, parse every case in one sandboxed worker, and save evidence."""
     probe = subprocess.run(  # noqa: S603 - fixed argv, no shell
-        [str(VENV_PYTHON), "-m", "omrg_ocr_worker_core", "--capabilities"],
+        [str(VENV_PYTHON), "-m", "omrs_ocr_worker_core", "--capabilities"],
         capture_output=True,
         text=True,
         check=False,

@@ -7,7 +7,7 @@
     "ocr_backend": "paddleocr-vl",
     "ocr_used": true,
     "output_schema": {
-      "id": "omrg.ocr.parse_output",
+      "id": "omrs.ocr.parse_output",
       "version": "1"
     },
     "page_count": 1,

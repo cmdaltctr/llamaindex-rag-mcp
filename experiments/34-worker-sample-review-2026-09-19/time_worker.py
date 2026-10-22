@@ -7,7 +7,7 @@ against reality: request one carries the model load, request two shows
 the steady-state per-page cost.
 
 Usage:
-    .venv/bin/python -m omrg_ocr_worker is spawned by this script.
+    .venv/bin/python -m omrs_ocr_worker is spawned by this script.
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ REQUESTS = [
 
 def main() -> int:
     proc = subprocess.Popen(  # noqa: S603 - fixed argv, no shell
-        [str(WORKER), "-m", "omrg_ocr_worker"],
+        [str(WORKER), "-m", "omrs_ocr_worker"],
         cwd=str(REPO_ROOT / "ocr-worker"),
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,

@@ -27,13 +27,13 @@ from typing import Any
 
 import pytest
 
-from omrg.core.retrieval.sparse import (
+from omrs.core.retrieval.sparse import (
     _LOCAL_TOKEN_PREFIX,
     _MAX_BUILD_ATTEMPTS,
     BM25SparseRetriever,
     reset_fallback_warning_state,
 )
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
 _DURABLE_PREFIX = "lancedb-durable-v1"
 
@@ -148,7 +148,7 @@ def test_fallback_token_is_tagged_and_warns_once_per_collection(
     fallback_warnings = [
         record
         for record in caplog.records
-        if record.name == "omrg.core.retrieval.sparse"
+        if record.name == "omrs.core.retrieval.sparse"
         and "process-local generation counter" in record.message
     ]
     assert len(fallback_warnings) == 1
@@ -167,7 +167,7 @@ def test_fallback_token_is_tagged_and_warns_once_per_collection(
             [
                 record
                 for record in caplog.records
-                if record.name == "omrg.core.retrieval.sparse"
+                if record.name == "omrs.core.retrieval.sparse"
                 and "process-local generation counter" in record.message
             ]
         )
@@ -179,7 +179,7 @@ def test_capability_transition_from_fallback_to_durable_invalidates() -> None:
     """Tagged tokens never compare equal, even with equal numeric members.
 
     A legacy table reads ``None`` (fallback token ``bm25-local-v1:3``);
-    the next OMRG-controlled writer installs an epoch whose table
+    the next OMRS-controlled writer installs an epoch whose table
     version is also 3. The numeric members match, but the cache must
     rebuild because the tags differ (spec: capability transition).
     """
@@ -271,8 +271,8 @@ def test_continuous_mutation_exhausts_bounded_retries_and_publishes_nothing() ->
 _WRITER_SCRIPT = textwrap.dedent(
     """
     import sys
-    from omrg.core.vectordb.identity import EmbeddingIdentity
-    from omrg.core.vectordb.lancedb.store import LanceVectorStore
+    from omrs.core.vectordb.identity import EmbeddingIdentity
+    from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
     uri, collection, phase = sys.argv[1], sys.argv[2], sys.argv[3]
     vector = [1.0] + [0.0] * 383

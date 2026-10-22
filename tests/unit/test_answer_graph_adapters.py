@@ -40,8 +40,8 @@ from tests.unit.test_answer_graph_adapters_support import (
     run_node,
 )
 
-from omrg.core.answer.graph_adapters import ANSWER_LLM_RESOURCE, VERIFY_LLM_RESOURCE
-from omrg.core.pipelines import (
+from omrs.core.answer.graph_adapters import ANSWER_LLM_RESOURCE, VERIFY_LLM_RESOURCE
+from omrs.core.pipelines import (
     EffectClass,
     OperationCatalogue,
     OperationDescriptor,
@@ -54,7 +54,7 @@ from omrg.core.pipelines import (
     preflight,
 )
 
-_SRC = Path(__file__).resolve().parents[2] / "src" / "omrg"
+_SRC = Path(__file__).resolve().parents[2] / "src" / "omrs"
 
 
 def _rows(name: str) -> list[dict]:
@@ -89,7 +89,7 @@ def test_register_publishes_the_answer_family_with_effect_classes() -> None:
 
 def test_registering_twice_is_rejected() -> None:
     """One ``register_answer_operations`` call per catalogue."""
-    from omrg.core.answer.graph_adapters import register_answer_operations
+    from omrs.core.answer.graph_adapters import register_answer_operations
 
     catalogue = OperationCatalogue()
     register_answer_operations(catalogue)
@@ -387,8 +387,8 @@ async def test_adapters_never_read_process_defaults(
     effective_settings: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Poisoned process defaults are never read by the adapter chain."""
-    import omrg.core.settings as core_settings
-    import omrg.core.vectordb as vectordb
+    import omrs.core.settings as core_settings
+    import omrs.core.vectordb as vectordb
 
     def _poisoned(*_args: Any, **_kwargs: Any) -> Any:
         raise AssertionError("an answer graph adapter read a process default")
@@ -413,10 +413,10 @@ def test_adapter_module_import_stays_inside_the_answer_domain() -> None:
     """Importing the adapters loads no ingestion, retrieval, transport or provider code."""
     code = (
         "import json, sys\n"
-        "import omrg.core.answer.graph_adapters\n"
+        "import omrs.core.answer.graph_adapters\n"
         "bad = sorted(m for m in sys.modules if m.startswith(("
-        "'omrg.core.ingestion', 'omrg.core.retrieval', 'omrg.core.providers', "
-        "'omrg.compose', 'omrg.transports', 'omrg.integrations')))\n"
+        "'omrs.core.ingestion', 'omrs.core.retrieval', 'omrs.core.providers', "
+        "'omrs.compose', 'omrs.transports', 'omrs.integrations')))\n"
         "print(json.dumps(bad))\n"
     )
     proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)

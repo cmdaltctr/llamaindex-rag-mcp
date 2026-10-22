@@ -1,7 +1,7 @@
 /**
  * Typed client for the stored-chat routes of the local `/v1` API (ADR-082).
  *
- * Shapes follow `src/omrg/transports/api/routes/chats.py` and the `Chat*`
+ * Shapes follow `src/omrs/transports/api/routes/chats.py` and the `Chat*`
  * schemas in `openapi.yaml`. The routes need the browser session. A chat that
  * the server no longer knows gives a 404 `ApiError`.
  */

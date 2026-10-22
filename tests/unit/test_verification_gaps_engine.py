@@ -27,14 +27,14 @@ from tests.fixtures.pipeline_parity.ingestion.snapshot import copy_sources, pin_
 from tests.unit.test_engine_pipelines_support import FakeStore, build_engine, chunks
 from tests.unit.test_ingestion_graph_adapters_support import offline_settings
 
-from omrg.core.ingestion._state import shutdown_requested
-from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition
-from omrg.core.pipelines import EventKind, NodeStatus, PipelineResult, RunCancellation, RunStatus
-from omrg.core.retrieval import _reranker_cache
-from omrg.core.retrieval.reranker import CrossEncoderReranker, reset_model_cache
-from omrg.core.settings import EffectiveSettings, MetadataBlock
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
-from omrg.engine import Engine
+from omrs.core.ingestion._state import shutdown_requested
+from omrs.core.ingestion.graph_adapters import canonical_ingestion_definition
+from omrs.core.pipelines import EventKind, NodeStatus, PipelineResult, RunCancellation, RunStatus
+from omrs.core.retrieval import _reranker_cache
+from omrs.core.retrieval.reranker import CrossEncoderReranker, reset_model_cache
+from omrs.core.settings import EffectiveSettings, MetadataBlock
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.engine import Engine
 
 _MODEL_ID = "fake-org/fake-cross-encoder"
 _CACHE_KEY = ("onnx", _MODEL_ID)
@@ -82,9 +82,9 @@ def _node(result: PipelineResult, node_id: str) -> Any:
 
 def test_build_engine_leaves_process_defaults_unchanged(tmp_path: Path) -> None:
     """The default settings, store and LlamaIndex embedder are the same objects after."""
-    from omrg.compose_engine import build_engine as compose_build_engine
-    from omrg.core.settings import get_default_effective_settings
-    from omrg.core.vectordb import get_default_store
+    from omrs.compose_engine import build_engine as compose_build_engine
+    from omrs.core.settings import get_default_effective_settings
+    from omrs.core.vectordb import get_default_store
 
     before = (
         get_default_effective_settings(),
@@ -97,12 +97,12 @@ def test_build_engine_leaves_process_defaults_unchanged(tmp_path: Path) -> None:
         collection_name="built_only",
     )
     with (
-        patch("omrg.compose.build_embed_model", return_value=MagicMock(model_name="m")),
-        patch("omrg.compose.build_vector_store", return_value=MagicMock()),
-        patch("omrg.compose.settings_to_effective", return_value=built),
-        patch("omrg.compose.build_reranker", return_value=None),
-        patch("omrg.compose._resolve_active_strategies"),
-        patch("omrg.compose._log_norm_guard_state"),
+        patch("omrs.compose.build_embed_model", return_value=MagicMock(model_name="m")),
+        patch("omrs.compose.build_vector_store", return_value=MagicMock()),
+        patch("omrs.compose.settings_to_effective", return_value=built),
+        patch("omrs.compose.build_reranker", return_value=None),
+        patch("omrs.compose._resolve_active_strategies"),
+        patch("omrs.compose._log_norm_guard_state"),
     ):
         engine = compose_build_engine(MagicMock())
 

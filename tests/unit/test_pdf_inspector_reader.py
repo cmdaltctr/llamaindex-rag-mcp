@@ -19,8 +19,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from omrg.integrations.pdf.factory import get_pdf_reader
-from omrg.integrations.pdf.registry import available as available_readers
+from omrs.integrations.pdf.factory import get_pdf_reader
+from omrs.integrations.pdf.registry import available as available_readers
 
 
 def _stub_pdf_inspector(
@@ -54,7 +54,7 @@ def _stub_liteparse_retry(monkeypatch, page_texts: list[str]) -> None:
     """Seed the registry cache with a stub LiteParse fallback reader."""
     from llama_index.core import Document
 
-    from omrg.integrations.pdf import registry
+    from omrs.integrations.pdf import registry
 
     class _StubLiteParseReader:
         def __init__(self, *, ocr_enabled: bool = False, num_workers: int | None = None) -> None:
@@ -76,7 +76,7 @@ def _stub_pypdf_retry(monkeypatch, page_texts: list[str]) -> None:
     """
     from llama_index.core import Document
 
-    from omrg.integrations.pdf import registry
+    from omrs.integrations.pdf import registry
 
     class _StubPypdfReader:
         def load_data(self, file, *args, **kwargs):
@@ -87,7 +87,7 @@ def _stub_pypdf_retry(monkeypatch, page_texts: list[str]) -> None:
 
 def _stub_liteparse_exploding(monkeypatch) -> None:
     """Seed a LiteParse tier that fails if a no-retry path invokes it."""
-    from omrg.integrations.pdf import registry
+    from omrs.integrations.pdf import registry
 
     class _ExplodingReader:
         def __init__(self, *, ocr_enabled: bool = False, num_workers: int | None = None) -> None:
@@ -102,7 +102,7 @@ def _stub_liteparse_exploding(monkeypatch) -> None:
 
 def _stub_pypdf_exploding(monkeypatch) -> None:
     """Seed a fallback reader that fails the test if it is ever invoked."""
-    from omrg.integrations.pdf import registry
+    from omrs.integrations.pdf import registry
 
     class _ExplodingReader:
         def load_data(self, file, *args, **kwargs):
@@ -131,7 +131,7 @@ def test_adapter_module_imports_pdf_inspector_lazily(monkeypatch):
     # earlier-running test exercises the real reader).
     monkeypatch.delitem(sys.modules, "pdf_inspector", raising=False)
 
-    importlib.import_module("omrg.integrations.pdf.pdf_inspector")
+    importlib.import_module("omrs.integrations.pdf.pdf_inspector")
 
     assert "pdf_inspector" not in sys.modules
 
@@ -141,7 +141,7 @@ def test_load_data_passthroughs_mock_markdown(monkeypatch, tmp_path):
     markdown = "# Title\n\nBody text extracted by pdf-inspector."
     _stub_pdf_inspector(monkeypatch, markdown)
 
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     fake_pdf = tmp_path / "sample.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 stub")
@@ -160,7 +160,7 @@ def test_missing_package_raises_actionable_importerror(monkeypatch, tmp_path):
     """Without pdf_inspector installed, load_data raises an ImportError naming the fix."""
     monkeypatch.setitem(sys.modules, "pdf_inspector", None)
 
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     fake_pdf = tmp_path / "sample.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 stub")
@@ -186,7 +186,7 @@ def test_real_pdf_end_to_end_smoke(fixtures_dir):
     """
     from pathlib import Path
 
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     pdf = fixtures_dir / "smoke_text.pdf"
     assert isinstance(pdf, Path)
@@ -216,7 +216,7 @@ def test_contradiction_retries_with_liteparse_before_pypdf_and_recovers_text(mon
     _stub_liteparse_retry(monkeypatch, ["lite page one", "lite page two", "lite page three"])
     _stub_pypdf_retry(monkeypatch, ["pypdf must not be selected"])
 
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     fake_pdf = tmp_path / "sloman.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 stub")
@@ -232,8 +232,8 @@ def test_unavailable_liteparse_falls_through_to_pypdf(monkeypatch, tmp_path):
     """An unavailable LiteParse tier hands over to the registered pypdf tier."""
     from llama_index.core import Document
 
-    from omrg.integrations.pdf import registry
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf import registry
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     _stub_pdf_inspector(monkeypatch, "", page_count=2, pages_needing_ocr=[0, 1])
     calls: list[str] = []
@@ -265,8 +265,8 @@ def test_failed_liteparse_tier_hands_over_to_pypdf(monkeypatch, tmp_path, litepa
     """A LiteParse exception or empty result must not block the pypdf rescue."""
     from llama_index.core import Document
 
-    from omrg.integrations.pdf import registry
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf import registry
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     _stub_pdf_inspector(monkeypatch, "", page_count=2, pages_needing_ocr=[0, 1])
     calls: list[str] = []
@@ -311,7 +311,7 @@ def test_recovered_text_corrects_the_routing_evidence(monkeypatch, tmp_path):
     _stub_liteparse_retry(monkeypatch, [""] * 3)
     _stub_pypdf_retry(monkeypatch, ["recovered text"] * 3)
 
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     fake_pdf = tmp_path / "sloman.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 stub")
@@ -341,8 +341,8 @@ def test_both_tiers_empty_emit_the_unchanged_inspector_result(monkeypatch, tmp_p
     _stub_liteparse_retry(monkeypatch, ["", "", ""])
     _stub_pypdf_retry(monkeypatch, ["", "", ""])
 
-    from omrg.integrations.pdf import registry
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf import registry
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     calls: list[str] = []
     registered_get = registry.get
@@ -376,7 +376,7 @@ def test_retry_exception_propagates_to_the_error_boundary(monkeypatch, tmp_path)
         pages_needing_ocr=[0, 1, 2],
     )
 
-    from omrg.integrations.pdf import registry
+    from omrs.integrations.pdf import registry
 
     class _CrashingReader:
         def load_data(self, file, *args, **kwargs):
@@ -385,7 +385,7 @@ def test_retry_exception_propagates_to_the_error_boundary(monkeypatch, tmp_path)
     _stub_liteparse_retry(monkeypatch, ["", "", ""])
     monkeypatch.setitem(registry._cache, "pypdf", _CrashingReader)
 
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     fake_pdf = tmp_path / "sloman.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 stub")
@@ -398,9 +398,9 @@ def test_liteparse_retry_forces_ocr_disabled(monkeypatch, tmp_path, effective_se
     """The rescue tier disables LiteParse OCR despite an operator default."""
     from llama_index.core import Document
 
-    from omrg.core.settings import set_default_effective_settings
-    from omrg.integrations.pdf import registry
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.core.settings import set_default_effective_settings
+    from omrs.integrations.pdf import registry
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     set_default_effective_settings(effective_settings(liteparse_ocr_enabled=True))
     _stub_pdf_inspector(monkeypatch, "", page_count=1, pages_needing_ocr=[0])
@@ -429,10 +429,10 @@ def test_liteparse_retry_forces_ocr_disabled(monkeypatch, tmp_path, effective_se
 
 def test_liteparse_rescue_does_not_require_default_settings(monkeypatch, tmp_path):
     """A bare adapter call stays on liteparse without composed settings."""
-    from omrg.core.settings import reset_default_effective_settings
-    from omrg.integrations.pdf import registry
-    from omrg.integrations.pdf.liteparse import LiteParseReader
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.core.settings import reset_default_effective_settings
+    from omrs.integrations.pdf import registry
+    from omrs.integrations.pdf.liteparse import LiteParseReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     _stub_pdf_inspector(monkeypatch, "", page_count=1, pages_needing_ocr=[0])
     observed_settings: list[tuple[bool, int | None, bool]] = []
@@ -478,7 +478,7 @@ def test_non_empty_markdown_never_retries(monkeypatch, tmp_path):
     _stub_liteparse_exploding(monkeypatch)
     _stub_pypdf_exploding(monkeypatch)
 
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     fake_pdf = tmp_path / "sample.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 stub")
@@ -506,7 +506,7 @@ def test_scanned_classification_never_retries(monkeypatch, tmp_path):
     _stub_liteparse_exploding(monkeypatch)
     _stub_pypdf_exploding(monkeypatch)
 
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     fake_pdf = tmp_path / "scanned.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 stub")
@@ -532,7 +532,7 @@ def test_zero_page_count_never_retries(monkeypatch, tmp_path):
     _stub_liteparse_exploding(monkeypatch)
     _stub_pypdf_exploding(monkeypatch)
 
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     fake_pdf = tmp_path / "empty.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 stub")

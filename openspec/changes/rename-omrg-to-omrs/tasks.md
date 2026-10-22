@@ -14,42 +14,42 @@
 - [x] 2.3 Implement the startup check in `config/legacy.py` or a sibling module, following the shape-aware retirement rule in its docstring. Keep `OMRG_*` flat names in the tripwire. Make the tests pass.
 - [x] 2.4 Write failing tests for `omrs migrate`: dry run changes nothing; full migration (folders, `omrg.jsonc` to `omrs.jsonc`, secret references, keychain copy, launchd replacement); conflict refusal when both folders exist; second run is a no-op; remaining `OMRG_*` variables are listed; LanceDB data opens with unchanged contents. Mock keychain and launchd. Never read the real `~/.config/omrg`.
 - [x] 2.5 Implement `transports/cli/migrate.py` (thin wrapper) and the move logic under `core/` or `integrations/` as the folder guides require. Reuse the legacy plist recognition in `_launchagent.py`. Never print secret values. Make the tests pass.
-- [ ] 2.6 Keep files under 500 lines (`tests/test_file_size_ceiling.py`). Commit: `uv run --no-sync git commit` with a Conventional Commit message.
+- [x] 2.6 Keep files under 500 lines (`tests/test_file_size_ceiling.py`). Commit: `uv run --no-sync git commit` with a Conventional Commit message.
 
 ## 3. Python package and build configuration
 
-- [ ] 3.1 `git mv src/omrg src/omrs`. Do the same for `ocr-workers/*/src/omrg_ocr_*` to `omrs_ocr_*` (confirmed by the owner).
-- [ ] 3.2 Run the ast-grep import rule on `src tests scripts experiments ocr-workers` (design D4). Review `git diff --stat`. Expect about 2,505 `from` statements in 467 files, 20 `import omrg` and 12 `import omrg.X`.
-- [ ] 3.3 Run the string-path rule for `patch`, `monkeypatch.setattr`, `import_module` and `mock.patch.object` first arguments. List the remaining bare `"omrg"` strings and decide each by hand (MCP name, keychain service, logger name, `metadata.version("omrg")`).
-- [ ] 3.4 Update `pyproject.toml`: project name, console script (`omrs = "omrs.transports.cli:run_cli"`), hatch `packages` and `force-include`, extras hints, coverage source, and the about 100 import-linter module strings including `root_package`. Remove the `omrg` script. Run `uv lock`.
-- [ ] 3.5 Update `.github/workflows/ci.yml` (lines near 94, 311, 523, 586), `codecov.yml`, `.coderabbit.yaml`, `scripts/local_ci.sh` and `.gitignore`.
-- [ ] 3.6 Update the tests that pin the name: `tests/unit/test_verification_gaps_boundaries.py`, `tests/test_clean_base_tripwire.py` (counts must match 1.3), `tests/test_file_size_ceiling.py`, `tests/test_docs_references.py`, `tests/conftest.py`.
+- [x] 3.1 `git mv src/omrg src/omrs`. Do the same for `ocr-workers/*/src/omrg_ocr_*` to `omrs_ocr_*` (confirmed by the owner).
+- [x] 3.2 Run the ast-grep import rule on `src tests scripts experiments ocr-workers` (design D4). Review `git diff --stat`. Expect about 2,505 `from` statements in 467 files, 20 `import omrg` and 12 `import omrg.X`.
+- [x] 3.3 Run the string-path rule for `patch`, `monkeypatch.setattr`, `import_module` and `mock.patch.object` first arguments. List the remaining bare `"omrg"` strings and decide each by hand (MCP name, keychain service, logger name, `metadata.version("omrg")`).
+- [x] 3.4 Update `pyproject.toml`: project name, console script (`omrs = "omrs.transports.cli:run_cli"`), hatch `packages` and `force-include`, extras hints, coverage source, and the about 100 import-linter module strings including `root_package`. Remove the `omrg` script. Run `uv lock`.
+- [x] 3.5 Update `.github/workflows/ci.yml` (lines near 94, 311, 523, 586), `codecov.yml`, `.coderabbit.yaml`, `scripts/local_ci.sh` and `.gitignore`.
+- [x] 3.6 Update the tests that pin the name: `tests/unit/test_verification_gaps_boundaries.py`, `tests/test_clean_base_tripwire.py` (counts must match 1.3), `tests/test_file_size_ceiling.py`, `tests/test_docs_references.py`, `tests/conftest.py`.
 - [ ] 3.7 Run `uv run lint-imports`. Delete any stale `ignore_imports` entry it reports. Run `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q`, then the tripwire on its own. Fix until green.
 - [ ] 3.8 Commit this group.
 
 ## 4. Settings surface and runtime identifiers
 
-- [ ] 4.1 Rename the 13 `OMRG_*` variables to `OMRS_*` in `config/user_config.py`, `core/plugins/editor.py`, `core/vectordb/lancedb/meta.py` and every other reader. Update `.env.example`.
-- [ ] 4.2 Rename `omrg.jsonc` to `omrs.jsonc` and the config and data folder defaults (`config/user_config.py`, `core/workspace/cleanup.py`, `compose_profile_setup.py`, `transports/cli/web*.py`, `transports/cli/config.py`). Check that `omrs config init` builds its template from the `Settings` model with no template edit.
-- [ ] 4.3 Rename the secret reference path in the writer and the reader (`file://~/.config/omrs/secrets/<name>.key`).
-- [ ] 4.4 Rename the MCP server name (`transports/mcp/server.py`), keychain service (`integrations/keychain.py`), launchd labels and log folder (`_web_login_item.py`, `_launchagent.py`), logger name (`transports/api/security.py`) and the version-line regex in `_web_login_item.py`. Extend the legacy plist recognition to `com.omrg.*` (design D2).
-- [ ] 4.5 Rename the cookie and token prefixes (`transports/api/security.py`, `confirmations.py`) and the `x-omrg-*` keys in `transports/api/openapi.yaml`. Confirm the CI OpenAPI validation still passes.
-- [ ] 4.6 Keep `omrg_dataset_epoch` in `core/vectordb/lancedb/meta.py` and `omrg_task` (`TASK_LAYOUT_KEY`) in `core/workspace/records.py` as one constant each, with a comment (design D3). Add a test that opens a LanceDB fixture written with the old key and checks the BM25 cache token stays equal.
-- [ ] 4.7 Update the CLI help text and the `omrg web ...` hints in messages (about 30). Check `omrs --help` has no `OMRG`.
+- [x] 4.1 Rename the 13 `OMRG_*` variables to `OMRS_*` in `config/user_config.py`, `core/plugins/editor.py`, `core/vectordb/lancedb/meta.py` and every other reader. Update `.env.example`.
+- [x] 4.2 Rename `omrg.jsonc` to `omrs.jsonc` and the config and data folder defaults (`config/user_config.py`, `core/workspace/cleanup.py`, `compose_profile_setup.py`, `transports/cli/web*.py`, `transports/cli/config.py`). Check that `omrs config init` builds its template from the `Settings` model with no template edit.
+- [x] 4.3 Rename the secret reference path in the writer and the reader (`file://~/.config/omrs/secrets/<name>.key`).
+- [x] 4.4 Rename the MCP server name (`transports/mcp/server.py`), keychain service (`integrations/keychain.py`), launchd labels and log folder (`_web_login_item.py`, `_launchagent.py`), logger name (`transports/api/security.py`) and the version-line regex in `_web_login_item.py`. Extend the legacy plist recognition to `com.omrg.*` (design D2).
+- [x] 4.5 Rename the cookie and token prefixes (`transports/api/security.py`, `confirmations.py`) and the `x-omrg-*` keys in `transports/api/openapi.yaml`. Confirm the CI OpenAPI validation still passes.
+- [x] 4.6 Keep `omrg_dataset_epoch` in `core/vectordb/lancedb/meta.py` and `omrg_task` (`TASK_LAYOUT_KEY`) in `core/workspace/records.py` as one constant each, with a comment (design D3). Add a test that opens a LanceDB fixture written with the old key and checks the BM25 cache token stays equal.
+- [x] 4.7 Update the CLI help text and the `omrg web ...` hints in messages (about 30). Check `omrs --help` has no `OMRG`.
 - [ ] 4.8 Run the fast suite and the guard test. Commit this group.
 
 ## 5. Web workspace
 
-- [ ] 5.1 Load the `omrg-design` skill (the owner may have renamed it by now; use whichever name exists). Rename `web/package.json` name, `web/index.html` title and logo, `web/public/omrg-logo.svg`, and update `web/DESIGN.md` and `web/src/AGENTS.md`.
-- [ ] 5.2 Rename the five storage keys and their tests (`lib/preferences.ts`, `lib/navCollapsed.ts`, `studio/storage.ts` and the session and UI keys). Rename the `omrg_bt_` display text in `settings/McpHttpPanel.tsx`.
-- [ ] 5.3 Update `web/vite.config.ts` (`OMRS_API_URL`, build output `../src/omrs/transports/api/static`).
+- [x] 5.1 Load the `omrg-design` skill (the owner may have renamed it by now; use whichever name exists). Rename `web/package.json` name, `web/index.html` title and logo, `web/public/omrg-logo.svg`, and update `web/DESIGN.md` and `web/src/AGENTS.md`.
+- [x] 5.2 Rename the five storage keys and their tests (`lib/preferences.ts`, `lib/navCollapsed.ts`, `studio/storage.ts` and the session and UI keys). Rename the `omrg_bt_` display text in `settings/McpHttpPanel.tsx`.
+- [x] 5.3 Update `web/vite.config.ts` (`OMRS_API_URL`, build output `../src/omrs/transports/api/static`).
 - [ ] 5.4 Run the web lint, typecheck, unit tests and build. Do a browser check at 1280 px and 390 px. Warn the owner before starting the dev server or a browser run.
 - [ ] 5.5 Commit this group.
 
 ## 6. Docs, specs and active changes
 
-- [ ] 6.1 Run the scripted pass (design D4, D5, D6) over `README.md`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, per-folder `AGENTS.md` and `CLAUDE.md` files, `docs/guides/`, `docs/proposals/`, `docs/roadmap/`, `plugins/`, `.agents/skills/omrg-design` (path only if tracked) and `.env.example`. Review the prose hits by hand.
-- [ ] 6.2 Update the project instructions: the Quick Reference commands, the `~/.config/omrs` text in gotcha 18, the `DATA/omrg/` text in gotcha 15 (keep the folder name, add the note from design D7) and the last-known-good block.
+- [x] 6.1 Run the scripted pass (design D4, D5, D6) over `README.md`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, per-folder `AGENTS.md` and `CLAUDE.md` files, `docs/guides/`, `docs/proposals/`, `docs/roadmap/`, `plugins/`, `.agents/skills/omrg-design` (path only if tracked) and `.env.example`. Review the prose hits by hand.
+- [x] 6.2 Update the project instructions: the Quick Reference commands, the `~/.config/omrs` text in gotcha 18, the `DATA/omrg/` text in gotcha 15 (keep the folder name, add the note from design D7) and the last-known-good block.
 - [ ] 6.3 Rewrite the live baseline specs in place: the token pass over the 124 requirement blocks and the 12 headings (design D9). Do not touch the two requirements that the delta files cover.
 - [ ] 6.4 Rewrite the five active changes with the same pass, including paths such as `src/omrg/core/...` in their tasks.
 - [ ] 6.5 Add one note to `docs/adr/ADR_README.md`: the project was named OMRG until this change and ADRs keep that name. Leave the ADR, TDR, archived-change, experiment and `CHANGELOG.md` files unchanged.

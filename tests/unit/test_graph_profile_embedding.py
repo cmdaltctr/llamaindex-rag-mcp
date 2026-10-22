@@ -23,10 +23,10 @@ from tests.unit.test_engine_pipelines_support import (
 )
 from tests.unit.test_ingestion_graph_adapters_support import offline_settings
 
-from omrg.core.pipelines import PipelineValidationError, RunStatus
-from omrg.core.vectordb.identity import EmbeddingIdentity
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
-from omrg.engine_embedders import EngineEmbedders
+from omrs.core.pipelines import PipelineValidationError, RunStatus
+from omrs.core.vectordb.identity import EmbeddingIdentity
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.engine_embedders import EngineEmbedders
 
 HOST = EmbeddingIdentity(provider="ollama", model="model-a")
 CHOICE_B = EmbeddingIdentity(provider="llamacpp", model="model-b")
@@ -133,7 +133,7 @@ def test_dense_step_embeds_with_the_profile_model_and_sends_its_identity(
 def test_sparse_step_sends_the_profile_identity_to_the_native_backend(
     effective_settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from omrg.core.retrieval import sparse_dispatch
+    from omrs.core.retrieval import sparse_dispatch
 
     seen: list[EmbeddingIdentity | None] = []
 
@@ -174,7 +174,7 @@ def test_sparse_step_sends_the_profile_identity_to_the_native_backend(
 def test_commit_step_writes_and_stamps_the_profile_identity(
     effective_settings, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from omrg.pipeline_templates import canonical_templates
+    from omrs.pipeline_templates import canonical_templates
 
     pin_detection(monkeypatch)
     root = copy_sources(tmp_path)
@@ -219,7 +219,7 @@ class _CountingUnitEmbedding(_UnitEmbedding):
 
 
 def _ingest(effective_settings, tmp_path, monkeypatch, store, built, hook=None):  # noqa: ANN001, ANN202
-    from omrg.pipeline_templates import canonical_templates
+    from omrs.pipeline_templates import canonical_templates
 
     pin_detection(monkeypatch)
     root = copy_sources(tmp_path)

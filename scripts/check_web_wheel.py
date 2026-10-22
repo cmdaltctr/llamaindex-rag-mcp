@@ -1,6 +1,6 @@
 """Fail release preparation when a wheel lacks the built web assets.
 
-Usage: ``python scripts/check_web_wheel.py dist/omrg-*.whl``
+Usage: ``python scripts/check_web_wheel.py dist/omrs-*.whl``
 
 The web assets are gitignored build output (``npm run build`` in ``web/``).
 Hatch ships them through ``artifacts`` when they exist, so a wheel built
@@ -18,7 +18,7 @@ import re
 import sys
 import zipfile
 
-STATIC_PREFIX = "omrg/transports/api/static/"
+STATIC_PREFIX = "omrs/transports/api/static/"
 INDEX = STATIC_PREFIX + "index.html"
 GUIDE_NAMES = frozenset({"AGENTS.md", "CLAUDE.md"})
 _ASSET_REF = re.compile(r'(?:src|href)="\./(assets/[^"]+)"')

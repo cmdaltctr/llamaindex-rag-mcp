@@ -21,9 +21,9 @@ import pytest
 from llama_index.core import Document
 from llama_index.core.schema import TextNode
 
-from omrg.core.chunking import registry as chunking_registry
-from omrg.core.ingestion import chunker
-from omrg.core.ingestion.backends.orchestrator import BackendRead
+from omrs.core.chunking import registry as chunking_registry
+from omrs.core.ingestion import chunker
+from omrs.core.ingestion.backends.orchestrator import BackendRead
 
 SENTINEL_TEXT = "SENTINEL-STRATEGY-OUTPUT"
 _calls: list[dict[str, Any]] = []
@@ -95,7 +95,7 @@ async def test_both_document_branches_invoke_registered_sentence_strategy(
     is_markdown: bool,
 ) -> None:
     """Scenario: registered replacement reaches production dispatch."""
-    from omrg.core.metadata import extractor
+    from omrs.core.metadata import extractor
 
     documents = [Document(text="# Heading\n\nBody text.")]
 
@@ -160,8 +160,8 @@ async def test_markdown_postprocessing_runs_exactly_once(
     monkeypatch: pytest.MonkeyPatch, effective_settings, structured: bool
 ) -> None:
     """Scenario: Markdown post-processing is applied exactly once per file."""
-    from omrg.core.chunking import sentence
-    from omrg.core.metadata import extractor
+    from omrs.core.chunking import sentence
+    from omrs.core.metadata import extractor
 
     original = sentence._postprocess_markdown_nodes
     counter = {"calls": 0}
@@ -193,7 +193,7 @@ async def test_store_keyword_reaches_metadata_extraction(
     monkeypatch: pytest.MonkeyPatch, effective_settings
 ) -> None:
     """Task 3.1: the chunker forwards its ``store`` keyword to metadata."""
-    from omrg.core.metadata import extractor
+    from omrs.core.metadata import extractor
 
     async def _read(*args, **kwargs) -> BackendRead:
         return BackendRead([Document(text="body")], False, "plain")
@@ -213,9 +213,9 @@ async def test_store_keyword_reaches_metadata_extraction(
 
 def _patch_pipeline_store_io(monkeypatch: pytest.MonkeyPatch, written: list[list]) -> None:
     """Fake every store interaction of ``ingest_path_async``."""
-    from omrg.core.codebase import codebase_map
-    from omrg.core.ingestion import pipeline
-    from omrg.core.ingestion.replacement import WriteTimings
+    from omrs.core.codebase import codebase_map
+    from omrs.core.ingestion import pipeline
+    from omrs.core.ingestion.replacement import WriteTimings
 
     def _no_detection(*args, **kwargs):
         raise RuntimeError("detection disabled in test")
@@ -241,8 +241,8 @@ def test_ordinary_ingestion_invokes_registered_strategy_and_forwards_store(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, effective_settings, sentinel_strategy
 ) -> None:
     """Ordinary ingestion reaches the sentinel and the owning store."""
-    from omrg.core.ingestion import ingest_path_async
-    from omrg.core.metadata import extractor
+    from omrs.core.ingestion import ingest_path_async
+    from omrs.core.metadata import extractor
 
     (tmp_path / "plain.txt").write_text("Plain body text.", encoding="utf-8")
     (tmp_path / "notes.md").write_text("# Notes\n\nMarkdown body.", encoding="utf-8")

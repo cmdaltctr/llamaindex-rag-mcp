@@ -139,9 +139,9 @@ def _run_smoke_with_store(
         overrides.update(settings_overrides)
     settings = _cloud_settings(**overrides)
 
-    import omrg.compose as compose_mod
-    import omrg.config as config_mod
-    import omrg.core.vectordb.chroma.store as chroma_mod
+    import omrs.compose as compose_mod
+    import omrs.config as config_mod
+    import omrs.core.vectordb.chroma.store as chroma_mod
 
     monkeypatch.setattr("dotenv.load_dotenv", lambda *a, **k: False)
     monkeypatch.setattr(config_mod, "Settings", lambda: settings)

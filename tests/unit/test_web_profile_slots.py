@@ -26,8 +26,8 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
 )
 from tests.unit.test_web_runs_support import build_app  # noqa: E402
 
-from omrg.core.profiles.resolver import ProfileResolver  # noqa: E402
-from omrg.core.workspace import TASK_LAYOUT_KEY  # noqa: E402
+from omrs.core.profiles.resolver import ProfileResolver  # noqa: E402
+from omrs.core.workspace import TASK_LAYOUT_KEY  # noqa: E402
 
 COLLECTIONS = ("notes", "papers")
 

@@ -38,7 +38,7 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # capability added the red-first core (15), compose (4), MCP transport
 # (16), LM-free search guard (2), OpenAPI conformance (3) and the
 # seven-tool discovery rename, plus five CLI transport cases for
-# `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
+# `omrs answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
 # Re-baselined at add-grounded-answer-synthesis-3 review remediation:
 # the second review round added the MRTR split suite, filter-security
@@ -51,7 +51,7 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # diagnostics, MRTR-prefetch, and transport-level judge-threading suites,
 # plus the review round (trailing citations, delimiter escaping, CLI
 # degradation) added 39 counted cases (2398 -> 2437).
-# Re-baselined at make-omrg-a-standalone-framework-4 review remediation:
+# Re-baselined at make-omrs-a-standalone-framework-4 review remediation:
 # the PR-85 review fixes added the engine-isolation suites — builder
 # validation and resolver wiring (legacy-env, fail-closed Chroma,
 # explicit-settings strategies, store/env snapshot), engine answer
@@ -101,9 +101,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # +1 (2026-10-19): the fake llama-server answers without a reverse DNS lookup.
 # -2 (2026-10-19): the two real-Uvicorn signal tests in test_launch_link.py are marked slow.
 # +54 (2026-10-19, add-web-power-menu): admission count (4), power control argv and runner
-# (15), power routes (26), launch wiring (2) and the `omrg web start` command (7).
+# (15), power routes (26), launch wiring (2) and the `omrs web start` command (7).
 # +499 (2026-10-19, move-settings-to-config-file): the settings-file source, JSONC editor and
-# writer, key references, handover, restart snapshot, configuration route, `omrg config`
+# writer, key references, handover, restart snapshot, configuration route, `omrs config`
 # commands and the file-backed settings routes. Measured with the web extra: 7162 executed
 # against 6663 before (6670 less the 7 optional cases above).
 # +2 (2026-10-19, fix/settings-file-test-isolation): a working-folder .env must not leak into
@@ -317,15 +317,15 @@ _BASE_EXECUTED = 7491
 # capability added the red-first core (15), compose (4), MCP transport
 # (16), LM-free search guard (2), OpenAPI conformance (3) and the
 # seven-tool discovery rename, plus five CLI transport cases for
-# `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
+# `omrs answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
 # The exact skipped count is no longer pinned (see ``_base_suite_counts``): the
 # inner suite runs in parallel, and a parallel run reports one fewer skip than a
 # serial run. A test that stops running still moves the exact executed count, and
 # the Chroma skip sources are asserted statically below.
 # +2 at modular-ocr-workers-dots-mocr: the real-eq01 detector case and the
-# real dots.mocr patch case run only when OMRG_EQ01_PDF or
-# OMRG_DOTS_MOCR_MODEL_DIR names a local copy (131 -> 133).
+# real dots.mocr patch case run only when OMRS_EQ01_PDF or
+# OMRS_DOTS_MOCR_MODEL_DIR names a local copy (131 -> 133).
 # Four historical-prefix cases need ignored ground truth. New safety
 # regressions are synthetic and always run. Preserve both exact counts
 # when that optional historical input is absent (as in a fresh checkout).
@@ -336,10 +336,10 @@ _HISTORICAL_GT = (
 if not _HISTORICAL_GT.exists():
     _BASE_EXECUTED -= 4
 # The pin counts the real-eq01 case in test_maths_pages.py as a skip. It runs
-# when the gitignored Experiment 34 copy (or OMRG_EQ01_PDF) is on disk, as in
+# when the gitignored Experiment 34 copy (or OMRS_EQ01_PDF) is on disk, as in
 # the v3 worktree (2026-10-20).
 _EQ01_COPIES = (
-    Path(os.environ.get("OMRG_EQ01_PDF", "/nonexistent")),
+    Path(os.environ.get("OMRS_EQ01_PDF", "/nonexistent")),
     Path(__file__).resolve().parents[1]
     / "experiments/34-worker-sample-review-2026-09-19/corpus/eq01.pdf",
 )
@@ -400,7 +400,7 @@ if not _has_qwen_tokenizer:
 # +14 executed after the restart and link-file fixes (2026-10-19): 8 restart cases and 6
 # link-file cases; the 6 link-file cases need fastapi (1011).
 # -2 (2026-10-19): the two signal tests moved to the slow suite (1009).
-# +47 (2026-10-19, add-web-power-menu): every new case except the 7 `omrg web start`
+# +47 (2026-10-19, add-web-power-menu): every new case except the 7 `omrs web start`
 # cases needs fastapi (1056).
 # +75 (2026-10-19, move-settings-to-config-file): measured by hiding fastapi behind an
 # import shim, 6031 executed without it against 7162 with it (1131).
@@ -464,9 +464,9 @@ def test_project_requires_keep_chroma_behind_extra_marker() -> None:
 
     The wheel-level check (task 1.3) inspects the built artefact directly;
     this tripwire inspects the *installed* distribution metadata, which is
-    what a fresh ``pip install omrg`` environment resolves against.
+    what a fresh ``pip install omrs`` environment resolves against.
     """
-    requires = metadata.requires("omrg") or []
+    requires = metadata.requires("omrs") or []
     for req in requires:
         normalised = req.lower().replace("_", "-")
         assert not normalised.startswith("chromadb(") or "extra ==" in req, (
@@ -483,9 +483,9 @@ def test_project_requires_keep_chroma_behind_extra_marker() -> None:
 def test_default_runtime_loads_no_chroma_modules() -> None:
     """Importing the default runtime path must not load any Chroma module."""
     _scrub_chroma_modules()
-    import_module("omrg.compose")
-    import_module("omrg.core.retrieval")
-    import_module("omrg.core.ingestion")
+    import_module("omrs.compose")
+    import_module("omrs.core.retrieval")
+    import_module("omrs.core.ingestion")
 
     import sys
 
@@ -501,7 +501,7 @@ def test_base_default_search_runs_without_chroma() -> None:
     install's default path is functional without the chroma extra.
     """
     _scrub_chroma_modules()
-    from omrg.core.retrieval import search
+    from omrs.core.retrieval import search
 
     results = search("tripwire query", top_k=3, hybrid=False)
     assert results == []

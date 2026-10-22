@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 from llama_index.core.schema import MetadataMode, TextNode
 
-from omrg.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS, stamp_source_lineage
+from omrs.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS, stamp_source_lineage
 
 OCR_DIAGNOSTIC_KEYS = (
     "ocr_required",
@@ -142,7 +142,7 @@ def test_ocr_diagnostics_remain_stored_and_retrievable(
     label: str, diagnostics: dict[str, str | int | bool]
 ) -> None:
     """Task 2.12: each extraction state is visible in retrieval metadata."""
-    from omrg.core.retrieval.dense import _dense_query_rows
+    from omrs.core.retrieval.dense import _dense_query_rows
 
     metadata = {"file_path": f"/fixtures/{label}.pdf", **diagnostics}
     rows = _dense_query_rows(

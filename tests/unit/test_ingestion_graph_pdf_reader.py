@@ -15,13 +15,13 @@ import pytest
 from pydantic import ValidationError
 from tests.unit.test_ingestion_graph_adapters_support import build_catalogue
 
-from omrg.core.ingestion import graph_adapters
-from omrg.core.ingestion.backends.orchestrator import BackendRead
-from omrg.core.ingestion.graph_adapters import SourceWork
-from omrg.core.ingestion.graph_adapters_catalogue import ReadParams
-from omrg.core.ingestion.sources import SourceUnit
-from omrg.core.pipelines import CancellationFlag, NodeContext
-from omrg.integrations.pdf import registry
+from omrs.core.ingestion import graph_adapters
+from omrs.core.ingestion.backends.orchestrator import BackendRead
+from omrs.core.ingestion.graph_adapters import SourceWork
+from omrs.core.ingestion.graph_adapters_catalogue import ReadParams
+from omrs.core.ingestion.sources import SourceUnit
+from omrs.core.pipelines import CancellationFlag, NodeContext
+from omrs.integrations.pdf import registry
 
 
 def _read_descriptor() -> Any:

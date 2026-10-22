@@ -27,12 +27,12 @@ design D8):
 mkdir -p ~/Development/DATA/omrg/ocr-models
 ln -s ~/Development/DATA/omrg/ocr-worker/model-cache \
   ~/Development/DATA/omrg/ocr-models/paddleocr-vl
-export OMRG_OCR_MODEL_CACHE=~/Development/DATA/omrg/ocr-models
+export OMRS_OCR_MODEL_CACHE=~/Development/DATA/omrg/ocr-models
 ```
 
 The engine then loads weights from
-`$OMRG_OCR_MODEL_CACHE/paddleocr-vl/` and performs no model download.
-The dots-mocr engine uses `$OMRG_OCR_MODEL_CACHE/dots-mocr/` under the
+`$OMRS_OCR_MODEL_CACHE/paddleocr-vl/` and performs no model download.
+The dots-mocr engine uses `$OMRS_OCR_MODEL_CACHE/dots-mocr/` under the
 same variable.
 
 ## Re-provisioning the engine environment

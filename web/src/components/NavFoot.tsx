@@ -41,7 +41,7 @@ export function NavFoot({ collapsed, onSettings }: { collapsed: boolean; onSetti
       </Button>
       <PowerMenu />
       <Button asChild variant="ghost" size="icon">
-        <a href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" aria-label="OMRG on GitHub">
+        <a href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" aria-label="OMRS on GitHub">
           <GitHubMark />
         </a>
       </Button>

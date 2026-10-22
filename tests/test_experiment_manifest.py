@@ -250,7 +250,7 @@ def test_git_and_lock_missing_fall_back_to_null(tmp_path: Path) -> None:
 def test_observe_document_reader_resolves_auto_and_passes_through(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from omrg.integrations.pdf import factory
+    from omrs.integrations.pdf import factory
 
     monkeypatch.setattr(factory, "_resolve_auto", lambda: "liteparse")
     assert observe_document_reader("auto") == {"requested": "auto", "effective": "liteparse"}
@@ -259,7 +259,7 @@ def test_observe_document_reader_resolves_auto_and_passes_through(
 
 
 def test_observe_chunking_reads_real_code_chunk_result() -> None:
-    from omrg.core.chunking.code import CodeChunkResult
+    from omrs.core.chunking.code import CodeChunkResult
 
     result = CodeChunkResult([], effective_strategy="code")
     assert observe_chunking(result) == {

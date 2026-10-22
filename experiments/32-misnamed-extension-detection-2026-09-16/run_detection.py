@@ -28,10 +28,10 @@ def _relative(path: Path) -> str:
 # Baseline text uses the exact pin-gate files, passed explicitly so
 # the path set matches the gate record.
 BASELINE_TEXT_FILES = [
-    REPO / "src/omrg/compose.py",
-    REPO / "src/omrg/core/ingestion/pipeline.py",
-    REPO / "src/omrg/integrations/magika.py",
-    REPO / "src/omrg/core/codebase/codebase_map.py",
+    REPO / "src/omrs/compose.py",
+    REPO / "src/omrs/core/ingestion/pipeline.py",
+    REPO / "src/omrs/integrations/magika.py",
+    REPO / "src/omrs/core/codebase/codebase_map.py",
     REPO / "README.md",
     REPO / "AGENTS.md",
     REPO / "docs/guides/architecture.md",

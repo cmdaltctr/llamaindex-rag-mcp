@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from tests.unit.test_pipeline_runner_support import Recorder, Script, admit, scripted_catalogue
 from tests.unit.test_pipeline_support import ingest_graph
 
-from omrg.core.pipelines import (
+from omrs.core.pipelines import (
     EventKind,
     FatalNodeError,
     NodeContext,

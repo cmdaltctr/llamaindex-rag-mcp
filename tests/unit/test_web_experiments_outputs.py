@@ -35,7 +35,7 @@ from tests.unit.test_web_experiments_support import (  # noqa: E402
 )
 from tests.unit.test_web_runs_support import make_engine, new_pipeline  # noqa: E402
 
-from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition  # noqa: E402
+from omrs.core.ingestion.graph_adapters import canonical_ingestion_definition  # noqa: E402
 
 
 @pytest.fixture
@@ -131,7 +131,7 @@ def test_linked_run_output_directory_is_refused_before_any_run(setup: Any, tmp_p
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
     output.mkdir(exist_ok=True)
-    (output / "omrg-runs").symlink_to(elsewhere, target_is_directory=True)
+    (output / "omrs-runs").symlink_to(elsewhere, target_is_directory=True)
     response = client.post(
         "/v1/runs",
         json={

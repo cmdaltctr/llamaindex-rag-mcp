@@ -33,9 +33,9 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
 )
 from tests.unit.test_web_openapi_conformance_support import FAMILIES, ContractChecker  # noqa: E402
 
-import omrg.core.providers.llm.openrouter as openrouter_llm  # noqa: E402
-from omrg import compose  # noqa: E402
-from omrg.transports.api import connection_probe  # noqa: E402
+import omrs.core.providers.llm.openrouter as openrouter_llm  # noqa: E402
+from omrs import compose  # noqa: E402
+from omrs.transports.api import connection_probe  # noqa: E402
 
 BODY_MARKER = "BODY-MARKER-do-not-return"
 

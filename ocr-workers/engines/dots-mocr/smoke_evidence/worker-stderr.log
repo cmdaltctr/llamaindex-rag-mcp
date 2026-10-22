@@ -1,10 +1,10 @@
-2026-10-04 20:24:39,860 omrg_ocr_worker_core INFO omrg OCR worker starting: engine dots-mocr, protocol 1.1
+2026-10-04 20:24:39,860 omrs_ocr_worker_core INFO omrs OCR worker starting: engine dots-mocr, protocol 1.1
 `torch_dtype` is deprecated! Use `dtype` instead!
 Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00, 30.91it/s]
 The image processor of type `Qwen2VLImageProcessor` is now loaded as a fast processor by default, even if the model checkpoint was saved with a slow processor. This is a breaking change and may produce slightly different outputs. To continue using the slow processor, instantiate this class with `use_fast=False`. Note that this behavior will be extended to all models in a future release.
 Setting `pad_token_id` to `eos_token_id`:151643 for open-end generation.
 Setting `pad_token_id` to `eos_token_id`:151643 for open-end generation.
-2026-10-04 20:26:11,180 omrg_ocr_worker_core INFO omrg OCR worker input closed; stopping
+2026-10-04 20:26:11,180 omrs_ocr_worker_core INFO omrs OCR worker input closed; stopping
        91.84 real        19.41 user         4.24 sys
            932511744  maximum resident set size
                    0  average shared memory size

@@ -1,4 +1,4 @@
-"""Tests for the metadata extraction module (omrg.metadata_extractor)."""
+"""Tests for the metadata extraction module (omrs.metadata_extractor)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from omrg.core.settings import EffectiveSettings, MetadataBlock
+from omrs.core.settings import EffectiveSettings, MetadataBlock
 
 
 def _set_mode(
@@ -28,7 +28,7 @@ def _set_mode(
     the conftest autouse fixture resets it afterwards — so configuration can
     no longer leak between tests the way singleton patching allowed.
     """
-    from omrg.core.settings import (
+    from omrs.core.settings import (
         EffectiveSettings,
         MetadataBlock,
         set_default_effective_settings,
@@ -57,7 +57,7 @@ class TestKeywordExtraction:
         """Text with AI keywords must categorise as 'AI'."""
         _set_mode(monkeypatch, "keyword")
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async(
@@ -70,7 +70,7 @@ class TestKeywordExtraction:
         """Text with more AI matches than Philosophy must choose AI."""
         _set_mode(monkeypatch, "keyword")
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async(
@@ -83,7 +83,7 @@ class TestKeywordExtraction:
         """Text with no keyword matches must return 'uncategorised'."""
         _set_mode(monkeypatch, "keyword")
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async(
@@ -96,7 +96,7 @@ class TestKeywordExtraction:
         """Text with mantiq/logic keywords must categorise as 'Philosophy'."""
         _set_mode(monkeypatch, "keyword")
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async(
@@ -109,7 +109,7 @@ class TestKeywordExtraction:
         """Text with biology keywords must categorise as 'Biology'."""
         _set_mode(monkeypatch, "keyword")
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async("The crispr gene editing tool revolutionises cancer research.")
@@ -120,7 +120,7 @@ class TestKeywordExtraction:
         """Text with marketing keywords must categorise as 'Marketing'."""
         _set_mode(monkeypatch, "keyword")
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async(
@@ -133,7 +133,7 @@ class TestKeywordExtraction:
         """Text with programming keywords must categorise as 'Programming'."""
         _set_mode(monkeypatch, "keyword")
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async("The Rust compiler uses an LLVM backend for code generation.")
@@ -151,7 +151,7 @@ class TestDisabledExtraction:
         """Disabled mode must return an empty dict."""
         _set_mode(monkeypatch, "disabled")
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("Any text content here."))
         assert result == {}
@@ -173,7 +173,7 @@ class TestCustomKeywordRules:
         )
         _set_mode(monkeypatch, "keyword", keyword_rules=custom_rules)
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async(
@@ -191,7 +191,7 @@ class TestCustomKeywordRules:
         )
         _set_mode(monkeypatch, "keyword", keyword_rules=custom_rules)
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         # Has AI keywords but custom rules don't include AI → uncategorised
         result = asyncio.run(extract_metadata_async("The transformer model uses attention heads."))
@@ -205,7 +205,7 @@ class TestCustomKeywordRules:
         """Invalid JSON in METADATA_KEYWORD_RULES must fall back to defaults."""
         _set_mode(monkeypatch, "keyword", keyword_rules="not valid json {{{")
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async("The transformer attention mechanism is key to modern AI.")
@@ -262,11 +262,11 @@ class TestLlamaindexStub:
             }
 
         monkeypatch.setattr(
-            "omrg.core.metadata.ollama._extract_ollama_async",
+            "omrs.core.metadata.ollama._extract_ollama_async",
             _fake_ollama,
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async(
@@ -306,7 +306,7 @@ class TestUnknownMode:
         """An unrecognised mode must log WARNING and fall back to keyword."""
         _set_mode(monkeypatch, "nonexistent_mode")
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("attention transformer neural network"))
         assert result == {"category": "AI"}
@@ -392,7 +392,7 @@ class TestOllamaExtraction:
             ),
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("attention transformer model architecture"))
         assert result["category"] == "ai"
@@ -403,7 +403,7 @@ class TestOllamaExtraction:
         """Ollama returns JSON missing keywords/summary → default to empty."""
         self._mock_ollama(monkeypatch, json.dumps({"category": "biology"}))
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("crispr gene editing"))
         assert result["category"] == "biology"
@@ -414,7 +414,7 @@ class TestOllamaExtraction:
         """Ollama returns plain text (not JSON) → use raw text as category."""
         self._mock_ollama(monkeypatch, "AI")
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("transformer attention"))
         assert result["category"] == "ai"
@@ -449,7 +449,7 @@ class TestOllamaExtraction:
 
         monkeypatch.setattr("httpx.AsyncClient", lambda **kwargs: _mock_instance)
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("any text"))
         assert result["category"] == "uncategorised"
@@ -467,7 +467,7 @@ class TestOllamaExtraction:
         # Test normal response
         self._mock_ollama(monkeypatch, json.dumps({"category": "philosophy"}))
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("logic and ontology"))
         assert "category" in result
@@ -485,7 +485,7 @@ class TestOllamaExtraction:
             ),
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("ai document"))
         assert result["category"] == "artificial_intelligence"
@@ -503,7 +503,7 @@ class TestOllamaExtraction:
             ),
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("some document"))
         assert result["category"] == "uncategorised"
@@ -522,7 +522,7 @@ class TestOllamaExtraction:
             ),
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("test"))
         assert len(result["keywords"]) == 10
@@ -542,7 +542,7 @@ class TestOllamaExtraction:
             ),
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("test"))
         assert "summary" in result
@@ -593,7 +593,7 @@ class TestHybridCategoryTaxonomy:
         )
         import chromadb
 
-        from omrg.core.vectordb.chroma.store import ChromaVectorStore
+        from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
         client = chromadb.PersistentClient(path="ignored")
         coll = client.get_or_create_collection("test_taxonomy")
@@ -634,7 +634,7 @@ class TestHybridCategoryTaxonomy:
 
         monkeypatch.setattr("httpx.AsyncClient", lambda **kwargs: mock_client)
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         store = getattr(self, "_store", None)
         asyncio.run(extract_metadata_async("test document", store=store))
@@ -715,7 +715,7 @@ class TestHybridCategoryTaxonomy:
             ),
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("quantum mechanics and wave functions"))
         assert result["category"] == "physics"
@@ -737,7 +737,7 @@ class TestHybridCategoryTaxonomy:
             ),
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("music theory composition harmony scales"))
         assert result["category"] == "music_theory"
@@ -751,27 +751,27 @@ class TestCategoryNormalisation:
     """Unit tests for the _normalise_category helper."""
 
     def test_lowercase_and_underscores(self) -> None:
-        from omrg.core.metadata._common import _normalise_category
+        from omrs.core.metadata._common import _normalise_category
 
         assert _normalise_category("Artificial Intelligence") == "artificial_intelligence"
         assert _normalise_category("  ML  ") == "ml"
         assert _normalise_category('"deep_learning"') == "deep_learning"
 
     def test_max_three_words(self) -> None:
-        from omrg.core.metadata._common import _normalise_category
+        from omrs.core.metadata._common import _normalise_category
 
         assert _normalise_category("one two three") == "one_two_three"
         assert _normalise_category("one two three four") == "uncategorised"
         assert _normalise_category("one two three four five") == "uncategorised"
 
     def test_empty_or_whitespace(self) -> None:
-        from omrg.core.metadata._common import _normalise_category
+        from omrs.core.metadata._common import _normalise_category
 
         assert _normalise_category("") == "uncategorised"
         assert _normalise_category("   ") == "uncategorised"
 
     def test_special_characters_stripped(self) -> None:
-        from omrg.core.metadata._common import _normalise_category
+        from omrs.core.metadata._common import _normalise_category
 
         assert _normalise_category("AI.") == "ai"
         assert _normalise_category("machine_learning;") == "machine_learning"
@@ -784,8 +784,8 @@ class TestSeedCategories:
         """Seed categories must cover all default keyword rule categories."""
         _set_mode(monkeypatch, "keyword")
 
-        from omrg.core.metadata.taxonomy import _get_seed_categories
-        from omrg.core.settings import get_default_effective_settings
+        from omrs.core.metadata.taxonomy import _get_seed_categories
+        from omrs.core.settings import get_default_effective_settings
 
         seeds = _get_seed_categories(get_default_effective_settings())
         assert "ai" in seeds
@@ -805,8 +805,8 @@ class TestSeedCategories:
         )
         _set_mode(monkeypatch, "keyword", keyword_rules=custom)
 
-        from omrg.core.metadata.taxonomy import _get_seed_categories
-        from omrg.core.settings import get_default_effective_settings
+        from omrs.core.metadata.taxonomy import _get_seed_categories
+        from omrs.core.settings import get_default_effective_settings
 
         seeds = _get_seed_categories(get_default_effective_settings())
         assert "motorsport" in seeds
@@ -868,11 +868,11 @@ class TestLlamaindexExtraction:
             }
 
         monkeypatch.setattr(
-            "omrg.core.metadata.ollama._extract_ollama_async",
+            "omrs.core.metadata.ollama._extract_ollama_async",
             _fake_ollama,
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async(
@@ -909,7 +909,7 @@ class TestLlamaindexExtraction:
             }
         )
 
-        from omrg.core.metadata.llamaindex import _aggregate_llamaindex_metadata
+        from omrs.core.metadata.llamaindex import _aggregate_llamaindex_metadata
 
         async def fake_extract_llamaindex_async(
             text: str, file_name: str = "", settings=None, *, store=None
@@ -917,11 +917,11 @@ class TestLlamaindexExtraction:
             return _aggregate_llamaindex_metadata([mock_node])
 
         monkeypatch.setattr(
-            "omrg.core.metadata.llamaindex._extract_llamaindex_async",
+            "omrs.core.metadata.llamaindex._extract_llamaindex_async",
             fake_extract_llamaindex_async,
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async(
@@ -939,7 +939,7 @@ class TestLlamaindexExtraction:
 
     def test_aggregation_first_non_empty(self, monkeypatch) -> None:
         """Metadata aggregation takes first non-empty value per key."""
-        from omrg.core.metadata.llamaindex import _aggregate_llamaindex_metadata
+        from omrs.core.metadata.llamaindex import _aggregate_llamaindex_metadata
 
         node1 = self._make_mock_node(
             {
@@ -965,7 +965,7 @@ class TestLlamaindexExtraction:
 
     def test_aggregation_empty_nodes_returns_uncategorised(self) -> None:
         """No metadata from any node → uncategorised with empty keywords."""
-        from omrg.core.metadata.llamaindex import _aggregate_llamaindex_metadata
+        from omrs.core.metadata.llamaindex import _aggregate_llamaindex_metadata
 
         node = self._make_mock_node({})
         result = _aggregate_llamaindex_metadata([node])
@@ -1011,11 +1011,11 @@ class TestLlamaindexExtraction:
             return {"category": "ai", "keywords": ["transformer"], "summary": "An AI paper."}
 
         monkeypatch.setattr(
-            "omrg.core.metadata.ollama._extract_ollama_async",
+            "omrs.core.metadata.ollama._extract_ollama_async",
             _fake_ollama,
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async(
@@ -1063,12 +1063,12 @@ class TestLlamaindexExtraction:
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
         monkeypatch.setattr(
-            "omrg.core.metadata.ollama._extract_ollama_async",
+            "omrs.core.metadata.ollama._extract_ollama_async",
             _failing_ollama,
         )
 
         _set_mode(monkeypatch, "llamaindex", local_backend="ollama")
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(
             extract_metadata_async(
@@ -1106,11 +1106,11 @@ class TestLlamaindexExtraction:
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
         monkeypatch.setattr(
-            "omrg.core.metadata.llamaindex._extract_llamaindex_async",
+            "omrs.core.metadata.llamaindex._extract_llamaindex_async",
             fake_extract_llamaindex_async,
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         # Long text — the function receives full text, caps internally
         long_text = "x" * 5000
@@ -1130,14 +1130,14 @@ class TestCoverageGaps:
 
     def test_strip_llm_prefix_empty_string(self) -> None:
         """Empty string input must be returned unchanged."""
-        from omrg.core.metadata._common import _strip_llm_prefix
+        from omrs.core.metadata._common import _strip_llm_prefix
 
         assert _strip_llm_prefix("") == ""
         assert _strip_llm_prefix(None) is None  # type: ignore[arg-type]
 
     def test_strip_llm_prefix_bold_markers(self) -> None:
         """Surrounding ** bold markers must be stripped."""
-        from omrg.core.metadata._common import _strip_llm_prefix
+        from omrs.core.metadata._common import _strip_llm_prefix
 
         assert (
             _strip_llm_prefix('** "Hallucinations in Language Models" **')
@@ -1148,21 +1148,21 @@ class TestCoverageGaps:
 
     def test_strip_llm_prefix_trailing_explanation(self) -> None:
         """Text after a double-newline must be truncated."""
-        from omrg.core.metadata._common import _strip_llm_prefix
+        from omrs.core.metadata._common import _strip_llm_prefix
 
         raw = '** "Hallucinations in Language Models"  \n\nThis title encapsulates the key themes.'
         assert _strip_llm_prefix(raw) == "Hallucinations in Language Models"
 
     def test_strip_llm_prefix_combined_label_and_bold(self) -> None:
         """Label prefix + bold markers + trailing explanation all stripped."""
-        from omrg.core.metadata._common import _strip_llm_prefix
+        from omrs.core.metadata._common import _strip_llm_prefix
 
         raw = '**Title:** ** "Deep Learning Review" **\n\nThis covers the main topics.'
         assert _strip_llm_prefix(raw) == "Deep Learning Review"
 
     def test_strip_llm_prefix_plain_text_unchanged(self) -> None:
         """Plain text without any LLM noise must pass through unchanged."""
-        from omrg.core.metadata._common import _strip_llm_prefix
+        from omrs.core.metadata._common import _strip_llm_prefix
 
         assert _strip_llm_prefix("A normal title") == "A normal title"
 
@@ -1170,7 +1170,7 @@ class TestCoverageGaps:
 
     def test_normalise_category_invalid_chars_rejected(self) -> None:
         """Labels with non-[a-z0-9_-] chars must return 'uncategorised'."""
-        from omrg.core.metadata._common import _normalise_category
+        from omrs.core.metadata._common import _normalise_category
 
         # Starts with a digit — invalid
         assert _normalise_category("4._[pubmed_api]") == "uncategorised"
@@ -1181,7 +1181,7 @@ class TestCoverageGaps:
 
     def test_load_keyword_rules_empty_list(self, monkeypatch) -> None:
         """An empty JSON array must be accepted and returned as-is."""
-        from omrg.core.metadata.keyword import _load_keyword_rules
+        from omrs.core.metadata.keyword import _load_keyword_rules
 
         result = _load_keyword_rules(EffectiveSettings(metadata=MetadataBlock(keyword_rules="[]")))
         assert result == []
@@ -1191,7 +1191,7 @@ class TestCoverageGaps:
         _rules_settings = EffectiveSettings(
             metadata=MetadataBlock(keyword_rules='[{"pattern": "foo"}]')
         )
-        from omrg.core.metadata.keyword import _DEFAULT_KEYWORD_RULES, _load_keyword_rules
+        from omrs.core.metadata.keyword import _DEFAULT_KEYWORD_RULES, _load_keyword_rules
 
         result = _load_keyword_rules(EffectiveSettings())
         assert result == _DEFAULT_KEYWORD_RULES
@@ -1201,7 +1201,7 @@ class TestCoverageGaps:
     def test_extract_keyword_empty_rules(self, monkeypatch) -> None:
         """Empty rules list must return uncategorised immediately."""
         _rules_settings = EffectiveSettings(metadata=MetadataBlock(keyword_rules="[]"))
-        from omrg.core.metadata.keyword import _extract_keyword
+        from omrs.core.metadata.keyword import _extract_keyword
 
         result = _extract_keyword("transformer attention neural network", _rules_settings)
         assert result == {"category": "uncategorised"}
@@ -1212,7 +1212,7 @@ class TestCoverageGaps:
         """A rule with an invalid regex pattern must be skipped with a WARNING."""
         bad_rules = '[{"pattern": "[invalid(", "category": "broken"}, {"pattern": "neural", "category": "AI"}]'  # noqa: E501
         _rules_settings = EffectiveSettings(metadata=MetadataBlock(keyword_rules=bad_rules))
-        from omrg.core.metadata.keyword import _extract_keyword
+        from omrs.core.metadata.keyword import _extract_keyword
 
         result = _extract_keyword("neural network transformer", _rules_settings)
         # The valid rule still fires
@@ -1235,7 +1235,7 @@ class TestCoverageGaps:
 
         mock_store.iter_metadatas.side_effect = _iter_metadatas
 
-        from omrg.core.metadata.taxonomy import _gather_existing_categories
+        from omrs.core.metadata.taxonomy import _gather_existing_categories
 
         result = _gather_existing_categories(store=mock_store)
         # bad_col skipped, good_col processed
@@ -1252,9 +1252,9 @@ class TestCoverageGaps:
         )
         import chromadb
 
-        import omrg.config as _config
-        from omrg.core.settings import EffectiveSettings, set_default_effective_settings
-        from omrg.core.vectordb.chroma.store import ChromaVectorStore
+        import omrs.config as _config
+        from omrs.core.settings import EffectiveSettings, set_default_effective_settings
+        from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
         set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
 
@@ -1272,7 +1272,7 @@ class TestCoverageGaps:
         )
         store = ChromaVectorStore()
 
-        from omrg.core.metadata.taxonomy import _gather_existing_categories
+        from omrs.core.metadata.taxonomy import _gather_existing_categories
 
         result = _gather_existing_categories(store=store)
         assert result == ["ai", "biology", "philosophy"]
@@ -1284,14 +1284,14 @@ class TestCoverageGaps:
         from unittest.mock import MagicMock
 
         # Empty custom rules → no seed categories
-        from omrg.core.settings import EffectiveSettings, MetadataBlock
+        from omrs.core.settings import EffectiveSettings, MetadataBlock
 
         settings = EffectiveSettings(metadata=MetadataBlock(keyword_rules="[]"))
         # Empty store → no existing categories
         mock_store = MagicMock()
         mock_store.list_collections.return_value = []
 
-        from omrg.core.metadata.ollama import _build_ollama_prompt
+        from omrs.core.metadata.ollama import _build_ollama_prompt
 
         prompt = _build_ollama_prompt("some document text", settings, store=mock_store)
         assert "uncategorised" in prompt
@@ -1301,7 +1301,7 @@ class TestCoverageGaps:
 
     def test_parse_ollama_json_non_list_keywords(self) -> None:
         """Non-list keywords field must be treated as empty list."""
-        from omrg.core.metadata.ollama import _parse_ollama_json_response
+        from omrs.core.metadata.ollama import _parse_ollama_json_response
 
         raw = json.dumps({"category": "ai", "keywords": "not_a_list", "summary": "test"})
         result = _parse_ollama_json_response(raw)
@@ -1309,7 +1309,7 @@ class TestCoverageGaps:
 
     def test_parse_ollama_json_empty_summary(self) -> None:
         """Empty summary field must produce empty string."""
-        from omrg.core.metadata.ollama import _parse_ollama_json_response
+        from omrs.core.metadata.ollama import _parse_ollama_json_response
 
         raw = json.dumps({"category": "ai", "keywords": [], "summary": ""})
         result = _parse_ollama_json_response(raw)
@@ -1317,7 +1317,7 @@ class TestCoverageGaps:
 
     def test_parse_ollama_json_non_dict_response(self) -> None:
         """A JSON array (not object) must fall back to raw text as category."""
-        from omrg.core.metadata.ollama import _parse_ollama_json_response
+        from omrs.core.metadata.ollama import _parse_ollama_json_response
 
         raw = json.dumps(["not", "a", "dict"])
         result = _parse_ollama_json_response(raw)
@@ -1330,7 +1330,7 @@ class TestCoverageGaps:
         """When all keywords are invalid, category falls back to first 2 words of title."""
         from unittest.mock import MagicMock
 
-        from omrg.core.metadata.llamaindex import _aggregate_llamaindex_metadata
+        from omrs.core.metadata.llamaindex import _aggregate_llamaindex_metadata
 
         node = MagicMock()
         # Keywords that all fail normalisation:
@@ -1354,7 +1354,7 @@ class TestOllamaMarkdownFenceStripping:
     """qwen3:0.6b often wraps JSON in a markdown fence; we must unwrap it."""
 
     def test_strip_json_fence(self) -> None:
-        from omrg.core.metadata.ollama import _strip_markdown_fence
+        from omrs.core.metadata.ollama import _strip_markdown_fence
 
         wrapped = '```json\n{"category": "ai", "keywords": [], "summary": ""}\n```'
         assert _strip_markdown_fence(wrapped) == (
@@ -1362,25 +1362,25 @@ class TestOllamaMarkdownFenceStripping:
         )
 
     def test_strip_bare_fence(self) -> None:
-        from omrg.core.metadata.ollama import _strip_markdown_fence
+        from omrs.core.metadata.ollama import _strip_markdown_fence
 
         wrapped = '```\n{"category": "ai"}\n```'
         assert _strip_markdown_fence(wrapped) == '{"category": "ai"}'
 
     def test_unfenced_text_returned_unchanged(self) -> None:
-        from omrg.core.metadata.ollama import _strip_markdown_fence
+        from omrs.core.metadata.ollama import _strip_markdown_fence
 
         bare = '{"category": "ai"}'
         assert _strip_markdown_fence(bare) == bare
 
     def test_empty_input_returns_empty(self) -> None:
-        from omrg.core.metadata.ollama import _strip_markdown_fence
+        from omrs.core.metadata.ollama import _strip_markdown_fence
 
         assert _strip_markdown_fence("") == ""
 
     def test_parse_ollama_json_with_markdown_fence(self) -> None:
         """Parser must unwrap a fenced JSON payload before json.loads."""
-        from omrg.core.metadata.ollama import _parse_ollama_json_response
+        from omrs.core.metadata.ollama import _parse_ollama_json_response
 
         raw = '```json\n{"category": "Biology", "keywords": ["gene"], "summary": "x"}\n```'
         result = _parse_ollama_json_response(raw)
@@ -1402,7 +1402,7 @@ class TestOllamaRetry:
         async def _noop_sleep(_seconds):
             return None
 
-        import omrg.core.metadata.ollama as _ollama
+        import omrs.core.metadata.ollama as _ollama
 
         monkeypatch.setattr(_ollama, "_retry_sleep", _noop_sleep)
 
@@ -1463,7 +1463,7 @@ class TestOllamaRetry:
             [ConnectionError("transient"), good],
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("transformer attention"))
         assert result["category"] == "ai"
@@ -1485,7 +1485,7 @@ class TestOllamaRetry:
             ],
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         with caplog.at_level(logging.WARNING):
             result = asyncio.run(extract_metadata_async("any text"))
@@ -1512,7 +1512,7 @@ class TestOllamaRetry:
         async def _record_sleep(seconds):
             sleeps.append(seconds)
 
-        import omrg.core.metadata.ollama as _ollama
+        import omrs.core.metadata.ollama as _ollama
 
         monkeypatch.setattr(_ollama, "_retry_sleep", _record_sleep)
 
@@ -1526,7 +1526,7 @@ class TestOllamaRetry:
             ],
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         asyncio.run(extract_metadata_async("text"))
 
@@ -1544,7 +1544,7 @@ class TestOllamaRetry:
         async def _record_sleep(seconds):
             sleeps.append(seconds)
 
-        import omrg.core.metadata.ollama as _ollama
+        import omrs.core.metadata.ollama as _ollama
 
         monkeypatch.setattr(_ollama, "_retry_sleep", _record_sleep)
 
@@ -1553,7 +1553,7 @@ class TestOllamaRetry:
             [ConnectionError("one and done")],
         )
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         asyncio.run(extract_metadata_async("text"))
 
@@ -1568,7 +1568,7 @@ class TestOllamaRetry:
         good = json.dumps({"category": "ai", "keywords": [], "summary": ""})
         log = self._mock_async_client(monkeypatch, [good])
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("attention"))
         assert result["category"] == "ai"
@@ -1660,7 +1660,7 @@ def _no_sleep(monkeypatch) -> list[float]:
     async def _record(seconds):
         sleeps.append(seconds)
 
-    import omrg.core.metadata._common as _common
+    import omrs.core.metadata._common as _common
 
     monkeypatch.setattr(_common, "_retry_sleep", _record)
     return sleeps
@@ -1674,7 +1674,7 @@ class TestStructuredOutputEnforcement:
         _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=1)
         payloads = _capturing_async_client(monkeypatch, [_GOOD_RESPONSE])
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("transformer attention"))
 
@@ -1691,7 +1691,7 @@ class TestStructuredOutputEnforcement:
         _set_mode(monkeypatch, "local", local_backend="llamacpp", max_attempts=1)
         payloads = _capturing_async_client(monkeypatch, [_GOOD_RESPONSE])
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("transformer attention"))
 
@@ -1704,7 +1704,7 @@ class TestStructuredOutputEnforcement:
         _set_openrouter_mode(monkeypatch, max_attempts=1)
         payloads = _capturing_async_client(monkeypatch, [_GOOD_RESPONSE])
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         asyncio.run(extract_metadata_async("transformer attention"))
 
@@ -1731,7 +1731,7 @@ class TestStructuredOutputEnforcement:
         _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=1)
         _capturing_async_client(monkeypatch, [_GOOD_RESPONSE])
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("text"))
 
@@ -1748,7 +1748,7 @@ class TestStructuredOutputEnforcement:
         fenced = f"```json\n{_GOOD_RESPONSE}\n```"
         _capturing_async_client(monkeypatch, [fenced])
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("text"))
 
@@ -1766,7 +1766,7 @@ class TestOpenRouterStructuredOutputDowngrade:
         sleeps = _no_sleep(monkeypatch)
         payloads = _capturing_async_client(monkeypatch, [status, _GOOD_RESPONSE])
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("transformer attention"))
 
@@ -1788,7 +1788,7 @@ class TestOpenRouterStructuredOutputDowngrade:
         _no_sleep(monkeypatch)
         _capturing_async_client(monkeypatch, [404, _GOOD_RESPONSE])
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         with caplog.at_level(logging.INFO):
             asyncio.run(extract_metadata_async("text"))
@@ -1812,7 +1812,7 @@ class TestOpenRouterStructuredOutputDowngrade:
         sleeps = _no_sleep(monkeypatch)
         payloads = _capturing_async_client(monkeypatch, [status, status])
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("text"))
 
@@ -1835,7 +1835,7 @@ class TestOpenRouterStructuredOutputDowngrade:
         sleeps = _no_sleep(monkeypatch)
         payloads = _capturing_async_client(monkeypatch, [400])
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("text"))
 
@@ -1850,7 +1850,7 @@ class TestOpenRouterStructuredOutputDowngrade:
         sleeps = _no_sleep(monkeypatch)
         payloads = _capturing_async_client(monkeypatch, [400, 400, 400])
 
-        from omrg.core.metadata import extract_metadata_async
+        from omrs.core.metadata import extract_metadata_async
 
         with caplog.at_level(logging.WARNING):
             result = asyncio.run(extract_metadata_async("text"))

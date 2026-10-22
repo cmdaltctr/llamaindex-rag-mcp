@@ -23,7 +23,7 @@ from tests.unit.test_ingestion_graph_adapters_support import (
     run_by_hand,
 )
 
-from omrg.core.metadata import extractor
+from omrs.core.metadata import extractor
 
 
 class _MarkedStore:
@@ -41,7 +41,7 @@ async def test_enrich_forwards_run_store_and_settings_to_metadata(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings: Any
 ) -> None:
     """Every unit's metadata call receives the run's store and node settings."""
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     pin_detection(monkeypatch)
     root = copy_sources(tmp_path)

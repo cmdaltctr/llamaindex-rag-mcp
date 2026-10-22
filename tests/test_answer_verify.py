@@ -12,10 +12,10 @@ from typing import Any
 
 import pytest
 
-from omrg import compose
-from omrg.core.answer import answer
-from omrg.core.answer.pipeline import ResolvedRetrieval
-from omrg.core.answer.verify import (
+from omrs import compose
+from omrs.core.answer import answer
+from omrs.core.answer.pipeline import ResolvedRetrieval
+from omrs.core.answer.verify import (
     VERDICT_SUPPORTED,
     VERDICT_UNPARSEABLE,
     VERDICT_UNSUPPORTED,
@@ -24,8 +24,8 @@ from omrg.core.answer.verify import (
     split_claims,
     verify_claims,
 )
-from omrg.core.profiles.resolver import _bundle_to_effective
-from omrg.core.settings import AnswerBlock, EffectiveSettings
+from omrs.core.profiles.resolver import _bundle_to_effective
+from omrs.core.settings import AnswerBlock, EffectiveSettings
 
 
 class RecordingSeam:
@@ -421,7 +421,7 @@ def test_env_model_and_provider_override_bundle(monkeypatch: pytest.MonkeyPatch)
 
 def test_evidence_aliases_match_the_internal_helpers() -> None:
     """The transport-planning aliases wrap the shared implementations."""
-    from omrg.core.answer.evidence import (
+    from omrs.core.answer.evidence import (
         _evidence_rows,
         evidence_rows,
         labelled_nodes,
@@ -469,7 +469,7 @@ def test_build_verify_llm_degrades_on_missing_optional_dependency(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A missing optional extra resolves to ``None`` (graceful, not loud)."""
-    from omrg.core.providers.llm import registry as llm_registry
+    from omrs.core.providers.llm import registry as llm_registry
 
     def _missing(name: str):
         raise ModuleNotFoundError("No module named 'llama_index.llms.openai_like'")
@@ -485,8 +485,8 @@ def test_build_verify_llm_degrades_on_missing_optional_dependency(
 
 def test_validate_verify_provider_gates_on_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
     """Startup validation only fires when the judge is opted in."""
-    from omrg.compose_answer import validate_verify_provider
-    from omrg.config import Settings
+    from omrs.compose_answer import validate_verify_provider
+    from omrs.config import Settings
 
     # Disabled (default): no failure even for a nonsense provider.
     monkeypatch.setenv("ANSWER__ENABLED", "true")
@@ -762,14 +762,14 @@ async def test_structure_lines_do_not_change_the_pipeline_status(
         "## Installation [1]\n\n"
         "Install uv first [1].\n\n"
         "```bash\nuv sync\n```\n[2]\n\n"
-        "Run the server with omrg [2]."
+        "Run the server with omrs [2]."
     )
     judge = StructureHostileJudge()
     result = await answer(
         "how do I install?",
         complete=RecordingSeam(text),
         verify_complete=judge,
-        rows=[_row("c1", "Install uv first."), _row("c2", "Run the server with omrg.")],
+        rows=[_row("c1", "Install uv first."), _row("c2", "Run the server with omrs.")],
         effective_settings=_verify_settings(effective_settings()),
         include_diagnostics=True,
     )
@@ -777,7 +777,7 @@ async def test_structure_lines_do_not_change_the_pipeline_status(
     assert result["status"] == "ok", result
     assert result["verified"] is True, result
     assert result["diagnostics"]["verification_calls"] == 2, judge.claims
-    assert judge.claims == ["Install uv first.", "Run the server with omrg."]
+    assert judge.claims == ["Install uv first.", "Run the server with omrs."]
     # The dropped marker still counts for grounding (design D3).
     assert sorted(c["ordinal"] for c in result["citations"]) == [1, 2], result
 
@@ -815,7 +815,7 @@ async def test_no_judgeable_claim_reports_verification_skipped(
     [
         pytest.param(f"## Setup\n{_PROSE}", [_PROSE_CLAIM], id="prose-after-heading"),
         pytest.param(
-            f"```bash\nuv sync\n```\n{_PROSE}\n```bash\nomrg web\n```",
+            f"```bash\nuv sync\n```\n{_PROSE}\n```bash\nomrs web\n```",
             [_PROSE_CLAIM],
             id="prose-between-fences",
         ),
@@ -867,8 +867,8 @@ def test_unclosed_fence_skips_to_the_end() -> None:
 
 def test_validate_accepts_alias_resolved_backends(monkeypatch: pytest.MonkeyPatch) -> None:
     """The cloud and local aliases resolve to registered backends."""
-    from omrg.compose_answer import validate_verify_provider
-    from omrg.config import Settings
+    from omrs.compose_answer import validate_verify_provider
+    from omrs.config import Settings
 
     monkeypatch.setenv("ANSWER__ENABLED", "true")
     monkeypatch.setenv("ANSWER__VERIFY_CLAIMS", "true")
@@ -881,13 +881,13 @@ def test_validate_profile_bundle_provider_at_startup(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A shipped profile enabling verification with a bad provider fails startup."""
-    from omrg.compose_answer import validate_verify_provider
-    from omrg.config import Settings
+    from omrs.compose_answer import validate_verify_provider
+    from omrs.config import Settings
 
     monkeypatch.setenv("ANSWER__ENABLED", "true")
     monkeypatch.delenv("ANSWER__VERIFY_CLAIMS", raising=False)
     monkeypatch.setattr(
-        "omrg.config._load_profile_bundle",
+        "omrs.config._load_profile_bundle",
         lambda profile: {"answer": {"verify_claims": "true", "verify_provider": "nope"}},
     )
     with pytest.raises(ValueError, match="verify provider 'nope'"):
@@ -896,14 +896,14 @@ def test_validate_profile_bundle_provider_at_startup(
     # Non-boolean YAML truthiness parses and still gates the profile check:
     # the bare-integer form (``verify_claims: 1``)…
     monkeypatch.setattr(
-        "omrg.config._load_profile_bundle",
+        "omrs.config._load_profile_bundle",
         lambda profile: {"answer": {"verify_claims": 1, "verify_provider": "nope"}},
     )
     with pytest.raises(ValueError, match="verify provider 'nope'"):
         validate_verify_provider(Settings())
     # …and the plain boolean form.
     monkeypatch.setattr(
-        "omrg.config._load_profile_bundle",
+        "omrs.config._load_profile_bundle",
         lambda profile: {"answer": {"verify_claims": True, "verify_provider": "nope"}},
     )
     with pytest.raises(ValueError, match="verify provider 'nope'"):
@@ -918,7 +918,7 @@ def test_build_verify_llm_local_alias_resolves_backend(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """verify_provider="local" resolves through the local backend."""
-    from omrg.core.providers.llm import registry as llm_registry
+    from omrs.core.providers.llm import registry as llm_registry
 
     calls: dict[str, Any] = {}
 
@@ -937,7 +937,7 @@ def test_build_verify_llm_local_alias_resolves_backend(
         )
     )
     assert llm is not None
-    from omrg.config import Settings
+    from omrs.config import Settings
 
     assert calls["name"] == Settings().local_backend, "the local alias resolves to local_backend"
     assert calls["answer_model"] == "judge-m"

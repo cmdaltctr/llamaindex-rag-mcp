@@ -1,7 +1,7 @@
 """Open editor delivers a private connection file to the editor (task 8.6).
 
 The production plugin host runs the fake marimo executable. The fake reads
-``OMRG_CONNECTION_FILE`` from its environment and records what it sees.
+``OMRS_CONNECTION_FILE`` from its environment and records what it sees.
 The test then proves that the connection file and the API token file are
 private (mode 600) and outside the experiment workspace, that the API
 credential is new, bound to the experiment context and able to run a graph
@@ -75,7 +75,7 @@ def _open(client: TestClient, parts: Any, exe: Path) -> tuple[dict[str, Any], st
 def _check_files(record: dict[str, Any], parts: Any, context_id: str) -> tuple[Path, Path]:
     connection = Path(record["connection_path"])
     token_file = Path(record["connection"]["token_file"])
-    assert connection.name == "omrg_connection.json"
+    assert connection.name == "omrs_connection.json"
     assert record["connection_mode"] == 0o600 and record["api_token_mode"] == 0o600
     assert token_file.parent == connection.parent
     launch_dir = connection.parent.resolve()
@@ -99,7 +99,7 @@ def test_editor_gets_a_private_bound_connection_until_stop(
         record = read_record(exe.parent)
         connection, token_file = _check_files(record, parts, context_id)
         bearer = record["api_token"]
-        assert bearer.startswith("omrg_bt_")
+        assert bearer.startswith("omrs_bt_")
         assert bearer != opened["token_delivery"]["token"]
         assert bearer not in json.dumps(record["argv"]) + json.dumps(record["env"])
         assert bearer not in json.dumps(opened)

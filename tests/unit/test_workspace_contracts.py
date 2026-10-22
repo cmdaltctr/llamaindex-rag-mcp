@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.workspace import ProfileRepository, canonical_json, content_hash
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.core.workspace import ProfileRepository, canonical_json, content_hash
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
 
 def test_canonical_json_ignores_key_order_and_whitespace() -> None:
@@ -39,10 +39,10 @@ def test_adapter_hash_matches_core_identity(tmp_path: Path) -> None:
 
 def test_contract_import_stays_free_of_persistence_and_domain_modules() -> None:
     probe = (
-        "import sys; import omrg.core.workspace; "
+        "import sys; import omrs.core.workspace; "
         "bad = sorted(m for m in sys.modules if m == 'sqlite3' "
-        "or m.startswith(('omrg.integrations', 'omrg.transports', 'omrg.core.ingestion', "
-        "'omrg.core.retrieval', 'omrg.core.answer', 'omrg.core.pipelines', 'fastapi', "
+        "or m.startswith(('omrs.integrations', 'omrs.transports', 'omrs.core.ingestion', "
+        "'omrs.core.retrieval', 'omrs.core.answer', 'omrs.core.pipelines', 'fastapi', "
         "'marimo'))); print(','.join(bad))"
     )
     result = subprocess.run(  # noqa: S603 - fixed interpreter and literal probe

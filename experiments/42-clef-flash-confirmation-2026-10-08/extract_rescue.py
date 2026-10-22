@@ -25,9 +25,9 @@ from exp42_io import (
     text_sha256,
 )
 
-from omrg.core.ingestion.normalise import NORMALISER_VERSION
-from omrg.integrations.pdf.liteparse import LiteParseReader
-from omrg.integrations.pdf.pypdf import PyPDFReader
+from omrs.core.ingestion.normalise import NORMALISER_VERSION
+from omrs.integrations.pdf.liteparse import LiteParseReader
+from omrs.integrations.pdf.pypdf import PyPDFReader
 
 TARGET = OUTPUT / "rescue_text.json"
 TIERS = ("liteparse", "pypdf")
@@ -35,9 +35,9 @@ TIERS = ("liteparse", "pypdf")
 
 def identity() -> dict:
     """Bind resume to the readers, adapters, normaliser and this runner."""
-    import omrg.core.ingestion.normalise as normaliser
-    import omrg.integrations.pdf.liteparse as liteparse_adapter
-    import omrg.integrations.pdf.pypdf as pypdf_adapter
+    import omrs.core.ingestion.normalise as normaliser
+    import omrs.integrations.pdf.liteparse as liteparse_adapter
+    import omrs.integrations.pdf.pypdf as pypdf_adapter
 
     return {
         "reader_versions": {name: version(name) for name in TIERS},

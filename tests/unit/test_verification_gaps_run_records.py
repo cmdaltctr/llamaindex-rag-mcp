@@ -32,12 +32,12 @@ from tests.unit.test_workspace_service_support import (
     repository,
 )
 
-from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition
-from omrg.core.pipelines import CancellationToken, PipelineResult, RunStatus
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
-from omrg.core.workspace import Admission, ArtefactStore, RevisionRecord, RunJob, RunService
-from omrg.engine import Engine
-from omrg.integrations.workspace_sqlite import SCHEMA_MIGRATIONS, SqliteWorkspaceRepository
+from omrs.core.ingestion.graph_adapters import canonical_ingestion_definition
+from omrs.core.pipelines import CancellationToken, PipelineResult, RunStatus
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.core.workspace import Admission, ArtefactStore, RevisionRecord, RunJob, RunService
+from omrs.engine import Engine
+from omrs.integrations.workspace_sqlite import SCHEMA_MIGRATIONS, SqliteWorkspaceRepository
 
 # ── Repeat of an older revision ──────────────────────────────────────────
 

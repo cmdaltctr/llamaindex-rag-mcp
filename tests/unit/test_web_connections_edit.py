@@ -29,14 +29,14 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
     login,
 )
 
-from omrg import compose  # noqa: E402
-from omrg.config.settings_file_write import write_settings  # noqa: E402
-from omrg.engine import Engine  # noqa: E402
-from omrg.integrations.keychain import KeychainUnavailableError, Secret  # noqa: E402
-from omrg.transports.api import connection_probe  # noqa: E402
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.security import AccessPolicy, SecretSet  # noqa: E402
+from omrs import compose  # noqa: E402
+from omrs.config.settings_file_write import write_settings  # noqa: E402
+from omrs.engine import Engine  # noqa: E402
+from omrs.integrations.keychain import KeychainUnavailableError, Secret  # noqa: E402
+from omrs.transports.api import connection_probe  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.security import AccessPolicy, SecretSet  # noqa: E402
 
 KEY64 = "sk-or-v1-" + "a1B2c3D4e5F6g7H8" * 3 + "Zz9Yy8X"  # 64 characters, fake
 NEW_URL = "http://gpu-box.local:11434"
@@ -111,7 +111,7 @@ class Harness:
         return self.app.state.mcp_http.store
 
     def file_text(self) -> str:
-        """The text of ``omrg.jsonc`` (empty when the file does not exist)."""
+        """The text of ``omrs.jsonc`` (empty when the file does not exist)."""
         path = self.store.path
         return path.read_text(encoding="utf-8") if path.exists() else ""
 
@@ -135,7 +135,7 @@ def harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         secrets = SecretSet()
         keychain = FakeKeychain(keychain_available, secrets)
         keychain.data.update(stored or {})
-        if stored:  # a key is used only through its keychain:// reference in omrg.jsonc
+        if stored:  # a key is used only through its keychain:// reference in omrs.jsonc
             write_settings(
                 {f"{name}_api_key": f"keychain://{name}" for name in stored}, revision=None
             )
@@ -653,7 +653,7 @@ def test_a_key_saved_through_the_route_is_removed_from_the_log_buffer_and_logs_r
     """Task 6.1: save through the key route, log the key, read it back redacted."""
     with harness() as h:
         buffer = h.app.state.log_buffer
-        logger = logging.getLogger("omrg.test.key-route")
+        logger = logging.getLogger("omrs.test.key-route")
         logger.setLevel(logging.INFO)
         logger.addHandler(buffer)
         try:

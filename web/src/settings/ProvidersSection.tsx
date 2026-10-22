@@ -4,7 +4,7 @@ import { connectionsQuery } from "../api/queries";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { ProviderCard } from "./ProviderCard";
 
-/** The provider cards. Addresses and keys are saved to `omrg.jsonc` (keys to the keychain) and apply at once to this web server. */
+/** The provider cards. Addresses and keys are saved to `omrs.jsonc` (keys to the keychain) and apply at once to this web server. */
 export function ProvidersSection() {
   const query = useQuery(connectionsQuery(useApi()));
   const list = query.data;
@@ -27,9 +27,9 @@ export function ProvidersSection() {
           <p className="text-meta text-muted-foreground">
             Saves are written to{" "}
             <code dir="ltr" className="font-mono text-code [overflow-wrap:anywhere]">
-              {`${list.user_config_dir}/omrg.jsonc`}
+              {`${list.user_config_dir}/omrs.jsonc`}
             </code>{" "}
-            and apply at once to this web server. <code className="font-mono text-code">omrg</code> over stdio and the CLI read the same file at their next launch. A value set in the
+            and apply at once to this web server. <code className="font-mono text-code">omrs</code> over stdio and the CLI read the same file at their next launch. A value set in the
             environment or in{" "}
             <code dir="ltr" className="font-mono text-code [overflow-wrap:anywhere]">
               {`${list.config_dir}/.env`}

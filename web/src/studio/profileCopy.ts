@@ -12,7 +12,7 @@ export const PROFILE_HELP_TITLE = "How profiles work";
 
 /** The four lines inside the "How profiles work" disclosure, in order. */
 export const PROFILE_HELP_LINES: readonly string[] = [
-  "Built-in profiles come with OMRG and are read-only. Your profiles are copies that you can rename, change and delete.",
+  "Built-in profiles come with OMRS and are read-only. Your profiles are copies that you can rename, change and delete.",
   "Each profile has three pipelines: Ingest reads files and splits them into chunks, Search finds the best chunks for a question, and Answer writes a cited answer.",
   "To use a profile, pick it for a collection in Knowledge Base, under Profile.",
   "When a collection holds vectors, the embedding model of its profile is locked, because the stored vectors were made with that model.",

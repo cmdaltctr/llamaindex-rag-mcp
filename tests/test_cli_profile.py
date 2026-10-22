@@ -1,4 +1,4 @@
-"""Tests for the ``omrg set-profile`` CLI command.
+"""Tests for the ``omrs set-profile`` CLI command.
 
 Task 12.2. This command sat at 17% coverage: the preview/confirm safety
 contract (§6.4 M6) was exercised through the MCP transport but never through
@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from omrg.transports.cli import app
+from omrs.transports.cli import app
 
 runner = CliRunner()
 
@@ -26,7 +26,7 @@ _CONTRACT = {
         {"lever": "top_k", "timing": "query-time", "change": "10 → 20"},
         {"lever": "chunk strategy", "timing": "ingest-time", "change": "markdown → code"},
     ],
-    "reingest_pointer": "Run `omrg ingest --force` to re-chunk.",
+    "reingest_pointer": "Run `omrs ingest --force` to re-chunk.",
 }
 
 
@@ -34,15 +34,15 @@ def _patched(apply_result: dict | None = None):
     """Patch the two core entry points the command delegates to."""
     return (
         patch(
-            "omrg.core.profiles.generate_safety_contract",
+            "omrs.core.profiles.generate_safety_contract",
             return_value=_CONTRACT,
         ),
         patch(
-            "omrg.core.profiles.apply_profile_change",
+            "omrs.core.profiles.apply_profile_change",
             return_value=apply_result
             or {"status": "ok", "profile": "codebase", "chunk_count_unchanged": 12},
         ),
-        patch("omrg.compose.build_profile_resolver", return_value=MagicMock()),
+        patch("omrs.compose.build_profile_resolver", return_value=MagicMock()),
     )
 
 
@@ -64,7 +64,7 @@ class TestUserProfileIsRefused:
     """A user profile is bound in the web workspace, never from the CLI (design D11)."""
 
     _MESSAGE = (
-        "Bind user profiles in Knowledge Base > Profile, or through the MCP endpoint of `omrg web`."
+        "Bind user profiles in Knowledge Base > Profile, or through the MCP endpoint of `omrs web`."
     )
 
     @pytest.mark.parametrize("extra", [[], ["--yes"], ["--json"], ["--json", "--yes"]])

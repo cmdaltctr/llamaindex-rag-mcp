@@ -12,8 +12,8 @@ from typing import Any
 
 from tests.fixtures.pipeline_parity.retrieval import harness
 
-from omrg.core.vectordb.identity import IDENTITY_MODEL_KEY, IDENTITY_PROVIDER_KEY
-from omrg.engine import Engine
+from omrs.core.vectordb.identity import IDENTITY_MODEL_KEY, IDENTITY_PROVIDER_KEY
+from omrs.engine import Engine
 
 #: Methods that write to a store. Validation must call none of them.
 WRITE_METHODS = (

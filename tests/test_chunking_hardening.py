@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from llama_index.core.schema import TextNode
 
-from omrg.core.chunking.code import chunk_code_file_async
-from omrg.core.settings import ChunkingBlock, EffectiveSettings, MetadataBlock
+from omrs.core.chunking.code import chunk_code_file_async
+from omrs.core.settings import ChunkingBlock, EffectiveSettings, MetadataBlock
 
 
 @pytest.mark.asyncio
@@ -110,7 +110,7 @@ async def test_code_splitter_preserves_distinct_top_level_boundaries(
 
 @pytest.mark.asyncio
 async def test_sentence_helper_honours_markdown_heading_prepend(monkeypatch) -> None:
-    from omrg.core.chunking import sentence
+    from omrs.core.chunking import sentence
 
     node = TextNode(text="Body text", metadata={"header_path": "Section"})
     monkeypatch.setattr(sentence, "_split_documents_sync", lambda *args: [node])
@@ -128,7 +128,7 @@ async def test_sentence_helper_honours_markdown_heading_prepend(monkeypatch) -> 
 
 @pytest.mark.asyncio
 async def test_sentence_helper_honours_markdown_min_fraction(monkeypatch) -> None:
-    from omrg.core.chunking import sentence
+    from omrs.core.chunking import sentence
 
     small = TextNode(text="tiny")
     large = TextNode(text="x" * 80)
@@ -158,8 +158,8 @@ async def test_main_ingestion_applies_markdown_postprocessing(tmp_path, monkeypa
     post-processing. The expected output is asserted directly, so the test
     does not compare the callable with itself.
     """
-    from omrg.core.chunking import sentence
-    from omrg.core.ingestion.chunker import read_and_chunk_file_async
+    from omrs.core.chunking import sentence
+    from omrs.core.ingestion.chunker import read_and_chunk_file_async
 
     def _fresh_nodes(*_args):
         return [

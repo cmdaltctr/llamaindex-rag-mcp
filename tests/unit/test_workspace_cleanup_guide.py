@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.workspace import (
+from omrs.core.workspace import (
     DEFAULT_CLEANUP_TTL_SECONDS,
     MAX_ARTEFACT_BYTES,
     MAX_PREVIEW_ROWS,
@@ -17,12 +17,12 @@ from omrg.core.workspace import (
     MAX_TEXT_BYTES,
     WorkspaceLayout,
 )
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
 REPO = Path(__file__).resolve().parents[2]
 GUIDE = REPO / "docs" / "guides" / "workspace.md"
 _CODE = re.compile(r"`([^`\n]+)`")
-_DOTTED = re.compile(r"omrg(?:\.[A-Za-z_]\w*)+")
+_DOTTED = re.compile(r"omrs(?:\.[A-Za-z_]\w*)+")
 _LAYOUT = re.compile(r"<!-- workspace-layout -->(.*?)<!-- /workspace-layout -->", re.S)
 _EXAMPLE = re.compile(r"<!-- cleanup-example -->\s*```python\n(.*?)```", re.S)
 _LINK = re.compile(r"\]\(([\w-]+\.md)(?:#([\w-]+))?\)")
@@ -48,7 +48,7 @@ def test_cited_repository_paths_exist() -> None:
 
 def test_cited_python_names_resolve() -> None:
     names = sorted({m.group() for span in _spans() for m in _DOTTED.finditer(span)})
-    assert "omrg.core.workspace.WorkspaceCleanup.preview_cleanup" in names
+    assert "omrs.core.workspace.WorkspaceCleanup.preview_cleanup" in names
     for name in names:
         parts = name.split(".")
         for split in range(len(parts), 0, -1):
@@ -64,7 +64,7 @@ def test_cited_python_names_resolve() -> None:
 
 
 def test_cited_selector_methods_and_errors_exist() -> None:
-    import omrg.core.workspace as workspace
+    import omrs.core.workspace as workspace
 
     methods = [m for s in _spans() for m in re.findall(r"^CleanupSelector\.(\w+)\(", s)]
     assert sorted(methods) == ["by_status", "older_than", "run"]
@@ -92,7 +92,7 @@ def test_layout_table_matches_workspace_layout(tmp_path: Path) -> None:
 
 
 def _api_files() -> list[Path]:
-    return sorted((REPO / "src/omrg/transports/api").rglob("*.py"))
+    return sorted((REPO / "src/omrs/transports/api").rglob("*.py"))
 
 
 def _api_source() -> str:
@@ -111,10 +111,10 @@ def test_layout_names_match_the_web_wiring(tmp_path: Path) -> None:
     assert "WorkspaceLayout(" in source
     for path in (layout.records, layout.lock, layout.artefacts, layout.uploads):
         assert f'"{path.name}"' not in source, f"duplicate literal {path.name!r}"
-    web_source = (REPO / "src/omrg/transports/cli/web.py").read_text(encoding="utf-8")
-    cleanup_source = (REPO / "src/omrg/core/workspace/cleanup.py").read_text(encoding="utf-8")
-    assert '".omrg" / "workspace"' in cleanup_source
-    assert "~/.omrg/workspace" in _spans()
+    web_source = (REPO / "src/omrs/transports/cli/web.py").read_text(encoding="utf-8")
+    cleanup_source = (REPO / "src/omrs/core/workspace/cleanup.py").read_text(encoding="utf-8")
+    assert '".omrs" / "workspace"' in cleanup_source
+    assert "~/.omrs/workspace" in _spans()
     for option in [s for s in _spans() if s.startswith("--")]:
         assert f'"{option}"' in web_source, option
 
@@ -142,7 +142,7 @@ def test_table_names_and_backup_name_match_the_database(tmp_path: Path) -> None:
         "chat_turns",
     }
     assert tables <= set(_spans())
-    schema = (REPO / "src/omrg/integrations/workspace_sqlite/schema.py").read_text("utf-8")
+    schema = (REPO / "src/omrs/integrations/workspace_sqlite/schema.py").read_text("utf-8")
     assert '.v{current}-to-v{target}.{stamp}.bak"' in schema
 
 
@@ -171,4 +171,4 @@ def test_cleanup_example_runs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     assert example is not None
     monkeypatch.setenv("HOME", str(tmp_path))
     exec(compile(example.group(1), str(GUIDE), "exec"), {})  # noqa: S102 - guide example
-    assert WorkspaceLayout(tmp_path / ".omrg" / "workspace").records.is_file()
+    assert WorkspaceLayout(tmp_path / ".omrs" / "workspace").records.is_file()

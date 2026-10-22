@@ -135,7 +135,7 @@ def test_search_signature_exposes_hybrid_opt_in() -> None:
     ``settings.retrieval.hybrid_enabled`` at call time (ADR-031), so a post-import
     settings patch is honoured.
     """
-    from omrg.core.retrieval import search
+    from omrs.core.retrieval import search
 
     param = inspect.signature(search).parameters.get("hybrid")
 
@@ -145,7 +145,7 @@ def test_search_signature_exposes_hybrid_opt_in() -> None:
 
 def test_mcp_search_documents_signature_exposes_hybrid_opt_in() -> None:
     """The MCP tool must expose the same opt-in ``hybrid`` parameter."""
-    from omrg.transports.mcp import search_documents
+    from omrs.transports.mcp import search_documents
 
     param = inspect.signature(search_documents).parameters.get("hybrid")
 
@@ -161,7 +161,7 @@ async def test_mcp_search_documents_passes_hybrid_through(monkeypatch) -> None:
     mock_search = MagicMock(return_value=[])
     monkeypatch.setattr(server.test_context.engine, "search", mock_search)
 
-    from omrg.transports.mcp import search_documents
+    from omrs.transports.mcp import search_documents
 
     await search_documents("needle", hybrid=True, rerank=False, ctx=direct_ctx(server))
 
@@ -171,7 +171,7 @@ async def test_mcp_search_documents_passes_hybrid_through(monkeypatch) -> None:
 
 def test_hybrid_config_defaults() -> None:
     """OpenSpec defaults are stable and safe for v1 rollout."""
-    import omrg.config as config
+    import omrs.config as config
 
     assert config.get_settings().retrieval.hybrid_enabled is False
     assert config.get_settings().retrieval.hybrid_rrf_k == 60
@@ -180,7 +180,7 @@ def test_hybrid_config_defaults() -> None:
 
 def test_rrf_worked_example_from_spec() -> None:
     """A chunk ranked 3rd and 5th scores ``1/(60+3)+1/(60+5)``."""
-    from omrg.core.retrieval import reciprocal_rank_fusion
+    from omrs.core.retrieval import reciprocal_rank_fusion
 
     scores = reciprocal_rank_fusion(
         [["d1", "d2", "target"], ["a", "b", "c", "d", "target"]],
@@ -192,7 +192,7 @@ def test_rrf_worked_example_from_spec() -> None:
 
 def test_rrf_chunk_present_in_only_one_ranking() -> None:
     """Missing sparse/dense ranks contribute no term to the RRF score."""
-    from omrg.core.retrieval import reciprocal_rank_fusion
+    from omrs.core.retrieval import reciprocal_rank_fusion
 
     scores = reciprocal_rank_fusion([["dense_only"], ["other"]], k=60)
 
@@ -202,7 +202,7 @@ def test_rrf_chunk_present_in_only_one_ranking() -> None:
 
 def test_rrf_with_metadata_empty_sparse_ranking_keeps_dense_order() -> None:
     """Empty sparse rankings must not error or disturb dense-only order."""
-    from omrg.core.retrieval import rrf_with_metadata
+    from omrs.core.retrieval import rrf_with_metadata
 
     dense = [
         {"id": "a", "text": "alpha", "metadata": {"source": "a.txt"}},
@@ -217,7 +217,7 @@ def test_rrf_with_metadata_empty_sparse_ranking_keeps_dense_order() -> None:
 
 def test_default_english_tokenizer_lowercases_splits_and_removes_stopwords() -> None:
     """BM25 tokenisation should be deterministic and useful for rare terms."""
-    from omrg.core.retrieval.sparse import tokenize_english
+    from omrs.core.retrieval.sparse import tokenize_english
 
     tokens = tokenize_english("The Colosseum identifier ZXQ-77 appears in Rome.")
 
@@ -231,7 +231,7 @@ def test_default_english_tokenizer_lowercases_splits_and_removes_stopwords() -> 
 
 def test_bm25_sparse_retriever_empty_collection_returns_empty() -> None:
     """The BM25 fallback must gracefully handle empty collections."""
-    from omrg.core.retrieval.sparse import BM25SparseRetriever
+    from omrs.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection("empty", [])
     store = FakeStore(collection)
@@ -242,7 +242,7 @@ def test_bm25_sparse_retriever_empty_collection_returns_empty() -> None:
 
 def test_bm25_sparse_retriever_ranks_exact_rare_term_first() -> None:
     """Rare exact-match identifiers should be promoted by BM25."""
-    from omrg.core.retrieval.sparse import BM25SparseRetriever
+    from omrs.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "rare_terms",
@@ -279,7 +279,7 @@ def test_bm25_sparse_retriever_ranks_exact_rare_term_first() -> None:
 
 def test_bm25_reuses_cached_index_when_generation_is_unchanged(monkeypatch) -> None:
     """Two consecutive queries without writes should scan the store only once."""
-    from omrg.core.retrieval.sparse import BM25SparseRetriever
+    from omrs.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "cache_reuse",
@@ -297,7 +297,7 @@ def test_bm25_reuses_cached_index_when_generation_is_unchanged(monkeypatch) -> N
 
 def test_bm25_rebuilds_when_generation_advances(monkeypatch) -> None:
     """A generation bump from ingest/delete must invalidate the BM25 cache."""
-    from omrg.core.retrieval.sparse import BM25SparseRetriever
+    from omrs.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "cache_rebuild",
@@ -324,7 +324,7 @@ def test_bm25_rebuilds_when_generation_advances(monkeypatch) -> None:
 
 def test_remove_document_generation_rebuild_excludes_deleted_chunk() -> None:
     """Deleting between sparse queries bumps generation and rebuilds cache."""
-    from omrg.core.retrieval.sparse import BM25SparseRetriever
+    from omrs.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "delete_rebuild",
@@ -346,7 +346,7 @@ def test_remove_document_generation_rebuild_excludes_deleted_chunk() -> None:
     # Task 3.2 of fix-retrieval-freshness: the cache stores the tagged
     # validity token, not the bare generation, so mode transitions
     # (durable <-> process-local fallback) can never compare equal.
-    from omrg.core.retrieval.sparse import _LOCAL_TOKEN_PREFIX
+    from omrs.core.retrieval.sparse import _LOCAL_TOKEN_PREFIX
 
     assert (
         BM25SparseRetriever._cache[(store, "delete_rebuild")].validity_token
@@ -356,7 +356,7 @@ def test_remove_document_generation_rebuild_excludes_deleted_chunk() -> None:
 
 def test_bm25_cache_namespaces_same_collection_by_store() -> None:
     """Two stores with equal generations cannot contaminate each other."""
-    from omrg.core.retrieval.sparse import BM25SparseRetriever
+    from omrs.core.retrieval.sparse import BM25SparseRetriever
 
     store_a = FakeStore(
         FakeCollection(
@@ -388,8 +388,8 @@ def test_bm25_cache_namespaces_same_collection_by_store() -> None:
 @requires_chroma
 def test_two_chroma_store_instances_do_not_share_bm25_rows() -> None:
     """Two Chroma adapters with the same collection name stay isolated."""
-    from omrg.core.retrieval.sparse import BM25SparseRetriever
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.retrieval.sparse import BM25SparseRetriever
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     client_a = FakePersistentClient(
         {
@@ -424,7 +424,7 @@ def test_two_chroma_store_instances_do_not_share_bm25_rows() -> None:
 
 def test_bm25_metadata_filter_supports_nested_and_operator_shapes() -> None:
     """Sparse eligibility matches the filter shapes shared by both stores."""
-    from omrg.core.retrieval.sparse import BM25SparseRetriever
+    from omrs.core.retrieval.sparse import BM25SparseRetriever
 
     store = FakeStore(
         FakeCollection(
@@ -464,9 +464,9 @@ def test_bm25_metadata_filter_supports_nested_and_operator_shapes() -> None:
 
 def test_hybrid_filter_cannot_reintroduce_forbidden_sparse_row(monkeypatch) -> None:
     """RRF receives only sparse rows satisfying the caller constraint."""
-    import omrg.core.retrieval.pipeline as pipeline
-    import omrg.core.retrieval.registry as registry
-    from omrg.core.settings import EffectiveSettings, RetrievalBlock
+    import omrs.core.retrieval.pipeline as pipeline
+    import omrs.core.retrieval.registry as registry
+    from omrs.core.settings import EffectiveSettings, RetrievalBlock
 
     store = FakeStore(
         FakeCollection(
@@ -516,9 +516,9 @@ def test_hybrid_filter_cannot_reintroduce_forbidden_sparse_row(monkeypatch) -> N
 
 def test_positive_dense_threshold_filters_before_nonreranked_fusion(monkeypatch) -> None:
     """Sparse-only and low-dense rows cannot satisfy a dense minimum."""
-    import omrg.core.retrieval.pipeline as pipeline
-    import omrg.core.retrieval.registry as registry
-    from omrg.core.settings import EffectiveSettings, RetrievalBlock
+    import omrs.core.retrieval.pipeline as pipeline
+    import omrs.core.retrieval.registry as registry
+    from omrs.core.settings import EffectiveSettings, RetrievalBlock
 
     store = FakeStore(
         FakeCollection(
@@ -567,8 +567,8 @@ def test_positive_dense_threshold_filters_before_nonreranked_fusion(monkeypatch)
 
 def test_hybrid_rerank_success_thresholds_reranker_score(monkeypatch) -> None:
     """Successful reranking switches threshold semantics from RRF to reranker."""
-    import omrg.core.retrieval.pipeline as pipeline
-    from omrg.core.settings import EffectiveSettings
+    import omrs.core.retrieval.pipeline as pipeline
+    from omrs.core.settings import EffectiveSettings
 
     monkeypatch.setattr(
         pipeline,
@@ -614,8 +614,8 @@ def test_hybrid_rerank_success_thresholds_reranker_score(monkeypatch) -> None:
 
 def test_hybrid_rerank_failure_restores_dense_threshold_semantics(monkeypatch) -> None:
     """A failed reranker rebuilds hybrid candidates under the dense rule."""
-    import omrg.core.retrieval.pipeline as pipeline
-    from omrg.core.settings import EffectiveSettings
+    import omrs.core.retrieval.pipeline as pipeline
+    from omrs.core.settings import EffectiveSettings
 
     thresholds: list[float] = []
 
@@ -666,7 +666,7 @@ def test_hybrid_rerank_failure_restores_dense_threshold_semantics(monkeypatch) -
 
 def test_remove_collection_generation_invalidates_cache() -> None:
     """Collection removal generation bump invalidates the cached BM25 index."""
-    from omrg.core.retrieval.sparse import BM25SparseRetriever
+    from omrs.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "drop_rebuild",
@@ -696,8 +696,8 @@ def test_hybrid_false_matches_dense_only_result_shape(monkeypatch) -> None:
     """The dense-only default must remain byte-for-byte compatible."""
     import chromadb
 
-    import omrg.core.retrieval.dense as _dense
-    import omrg.core.retrieval.pipeline as retrieval
+    import omrs.core.retrieval.dense as _dense
+    import omrs.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "documents",
@@ -712,7 +712,7 @@ def test_hybrid_false_matches_dense_only_result_shape(monkeypatch) -> None:
     )
     client = FakePersistentClient({"documents": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
@@ -730,8 +730,8 @@ def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
     """Hybrid + rerank must feed the reranker the fused dense+sparse pool."""
     import chromadb
 
-    import omrg.core.retrieval.dense as _dense
-    import omrg.core.retrieval.pipeline as retrieval
+    import omrs.core.retrieval.dense as _dense
+    import omrs.core.retrieval.pipeline as retrieval
 
     dense_rows = [
         {
@@ -750,13 +750,13 @@ def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
     collection = FakeCollection("documents", dense_rows)
     client = FakePersistentClient({"documents": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
         _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
     )
-    from omrg.core.settings import (
+    from omrs.core.settings import (
         EffectiveSettings,
         RetrievalBlock,
         set_default_effective_settings,
@@ -795,8 +795,8 @@ def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
     """MCP/CLI public result shape should not leak internal fusion fields."""
     import chromadb
 
-    import omrg.core.retrieval.dense as _dense
-    import omrg.core.retrieval.pipeline as retrieval
+    import omrs.core.retrieval.dense as _dense
+    import omrs.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "documents",
@@ -817,13 +817,13 @@ def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
     )
     client = FakePersistentClient({"documents": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
         _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
     )
-    from omrg.core.settings import (
+    from omrs.core.settings import (
         EffectiveSettings,
         RetrievalBlock,
         set_default_effective_settings,
@@ -851,8 +851,8 @@ def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
     """Experiment 9 can opt into fusion rank diagnostics explicitly."""
     import chromadb
 
-    import omrg.core.retrieval.dense as _dense
-    import omrg.core.retrieval.pipeline as retrieval
+    import omrs.core.retrieval.dense as _dense
+    import omrs.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "documents",
@@ -867,13 +867,13 @@ def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
     )
     client = FakePersistentClient({"documents": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
         _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
     )
-    from omrg.core.settings import (
+    from omrs.core.settings import (
         EffectiveSettings,
         RetrievalBlock,
         set_default_effective_settings,
@@ -902,8 +902,8 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
     """Native sparse mixed coverage should warn once with remediation text."""
     import chromadb
 
-    import omrg.core.retrieval.dense as _dense
-    import omrg.core.retrieval.pipeline as retrieval
+    import omrs.core.retrieval.dense as _dense
+    import omrs.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "mixed_native",
@@ -918,13 +918,13 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
     )
     client = FakePersistentClient({"mixed_native": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
         _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
     )
-    from omrg.core.settings import (
+    from omrs.core.settings import (
         EffectiveSettings,
         RetrievalBlock,
         set_default_effective_settings,
@@ -961,8 +961,8 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
     """Native coverage checks must respect CHROMA_SCAN_PAGE_SIZE paging."""
     import chromadb
 
-    import omrg.core.retrieval.dense as _dense
-    import omrg.core.retrieval.pipeline as retrieval
+    import omrs.core.retrieval.dense as _dense
+    import omrs.core.retrieval.pipeline as retrieval
 
     rows = [
         {
@@ -980,7 +980,7 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
     collection = FakeCollection("paged_native", rows)
     client = FakePersistentClient({"paged_native": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client, scan_page_size=1)
     monkeypatch.setattr(
@@ -1004,8 +1004,8 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
     """Selected native without real query support must use BM25 sparse results."""
     import chromadb
 
-    import omrg.core.retrieval.dense as _dense
-    import omrg.core.retrieval.pipeline as retrieval
+    import omrs.core.retrieval.dense as _dense
+    import omrs.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "native_fallback",
@@ -1030,7 +1030,7 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
             },
         ],
     )
-    from omrg.core.settings import (
+    from omrs.core.settings import (
         EffectiveSettings,
         RetrievalBlock,
         set_default_effective_settings,
@@ -1041,7 +1041,7 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
     )
     client = FakePersistentClient({"native_fallback": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
@@ -1072,8 +1072,8 @@ def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> Non
     """BM25 indexes all chunks it sees and must not warn about sparse coverage."""
     import chromadb
 
-    import omrg.core.retrieval.dense as _dense
-    import omrg.core.retrieval.pipeline as retrieval
+    import omrs.core.retrieval.dense as _dense
+    import omrs.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "bm25_no_warn",
@@ -1088,7 +1088,7 @@ def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> Non
     )
     client = FakePersistentClient({"bm25_no_warn": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
@@ -1114,9 +1114,9 @@ def test_sparse_backend_auto_falls_back_to_bm25_when_unsupported(monkeypatch) ->
     quarantined Chroma extra) resolves ``auto`` to ``bm25`` without
     emitting the explicit-native fallback warning.
     """
-    import omrg.compose as compose
-    from omrg.config import Settings
-    from omrg.core.retrieval.settings import RetrievalSettings
+    import omrs.compose as compose
+    from omrs.config import Settings
+    from omrs.core.retrieval.settings import RetrievalSettings
 
     settings = Settings(
         _env_file=None,
@@ -1133,9 +1133,9 @@ def test_sparse_backend_auto_selects_native_when_supported(monkeypatch) -> None:
     The lancedb registry entry carries the real native-FTS probe; on
     the locked runtime (lancedb 0.37.1) it reports availability.
     """
-    import omrg.compose as compose
-    from omrg.config import Settings
-    from omrg.core.retrieval.settings import RetrievalSettings
+    import omrs.compose as compose
+    from omrs.config import Settings
+    from omrs.core.retrieval.settings import RetrievalSettings
 
     settings = Settings(
         _env_file=None,
@@ -1148,10 +1148,10 @@ def test_sparse_backend_auto_selects_native_when_supported(monkeypatch) -> None:
 
 def test_sparse_backend_auto_respects_a_failing_probe(monkeypatch) -> None:
     """A probe that reports unavailability resolves auto to bm25."""
-    import omrg.compose as compose
-    import omrg.core.vectordb.lancedb.fts as lance_fts
-    from omrg.config import Settings
-    from omrg.core.retrieval.settings import RetrievalSettings
+    import omrs.compose as compose
+    import omrs.core.vectordb.lancedb.fts as lance_fts
+    from omrs.config import Settings
+    from omrs.core.retrieval.settings import RetrievalSettings
 
     settings = Settings(
         _env_file=None,
@@ -1165,9 +1165,9 @@ def test_sparse_backend_auto_respects_a_failing_probe(monkeypatch) -> None:
 
 def test_sparse_backend_explicit_native_falls_back_to_bm25(monkeypatch, caplog) -> None:
     """Explicit native override falls back gracefully with a warning."""
-    import omrg.compose as compose
-    from omrg.config import Settings
-    from omrg.core.retrieval.settings import RetrievalSettings
+    import omrs.compose as compose
+    from omrs.config import Settings
+    from omrs.core.retrieval.settings import RetrievalSettings
 
     settings = Settings(
         _env_file=None,
@@ -1188,9 +1188,9 @@ def test_sparse_backend_unknown_name_fails_listing_registered_names() -> None:
     registry-owned, ``auto`` stays a separately accepted policy name,
     and the error lists it alongside the registered concrete names.
     """
-    import omrg.compose as compose
-    from omrg.config import Settings
-    from omrg.core.retrieval.settings import RetrievalSettings
+    import omrs.compose as compose
+    from omrs.config import Settings
+    from omrs.core.retrieval.settings import RetrievalSettings
 
     settings = Settings(
         _env_file=None,
@@ -1207,8 +1207,8 @@ def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
     """Dense top_k can miss the exact Colosseum chunk; hybrid recovers it."""
     import chromadb
 
-    import omrg.core.retrieval.dense as _dense
-    import omrg.core.retrieval.pipeline as retrieval
+    import omrs.core.retrieval.dense as _dense
+    import omrs.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "colosseum_regression",
@@ -1229,13 +1229,13 @@ def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
     )
     client = FakePersistentClient({"colosseum_regression": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(
         _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
     )
-    from omrg.core.settings import (
+    from omrs.core.settings import (
         EffectiveSettings,
         RetrievalBlock,
         set_default_effective_settings,
@@ -1277,9 +1277,9 @@ def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
     """
     import chromadb
 
-    import omrg.core.retrieval.dense as _dense
-    import omrg.core.retrieval.pipeline as retrieval
-    import omrg.core.retrieval.registry as retrieval_registry
+    import omrs.core.retrieval.dense as _dense
+    import omrs.core.retrieval.pipeline as retrieval
+    import omrs.core.retrieval.registry as retrieval_registry
 
     collection = FakeCollection(
         "documents",
@@ -1300,7 +1300,7 @@ def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
     )
     client = FakePersistentClient({"documents": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(

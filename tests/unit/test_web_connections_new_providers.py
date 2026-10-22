@@ -29,12 +29,12 @@ from tests.unit.test_web_connections_edit import (  # noqa: E402
 )
 from tests.unit.test_web_documents_support import BASE, ORIGIN, lance_store, login  # noqa: E402
 
-from omrg import compose  # noqa: E402
-from omrg.engine import Engine  # noqa: E402
-from omrg.transports.api import connection_probe  # noqa: E402
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.security import AccessPolicy, SecretSet  # noqa: E402
+from omrs import compose  # noqa: E402
+from omrs.engine import Engine  # noqa: E402
+from omrs.transports.api import connection_probe  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.security import AccessPolicy, SecretSet  # noqa: E402
 
 ANT_KEY = "sk-ant-api03-" + "a1B2c3D4e5F6g7H8" * 3 + "Zz9"  # gitleaks:allow
 OAI_KEY = "sk-oai-" + "q1W2e3R4t5Y6u7I8" * 3 + "Oo0"  # gitleaks:allow
@@ -372,7 +372,7 @@ def test_openai_compatible_chat_is_ready_without_a_key(harness: Any) -> None:
 def test_chat_test_route_uses_the_new_providers(
     harness: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from omrg.core.providers.llm import registry
+    from omrs.core.providers.llm import registry
 
     built: list[tuple[str, Any]] = []
 
@@ -416,13 +416,13 @@ def test_chat_test_route_uses_the_new_providers(
 
 @pytest.fixture
 def installed(monkeypatch: pytest.MonkeyPatch) -> None:
-    from omrg.transports.api.routes import chat_settings
+    from omrs.transports.api.routes import chat_settings
 
     monkeypatch.setattr(chat_settings, "module_installed", lambda name: True)
 
 
 def reason(settings: Any, provider: str, model: str = "m") -> str | None:
-    from omrg.transports.api.routes.chat_settings import _not_ready_reason
+    from omrs.transports.api.routes.chat_settings import _not_ready_reason
 
     return _not_ready_reason(settings, provider, model)
 
@@ -449,7 +449,7 @@ def test_a_required_key_blocks_chat() -> None:
 
 
 def test_a_missing_package_is_not_installed(monkeypatch: pytest.MonkeyPatch) -> None:
-    from omrg.transports.api.routes import chat_settings
+    from omrs.transports.api.routes import chat_settings
 
     monkeypatch.setattr(chat_settings, "module_installed", lambda name: False)
     assert reason(make_settings(anthropic_api_key=ANT_KEY), "anthropic") == "not-installed"
@@ -460,13 +460,13 @@ def test_a_third_provider_with_an_optional_key_is_ready_without_it() -> None:
     import sys
     import types
 
-    from omrg.core.providers.llm import registry
-    from omrg.core.providers.llm.connection import (
+    from omrs.core.providers.llm import registry
+    from omrs.core.providers.llm.connection import (
         ConnectionDescriptor,
         ConnectionField,
         ConnectionTarget,
     )
-    from omrg.transports.api.routes import chat_settings
+    from omrs.transports.api.routes import chat_settings
 
     module = types.ModuleType("fake_third_ready")
     module.build = lambda settings, **_: None  # type: ignore[attr-defined]

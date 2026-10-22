@@ -14,7 +14,7 @@ Usage:
 """
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
+# (omrs.ingestion, omrs.retrieval, omrs.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -65,7 +65,7 @@ def _setup_environment(parser_mode: str, chroma_dir: Path) -> None:
     # Hybrid off — isolates the parser variable per protocol.md.
     os.environ["HYBRID_ENABLED"] = "false"
 
-    for mod_name in ("omrg.config", "omrg.retrieval", "omrg.ingestion"):
+    for mod_name in ("omrs.config", "omrs.retrieval", "omrs.ingestion"):
         mod = sys.modules.get(mod_name)
         if mod is None:
             continue
@@ -75,7 +75,7 @@ def _setup_environment(parser_mode: str, chroma_dir: Path) -> None:
             mod.HYBRID_ENABLED = False
 
     try:
-        from omrg.retrieval import _cached_query_embedding
+        from omrs.retrieval import _cached_query_embedding
         _cached_query_embedding.cache_clear()
     except Exception:
         pass
@@ -146,7 +146,7 @@ def _evaluate_cell(
     top_k: int,
     k_values: list[int],
 ) -> dict[str, Any]:
-    import omrg.retrieval as retrieval
+    import omrs.retrieval as retrieval
 
     _setup_environment(parser_mode, chroma_dir)
     per_query: list[dict[str, Any]] = []
@@ -261,7 +261,7 @@ def main() -> None:
     modes = [m.strip() for m in args.modes.split(",") if m.strip()]
     rerank_settings = [False, True] if args.rerank_cross else [True]
 
-    import omrg.retrieval as retrieval
+    import omrs.retrieval as retrieval
     if "rerank" not in inspect.signature(retrieval.search).parameters:
         raise RuntimeError("retrieval.search does not expose the rerank parameter")
 

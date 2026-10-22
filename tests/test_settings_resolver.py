@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 
-from omrg.config import Settings
+from omrs.config import Settings
 
 # ── Env var → (field name, documented default) ──────────────────────────
 # EMBED_MODEL is handled separately because the model validator requires

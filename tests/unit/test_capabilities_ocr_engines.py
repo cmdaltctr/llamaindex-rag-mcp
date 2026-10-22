@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from omrg.capabilities import (
+from omrs.capabilities import (
     ENGINE_NOT_A_FOLDER,
     ENGINE_WORKERS_UNSET,
     ocr_engine_options,

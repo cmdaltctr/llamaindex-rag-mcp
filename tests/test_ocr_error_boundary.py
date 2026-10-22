@@ -17,10 +17,10 @@ from pathlib import Path
 
 import pytest
 
-from omrg.capabilities import probe_ocr_worker, reset_ocr_fingerprint_cache
-from omrg.core.ingestion.pipeline import ingest_path_async
-from omrg.core.vectordb import get_default_store
-from omrg.integrations.ocr_worker.managed import ManagedOcrClient
+from omrs.capabilities import probe_ocr_worker, reset_ocr_fingerprint_cache
+from omrs.core.ingestion.pipeline import ingest_path_async
+from omrs.core.vectordb import get_default_store
+from omrs.integrations.ocr_worker.managed import ManagedOcrClient
 
 pytest.importorskip("pdf_inspector", reason="pdf-inspector is a base dependency (ADR-050)")
 
@@ -252,7 +252,7 @@ async def test_engine_close_releases_the_owned_worker(effective_settings) -> Non
     """Engine.ingest dispatches through its client; close() releases it."""
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = _ocr_settings(effective_settings)
     client = _client("echo")

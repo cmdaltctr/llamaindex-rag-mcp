@@ -16,7 +16,7 @@ interface NotebookPanelProps {
 /**
  * Opens a registered notebook editor in a separate browser tab. Without a
  * compatible plugin, it shows the server's message and how to install the
- * editor outside OMRG. It never installs or updates anything.
+ * editor outside OMRS. It never installs or updates anything.
  */
 export function NotebookPanel({ list, loading, active, names }: NotebookPanelProps) {
   const launchable = (list?.plugins ?? []).filter((plugin) => plugin.launchable && plugin.status === "compatible");

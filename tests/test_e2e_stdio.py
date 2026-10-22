@@ -1,6 +1,6 @@
 """End-to-end smoke test: server over stdio transport.
 
-Launches ``uv run omrg`` as a subprocess, performs MCP handshake,
+Launches ``uv run omrs`` as a subprocess, performs MCP handshake,
 and verifies tool discovery. Marked ``slow`` — skipped by default,
 and skipped under CI: the probe only ever usefully runs against a
 local checkout (GitHub-hosted runners have no Ollama, so the CI slow
@@ -29,7 +29,7 @@ pytestmark = [
 def test_stdio_server_lists_tools() -> None:
     """Launch the server over stdio and verify all tools are present."""
     proc = subprocess.Popen(
-        ["uv", "run", "omrg"],
+        ["uv", "run", "omrs"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

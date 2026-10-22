@@ -19,9 +19,9 @@ from pathlib import Path
 import pytest
 from llama_index.core.embeddings import MockEmbedding
 
-from omrg.core.ingestion import ingest_path_async
-from omrg.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.core.ingestion import ingest_path_async
+from omrs.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
 
 class _UnitNormMockEmbedding(MockEmbedding):
@@ -46,7 +46,7 @@ async def test_ingest_content_type_detection_needs_no_global_settings(
     "Magika detection failed ... No default EffectiveSettings installed"
     catch.
     """
-    from omrg.core.settings import reset_default_effective_settings
+    from omrs.core.settings import reset_default_effective_settings
 
     reset_default_effective_settings()
 
@@ -60,7 +60,7 @@ async def test_ingest_content_type_detection_needs_no_global_settings(
     )
     store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
 
-    with caplog.at_level(logging.DEBUG, logger="omrg.core"):
+    with caplog.at_level(logging.DEBUG, logger="omrs.core"):
         result = await ingest_path_async(
             str(source),
             collection_name="magika_settings_injection",
@@ -100,7 +100,7 @@ def test_magika_binary_reads_injected_settings_not_the_global(
     A raising stub on the module's global getter proves the global is
     never consulted when settings are injected.
     """
-    from omrg.integrations import magika as magika_module
+    from omrs.integrations import magika as magika_module
 
     def _raise() -> None:
         raise RuntimeError("global settings read attempted")
@@ -166,7 +166,7 @@ async def test_binary_transition_cleanup_failure_fails_the_file(
     false branch) and the pipeline's per-file failure reporting when the
     binary skip cannot clean previously indexed rows.
     """
-    from omrg.core.ingestion import writer
+    from omrs.core.ingestion import writer
 
     def _fail_removal(*args: object, **kwargs: object) -> dict:
         return {

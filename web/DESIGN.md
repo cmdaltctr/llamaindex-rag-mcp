@@ -1,8 +1,8 @@
 ---
 version: alpha
-name: OMRG Workspace
+name: OMRS Workspace
 description: >-
-  Local research workspace for OMRG. Warm neutral surfaces, one burnt-orange
+  Local research workspace for OMRS. Warm neutral surfaces, one burnt-orange
   accent used as a tint, compact system type, flat cards. Adapted from
   OpenChamber (MIT) at revision 02306f32e4d191e4840440cbafa643ae899471c2.
   Front matter holds the light theme; dark values are in the Colors section.
@@ -137,13 +137,13 @@ components:
     textColor: "{colors.primary}"
 ---
 
-# OMRG Workspace design
+# OMRS Workspace design
 
 This file is the portable summary of the web workspace's visual system, in the [DESIGN.md format](https://github.com/google-labs-code/design.md) (version `alpha`). Read it for intent. For implementation, follow these, in this order:
 
 1. `web/src/styles/tokens.css`: the only source of colour, type, spacing and radius values. If this file and `tokens.css` disagree, `tokens.css` wins; update this file.
 2. `web/src/components/ui/`: the primitives. Use them; never re-create them.
-3. The `omrg-design` skill (`.agents/skills/omrg-design/`): rules, contrast data, screen guidance and verification steps.
+3. The `omrs-design` skill (`.agents/skills/omrs-design/`): rules, contrast data, screen guidance and verification steps.
 4. `openspec/specs/web-ui-stack/` and the `workspace-*` specs: the behaviour contract.
 
 ## Overview
@@ -213,7 +213,7 @@ Copy is plain British English. Buttons say what they do ("Upload files", "Run pi
 - Studio opens on a gallery of profile cards. A profile canvas takes the full main area; one floating panel holds six sections: Pipeline settings, Operations, Steps and connections, Connect ports, Revision and run, Step settings.
 - Settings has seven sections, switched by `chip` buttons: Appearance, Providers, Chat, MCP, Server log, Runtime, Workspace. Each chip writes `#/settings/<section>`.
 - The Providers section shows one card per registered LLM provider in a `grid-cols-1 md:grid-cols-2 xl:grid-cols-3` grid. A key field is write-only: `Input type="password"`, emptied after save, never filled with a saved key. A field set from the environment or the config file is locked and says so in text ("Set from environment (read-only here)", "Set from config file (read-only here)" with the lock text from the server). A key set from a key file is not locked: the card says "Set from key file (read-only here). Saving a key in the keychain overrides it." and keeps the key input. Saved values apply at once, so the section shows no restart banner.
-- The Ollama card has a number `Input` "Context window (tokens)" (min 2048, max 262144) with the source line. The llama.cpp card has a "Local server" panel: a state `Badge` with text (`stopped`, `starting`, `running`, `failed`), a friendly line for each fixed reason, `Input` fields for program path, model, context window and idle sleep with source lines, a one-line note on what idle sleep does, and Start, Stop and Restart `Button`s. Start is disabled while starting or running. Stop is disabled while stopped. The panel says "omrg starts and stops only this server. It never touches a server you started yourself." and shows "Restart to apply" when saved values differ from the running ones. Program path and model are read-only without the `credentials` scope. The panel never shows output of the server.
+- The Ollama card has a number `Input` "Context window (tokens)" (min 2048, max 262144) with the source line. The llama.cpp card has a "Local server" panel: a state `Badge` with text (`stopped`, `starting`, `running`, `failed`), a friendly line for each fixed reason, `Input` fields for program path, model, context window and idle sleep with source lines, a one-line note on what idle sleep does, and Start, Stop and Restart `Button`s. Start is disabled while starting or running. Stop is disabled while stopped. The panel says "omrs starts and stops only this server. It never touches a server you started yourself." and shows "Restart to apply" when saved values differ from the running ones. Program path and model are read-only without the `credentials` scope. The panel never shows output of the server.
 - The Chat section holds a provider `Select`, a model `Input`, List models, Test, Save and Clear. A provider that is not ready is disabled and shows its reason. A cloud provider shows a notice that questions and passages leave this machine.
 - Card grids use `items-start` so short cards do not stretch.
 - Use logical properties only (`ms-*`, `pe-*`, `border-s`, `text-start`), so the layout mirrors for right-to-left text.

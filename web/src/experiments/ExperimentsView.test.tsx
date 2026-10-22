@@ -67,7 +67,7 @@ describe("Experiments view", () => {
     openExperiments({ roots: [] });
     const guidance = await screen.findByText(/No experiment root is approved/);
     expect(guidance.parentElement).toHaveTextContent("--experiment-root");
-    expect(screen.getByText(/omrg web --experiment-root/, { selector: "code" })).toBeInTheDocument();
+    expect(screen.getByText(/omrs web --experiment-root/, { selector: "code" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Create folder" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Create sub-experiment" })).toBeNull();
   });

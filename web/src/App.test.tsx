@@ -189,8 +189,8 @@ describe("brand", () => {
     const logo = nav().querySelector("img");
     expect(logo).not.toBeNull();
     expect(logo).toHaveAttribute("alt", "");
-    expect(logo?.getAttribute("src")).toMatch(/omrg-logo\.svg$/);
-    expect(within(nav()).getByText("OMRG")).toBeInTheDocument();
+    expect(logo?.getAttribute("src")).toMatch(/omrs-logo\.svg$/);
+    expect(within(nav()).getByText("OMRS")).toBeInTheDocument();
   });
 
   it("shows the server version beside the name and hides it when collapsed", async () => {
@@ -205,7 +205,7 @@ describe("brand", () => {
     const user = userEvent.setup();
     start();
     await user.click(within(nav()).getByRole("button", { name: "Collapse navigation" }));
-    expect(within(nav()).getByText("OMRG")).toHaveClass("sr-only");
+    expect(within(nav()).getByText("OMRS")).toHaveClass("sr-only");
   });
 });
 

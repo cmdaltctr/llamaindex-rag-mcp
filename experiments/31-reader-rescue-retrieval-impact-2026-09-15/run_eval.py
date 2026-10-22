@@ -61,7 +61,7 @@ def _run_cell(cell: str, queries: list[dict], checkpoint: dict, resume: bool) ->
     collection = f"exp31_{cell}"
     cell_state = checkpoint["cells"].setdefault(cell, {})
 
-    import omrg.config as config_module
+    import omrs.config as config_module
 
     env = dict(PINNED_ENV)
     # The reader never runs at search time; the production name keeps
@@ -73,7 +73,7 @@ def _run_cell(cell: str, queries: list[dict], checkpoint: dict, resume: bool) ->
     engine = None
     try:
         config_module._settings = None
-        from omrg.compose import build_engine
+        from omrs.compose import build_engine
 
         engine = build_engine()
         for q in queries:

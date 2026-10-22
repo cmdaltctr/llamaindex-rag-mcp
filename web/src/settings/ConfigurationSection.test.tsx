@@ -10,7 +10,7 @@ import type { ConfigurationState } from "./configurationTypes";
 const KEY = "not-a-real-key-value-1234";
 
 const STATE: ConfigurationState = {
-  path: "~/.config/omrg/omrg.jsonc",
+  path: "~/.config/omrs/omrs.jsonc",
   revision: "r1",
   settings: [
     { key: "retrieval.top_k", value: 10, source: "default", applies: "restart", restart_pending: false },
@@ -55,7 +55,7 @@ describe("ConfigurationView", () => {
     expect(topK).toHaveTextContent("10");
     expect(topK).toHaveTextContent("default");
     expect(within(retrieval).getByRole("row", { name: /reranker_enabled/ })).toHaveTextContent("false");
-    expect(within(retrieval).getByRole("row", { name: /reranker_enabled/ })).toHaveTextContent("from omrg.jsonc");
+    expect(within(retrieval).getByRole("row", { name: /reranker_enabled/ })).toHaveTextContent("from omrs.jsonc");
     expect(screen.getByRole("table", { name: "General" })).toHaveTextContent("web_port");
     expect(screen.getByRole("row", { name: /ollama\.address/ })).toHaveTextContent("Set in .env. Change it there.");
   });
@@ -87,7 +87,7 @@ describe("ConfigurationView", () => {
 
   it("shows the path with a copy action", () => {
     view();
-    expect(screen.getByText("~/.config/omrg/omrg.jsonc")).toBeInTheDocument();
+    expect(screen.getByText("~/.config/omrs/omrs.jsonc")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copy settings file path" })).toBeInTheDocument();
   });
 
@@ -121,7 +121,7 @@ describe("ConfigurationView", () => {
         { key: "retrieval.top_k", kind: "invalid-value", message: "Enter a whole number from 1 to 100." },
       ],
     });
-    const list = screen.getByRole("list", { name: "Problems in omrg.jsonc" });
+    const list = screen.getByRole("list", { name: "Problems in omrs.jsonc" });
     const items = within(list).getAllByRole("listitem");
     expect(items).toHaveLength(2);
     expect(items[0]).toHaveTextContent("retreival.top_k");
@@ -131,13 +131,13 @@ describe("ConfigurationView", () => {
 
   it("shows no problem list when the file is clean", () => {
     view();
-    expect(screen.queryByRole("list", { name: "Problems in omrg.jsonc" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Problems in omrs.jsonc" })).not.toBeInTheDocument();
   });
 
   it("tells the user when saved settings could not be moved", () => {
-    view({ ...STATE, handover: { pending: true, folder: "~/.omrg/workspace" } });
-    expect(screen.getByText("Saved settings could not be moved to omrg.jsonc")).toBeInTheDocument();
-    expect(screen.getByText("~/.omrg/workspace")).toBeInTheDocument();
+    view({ ...STATE, handover: { pending: true, folder: "~/.omrs/workspace" } });
+    expect(screen.getByText("Saved settings could not be moved to omrs.jsonc")).toBeInTheDocument();
+    expect(screen.getByText("~/.omrs/workspace")).toBeInTheDocument();
   });
 
   it("shows no handover line when nothing is pending", () => {

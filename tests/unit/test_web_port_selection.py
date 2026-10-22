@@ -1,4 +1,4 @@
-"""``omrg web`` port selection and the web-port API (ADR-087: ``web_port`` in ``omrg.jsonc``)."""
+"""``omrs web`` port selection and the web-port API (ADR-087: ``web_port`` in ``omrs.jsonc``)."""
 
 from __future__ import annotations
 
@@ -23,20 +23,20 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
 )
 from typer.testing import CliRunner  # noqa: E402
 
-from omrg.config.settings_file import read_settings_file  # noqa: E402
-from omrg.config.user_config import user_config_dir  # noqa: E402
-from omrg.transports.cli import app as cli_app  # noqa: E402
-from omrg.transports.cli.web import DEFAULT_PORT, resolve_port  # noqa: E402
+from omrs.config.settings_file import read_settings_file  # noqa: E402
+from omrs.config.user_config import user_config_dir  # noqa: E402
+from omrs.transports.cli import app as cli_app  # noqa: E402
+from omrs.transports.cli.web import DEFAULT_PORT, resolve_port  # noqa: E402
 
 runner = CliRunner()
 
 
 def _save_port(port: int | None, *, raw: str | None = None) -> None:
-    """Write ``web_port`` to ``omrg.jsonc`` (or a raw, possibly invalid, JSON value)."""
+    """Write ``web_port`` to ``omrs.jsonc`` (or a raw, possibly invalid, JSON value)."""
     folder = user_config_dir()
     folder.mkdir(parents=True, exist_ok=True)
     value = raw if raw is not None else ("null" if port is None else str(port))
-    (folder / "omrg.jsonc").write_text(f'{{ "web_port": {value} }}', encoding="utf-8")
+    (folder / "omrs.jsonc").write_text(f'{{ "web_port": {value} }}', encoding="utf-8")
 
 
 def _file_port() -> object:
@@ -44,12 +44,12 @@ def _file_port() -> object:
 
 
 def _launch(workspace: Path, *args: str) -> tuple[Any, MagicMock]:
-    """Run ``omrg web`` with the bind and the server replaced; return result and bind mock."""
+    """Run ``omrs web`` with the bind and the server replaced; return result and bind mock."""
     sock = MagicMock()
     sock.getsockname.return_value = ("127.0.0.1", 4242)
     with (
-        patch("omrg.transports.cli.web._bind_socket", return_value=sock) as bind,
-        patch("omrg.transports.cli.web._serve", return_value=True),
+        patch("omrs.transports.cli.web._bind_socket", return_value=sock) as bind,
+        patch("omrs.transports.cli.web._serve", return_value=True),
     ):
         result = runner.invoke(cli_app, ["web", "--workspace", str(workspace), *args])
     return result, bind
@@ -119,7 +119,7 @@ def test_an_invalid_port_in_the_file_falls_back_to_8765(tmp_path: Path, raw: str
 def test_an_unreadable_file_falls_back_to_8765(tmp_path: Path) -> None:
     folder = user_config_dir()
     folder.mkdir(parents=True, exist_ok=True)
-    (folder / "omrg.jsonc").write_text("{ not json", encoding="utf-8")
+    (folder / "omrs.jsonc").write_text("{ not json", encoding="utf-8")
     result, bind = _launch(tmp_path / "ws")
     assert result.exit_code == 0, result.output
     assert bind.call_args.args == ("127.0.0.1", 8765)
@@ -128,8 +128,8 @@ def test_an_unreadable_file_falls_back_to_8765(tmp_path: Path) -> None:
 def test_the_database_no_longer_sets_the_port(tmp_path: Path) -> None:
     import sqlite3
 
-    from omrg.core.workspace import WorkspaceLayout
-    from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+    from omrs.core.workspace import WorkspaceLayout
+    from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
     records = WorkspaceLayout(tmp_path / "ws").records
     SqliteWorkspaceRepository(records)
@@ -151,7 +151,7 @@ def test_taken_port_exits_one_with_an_actionable_message(tmp_path: Path) -> None
     holder.listen(1)
     taken = holder.getsockname()[1]
     try:
-        with patch("omrg.transports.cli.web._serve") as serve:
+        with patch("omrs.transports.cli.web._serve") as serve:
             result = runner.invoke(
                 cli_app, ["web", "--workspace", str(tmp_path / "ws"), "--port", str(taken)]
             )
@@ -199,7 +199,7 @@ def test_put_saves_the_port_without_rebinding(web: Any) -> None:
     assert (body["saved"], body["bound"], body["differs"]) == (9100, 8765, True)
     assert body["revision"] == read_settings_file().revision
     assert _file_port() == 9100
-    assert '"web_port": 9100' in (user_config_dir() / "omrg.jsonc").read_text(encoding="utf-8")
+    assert '"web_port": 9100' in (user_config_dir() / "omrs.jsonc").read_text(encoding="utf-8")
     assert web.get("/v1/settings/web-port").json() == body
 
 
@@ -215,7 +215,7 @@ def test_put_null_clears_the_saved_port(web: Any) -> None:
     assert response.status_code == 200
     assert (response.json()["saved"], response.json()["differs"]) == (None, False)
     assert _file_port() is None
-    assert "web_port" not in (user_config_dir() / "omrg.jsonc").read_text(encoding="utf-8")
+    assert "web_port" not in (user_config_dir() / "omrs.jsonc").read_text(encoding="utf-8")
 
 
 def test_put_with_a_stale_revision_is_409_and_keeps_the_hand_edit(web: Any) -> None:
@@ -225,7 +225,7 @@ def test_put_with_a_stale_revision_is_409_and_keeps_the_hand_edit(web: Any) -> N
         "/v1/settings/web-port", json={"port": 9100, "revision": first}, headers=ORIGIN
     )
     assert response.status_code == 409
-    assert response.json()["message"] == "omrg.jsonc changed on disk. Reload to see the new values."
+    assert response.json()["message"] == "omrs.jsonc changed on disk. Reload to see the new values."
     assert _file_port() == 9200
 
 
@@ -260,12 +260,12 @@ def test_unauthenticated_requests_are_refused(web: Any) -> None:
 
 def test_serve_limits_the_graceful_shutdown_wait() -> None:
     """An open MCP event stream must not keep Ctrl+C waiting for ever."""
-    from omrg.transports.cli.web import _serve
+    from omrs.transports.cli.web import _serve
 
     with (
         patch("uvicorn.Config") as config,
         patch("uvicorn.Server.run"),
-        patch("omrg.transports.api.security.install_log_redaction"),
+        patch("omrs.transports.api.security.install_log_redaction"),
     ):
         _serve(MagicMock(), MagicMock())
     assert 0 < config.call_args.kwargs["timeout_graceful_shutdown"] <= 10
@@ -275,11 +275,11 @@ def test_serve_limits_the_graceful_shutdown_wait() -> None:
 
 
 def _plan(tmp_path: Path, port: int | None = None) -> Any:
-    from omrg.transports.cli import _web_login_item as core
+    from omrs.transports.cli import _web_login_item as core
 
     return core.WebLoginItemPlan(
-        label="com.omrg.web.test",
-        command_path="/usr/local/bin/omrg",
+        label="com.omrs.web.test",
+        command_path="/usr/local/bin/omrs",
         plist_path=tmp_path / "test.plist",
         stdout_log=tmp_path / "out.log",
         stderr_log=tmp_path / "err.log",
@@ -290,7 +290,7 @@ def _plan(tmp_path: Path, port: int | None = None) -> Any:
 
 
 def test_the_login_item_targets_the_port_in_the_config_file(tmp_path: Path) -> None:
-    from omrg.transports.cli.web_login_item import _target_port
+    from omrs.transports.cli.web_login_item import _target_port
 
     assert _target_port(_plan(tmp_path)) == 8765
     _save_port(9100)
@@ -299,7 +299,7 @@ def test_the_login_item_targets_the_port_in_the_config_file(tmp_path: Path) -> N
 
 
 def test_the_login_item_ignores_an_invalid_file_port(tmp_path: Path) -> None:
-    from omrg.transports.cli.web_login_item import _target_port
+    from omrs.transports.cli.web_login_item import _target_port
 
     _save_port(None, raw="80")
     assert _target_port(_plan(tmp_path)) == 8765

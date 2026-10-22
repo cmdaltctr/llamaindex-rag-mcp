@@ -12,7 +12,7 @@ import pytest
 from tests.unit.test_plugin_manifest import valid_manifest
 from tests.unit.test_plugin_registration import FakeRunner
 
-from omrg.core.plugins import (
+from omrs.core.plugins import (
     NotebookEditorSupervisor,
     PluginConsentError,
     PluginLaunchError,
@@ -20,7 +20,7 @@ from omrg.core.plugins import (
     build_launch_plan,
     parse_manifest,
 )
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
 
 @dataclass
@@ -139,7 +139,7 @@ def test_all_ports_busy_fails_clearly(setup) -> None:
 
 def test_incompatible_plugin_is_not_launched(setup) -> None:
     registry, launcher, notebook, _ = setup
-    registry._runner.version = "fakeedit 9.0"  # updated outside OMRG
+    registry._runner.version = "fakeedit 9.0"  # updated outside OMRS
     with pytest.raises(PluginLaunchError, match="outside the tested range"):
         supervisor(registry, launcher).open("fakeedit", notebook, consent=True)
     assert launcher.started == []

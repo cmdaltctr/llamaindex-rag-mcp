@@ -11,15 +11,15 @@ from typing import Any
 
 import pytest
 
-from omrg import compose_embedding
-from omrg.compose_embedding import (
+from omrs import compose_embedding
+from omrs.compose_embedding import (
     UnknownEmbeddingProviderError,
     check_embedding_model,
     provider_listing,
     server_default_identity,
 )
-from omrg.config import Settings
-from omrg.core.settings import EmbeddingSettings
+from omrs.config import Settings
+from omrs.core.settings import EmbeddingSettings
 
 KEY = "sk-or-fake-key"
 
@@ -86,7 +86,7 @@ def test_a_unit_vector_passes_and_reports_its_size(builders: dict[str, Any]) -> 
     assert result["norm"] == pytest.approx(1.0)
     assert result["reason"] is None
     assert builders["seen"] == [("ollama", "nomic-embed-text")]
-    assert builders["embedder"].texts == ["OMRG model check"]
+    assert builders["embedder"].texts == ["OMRS model check"]
 
 
 def test_a_llamacpp_name_that_the_server_does_not_list_fails_before_the_probe(

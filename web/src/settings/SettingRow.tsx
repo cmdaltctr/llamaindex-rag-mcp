@@ -24,7 +24,7 @@ export interface SettingRowProps {
   error: unknown;
   /** Called with the typed text; the row closes its input when `done` runs. */
   onSave: (text: string, done: () => void) => void;
-  /** Returns the setting to its default. The row offers it only for a value from `omrg.jsonc`. */
+  /** Returns the setting to its default. The row offers it only for a value from `omrs.jsonc`. */
   onClear?: (done: () => void) => void;
   onRetry: () => void;
   /** Checked before Save sends anything. A returned message shows under the input and nothing is saved. */

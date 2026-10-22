@@ -1,7 +1,7 @@
 """Evidence-level evaluator for Experiment 6b."""
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
+# (omrs.ingestion, omrs.retrieval, omrs.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -121,7 +121,7 @@ def _validate_evidence_density(queries: list[dict[str, Any]]) -> None:
 
 def _setup_chroma_dir(chroma_dir: str) -> None:
     os.environ["CHROMA_PERSIST_DIR"] = chroma_dir
-    for mod_name in ("omrg.ingestion", "omrg.retrieval", "omrg.config"):
+    for mod_name in ("omrs.ingestion", "omrs.retrieval", "omrs.config"):
         mod = sys.modules.get(mod_name)
         if mod is not None and hasattr(mod, "CHROMA_PERSIST_DIR"):
             mod.CHROMA_PERSIST_DIR = chroma_dir
@@ -204,7 +204,7 @@ def _evaluate(
     *,
     rerank: bool = False,
 ) -> Evaluation:
-    from omrg.retrieval import search
+    from omrs.retrieval import search
 
     _setup_chroma_dir(chroma_dir)
     ev = Evaluation(label=label, chroma_dir=chroma_dir, dataset_source=dataset_source)

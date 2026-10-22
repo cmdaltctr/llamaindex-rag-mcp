@@ -25,7 +25,7 @@ const CATALOGUE: Integration[] = [
     purpose: `Purpose of ${id}.`,
     extra: id,
     install_command: `uv sync --extra ${id}`,
-    pip_command: `pip install "omrg[${id}]"`,
+    pip_command: `pip install "omrs[${id}]"`,
     availability,
   })),
   {

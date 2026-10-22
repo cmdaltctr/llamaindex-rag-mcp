@@ -1,8 +1,8 @@
-"""The per-file upload limit as an ``omrg.jsonc`` setting and a launch option (ADR-087).
+"""The per-file upload limit as an ``omrs.jsonc`` setting and a launch option (ADR-087).
 
 The ``/v1/settings/upload-limit`` routes, the startup order (launch, then
 ``web_max_upload_mib`` in the file, then default), the single-read limit of an
-upload in progress, live reload of a hand edit and ``omrg web --max-upload-mib``
+upload in progress, live reload of a hand edit and ``omrs web --max-upload-mib``
 with ``WEB_MAX_UPLOAD_MIB``.
 """
 
@@ -20,14 +20,14 @@ pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient  # noqa: E402
 from typer.testing import CliRunner  # noqa: E402
 
-from omrg.config.settings_file import read_settings_file  # noqa: E402
-from omrg.config.settings_file_write import SettingsFileWriteError, write_settings  # noqa: E402
-from omrg.config.user_config import user_config_dir  # noqa: E402
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.security import AccessPolicy  # noqa: E402
-from omrg.transports.api.uploads import UploadStore  # noqa: E402
-from omrg.transports.cli import app as cli_app  # noqa: E402
+from omrs.config.settings_file import read_settings_file  # noqa: E402
+from omrs.config.settings_file_write import SettingsFileWriteError, write_settings  # noqa: E402
+from omrs.config.user_config import user_config_dir  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.security import AccessPolicy  # noqa: E402
+from omrs.transports.api.uploads import UploadStore  # noqa: E402
+from omrs.transports.cli import app as cli_app  # noqa: E402
 
 BASE = "http://127.0.0.1:8765"
 ORIGIN = {"Origin": BASE}
@@ -119,7 +119,7 @@ def test_put_applies_at_once_and_survives_a_restart(web: Any, workspace: Path) -
     assert response.json() == _state(200, "config-file", 200)
     assert _preflight(web, 120 * MIB).status_code == 200
     assert _saved() == 200
-    assert '"web_max_upload_mib": 200' in (user_config_dir() / "omrg.jsonc").read_text()
+    assert '"web_max_upload_mib": 200' in (user_config_dir() / "omrs.jsonc").read_text()
     web.__exit__(None, None, None)
     again = _client(workspace)
     try:
@@ -135,7 +135,7 @@ def test_put_null_returns_to_the_default(web: Any, workspace: Path) -> None:
     assert response.status_code == 200, response.text
     assert response.json() == _state(50, "default", None)
     assert _saved() is None
-    assert "web_max_upload_mib" not in (user_config_dir() / "omrg.jsonc").read_text()
+    assert "web_max_upload_mib" not in (user_config_dir() / "omrs.jsonc").read_text()
     assert _preflight(web, 51 * MIB).status_code == 413
 
 
@@ -153,15 +153,15 @@ def test_a_stale_revision_is_409_and_the_hand_edit_stays(web: Any) -> None:
     _save(None, 300)  # a hand edit after the page read
     response = web.put(URL, json={"max_mib": 200, "revision": first}, headers=ORIGIN)
     assert response.status_code == 409
-    assert response.json()["message"] == "omrg.jsonc changed on disk. Reload to see the new values."
+    assert response.json()["message"] == "omrs.jsonc changed on disk. Reload to see the new values."
     assert _saved() == 300
 
 
 def test_a_saved_row_moves_to_the_file_at_launch(workspace: Path) -> None:
     import sqlite3
 
-    from omrg.core.workspace import WorkspaceLayout
-    from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+    from omrs.core.workspace import WorkspaceLayout
+    from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
     records = WorkspaceLayout(workspace).records
     SqliteWorkspaceRepository(records)
@@ -171,7 +171,7 @@ def test_a_saved_row_moves_to_the_file_at_launch(workspace: Path) -> None:
     conn.close()
     client = _client(workspace)
     try:
-        # The handover (task 6.2) copies the old row into omrg.jsonc, then deletes it.
+        # The handover (task 6.2) copies the old row into omrs.jsonc, then deletes it.
         assert client.get(URL).json() == _state(200, "config-file", 200)
         assert read_settings_file().values["web_max_upload_mib"] == 200
     finally:
@@ -216,12 +216,12 @@ def test_a_bearer_can_read_but_not_change_the_limit(web: Any, workspace: Path) -
 def test_a_failed_save_changes_nothing(web: Any, workspace: Path) -> None:
     runtime = web.app.state.runtime
     with patch(
-        "omrg.transports.api.settings_store.write_settings",
-        side_effect=SettingsFileWriteError("omrg.jsonc could not be written."),
+        "omrs.transports.api.settings_store.write_settings",
+        side_effect=SettingsFileWriteError("omrs.jsonc could not be written."),
     ):
         response = web.put(URL, json={"max_mib": 200}, headers=ORIGIN)
     assert response.status_code == 500
-    assert response.json()["message"] == "omrg.jsonc could not be written."
+    assert response.json()["message"] == "omrs.jsonc could not be written."
     assert runtime.uploads.max_bytes == 50 * MIB
     assert web.get(URL).json() == _state(50, "default", None, "absent")
 
@@ -268,13 +268,13 @@ def test_a_launch_value_beats_the_saved_value_and_locks_settings(workspace: Path
 
 
 def _launch(workspace: Path, *args: str, env: dict[str, str] | None = None) -> tuple[Any, Any]:
-    """Run ``omrg web`` with the bind, the app and the server replaced."""
+    """Run ``omrs web`` with the bind, the app and the server replaced."""
     sock = MagicMock()
     sock.getsockname.return_value = ("127.0.0.1", 4242)
     with (
-        patch("omrg.transports.cli.web._bind_socket", return_value=sock) as bind,
-        patch("omrg.transports.cli.web._serve", return_value=True),
-        patch("omrg.transports.api.app.create_app") as create,
+        patch("omrs.transports.cli.web._bind_socket", return_value=sock) as bind,
+        patch("omrs.transports.cli.web._serve", return_value=True),
+        patch("omrs.transports.api.app.create_app") as create,
     ):
         result = runner.invoke(
             cli_app, ["web", "--workspace", str(workspace), *args], env=env or {}

@@ -28,8 +28,8 @@ from tests.unit.test_web_runs_support import (  # noqa: E402
     wait_run,
 )
 
-from omrg.core.pipelines import AdmissionSnapshot  # noqa: E402
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
+from omrs.core.pipelines import AdmissionSnapshot  # noqa: E402
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
 
 
 @pytest.fixture

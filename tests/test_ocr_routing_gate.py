@@ -10,7 +10,7 @@ arrive through the injected settings — never a module constant.
 
 from __future__ import annotations
 
-from omrg.integrations.pdf.ocr_routing import OCR_UNCONDITIONAL_TYPES, ocr_required_by_gate
+from omrs.integrations.pdf.ocr_routing import OCR_UNCONDITIONAL_TYPES, ocr_required_by_gate
 
 # ── The promoted packaged default (ADR-065, Experiment 29) ─────────────────
 
@@ -23,8 +23,8 @@ def test_packaged_defaults_carry_the_promoted_gate() -> None:
     enable at the 0.0 sentinels is the configuration the study showed
     silently misses threshold-flagged documents.
     """
-    from omrg.config import Settings
-    from omrg.core.settings import EffectiveSettings
+    from omrs.config import Settings
+    from omrs.core.settings import EffectiveSettings
 
     for model in (Settings, EffectiveSettings):
         fields = model.model_fields

@@ -21,7 +21,7 @@ export function FoldersSection({ list }: { list: ExperimentList }) {
     return (
       <Panel title="No experiment root" description="Experiment folders live below a root that the server approves at launch.">
         <p className="text-ui">
-          No experiment root is approved on this server. Restart it with <code className="font-mono text-code">omrg web --experiment-root &lt;directory&gt;</code>, then create a folder here.
+          No experiment root is approved on this server. Restart it with <code className="font-mono text-code">omrs web --experiment-root &lt;directory&gt;</code>, then create a folder here.
         </p>
       </Panel>
     );

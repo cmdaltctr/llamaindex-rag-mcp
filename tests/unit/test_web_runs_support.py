@@ -27,11 +27,11 @@ from tests.unit.test_engine_pipelines_support import (
     retrieval_graph,
 )
 
-from omrg.engine import Engine
-from omrg.transports.api.app import create_app
-from omrg.transports.api.lifespan import WebConfig
-from omrg.transports.api.runs_wiring import run_service_factory
-from omrg.transports.api.security import AccessPolicy
+from omrs.engine import Engine
+from omrs.transports.api.app import create_app
+from omrs.transports.api.lifespan import WebConfig
+from omrs.transports.api.runs_wiring import run_service_factory
+from omrs.transports.api.security import AccessPolicy
 
 BASE = "http://127.0.0.1:8765"
 ORIGIN = {"Origin": BASE}

@@ -21,7 +21,7 @@ interface PluginPanelProps {
   onRetry: () => void;
 }
 
-/** Notebook plugin states with register, recheck and unregister. OMRG never installs or updates a plugin. */
+/** Notebook plugin states with register, recheck and unregister. OMRS never installs or updates a plugin. */
 export function PluginPanel({ list, loadError, loading, onRetry }: PluginPanelProps) {
   const recheck = useRecheckPlugin();
   const unregister = useUnregisterPlugin();

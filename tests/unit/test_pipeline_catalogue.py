@@ -21,7 +21,7 @@ from tests.unit.test_pipeline_support import (
     noop_adapter,
 )
 
-from omrg.core.pipelines import (
+from omrs.core.pipelines import (
     SCORE_KIND_DENSE,
     SCORE_KIND_NATIVE_SPARSE,
     SCORE_KIND_RERANK,
@@ -39,7 +39,7 @@ from omrg.core.pipelines import (
     check_port_compatibility,
 )
 
-PIPELINES_DIR = Path(__file__).resolve().parents[2] / "src" / "omrg" / "core" / "pipelines"
+PIPELINES_DIR = Path(__file__).resolve().parents[2] / "src" / "omrs" / "core" / "pipelines"
 
 
 def _descriptor(**overrides: object) -> OperationDescriptor:
@@ -62,9 +62,9 @@ def _descriptor(**overrides: object) -> OperationDescriptor:
 
 def test_score_kind_constants_match_domain_constants() -> None:
     """Graph score kinds are the same strings the domains emit."""
-    from omrg.core.retrieval.fusion import RRF_SCORE_KIND
-    from omrg.core.retrieval.pipeline import RERANK_SCORE_KIND
-    from omrg.core.vectordb.score import DENSE_SCORE_KIND, NATIVE_SPARSE_SCORE_KIND
+    from omrs.core.retrieval.fusion import RRF_SCORE_KIND
+    from omrs.core.retrieval.pipeline import RERANK_SCORE_KIND
+    from omrs.core.vectordb.score import DENSE_SCORE_KIND, NATIVE_SPARSE_SCORE_KIND
 
     assert SCORE_KIND_DENSE == DENSE_SCORE_KIND
     assert SCORE_KIND_NATIVE_SPARSE == NATIVE_SPARSE_SCORE_KIND
@@ -294,7 +294,7 @@ def test_catalogue_reports_unavailable_operations_with_reasons() -> None:
         {
             "embedder": None,
             "store": None,
-            "reranker": "Reranker model is not installed; run `omrg models pull`.",
+            "reranker": "Reranker model is not installed; run `omrs models pull`.",
         }
     )
     by_id = {entry["operation_id"]: entry for entry in listing}
@@ -322,11 +322,11 @@ def test_dispatch_modules_have_no_name_branches() -> None:
 
 
 FORBIDDEN_PREFIXES = (
-    "omrg.core.ingestion",
-    "omrg.core.retrieval",
-    "omrg.core.answer",
-    "omrg.core.providers",
-    "omrg.transports",
+    "omrs.core.ingestion",
+    "omrs.core.retrieval",
+    "omrs.core.answer",
+    "omrs.core.providers",
+    "omrs.transports",
     "subprocess",
 )
 
@@ -342,8 +342,8 @@ def test_pipelines_package_avoids_domain_and_process_imports() -> None:
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ""
                 if node.level:
-                    # Resolve relative imports against omrg.core.pipelines.
-                    parts = ["omrg", "core", "pipelines"][: 3 - (node.level - 1)]
+                    # Resolve relative imports against omrs.core.pipelines.
+                    parts = ["omrs", "core", "pipelines"][: 3 - (node.level - 1)]
                     module = ".".join([*parts, module] if module else parts)
                 names = [module]
             for name in names:

@@ -26,12 +26,12 @@ from tests.unit.test_ingestion_graph_adapters_support import (
     resources,
 )
 
-from omrg.core.ingestion._state import write_lock
-from omrg.core.ingestion.graph_adapters import SourceWork
-from omrg.core.ingestion.replacement import IngestionStageError
-from omrg.core.ingestion.source_state import SOURCE_ID_KEY, IncompatibleSourceLineageError
-from omrg.core.ingestion.sources import SourceUnit
-from omrg.core.pipelines import CancellationFlag, PipelineCancelledError
+from omrs.core.ingestion._state import write_lock
+from omrs.core.ingestion.graph_adapters import SourceWork
+from omrs.core.ingestion.replacement import IngestionStageError
+from omrs.core.ingestion.source_state import SOURCE_ID_KEY, IncompatibleSourceLineageError
+from omrs.core.ingestion.sources import SourceUnit
+from omrs.core.pipelines import CancellationFlag, PipelineCancelledError
 
 _COLLECTION = "graph_commit"
 _CHAIN = (
@@ -92,7 +92,7 @@ class _Harness:
 
 @pytest.fixture
 def harness(tmp_path: Path, effective_settings: Any) -> _Harness:
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     assert not write_lock.locked()
     yield _Harness(tmp_path, effective_settings, get_default_store())
@@ -155,7 +155,7 @@ async def test_invalid_lineage_fails_before_mutation(harness: _Harness, tamper: 
 @pytest.mark.asyncio
 async def test_legacy_lineage_is_rejected_before_parsing(harness: _Harness) -> None:
     """Pre-lineage rows fail in the identify node; no repair is attempted."""
-    from omrg.core.ingestion.source_state import canonical_source_path
+    from omrs.core.ingestion.source_state import canonical_source_path
 
     harness.source.write_text(_NEW, encoding="utf-8")
     legacy = TextNode(text="legacy", metadata={"file_path": canonical_source_path(harness.source)})

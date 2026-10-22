@@ -29,7 +29,7 @@ describe("Studio header", () => {
     expect(details).not.toBeNull();
     expect(details).not.toHaveAttribute("open");
     expect(PROFILE_HELP_LINES).toHaveLength(4);
-    expect(PROFILE_HELP_LINES[0]).toBe("Built-in profiles come with OMRG and are read-only. Your profiles are copies that you can rename, change and delete.");
+    expect(PROFILE_HELP_LINES[0]).toBe("Built-in profiles come with OMRS and are read-only. Your profiles are copies that you can rename, change and delete.");
     expect(PROFILE_HELP_LINES[3]).toBe("When a collection holds vectors, the embedding model of its profile is locked, because the stored vectors were made with that model.");
     expect(within(details!).getAllByRole("listitem", { hidden: true }).map((line) => line.textContent)).toEqual(PROFILE_HELP_LINES);
     await user.click(summary);

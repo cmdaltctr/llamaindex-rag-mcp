@@ -22,7 +22,7 @@ import sys
 import textwrap
 from pathlib import Path
 
-_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "omrg"
+_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "omrs"
 
 # Matches ``import lancedb`` / ``import lancedb.expr`` / ``from lancedb
 # import ...`` at the start of a line (leading whitespace allowed).
@@ -75,8 +75,8 @@ def test_registry_and_filter_imports_stay_torch_free() -> None:
         import importlib
         import sys
 
-        importlib.import_module("omrg.core.vectordb.registry")
-        importlib.import_module("omrg.core.vectordb.lancedb.filter")
+        importlib.import_module("omrs.core.vectordb.registry")
+        importlib.import_module("omrs.core.vectordb.lancedb.filter")
 
         assert "torch" not in sys.modules, "torch leaked onto the base import path"
         """

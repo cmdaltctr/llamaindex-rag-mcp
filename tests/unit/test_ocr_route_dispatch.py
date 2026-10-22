@@ -21,12 +21,12 @@ import pytest
 from llama_index.core import Document
 from llama_index.core.schema import MetadataMode, TextNode
 
-from omrg.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS, stamp_source_lineage
-from omrg.integrations.ocr_worker.client import OcrWorkerError
-from omrg.integrations.ocr_worker.protocol import make_success
-from omrg.integrations.ocr_worker.routes import OcrRoutes
-from omrg.integrations.pdf import maths_routing
-from omrg.integrations.pdf.ocr_routing import OcrPostDispatchError, OcrRoutedPdfInspector
+from omrs.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS, stamp_source_lineage
+from omrs.integrations.ocr_worker.client import OcrWorkerError
+from omrs.integrations.ocr_worker.protocol import make_success
+from omrs.integrations.ocr_worker.routes import OcrRoutes
+from omrs.integrations.pdf import maths_routing
+from omrs.integrations.pdf.ocr_routing import OcrPostDispatchError, OcrRoutedPdfInspector
 
 pytest.importorskip("pdf_inspector", reason="pdf-inspector is a base dependency (ADR-050)")
 

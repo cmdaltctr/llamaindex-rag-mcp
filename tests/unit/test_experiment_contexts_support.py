@@ -13,11 +13,11 @@ from typing import Any
 
 from llama_index.core import Settings as LlamaIndexSettings
 
-from omrg.compose_settings import settings_to_effective
-from omrg.config import Settings
-from omrg.core.metadata.settings import MetadataSettings
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
-from omrg.engine import Engine
+from omrs.compose_settings import settings_to_effective
+from omrs.config import Settings
+from omrs.core.metadata.settings import MetadataSettings
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.engine import Engine
 
 
 def base_settings(live_dir: Path) -> Settings:

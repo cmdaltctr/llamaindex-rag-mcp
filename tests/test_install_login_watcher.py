@@ -1,7 +1,7 @@
-"""CLI-level tests for ``omrg install-login-watcher``.
+"""CLI-level tests for ``omrs install-login-watcher``.
 
 Covers OpenSpec change ``add-login-watcher-installer``:
-- Requirement: CLI subcommand ``omrg install-login-watcher``
+- Requirement: CLI subcommand ``omrs install-login-watcher``
 - Requirement: Guided interactive setup
 - Requirement: Non-interactive installation
 - Requirement: LaunchAgent plist generation
@@ -24,7 +24,7 @@ import pytest
 from llama_index.core.embeddings import MockEmbedding
 from typer.testing import CliRunner
 
-from omrg.transports.cli import app
+from omrs.transports.cli import app
 
 runner = CliRunner()
 
@@ -38,7 +38,7 @@ def _strip_ansi(text: str) -> str:
 
 def _installer():
     """Return the command module; ModuleNotFoundError until implemented."""
-    from omrg.transports.cli import install_login_watcher
+    from omrs.transports.cli import install_login_watcher
 
     return install_login_watcher
 
@@ -54,11 +54,11 @@ def invoke_happy(tmp_path):
     def _run(watch_dir: Path, home: Path, extra_args: list[str] | None = None):
         fake_bin = tmp_path / "fakebin"
         fake_bin.mkdir(exist_ok=True)
-        stub_cmd = str(fake_bin / "omrg")
+        stub_cmd = str(fake_bin / "omrs")
         with (
             patch("shutil.which", return_value=stub_cmd),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
         ):
             result = runner.invoke(
                 app,
@@ -78,7 +78,7 @@ def invoke_happy(tmp_path):
 
 def _built_in_resolver(settings: object | None = None) -> MagicMock:
     """Return a resolver double for a collection that follows a built-in profile."""
-    from omrg.core.profiles.catalogue import ProfileBinding
+    from omrs.core.profiles.catalogue import ProfileBinding
 
     resolver = MagicMock()
     resolver.resolve_bound.return_value = (
@@ -97,7 +97,7 @@ def macos_home(monkeypatch: pytest.MonkeyPatch):
     """
 
     def _apply(home: Path) -> Path:
-        from omrg.transports.cli import install_login_watcher
+        from omrs.transports.cli import install_login_watcher
 
         home.mkdir(parents=True, exist_ok=True)
         monkeypatch.setattr(Path, "home", lambda: home)
@@ -215,7 +215,7 @@ class TestPlistGeneration:
         data = plistlib.loads(plists[0].read_bytes())
 
         label = data["Label"]
-        assert isinstance(label, str) and label.startswith("com.omrg.watch.")
+        assert isinstance(label, str) and label.startswith("com.omrs.watch.")
         args = data["ProgramArguments"]
         assert Path(args[0]) in {
             Path(meta["stub_cmd"]),
@@ -231,7 +231,7 @@ class TestPlistGeneration:
         ]
         assert data["RunAtLoad"] is True
         assert data["KeepAlive"] is False
-        logs_root = home / "Library/Logs/omrg"
+        logs_root = home / "Library/Logs/omrs"
         assert Path(data["StandardOutPath"]).parent == logs_root
         assert Path(data["StandardErrorPath"]).parent == logs_root
 
@@ -240,10 +240,10 @@ class TestPlistGeneration:
         home = macos_home(tmp_path / "h")
         watched = tmp_path / "docs2"
         watched.mkdir()
-        override = "/opt/homebrew/bin/omrg"
+        override = "/opt/homebrew/bin/omrs"
         with (
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
         ):
             result = runner.invoke(
                 app,
@@ -304,7 +304,7 @@ class TestDifferentLabelReplacement:
     migrate (task 2.4). Non-consented runs refuse with exact removal
     instructions; --force or an interactive confirmation removes the old
     watcher (bootout + plist delete) and installs a replacement using the
-    current ``omrg`` executable, ``com.omrg.watch.`` label, and OMRG log
+    current ``omrs`` executable, ``com.omrs.watch.`` label, and OMRS log
     paths (CodeRabbit major finding; OpenSpec scenario "Installed watchers
     survive the command rename").
     """
@@ -341,10 +341,10 @@ class TestDifferentLabelReplacement:
         old_plist = self._seed_legacy_watcher(home, watched)
         old_bytes = old_plist.read_bytes()
         with (
-            patch("shutil.which", return_value="/fake/bin/omrg"),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
-            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("shutil.which", return_value="/fake/bin/omrs"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
+            patch("omrs.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = runner.invoke(
                 app,
@@ -375,11 +375,11 @@ class TestDifferentLabelReplacement:
         old_plist = self._seed_legacy_watcher(home, watched)
         ok = subprocess.CompletedProcess(args=[], returncode=0)
         with (
-            patch("shutil.which", return_value="/fake/bin/omrg"),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("shutil.which", return_value="/fake/bin/omrs"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
             patch(
-                "omrg.transports.cli._launchagent.run_launchctl",
+                "omrs.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=ok),
             ) as mock_lc,
         ):
@@ -416,11 +416,11 @@ class TestDifferentLabelReplacement:
         old_plist = self._seed_legacy_watcher(home, watched)
         ok = subprocess.CompletedProcess(args=[], returncode=0)
         with (
-            patch("shutil.which", return_value="/fake/bin/omrg"),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("shutil.which", return_value="/fake/bin/omrs"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
             patch(
-                "omrg.transports.cli._launchagent.run_launchctl",
+                "omrs.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=ok),
             ),
         ):
@@ -446,10 +446,10 @@ class TestDifferentLabelReplacement:
         old_plist = self._seed_legacy_watcher(home, watched)
         old_bytes = old_plist.read_bytes()
         with (
-            patch("shutil.which", return_value="/fake/bin/omrg"),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
-            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("shutil.which", return_value="/fake/bin/omrs"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
+            patch("omrs.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = runner.invoke(
                 app,
@@ -478,10 +478,10 @@ class TestDifferentLabelReplacement:
         old_plist = self._seed_legacy_watcher(home, watched)
         old_bytes = old_plist.read_bytes()
         with (
-            patch("shutil.which", return_value="/fake/bin/omrg"),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
-            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("shutil.which", return_value="/fake/bin/omrs"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
+            patch("omrs.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = runner.invoke(
                 app,
@@ -506,13 +506,13 @@ class TestDifferentLabelReplacement:
         old_plist = self._seed_legacy_watcher(home, watched)
         old_bytes = old_plist.read_bytes()
         with (
-            patch("shutil.which", return_value="/fake/bin/omrg"),
+            patch("shutil.which", return_value="/fake/bin/omrs"),
             patch(
-                "omrg.core.ingestion.ingest_path_async",
+                "omrs.core.ingestion.ingest_path_async",
                 new=AsyncMock(return_value={"status": "error", "message": "boom"}),
             ),
-            patch("omrg.compose.build_profile_resolver", return_value=_built_in_resolver()),
-            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrs.compose.build_profile_resolver", return_value=_built_in_resolver()),
+            patch("omrs.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = runner.invoke(
                 app,
@@ -548,11 +548,11 @@ class TestDifferentLabelReplacement:
             return subprocess.CompletedProcess(args=cmd, returncode=rc)
 
         with (
-            patch("shutil.which", return_value="/fake/bin/omrg"),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("shutil.which", return_value="/fake/bin/omrs"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
             patch(
-                "omrg.transports.cli._launchagent.run_launchctl",
+                "omrs.transports.cli._launchagent.run_launchctl",
                 side_effect=_launchctl,
             ),
         ):
@@ -578,11 +578,11 @@ class TestDifferentLabelReplacement:
             return subprocess.CompletedProcess(args=cmd, returncode=1)
 
         with (
-            patch("shutil.which", return_value="/fake/bin/omrg"),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("shutil.which", return_value="/fake/bin/omrs"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
             patch(
-                "omrg.transports.cli._launchagent.run_launchctl",
+                "omrs.transports.cli._launchagent.run_launchctl",
                 side_effect=_launchctl,
             ),
         ):
@@ -606,10 +606,10 @@ class TestDryRun:
         watched = tmp_path / "docs5"
         watched.mkdir()
         with (
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
             patch(
-                "omrg.transports.cli._launchagent.run_launchctl",
+                "omrs.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ) as mock_launchctl,
         ):
@@ -651,10 +651,10 @@ class TestInteractiveWizard:
         watched.mkdir()
         text_input = f"{watched}\n\nn\ny\n\n\n\n"
         with (
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
             patch(
-                "omrg.transports.cli._launchagent.run_launchctl",
+                "omrs.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ),
         ):
@@ -682,10 +682,10 @@ class TestInteractiveWizard:
         bad.write_text("x")
         text_input = f"{bad}\n{watched}\n\nn\ny\n\n\n\n"
         with (
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
             patch(
-                "omrg.transports.cli._launchagent.run_launchctl",
+                "omrs.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ),
         ):
@@ -727,15 +727,15 @@ class TestInitialIngest:
 
         parent = MagicMock()
         with (
-            patch("omrg.compose.build_profile_resolver", return_value=resolver),
+            patch("omrs.compose.build_profile_resolver", return_value=resolver),
             patch(
-                "omrg.core.ingestion.ingest_path_async",
+                "omrs.core.ingestion.ingest_path_async",
                 new=AsyncMock(
                     return_value={"status": "success", "files_indexed": 3, "chunks_created": 7}
                 ),
             ) as mock_ing,
             patch(
-                "omrg.transports.cli._launchagent.run_launchctl",
+                "omrs.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ) as mock_lc,
         ):
@@ -780,7 +780,7 @@ class TestInitialIngest:
         runs = count_graph_runs(monkeypatch)
         watched = copy_sources(tmp_path / "wd")
         with patch(
-            "omrg.transports.cli._launchagent.run_launchctl",
+            "omrs.transports.cli._launchagent.run_launchctl",
             new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
         ):
             result = self._invoke(
@@ -806,14 +806,14 @@ class TestInitialIngest:
         tag_collection(tmp_path, USER_COLLECTION, PROFILE)
         watched = tmp_path / "nw-docs"
         watched.mkdir()
-        with patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc:
+        with patch("omrs.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc:
             result = self._invoke(
                 watched, ["--collection", USER_COLLECTION, "--initial-ingest", "--load", "--yes"]
             )
         assert result.exit_code == 1
         text = " ".join(result.output.split())
-        assert "'my-notes'" in text and "~/.omrg/workspace/workspace.db" in text
-        assert "Start `omrg web` once" in text
+        assert "'my-notes'" in text and "~/.omrs/workspace/workspace.db" in text
+        assert "Start `omrs web` once" in text
         mock_lc.assert_not_called()
         assert not (home / "Library/LaunchAgents").exists() or not any(
             (home / "Library/LaunchAgents").iterdir()
@@ -831,9 +831,9 @@ class TestInitialIngest:
             "No profile registered for collection 'research'"
         )
         with (
-            patch("omrg.compose.build_profile_resolver", return_value=resolver),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()) as mock_ing,
-            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrs.compose.build_profile_resolver", return_value=resolver),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()) as mock_ing,
+            patch("omrs.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = self._invoke(
                 watched,
@@ -855,12 +855,12 @@ class TestInitialIngest:
         watched = tmp_path / "ie-docs"
         watched.mkdir()
         with (
-            patch("omrg.compose.build_profile_resolver", return_value=_built_in_resolver()),
+            patch("omrs.compose.build_profile_resolver", return_value=_built_in_resolver()),
             patch(
-                "omrg.core.ingestion.ingest_path_async",
+                "omrs.core.ingestion.ingest_path_async",
                 new=AsyncMock(return_value={"status": "error", "message": "boom"}),
             ),
-            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrs.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = self._invoke(
                 watched,
@@ -880,13 +880,13 @@ class TestInitialIngest:
         watched = tmp_path / "if-docs"
         watched.mkdir()
         with (
-            patch("omrg.compose.build_profile_resolver", return_value=_built_in_resolver()),
+            patch("omrs.compose.build_profile_resolver", return_value=_built_in_resolver()),
             patch(
-                "omrg.core.ingestion.ingest_path_async",
+                "omrs.core.ingestion.ingest_path_async",
                 new=AsyncMock(return_value={"status": "error", "message": "boom"}),
             ),
             patch(
-                "omrg.transports.cli._launchagent.run_launchctl",
+                "omrs.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ) as mock_lc,
         ):
@@ -916,9 +916,9 @@ class TestInitialIngest:
         resolver = MagicMock()
         resolver.resolve_bound.side_effect = ValueError("No profile registered")
         with (
-            patch("omrg.compose.build_profile_resolver", return_value=resolver),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrs.compose.build_profile_resolver", return_value=resolver),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = self._invoke(
                 watched,
@@ -942,8 +942,8 @@ class TestInitialIngest:
         watched = tmp_path / "dp-docs"
         watched.mkdir()
         with (
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
         ):
             result = self._invoke(watched, ["--collection", "-evil", "--yes"])
         assert result.exit_code != 0
@@ -957,12 +957,12 @@ class TestInitialIngest:
         watched = tmp_path / "ex-docs"
         watched.mkdir()
         with (
-            patch("omrg.compose.build_profile_resolver", return_value=_built_in_resolver()),
+            patch("omrs.compose.build_profile_resolver", return_value=_built_in_resolver()),
             patch(
-                "omrg.core.ingestion.ingest_path_async",
+                "omrs.core.ingestion.ingest_path_async",
                 new=AsyncMock(side_effect=RuntimeError("kaboom")),
             ),
-            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrs.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = self._invoke(
                 watched, ["--collection", "research", "--initial-ingest", "--yes"]
@@ -987,10 +987,10 @@ class TestLoadAndStart:
         watched.mkdir()
         uid = os.getuid()
         with (
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
             patch(
-                "omrg.transports.cli._launchagent.run_launchctl",
+                "omrs.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ) as mock_lc,
         ):
@@ -1012,10 +1012,10 @@ class TestLoadAndStart:
         watched = tmp_path / "st-docs"
         watched.mkdir()
         with (
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
             patch(
-                "omrg.transports.cli._launchagent.run_launchctl",
+                "omrs.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ) as mock_lc,
         ):
@@ -1034,10 +1034,10 @@ class TestLoadAndStart:
             args=[], returncode=1, stdout="", stderr="launchctl boom"
         )
         with (
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
             patch(
-                "omrg.transports.cli._launchagent.run_launchctl",
+                "omrs.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=failed),
             ),
         ):
@@ -1063,7 +1063,7 @@ class TestContentionWarning:
     @staticmethod
     def _seed_existing(home: Path, watched: Path) -> Path:
         """Create a different-label plist watching the same folder; return it."""
-        label = f"com.omrg.watch.{watched.name}"
+        label = f"com.omrs.watch.{watched.name}"
         existing = home / "Library/LaunchAgents" / f"{label}.plist"
         existing.parent.mkdir(parents=True, exist_ok=True)
         existing.write_bytes(
@@ -1071,7 +1071,7 @@ class TestContentionWarning:
                 {
                     "Label": label,
                     "ProgramArguments": [
-                        "/fake/bin/omrg",
+                        "/fake/bin/omrs",
                         "watch",
                         str(watched.resolve()),
                         "--collection",
@@ -1091,18 +1091,18 @@ class TestContentionWarning:
         watched.mkdir()
         self._seed_existing(home, watched)
         with (
-            patch("shutil.which", return_value="/fake/bin/omrg"),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
-            patch("omrg.compose._resolve_active_strategies"),
+            patch("shutil.which", return_value="/fake/bin/omrs"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
+            patch("omrs.compose._resolve_active_strategies"),
             patch(
-                "omrg.compose.build_embed_model",
+                "omrs.compose.build_embed_model",
                 return_value=MockEmbedding(embed_dim=8),
             ),
-            patch("omrg.compose.build_vector_store", return_value=MagicMock()),
-            patch("omrg.compose.settings_to_effective", return_value=MagicMock()),
-            patch("omrg.config.get_settings") as mock_settings,
-            patch("omrg.core.vectordb.registry.describe") as mock_describe,
+            patch("omrs.compose.build_vector_store", return_value=MagicMock()),
+            patch("omrs.compose.settings_to_effective", return_value=MagicMock()),
+            patch("omrs.config.get_settings") as mock_settings,
+            patch("omrs.core.vectordb.registry.describe") as mock_describe,
         ):
             mock_settings.return_value = MagicMock(vector_store="fakestore")
             mock_describe.return_value = {"cross_process_writes_safe": False}
@@ -1131,18 +1131,18 @@ class TestContentionWarning:
         watched.mkdir()
         self._seed_existing(home, watched)
         with (
-            patch("shutil.which", return_value="/fake/bin/omrg"),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
-            patch("omrg.compose._resolve_active_strategies"),
+            patch("shutil.which", return_value="/fake/bin/omrs"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
+            patch("omrs.compose._resolve_active_strategies"),
             patch(
-                "omrg.compose.build_embed_model",
+                "omrs.compose.build_embed_model",
                 return_value=MockEmbedding(embed_dim=8),
             ),
-            patch("omrg.compose.build_vector_store", return_value=MagicMock()),
-            patch("omrg.compose.settings_to_effective", return_value=MagicMock()),
-            patch("omrg.config.get_settings") as mock_settings,
-            patch("omrg.core.vectordb.registry.describe") as mock_describe,
+            patch("omrs.compose.build_vector_store", return_value=MagicMock()),
+            patch("omrs.compose.settings_to_effective", return_value=MagicMock()),
+            patch("omrs.config.get_settings") as mock_settings,
+            patch("omrs.core.vectordb.registry.describe") as mock_describe,
         ):
             mock_settings.return_value = MagicMock(vector_store="fakestore")
             mock_describe.return_value = {"cross_process_writes_safe": False}
@@ -1167,18 +1167,18 @@ class TestContentionWarning:
         watched.mkdir()
         self._seed_existing(home, watched)
         with (
-            patch("shutil.which", return_value="/fake/bin/omrg"),
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
-            patch("omrg.compose._resolve_active_strategies"),
+            patch("shutil.which", return_value="/fake/bin/omrs"),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
+            patch("omrs.compose._resolve_active_strategies"),
             patch(
-                "omrg.compose.build_embed_model",
+                "omrs.compose.build_embed_model",
                 return_value=MockEmbedding(embed_dim=8),
             ),
-            patch("omrg.compose.build_vector_store", return_value=MagicMock()),
-            patch("omrg.compose.settings_to_effective", return_value=MagicMock()),
-            patch("omrg.config.get_settings") as mock_settings,
-            patch("omrg.core.vectordb.registry.describe") as mock_describe,
+            patch("omrs.compose.build_vector_store", return_value=MagicMock()),
+            patch("omrs.compose.settings_to_effective", return_value=MagicMock()),
+            patch("omrs.config.get_settings") as mock_settings,
+            patch("omrs.core.vectordb.registry.describe") as mock_describe,
         ):
             mock_settings.return_value = MagicMock(vector_store="fakestore")
             mock_describe.return_value = {"cross_process_writes_safe": True}
@@ -1211,9 +1211,9 @@ class TestWizardSummaryDecline:
         watched.mkdir()
         text_input = f"{watched}\n\nn\nn\n"
         with (
-            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("omrg.compose.build_profile_resolver"),
-            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()),
+            patch("omrs.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrs.compose.build_profile_resolver"),
+            patch("omrs.transports.cli._launchagent.run_launchctl", new=MagicMock()),
         ):
             result = runner.invoke(app, ["install-login-watcher"], input=text_input)
         assert result.exit_code != 0

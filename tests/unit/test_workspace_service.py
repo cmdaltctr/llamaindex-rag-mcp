@@ -27,8 +27,8 @@ from tests.unit.test_workspace_service_support import (
     saved_revision,
 )
 
-from omrg.core.pipelines import EventKind, RunCancellation
-from omrg.core.workspace import (
+from omrs.core.pipelines import EventKind, RunCancellation
+from omrs.core.workspace import (
     NONTERMINAL_RUN_STATUSES,
     TERMINAL_RUN_STATUSES,
     QueueFullError,

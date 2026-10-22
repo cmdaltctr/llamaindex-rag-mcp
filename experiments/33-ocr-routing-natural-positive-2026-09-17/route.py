@@ -48,7 +48,7 @@ SOURCES_PATH = EXP_DIR / "sources.json"
 NATURAL_DIR = EXP_DIR / "corpus" / "natural"
 
 #: Repository whose ``src/`` is measured. ``--code-root`` points it at a
-#: detached worktree for a pinned arm (plan.json ``arms``); ``omrg`` must
+#: detached worktree for a pinned arm (plan.json ``arms``); ``omrs`` must
 #: not be imported before ``main`` sets it.
 CODE_ROOT = PROJECT_ROOT
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
@@ -57,11 +57,11 @@ sys.path.insert(0, str(EXP_DIR))
 
 #: Sources whose content defines the measured policy (repo-relative).
 POLICY_SOURCES = (
-    "src/omrg/integrations/pdf/ocr_routing.py",
-    "src/omrg/integrations/pdf/ocr_policy.py",
-    "src/omrg/integrations/pdf/pdf_inspector.py",
-    "src/omrg/integrations/pdf/factory.py",
-    "src/omrg/core/ingestion/backends/local.py",
+    "src/omrs/integrations/pdf/ocr_routing.py",
+    "src/omrs/integrations/pdf/ocr_policy.py",
+    "src/omrs/integrations/pdf/pdf_inspector.py",
+    "src/omrs/integrations/pdf/factory.py",
+    "src/omrs/core/ingestion/backends/local.py",
 )
 
 #: Preflight assertions that only a real (frozen) run can satisfy.
@@ -97,8 +97,8 @@ def _versions() -> dict[str, str | None]:
 
 def _detection(directory: Path, effective) -> dict:
     """Record the content-type detection path the ingestion pipeline would take."""
-    from omrg.core.codebase.codebase_map import detect_file_types
-    from omrg.integrations.magika import _is_magika_available, _magika_binary, scan_with_magika
+    from omrs.core.codebase.codebase_map import detect_file_types
+    from omrs.integrations.magika import _is_magika_available, _magika_binary, scan_with_magika
 
     path = "suffix"
     magika_version = None
@@ -123,8 +123,8 @@ def _detection(directory: Path, effective) -> dict:
 def _runtime_manifest(
     effective, reader, detection: dict, freeze_ok: bool, arm: str | None = None
 ) -> dict:
-    import omrg
-    from omrg.integrations.pdf.ocr_policy import OCR_UNCONDITIONAL_TYPES
+    import omrs
+    from omrs.integrations.pdf.ocr_policy import OCR_UNCONDITIONAL_TYPES
 
     labels = json.loads(LABELS_PATH.read_text(encoding="utf-8")) if LABELS_PATH.exists() else {}
     return {
@@ -144,7 +144,7 @@ def _runtime_manifest(
             "routing_code_clean": not _git("status", "--porcelain", "--", *POLICY_SOURCES),
             "source_sha256": {rel: _sha256(CODE_ROOT / rel) for rel in POLICY_SOURCES},
             "arm": arm,
-            "omrg_loaded_from_code_root": Path(omrg.__file__)
+            "omrs_loaded_from_code_root": Path(omrs.__file__)
             .resolve()
             .is_relative_to(CODE_ROOT.resolve() / "src"),
         },
@@ -159,7 +159,7 @@ def _runtime_manifest(
 
 def _assert_secret_free(payload: object) -> None:
     """Abort when any configured secret value appears in *payload*."""
-    from omrg.compose import redaction_values
+    from omrs.compose import redaction_values
 
     serialised = json.dumps(payload)
     for value in redaction_values().values():
@@ -186,7 +186,7 @@ def _preflight(plan: dict, manifest: dict, *, smoke: bool) -> None:
 
 
 def _read_one(path: Path, effective) -> tuple[dict, str]:
-    from omrg.core.ingestion.backends.local import read_documents
+    from omrs.core.ingestion.backends.local import read_documents
 
     started = time.perf_counter()
     documents = asyncio.run(read_documents(path, settings=effective, ocr_client=None))
@@ -251,8 +251,8 @@ def main() -> int:
         parser.error("natural runs need --arm (plan.json arms) and --code-root")
     global CODE_ROOT
     if args.code_root is not None:
-        if "omrg" in sys.modules:
-            raise SystemExit("omrg was imported before --code-root took effect")
+        if "omrs" in sys.modules:
+            raise SystemExit("omrs was imported before --code-root took effect")
         CODE_ROOT = args.code_root.resolve()
         sys.path.insert(0, str(CODE_ROOT / "src"))
     if args.smoke and not args.smoke_out:
@@ -263,9 +263,9 @@ def main() -> int:
     elif args.probe:
         out_dir = EXP_DIR / "output" / "probe"
 
-    from omrg.compose import settings_to_effective
-    from omrg.config import Settings
-    from omrg.integrations.pdf import build_pdf_reader
+    from omrs.compose import settings_to_effective
+    from omrs.config import Settings
+    from omrs.integrations.pdf import build_pdf_reader
 
     plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
     effective = settings_to_effective(Settings())

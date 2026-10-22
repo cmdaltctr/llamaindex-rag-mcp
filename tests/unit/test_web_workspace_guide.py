@@ -1,6 +1,6 @@
 """The web workspace guide matches the real command and API (task 6.9).
 
-The guide's option table must equal the options of ``omrg web --help``.
+The guide's option table must equal the options of ``omrs web --help``.
 Its missing-extra message must equal the message the command prints.
 Every repository path, ``/v1`` route and relative link it cites must
 exist. The API must answer unknown ``/v1`` paths and unexpected errors with
@@ -31,11 +31,11 @@ from tests.unit.test_web_guides_support import (  # noqa: E402
 )
 from typer.testing import CliRunner  # noqa: E402
 
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.security import AccessPolicy  # noqa: E402
-from omrg.transports.cli import app as cli_app  # noqa: E402
-from omrg.transports.cli.web import INSTALL_HINT  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.security import AccessPolicy  # noqa: E402
+from omrs.transports.cli import app as cli_app  # noqa: E402
+from omrs.transports.cli.web import INSTALL_HINT  # noqa: E402
 
 GUIDE = GUIDES / "web-workspace.md"
 BASE = "http://127.0.0.1:8765"
@@ -81,7 +81,7 @@ def test_guide_options_equal_the_web_command_options() -> None:
 
 
 def test_missing_extra_message_matches_the_guide(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The guide quotes the exact message that ``omrg web`` prints."""
+    """The guide quotes the exact message that ``omrs web`` prints."""
     block = _MISSING_EXTRA.search(_text())
     assert block is not None, "the guide does not quote the missing-extra message"
     assert block.group(1).strip() == INSTALL_HINT
@@ -92,10 +92,10 @@ def test_missing_extra_message_matches_the_guide(monkeypatch: pytest.MonkeyPatch
 
 
 def test_documented_install_commands_name_the_real_extra() -> None:
-    """``uv sync --extra web`` and ``omrg[web]`` refer to an existing extra."""
+    """``uv sync --extra web`` and ``omrs[web]`` refer to an existing extra."""
     pyproject = (REPO / "pyproject.toml").read_text(encoding="utf-8")
     assert re.search(r"^web = \[", pyproject, re.M)
-    for command in ("uv sync --extra web", 'pip install "omrg[web]"'):
+    for command in ("uv sync --extra web", 'pip install "omrs[web]"'):
         assert command in _text()
         assert command in INSTALL_HINT
 

@@ -47,7 +47,7 @@ describe("source words", () => {
   const words: [string, string][] = [
     ["env", "Set in the environment. Change it there."],
     ["dotenv", "Set in .env. Change it there."],
-    ["config-file", "from omrg.jsonc"],
+    ["config-file", "from omrs.jsonc"],
     ["keychain", "in system keychain"],
     ["key-file", "from key file"],
     ["default", "default"],
@@ -78,7 +78,7 @@ describe("SettingRow", () => {
   it("shows the value and source and no input until Edit", () => {
     row();
     expect(screen.getByText(BINARY)).toBeInTheDocument();
-    expect(screen.getByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(screen.getByText("from omrs.jsonc")).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
@@ -196,7 +196,7 @@ describe("SettingRow", () => {
 
   it("shows the server message of a refused save and a Reload action for a conflict", async () => {
     const user = userEvent.setup();
-    const message = "omrg.jsonc changed on disk. Reload to see the new values.";
+    const message = "omrs.jsonc changed on disk. Reload to see the new values.";
     row({ error: new ApiError("http", "x", "/v1/x", 409, { status: "error", message }) });
     await user.click(screen.getByRole("button", { name: "Edit Program path" }));
     expect(screen.getByRole("alert")).toHaveTextContent(message);

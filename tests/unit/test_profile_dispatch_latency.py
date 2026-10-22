@@ -21,7 +21,7 @@ import pytest
 from tests.fixtures.pipeline_parity.retrieval import harness
 from tests.unit.test_engine_profiles_support import PROFILE, make_env, tagged_engine
 
-from omrg.core.retrieval import registry
+from omrs.core.retrieval import registry
 
 pytestmark = pytest.mark.slow
 

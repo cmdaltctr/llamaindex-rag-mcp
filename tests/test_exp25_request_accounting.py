@@ -15,7 +15,7 @@ import lancedb
 import pytest
 from llama_index.core.schema import MetadataMode, TextNode
 
-from omrg.integrations import tokenizer as tokenizer_module
+from omrs.integrations import tokenizer as tokenizer_module
 
 EXP_DIR = Path(__file__).resolve().parents[1] / "experiments/25-token-chunking-ablation-2026-09-08"
 

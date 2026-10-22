@@ -16,7 +16,7 @@ from typing import Any
 import pytest
 from tests.unit.test_workspace_cleanup_support import Workspace
 
-from omrg.core.workspace import CleanupSelector, WorkspaceCleanup
+from omrs.core.workspace import CleanupSelector, WorkspaceCleanup
 
 # Files that cleanup must never change, relative to a base directory.
 _PROTECTED = {
@@ -214,7 +214,7 @@ def test_failed_record_deletion_removes_no_files(setup: tuple[Workspace, Path]) 
             raise ValueError("run is active")
 
     cleanup = WorkspaceCleanup.for_layout(Refuse(ws.repo), ws.layout, clock=ws.clock)  # type: ignore[arg-type]
-    from omrg.core.workspace import CleanupRejected
+    from omrs.core.workspace import CleanupRejected
 
     with pytest.raises(CleanupRejected) as exc:
         _apply_all(ws, cleanup)
@@ -236,10 +236,10 @@ def test_artefact_files_and_directories_keep_private_modes(tmp_path: Path) -> No
 
 def test_experiment_run_outputs_survive_cleanup_of_their_record(tmp_path: Path) -> None:
     """A run whose artefacts sit below an experiment workspace keeps them."""
-    from omrg.core.workspace import ARTEFACT_ROOT_KEY, ArtefactStore
+    from omrs.core.workspace import ARTEFACT_ROOT_KEY, ArtefactStore
 
     ws = Workspace(tmp_path / "workspace")
-    outputs = tmp_path / "experiments" / "exp-a" / "output" / "omrg-runs"
+    outputs = tmp_path / "experiments" / "exp-a" / "output" / "omrs-runs"
     run = ws.repo.create_run(
         ws.revision_id,
         settings={},

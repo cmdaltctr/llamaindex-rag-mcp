@@ -18,13 +18,13 @@ from pathlib import Path
 
 import pytest
 
-_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "omrg"
+_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "omrs"
 
 
 def _absolute_module_name(module_path: Path) -> str:
     """Return the dotted module name for a file under ``src/``.
 
-    ``src/omrg/core/ingestion/chunker.py`` → ``omrg.core.ingestion.chunker``
+    ``src/omrs/core/ingestion/chunker.py`` → ``omrs.core.ingestion.chunker``
     """
     rel = module_path.resolve().relative_to(_SRC_ROOT.parent)
     return ".".join(rel.with_suffix("").parts)
@@ -39,7 +39,7 @@ def _resolve_relative(importer: str, level: int, module: str | None) -> str:
 
     Without this resolution a relative import such as
     ``from ..chunking.code import chunk_code_file_async`` inside
-    ``omrg.core.ingestion.chunker`` yields the bare string
+    ``omrs.core.ingestion.chunker`` yields the bare string
     ``"chunking.code"``, which can never match an absolute forbidden name —
     silently rendering this whole test decorative.
     """
@@ -82,32 +82,32 @@ def _module_top_level_imports(module_path: Path) -> set[str]:
 
 # The concrete strategy modules that must NOT appear as top-level imports.
 _FORBIDDEN_STRATEGY_MODULES = {
-    "omrg.core.chunking.code",
-    "omrg.core.chunking.markdown",
-    "omrg.core.chunking.sentence",
-    "omrg.core.chunking.config_file",
-    "omrg.core.metadata.keyword",
-    "omrg.core.metadata.ollama",
-    "omrg.core.metadata.llamaindex",
-    "omrg.core.metadata.llamacpp",
-    "omrg.core.retrieval.dense",
-    "omrg.core.retrieval.fusion",
-    # omrg.core.retrieval.policy is deliberately absent. It is a pure helper
+    "omrs.core.chunking.code",
+    "omrs.core.chunking.markdown",
+    "omrs.core.chunking.sentence",
+    "omrs.core.chunking.config_file",
+    "omrs.core.metadata.keyword",
+    "omrs.core.metadata.ollama",
+    "omrs.core.metadata.llamaindex",
+    "omrs.core.metadata.llamacpp",
+    "omrs.core.retrieval.dense",
+    "omrs.core.retrieval.fusion",
+    # omrs.core.retrieval.policy is deliberately absent. It is a pure helper
     # (threshold scaling, fetch_k and rerank-policy resolution), not a
     # registered strategy, and core/retrieval/operations.py imports it at
     # module level by design (add-local-web-pipeline-workspace).
-    "omrg.core.retrieval.reranker",
-    "omrg.core.retrieval.sparse",
-    "omrg.core.community.louvain",
-    "omrg.core.community.leiden",
-    "omrg.integrations.pdf.liteparse",
-    "omrg.integrations.pdf.pypdf",
-    "omrg.integrations.pdf.pypdfium",
+    "omrs.core.retrieval.reranker",
+    "omrs.core.retrieval.sparse",
+    "omrs.core.community.louvain",
+    "omrs.core.community.leiden",
+    "omrs.integrations.pdf.liteparse",
+    "omrs.integrations.pdf.pypdf",
+    "omrs.integrations.pdf.pypdfium",
     # register-document-backend-strategies (task 4.2): the chunker and the
     # backends orchestrator must resolve adapters through the registry —
     # never a module-level import of either concrete backend.
-    "omrg.core.ingestion.backends.local",
-    "omrg.integrations.azure",
+    "omrs.core.ingestion.backends.local",
+    "omrs.integrations.azure",
 }
 
 
@@ -138,7 +138,7 @@ def test_no_module_level_strategy_import(rel_path: str) -> None:
     module_path = _SRC_ROOT / rel_path
     imports = _module_top_level_imports(module_path)
 
-    # Check both the short form (e.g. "omrg") and full dotted paths.
+    # Check both the short form (e.g. "omrs") and full dotted paths.
     offenders = imports & _FORBIDDEN_STRATEGY_MODULES
     assert not offenders, (
         f"{rel_path} has module-level imports of concrete strategy modules: "

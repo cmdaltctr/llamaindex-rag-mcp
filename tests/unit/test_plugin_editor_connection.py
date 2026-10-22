@@ -1,8 +1,8 @@
-"""Editor launch plan with an OMRG connection file (task 8.6).
+"""Editor launch plan with an OMRS connection file (task 8.6).
 
 When the caller gives an :class:`EditorConnection`, the plan adds two
 private files to the launch directory (the connection file and a separate
-API token file) and one per-launch variable, ``OMRG_CONNECTION_FILE``,
+API token file) and one per-launch variable, ``OMRS_CONNECTION_FILE``,
 that names the connection file. The API token is only in the token file.
 """
 
@@ -13,22 +13,22 @@ from pathlib import Path
 
 from tests.unit.test_plugin_editor import setup, supervisor  # noqa: F401 - fixture
 
-from omrg.core.plugins.editor import (
+from omrs.core.plugins.editor import (
     API_TOKEN_FILE_NAME,
     CONNECTION_ENV,
     CONNECTION_FILE_NAME,
     EditorConnection,
 )
 
-BEARER = "omrg_bt_0123.bearer-for-test"  # noqa: S105 - test value
+BEARER = "omrs_bt_0123.bearer-for-test"  # noqa: S105 - test value
 CONNECTION = EditorConnection("http://127.0.0.1:8765", "exp_abc", BEARER)
 
 
 def test_connection_names_are_fixed() -> None:
     assert (CONNECTION_FILE_NAME, API_TOKEN_FILE_NAME, CONNECTION_ENV) == (
-        "omrg_connection.json",
-        "omrg-api-token",
-        "OMRG_CONNECTION_FILE",
+        "omrs_connection.json",
+        "omrs-api-token",
+        "OMRS_CONNECTION_FILE",
     )
 
 

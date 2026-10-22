@@ -1,7 +1,7 @@
 """Import boundaries of the plugin packages (design D10).
 
 The import-linter contract ``plugin-host-starts-no-processes`` in
-``pyproject.toml`` now governs ``omrg.core.plugins``. This test keeps its
+``pyproject.toml`` now governs ``omrs.core.plugins``. This test keeps its
 own direct-import check as a second guard. It also checks the process
 launcher in ``integrations/`` against its own forbidden list.
 """
@@ -13,16 +13,16 @@ from pathlib import Path
 
 import pytest
 
-SRC = Path(__file__).resolve().parents[2] / "src" / "omrg"
+SRC = Path(__file__).resolve().parents[2] / "src" / "omrs"
 CORE_PLUGINS = sorted((SRC / "core" / "plugins").glob("*.py"))
 LAUNCHER = SRC / "integrations" / "process_launcher.py"
 
 CORE_FORBIDDEN = (
     "subprocess", "socket", "signal", "multiprocessing", "sqlite3", "fastapi", "starlette",
-    "uvicorn", "marimo", "uv", "pip", "omrg.integrations", "omrg.transports",
-    "omrg.core.providers", "omrg.core.ingestion", "omrg.core.retrieval", "omrg.core.answer",
+    "uvicorn", "marimo", "uv", "pip", "omrs.integrations", "omrs.transports",
+    "omrs.core.providers", "omrs.core.ingestion", "omrs.core.retrieval", "omrs.core.answer",
 )  # fmt: skip
-LAUNCHER_FORBIDDEN = ("omrg", "marimo", "sqlite3", "fastapi", "starlette", "uvicorn")
+LAUNCHER_FORBIDDEN = ("omrs", "marimo", "sqlite3", "fastapi", "starlette", "uvicorn")
 
 
 def imported(path: Path) -> set[str]:
@@ -63,8 +63,8 @@ def test_process_launcher_is_an_integration_leaf() -> None:
 
 def test_checker_detects_a_forbidden_import(tmp_path: Path) -> None:
     sample = tmp_path / "bad.py"
-    sample.write_text("import subprocess\nfrom omrg.integrations import x\n")
-    assert violations(imported(sample), CORE_FORBIDDEN) == ["omrg.integrations", "subprocess"]
+    sample.write_text("import subprocess\nfrom omrs.integrations import x\n")
+    assert violations(imported(sample), CORE_FORBIDDEN) == ["omrs.integrations", "subprocess"]
 
 
 @pytest.mark.parametrize("path", [*CORE_PLUGINS, LAUNCHER], ids=lambda p: p.name)

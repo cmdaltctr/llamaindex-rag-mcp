@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.retrieval import operations as ops
+from omrs.core.retrieval import operations as ops
 
 _OPS_SOURCE = Path(ops.__file__)
 
@@ -170,7 +170,7 @@ def test_run_reranker_failure_keeps_dense_kind_and_reason(effective_settings) ->
 def test_run_reranker_builds_from_settings_when_none_injected(
     effective_settings, monkeypatch
 ) -> None:
-    from omrg.core.retrieval import backend
+    from omrs.core.retrieval import backend
 
     seen: list = []
 
@@ -259,8 +259,8 @@ def test_rank_and_truncate_is_stable_descending() -> None:
 
 def test_search_delegates_to_the_shared_seams(monkeypatch) -> None:
     """``search()`` calls the seams; it keeps no private copy of the rules."""
-    from omrg.core.retrieval import pipeline
-    from omrg.core.settings import EffectiveSettings
+    from omrs.core.retrieval import pipeline
+    from omrs.core.settings import EffectiveSettings
 
     called: list[str] = []
     for name in (
@@ -322,8 +322,8 @@ def test_seams_read_no_process_defaults() -> None:
 
 def test_seams_work_with_poisoned_process_defaults(effective_settings, monkeypatch) -> None:
     """Every seam uses only what it is given, never a process default."""
-    import omrg.core.settings as settings_mod
-    import omrg.core.vectordb as vectordb_mod
+    import omrs.core.settings as settings_mod
+    import omrs.core.vectordb as vectordb_mod
 
     def _poison(*_a, **_k):
         raise AssertionError("seam read a process default")
@@ -345,16 +345,16 @@ def test_seams_work_with_poisoned_process_defaults(effective_settings, monkeypat
 
 def test_importing_seams_loads_no_concrete_strategy_module() -> None:
     concrete = [
-        "omrg.core.retrieval.dense",
-        "omrg.core.retrieval.sparse",
-        "omrg.core.retrieval.native_sparse",
-        "omrg.core.retrieval.fusion",
-        "omrg.core.retrieval.reranker",
-        "omrg.core.retrieval.reranker_torch",
-        "omrg.core.retrieval.backend",
+        "omrs.core.retrieval.dense",
+        "omrs.core.retrieval.sparse",
+        "omrs.core.retrieval.native_sparse",
+        "omrs.core.retrieval.fusion",
+        "omrs.core.retrieval.reranker",
+        "omrs.core.retrieval.reranker_torch",
+        "omrs.core.retrieval.backend",
     ]
     code = (
-        "import sys, omrg.core.retrieval.operations\n"
+        "import sys, omrs.core.retrieval.operations\n"
         f"print([m for m in {concrete!r} if m in sys.modules])"
     )
     out = subprocess.run(

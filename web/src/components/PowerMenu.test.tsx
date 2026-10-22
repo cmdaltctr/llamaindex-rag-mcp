@@ -30,27 +30,27 @@ describe("PowerMenu", () => {
   it("opens a confirmation for Turn off and posts nothing until it is confirmed", async () => {
     const { user, server, panel } = await openPanel({ ...MANAGED, "POST /v1/server/power": ACCEPTED("off") });
     await user.click(await ready(panel, "Turn off"));
-    const dialog = await screen.findByRole("dialog", { name: "Turn off OMRG?" });
+    const dialog = await screen.findByRole("dialog", { name: "Turn off OMRS?" });
     expect(dialog).toHaveTextContent(/stays off/i);
     expect(dialog).not.toHaveTextContent(/signed out/i);
-    expect(within(dialog).getByText("omrg web start")).toBeInTheDocument();
+    expect(within(dialog).getByText("omrs web start")).toBeInTheDocument();
     expect(server.find("POST", "/v1/server/power")).toHaveLength(0);
 
     await user.click(within(dialog).getByRole("button", { name: "Turn off" }));
     await waitFor(() => expect(server.find("POST", "/v1/server/power")).toHaveLength(1));
     expect(server.find("POST", "/v1/server/power")[0]?.body).toEqual({ action: "off" });
     expect(await screen.findByText(/^Turned off\./)).toBeInTheDocument();
-    expect(screen.getAllByText("omrg web start").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("omrs web start").length).toBeGreaterThan(0);
     expect(screen.queryByText(/^Restarting\./)).not.toBeInTheDocument();
   });
 
   it("opens a confirmation for Restart and posts nothing until it is confirmed", async () => {
     const { user, server, panel } = await openPanel({ ...MANAGED, "POST /v1/server/power": ACCEPTED("restart") });
     await user.click(await ready(panel, "Restart"));
-    const dialog = await screen.findByRole("dialog", { name: "Restart OMRG?" });
+    const dialog = await screen.findByRole("dialog", { name: "Restart OMRS?" });
     expect(dialog).toHaveTextContent(/signs in again by itself/i);
     expect(dialog).not.toHaveTextContent(/signed out/i);
-    expect(within(dialog).getByText("omrg web open")).toBeInTheDocument();
+    expect(within(dialog).getByText("omrs web open")).toBeInTheDocument();
     expect(server.find("POST", "/v1/server/power")).toHaveLength(0);
 
     await user.click(within(dialog).getByRole("button", { name: "Restart" }));
@@ -58,7 +58,7 @@ describe("PowerMenu", () => {
     expect(server.find("POST", "/v1/server/power")[0]?.body).toEqual({ action: "restart" });
     const done = await screen.findByText(/^Restarting\./);
     expect(done.parentElement).toHaveTextContent(/signs in again by itself/i);
-    expect(screen.getAllByText("omrg web open").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("omrs web open").length).toBeGreaterThan(0);
   });
 
   it("posts nothing when the dialog is cancelled", async () => {
@@ -76,8 +76,8 @@ describe("PowerMenu", () => {
     await waitFor(() => expect(within(panel).getByText(/runs in a terminal/i)).toBeInTheDocument());
     expect(within(panel).getByRole("button", { name: "Turn off" })).toBeDisabled();
     expect(within(panel).getByRole("button", { name: "Restart" })).toBeDisabled();
-    expect(within(panel).getByText("omrg web restart")).toBeInTheDocument();
-    expect(within(panel).getByText("omrg web open")).toBeInTheDocument();
+    expect(within(panel).getByText("omrs web restart")).toBeInTheDocument();
+    expect(within(panel).getByText("omrs web open")).toBeInTheDocument();
   });
 
   it("disables both buttons with a reason when the power route does not answer", async () => {
@@ -85,7 +85,7 @@ describe("PowerMenu", () => {
     await waitFor(() => expect(within(panel).getByText(/cannot tell whether/i)).toBeInTheDocument());
     expect(within(panel).getByRole("button", { name: "Turn off" })).toBeDisabled();
     expect(within(panel).getByRole("button", { name: "Restart" })).toBeDisabled();
-    expect(within(panel).getByText("omrg web restart")).toBeInTheDocument();
+    expect(within(panel).getByText("omrs web restart")).toBeInTheDocument();
   });
 
   it("shows one line on a 409 and does not report the app as off or restarting", async () => {

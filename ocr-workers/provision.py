@@ -2,7 +2,7 @@
 """Deterministic provisioning for one isolated OCR engine environment.
 
 Resolves the named engine's virtual environment from that engine's own
-``uv.lock`` only. The script never touches the parent OMRG project or
+``uv.lock`` only. The script never touches the parent OMRS project or
 its virtual environment: every command runs with the engine folder as
 its working directory, the uv project selectors are pinned to that
 folder, and ``uv sync --locked`` refuses drift from the committed
@@ -16,11 +16,11 @@ Usage::
     python3 ocr-workers/provision.py dots-mocr --accept-model-licence --dry-run
 
 Licence gate (design D9): an engine whose ``pyproject.toml`` declares
-``[tool.omrg-ocr] requires-acceptance = true`` is refused without
+``[tool.omrs-ocr] requires-acceptance = true`` is refused without
 ``--accept-model-licence``, before anything is installed, and the error
 names the engine's licence file.
 
-After ``uv sync --locked``, an engine that ships an ``omrg-ocr-fetch``
+After ``uv sync --locked``, an engine that ships an ``omrs-ocr-fetch``
 console script runs it inside the engine environment, to download its
 pinned weights and apply its patches. ``--dry-run`` installs nothing and
 fetches nothing.
@@ -50,7 +50,7 @@ WORKERS_DIR = Path(__file__).resolve().parent
 ENGINES_DIR = WORKERS_DIR / "engines"
 
 #: The console script an engine may ship to fetch weights and patch them.
-FETCH_SCRIPT = "omrg-ocr-fetch"
+FETCH_SCRIPT = "omrs-ocr-fetch"
 
 #: Exit status when the licence gate refuses an engine.
 EXIT_LICENCE_NOT_ACCEPTED = 3
@@ -156,7 +156,7 @@ _PAIR_RE = re.compile(r'^("?)([A-Za-z0-9_.-]+)\1\s*=\s*(.+?)\s*$')
 def _minimal_toml(text: str) -> dict[str, Any]:
     """Read flat ``key = "string" | true | false`` pairs, grouped by table.
 
-    Only what provisioning reads: ``[tool.omrg-ocr]`` and
+    Only what provisioning reads: ``[tool.omrs-ocr]`` and
     ``[project.scripts]``. Arrays and inline tables are skipped.
     """
     data: dict[str, Any] = {}
@@ -183,13 +183,13 @@ def _minimal_toml(text: str) -> dict[str, Any]:
 
 
 def licence_gate(manifest: dict[str, Any]) -> tuple[bool, str | None]:
-    """Return ``(requires acceptance, licence file)`` from ``[tool.omrg-ocr]``."""
-    config = manifest.get("tool", {}).get("omrg-ocr", {})
+    """Return ``(requires acceptance, licence file)`` from ``[tool.omrs-ocr]``."""
+    config = manifest.get("tool", {}).get("omrs-ocr", {})
     return bool(config.get("requires-acceptance", False)), config.get("licence-file")
 
 
 def has_fetch_script(manifest: dict[str, Any]) -> bool:
-    """Return True when the engine ships an ``omrg-ocr-fetch`` console script."""
+    """Return True when the engine ships an ``omrs-ocr-fetch`` console script."""
     return FETCH_SCRIPT in manifest.get("project", {}).get("scripts", {})
 
 

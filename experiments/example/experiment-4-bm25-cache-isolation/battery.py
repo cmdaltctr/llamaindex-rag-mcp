@@ -42,13 +42,13 @@ def run_battery(
     top_n: int = 5,
 ) -> dict[str, Any]:
     """Run one cell's battery; return rows, mutation trace, diagnostics."""
-    import omrg.core.retrieval.sparse as sparse_mod
-    from omrg.core.retrieval.sparse import BM25SparseRetriever
+    import omrs.core.retrieval.sparse as sparse_mod
+    from omrs.core.retrieval.sparse import BM25SparseRetriever
 
     if backend == "chroma":
         import chromadb
 
-        from omrg.core.vectordb.chroma import ChromaVectorStore
+        from omrs.core.vectordb.chroma import ChromaVectorStore
 
         store_a = ChromaVectorStore(
             client=chromadb.PersistentClient(path=str(tmp_root / "store_a"))
@@ -59,7 +59,7 @@ def run_battery(
     elif backend == "lancedb":
         import lancedb
 
-        from omrg.core.vectordb.lancedb import LanceVectorStore
+        from omrs.core.vectordb.lancedb import LanceVectorStore
 
         store_a = LanceVectorStore(connection=lancedb.connect(str(tmp_root / "store_a")))
         store_b = LanceVectorStore(connection=lancedb.connect(str(tmp_root / "store_b")))
@@ -84,7 +84,7 @@ def run_battery(
 
     rows: list[dict[str, Any]] = []
     mutations: list[dict[str, Any]] = []
-    from omrg.core.vectordb.identity import EmbeddingIdentity
+    from omrs.core.vectordb.identity import EmbeddingIdentity
 
     fixture_identity = EmbeddingIdentity(
         provider="fixture", model="committed-fixture-vectors"
@@ -256,7 +256,7 @@ def run_battery(
         from llama_index.core.embeddings import MockEmbedding
         from llama_index.core.schema import TextNode
 
-        from omrg.core.ingestion import writer
+        from omrs.core.ingestion import writer
 
         previous_embed_model = getattr(Settings, "embed_model", None)
         Settings.embed_model = MockEmbedding(embed_dim=corpus["dimension"])
@@ -325,7 +325,7 @@ def run_battery(
             "mutation_trace": mutations,
             "build_counters": {f"{a}::{b}": v for (a, b), v in sorted(builds.items())},
             "cache_key_mechanism": {
-                "location": "src/omrg/core/retrieval/sparse.py:183,244-247",
+                "location": "src/omrs/core/retrieval/sparse.py:183,244-247",
                 "key_shape": "(store.cache_identity, collection_name)",
                 "cache_identity_default": "the store object itself (vectordb/base.py:22-25)",
             },

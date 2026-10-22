@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from omrg.core.profiles.resolver import ProfileResolver
-from omrg.core.vectordb.identity import EmbeddingIdentity
+from omrs.core.profiles.resolver import ProfileResolver
+from omrs.core.vectordb.identity import EmbeddingIdentity
 
 
 class _Store:

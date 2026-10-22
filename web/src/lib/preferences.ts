@@ -4,7 +4,7 @@ import { readStored, writeStored } from "./storage";
  * Per-browser preferences: the theme, and the last collection as a
  * navigation default. Nothing here is a source of truth for workspace data.
  */
-export const PREFERENCES_KEY = "omrg-preferences";
+export const PREFERENCES_KEY = "omrs-preferences";
 
 export const THEMES = ["system", "light", "dark"] as const;
 export type ThemePreference = (typeof THEMES)[number];

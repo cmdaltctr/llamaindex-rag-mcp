@@ -17,25 +17,25 @@ const HEALTH_POLL_MS = 15_000;
 /** After a 202 the server ends within a second, so a health poll in this window would only fail. */
 const QUIET_MS = 5_000;
 const COMMANDS = [
-  { what: "restart command", command: "omrg web restart", hint: "Restart the login item." },
-  { what: "open command", command: "omrg web open", hint: "Open the workspace in the browser with a fresh link." },
+  { what: "restart command", command: "omrs web restart", hint: "Restart the login item." },
+  { what: "open command", command: "omrs web open", hint: "Open the workspace in the browser with a fresh link." },
 ] as const;
 
 const COPY: Record<PowerAction, { label: string; title: string; ask: string; command: string; done: string; next: string }> = {
   off: {
     label: "Turn off",
-    title: "Turn off OMRG?",
-    ask: "OMRG stops. It stays off until you log in again or run",
-    command: "omrg web start",
+    title: "Turn off OMRS?",
+    ask: "OMRS stops. It stays off until you log in again or run",
+    command: "omrs web start",
     done: "Turned off. Run",
     next: "in a terminal to turn it on.",
   },
   restart: {
     label: "Restart",
-    title: "Restart OMRG?",
-    ask: "OMRG restarts. This page signs in again by itself when it is back. If it does not, run",
-    command: "omrg web open",
-    done: "Restarting. This page signs in again by itself when OMRG is back. If it does not, run",
+    title: "Restart OMRS?",
+    ask: "OMRS restarts. This page signs in again by itself when it is back. If it does not, run",
+    command: "omrs web open",
+    done: "Restarting. This page signs in again by itself when OMRS is back. If it does not, run",
     next: "in a terminal.",
   },
 };
@@ -131,7 +131,7 @@ export function PowerMenu() {
         )}
       >
         <p className="text-ui font-medium">{state}</p>
-        {running && health.data ? <p className="text-muted-foreground">{`OMRG version ${health.data.version}`}</p> : null}
+        {running && health.data ? <p className="text-muted-foreground">{`OMRS version ${health.data.version}`}</p> : null}
         {done !== null ? <Done action={done} /> : null}
         <div className="flex flex-wrap gap-2">
           <Button variant="destructive" size="sm" disabled={!canAct} onClick={() => setAsking("off")}>
@@ -168,7 +168,7 @@ export function PowerMenu() {
           </DialogHeader>
           {finished && asking !== null ? <Done action={asking} /> : null}
           {act.isError && isBusy(act.error) ? (
-            <AlertNotice message="OMRG is busy with a run or an ingestion, so nothing changed. Try again when it has finished.">
+            <AlertNotice message="OMRS is busy with a run or an ingestion, so nothing changed. Try again when it has finished.">
               <Button variant="outline" onClick={() => void confirm()}>
                 Retry
               </Button>

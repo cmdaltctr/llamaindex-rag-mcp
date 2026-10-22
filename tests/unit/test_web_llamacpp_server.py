@@ -29,8 +29,8 @@ from tests.unit.test_web_openapi_conformance_support import (  # noqa: E402
     ContractChecker,
 )
 
-from omrg.transports.api import security  # noqa: E402
-from omrg.transports.api.llamacpp_server import LlamacppServer  # noqa: E402
+from omrs.transports.api import security  # noqa: E402
+from omrs.transports.api.llamacpp_server import LlamacppServer  # noqa: E402
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="POSIX process groups")
 
@@ -244,7 +244,7 @@ def test_an_environment_value_locks_the_field_and_names_the_variable(
 
 
 def test_a_config_file_value_does_not_lock_the_field_and_is_written_back(rig: Any) -> None:
-    from omrg.config.settings_file_write import write_settings
+    from omrs.config.settings_file_write import write_settings
 
     with rig() as r:
         write_settings({"llamacpp_context_window": 8192}, revision=None)  # a hand edit
@@ -257,7 +257,7 @@ def test_a_config_file_value_does_not_lock_the_field_and_is_written_back(rig: An
 
 
 def test_every_answer_carries_the_file_revision_and_a_stale_one_is_409(rig: Any) -> None:
-    from omrg.config.settings_file_write import write_settings
+    from omrs.config.settings_file_write import write_settings
 
     with rig() as r:
         first = r.get()["revision"]
@@ -267,7 +267,7 @@ def test_every_answer_carries_the_file_revision_and_a_stale_one_is_409(rig: Any)
         stale = r.put({"context_window": 8192, "revision": first})
         assert stale.status_code == 409
         assert (
-            stale.json()["message"] == "omrg.jsonc changed on disk. Reload to see the new values."
+            stale.json()["message"] == "omrs.jsonc changed on disk. Reload to see the new values."
         )
         assert '"llamacpp_context_window": 4096' in r.h.file_text()
 
@@ -429,7 +429,7 @@ def test_the_responses_conform_to_the_contract(rig: Any) -> None:
 
 def test_the_routes_start_no_process_themselves() -> None:
     source = (
-        Path(__file__).parents[2] / "src/omrg/transports/api/routes/llamacpp_server.py"
+        Path(__file__).parents[2] / "src/omrs/transports/api/routes/llamacpp_server.py"
     ).read_text(encoding="utf-8")
     assert "subprocess" not in source
     assert "os.kill" not in source

@@ -1,7 +1,7 @@
 /**
  * Typed client for the document routes of the local `/v1` API.
  *
- * Shapes follow `src/omrg/transports/api/routes/documents.py`, `jobs.py`,
+ * Shapes follow `src/omrs/transports/api/routes/documents.py`, `jobs.py`,
  * `inspection.py`, `admin.py` and `foundation.py` (roots, uploads,
  * session). Every function takes the `ApiClient` first, which owns the
  * transport checks: JSON content type, valid JSON and the error envelope.

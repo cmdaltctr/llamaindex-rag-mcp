@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from omrg.core.settings import AnswerBlock, EffectiveSettings
+from omrs.core.settings import AnswerBlock, EffectiveSettings
 
 _HERE = Path(__file__).resolve().parent
 CASES: dict[str, Any] = json.loads((_HERE / "cases.json").read_text(encoding="utf-8"))
@@ -91,7 +91,7 @@ def observation(
 
 async def run_case_through_answer(case: dict[str, Any], base: EffectiveSettings) -> dict[str, Any]:
     """Run one fixture case through the standard ``answer()`` path."""
-    from omrg.core.answer import answer
+    from omrs.core.answer import answer
 
     complete = make_seam(case.get("complete"))
     judge = make_seam(case.get("judge"))

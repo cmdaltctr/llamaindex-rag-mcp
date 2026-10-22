@@ -16,7 +16,7 @@ from tests.unit.test_pipeline_runner_support import (
 )
 from tests.unit.test_pipeline_support import ingest_graph
 
-from omrg.core.pipelines import (
+from omrs.core.pipelines import (
     EventKind,
     NodeContext,
     NodeOutput,

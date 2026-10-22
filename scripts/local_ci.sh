@@ -32,7 +32,7 @@ step "OpenSpec validate --all --strict"
 openspec validate --all --strict
 
 step "OpenAPI contract"
-uv run --no-sync python -c "import yaml; from openapi_spec_validator import validate; validate(yaml.safe_load(open('src/omrg/transports/api/openapi.yaml')))"
+uv run --no-sync python -c "import yaml; from openapi_spec_validator import validate; validate(yaml.safe_load(open('src/omrs/transports/api/openapi.yaml')))"
 echo "OpenAPI contract valid"
 
 step "default install is torch-free"

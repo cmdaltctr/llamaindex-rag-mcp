@@ -15,14 +15,14 @@ from pathlib import Path
 
 import pytest
 
-from omrg.capabilities import (
+from omrs.capabilities import (
     UNAVAILABLE_OCR_WORKER_FINGERPRINT,
     probe_ocr_worker,
     reset_ocr_fingerprint_cache,
 )
-from omrg.integrations.ocr_worker import OcrWorkerError
-from omrg.integrations.ocr_worker.fingerprint import OcrWorkerFingerprint
-from omrg.integrations.ocr_worker.managed import ManagedOcrClient
+from omrs.integrations.ocr_worker import OcrWorkerError
+from omrs.integrations.ocr_worker.fingerprint import OcrWorkerFingerprint
+from omrs.integrations.ocr_worker.managed import ManagedOcrClient
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STUB_WORKER = REPO_ROOT / "tests" / "fixtures" / "ocr_worker" / "stub_worker.py"

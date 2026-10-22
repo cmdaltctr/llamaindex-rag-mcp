@@ -23,13 +23,13 @@ import httpx
 import pytest
 from ollama import AsyncClient, Client
 
-from omrg.core.answer.stages import (
+from omrs.core.answer.stages import (
     FAILURE_STAGE_GENERATION,
     prepare_evidence,
     synthesise_answer,
 )
-from omrg.core.settings import AnswerBlock
-from omrg.engine_answer import server_seam
+from omrs.core.settings import AnswerBlock
+from omrs.engine_answer import server_seam
 
 _BASE_URL = "http://ollama.test:11434"
 

@@ -1,8 +1,8 @@
-"""``omrg config show`` (move-settings-to-config-file tasks 8.1 and 8.2).
+"""``omrs config show`` (move-settings-to-config-file tasks 8.1 and 8.2).
 
-Every case runs in a temporary config folder named by ``OMRG_CONFIG_DIR``. A
+Every case runs in a temporary config folder named by ``OMRS_CONFIG_DIR``. A
 fake keychain class replaces the system keychain. No test reads or writes the
-real ``~/.config/omrg``. Keys here are fake constants.
+real ``~/.config/omrs``. Keys here are fake constants.
 """
 
 from __future__ import annotations
@@ -14,9 +14,9 @@ from typing import Any
 import pytest
 from typer.testing import CliRunner
 
-from omrg.config import provenance
-from omrg.config.settings_file import setting_paths
-from omrg.transports.cli import app as cli_app
+from omrs.config import provenance
+from omrs.config.settings_file import setting_paths
+from omrs.transports.cli import app as cli_app
 
 runner = CliRunner()
 KEY = "Zq9XkP3lM7wVb2NrT4yQ1234"
@@ -35,15 +35,15 @@ def config_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     for variable in VARIABLES:
         monkeypatch.delenv(variable, raising=False)
     monkeypatch.setattr(provenance, "DOTENV_KEYS", frozenset())
-    folder = tmp_path / "cfg" / "omrg"
+    folder = tmp_path / "cfg" / "omrs"
     folder.mkdir(parents=True, mode=0o700)
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(folder))
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(folder))
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
     return folder
 
 
 def write_config(folder: Path, text: str) -> None:
-    (folder / "omrg.jsonc").write_text(text, encoding="utf-8")
+    (folder / "omrs.jsonc").write_text(text, encoding="utf-8")
 
 
 def show() -> Any:
@@ -135,7 +135,7 @@ def test_keychain_reference_resolves_and_shows_last_four(
 
             return Secret() if provider == "openrouter" else None
 
-    monkeypatch.setattr("omrg.integrations.keychain.KeychainStore", FakeStore)
+    monkeypatch.setattr("omrs.integrations.keychain.KeychainStore", FakeStore)
     write_config(config_dir, '{ "openrouter_api_key": "keychain://openrouter" }')
     result = show()
     assert parsed(result.stderr)["openrouter_api_key"] == ("set, ending 1234", "keychain")
@@ -151,7 +151,7 @@ def test_keychain_reference_that_does_not_resolve_is_named(
         def read(self, provider: str) -> None:
             return None
 
-    monkeypatch.setattr("omrg.integrations.keychain.KeychainStore", EmptyStore)
+    monkeypatch.setattr("omrs.integrations.keychain.KeychainStore", EmptyStore)
     write_config(config_dir, '{ "openrouter_api_key": "keychain://openrouter" }')
     result = show()
     assert result.exit_code == 0
@@ -165,7 +165,7 @@ def test_without_a_reference_the_keychain_is_never_opened(
     def forbidden(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("the keychain was opened")
 
-    monkeypatch.setattr("omrg.integrations.keychain.KeychainStore", forbidden)
+    monkeypatch.setattr("omrs.integrations.keychain.KeychainStore", forbidden)
     write_config(config_dir, '{ "retrieval": { "top_k": 7 } }')
     assert show().exit_code == 0
 
@@ -210,7 +210,7 @@ def test_a_broken_file_is_listed_and_the_command_still_succeeds(config_dir: Path
     write_config(config_dir, '{ "retrieval": ')
     result = show()
     assert result.exit_code == 0
-    assert "omrg.jsonc could not be read" in flat(result.stderr)
+    assert "omrs.jsonc could not be read" in flat(result.stderr)
     assert sorted(parsed(result.stderr)) == sorted(setting_paths())
 
 
@@ -223,4 +223,4 @@ def test_a_missing_file_is_said_and_defaults_are_listed(config_dir: Path) -> Non
     result = show()
     assert "not found" in flat(result.stderr)
     assert sorted(parsed(result.stderr)) == sorted(setting_paths())
-    assert not (config_dir / "omrg.jsonc").exists()  # show writes nothing
+    assert not (config_dir / "omrs.jsonc").exists()  # show writes nothing

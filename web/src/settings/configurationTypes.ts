@@ -27,7 +27,7 @@ export interface ConfigurationProblem {
 }
 
 export interface ConfigurationState {
-  /** The `omrg.jsonc` path. */
+  /** The `omrs.jsonc` path. */
   path: string;
   revision: string;
   settings: ConfigurationSetting[];

@@ -63,11 +63,11 @@ describe("Providers", () => {
     expect(within(card("Ollama")).queryByText(/uv sync/)).toBeNull();
   });
 
-  it("names the omrg.jsonc path, says saves are written there, and shows no restart banner", async () => {
+  it("names the omrs.jsonc path, says saves are written there, and shows no restart banner", async () => {
     await openProviders();
     const section = screen.getByRole("region", { name: "Providers" });
-    expect(section).toHaveTextContent("~/.config/omrg/omrg.jsonc");
-    expect(section).toHaveTextContent(/saves are written to .*omrg\.jsonc/i);
+    expect(section).toHaveTextContent("~/.config/omrs/omrs.jsonc");
+    expect(section).toHaveTextContent(/saves are written to .*omrs\.jsonc/i);
     expect(section).toHaveTextContent(/apply at once to this web server/i);
     expect(screen.queryByText(/restart to apply/i)).toBeNull();
   });
@@ -108,7 +108,7 @@ describe("Providers", () => {
     });
     const ollama = card("Ollama");
     expect(within(ollama).getByText("http://cfg-host:11434")).toBeInTheDocument();
-    expect(within(ollama).getByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(within(ollama).getByText("from omrs.jsonc")).toBeInTheDocument();
     expect(within(ollama).getByRole("button", { name: "Edit Address" })).toBeInTheDocument();
   });
 
@@ -131,7 +131,7 @@ describe("Providers", () => {
     await user.clear(input);
     await user.type(input, "http://gpu-box.local:11434");
     await user.click(within(ollama).getByRole("button", { name: "Save" }));
-    expect(await within(ollama).findByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(await within(ollama).findByText("from omrs.jsonc")).toBeInTheDocument();
     expect(within(ollama).getByText("http://gpu-box.local:11434")).toBeInTheDocument();
     expect(within(ollama).queryByRole("textbox")).toBeNull();
     expect(server.find("PUT", "/v1/connections/ollama")[0]?.body).toEqual({ fields: { base_url: "http://gpu-box.local:11434" }, revision: "r1" });
@@ -342,8 +342,8 @@ describe("Providers", () => {
     expect(screen.queryByText(/could not complete/i)).toBeNull();
   });
 
-  it("shows the conflict with a Reload action when omrg.jsonc changed on disk, and reads the cards again on Reload", async () => {
-    const message = "omrg.jsonc changed on disk. Reload to see the new values.";
+  it("shows the conflict with a Reload action when omrs.jsonc changed on disk, and reads the cards again on Reload", async () => {
+    const message = "omrs.jsonc changed on disk. Reload to see the new values.";
     const { user, server } = await openProviders({ "PUT /v1/connections/ollama": () => json({ status: "error", message }, 409) });
     const ollama = card("Ollama");
     await user.click(within(ollama).getByRole("button", { name: "Edit Address" }));

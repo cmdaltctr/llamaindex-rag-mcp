@@ -37,7 +37,7 @@ from tests.unit.test_web_experiments_support import (  # noqa: E402
 )
 from tests.unit.test_web_runs_support import make_engine  # noqa: E402
 
-from omrg.transports.api import lifespan  # noqa: E402
+from omrs.transports.api import lifespan  # noqa: E402
 
 
 def test_shipped_manifest_is_the_approved_default() -> None:

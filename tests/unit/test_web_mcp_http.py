@@ -53,7 +53,7 @@ def _spy_on_search(live: Live) -> list[int]:
 
 def test_mcp_is_off_by_default_even_with_a_valid_looking_token(live: Live) -> None:
     assert mcp_post(live, None, INITIALIZE).status_code == 404
-    assert mcp_post(live, "omrg_mcp_whatever", INITIALIZE).status_code == 404
+    assert mcp_post(live, "omrs_mcp_whatever", INITIALIZE).status_code == 404
 
 
 def test_off_state_has_a_json_error_envelope(live: Live) -> None:
@@ -78,7 +78,7 @@ def test_missing_or_wrong_token_is_401_before_any_tool_runs(live: Live) -> None:
     calls = _spy_on_search(live)
 
     assert mcp_post(live, None, _TOOL_CALL).status_code == 401
-    assert mcp_post(live, "omrg_mcp_wrong", _TOOL_CALL).status_code == 401
+    assert mcp_post(live, "omrs_mcp_wrong", _TOOL_CALL).status_code == 401
     assert mcp_post(live, token + "x", _TOOL_CALL).status_code == 401
     assert mcp_post(live, None, _TOOL_CALL).headers["www-authenticate"].lower() == "bearer"
     assert calls == []
@@ -146,11 +146,11 @@ def test_enable_and_token_survive_a_restart(tmp_path: Path) -> None:
 
 
 def test_enable_writes_the_file_and_a_hand_edit_turns_it_off(live: Live) -> None:
-    from omrg.config.settings_file_write import write_settings
-    from omrg.config.user_config import user_config_dir
+    from omrs.config.settings_file_write import write_settings
+    from omrs.config.user_config import user_config_dir
 
     token = enable_mcp(live)
-    assert '"mcp_http_enabled": true' in (user_config_dir() / "omrg.jsonc").read_text()
+    assert '"mcp_http_enabled": true' in (user_config_dir() / "omrs.jsonc").read_text()
     assert live.browser().get("/v1/mcp").json()["source"] == "config-file"
     assert mcp_post(live, token, INITIALIZE).status_code == 200
 
@@ -161,7 +161,7 @@ def test_enable_writes_the_file_and_a_hand_edit_turns_it_off(live: Live) -> None
 
 
 def test_a_stale_revision_cannot_toggle_mcp(live: Live) -> None:
-    from omrg.config.settings_file_write import write_settings
+    from omrs.config.settings_file_write import write_settings
 
     browser = live.browser()
     first = browser.get("/v1/mcp").json()["revision"]
@@ -208,7 +208,7 @@ def test_the_token_is_shown_once(live: Live) -> None:
     created = browser.post("/v1/mcp/token")
     assert created.status_code in (200, 201)
     body = created.json()
-    assert body["token"].startswith("omrg_mcp_")
+    assert body["token"].startswith("omrs_mcp_")
     assert re.fullmatch(r".*T.*", body["created_at"])
     state = browser.get("/v1/mcp")
     assert body["token"] not in state.text
@@ -256,7 +256,7 @@ _PUBLIC = {"/v1/health", "/v1/session"}
 
 
 def _api_routes() -> list[tuple[str, str]]:
-    from omrg.transports.api.app import API_ROUTERS
+    from omrs.transports.api.app import API_ROUTERS
 
     found = []
     for router in API_ROUTERS:
@@ -299,8 +299,8 @@ def test_the_browser_session_cannot_call_mcp(live: Live) -> None:
 
 
 def test_redact_removes_an_mcp_token() -> None:
-    from omrg.integrations.workspace_sqlite.tokens import MCP_TOKEN_PREFIX
-    from omrg.transports.api.security import redact
+    from omrs.integrations.workspace_sqlite.tokens import MCP_TOKEN_PREFIX
+    from omrs.transports.api.security import redact
 
     token = MCP_TOKEN_PREFIX + "AbC-123_xyz.-"
     cleaned = redact(f"failed with {token} and Authorization: Bearer {token}")
@@ -311,9 +311,9 @@ def test_redact_removes_an_mcp_token() -> None:
 def test_the_logging_filter_removes_a_logged_mcp_token() -> None:
     import logging
 
-    from omrg.transports.api.security import RedactingFilter
+    from omrs.transports.api.security import RedactingFilter
 
-    token = "omrg_mcp_" + "Zq9-secret_value"
-    record = logging.LogRecord("omrg", logging.WARNING, __file__, 1, "bad token %s", (token,), None)
+    token = "omrs_mcp_" + "Zq9-secret_value"
+    record = logging.LogRecord("omrs", logging.WARNING, __file__, 1, "bad token %s", (token,), None)
     RedactingFilter().filter(record)
     assert "secret_value" not in record.getMessage()

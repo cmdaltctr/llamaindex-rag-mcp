@@ -32,10 +32,10 @@ from tests.unit.test_ingestion_graph_adapters_support import (
     run_by_hand,
 )
 
-from omrg.core.ingestion import graph_adapters, pipeline
-from omrg.core.ingestion.graph_adapters import SourceWork, source_unit_id
-from omrg.core.ingestion.sources import SourceUnit
-from omrg.core.pipelines import EffectClass, PortKind, preflight
+from omrs.core.ingestion import graph_adapters, pipeline
+from omrs.core.ingestion.graph_adapters import SourceWork, source_unit_id
+from omrs.core.ingestion.sources import SourceUnit
+from omrs.core.pipelines import EffectClass, PortKind, preflight
 
 _OPERATIONS = {
     "source.discover",
@@ -87,7 +87,7 @@ def test_read_keeps_reader_declarations_on_its_port() -> None:
 
 def test_canonical_graph_passes_preflight() -> None:
     """The canonical template validates against the published catalogue."""
-    from omrg.core.pipelines import parse_definition
+    from omrs.core.pipelines import parse_definition
 
     definition = parse_definition(canonical_graph("documents"))
     report = preflight(definition, build_catalogue(), inputs={"path": "/tmp/x"})
@@ -97,7 +97,7 @@ def test_canonical_graph_passes_preflight() -> None:
 
 def test_embedding_cannot_be_bypassed_into_the_commit() -> None:
     """Chunks without vectors cannot reach the vector-only commit port."""
-    from omrg.core.pipelines import parse_definition
+    from omrs.core.pipelines import parse_definition
 
     data = canonical_graph("documents")
     data["graph"]["edges"] = [
@@ -121,7 +121,7 @@ async def test_graph_chain_matches_ingest_path_async(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings: Any
 ) -> None:
     """Chunk ids, texts, metadata and per-source outcomes agree."""
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     pin_detection(monkeypatch)
     root = copy_sources(tmp_path)
@@ -152,7 +152,7 @@ async def test_unchanged_sources_skip_expensive_work(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings: Any
 ) -> None:
     """After a standard ingest, the canonical graph reuses every source."""
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     pin_detection(monkeypatch)
     root = copy_sources(tmp_path)
@@ -182,8 +182,8 @@ async def test_reader_markdown_declaration_reaches_the_splitter(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings: Any
 ) -> None:
     """A ``.txt`` source whose reader declares Markdown splits as Markdown."""
-    from omrg.core.ingestion.backends.orchestrator import BackendRead
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.ingestion.backends.orchestrator import BackendRead
+    from omrs.core.vectordb import get_default_store
 
     pin_detection(monkeypatch)
     root = copy_sources(tmp_path)
@@ -216,7 +216,7 @@ async def test_identify_refuses_more_than_one_source(
     tmp_path: Path, effective_settings: Any
 ) -> None:
     """A whole directory list cannot enter one per-source chain."""
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     settings = offline_settings(effective_settings)
     catalogue = build_catalogue()
@@ -240,7 +240,7 @@ async def test_binary_source_cleanup_happens_only_in_commit(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings: Any
 ) -> None:
     """A binary unit passes through; the commit removes its stale rows."""
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     settings = offline_settings(effective_settings)
     store = get_default_store()
@@ -288,7 +288,7 @@ async def test_non_commit_nodes_never_mutate_the_store(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings: Any
 ) -> None:
     """Every node before the commit reads only; the commit writes."""
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     pin_detection(monkeypatch)
     root = copy_sources(tmp_path)
@@ -314,8 +314,8 @@ async def test_adapters_never_read_process_defaults(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings: Any
 ) -> None:
     """With no process defaults installed, the explicit chain still ingests."""
-    from omrg.core.settings import reset_default_effective_settings
-    from omrg.core.vectordb import get_default_store, reset_default_store
+    from omrs.core.settings import reset_default_effective_settings
+    from omrs.core.vectordb import get_default_store, reset_default_store
 
     pin_detection(monkeypatch)
     root = copy_sources(tmp_path)
@@ -338,7 +338,7 @@ async def test_missing_resource_fails_before_any_work(
     tmp_path: Path, effective_settings: Any, missing: str
 ) -> None:
     """The identify node never substitutes a default for a missing resource."""
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     (tmp_path / "a.md").write_text("# A\n\ntext\n", encoding="utf-8")
     settings = offline_settings(effective_settings)
@@ -359,9 +359,9 @@ async def test_runner_unit_split_matches_ingest_path_async(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings: Any
 ) -> None:
     """``run_pipeline`` with the ingestion unit split writes the same rows."""
-    from omrg.core.ingestion.graph_adapters import ingestion_unit_split
-    from omrg.core.pipelines import RunStatus, run_pipeline
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.ingestion.graph_adapters import ingestion_unit_split
+    from omrs.core.pipelines import RunStatus, run_pipeline
+    from omrs.core.vectordb import get_default_store
 
     pin_detection(monkeypatch)
     root = copy_sources(tmp_path)

@@ -8,7 +8,7 @@ Per cell (isolated process → isolated query-embedding cache and BM25
 index state):
 
 1. Load the deterministic filename→freshstack_id map from the corpus
-   manifest (front matter is NOT preserved by omrg ingestion, so chunk
+   manifest (front matter is NOT preserved by omrs ingestion, so chunk
    file_name metadata is the only join key).
 2. Load ground truth (223 queries, nugget qrels, categories).
 3. For each query: ``pipeline.search(top_k=50, rerank=False,
@@ -93,10 +93,10 @@ def _save_checkpoint(cell: str, payload: dict) -> None:
 
 def run_cell(cell: str) -> None:
     """Run one retrieval arm over all queries, checkpointing per query."""
-    from omrg.compose import ensure_runtime_setup
-    from omrg.core.retrieval import pipeline
-    from omrg.core.settings import EffectiveSettings, RetrievalBlock
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrs.compose import ensure_runtime_setup
+    from omrs.core.retrieval import pipeline
+    from omrs.core.settings import EffectiveSettings, RetrievalBlock
+    from omrs.core.vectordb.lancedb import LanceVectorStore
 
     ensure_runtime_setup()
     store = LanceVectorStore(uri=str(STORE_URI))

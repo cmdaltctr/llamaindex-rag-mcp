@@ -60,7 +60,7 @@ describe("Integer field (Ollama context window)", () => {
     });
     await type(user, card, "32768");
     await user.click(within(card()).getByRole("button", { name: "Save" }));
-    expect(await within(card()).findByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(await within(card()).findByText("from omrs.jsonc")).toBeInTheDocument();
     expect(within(card()).getByText("32768")).toBeInTheDocument();
     expect(within(card()).queryByRole("spinbutton")).toBeNull();
   });

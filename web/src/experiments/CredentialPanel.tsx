@@ -82,8 +82,8 @@ export function CredentialPanel({ active }: { active: ExperimentRecord[] }) {
         <OneTimeSecret title="Credential token" secret={issued.token} onHide={hide}>
           <p className="text-meta">
             An editor opened from this page connects by itself. For an editor you start yourself, give the token to the notebook in a file with mode 600 named by{" "}
-            <code className="font-mono text-code">OMRG_TOKEN_FILE</code>, and set{" "}
-            <code className="font-mono text-code">OMRG_EXPERIMENT_CONTEXT={issued.experiment_context}</code>.
+            <code className="font-mono text-code">OMRS_TOKEN_FILE</code>, and set{" "}
+            <code className="font-mono text-code">OMRS_EXPERIMENT_CONTEXT={issued.experiment_context}</code>.
           </p>
         </OneTimeSecret>
       ) : null}

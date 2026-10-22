@@ -34,8 +34,8 @@ pytest.importorskip("chromadb", reason="chroma extra not installed (uv sync --ex
 import chromadb
 import pytest
 
-from omrg.config import Settings
-from omrg.core.vectordb.chroma.store import ChromaVectorStore
+from omrs.config import Settings
+from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
 _CLOUD_KEY = "0" * 8 + "-chroma-exp-key"
 
@@ -64,7 +64,7 @@ _NAMING_KWARGS = dict(
 
 def _naming():
     """Import the naming module lazily (red per-test before implementation)."""
-    from omrg.core.vectordb import naming
+    from omrs.core.vectordb import naming
 
     return naming
 

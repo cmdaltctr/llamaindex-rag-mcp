@@ -15,7 +15,7 @@ from typing import Any
 from pydantic import BaseModel
 from tests.unit.test_pipeline_support import fixture_descriptors, fixture_host
 
-from omrg.core.pipelines import (
+from omrs.core.pipelines import (
     AdmissionSnapshot,
     EventKind,
     NodeContext,
@@ -27,7 +27,7 @@ from omrg.core.pipelines import (
     admit_pipeline,
     parse_definition,
 )
-from omrg.core.profiles.resolver import ProfileResolver
+from omrs.core.profiles.resolver import ProfileResolver
 
 WAIT_GUARD_S = 5.0
 

@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from omrg import compose
-from omrg.compose_profile_setup import workspace_profile_catalogue
-from omrg.integrations.workspace_sqlite import (
+from omrs import compose
+from omrs.compose_profile_setup import workspace_profile_catalogue
+from omrs.integrations.workspace_sqlite import (
     SqliteProfileCatalogue,
     SqliteProfileRepository,
     SqliteWorkspaceRepository,
@@ -34,7 +34,7 @@ def _make_workspace(root: Path) -> Path:
 
 
 def test_returns_a_read_only_catalogue_when_the_default_workspace_exists(home: Path) -> None:
-    records = _make_workspace(home / ".omrg" / "workspace")
+    records = _make_workspace(home / ".omrs" / "workspace")
     catalogue = workspace_profile_catalogue()
     assert isinstance(catalogue, SqliteProfileCatalogue)
     assert catalogue.path == records
@@ -49,11 +49,11 @@ def test_returns_none_when_the_default_workspace_file_is_missing(home: Path) -> 
 
 def test_never_creates_the_folder_or_the_file(home: Path) -> None:
     workspace_profile_catalogue()
-    assert not (home / ".omrg").exists()
+    assert not (home / ".omrs").exists()
 
 
 def test_a_folder_without_the_file_gives_none_and_stays_empty(home: Path) -> None:
-    folder = home / ".omrg" / "workspace"
+    folder = home / ".omrs" / "workspace"
     folder.mkdir(parents=True)
     assert workspace_profile_catalogue() is None
     assert list(folder.iterdir()) == []
@@ -71,7 +71,7 @@ def test_an_explicit_root_overrides_the_default(home: Path, tmp_path: Path) -> N
 def test_ensure_runtime_setup_passes_the_catalogue_and_runtime_engine_returns_the_engine(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _make_workspace(home / ".omrg" / "workspace")
+    _make_workspace(home / ".omrs" / "workspace")
     seen: dict[str, object] = {}
 
     class FakeEngine:

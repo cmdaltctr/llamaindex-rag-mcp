@@ -69,7 +69,7 @@ def main() -> None:
     import lancedb
     from llama_index.core.schema import MetadataMode, TextNode
 
-    from omrg.integrations.tokenizer import load_tokenizer
+    from omrs.integrations.tokenizer import load_tokenizer
 
     side = SIDES[args.side]
     if not side["uri"].exists():

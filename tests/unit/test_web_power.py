@@ -29,12 +29,12 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
 )
 from tests.unit.test_web_openapi_conformance_support import FAMILIES, ContractChecker  # noqa: E402
 
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.power_control import PowerControl  # noqa: E402
-from omrg.transports.api.security import AccessPolicy  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.power_control import PowerControl  # noqa: E402
+from omrs.transports.api.security import AccessPolicy  # noqa: E402
 
-LABEL = "com.omrg.web"
+LABEL = "com.omrs.web"
 UID = 501
 URL = "/v1/server/power"
 

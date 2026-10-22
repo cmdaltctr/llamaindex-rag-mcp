@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from omrg.transports.api.grants import RootGrants
-from omrg.transports.mcp.context import McpContext, PathDenied, PathPolicy, no_admission
+from omrs.transports.api.grants import RootGrants
+from omrs.transports.mcp.context import McpContext, PathDenied, PathPolicy, no_admission
 
 
 def test_allow_all_returns_the_path_unchanged(tmp_path: Path) -> None:

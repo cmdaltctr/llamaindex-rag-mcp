@@ -3,7 +3,7 @@
 Each test follows a scenario of the ``workspace-settings`` and ``settings-file``
 deltas, or a row of the design D10 error table. The app is built without its
 lifespan, so no Engine runs. A temporary config folder replaces the real one;
-no test reads ``~/.config/omrg``. The PDF reader probes are faked.
+no test reads ``~/.config/omrs``. The PDF reader probes are faked.
 """
 
 from __future__ import annotations
@@ -22,17 +22,17 @@ from tests.unit.test_web_openapi_conformance_support import (  # noqa: E402
     ContractChecker,
 )
 
-from omrg import capabilities  # noqa: E402
-from omrg.config import Settings, provenance  # noqa: E402
-from omrg.config.rules import DOCUMENT_READING_KEYS  # noqa: E402
-from omrg.config.settings_file import file_revision, read_settings_file  # noqa: E402
-from omrg.config.user_config import parse_jsonc  # noqa: E402
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.document_reading import reset_reader_in_use  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.restart_snapshot import capture  # noqa: E402
-from omrg.transports.api.routes.configuration import ConfigurationState  # noqa: E402
-from omrg.transports.api.security import AccessPolicy  # noqa: E402
+from omrs import capabilities  # noqa: E402
+from omrs.config import Settings, provenance  # noqa: E402
+from omrs.config.rules import DOCUMENT_READING_KEYS  # noqa: E402
+from omrs.config.settings_file import file_revision, read_settings_file  # noqa: E402
+from omrs.config.user_config import parse_jsonc  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.document_reading import reset_reader_in_use  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.restart_snapshot import capture  # noqa: E402
+from omrs.transports.api.routes.configuration import ConfigurationState  # noqa: E402
+from omrs.transports.api.security import AccessPolicy  # noqa: E402
 
 URL = "/v1/settings/document-reading"
 OPTIONS = {"pypdf": None, "pypdfium2": "The package 'pypdfium2' is not installed."}
@@ -54,7 +54,7 @@ class Harness:
 
     @property
     def path(self) -> Path:
-        return self.folder / "omrg.jsonc"
+        return self.folder / "omrs.jsonc"
 
     def write(self, text: str) -> None:
         self.path.write_text(text, encoding="utf-8")
@@ -78,9 +78,9 @@ def harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Harness:
     monkeypatch.setattr(capabilities, "pdf_reader_options", lambda: dict(OPTIONS))
     monkeypatch.setattr(capabilities, "resolve_pdf_reader", lambda settings: "pypdf")
     reset_reader_in_use()
-    folder = tmp_path / "omrg-config"
+    folder = tmp_path / "omrs-config"
     folder.mkdir(mode=0o700)
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(folder))
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(folder))
     empty_env = tmp_path / "none.env"
     empty_env.write_text("", encoding="utf-8")
     config = WebConfig(workspace=tmp_path / "ws", port=8765, static_dir=None)
@@ -327,7 +327,7 @@ def test_6_stale_revision(harness: Harness, client: TestClient) -> None:
     refused(
         put(client, {"pdf_reader": "pypdf"}, revision),
         409,
-        "omrg.jsonc changed on disk. Reload to see the new values.",
+        "omrs.jsonc changed on disk. Reload to see the new values.",
     )
 
 
@@ -337,21 +337,21 @@ def test_7_broken_file(harness: Harness, client: TestClient) -> None:
     refused(
         put(client, {"pdf_reader": "pypdf"}, file_revision(harness.folder)),
         409,
-        "omrg.jsonc could not be read. Fix it, then save again.",
+        "omrs.jsonc could not be read. Fix it, then save again.",
     )
 
 
 def test_8_disk_refuses_the_write(
     harness: Harness, client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from omrg.config import settings_file_write
+    from omrs.config import settings_file_write
 
     def refuse(*args: Any, **kwargs: Any) -> None:
         raise settings_file_write.SettingsFileWriteError(settings_file_write.WRITE_FAILED)
 
     monkeypatch.setattr(settings_file_write, "_write_atomically", refuse)
     harness.launch()
-    refused(put(client, {"pdf_reader": "pypdf"}), 500, "omrg.jsonc could not be written.")
+    refused(put(client, {"pdf_reader": "pypdf"}), 500, "omrs.jsonc could not be written.")
 
 
 @pytest.mark.parametrize(

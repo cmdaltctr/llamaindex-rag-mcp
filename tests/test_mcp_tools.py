@@ -284,7 +284,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
     mcp_server,
 ) -> None:
     """MCP search handler is async and returns the same list-of-dicts shape."""
-    import omrg.transports.mcp as server
+    import omrs.transports.mcp as server
 
     expected = [
         {
@@ -432,7 +432,7 @@ async def test_list_passes_through_orphaned_values(mcp_server) -> None:
         {"source": "legacy.txt", "source_id": None, "chunks": 3, "orphaned": None},
     ]
 
-    with patch("omrg.transports.mcp.list._list_documents", return_value=rows):
+    with patch("omrs.transports.mcp.list._list_documents", return_value=rows):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool("list_indexed_documents", {})
 
@@ -828,12 +828,12 @@ def test_main_calls_mcp_run() -> None:
     server = MagicMock()
     catalogue = object()
     with (
-        patch("omrg.compose_profile_setup.workspace_profile_catalogue", return_value=catalogue),
-        patch("omrg.transports.mcp.compose.ensure_runtime_setup") as mock_setup,
-        patch("omrg.transports.mcp.compose.build_engine") as mock_build,
-        patch("omrg.transports.mcp.create_mcp_server", return_value=server) as mock_factory,
+        patch("omrs.compose_profile_setup.workspace_profile_catalogue", return_value=catalogue),
+        patch("omrs.transports.mcp.compose.ensure_runtime_setup") as mock_setup,
+        patch("omrs.transports.mcp.compose.build_engine") as mock_build,
+        patch("omrs.transports.mcp.create_mcp_server", return_value=server) as mock_factory,
     ):
-        from omrg.transports.mcp import main
+        from omrs.transports.mcp import main
 
         main()
 
@@ -847,13 +847,13 @@ def test_main_reports_runtime_setup_error(capsys: pytest.CaptureFixture[str]) ->
     """main() reports startup configuration errors without starting the server."""
     with (
         patch(
-            "omrg.transports.mcp.compose.build_engine",
+            "omrs.transports.mcp.compose.build_engine",
             side_effect=ValueError("EMBED_PROVIDER='invalid'"),
         ),
-        patch("omrg.transports.mcp.create_mcp_server") as mock_factory,
+        patch("omrs.transports.mcp.create_mcp_server") as mock_factory,
         pytest.raises(SystemExit, match="1"),
     ):
-        from omrg.transports.mcp import main
+        from omrs.transports.mcp import main
 
         main()
 
@@ -868,11 +868,11 @@ def test_main_stops_startup_when_the_profile_resolver_is_invalid(
     engine = MagicMock()
     type(engine).profile_resolver = PropertyMock(side_effect=ValueError("bad profile tag"))
     with (
-        patch("omrg.transports.mcp.compose.build_engine", return_value=engine),
-        patch("omrg.transports.mcp.create_mcp_server") as mock_factory,
+        patch("omrs.transports.mcp.compose.build_engine", return_value=engine),
+        patch("omrs.transports.mcp.create_mcp_server") as mock_factory,
         pytest.raises(SystemExit, match="1"),
     ):
-        from omrg.transports.mcp import main
+        from omrs.transports.mcp import main
 
         main()
 
@@ -922,8 +922,8 @@ def test_leak_guard_detects_closed_handlers(tmp_path: Path) -> None:
 
 async def test_stdio_lifespan_yields_allow_all_context_and_closes_the_engine() -> None:
     """The stdio lifespan hands handlers the Engine and closes it on exit."""
-    from omrg.transports.mcp import _stdio_lifespan
-    from omrg.transports.mcp.context import PathPolicy, no_admission
+    from omrs.transports.mcp import _stdio_lifespan
+    from omrs.transports.mcp.context import PathPolicy, no_admission
 
     engine = MagicMock()
     async with _stdio_lifespan(engine)(MagicMock()) as context:
@@ -980,7 +980,7 @@ async def test_search_documents_returns_filter_matches(
     monkeypatch,
 ) -> None:
     """End-to-end: a filtered MCP search returns only matching chunks."""
-    from omrg.core.settings import (
+    from omrs.core.settings import (
         EffectiveSettings,
         MetadataBlock,
         set_default_effective_settings,
@@ -1114,7 +1114,7 @@ async def test_search_documents_retrieval_error_envelope(
     # Forge an exception class whose ``__module__`` lives under chromadb,
     # without importing chromadb.errors directly (which moves between
     # versions).  This matches the production-side discriminator in
-    # omrg.transports.mcp.search_documents.
+    # omrs.transports.mcp.search_documents.
     fake_chroma = type(
         "ChromaError",
         (RuntimeError,),
@@ -1251,14 +1251,14 @@ def _mcp_error_log_text(caplog: pytest.LogCaptureFixture) -> str:
     return " ".join(
         record.getMessage()
         for record in caplog.records
-        if record.name == "omrg.transports.mcp" and record.levelno >= logging.WARNING
+        if record.name == "omrs.transports.mcp" and record.levelno >= logging.WARNING
     )
 
 
 async def _ingest_failure_result(leaked_text: str, **secrets: str):
     """Build an Engine that holds cloud credentials, then fail ingest with ``leaked_text``."""
     from conftest import build_mcp_server
-    from omrg.core.vectordb.identity import RedactionSecrets
+    from omrs.core.vectordb.identity import RedactionSecrets
 
     redaction = RedactionSecrets(
         **{"chroma_cloud_tenant": "99999999-tenant", "chroma_cloud_database": "88888888-database"}
@@ -1333,7 +1333,7 @@ def test_error_detail_settings_failure_returns_placeholder(
     must not leak unredacted detail when there is no settings object to
     redact against (gotcha #1).
     """
-    from omrg.transports import mcp as mcp_mod
+    from omrs.transports import mcp as mcp_mod
 
     def _raise() -> None:
         raise OSError("settings unavailable")
@@ -1353,7 +1353,7 @@ def test_main_settings_failure_prints_reason(
     Config validation messages name the offending variable and never echo
     key material, so the operator sees why startup failed.
     """
-    from omrg.transports import mcp as mcp_mod
+    from omrs.transports import mcp as mcp_mod
 
     def _settings_failure(**_kwargs: object) -> None:
         raise ValueError("EMBED_PROVIDER='bogus' is not an accepted value")
@@ -1382,8 +1382,8 @@ def test_all_handlers_importable_from_package_root() -> None:
     The registered list must name every tool, so a new tool cannot be left
     out of this check.
     """
-    import omrg.transports.mcp as pkg
-    from omrg.transports.mcp import server as server_module
+    import omrs.transports.mcp as pkg
+    from omrs.transports.mcp import server as server_module
 
     handler_names = [
         "ingest_documents",
@@ -1407,7 +1407,7 @@ def test_all_handlers_importable_from_package_root() -> None:
 
 def test_there_is_no_module_level_server_or_process_default_accessor() -> None:
     """Design D1: the module-level server and the process-default getters are gone."""
-    import omrg.transports.mcp as pkg
+    import omrs.transports.mcp as pkg
 
     for name in ("mcp", "_get_reranker", "_get_profile_resolver", "_reranker", "_profile_resolver"):
         assert not hasattr(pkg, name), name

@@ -14,7 +14,7 @@ independent reference envelope arms (``reranker_off`` floor,
 pass D14 preflight assertions, controlled variables are pinned across
 cells, and plan.json agreement (D15) is enforced before measured work.
 
-Runs through ``omrg.core.retrieval.search`` with an injected store
+Runs through ``omrs.core.retrieval.search`` with an injected store
 from ``experiments/_lib/storage.py``; works in local and cloud Chroma
 modes.
 """
@@ -240,7 +240,7 @@ def run_query(
     Raises:
         ValueError: On an unknown arm.
     """
-    from omrg.core.retrieval import search
+    from omrs.core.retrieval import search
 
     common: dict[str, Any] = {
         "query": query,
@@ -288,9 +288,9 @@ def _resolve_cell_runtime() -> tuple[Any, str, Any, dict[str, Any]]:
 
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from omrg.compose import settings_to_effective
-    from omrg.config import Settings
-    from omrg.core.vectordb import set_default_store
+    from omrs.compose import settings_to_effective
+    from omrs.config import Settings
+    from omrs.core.vectordb import set_default_store
 
     settings = Settings()
     # Pin the query embedder to the index identity; ambient Settings()
@@ -363,7 +363,7 @@ def _cell_manifest(
     """
     from experiments._lib.manifest import build_runtime_manifest
 
-    from omrg.core.vectordb.score import DENSE_SCORE_KIND
+    from omrs.core.vectordb.score import DENSE_SCORE_KIND
 
     retrieval: dict[str, Any] = {
         "top_k": top_k,

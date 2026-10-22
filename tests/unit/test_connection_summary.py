@@ -15,12 +15,12 @@ from typing import Any
 
 import pytest
 
-from omrg import compose
-from omrg.compose_connections import build_connection_summary, build_connection_targets
-from omrg.compose_providers import ProviderValues, apply_provider_values
-from omrg.config import Settings
-from omrg.core.answer.settings import AnswerSettings
-from omrg.core.metadata.settings import MetadataSettings
+from omrs import compose
+from omrs.compose_connections import build_connection_summary, build_connection_targets
+from omrs.compose_providers import ProviderValues, apply_provider_values
+from omrs.config import Settings
+from omrs.core.answer.settings import AnswerSettings
+from omrs.core.metadata.settings import MetadataSettings
 
 SECRET = "sk-or-v1-SECRETVALUE0123456789"  # noqa: S105 - fake key for redaction tests
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -275,8 +275,8 @@ def test_installed_flag_and_install_hint(monkeypatch: pytest.MonkeyPatch) -> Non
 def test_a_registered_provider_gets_an_entry_with_no_other_change(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from omrg.core.providers.llm import registry
-    from omrg.core.providers.llm.connection import ConnectionDescriptor, ConnectionTarget
+    from omrs.core.providers.llm import registry
+    from omrs.core.providers.llm.connection import ConnectionDescriptor, ConnectionTarget
 
     fake = ConnectionDescriptor(
         display_name="Fake",

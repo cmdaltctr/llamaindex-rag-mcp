@@ -1,5 +1,5 @@
 /**
- * Typed client for the llama.cpp server that `omrg web` starts and owns.
+ * Typed client for the llama.cpp server that `omrs web` starts and owns.
  * Shapes follow `openapi.yaml` (`getLlamacppServer`, `saveLlamacppServer`,
  * `startLlamacppServer`, `stopLlamacppServer`, `restartLlamacppServer`).
  * No response holds log text or text from the process: a failure is one fixed
@@ -28,7 +28,7 @@ export interface ServerField {
 
 export interface LlamacppServerStatus {
   status: "ok";
-  /** Stamp of `omrg.jsonc` at this read. A save sends it back. */
+  /** Stamp of `omrs.jsonc` at this read. A save sends it back. */
   revision: string;
   state: ServerState;
   reason: ServerReason | null;

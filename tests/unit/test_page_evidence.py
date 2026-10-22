@@ -33,7 +33,7 @@ def _stub(monkeypatch, pages):
 
 def test_page_numbers_are_one_based(monkeypatch, tmp_path):
     """The library numbers from 0; the evidence must speak the OCR API's language."""
-    from omrg.integrations.pdf.page_routing import page_evidence
+    from omrs.integrations.pdf.page_routing import page_evidence
 
     _stub(monkeypatch, [_page(0, "first", False), _page(1, "second", True, "image_only")])
 
@@ -44,7 +44,7 @@ def test_page_numbers_are_one_based(monkeypatch, tmp_path):
 
 def test_evidence_carries_native_text_and_flags(monkeypatch, tmp_path):
     """Each page reports its own Markdown, its OCR need and the stated reason."""
-    from omrg.integrations.pdf.page_routing import page_evidence
+    from omrs.integrations.pdf.page_routing import page_evidence
 
     _stub(monkeypatch, [_page(0, "clean", False), _page(1, "", True, "image_only")])
 
@@ -58,7 +58,7 @@ def test_evidence_carries_native_text_and_flags(monkeypatch, tmp_path):
 
 def test_every_flagged_page_is_reported(monkeypatch, tmp_path):
     """No sample and no threshold: a flagged page anywhere in the file is evidence."""
-    from omrg.integrations.pdf.page_routing import page_evidence
+    from omrs.integrations.pdf.page_routing import page_evidence
 
     pages = [_page(index, "text", index == 19) for index in range(20)]
     _stub(monkeypatch, pages)
@@ -70,7 +70,7 @@ def test_every_flagged_page_is_reported(monkeypatch, tmp_path):
 
 def test_missing_markdown_is_empty_not_none(monkeypatch, tmp_path):
     """A page with no text contributes an empty string, never ``None``."""
-    from omrg.integrations.pdf.page_routing import page_evidence
+    from omrs.integrations.pdf.page_routing import page_evidence
 
     _stub(monkeypatch, [_page(0, None, True, "image_only")])
 
@@ -85,7 +85,7 @@ def test_scan_failure_raises(monkeypatch, tmp_path):
     only evidence there is, so swallowing the failure would route nothing and
     claim the file was clean.
     """
-    from omrg.integrations.pdf.page_routing import page_evidence
+    from omrs.integrations.pdf.page_routing import page_evidence
 
     def _boom(_path):
         raise RuntimeError("pdfium refused the file")

@@ -2,7 +2,7 @@
  * Client-side connection checks for quick feedback on the canvas.
  *
  * `portCompatibility` follows `check_port_compatibility` in
- * `src/omrg/core/pipelines/ports.py`. Server validation stays authoritative:
+ * `src/omrs/core/pipelines/ports.py`. Server validation stays authoritative:
  * it also follows bypassed nodes and host capabilities, which this file does not.
  */
 import type { OperationDescriptor, PortRef, PortType } from "../api/pipelines";

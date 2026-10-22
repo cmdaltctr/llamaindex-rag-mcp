@@ -10,7 +10,7 @@
  */
 import type { ApiClient, CallOptions } from "./client";
 
-/** Options of a Settings write. `revision` is the stamp of `omrg.jsonc` last read; a file changed on disk since gives 409. */
+/** Options of a Settings write. `revision` is the stamp of `omrs.jsonc` last read; a file changed on disk since gives 409. */
 export interface SaveOptions extends CallOptions {
   revision?: string;
 }
@@ -19,7 +19,7 @@ export interface Health {
   status: "ok";
   /** False while the server starts or shuts down. */
   ready: boolean;
-  /** The installed OMRG package version. */
+  /** The installed OMRS package version. */
   version: string;
 }
 
@@ -78,7 +78,7 @@ export interface ConnectionList {
   /** The read-only user config folder, with `~` for the home folder. */
   user_config_dir: string;
   keychain: "available" | "unavailable";
-  /** Stamp of `omrg.jsonc` at this read. A save sends it back, so a file changed on disk gives 409. */
+  /** Stamp of `omrs.jsonc` at this read. A save sends it back, so a file changed on disk gives 409. */
   revision: string;
   connections: Connection[];
 }

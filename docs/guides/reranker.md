@@ -50,7 +50,7 @@ RETRIEVAL__SIMILARITY_THRESHOLD=0.3   # optional default threshold
 **CLI**:
 
 ```bash
-omrg search "machine learning" --rerank --threshold 0.3
+omrs search "machine learning" --rerank --threshold 0.3
 ```
 
 ## First-run download
@@ -104,7 +104,7 @@ Hybrid search fuses two rankings: dense embedding similarity and a sparse keywor
 | `bm25` (default) | In-process BM25, cached per store and collection, invalidated on every mutation | Base install, backend-agnostic |
 | `native` | LanceDB native full-text search over the stored `text` column | LanceDB only |
 
-The registry (`core/retrieval/sparse_registry.py`) maps backend names to implementations; adding a backend is one new file plus one `register()` line. `auto` is deliberately not a backend: the composition root resolves it before query time through the selected store's capability metadata plus a real native-FTS probe (`omrg.core.vectordb.lancedb.fts:probe_native_fts`). On LanceDB `auto` resolves to `native`. Chroma declares no native capability, so `auto` resolves to `bm25` there. An unknown concrete name fails startup listing `auto` plus the registered names.
+The registry (`core/retrieval/sparse_registry.py`) maps backend names to implementations; adding a backend is one new file plus one `register()` line. `auto` is deliberately not a backend: the composition root resolves it before query time through the selected store's capability metadata plus a real native-FTS probe (`omrs.core.vectordb.lancedb.fts:probe_native_fts`). On LanceDB `auto` resolves to `native`. Chroma declares no native capability, so `auto` resolves to `bm25` there. An unknown concrete name fails startup listing `auto` plus the registered names.
 
 Scores are not comparable across backends. Native rows carry `score_kind` `native_fts_v1`, the engine's raw higher-is-better score. Only rank order feeds RRF, so the scale difference never affects fusion.
 
@@ -147,18 +147,18 @@ Existing collections need no re-ingestion: the first native query creates the FT
 
 | Stage | Shared function | Module | Graph operation |
 |---|---|---|---|
-| Levers (`top_k`, threshold, hybrid) | `resolve_search_levers` | `src/omrg/core/retrieval/operations.py` | `retrieve.prepare_query` |
-| Rerank decision | `resolve_rerank_decision` | `src/omrg/core/retrieval/operations.py` | `retrieve.prepare_query` |
-| Candidate pool | `size_candidate_pool` | `src/omrg/core/retrieval/operations.py` | `retrieve.prepare_query` |
-| Dense retrieval | `_dense_query_rows` (registry name `dense`) | `src/omrg/core/retrieval/dense.py` | `retrieve.dense` |
-| Sparse retrieval | `sparse_policy_runner` | `src/omrg/core/retrieval/sparse_dispatch.py` | `retrieve.sparse` |
-| Dense eligibility before fusion | `first_stage_dense_threshold`, `apply_dense_eligibility` | `src/omrg/core/retrieval/operations.py` | `combine.rrf` |
-| Fusion | `rrf_with_metadata` (registry name `fusion`) | `src/omrg/core/retrieval/fusion.py` | `combine.rrf` |
-| Reranking and its failure fallback | `run_reranker`, `rerank_succeeded` | `src/omrg/core/retrieval/operations.py` | `select.rerank` |
-| Threshold (÷30 after a successful rerank) and `top_k` | `apply_score_threshold`, `rank_and_truncate`, `needs_dense_fallback` | `src/omrg/core/retrieval/operations.py` | `select.threshold` |
-| Lineage expansion and overlap merge | `assemble` | `src/omrg/core/retrieval/assembly.py` | `context.assemble` |
+| Levers (`top_k`, threshold, hybrid) | `resolve_search_levers` | `src/omrs/core/retrieval/operations.py` | `retrieve.prepare_query` |
+| Rerank decision | `resolve_rerank_decision` | `src/omrs/core/retrieval/operations.py` | `retrieve.prepare_query` |
+| Candidate pool | `size_candidate_pool` | `src/omrs/core/retrieval/operations.py` | `retrieve.prepare_query` |
+| Dense retrieval | `_dense_query_rows` (registry name `dense`) | `src/omrs/core/retrieval/dense.py` | `retrieve.dense` |
+| Sparse retrieval | `sparse_policy_runner` | `src/omrs/core/retrieval/sparse_dispatch.py` | `retrieve.sparse` |
+| Dense eligibility before fusion | `first_stage_dense_threshold`, `apply_dense_eligibility` | `src/omrs/core/retrieval/operations.py` | `combine.rrf` |
+| Fusion | `rrf_with_metadata` (registry name `fusion`) | `src/omrs/core/retrieval/fusion.py` | `combine.rrf` |
+| Reranking and its failure fallback | `run_reranker`, `rerank_succeeded` | `src/omrs/core/retrieval/operations.py` | `select.rerank` |
+| Threshold (÷30 after a successful rerank) and `top_k` | `apply_score_threshold`, `rank_and_truncate`, `needs_dense_fallback` | `src/omrs/core/retrieval/operations.py` | `select.threshold` |
+| Lineage expansion and overlap merge | `assemble` | `src/omrs/core/retrieval/assembly.py` | `context.assemble` |
 
-The adapters live in `src/omrg/core/retrieval/graph_adapters.py` and `src/omrg/core/retrieval/graph_adapters_retrieve.py`. Their descriptors live in `src/omrg/core/retrieval/graph_adapters_catalogue.py`. The canonical `search` template chains these operations in the order above. It returns the same rows, scores, score kinds, rank provenance and fallback reasons as `Engine.search` on the recorded fixtures in `tests/fixtures/pipeline_parity/retrieval/`.
+The adapters live in `src/omrs/core/retrieval/graph_adapters.py` and `src/omrs/core/retrieval/graph_adapters_retrieve.py`. Their descriptors live in `src/omrs/core/retrieval/graph_adapters_catalogue.py`. The canonical `search` template chains these operations in the order above. It returns the same rows, scores, score kinds, rank provenance and fallback reasons as `Engine.search` on the recorded fixtures in `tests/fixtures/pipeline_parity/retrieval/`.
 
 These values and behaviours are unchanged:
 

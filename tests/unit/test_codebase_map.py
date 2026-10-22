@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from omrg.core.codebase.codebase_map import (
+from omrs.core.codebase.codebase_map import (
     CodebaseMap,
     FileEntry,
     FileInventory,
@@ -127,7 +127,7 @@ class TestDetectFileTypes:
         """When Magika is not installed, suffix detection is used."""
         (tmp_path / "app.py").write_text("print('hi')")
         (tmp_path / "README.md").write_text("# Test")
-        with patch("omrg.integrations.magika._is_magika_available", return_value=False):
+        with patch("omrs.integrations.magika._is_magika_available", return_value=False):
             inventory = detect_file_types(str(tmp_path))
         assert len(inventory.entries) == 2
         assert "code/python" in inventory.type_counts
@@ -137,7 +137,7 @@ class TestDetectFileTypes:
         """Binary files are collected in the binary_files list."""
         (tmp_path / "app.py").write_text("x = 1")
         (tmp_path / "photo.png").write_bytes(b"\x89PNG")
-        with patch("omrg.integrations.magika._is_magika_available", return_value=False):
+        with patch("omrs.integrations.magika._is_magika_available", return_value=False):
             inventory = detect_file_types(str(tmp_path))
         assert "photo.png" in inventory.binary_files
         assert "app.py" not in inventory.binary_files
@@ -147,7 +147,7 @@ class TestDetectFileTypes:
         (tmp_path / "a.py").write_text("x = 1")
         (tmp_path / "b.py").write_text("y = 2")
         (tmp_path / "c.ts").write_text("const z = 3;")
-        with patch("omrg.integrations.magika._is_magika_available", return_value=False):
+        with patch("omrs.integrations.magika._is_magika_available", return_value=False):
             inventory = detect_file_types(str(tmp_path))
         assert inventory.type_counts["code/python"] == 2
         assert inventory.type_counts["code/typescript"] == 1
@@ -302,11 +302,11 @@ class TestMagikaParsing:
         )
 
         with (
-            patch("omrg.integrations.magika._is_magika_available", return_value=True),
+            patch("omrs.integrations.magika._is_magika_available", return_value=True),
             patch("subprocess.run") as mock_run,
         ):
             mock_run.return_value = MagicMock(stdout=mock_output, returncode=0)
-            from omrg.core.codebase.codebase_map import scan_with_magika
+            from omrs.core.codebase.codebase_map import scan_with_magika
 
             entries = scan_with_magika(str(tmp_path))
 
@@ -341,11 +341,11 @@ class TestMagikaParsing:
         )
 
         with (
-            patch("omrg.integrations.magika._is_magika_available", return_value=True),
+            patch("omrs.integrations.magika._is_magika_available", return_value=True),
             patch("subprocess.run") as mock_run,
         ):
             mock_run.return_value = MagicMock(stdout=mock_output, returncode=0)
-            from omrg.core.codebase.codebase_map import scan_with_magika
+            from omrs.core.codebase.codebase_map import scan_with_magika
 
             entries = scan_with_magika(str(tmp_path))
 
@@ -378,8 +378,8 @@ class TestBuildCodebaseMap:
         mock_store.fetch_all.return_value = {"ids": [], "embeddings": [], "metadatas": []}
 
         with (
-            patch("omrg.integrations.magika._is_magika_available", return_value=False),
-            patch("omrg.core.documents.doc_graph.build_document_graph") as mock_build_doc,
+            patch("omrs.integrations.magika._is_magika_available", return_value=False),
+            patch("omrs.core.documents.doc_graph.build_document_graph") as mock_build_doc,
         ):
             mock_build_doc.return_value = MagicMock()
 
@@ -407,7 +407,7 @@ class TestBuildCodebaseMap:
 
         (tmp_path / "app.py").write_text("x = 1\n")
 
-        with patch("omrg.integrations.magika._is_magika_available", return_value=False):
+        with patch("omrs.integrations.magika._is_magika_available", return_value=False):
             result = build_codebase_map(
                 str(tmp_path), settings=effective_settings(), store=_NoCollectionStore()
             )

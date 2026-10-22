@@ -11,11 +11,11 @@ from typing import Any
 
 import pytest
 
-from omrg.core.answer import answer
-from omrg.core.answer.progress import AnswerStage, reporting
-from omrg.core.answer.synthesis import CompletionSeam
-from omrg.core.answer.verify import VERDICT_SUPPORTED
-from omrg.core.settings import AnswerBlock, EffectiveSettings
+from omrs.core.answer import answer
+from omrs.core.answer.progress import AnswerStage, reporting
+from omrs.core.answer.synthesis import CompletionSeam
+from omrs.core.answer.verify import VERDICT_SUPPORTED
+from omrs.core.settings import AnswerBlock, EffectiveSettings
 
 _EVIDENCE_TEXT = "The tower is exactly 100 metres tall."
 _GROUNDED_ANSWER = "The tower is 100 metres tall [1]."
@@ -225,7 +225,7 @@ async def test_callback_receives_stage_values_only(effective_settings: Any) -> N
 
 
 def test_seam_still_refuses_streaming() -> None:
-    from omrg.core.answer.synthesis import SeamLLM
+    from omrs.core.answer.synthesis import SeamLLM
 
     with pytest.raises(NotImplementedError):
         SeamLLM(seam=_Seam(_GROUNDED_ANSWER)).stream_complete("prompt")
