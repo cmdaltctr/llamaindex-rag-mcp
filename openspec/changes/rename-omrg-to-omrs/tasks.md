@@ -24,7 +24,7 @@
 - [x] 3.4 Update `pyproject.toml`: project name, console script (`omrs = "omrs.transports.cli:run_cli"`), hatch `packages` and `force-include`, extras hints, coverage source, and the about 100 import-linter module strings including `root_package`. Remove the `omrg` script. Run `uv lock`.
 - [x] 3.5 Update `.github/workflows/ci.yml` (lines near 94, 311, 523, 586), `codecov.yml`, `.coderabbit.yaml`, `scripts/local_ci.sh` and `.gitignore`.
 - [x] 3.6 Update the tests that pin the name: `tests/unit/test_verification_gaps_boundaries.py`, `tests/test_clean_base_tripwire.py` (counts must match 1.3), `tests/test_file_size_ceiling.py`, `tests/test_docs_references.py`, `tests/conftest.py`.
-- [ ] 3.7 Run `uv run lint-imports`. Delete any stale `ignore_imports` entry it reports. Run `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q`, then the tripwire on its own. Fix until green.
+- [x] 3.7 Run `uv run lint-imports`. Delete any stale `ignore_imports` entry it reports. Run `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q`, then the tripwire on its own. Fix until green.
 - [x] 3.8 Commit this group.
 
 ## 4. Settings surface and runtime identifiers
@@ -36,7 +36,7 @@
 - [x] 4.5 Rename the cookie and token prefixes (`transports/api/security.py`, `confirmations.py`) and the `x-omrg-*` keys in `transports/api/openapi.yaml`. Confirm the CI OpenAPI validation still passes.
 - [x] 4.6 Keep `omrg_dataset_epoch` in `core/vectordb/lancedb/meta.py` and `omrg_task` (`TASK_LAYOUT_KEY`) in `core/workspace/records.py` as one constant each, with a comment (design D3). Add a test that opens a LanceDB fixture written with the old key and checks the BM25 cache token stays equal.
 - [x] 4.7 Update the CLI help text and the `omrg web ...` hints in messages (about 30). Check `omrs --help` has no `OMRG`.
-- [ ] 4.8 Run the fast suite and the guard test. Commit this group.
+- [x] 4.8 Run the fast suite and the guard test. Commit this group.
 
 ## 5. Web workspace
 
@@ -63,7 +63,7 @@
 - [x] 7.1 Run `./scripts/local_ci.sh` and compare with `baseline.md`. The tripwire executed and deselected counts must match. Coverage must stay at or above the floors.
 - [x] 7.2 Run `omrs migrate` against a copy of the owner's real folders in a temp `HOME` (copy `~/.omrg` and `~/.config/omrg`; mock the keychain and launchd). Check the report and that the copied collections open and return search results.
 - [x] 7.3 Run `openspec validate rename-omrg-to-omrs --strict`.
-- [ ] 7.4 Run `/opsx:verify` for this change.
+- [x] 7.4 Run `/opsx:verify` for this change.
 - [x] 7.5 Build the wheel in a throwaway environment and check that `omrs` imports, `omrs --help` runs, the packaged YAML defaults load, and no `omrg` console script exists.
 - [ ] 7.6 Open the pull request into `v4`: `gh pr create --base v4`. Title `feat!: rename OMRG to OMRS`. Wait for the required checks.
 

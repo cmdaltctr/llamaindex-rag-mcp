@@ -38,7 +38,6 @@ _HISTORY_PREFIXES: dict[str, str] = {
 _EXEMPT_FILES: dict[str, str] = {
     "tests/test_no_old_identity.py": "this guard names the old identity",
     "tests/test_experiment_29_routing_repeat.py": "reads a file from the pinned commit afe151e",
-    "src/omrs/config/legacy.py": "retired-variable tripwire keeps flat OMRG_ names (design D2)",
     "src/omrs/config/legacy_install.py": "startup check for an old install",
     "src/omrs/transports/cli/migrate.py": "the migrate command",
     "src/omrs/integrations/legacy_migration.py": "moves an old install to the new names",
