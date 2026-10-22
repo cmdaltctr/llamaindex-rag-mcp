@@ -2,7 +2,7 @@
 
 ### Requirement: An old OMRG install is detected and refused
 
-At startup, every transport (web server, CLI, stdio MCP server, watcher) SHALL check for an old OMRG install. The signs are: an environment variable that starts with `OMRG_`, the folder `~/.omrg`, the folder `~/.config/omrg`, a launchd label that starts with `com.omrg.`, and a keychain entry under the service `omrg`. When a sign is present, the transport SHALL stop and name each sign found, its `omrs` replacement and the command `omrs migrate`. The check SHALL read only. It SHALL NOT use the old value as a fallback.
+At startup, every transport (web server, CLI, stdio MCP server, watcher) SHALL check for an old OMRG install. The signs are: an environment variable that starts with `OMRG_`, the folder `~/.omrg`, the folder `~/.config/omrg`, and a launchd plist whose label starts with `com.omrg.` in `~/Library/LaunchAgents`. Every sign is a read-only file or environment check. The check SHALL NOT read the keychain, because a keychain read can show a system prompt on every start and the old entry stays in place after `omrs migrate`. When a sign is present, the transport SHALL stop and name each sign found, its `omrs` replacement and the command `omrs migrate`. The check SHALL read only. It SHALL NOT use the old value as a fallback.
 
 The commands `omrs migrate` and `omrs --help` SHALL run without the check.
 
@@ -20,6 +20,13 @@ The commands `omrs migrate` and `omrs --help` SHALL run without the check.
 - **WHEN** an MCP client starts `omrs`
 - **THEN** the process SHALL write the message to stderr and exit
 - **AND** the process SHALL NOT write to stdout, because stdout is the protocol channel
+
+#### Scenario: An old keychain entry alone does not stop startup
+
+- **GIVEN** a keychain entry under the service `omrg` and no other sign of an old install
+- **WHEN** a user runs `omrs web start`
+- **THEN** the check SHALL pass
+- **AND** the check SHALL NOT call the keychain
 
 #### Scenario: A clean install passes
 
@@ -39,10 +46,11 @@ The commands `omrs migrate` and `omrs --help` SHALL run without the check.
 
 1. rename `~/.omrg` to `~/.omrs`;
 2. rename `~/.config/omrg` to `~/.config/omrs`, rename `omrg.jsonc` to `omrs.jsonc` and rewrite each `file://~/.config/omrg/secrets/` reference to the new path;
-3. copy each keychain entry from the service `omrg` to the service `omrs`;
+3. copy each keychain entry from the service `omrg` to the service `omrs` for each provider that the old workspace records as saved, leave the old entry in place, and say so in the report;
 4. unload each `com.omrg.*` launchd job, remove its plist and install the `com.omrs.*` replacement;
 5. print the `OMRG_*` variables that remain set, with the `OMRS_*` names to use, because a process cannot change its parent's environment;
-6. leave the LanceDB data unchanged.
+6. leave the LanceDB data unchanged;
+7. rewrite each absolute path into the old data folder that `workspace.db` stores in the `runs.inputs_json` column, so saved runs still find their uploads.
 
 The command SHALL accept `--dry-run`, which prints the plan and changes nothing. The command SHALL refuse to overwrite an existing `omrs` target and SHALL name the conflict. The command SHALL print a report of each step and its result. Running it a second time SHALL change nothing and SHALL report that the install is already migrated.
 

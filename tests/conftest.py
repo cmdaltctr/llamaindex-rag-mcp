@@ -72,6 +72,17 @@ _TEST_COLLECTION = "test_documents"
 
 
 @pytest.fixture(autouse=True)
+def _skip_legacy_install_check(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the startup check for an old OMRG install away from the machine's real home.
+
+    A developer machine can hold a real old install (``~/.omrg``, a login
+    item). The check would then stop every CLI test. Tests of the check
+    override this fixture by name.
+    """
+    monkeypatch.setattr("omrg.config.legacy_install.exit_if_legacy_install", lambda: None)
+
+
+@pytest.fixture(autouse=True)
 def _reset_default_store() -> None:
     """Reset the process-wide default store before each test.
 
