@@ -37,9 +37,14 @@ nothing else.
 
 ## Owner backup (task 1.6)
 
-`/Users/aizat/Development/DATA/omrs/backups/pre-omrs-rename-2026-10-22/`
-holds copies of `~/.omrg` and `~/.config/omrg` (171 files, SHA-256 manifest
-inside). Local only. `workspace.db` passed `PRAGMA integrity_check` after the copy.
+`~/Development/DATA/omrs/backups/pre-omrs-rename-2026-10-22/` held copies of
+`~/.omrg` and `~/.config/omrg` (171 files, SHA-256 manifest inside), local only.
+`workspace.db` passed `PRAGMA integrity_check` after the copy.
+
+A second backup, `pre-live-move-2026-10-22/` (172 files), was taken just before
+the live move (task 8.2). Both were deleted on 2026-10-22 after the reinstall
+from `v4` checked out: four collections with the same row counts, search,
+web UI and MCP connection all working.
 
 ## After the rename (task 7.1)
 
