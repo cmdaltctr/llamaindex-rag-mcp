@@ -1,7 +1,7 @@
 """Experiment 37 detection runs D-pos and D-neg (detector only, no OCR).
 
 The flags come from the built host detector: ``detect_maths_pages`` and
-``maths_condition`` from ``omrs.integrations.pdf.maths_routing``, with the
+``maths_condition`` from ``omrg.integrations.pdf.maths_routing``, with the
 default OCR route settings (maths routing on, page fraction 0.10). A
 separate font walk lists every font name per page, for the report only
 (task 7.2: font names on maths pages that the list does not match).
@@ -26,15 +26,15 @@ from typing import Any
 
 from pypdf import PdfReader
 
-from omrs.config.ocr_routes import OcrRouteSettingsMixin
-from omrs.integrations.pdf.maths_pages import (
+from omrg.config.ocr_routes import OcrRouteSettingsMixin
+from omrg.integrations.pdf.maths_pages import (
     MATHS_DETECTOR_VERSION,
     MATHS_FONT_PATTERNS,
     MAX_FORM_DEPTH,
     is_maths_font,
     normalise_font_name,
 )
-from omrs.integrations.pdf.maths_routing import detect_maths_pages, maths_condition
+from omrg.integrations.pdf.maths_routing import detect_maths_pages, maths_condition
 
 EXP_DIR = Path(__file__).resolve().parent
 OUT = EXP_DIR / "output" / "detection.json"
@@ -163,7 +163,7 @@ def main() -> int:
     if not args.resume:
         run["documents"] = {}
     run.update(
-        {"omrs_commit": commit, "started_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}
+        {"omrg_commit": commit, "started_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}
     )
 
     for doc in docs:

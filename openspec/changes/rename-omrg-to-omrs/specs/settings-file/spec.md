@@ -2,7 +2,7 @@
 
 ### Requirement: The user config folder location
 
-The web server, the CLI and the stdio MCP server SHALL read the user config folder: `$OMRS_CONFIG_DIR` when set, else `$XDG_CONFIG_HOME/omrs` when set, else `~/.config/omrs`. The folder MAY hold `omrs.jsonc` and `secrets/<name>.key`. A missing folder or file SHALL give no values and no warning. The folder `~/.config/omrg` and the variable `OMRG_CONFIG_DIR` SHALL NOT be read; their presence follows the legacy-install-migration requirement.
+The web server, the CLI and the stdio MCP server SHALL read the user config folder: `$OMRS_CONFIG_DIR` when set, else `$XDG_CONFIG_HOME/omrs` when set, else `~/.config/omrs`. The folder MAY hold `omrs.jsonc` and `secrets/<name>.key`. A missing folder or file SHALL give no values and no warning. The folder `~/.config/omrg` and the variable `OMRG_CONFIG_DIR` SHALL NOT be read.
 
 #### Scenario: Folder from OMRS_CONFIG_DIR
 
@@ -13,7 +13,6 @@ The web server, the CLI and the stdio MCP server SHALL read the user config fold
 
 - **WHEN** `OMRG_CONFIG_DIR` names a folder that holds `omrg.jsonc` and `OMRS_CONFIG_DIR` is not set
 - **THEN** no process MUST read that folder
-- **AND** the process MUST follow the legacy-install-migration requirement for the detected old variable
 
 #### Scenario: Folder from XDG_CONFIG_HOME
 

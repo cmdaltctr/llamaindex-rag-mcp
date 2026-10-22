@@ -112,9 +112,6 @@ def main() -> None:
     """Start the MCP server on stdio transport."""
     import sys
 
-    from ...config.legacy_install import exit_if_legacy_install
-
-    exit_if_legacy_install()
     logging.basicConfig(
         level=logging.WARNING,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",

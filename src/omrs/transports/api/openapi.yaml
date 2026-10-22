@@ -1425,7 +1425,7 @@ paths:
       summary: Replace the presentation layout
       description: >
         No revision is created. A document-job pipeline gives 409, and so
-        does a pipeline of a deleted profile. The layout key `omrg_task` is
+        does a pipeline of a deleted profile. The layout key `omrs_task` is
         reserved (400).
       security:
         - sessionCookie: [graph]

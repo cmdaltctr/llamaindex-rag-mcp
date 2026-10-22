@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
-from omrs.core.ingestion.normalise import NORMALISER_VERSION, normalise_reader_text  # noqa: E402
+from omrg.core.ingestion.normalise import NORMALISER_VERSION, normalise_reader_text  # noqa: E402
 
 SOURCE = ROOT / "experiments/34-worker-sample-review-2026-09-19/output"
 OUTPUT = Path(__file__).resolve().parent / "output"

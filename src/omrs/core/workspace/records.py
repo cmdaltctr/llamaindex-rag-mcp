@@ -35,10 +35,7 @@ RESERVED_PROFILE_IDS: frozenset[str] = frozenset({"documents", "codebase", "hybr
 PROFILE_ID_PATTERN = r"^[a-z0-9][a-z0-9-]{0,63}$"
 
 #: Layout key that marks a reserved workspace job pipeline (not a user graph).
-#: The value keeps the name the project had before the OMRS rename. It is
-#: stored in existing ``workspace.db`` pipelines, so a rename would stop them
-#: being recognised (ADR-092). Do not change it.
-TASK_LAYOUT_KEY = "omrg_task"
+TASK_LAYOUT_KEY = "omrs_task"
 
 
 class PipelineRecord(TypedDict):

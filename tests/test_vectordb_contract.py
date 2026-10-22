@@ -558,7 +558,7 @@ class TestGenerationCounter:
 class TestDataVersionCapability:
     """Differential contract for the durable data-version capability.
 
-    LanceDB returns a tagged ``(omrg_dataset_epoch, table.version)``
+    LanceDB returns a tagged ``(omrs_dataset_epoch, table.version)``
     token; ChromaDB has no durable cross-process collection version,
     so it stays on the ABC default and reports ``None`` explicitly
     rather than repackaging the process-local generation counter.

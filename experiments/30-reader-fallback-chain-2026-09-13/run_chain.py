@@ -26,7 +26,7 @@ EXP_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = EXP_DIR.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from omrs.core.settings import (  # noqa: E402
+from omrg.core.settings import (  # noqa: E402
     ChunkingBlock,
     EffectiveSettings,
     EmbeddingBlock,
@@ -48,7 +48,7 @@ set_default_effective_settings(
 
 import pdf_inspector  # noqa: E402
 
-from omrs.integrations.pdf.ocr_routing import ocr_required_by_gate  # noqa: E402
+from omrg.integrations.pdf.ocr_routing import ocr_required_by_gate  # noqa: E402
 
 
 def _gate_settings() -> object:
@@ -73,7 +73,7 @@ def _route(evidence: dict) -> bool:
 
 
 def _pypdf_retry(path: Path) -> tuple[str, float, int]:
-    from omrs.integrations.pdf.registry import get as get_reader
+    from omrg.integrations.pdf.registry import get as get_reader
 
     started = time.perf_counter()
     docs = get_reader("pypdf")().load_data(path)
@@ -83,7 +83,7 @@ def _pypdf_retry(path: Path) -> tuple[str, float, int]:
 
 
 def _liteparse_retry(path: Path) -> tuple[str, float, int, int]:
-    from omrs.integrations.pdf.registry import get as get_reader
+    from omrg.integrations.pdf.registry import get as get_reader
 
     started = time.perf_counter()
     docs = get_reader("liteparse")().load_data(path)

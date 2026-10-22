@@ -18,7 +18,7 @@ engine Python 3.12.14.
 ## Provisioning
 
 ```bash
-export OMRS_OCR_MODEL_CACHE=~/Development/DATA/omrg/ocr-models
+export OMRS_OCR_MODEL_CACHE=~/Development/DATA/omrs/ocr-models
 python3 ocr-workers/provision.py dots-mocr --dry-run --accept-model-licence
 python3 ocr-workers/provision.py dots-mocr --python 3.12 --accept-model-licence
 ```
@@ -29,7 +29,7 @@ python3 ocr-workers/provision.py dots-mocr --python 3.12 --accept-model-licence
    `e539fbb52280393adc081b289ec597430a0f9031`, applied the patch set and
    wrote `omrs-code-hashes.json`.
 3. Disk: model folder 5.7 GB at
-   `~/Development/DATA/omrg/ocr-models/dots-mocr/` (outside the
+   `~/Development/DATA/omrs/ocr-models/dots-mocr/` (outside the
    repository, kept across worktree removal); engine `.venv` 756 MB.
 4. The patched `modeling_dots_vision.py` differs from the Experiment 34
    copy only in one patch comment. `modeling_dots_ocr.py`,

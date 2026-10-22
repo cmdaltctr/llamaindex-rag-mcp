@@ -56,17 +56,17 @@ def main() -> int:
     if not os.environ.get("PDFIUM_LIB_PATH"):
         print("PDFIUM_LIB_PATH is not set", file=sys.stderr)
         return 1
-    if "omrs" in sys.modules:
-        raise SystemExit("omrs was imported before --code-root took effect")
+    if "omrg" in sys.modules:
+        raise SystemExit("omrg was imported before --code-root took effect")
 
     code_root = args.code_root.resolve()
     sys.path.insert(0, str(code_root / "src"))
-    import omrs
-    from omrs.integrations.pdf.liteparse import _gutter_centre, _order_by_column
+    import omrg
+    from omrg.integrations.pdf.liteparse import _gutter_centre, _order_by_column
 
-    loaded = Path(omrs.__file__).resolve()
+    loaded = Path(omrg.__file__).resolve()
     if code_root not in loaded.parents:
-        raise SystemExit(f"omrs loaded from {loaded}, not from {code_root}")
+        raise SystemExit(f"omrg loaded from {loaded}, not from {code_root}")
 
     from liteparse import LiteParse
 

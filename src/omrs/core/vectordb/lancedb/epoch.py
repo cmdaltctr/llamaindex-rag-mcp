@@ -10,7 +10,7 @@ a value a long-lived reader has already cached.
 
 The durable token therefore combines two components:
 
-* ``omrg_dataset_epoch`` — an OMRS-owned random UUID stored in the
+* ``omrs_dataset_epoch`` — an OMRS-owned random UUID stored in the
   *current* table schema metadata through the existing
   :mod:`.meta` seam.  One epoch identifies one incarnation of
   the dataset: table creation, delete/recreate and every
@@ -65,7 +65,7 @@ def durable_data_token(epoch: str, version: int) -> str:
     """Combine an epoch and a table version into the tagged durable token.
 
     Args:
-        epoch: The ``omrg_dataset_epoch`` UUID from schema metadata.
+        epoch: The ``omrs_dataset_epoch`` UUID from schema metadata.
         version: The current numeric ``table.version``.
 
     Returns:
@@ -120,7 +120,7 @@ class LanceDatasetEpochMixin:
             ``None`` when the collection is absent, or when the table
             carries no OMRS dataset epoch (legacy or externally
             recreated tables).  Otherwise the opaque durable token
-            combining ``(omrg_dataset_epoch, table.version)``.
+            combining ``(omrs_dataset_epoch, table.version)``.
         """
         table = self._open_table(collection_name)
         if table is None:

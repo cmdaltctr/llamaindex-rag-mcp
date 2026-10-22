@@ -199,11 +199,6 @@ def callback(
     ),
 ) -> None:
     """Run with no arguments to start the MCP stdio server."""
-    # An install from before the rename stops every command except ``migrate`` (and help).
-    if ctx.invoked_subcommand != "migrate" and not {"--help", "-h"}.intersection(sys.argv[1:]):
-        from ...config.legacy_install import exit_if_legacy_install
-
-        exit_if_legacy_install()
     if ctx.invoked_subcommand not in ("web", None):
         # ``omrs web`` and bare ``omrs`` (MCP over stdio) each own one
         # Engine and must not install the legacy process default.
@@ -236,7 +231,6 @@ from . import (  # noqa: E402,F401
     ingest,
     install_login_watcher,
     list,
-    migrate,
     profile,
     search,
     watch,

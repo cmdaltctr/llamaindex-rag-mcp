@@ -37,23 +37,29 @@ nothing else.
 
 ## Owner backup (task 1.6)
 
-`/Users/aizat/Development/DATA/omrg/backups/pre-omrs-rename-2026-10-22/`
+`/Users/aizat/Development/DATA/omrs/backups/pre-omrs-rename-2026-10-22/`
 holds copies of `~/.omrg` and `~/.config/omrg` (171 files, SHA-256 manifest
 inside). Local only. `workspace.db` passed `PRAGMA integrity_check` after the copy.
 
 ## After the rename (task 7.1)
 
-`./scripts/local_ci.sh` passed (exit 0), 8 min 14 s, on the feature branch.
+`./scripts/local_ci.sh` passed (exit 0), 8 min 7 s, on the feature branch,
+after the migration code was removed (design D2).
 
 | Step | Before | After |
 | --- | --- | --- |
 | import-linter contracts | 21 kept, 0 broken | 21 kept, 0 broken |
 | `openspec validate --all --strict` | 84 passed | 84 passed |
-| Fast suite | 7484 passed, 152 skipped | 7517 passed, 152 skipped |
-| Clean-base tripwire | 5 passed, `_BASE_EXECUTED = 7491` | 5 passed, `_BASE_EXECUTED = 7524` |
+| Fast suite | 7484 passed, 152 skipped | 7486 passed, 152 skipped |
+| Clean-base tripwire | 5 passed, `_BASE_EXECUTED = 7491` | 5 passed, `_BASE_EXECUTED = 7493` |
 | Tripwire `_BASE_DESELECTED` | 21 | 21 |
 | Web tests | 1750 passed | 1750 passed |
 
-The fast suite gained 33 tests, all added on purpose: guard (2), startup
-check (17), migrate command (13) and stored epoch key (1). The skipped and
-deselected counts did not change. No existing test was removed.
+The only added tests are the two in the guard. Skipped and deselected counts
+did not change. No existing test was removed.
+
+## Large-data folder (task 8.4)
+
+`~/Development/DATA/omrg/` (90 GB) was renamed to `DATA/omrs/` on 2026-10-22,
+on the same disk. Entry counts at depth 2 matched (52 before and after). Six
+gitignored symlinks in four worktrees were repointed and resolve.

@@ -51,11 +51,7 @@ from ..identity import (
 #: Schema-metadata key holding the OMRS-owned dataset epoch UUID
 #: (see :mod:`.epoch`).  Defined at this seam so both modules
 #: share one constant without a circular import.
-#:
-#: The value keeps the name the project had before the OMRS rename. It is
-#: stored inside existing tables; renaming it would make every dataset's BM25
-#: cache token compare unequal (gotcha 14, ADR-092). Do not change it.
-OMRS_EPOCH_KEY = "omrg_dataset_epoch"
+OMRS_EPOCH_KEY = "omrs_dataset_epoch"
 
 __all__ = [
     "LanceTableMetadataMixin",

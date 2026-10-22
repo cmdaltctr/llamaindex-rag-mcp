@@ -190,7 +190,7 @@ Change `modular-ocr-workers-dots-mocr`, tasks 2.1 and 2.2. The engine now
 runs on the shared worker core (`python -m omrs_ocr_worker_core`).
 
 Machine: Apple M5 Pro, 48 GB, macOS 27.0, uv 0.12.18. Model weights came
-from `OMRS_OCR_MODEL_CACHE=~/Development/DATA/omrg/ocr-models`, whose
+from `OMRS_OCR_MODEL_CACHE=~/Development/DATA/omrs/ocr-models`, whose
 `paddleocr-vl` entry is an APFS clone of the preserved cache. The runs
 downloaded no model files. The cache size did not change (2,014,328 KB).
 

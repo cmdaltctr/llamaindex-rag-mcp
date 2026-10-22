@@ -143,7 +143,7 @@ def test_reserved_layout_key_is_refused(client: Any) -> None:
     pipeline_id = new_pipeline(client.app, "x")["pipeline_id"]
     response = client.put(
         f"/v1/pipelines/{pipeline_id}/layout",
-        json={"layout": {"omrg_task": "ingest"}},
+        json={"layout": {"omrs_task": "ingest"}},
         headers=ORIGIN,
     )
     assert response.status_code == 400
