@@ -58,7 +58,7 @@ No identifier SHALL be created under an `omrg` name. No compatibility alias SHAL
 
 ### Requirement: Stored-data identifiers keep their original names
 
-An identifier written inside existing stored data SHALL keep its original name so that stored data stays readable. The LanceDB table metadata key `omrg_dataset_epoch` SHALL stay unchanged. The code SHALL define each such identifier once, with a comment that states why it keeps the old name.
+An identifier written inside existing stored data SHALL keep its original name so that stored data stays readable. The LanceDB table metadata key `omrg_dataset_epoch` SHALL stay unchanged. The workspace pipeline layout key `omrg_task`, stored in `workspace.db`, SHALL stay unchanged. The code SHALL define each such identifier once, with a comment that states why it keeps the old name.
 
 #### Scenario: An existing dataset is read after the rename
 
@@ -68,6 +68,12 @@ An identifier written inside existing stored data SHALL keep its original name s
 - **AND** the BM25 cache validity token SHALL be computed from the same `omrg_dataset_epoch` key
 - **AND** no re-ingest SHALL be required
 
+#### Scenario: An existing workspace job pipeline is still recognised
+
+- **GIVEN** a `workspace.db` written before the rename, with a pipeline whose layout carries `omrg_task`
+- **WHEN** the renamed release lists the workspace job pipelines
+- **THEN** that pipeline SHALL be recognised as a job pipeline
+
 #### Scenario: A new dataset uses the original key
 
 - **WHEN** the renamed release creates a new LanceDB collection
@@ -75,7 +81,7 @@ An identifier written inside existing stored data SHALL keep its original name s
 
 ### Requirement: Live files do not use the old identity
 
-A guard test SHALL fail when a live file contains the old identity. Live files are the source, tests, scripts, web sources and live documentation. The guard SHALL exempt: the `omrg_dataset_epoch` constant, the migration code and its tests, ADRs, TDRs, archived OpenSpec changes, the `openspec/` tree, experiment reports and `CHANGELOG.md`. Each exemption SHALL be a named entry in the guard with a reason. Live specs and active changes SHALL use the new name, except where a requirement describes the old identity (the migration requirements, the absence of the old commands and the old environment variable). A review step, not the guard, checks the `openspec/` tree.
+A guard test SHALL fail when a live file contains the old identity. Live files are the source, tests, scripts, web sources and live documentation. The guard SHALL exempt: the `omrg_dataset_epoch` and `omrg_task` constants, the migration code and its tests, ADRs, TDRs, archived OpenSpec changes, the `openspec/` tree, experiment reports and `CHANGELOG.md`. Each exemption SHALL be a named entry in the guard with a reason. Live specs and active changes SHALL use the new name, except where a requirement describes the old identity (the migration requirements, the absence of the old commands and the old environment variable). A review step, not the guard, checks the `openspec/` tree.
 
 #### Scenario: A stray old name fails the guard
 

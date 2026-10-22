@@ -1,19 +1,19 @@
 ## 1. Set up
 
-- [ ] 1.1 Check `git worktree list` and that the main checkout is on `main`. Create the sibling worktree: `git worktree add -b feat/rename-omrg-to-omrs ../llamaindex-rag-mcp-feat-rename-omrg-to-omrs v4`. Verify `git rev-parse --show-toplevel` and `git branch --show-current` match before any command that changes state.
-- [ ] 1.2 In the new worktree run `uv sync --frozen --extra web`. Do not use `--all-extras`. Do not copy `.env`.
-- [ ] 1.3 Record the baseline: `./scripts/local_ci.sh` result, the executed and deselected counts from `tests/test_clean_base_tripwire.py`, and `uv run lint-imports`. Save the numbers in the change folder as `baseline.md`.
-- [ ] 1.4 Re-check that no active change modifies a baseline requirement heading that contains `omrg` (design D9). Run the check script from the recon (compare MODIFIED, RENAMED and REMOVED headings in `openspec/changes/*/specs` with the 12 baseline headings). Stop and report if one collides.
+- [x] 1.1 Check `git worktree list` and that the main checkout is on `main`. Create the sibling worktree: `git worktree add -b feat/rename-omrg-to-omrs ../llamaindex-rag-mcp-feat-rename-omrg-to-omrs v4`. Verify `git rev-parse --show-toplevel` and `git branch --show-current` match before any command that changes state.
+- [x] 1.2 In the new worktree run `uv sync --frozen --extra web`. Do not use `--all-extras`. Do not copy `.env`.
+- [x] 1.3 Record the baseline: `./scripts/local_ci.sh` result, the executed and deselected counts from `tests/test_clean_base_tripwire.py`, and `uv run lint-imports`. Save the numbers in the change folder as `baseline.md`.
+- [x] 1.4 Re-check that no active change modifies a baseline requirement heading that contains `omrg` (design D9). Run the check script from the recon (compare MODIFIED, RENAMED and REMOVED headings in `openspec/changes/*/specs` with the 12 baseline headings). Stop and report if one collides.
 - [x] 1.5 `omrs` is free on PyPI (404 on 2026-10-22; `omrg` also 404). Re-check it just before the first release and record the date in `baseline.md`.
-- [ ] 1.6 Before any move, copy `~/.omrg` and `~/.config/omrg` to a dated backup folder outside the repository (keep secrets local, never upload). Task 7.2 uses a copy of this backup, not the live folders.
+- [x] 1.6 Before any move, copy `~/.omrg` and `~/.config/omrg` to a dated backup folder outside the repository (keep secrets local, never upload). Task 7.2 uses a copy of this backup, not the live folders.
 
 ## 2. Guard and migration first (old names still in place)
 
-- [ ] 2.1 Write the guard test `tests/test_no_old_identity.py`: scan the live surface for `omrg` in any case. Use a named exemption list with a reason per entry (design D6). Confirm it FAILS on the current tree.
-- [ ] 2.2 Write failing tests for the startup check: an `OMRG_*` variable, `~/.omrg`, `~/.config/omrg`, a `com.omrg.` label and a keychain entry each stop `omrs web start`, the CLI and the stdio MCP server with the replacement named. The stdio server writes to stderr only. A clean install passes. `omrs migrate` and `--help` skip the check. Use a temp `HOME`.
-- [ ] 2.3 Implement the startup check in `config/legacy.py` or a sibling module, following the shape-aware retirement rule in its docstring. Keep `OMRG_*` flat names in the tripwire. Make the tests pass.
-- [ ] 2.4 Write failing tests for `omrs migrate`: dry run changes nothing; full migration (folders, `omrg.jsonc` to `omrs.jsonc`, secret references, keychain copy, launchd replacement); conflict refusal when both folders exist; second run is a no-op; remaining `OMRG_*` variables are listed; LanceDB data opens with unchanged contents. Mock keychain and launchd. Never read the real `~/.config/omrg`.
-- [ ] 2.5 Implement `transports/cli/migrate.py` (thin wrapper) and the move logic under `core/` or `integrations/` as the folder guides require. Reuse the legacy plist recognition in `_launchagent.py`. Never print secret values. Make the tests pass.
+- [x] 2.1 Write the guard test `tests/test_no_old_identity.py`: scan the live surface for `omrg` in any case. Use a named exemption list with a reason per entry (design D6). Confirm it FAILS on the current tree.
+- [x] 2.2 Write failing tests for the startup check: an `OMRG_*` variable, `~/.omrg`, `~/.config/omrg`, and a `com.omrg.` plist each stop `omrs web start`, the CLI and the stdio MCP server with the replacement named. The stdio server writes to stderr only. A keychain entry alone does not stop startup and the check never calls the keychain. A clean install passes. `omrs migrate` and `--help` skip the check. Use a temp `HOME`.
+- [x] 2.3 Implement the startup check in `config/legacy.py` or a sibling module, following the shape-aware retirement rule in its docstring. Keep `OMRG_*` flat names in the tripwire. Make the tests pass.
+- [x] 2.4 Write failing tests for `omrs migrate`: dry run changes nothing; full migration (folders, `omrg.jsonc` to `omrs.jsonc`, secret references, keychain copy, launchd replacement); conflict refusal when both folders exist; second run is a no-op; remaining `OMRG_*` variables are listed; LanceDB data opens with unchanged contents. Mock keychain and launchd. Never read the real `~/.config/omrg`.
+- [x] 2.5 Implement `transports/cli/migrate.py` (thin wrapper) and the move logic under `core/` or `integrations/` as the folder guides require. Reuse the legacy plist recognition in `_launchagent.py`. Never print secret values. Make the tests pass.
 - [ ] 2.6 Keep files under 500 lines (`tests/test_file_size_ceiling.py`). Commit: `uv run --no-sync git commit` with a Conventional Commit message.
 
 ## 3. Python package and build configuration
@@ -34,7 +34,7 @@
 - [ ] 4.3 Rename the secret reference path in the writer and the reader (`file://~/.config/omrs/secrets/<name>.key`).
 - [ ] 4.4 Rename the MCP server name (`transports/mcp/server.py`), keychain service (`integrations/keychain.py`), launchd labels and log folder (`_web_login_item.py`, `_launchagent.py`), logger name (`transports/api/security.py`) and the version-line regex in `_web_login_item.py`. Extend the legacy plist recognition to `com.omrg.*` (design D2).
 - [ ] 4.5 Rename the cookie and token prefixes (`transports/api/security.py`, `confirmations.py`) and the `x-omrg-*` keys in `transports/api/openapi.yaml`. Confirm the CI OpenAPI validation still passes.
-- [ ] 4.6 Keep `omrg_dataset_epoch` in `core/vectordb/lancedb/meta.py` as one constant with a comment (design D3). Add a test that opens a LanceDB fixture written with the old key and checks the BM25 cache token stays equal.
+- [ ] 4.6 Keep `omrg_dataset_epoch` in `core/vectordb/lancedb/meta.py` and `omrg_task` (`TASK_LAYOUT_KEY`) in `core/workspace/records.py` as one constant each, with a comment (design D3). Add a test that opens a LanceDB fixture written with the old key and checks the BM25 cache token stays equal.
 - [ ] 4.7 Update the CLI help text and the `omrg web ...` hints in messages (about 30). Check `omrs --help` has no `OMRG`.
 - [ ] 4.8 Run the fast suite and the guard test. Commit this group.
 

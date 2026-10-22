@@ -40,9 +40,15 @@ The old names stop working. A startup check finds the old install and stops, nam
 
 The tripwire is the only mechanism that can detect flat `OMRG_*` names, because pydantic-settings discards unknown flat names without an error. The `OMRG_*` entries therefore stay in the tripwire for as long as an upgrade path exists (the rule in the `legacy.py` docstring).
 
-### D3. Keep `omrg_dataset_epoch`
+### D2a. The keychain is not a startup sign
+
+The first draft listed an old keychain entry as a startup sign. That fails in two ways. `omrs migrate` copies the entry and leaves the old one in place, so a correct migration would still be refused on every start. And a keychain read can show a macOS permission prompt on every run, because the new `omrs` executable differs from the one that stored the key. The startup check therefore uses only environment and file checks. `omrs migrate` reads the keychain once, after a warning, for the providers that the old workspace records as saved. Confirmed by the owner on 2026-10-22.
+
+### D3. Keep `omrg_dataset_epoch` and `omrg_task`
 
 The key lives inside existing LanceDB tables and feeds the BM25 cache validity token (gotcha 14). A rename would make every existing dataset compare unequal. It is defined once as a constant with a comment, and exempted by name in the guard test.
+
+The same holds for `omrg_task` (`TASK_LAYOUT_KEY` in `core/workspace/records.py`). It is stored in the `layout_json` column of `workspace.db` pipelines and marks a workspace job pipeline. A rename would stop existing job pipelines from being recognised. Found while writing the migrate tests, against a copy of the owner's real `workspace.db`. The same recon found absolute `~/.omrg/workspace/uploads/...` paths in `runs.inputs_json`, so `omrs migrate` rewrites that column (spec step 7).
 
 ### D4. ast-grep for code, a scripted pass for the rest
 

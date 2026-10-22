@@ -146,13 +146,18 @@ def test_no_argument_entry_point_loads_no_web_or_editor_modules(tmp_path: Path) 
         capture_output=True,
         text=True,
         cwd=tmp_path,
-        env=dict(os.environ),
+        # A temporary HOME and no OMRG_* names keep the startup check for an
+        # old OMRG install away from the machine's real home folder.
+        env={
+            **{k: v for k, v in os.environ.items() if not k.startswith("OMRG_")},
+            "HOME": str(tmp_path),
+        },
         timeout=120,
         check=False,
     )
     assert completed.returncode == 0, completed.stderr
     report = json.loads(completed.stdout.strip().splitlines()[-1])
-    assert report == {"code": 0, "mcp_runs": 1, "loaded": []}
+    assert report == {"code": 0, "mcp_runs": 1, "loaded": []}, completed.stderr
 
 
 # ── MCP tool contract ────────────────────────────────────────────────────

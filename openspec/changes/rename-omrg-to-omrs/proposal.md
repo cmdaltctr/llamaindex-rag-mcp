@@ -14,8 +14,8 @@ Why now: v4 is the integration branch and no v4 feature has shipped. Two v4 chan
 - **Settings surface.** Env prefix `OMRG_` becomes `OMRS_` (13 variables). Config file `omrg.jsonc` becomes `omrs.jsonc`. Config folder `~/.config/omrg` becomes `~/.config/omrs`. Data folder `~/.omrg` becomes `~/.omrs`. Secret references `file://~/.config/omrg/secrets/...` become `file://~/.config/omrs/secrets/...`.
 - **Runtime identifiers.** MCP server name, macOS keychain service, launchd labels (`com.omrg.web`, `com.omrg.watch.*`), the log folder, the logger name, the session cookie and the `omrg_bt_` / `omrg_bs_` / `omrg_ss_` token prefixes, and the `x-omrg-*` OpenAPI extensions all move to `omrs`.
 - **Web workspace.** `web/package.json` name, page title, logo file and five browser storage keys (`omrg-preferences`, `omrg-nav-collapsed`, `omrg-canvas-draft:`, `omrg-canvas-session`, `omrg-workspace-ui`) move to `omrs`.
-- **Kept on purpose.** The LanceDB table metadata key `omrg_dataset_epoch` stays. It is stored inside existing tables and feeds the BM25 cache validity token (gotcha 14). Renaming it would invalidate every existing dataset. The code names it once, as a constant with a comment.
-- **Old-install migration (new).** A startup check detects `OMRG_*` variables, `~/.omrg`, `~/.config/omrg`, the old launchd labels and the old keychain service, and stops with a message that names the replacement (same mechanism as gotcha 11). A new `omrs migrate` command moves the data, rewrites secret references, copies keychain entries and replaces the login items. No silent fallback to the old names.
+- **Kept on purpose.** The LanceDB table metadata key `omrg_dataset_epoch` and the workspace pipeline layout key `omrg_task` stay. It is stored inside existing tables and feeds the BM25 cache validity token (gotcha 14). Renaming it would invalidate every existing dataset. The code names it once, as a constant with a comment.
+- **Old-install migration (new).** A startup check detects `OMRG_*` variables, `~/.omrg`, `~/.config/omrg` and the old launchd plists (read-only file checks, no keychain read), and stops with a message that names the replacement (same mechanism as gotcha 11). A new `omrs migrate` command moves the data, rewrites secret references, copies keychain entries and replaces the login items. No silent fallback to the old names.
 - **Live docs and specs.** `README.md`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, per-folder `AGENTS.md`, `docs/guides/`, `docs/proposals/`, `.env.example`, the live `openspec/specs/` baselines and the five active changes are rewritten.
 - **History stays.** ADRs, TDRs, archived OpenSpec changes (128), experiment reports and `CHANGELOG.md` keep the old name. One note in `docs/adr/ADR_README.md` explains the rename. ADR file names keep `omrg` so existing links hold.
 - **ADR-092** records the decision.
@@ -28,7 +28,7 @@ Why now: v4 is the integration branch and no v4 feature has shipped. Two v4 chan
 ### New Capabilities
 
 - `project-identity`: the one place that states the project name, display name, package and distribution name, console command, MCP server name, env prefix, config and data folder names, keychain service, launchd labels, auth prefixes and browser storage key prefix; the stored-data identifiers that deliberately keep an old name; and the guard that stops live files from naming the old identity.
-- `legacy-install-migration`: detection of an old OMRG install at startup (variables, folders, login items, keychain), a refusal that names the exact replacement, and an `omrs migrate` command that moves data and settings, with a dry-run mode and a report.
+- `legacy-install-migration`: detection of an old OMRG install at startup (variables, folders, login items), a refusal that names the exact replacement, and an `omrs migrate` command that moves data and settings, with a dry-run mode and a report.
 
 ### Modified Capabilities
 
