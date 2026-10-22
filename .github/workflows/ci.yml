@@ -5,9 +5,9 @@ on:
   schedule:
     - cron: "23 3 * * *"
   push:
-    branches: [main, v3, integration/core-web]
+    branches: [main, v3, v4, integration/core-web]
   pull_request:
-    branches: [main, v3, integration/core-web, harden-pipeline-correctness-before-calibration]
+    branches: [main, v3, v4, integration/core-web, harden-pipeline-correctness-before-calibration]
 
 jobs:
   test:
