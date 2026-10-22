@@ -417,7 +417,12 @@ if not _has_qwen_tokenizer:
 # test_web_answer_stream_live.py (5) import fastapi at module level (1235).
 # +3 (2026-10-21, fix/answer-route-diagnostics): test_web_documents.py (2) and
 # test_web_answer_stream.py (1) import fastapi (1238).
-_WEB_EXTRA_CASES = 1238
+# Re-measured at the OMRS rename (2026-10-22, PR #125): CI had never run on v4 or on the
+# local v3 commits it carries, so the count drifted unseen. The floors job (no web extra)
+# ran 6229 executed against 6248 pinned. A collect-only count with fastapi hidden gave the
+# same total on the base commit and the branch (plus the 2 guard tests), so the 19 cases
+# came in with v3 work, not with the rename (1257).
+_WEB_EXTRA_CASES = 1257
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)
