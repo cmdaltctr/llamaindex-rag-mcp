@@ -128,7 +128,10 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # Engine stages on both paths (29) and the streaming answer route (15). 15 need fastapi.
 # +3 (2026-10-21, fix/answer-route-diagnostics): the answer route diagnostics cases in
 # test_web_documents.py (2) and test_web_answer_stream.py (1). All 3 need fastapi.
-_BASE_EXECUTED = 7491
+# +33 (2026-10-22, OMRS rename): the no-old-identity guard (2), the startup check for
+# a pre-rename install (17), the migrate command (13) and the stored epoch key (1). No fastapi
+# needed. The rename itself adds and removes no test (7491 -> 7524).
+_BASE_EXECUTED = 7524
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.

@@ -60,11 +60,11 @@
 
 ## 7. Verify
 
-- [ ] 7.1 Run `./scripts/local_ci.sh` and compare with `baseline.md`. The tripwire executed and deselected counts must match. Coverage must stay at or above the floors.
-- [ ] 7.2 Run `omrs migrate` against a copy of the owner's real folders in a temp `HOME` (copy `~/.omrg` and `~/.config/omrg`; mock the keychain and launchd). Check the report and that the copied collections open and return search results.
-- [ ] 7.3 Run `openspec validate rename-omrg-to-omrs --strict`.
+- [x] 7.1 Run `./scripts/local_ci.sh` and compare with `baseline.md`. The tripwire executed and deselected counts must match. Coverage must stay at or above the floors.
+- [x] 7.2 Run `omrs migrate` against a copy of the owner's real folders in a temp `HOME` (copy `~/.omrg` and `~/.config/omrg`; mock the keychain and launchd). Check the report and that the copied collections open and return search results.
+- [x] 7.3 Run `openspec validate rename-omrg-to-omrs --strict`.
 - [ ] 7.4 Run `/opsx:verify` for this change.
-- [ ] 7.5 Build the wheel in a throwaway environment and check that `omrs` imports, `omrs --help` runs, the packaged YAML defaults load, and no `omrg` console script exists.
+- [x] 7.5 Build the wheel in a throwaway environment and check that `omrs` imports, `omrs --help` runs, the packaged YAML defaults load, and no `omrg` console script exists.
 - [ ] 7.6 Open the pull request into `v4`: `gh pr create --base v4`. Title `feat!: rename OMRG to OMRS`. Wait for the required checks.
 
 ## 8. Owner hand-off (outside the repository; the agent cannot do these)
