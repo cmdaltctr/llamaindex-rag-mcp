@@ -71,8 +71,8 @@ The pass never touches: `docs/adr/`, `docs/tdr/` (or `docs/04_tdr/`), `openspec/
 
 ### D7. Outside-repo items
 
-- `~/.claude.json` key `omrg`: the MCP tool prefix follows this client key, not the server's own name string. The owner renames the key to `omrs` and updates any prompt, skill or allow-list that names `mcp__omrg__*`.
-- Skills `omrg-design` and `s-preserve-omrg`: the owner renames the folders and the frontmatter `name`. The data path inside `s-preserve-omrg` was updated with the DATA move.
+- `~/.claude.json` key `omrg`: the MCP tool prefix follows this client key, not the server's own name string. Replaced with an `omrs` entry on 2026-10-22 (task 8.1).
+- Skills `omrg-design` and `s-preserve-omrg`: renamed to `omrs-design` and `s-preserve-omrs` on 2026-10-22 (task 8.3).
 - `DATA/omrg/` became `DATA/omrs/` on 2026-10-22 (a same-disk rename of 90 GB). Six gitignored symlinks in four worktrees were repointed. `DATA_LOCATIONS.md`, the global agent instructions and the preserve skill name the new path. Copy receipts, recovery files and run experiment records inside the folder keep the old path as history.
 - NiftyPM `niftypm/omrg.json` is gitignored. The owner renames it and its project title.
 - GitHub repository: it is `llamaindex-rag-mcp`, which already differs from `omrg`. The owner decides separately.

@@ -66,9 +66,9 @@
 
 ## 8. Owner hand-off (outside the repository; the agent cannot do these)
 
-- [ ] 8.1 Rename the `omrg` key in `~/.claude.json` to `omrs`. Check `~/.claude/settings*.json`, `~/.config/opencode/` and `~/.codex/` for prompts or allow-lists that name `mcp__omrg__*`. Restart the clients.
-- [ ] 8.2 Move the owner's install by hand, after the merge, with the six steps in design.md (Migration Plan). Check that `omrs web start` opens the four collections.
-- [ ] 8.3 Rename the `omrg-design` and `s-preserve-omrg` skill folders and their frontmatter `name`, plus any `.claude/skills/` copies.
+- [x] 8.1 Replace the `omrg` MCP client entry with `omrs` (`claude mcp remove omrg -s local`, `claude mcp add omrs -s local -- sh -c 'cd "$HOME/.omrs" && exec omrs'`, main checkout). It connects. No settings, OpenCode or Codex config named `mcp__omrg__*`; only old session logs do.
+- [x] 8.2 Move the owner's install (2026-10-22): fresh backup in `DATA/omrs/backups/pre-live-move-2026-10-22/`, `omrs[web,hybrid]` installed from this worktree, old app and four `omrg` MCP servers stopped, `~/.omrs`, `~/.config/omrs` and `~/Library/Logs/omrs` moved, `omrs.jsonc` paths rewritten, `workspace.db` updated (1 pipeline, 10 runs), `com.omrs.web` installed and running, old tool removed. All four collections hold the same row counts as before. No keychain entry and no `OMRG_*` variable existed.
+- [x] 8.3 Rename the `omrg-design` and `s-preserve-omrg` skill folders and their frontmatter `name` to `omrs-design` and `s-preserve-omrs`. `~/.claude/skills` is a link to `~/.agents/skills`, so there is one copy.
 - [x] 8.4 Rename `~/Development/DATA/omrg/` to `DATA/omrs/` (2026-10-22). Repoint the six symlinks in four worktrees. Update `DATA_LOCATIONS.md`, the global agent instructions, the `s-preserve-omrg` skill and the memory file.
 - [ ] 8.5 Rename `niftypm/omrg.json` and the NiftyPM project title.
 - [ ] 8.6 Decide on the GitHub repository name. Update the Sonar project key if it changes.

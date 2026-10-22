@@ -114,7 +114,7 @@ Rules:
 
 ## Migration steps
 
-For the owner's install, once, after the merge. Stop the app first.
+For the owner's install, once. Done on 2026-10-22 from the feature branch, before the merge. Stop the app first.
 
 1. Install the new package and remove the old `omrg` tool.
 2. Move the folders: `mv ~/.omrg ~/.omrs` and `mv ~/.config/omrg ~/.config/omrs`.
