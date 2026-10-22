@@ -29,7 +29,7 @@ None.
 ## Impact
 
 - **Code:** experiment scripts only, under `experiments/42-clef-flash-confirmation-2026-10-08/`. No change under `src/`, `pyproject.toml` or `uv.lock`.
-- **Dependencies:** none added to OMRS. Candidate A uses `wordfreq==3.1.1` as an experiment-only tool (`uv run --with`), as in Experiment 38. llama.cpp runs as an external binary, outside the OMRS environment.
+- **Dependencies:** none added to OMRG. Candidate A uses `wordfreq==3.1.1` as an experiment-only tool (`uv run --with`), as in Experiment 38. llama.cpp runs as an external binary, outside the OMRG environment.
 - **Downloads:** none expected. The Experiment 38 llama.cpp build and Q8_0 file are reused if their hashes match. A fresh download waits for operator approval.
 - **Cloud:** none. Every arm and the reference transcription run on the operator's machine.
 - **Data:** new open-licence PDFs, stored in a gitignored `corpus/` folder. The Experiment 33 and Experiment 38 files are read only, to exclude duplicates and to fit the threshold. No frozen file is edited.

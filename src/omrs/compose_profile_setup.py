@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 def upgrade_saved_pipelines(service: ProfileService) -> list[str]:
     """Turn each saved Studio pipeline that belongs to no profile into a profile.
 
-    Workspace job pipelines (layout key ``omrg_task``) are skipped. A
+    Workspace job pipelines (layout key ``omrs_task``) are skipped. A
     pipeline fills the slot whose ports its current graph matches (Ingest,
     Search, Answer first match), else the Search slot. The other slots get
     the standard graphs of the base profile. The step is safe to run on

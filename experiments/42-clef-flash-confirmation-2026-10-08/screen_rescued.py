@@ -110,9 +110,9 @@ def ntrs_list() -> list[dict]:
 
 def rescued_backend(path) -> str | None:
     """Read once with the shipped chain; return the rescue tier or None."""
-    from omrs.compose import settings_to_effective
-    from omrs.config import Settings
-    from omrs.core.ingestion.backends.local import read_documents
+    from omrg.compose import settings_to_effective
+    from omrg.config import Settings
+    from omrg.core.ingestion.backends.local import read_documents
 
     effective = settings_to_effective(Settings())
     documents = asyncio.run(read_documents(path, settings=effective, ocr_client=None))

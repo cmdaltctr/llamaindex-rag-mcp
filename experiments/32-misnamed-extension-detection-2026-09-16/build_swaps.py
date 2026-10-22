@@ -18,10 +18,10 @@ WORK = EXP / "output/work"
 
 PDF_SOURCES = sorted(E31.glob("heldout/*.pdf")) + sorted(E31.glob("distractors/*.pdf"))
 TEXT_SOURCES = [
-    REPO / "src/omrs/compose.py",
-    REPO / "src/omrs/core/ingestion/pipeline.py",
-    REPO / "src/omrs/integrations/magika.py",
-    REPO / "src/omrs/core/codebase/codebase_map.py",
+    REPO / "src/omrg/compose.py",
+    REPO / "src/omrg/core/ingestion/pipeline.py",
+    REPO / "src/omrg/integrations/magika.py",
+    REPO / "src/omrg/core/codebase/codebase_map.py",
     REPO / "README.md",
     REPO / "AGENTS.md",
     REPO / "docs/guides/architecture.md",

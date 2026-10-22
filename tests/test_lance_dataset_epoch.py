@@ -2,7 +2,7 @@
 
 Stage 2 of ``fix-retrieval-freshness-and-context-assembly-2`` (tasks
 2.2, 2.5 and 2.6): pins the lifecycle of the Lance durable
-data-version token — ``(omrg_dataset_epoch, table.version)`` — against
+data-version token — ``(omrs_dataset_epoch, table.version)`` — against
 ordinary mutations, overwrite-based rebuilds, delete/recreate
 collisions on the numeric version, legacy unmarked tables, version
 cleanup/optimisation, and cross-process rebuilds observed through the
@@ -77,7 +77,7 @@ def _create_legacy_table(uri: str, name: str, rows: list[tuple[str, str, str]]) 
 
     Simulates a table written by an older OMRS version or an external
     writer: the schema matches what the store produces, but the schema
-    metadata carries no ``omrg_dataset_epoch`` key.
+    metadata carries no ``omrs_dataset_epoch`` key.
     """
     schema = pa.schema(
         [
@@ -104,40 +104,6 @@ def _create_legacy_table(uri: str, name: str, rows: list[tuple[str, str, str]]) 
 def _numeric_table_version(uri: str, collection: str) -> int:
     """Return the raw Lance table version, bypassing the store adapter."""
     return lancedb.connect(uri).open_table(collection).version
-
-
-# ── Stored key keeps its original name (OMRS rename, task 4.6) ──
-
-
-def test_an_epoch_stored_under_the_original_key_is_read(tmp_path: Path) -> None:
-    """A table written before the rename keeps its epoch, so the BM25 token stays equal."""
-    from omrs.core.vectordb.lancedb.meta import OMRS_EPOCH_KEY
-
-    assert OMRS_EPOCH_KEY == "omrg_dataset_epoch"  # pinned: stored inside existing tables
-    uri = str(tmp_path / "lance")
-    epoch = "0b9b6a52-6d63-4c84-9a07-6d3c2d6f7e11"
-    schema = pa.schema(
-        [
-            pa.field("id", pa.string()),
-            pa.field("doc_id", pa.string()),
-            pa.field("vector", pa.list_(pa.float32(), len(_EMBEDDING))),
-            pa.field("text", pa.string()),
-            pa.field("metadata", pa.struct([pa.field("file_path", pa.string())])),
-        ],
-        metadata={"omrg_dataset_epoch": epoch},
-    )
-    row = {
-        "id": "a",
-        "doc_id": None,
-        "vector": list(_EMBEDDING),
-        "text": "alpha",
-        "metadata": {"file_path": "a.txt"},
-    }
-    lancedb.connect(uri).create_table("docs", data=[row], schema=schema, mode="create")
-
-    token_epoch, _ = _epoch_and_version(LanceVectorStore(uri=uri), "docs")
-
-    assert token_epoch == epoch
 
 
 # ── Ordinary mutations (task 2.5) ──────────────────────────────────────

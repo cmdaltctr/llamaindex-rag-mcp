@@ -41,8 +41,8 @@ import harness_readers  # noqa: E402
 
 harness_readers.register_mirrors()
 
-from omrs.integrations.pdf import registry as pdf_registry  # noqa: E402
-from omrs.integrations.pdf.ocr_routing import ocr_required_by_gate  # noqa: E402
+from omrg.integrations.pdf import registry as pdf_registry  # noqa: E402
+from omrg.integrations.pdf.ocr_routing import ocr_required_by_gate  # noqa: E402
 
 CELL_READERS = {
     "A": "exp31_inspector_only",

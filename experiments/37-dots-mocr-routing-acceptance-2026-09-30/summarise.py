@@ -179,7 +179,7 @@ def main() -> int:
     summary = {
         "experiment_id": plan["experiment_id"],
         "protocol_version": plan["protocol_version"],
-        "omrs_commit": plan["system_identity"]["omrs_commit"],
+        "omrg_commit": plan["system_identity"]["omrg_commit"],
         "maths_detector_version": plan["system_identity"]["maths_detector_version"],
         "inputs": {
             "maths_labels_sha256": sha256(EXP_DIR / "maths_labels.json"),

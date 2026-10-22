@@ -1,6 +1,6 @@
 """Task 3.2: local dots.mocr reference transcription of every page (OD2).
 
-Uses the shipped host path (``omrs.capabilities.build_ocr_routes``) with
+Uses the shipped host path (``omrg.capabilities.build_ocr_routes``) with
 dots-mocr as the only route, one page per request, as in Experiment 37.
 The engine runs offline (HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1).
 
@@ -47,8 +47,8 @@ def write_text(path: Path, text: str) -> None:
 
 def build_routes() -> tuple[Any, Any]:
     """Host OCR routes with dots-mocr as the only (primary) route."""
-    from omrs.capabilities import build_ocr_routes
-    from omrs.config import Settings
+    from omrg.capabilities import build_ocr_routes
+    from omrg.config import Settings
 
     settings = Settings(
         ocr_fallback_enabled=True,
@@ -76,8 +76,8 @@ def main() -> int:
     os.environ.update({"HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1"})
     for name in ("OCR_WORKER_COMMAND", "OCR_WORKER_ENV_DIR"):
         os.environ.pop(name, None)
-    from omrs.integrations.ocr_worker.client import OcrWorkerError
-    from omrs.integrations.ocr_worker.routes import request_timeout
+    from omrg.integrations.ocr_worker.client import OcrWorkerError
+    from omrg.integrations.ocr_worker.routes import request_timeout
 
     # Junk targets decide whether sourcing must extend, so their strata go first.
     documents = sorted(

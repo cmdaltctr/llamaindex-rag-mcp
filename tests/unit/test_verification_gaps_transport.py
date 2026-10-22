@@ -146,15 +146,13 @@ def test_no_argument_entry_point_loads_no_web_or_editor_modules(tmp_path: Path) 
         capture_output=True,
         text=True,
         cwd=tmp_path,
-        # A temporary HOME keeps the startup check for a pre-rename install
-        # away from the machine's real home folder.
-        env={**os.environ, "HOME": str(tmp_path)},
+        env=dict(os.environ),
         timeout=120,
         check=False,
     )
     assert completed.returncode == 0, completed.stderr
     report = json.loads(completed.stdout.strip().splitlines()[-1])
-    assert report == {"code": 0, "mcp_runs": 1, "loaded": []}, completed.stderr
+    assert report == {"code": 0, "mcp_runs": 1, "loaded": []}
 
 
 # ── MCP tool contract ────────────────────────────────────────────────────

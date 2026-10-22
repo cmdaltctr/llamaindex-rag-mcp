@@ -25,12 +25,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from xml.parsers.expat import ExpatError
 
-from ...config.legacy_install import OLD_LABEL_PREFIX
-
 LABEL_PREFIX = "com.omrs.watch."
 LEGACY_LABEL_PREFIX = "com.rag-mcp.watch."
-#: Prefixes of watcher plists written by earlier names of this tool.
-LEGACY_LABEL_PREFIXES = (LEGACY_LABEL_PREFIX, OLD_LABEL_PREFIX + "watch.")
 _LAUNCHAGENTS_PARTS = ("Library", "LaunchAgents")
 _LOG_PARTS = ("Library", "Logs", "omrs")
 _LABEL_SLUG_MAX = 40
@@ -248,9 +244,9 @@ def find_existing_plist(plan: LaunchAgentPlan) -> Path | None:
     """Return a previously generated plist for this watch folder, if any.
 
     Checks the exact planned path first, then every plist under the
-    current ``com.omrs.watch.`` prefix or a legacy prefix (``com.rag-mcp.watch.``
-    or the label of the pre-rename name). Every candidate under a prefix is
-    examined, not only ones whose filename shares the watch directory's slug — a custom ``--label``
+    current ``com.omrs.watch.`` prefix or the legacy ``com.rag-mcp.watch.``
+    prefix. Every candidate under a prefix is examined, not only ones whose
+    filename shares the watch directory's slug — a custom ``--label``
     (current or legacy) never shares that slug, and a slug-restricted glob
     would leave it undiscovered (CodeRabbit). :func:`_plist_watches` is the
     verdict for every candidate: it is what makes ``docs`` never match
@@ -260,7 +256,7 @@ def find_existing_plist(plan: LaunchAgentPlan) -> Path | None:
     """
     if plan.plist_path.exists():
         return plan.plist_path
-    for prefix in (LABEL_PREFIX, *LEGACY_LABEL_PREFIXES):
+    for prefix in (LABEL_PREFIX, LEGACY_LABEL_PREFIX):
         for candidate in sorted(plan.plist_path.parent.glob(f"{prefix}*.plist")):
             if _plist_watches(candidate) == plan.watch_path:
                 return candidate

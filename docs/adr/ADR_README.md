@@ -98,7 +98,7 @@ development of OMRG — Opinionated Modular RAG.
 | [087](./087-settings-live-in-omrg-jsonc.md) | Settings Live in omrg.jsonc | 2026-10-19 | Accepted |
 | [088](./088-persistent-workspace-sign-in-secret.md) | Persistent Workspace Sign-in Secret | 2026-10-20 | Accepted |
 | [089](./089-answer-stage-progress.md) | Answer Stage Progress over a Streamed POST | 2026-10-21 | Proposed |
-| [092](./092-rename-omrg-to-omrs.md) | Rename OMRG to OMRS | 2026-10-22 | Proposed |
+| [092](./092-rename-project-to-omrs.md) | Rename OMRG to OMRS | 2026-10-22 | Proposed |
 
 ## Convention
 

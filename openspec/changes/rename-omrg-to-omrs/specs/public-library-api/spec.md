@@ -14,9 +14,9 @@ SHALL be absent. No compatibility shim, console-script alias, or automatic
 fallback SHALL be provided.
 
 This is a breaking change. Existing stored vector data remains compatible.
-A legacy watcher is migrated only when its user explicitly runs `omrs migrate`
-or reruns `omrs install-login-watcher` and confirms replacement or supplies
-`--force`.
+A legacy `com.rag-mcp.watch.` watcher is migrated only when its user
+explicitly reruns `omrs install-login-watcher` and confirms replacement or
+supplies `--force`.
 
 #### Scenario: The new import path works
 
@@ -45,9 +45,8 @@ or reruns `omrs install-login-watcher` and confirms replacement or supplies
 
 #### Scenario: Installed watchers survive the command rename
 
-- **GIVEN** a legacy LaunchAgent whose label starts `com.rag-mcp.watch.` or
-  `com.omrg.watch.` and whose ProgramArguments contain an absolute `rag-mcp`
-  or `omrg` executable
+- **GIVEN** a legacy LaunchAgent whose label starts `com.rag-mcp.watch.` and
+  whose ProgramArguments contain an absolute `rag-mcp` executable
 - **WHEN** the user runs `omrs install-login-watcher` for the same watched
   directory
 - **THEN** the installer SHALL discover the legacy plist

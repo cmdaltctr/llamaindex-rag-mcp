@@ -4,11 +4,11 @@ This fixes the two caveats from Experiment 8:
 
 1. uses full-size traces (250 warm calls, 200 cold calls, 250 agent-loop calls);
 2. implements a real cache-disabled mode by monkey-patching
-   ``omrs.retrieval._embed_query`` to bypass the production LRU helper.
+   ``omrg.retrieval._embed_query`` to bypass the production LRU helper.
 """
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (omrs.ingestion, omrs.retrieval, omrs.reranker, ...), which was
+# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -134,7 +134,7 @@ class CacheToggle:
 
     def __enter__(self):
         from llama_index.core import Settings
-        import omrs.retrieval as retrieval
+        import omrg.retrieval as retrieval
 
         self._original_embed_query = retrieval._embed_query
         if hasattr(retrieval._cached_query_embedding, "cache_clear"):
@@ -146,7 +146,7 @@ class CacheToggle:
         return self
 
     def __exit__(self, exc_type, exc, tb):
-        import omrs.retrieval as retrieval
+        import omrg.retrieval as retrieval
 
         if self._original_embed_query is not None:
             retrieval._embed_query = self._original_embed_query
@@ -194,7 +194,7 @@ def _load_trace(name: str) -> list[str]:
 
 def _read_cache_info() -> dict:
     try:
-        from omrs.retrieval import _cached_query_embedding
+        from omrg.retrieval import _cached_query_embedding
         info = _cached_query_embedding.cache_info()
         return {"hits": info.hits, "misses": info.misses, "maxsize": info.maxsize, "currsize": info.currsize}
     except Exception:
@@ -203,13 +203,13 @@ def _read_cache_info() -> dict:
 
 def _ingest_corpus(corpus_dir: Path) -> str:
     import asyncio
-    from omrs.ingestion import ingest_path_async
+    from omrg.ingestion import ingest_path_async
 
     tmp_dir = tempfile.mkdtemp(prefix="rag_cache_8a_")
     os.environ["CHROMA_PERSIST_DIR"] = tmp_dir
     os.environ["COLLECTION_NAME"] = EXPERIMENT_COLLECTION
     os.environ["METADATA_EXTRACTION_MODE"] = "disabled"
-    for mod_name in ("omrs.ingestion", "omrs.retrieval", "omrs.config"):
+    for mod_name in ("omrg.ingestion", "omrg.retrieval", "omrg.config"):
         mod = sys.modules.get(mod_name)
         if mod is not None and hasattr(mod, "CHROMA_PERSIST_DIR"):
             mod.CHROMA_PERSIST_DIR = tmp_dir
@@ -224,7 +224,7 @@ def _ingest_corpus(corpus_dir: Path) -> str:
 
 
 def _run_cell(cache_enabled: bool, trace_name: str, queries: list[str], counter: EmbedCallCounter, *, rerank: bool) -> CellResult:
-    from omrs.retrieval import search
+    from omrg.retrieval import search
 
     cell = CellResult(cache_enabled=cache_enabled, trace=trace_name, rerank=rerank)
     print(f"\nCell cache={'on' if cache_enabled else 'off'} trace={trace_name} rerank={'on' if rerank else 'off'} calls={len(queries)}")

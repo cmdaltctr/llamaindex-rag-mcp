@@ -18,9 +18,9 @@ from experiment_io import (
     verify_freeze,
 )
 
-from omrs.core.ingestion.normalise import NORMALISER_VERSION, normalise_reader_text
-from omrs.integrations.pdf.liteparse import LiteParseReader
-from omrs.integrations.pdf.pypdf import PyPDFReader
+from omrg.core.ingestion.normalise import NORMALISER_VERSION, normalise_reader_text
+from omrg.integrations.pdf.liteparse import LiteParseReader
+from omrg.integrations.pdf.pypdf import PyPDFReader
 
 
 def page_texts(documents: list[Any], tier: str, count: int) -> list[str]:
@@ -42,9 +42,9 @@ def page_texts(documents: list[Any], tier: str, count: int) -> list[str]:
 
 def extraction_identity(source: Path) -> dict:
     """Bind resume to the frozen files, references, readers and normaliser."""
-    import omrs.core.ingestion.normalise as normaliser
-    import omrs.integrations.pdf.liteparse as liteparse_adapter
-    import omrs.integrations.pdf.pypdf as pypdf_adapter
+    import omrg.core.ingestion.normalise as normaliser
+    import omrg.integrations.pdf.liteparse as liteparse_adapter
+    import omrg.integrations.pdf.pypdf as pypdf_adapter
 
     files = [
         source / "output" / "frozen.manifest.json",

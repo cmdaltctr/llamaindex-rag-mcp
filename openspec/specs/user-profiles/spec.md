@@ -285,7 +285,7 @@ Saving a revision of a pipeline that belongs to a profile in use SHALL return `a
 
 ### Requirement: Saved Studio pipelines become user profiles on upgrade
 
-On the first start after upgrade, each saved Studio pipeline that belongs to no profile SHALL become a user profile. A workspace job pipeline, whose layout holds the key `omrg_task`, SHALL be skipped. The profile title SHALL be the pipeline's `layout.title` when it is not empty after trimming, else the pipeline title. The base profile SHALL be the `graph.profile` of the current revision when it is `documents` or `codebase`, else `documents`. The pipeline SHALL fill the slot whose contract its current revision matches first (Ingest, Search, Answer). The other slots SHALL get the standard graphs of the base profile. A pipeline with no saved revision, or a graph that matches no contract, SHALL go in the Search slot, and the profile SHALL be not ready. When the current revision names another operational profile than the base, the upgrade SHALL save one new revision that names the base profile, and SHALL keep the earlier revisions and their runs.
+On the first start after upgrade, each saved Studio pipeline that belongs to no profile SHALL become a user profile. A workspace job pipeline, whose layout holds the key `omrs_task`, SHALL be skipped. The profile title SHALL be the pipeline's `layout.title` when it is not empty after trimming, else the pipeline title. The base profile SHALL be the `graph.profile` of the current revision when it is `documents` or `codebase`, else `documents`. The pipeline SHALL fill the slot whose contract its current revision matches first (Ingest, Search, Answer). The other slots SHALL get the standard graphs of the base profile. A pipeline with no saved revision, or a graph that matches no contract, SHALL go in the Search slot, and the profile SHALL be not ready. When the current revision names another operational profile than the base, the upgrade SHALL save one new revision that names the base profile, and SHALL keep the earlier revisions and their runs.
 
 #### Scenario: A saved search pipeline
 
@@ -312,7 +312,7 @@ On the first start after upgrade, each saved Studio pipeline that belongs to no 
 
 #### Scenario: Workspace job pipeline
 
-- **WHEN** the workspace holds the pipeline "Workspace job: ingest" whose layout holds `omrg_task`
+- **WHEN** the workspace holds the pipeline "Workspace job: ingest" whose layout holds `omrs_task`
 - **THEN** after upgrade no user profile MUST exist for it
 - **AND** its runs MUST stay unchanged
 

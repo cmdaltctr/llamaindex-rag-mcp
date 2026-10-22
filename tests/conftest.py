@@ -72,17 +72,6 @@ _TEST_COLLECTION = "test_documents"
 
 
 @pytest.fixture(autouse=True)
-def _skip_legacy_install_check(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Keep the startup check for a pre-rename install away from the real home folder.
-
-    A developer machine can hold a real pre-rename install (a data folder, a
-    login item). The check would then stop every CLI test. Tests of the check
-    override this fixture by name.
-    """
-    monkeypatch.setattr("omrs.config.legacy_install.exit_if_legacy_install", lambda: None)
-
-
-@pytest.fixture(autouse=True)
 def _reset_default_store() -> None:
     """Reset the process-wide default store before each test.
 
