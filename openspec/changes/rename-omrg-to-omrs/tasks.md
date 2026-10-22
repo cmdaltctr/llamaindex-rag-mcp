@@ -25,7 +25,7 @@
 - [x] 3.5 Update `.github/workflows/ci.yml` (lines near 94, 311, 523, 586), `codecov.yml`, `.coderabbit.yaml`, `scripts/local_ci.sh` and `.gitignore`.
 - [x] 3.6 Update the tests that pin the name: `tests/unit/test_verification_gaps_boundaries.py`, `tests/test_clean_base_tripwire.py` (counts must match 1.3), `tests/test_file_size_ceiling.py`, `tests/test_docs_references.py`, `tests/conftest.py`.
 - [ ] 3.7 Run `uv run lint-imports`. Delete any stale `ignore_imports` entry it reports. Run `uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q`, then the tripwire on its own. Fix until green.
-- [ ] 3.8 Commit this group.
+- [x] 3.8 Commit this group.
 
 ## 4. Settings surface and runtime identifiers
 
@@ -44,19 +44,19 @@
 - [x] 5.2 Rename the five storage keys and their tests (`lib/preferences.ts`, `lib/navCollapsed.ts`, `studio/storage.ts` and the session and UI keys). Rename the `omrg_bt_` display text in `settings/McpHttpPanel.tsx`.
 - [x] 5.3 Update `web/vite.config.ts` (`OMRS_API_URL`, build output `../src/omrs/transports/api/static`).
 - [ ] 5.4 Run the web lint, typecheck, unit tests and build. Do a browser check at 1280 px and 390 px. Warn the owner before starting the dev server or a browser run.
-- [ ] 5.5 Commit this group.
+- [x] 5.5 Commit this group.
 
 ## 6. Docs, specs and active changes
 
 - [x] 6.1 Run the scripted pass (design D4, D5, D6) over `README.md`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, per-folder `AGENTS.md` and `CLAUDE.md` files, `docs/guides/`, `docs/proposals/`, `docs/roadmap/`, `plugins/`, `.agents/skills/omrg-design` (path only if tracked) and `.env.example`. Review the prose hits by hand.
 - [x] 6.2 Update the project instructions: the Quick Reference commands, the `~/.config/omrs` text in gotcha 18, the `DATA/omrg/` text in gotcha 15 (keep the folder name, add the note from design D7) and the last-known-good block.
-- [ ] 6.3 Rewrite the live baseline specs in place: the token pass over the 124 requirement blocks and the 12 headings (design D9). Do not touch the two requirements that the delta files cover.
-- [ ] 6.4 Rewrite the five active changes with the same pass, including paths such as `src/omrg/core/...` in their tasks.
-- [ ] 6.5 Add one note to `docs/adr/ADR_README.md`: the project was named OMRG until this change and ADRs keep that name. Leave the ADR, TDR, archived-change, experiment and `CHANGELOG.md` files unchanged.
-- [ ] 6.6 Write `docs/adr/092-rename-omrg-to-omrs.md` with the decision, the alternatives from design D2 and D8, and the migration steps. Load `s-adr` first.
-- [ ] 6.7 Write a migration guide in `docs/guides/` (or extend `getting-started.md`) with the six user steps from design.md, the MCP client key step first.
-- [ ] 6.8 Do the documentation drift check: grep `docs/guides/` for `omrg`, `OMRG`, `~/.omrg` and `omrg.jsonc`. The guard test must pass. Then grep `openspec/specs/` and `openspec/changes/` (not `archive/`) for `omrg`. Each remaining hit must sit in a requirement that describes the old identity (design D9). List the hits in the commit message.
-- [ ] 6.9 Run `openspec validate --all --strict`. Commit this group.
+- [x] 6.3 Rewrite the live baseline specs in place: the token pass over the 124 requirement blocks and the 12 headings (design D9). Do not touch the two requirements that the delta files cover.
+- [x] 6.4 Rewrite the five active changes with the same pass, including paths such as `src/omrg/core/...` in their tasks.
+- [x] 6.5 Add one note to `docs/adr/ADR_README.md`: the project was named OMRG until this change and ADRs keep that name. Leave the ADR, TDR, archived-change, experiment and `CHANGELOG.md` files unchanged.
+- [x] 6.6 Write `docs/adr/092-rename-omrg-to-omrs.md` with the decision, the alternatives from design D2 and D8, and the migration steps. Load `s-adr` first.
+- [x] 6.7 Write a migration guide in `docs/guides/` (or extend `getting-started.md`) with the six user steps from design.md, the MCP client key step first.
+- [x] 6.8 Do the documentation drift check: grep `docs/guides/` for `omrg`, `OMRG`, `~/.omrg` and `omrg.jsonc`. The guard test must pass. Then grep `openspec/specs/` and `openspec/changes/` (not `archive/`) for `omrg`. Each remaining hit must sit in a requirement that describes the old identity (design D9). List the hits in the commit message.
+- [x] 6.9 Run `openspec validate --all --strict`. Commit this group.
 
 ## 7. Verify
 

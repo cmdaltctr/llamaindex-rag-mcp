@@ -148,7 +148,7 @@ When the LiteParse adapter is in use, every emitted `Document` object SHALL carr
 ### Requirement: Reader factory SHALL be extensible without modifying ingestion code
 
 New reader adapters SHALL be addable by creating a single module in
-`src/omrg/integrations/pdf/` and registering it with one
+`src/omrs/integrations/pdf/` and registering it with one
 `registry.register()` call. The shared contract is the duck-typed
 `load_data(file) -> list[Document]` method — there is no separate protocol
 module. The ingestion call sites SHALL NOT require modification when a new
@@ -158,7 +158,7 @@ caller: `get_pdf_reader(reader)`.
 
 #### Scenario: Adding a new adapter
 
-- **WHEN** a developer creates `src/omrg/integrations/pdf/spdf.py` with a `load_data` method and adds `"spdf"` to the accepted values in `config/` plus one `register("spdf", "...")` call in the registry
+- **WHEN** a developer creates `src/omrs/integrations/pdf/spdf.py` with a `load_data` method and adds `"spdf"` to the accepted values in `config/` plus one `register("spdf", "...")` call in the registry
 - **THEN** no other source file SHALL require modification to make `PDF_READER=spdf` functional
 
 #### Scenario: Factory returns adapter, not reader instance
@@ -336,7 +336,7 @@ The fallback-route OCR engine SHALL be PaddleOCR-VL, and the primary-route engin
 
 Every OCR engine SHALL run as a local subprocess in a separate environment provisioned from its own engine-owned lockfile. Each engine project SHALL declare Python `>=3.11,<3.14` and SHALL own all of its model-runtime packages: PaddleOCR, PaddleX and PaddlePaddle for PaddleOCR-VL; PyTorch and transformers for dots.mocr; and any accelerator packages.
 
-OMRG's main package metadata, root lockfile, and main runtime environment SHALL NOT include any engine's model-runtime packages. OMRG runtime modules SHALL NOT import them. The OMRG side SHALL communicate with every engine only through the subprocess protocol.
+OMRS's main package metadata, root lockfile, and main runtime environment SHALL NOT include any engine's model-runtime packages. OMRS runtime modules SHALL NOT import them. The OMRS side SHALL communicate with every engine only through the subprocess protocol.
 
 Every engine SHALL emit structured Markdown suitable for the same downstream Markdown chunking path used by `pdf-inspector` output.
 
@@ -347,9 +347,9 @@ Every engine SHALL emit structured Markdown suitable for the same downstream Mar
 - **THEN** the emitted text SHALL be Markdown
 - **AND** structural elements available from the parser SHALL be represented in that Markdown rather than flattened into an undifferentiated text stream
 
-#### Scenario: Main OMRG environment remains Paddle-free
+#### Scenario: Main OMRS environment remains Paddle-free
 
-- **GIVEN** OMRG is installed from its main package metadata and root lockfile
+- **GIVEN** OMRS is installed from its main package metadata and root lockfile
 - **WHEN** the package starts and processes content without any engine environment
 - **THEN** no PaddleOCR, PaddleX, PaddlePaddle, PyTorch or transformers package SHALL be required or imported
 - **AND** the server SHALL remain usable for every existing non-OCR path
@@ -359,7 +359,7 @@ Every engine SHALL emit structured Markdown suitable for the same downstream Mar
 - **GIVEN** a Python interpreter in the supported `>=3.11,<3.14` range
 - **WHEN** an OCR engine is provisioned
 - **THEN** its environment SHALL be resolved from that engine's lockfile
-- **AND** provisioning SHALL NOT add the engine's packages to OMRG's main environment
+- **AND** provisioning SHALL NOT add the engine's packages to OMRS's main environment
 
 #### Scenario: Worker smoke test is independent of the main environment
 
@@ -367,13 +367,13 @@ Every engine SHALL emit structured Markdown suitable for the same downstream Mar
 - **WHEN** its standalone smoke test runs
 - **THEN** the capability probe SHALL return a schema-valid manifest
 - **AND** a small OCR fixture SHALL return schema-valid structured Markdown
-- **AND** the test SHALL NOT require the engine's packages in OMRG's main environment
+- **AND** the test SHALL NOT require the engine's packages in OMRS's main environment
 
 ### Requirement: The OCR worker SHALL use a versioned JSON Lines protocol
 
-OMRG SHALL send UTF-8 requests as one complete JSON object per line on the worker's standard input. The worker SHALL return one complete JSON object per line on standard output. Every request and response SHALL include a request identifier and protocol version. Every accepted parse request SHALL receive one terminal success or error response with the same request identifier while the worker remains healthy.
+OMRS SHALL send UTF-8 requests as one complete JSON object per line on the worker's standard input. The worker SHALL return one complete JSON object per line on standard output. Every request and response SHALL include a request identifier and protocol version. Every accepted parse request SHALL receive one terminal success or error response with the same request identifier while the worker remains healthy.
 
-Standard output SHALL contain protocol messages only. Worker diagnostics and operational logs SHALL use standard error so they cannot corrupt protocol framing. OMRG SHALL drain standard error independently from standard output.
+Standard output SHALL contain protocol messages only. Worker diagnostics and operational logs SHALL use standard error so they cannot corrupt protocol framing. OMRS SHALL drain standard error independently from standard output.
 
 The capability probe SHALL report worker availability, protocol version, relevant package names and exact versions, pipeline identity and revision, model identity and revision, and output-schema identity and version. It SHALL use metadata and static worker declarations without initialising Paddle, importing model code, loading model weights, or leaving the long-lived parsing worker running. Missing files, an unusable environment, malformed probe output, or an incompatible protocol SHALL produce a stable unavailable fingerprint before parse dispatch.
 
@@ -382,7 +382,7 @@ A successful parse response SHALL contain structured Markdown and metadata that 
 #### Scenario: Capability probe returns the worker fingerprint without loading the model
 
 - **GIVEN** the isolated worker environment is provisioned
-- **WHEN** OMRG performs the capability probe
+- **WHEN** OMRS performs the capability probe
 - **THEN** the probe SHALL report availability and every required worker identity field
 - **AND** it SHALL NOT initialise Paddle or import model code
 - **AND** it SHALL NOT leave a long-lived parsing worker running
@@ -390,14 +390,14 @@ A successful parse response SHALL contain structured Markdown and metadata that 
 #### Scenario: Parse request and response remain correlated
 
 - **GIVEN** the routing gate selects OCR and the worker capability is compatible
-- **WHEN** OMRG writes a parse request line to the worker
+- **WHEN** OMRS writes a parse request line to the worker
 - **THEN** the worker SHALL return one terminal JSON response line with the same request identifier
 - **AND** the response SHALL declare the negotiated protocol and output-schema identities
 
 #### Scenario: Worker logging does not contaminate protocol output
 
 - **GIVEN** the worker emits a diagnostic while handling a request
-- **WHEN** OMRG reads the worker streams
+- **WHEN** OMRS reads the worker streams
 - **THEN** the diagnostic SHALL be read from standard error
 - **AND** standard output SHALL remain parseable as JSON Lines protocol messages only
 
@@ -405,7 +405,7 @@ A successful parse response SHALL contain structured Markdown and metadata that 
 
 - **GIVEN** the capability probe reports an unsupported protocol or output-schema identity
 - **WHEN** an OCR-required PDF reaches the routing seam
-- **THEN** OMRG SHALL NOT dispatch the PDF to that worker
+- **THEN** OMRS SHALL NOT dispatch the PDF to that worker
 - **AND** the unavailable-worker degradation behaviour SHALL apply
 
 ### Requirement: The OCR parsing worker SHALL be lazy and long-lived
@@ -444,13 +444,13 @@ A timed-out, crashed, or protocol-invalid subprocess SHALL be discarded. The fai
 
 ### Requirement: Post-dispatch worker failure SHALL be a structured per-file error
 
-Parse dispatch occurs when OMRG has written and flushed the complete JSON Lines request. If the worker times out, crashes, closes its output, violates the protocol, or returns a structured error after that point, OMRG SHALL return a structured error for that file. It SHALL NOT report the partial `pdf-inspector` result as a successful or degraded extraction for the failed attempt.
+Parse dispatch occurs when OMRS has written and flushed the complete JSON Lines request. If the worker times out, crashes, closes its output, violates the protocol, or returns a structured error after that point, OMRS SHALL return a structured error for that file. It SHALL NOT report the partial `pdf-inspector` result as a successful or degraded extraction for the failed attempt.
 
 The failed source version SHALL NOT be marked current. The existing failure-safe replacement boundary SHALL preserve any prior current version. Other files in the same ingestion batch SHALL continue within the existing per-file error boundary.
 
 #### Scenario: Worker times out after parse dispatch
 
-- **GIVEN** OMRG has written and flushed a complete parse request
+- **GIVEN** OMRS has written and flushed a complete parse request
 - **WHEN** the worker does not return a terminal response within the configured timeout
 - **THEN** that file SHALL receive a structured timeout error
 - **AND** its source version SHALL NOT be marked current
@@ -458,7 +458,7 @@ The failed source version SHALL NOT be marked current. The existing failure-safe
 
 #### Scenario: Worker crashes after parse dispatch
 
-- **GIVEN** OMRG has written and flushed a complete parse request
+- **GIVEN** OMRS has written and flushed a complete parse request
 - **WHEN** the worker exits before returning the terminal response
 - **THEN** that file SHALL receive a structured worker-crash error
 - **AND** its source version SHALL NOT be marked current

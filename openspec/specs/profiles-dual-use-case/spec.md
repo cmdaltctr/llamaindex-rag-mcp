@@ -146,7 +146,7 @@ error that names the profile, the path it read and the fix.
   watcher or the stdio MCP server handles a collection tagged `my-notes`
 - **THEN** it MUST fail with an error that names `my-notes` and the path it
   read, says that user profiles live in the web workspace, and tells the user
-  to start `omrg web` once or to change the collection to `documents` or
+  to start `omrs web` once or to change the collection to `documents` or
   `codebase`
 
 ---

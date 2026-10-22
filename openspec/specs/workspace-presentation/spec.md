@@ -174,7 +174,7 @@ The theme button SHALL show the theme in effect and SHALL switch between Light a
 
 The Settings link SHALL open the Settings view.
 
-The power control SHALL show a light that follows `GET /v1/health`: green while the app answers and grey when it does not. Pressing it SHALL open a panel. The panel SHALL say "Running" with the running version while the app answers, and "Not answering" when it does not. The panel SHALL offer a Turn off button and a Restart button. Each button SHALL open a confirmation dialog that names the action. The Restart dialog SHALL say that the page signs in again by itself once the app is back, and SHALL name `omrg web open` for the case where it does not. After Turn off the dialog SHALL name `omrg web start`. After Restart it SHALL name `omrg web open`. The buttons SHALL be disabled when `GET /v1/server/power` answers `managed: false` or does not answer. The panel SHALL then show the commands `omrg web restart` and `omrg web open`, and one line that says why the buttons are disabled. When the server answers 409 because work is in progress, the panel SHALL show that reason in one line and SHALL keep the app running. The state SHALL NOT rely on colour alone.
+The power control SHALL show a light that follows `GET /v1/health`: green while the app answers and grey when it does not. Pressing it SHALL open a panel. The panel SHALL say "Running" with the running version while the app answers, and "Not answering" when it does not. The panel SHALL offer a Turn off button and a Restart button. Each button SHALL open a confirmation dialog that names the action. The Restart dialog SHALL say that the page signs in again by itself once the app is back, and SHALL name `omrs web open` for the case where it does not. After Turn off the dialog SHALL name `omrs web start`. After Restart it SHALL name `omrs web open`. The buttons SHALL be disabled when `GET /v1/server/power` answers `managed: false` or does not answer. The panel SHALL then show the commands `omrs web restart` and `omrs web open`, and one line that says why the buttons are disabled. When the server answers 409 because work is in progress, the panel SHALL show that reason in one line and SHALL keep the app running. The state SHALL NOT rely on colour alone.
 
 The GitHub link SHALL point to https://github.com/cmdaltctr/llamaindex-rag-mcp, SHALL open in a new tab and SHALL carry a `rel` value with `noopener` and `noreferrer`.
 
@@ -212,19 +212,19 @@ The GitHub link SHALL point to https://github.com/cmdaltctr/llamaindex-rag-mcp, 
 
 - **WHEN** `GET /v1/server/power` answers `managed: true` and the user presses Turn off
 - **THEN** a confirmation dialog MUST open and MUST NOT call `POST /v1/server/power` until the user confirms
-- **AND** after confirmation the page MUST post `{"action": "off"}` and MUST then say that the app is off and name `omrg web start`
+- **AND** after confirmation the page MUST post `{"action": "off"}` and MUST then say that the app is off and name `omrs web start`
 
 #### Scenario: Restart asks first
 
 - **WHEN** `GET /v1/server/power` answers `managed: true` and the user presses Restart
 - **THEN** a confirmation dialog MUST open and MUST NOT call `POST /v1/server/power` until the user confirms
-- **AND** after confirmation the page MUST post `{"action": "restart"}` and MUST then say that the page signs in again by itself and name `omrg web open`
+- **AND** after confirmation the page MUST post `{"action": "restart"}` and MUST then say that the page signs in again by itself and name `omrs web open`
 
 #### Scenario: Power panel names the commands
 
 - **WHEN** the user opens the power panel and `GET /v1/server/power` answers `managed: false`
 - **THEN** the Turn off and Restart buttons MUST be disabled
-- **AND** the panel MUST show the commands `omrg web restart` and `omrg web open` and the reason in one line
+- **AND** the panel MUST show the commands `omrs web restart` and `omrs web open` and the reason in one line
 
 #### Scenario: Work in progress
 

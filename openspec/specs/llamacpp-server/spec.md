@@ -1,13 +1,13 @@
 # llamacpp-server Specification
 
 ## Purpose
-Lets `omrg web` start, stop and restart one `llama-server` for Chat. Covers ownership, settings, launch guardrails, lifecycle states with fixed reasons, routes and scopes, and the log file. The stdio MCP server and the CLI never manage it.
+Lets `omrs web` start, stop and restart one `llama-server` for Chat. Covers ownership, settings, launch guardrails, lifecycle states with fixed reasons, routes and scopes, and the log file. The stdio MCP server and the CLI never manage it.
 
 ## Requirements
 
-### Requirement: omrg owns only the server it starts
+### Requirement: omrs owns only the server it starts
 
-`omrg web` SHALL start at most one `llama-server` for Chat and SHALL keep the handle of that process. It SHALL stop, restart and report only that process. It SHALL NOT find a process by name or by port. It SHALL NOT signal a process it did not start. The stdio MCP server and the CLI SHALL NOT start or stop the server. The llama.cpp embedding server SHALL NOT be managed.
+`omrs web` SHALL start at most one `llama-server` for Chat and SHALL keep the handle of that process. It SHALL stop, restart and report only that process. It SHALL NOT find a process by name or by port. It SHALL NOT signal a process it did not start. The stdio MCP server and the CLI SHALL NOT start or stop the server. The llama.cpp embedding server SHALL NOT be managed.
 
 #### Scenario: User's own server on the port
 
@@ -16,7 +16,7 @@ Lets `omrg web` start, stop and restart one `llama-server` for Chat. Covers owne
 
 #### Scenario: Stop with nothing owned
 
-- **WHEN** the user presses Stop and omrg owns no process
+- **WHEN** the user presses Stop and omrs owns no process
 - **THEN** the server MUST send no signal to any process and the state MUST stay `stopped`
 
 #### Scenario: No process lookup
@@ -31,17 +31,17 @@ Lets `omrg web` start, stop and restart one `llama-server` for Chat. Covers owne
 
 ### Requirement: Server settings and sources
 
-The server SHALL have the settings `llamacpp_server_binary` (env `LLAMACPP_SERVER_BINARY`), `llamacpp_server_model` (env `LLAMACPP_SERVER_MODEL`) and `llamacpp_context_window` (env `LLAMACPP_CONTEXT_WINDOW`, default 16,384, range 2,048 to 262,144) and `llamacpp_idle_sleep_seconds` (env `LLAMACPP_IDLE_SLEEP_SECONDS`, default 300, range 0 to 86,400, 0 turns sleep off). Each SHALL be settable in `omrg.jsonc` under the same key name and in the llama.cpp card. A card save SHALL write `omrg.jsonc`. The source order of the provider settings SHALL apply: the environment and `.env` (both lock), then `omrg.jsonc` (does not lock), then the default. A changed value SHALL apply at the next start of the owned server. The port SHALL come from `llamacpp_chat_url`.
+The server SHALL have the settings `llamacpp_server_binary` (env `LLAMACPP_SERVER_BINARY`), `llamacpp_server_model` (env `LLAMACPP_SERVER_MODEL`) and `llamacpp_context_window` (env `LLAMACPP_CONTEXT_WINDOW`, default 16,384, range 2,048 to 262,144) and `llamacpp_idle_sleep_seconds` (env `LLAMACPP_IDLE_SLEEP_SECONDS`, default 300, range 0 to 86,400, 0 turns sleep off). Each SHALL be settable in `omrs.jsonc` under the same key name and in the llama.cpp card. A card save SHALL write `omrs.jsonc`. The source order of the provider settings SHALL apply: the environment and `.env` (both lock), then `omrs.jsonc` (does not lock), then the default. A changed value SHALL apply at the next start of the owned server. The port SHALL come from `llamacpp_chat_url`.
 
 #### Scenario: Config file sets all three
 
-- **WHEN** `omrg.jsonc` holds the three keys
+- **WHEN** `omrs.jsonc` holds the three keys
 - **THEN** `GET /v1/llamacpp/server` MUST report each with source `config-file` and `locked` false
 
 #### Scenario: Saved from the GUI
 
 - **WHEN** no environment value exists and the user saves the three values
-- **THEN** `omrg.jsonc` MUST hold them and the sources MUST be `config-file`
+- **THEN** `omrs.jsonc` MUST hold them and the sources MUST be `config-file`
 
 #### Scenario: Environment wins
 
@@ -151,7 +151,7 @@ The server SHALL build the argument list as a list from fixed flags only: `-m <p
 
 #### Scenario: Minimal environment
 
-- **WHEN** the environment of `omrg web` holds `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` and `OPENAI_COMPATIBLE_API_KEY`
+- **WHEN** the environment of `omrs web` holds `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` and `OPENAI_COMPATIBLE_API_KEY`
 - **THEN** the environment of the child MUST hold none of them
 
 #### Scenario: Cache variables only for a Hugging Face model
@@ -219,7 +219,7 @@ The server state SHALL be one of `stopped`, `starting`, `running` and `failed`. 
 
 ### Requirement: Stop and restart
 
-Stop SHALL send SIGTERM to the process group of the owned process, wait up to 10 seconds, then send SIGKILL to the group. Restart SHALL stop the owned process and then start it with the saved values. The owned server SHALL stop when `omrg web` exits. A save SHALL NOT stop a running server. The status SHALL report the values the running process started with and the saved values, so the page can show "Restart to apply" when they differ.
+Stop SHALL send SIGTERM to the process group of the owned process, wait up to 10 seconds, then send SIGKILL to the group. Restart SHALL stop the owned process and then start it with the saved values. The owned server SHALL stop when `omrs web` exits. A save SHALL NOT stop a running server. The status SHALL report the values the running process started with and the saved values, so the page can show "Restart to apply" when they differ.
 
 #### Scenario: Graceful stop
 
@@ -236,9 +236,9 @@ Stop SHALL send SIGTERM to the process group of the owned process, wait up to 10
 - **WHEN** the user saves a new context window and presses Restart
 - **THEN** the new process MUST start with the new `-c` value
 
-#### Scenario: Exit of omrg web
+#### Scenario: Exit of omrs web
 
-- **WHEN** `omrg web` shuts down while the owned server runs
+- **WHEN** `omrs web` shuts down while the owned server runs
 - **THEN** the owned process group MUST be stopped before the process exits
 
 #### Scenario: Save keeps it running

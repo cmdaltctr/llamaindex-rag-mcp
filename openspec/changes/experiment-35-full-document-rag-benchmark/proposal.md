@@ -1,10 +1,10 @@
-# Experiment 35: Local OMRG Profile Baselines
+# Experiment 35: Local OMRS Profile Baselines
 
 > Status: DRAFT. Run the two local baselines only after the subset identities, model identities, scoring rules, and local resource budget are frozen.
 
 ## Why
 
-OMRG needs one full evaluation of each main profile before larger cloud benchmarks or comparisons with other frameworks.
+OMRS needs one full evaluation of each main profile before larger cloud benchmarks or comparisons with other frameworks.
 
 The first baseline should stay small enough to run on the operator's Mac. The document and codebase runs should execute separately, not concurrently. This proves the evaluation harness, exposes bottlenecks, and establishes a reproducible local baseline before cloud deployment.
 
@@ -18,7 +18,7 @@ The first baseline should stay small enough to run on the operator's Mac. The do
 - Add lightweight experiment observability with structured per-stage JSONL traces.
 - Record reader/OCR path, chunking, embedding, retrieval, reranking, answer generation, latency, token use, errors, and degradation where applicable.
 - Add RAGAS as an optional evaluation-only layer for answer/context quality where the benchmark supports it.
-- Keep RAGAS and observability tooling out of the base OMRG runtime dependency path.
+- Keep RAGAS and observability tooling out of the base OMRS runtime dependency path.
 - Stop local scale-up when the agreed Mac resource/runtime budget is exceeded. Larger runs move to a later cloud proposal.
 - Keep LlamaIndex, Haystack, and other framework comparisons out of Experiment 35.
 - Do not change production defaults from this experiment.

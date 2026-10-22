@@ -1,4 +1,4 @@
-# Tasks: Experiment 35 Local OMRG Profile Baselines
+# Tasks: Experiment 35 Local OMRS Profile Baselines
 
 > DRAFT: measured execution must not begin until section 1 is complete.
 
@@ -7,7 +7,7 @@
 - [ ] 1.1 Select and freeze 30–50 FinanceBench questions across multiple source PDFs for 35A.
 - [ ] 1.2 Select and freeze two RepoProbe repositories, commit SHAs, and approximately 10–20 questions for 35B.
 - [ ] 1.3 Record exact dataset versions, licences, download procedures, and source hashes.
-- [ ] 1.4 Select the reference embedding provider/model and freeze all OMRG profile settings.
+- [ ] 1.4 Select the reference embedding provider/model and freeze all OMRS profile settings.
 - [ ] 1.5 Decide whether grounded-answer scoring is mandatory or secondary for each profile.
 - [ ] 1.6 Select the RAGAS version, metrics, and judge/provider configuration if RAGAS is used.
 - [ ] 1.7 Define the Mac wall-time, memory-pressure, and paid-provider budget.
@@ -17,7 +17,7 @@
 
 - [ ] 2.1 Define a secret-free JSONL trace schema for run, profile, dataset/query identity, stage timing, model identity, routing, retrieval, reranking, answer status, tokens, and failures.
 - [ ] 2.2 Keep trace output outside MCP stdout and production protocol channels.
-- [ ] 2.3 Record OMRG SHA, dependency-lock hashes, effective settings, index identity, and model/provider identities.
+- [ ] 2.3 Record OMRS SHA, dependency-lock hashes, effective settings, index identity, and model/provider identities.
 - [ ] 2.4 Design the schema so later cloud work can map it to OpenTelemetry without requiring OpenTelemetry for the Mac baseline.
 - [ ] 2.5 Add RAGAS only to an evaluation/dev environment or optional evaluation extra; do not add it to the base install.
 

@@ -1,7 +1,7 @@
 # public-library-api Specification
 
 ## Purpose
-Defines the public API surface of the `omrg` package: the names a library
+Defines the public API surface of the `omrs` package: the names a library
 consumer may import, the guarantee that importing the package has no side
 effects, and the identity of the distribution and import name.
 

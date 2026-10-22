@@ -166,14 +166,14 @@ citation safeguards.
 #### Scenario: Full test suite passes
 
 - **WHEN** the approved implementation validation runs
-  `uv run pytest -m "not slow" --cov=omrg`
+  `uv run pytest -m "not slow" --cov=omrs`
 - **THEN** all tests MUST pass
 - **AND** coverage MUST meet the recorded floors: Core + MCP ≥95%,
   Orchestration ≥85%, Overall ≥90%
 
 #### Scenario: File size ceiling across the package
 
-- **WHEN** `src/omrg/` is inspected
+- **WHEN** `src/omrs/` is inspected
 - **THEN** no Python file MUST exceed 500 lines, including modules outside
   `core/`
 
@@ -181,4 +181,4 @@ citation safeguards.
 
 - **WHEN** existing MCP tools and CLI commands are exercised after the change
 - **THEN** their signatures and behaviour MUST remain compatible
-- **AND** no-argument `omrg` MUST still start the MCP stdio server
+- **AND** no-argument `omrs` MUST still start the MCP stdio server

@@ -1,21 +1,21 @@
 # notebook-plugins Specification
 
 ## Purpose
-Connect independently managed local notebook editors to OMRG without adding their runtime dependencies or release cycle to the base application.
+Connect independently managed local notebook editors to OMRS without adding their runtime dependencies or release cycle to the base application.
 
 ## Requirements
 
 ### Requirement: Notebook integration is separately managed
-Notebook editors SHALL be optional external-tool plugins with versioned manifests and explicitly registered executables. Their installation and updates SHALL remain outside OMRG's dependency environment. The initial workspace SHALL not provide automatic installation or updating.
+Notebook editors SHALL be optional external-tool plugins with versioned manifests and explicitly registered executables. Their installation and updates SHALL remain outside OMRS's dependency environment. The initial workspace SHALL not provide automatic installation or updating.
 
 #### Scenario: marimo is absent
 - **WHEN** the user opens Experiments without a registered marimo installation
 - **THEN** the workspace SHALL explain how to install/register it independently
-- **AND** ordinary OMRG functions SHALL remain available
+- **AND** ordinary OMRS functions SHALL remain available
 
 #### Scenario: Editor is updated independently
 - **WHEN** the operator updates the external editor and requests a compatibility recheck
-- **THEN** the host SHALL probe the updated executable without changing OMRG's dependency lock
+- **THEN** the host SHALL probe the updated executable without changing OMRS's dependency lock
 
 ### Requirement: Plugin manifests are constrained data
 A plugin manifest SHALL declare its identity, schema/version, capabilities, executable reference, tested compatibility range, and supported structured launch/probe arguments. Registration and enabling SHALL require explicit trust. Manifests SHALL not supply shell strings, Python hooks, credentials, or installation commands.
@@ -39,7 +39,7 @@ The host SHALL probe tool version and required launch capabilities before starti
 
 #### Scenario: Independently updated version is supported
 - **WHEN** the updated editor passes the manifest's compatibility checks
-- **THEN** the same OMRG installation SHALL be able to launch it
+- **THEN** the same OMRS installation SHALL be able to launch it
 
 ### Requirement: Editor lifecycle is explicit and locally protected
 The initial plugin SHALL launch an editable local notebook interface only after user consent. It SHALL bind to loopback, retain authentication, disable startup cell execution and automatic package/update behaviour, and expose explicit start/stop states. The host SHALL own only processes it starts.

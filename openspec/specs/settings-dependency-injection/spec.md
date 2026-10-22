@@ -27,7 +27,7 @@ binary, thresholds). It SHALL live in a pure-data module with no imports from
 
 - **WHEN** the import-linter check runs against the module defining
   `EffectiveSettings`
-- **THEN** it MUST have no import from `omrg.config`, `omrg.compose`, or
+- **THEN** it MUST have no import from `omrs.config`, `omrs.compose`, or
   a sibling `core/` business module
 
 #### Scenario: Covers every core-consumed knob
@@ -110,7 +110,7 @@ factory over it; direct Engine construction accepts already-resolved
 
 #### Scenario: Import does not resolve settings
 
-- **WHEN** `omrg.config` is imported
+- **WHEN** `omrs.config` is imported
 - **THEN** no `Settings()` instance MUST be constructed as a side effect
 - **AND** no environment or YAML resolution MUST occur until `get_settings()`
   is called

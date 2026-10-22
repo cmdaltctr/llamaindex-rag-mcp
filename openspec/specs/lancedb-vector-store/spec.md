@@ -27,7 +27,7 @@ No module outside `core/vectordb/lancedb/` SHALL import `lancedb`.
 
 #### Scenario: Single lancedb import site
 
-- **WHEN** `src/omrg/` is searched for `import lancedb`
+- **WHEN** `src/omrs/` is searched for `import lancedb`
 - **THEN** the only matches MUST be within `core/vectordb/lancedb/`
 
 #### Scenario: Contract parity with the ABC

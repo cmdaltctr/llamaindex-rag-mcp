@@ -212,7 +212,7 @@ An answer on a collection that uses a user profile SHALL run that profile's curr
 
 ### Requirement: User profiles work in every process that reads the workspace
 
-The stdio MCP server, the CLI and the watcher SHALL resolve user profiles from the default workspace database (`~/.omrg/workspace/workspace.db`, the default folder of `omrg web`) when that file exists. They SHALL open it read-only and SHALL NOT create, migrate or write it. A search, answer or ingestion on a collection that uses a user profile SHALL then run that profile's pipelines, as in the web server. When the file does not exist, they SHALL refuse a collection that uses a user profile with an error that names the profile, names the path that was read, and tells the user to start `omrg web` once with the default workspace or to change the collection's profile to `documents` or `codebase`. Binding a user profile to a collection SHALL stay in the web server and its MCP endpoint.
+The stdio MCP server, the CLI and the watcher SHALL resolve user profiles from the default workspace database (`~/.omrs/workspace/workspace.db`, the default folder of `omrs web`) when that file exists. They SHALL open it read-only and SHALL NOT create, migrate or write it. A search, answer or ingestion on a collection that uses a user profile SHALL then run that profile's pipelines, as in the web server. When the file does not exist, they SHALL refuse a collection that uses a user profile with an error that names the profile, names the path that was read, and tells the user to start `omrs web` once with the default workspace or to change the collection's profile to `documents` or `codebase`. Binding a user profile to a collection SHALL stay in the web server and its MCP endpoint.
 
 #### Scenario: Stdio MCP search on a user profile
 
@@ -222,7 +222,7 @@ The stdio MCP server, the CLI and the watcher SHALL resolve user profiles from t
 
 #### Scenario: CLI search on a user profile
 
-- **WHEN** the default workspace holds user profile `my-notes`, collection `notes` uses it, and the user runs `omrg search` on `notes`
+- **WHEN** the default workspace holds user profile `my-notes`, collection `notes` uses it, and the user runs `omrs search` on `notes`
 - **THEN** the results MUST come from the Search pipeline of `my-notes`
 
 #### Scenario: Watcher ingests into a user profile
@@ -233,8 +233,8 @@ The stdio MCP server, the CLI and the watcher SHALL resolve user profiles from t
 #### Scenario: No workspace database
 
 - **WHEN** the default workspace database does not exist and the CLI, the watcher or the stdio MCP server handles collection `notes`, which is tagged `my-notes`
-- **THEN** it MUST fail with an error that names `my-notes` and the path `~/.omrg/workspace/workspace.db`
-- **AND** the error MUST tell the user to start `omrg web` once or to change the collection to `documents` or `codebase`
+- **THEN** it MUST fail with an error that names `my-notes` and the path `~/.omrs/workspace/workspace.db`
+- **AND** the error MUST tell the user to start `omrs web` once or to change the collection to `documents` or `codebase`
 
 #### Scenario: Older workspace schema
 
@@ -244,8 +244,8 @@ The stdio MCP server, the CLI and the watcher SHALL resolve user profiles from t
 
 #### Scenario: Bind from the CLI
 
-- **WHEN** a user runs `omrg set-profile` with the user profile id `my-notes`
-- **THEN** the CLI MUST refuse with a message that tells the user to bind user profiles in Knowledge Base or through the MCP endpoint of `omrg web`
+- **WHEN** a user runs `omrs set-profile` with the user profile id `my-notes`
+- **THEN** the CLI MUST refuse with a message that tells the user to bind user profiles in Knowledge Base or through the MCP endpoint of `omrs web`
 - **AND** the collection's profile tag MUST stay unchanged
 
 ### Requirement: Ingestion into a user-profile collection runs its Ingest pipeline

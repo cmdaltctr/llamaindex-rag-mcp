@@ -82,14 +82,14 @@ cheap to close now while the v3 line is open for breaking work.
 ## Impact
 
 **Code**
-- `src/omrg/config/legacy.py` — policy docstring, entry retention/removal.
-- `src/omrg/core/metadata/extractor.py` — loses the OpenRouter implementation
+- `src/omrs/config/legacy.py` — policy docstring, entry retention/removal.
+- `src/omrs/core/metadata/extractor.py` — loses the OpenRouter implementation
   and `_CLOUD_BACKENDS`; shrinks toward pure dispatch.
-- `src/omrg/core/metadata/openrouter.py` — **new**.
-- `src/omrg/core/providers/llm/openrouter.py` — **new**.
-- `src/omrg/core/providers/llm/registry.py`, `core/metadata/registry.py` — one
+- `src/omrs/core/metadata/openrouter.py` — **new**.
+- `src/omrs/core/providers/llm/openrouter.py` — **new**.
+- `src/omrs/core/providers/llm/registry.py`, `core/metadata/registry.py` — one
   `register()` line each.
-- `src/omrg/core/metadata/llamaindex.py` — inline construction removed.
+- `src/omrs/core/metadata/llamaindex.py` — inline construction removed.
 
 **Tests**
 - New guard test and symmetry test.

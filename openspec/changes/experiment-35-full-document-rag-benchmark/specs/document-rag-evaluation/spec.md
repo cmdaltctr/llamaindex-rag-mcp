@@ -4,7 +4,7 @@
 
 ### Requirement: Document baseline uses a frozen FinanceBench subset
 
-Experiment 35A SHALL evaluate the current OMRG `documents` profile on a small frozen FinanceBench subset using the source PDFs.
+Experiment 35A SHALL evaluate the current OMRS `documents` profile on a small frozen FinanceBench subset using the source PDFs.
 
 #### Scenario: A run starts from pre-extracted benchmark text
 - **WHEN** the run bypasses the approved source PDF

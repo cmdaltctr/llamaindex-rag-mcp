@@ -186,7 +186,7 @@ The Studio page header SHALL show two sentences under the heading: "Profiles are
 
 - **WHEN** the user opens "How profiles work"
 - **THEN** it MUST show these four lines in this order:
-  1. "Built-in profiles come with OMRG and are read-only. Your profiles are copies that you can rename, change and delete."
+  1. "Built-in profiles come with OMRS and are read-only. Your profiles are copies that you can rename, change and delete."
   2. "Each profile has three pipelines: Ingest reads files and splits them into chunks, Search finds the best chunks for a question, and Answer writes a cited answer."
   3. "To use a profile, pick it for a collection in Knowledge Base, under Profile."
   4. "When a collection holds vectors, the embedding model of its profile is locked, because the stored vectors were made with that model."

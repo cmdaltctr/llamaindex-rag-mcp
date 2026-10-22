@@ -13,7 +13,7 @@ of these rules; this spec is the contract they enforce.
 ### Requirement: ChromaDB confined to the vector store implementation
 
 Production code SHALL import `chromadb` only from modules in the
-`src/omrg/core/vectordb/chroma/` folder. Every other module that needs
+`src/omrs/core/vectordb/chroma/` folder. Every other module that needs
 vector store access SHALL receive a `VectorStore` instance by injection. An
 import-linter contract SHALL enforce this, and SHALL fail CI when any other
 module imports `chromadb`.
@@ -31,19 +31,19 @@ module imports `chromadb`.
 
 ### Requirement: Configuration is a leaf module
 
-`omrg.config` SHALL NOT import from `omrg.core` business logic,
-`omrg.compose`, `omrg.transports`, `omrg.integrations`, or
-`omrg.daemon`. The only sanctioned upward references are the pure-data
-subpackage settings models (`omrg.core.*.settings`). Runtime capability
+`omrs.config` SHALL NOT import from `omrs.core` business logic,
+`omrs.compose`, `omrs.transports`, `omrs.integrations`, or
+`omrs.daemon`. The only sanctioned upward references are the pure-data
+subpackage settings models (`omrs.core.*.settings`). Runtime capability
 probing (sparse backend availability, PDF reader availability) SHALL live in
 `compose.py`, not in `config`. An import-linter contract SHALL enforce this.
 
 #### Scenario: No business-logic import in config
 
-- **WHEN** `src/omrg/config/__init__.py` is inspected
+- **WHEN** `src/omrs/config/__init__.py` is inspected
 - **THEN** it MUST NOT import `_detect_native_sparse_capability` or any other
-  symbol from `omrg.core.retrieval`, `omrg.core.ingestion`,
-  `omrg.core.metadata`, or `omrg.core.vectordb`
+  symbol from `omrs.core.retrieval`, `omrs.core.ingestion`,
+  `omrs.core.metadata`, or `omrs.core.vectordb`
 
 #### Scenario: Capability probing lives in the composition root
 
@@ -53,7 +53,7 @@ probing (sparse backend availability, PDF reader availability) SHALL live in
 
 #### Scenario: Contract fails on a new upward import
 
-- **WHEN** a developer adds an import from `omrg.config` to any `core/`
+- **WHEN** a developer adds an import from `omrs.config` to any `core/`
   module other than a `settings` model
 - **THEN** `uv run lint-imports` MUST fail
 
@@ -61,21 +61,21 @@ probing (sparse backend availability, PDF reader availability) SHALL live in
 
 ### Requirement: Integrations are acyclic leaves
 
-Modules under `src/omrg/integrations/` SHALL NOT import from
-`omrg.core`, `omrg.transports`, or `omrg.daemon`. No module SHALL
+Modules under `src/omrs/integrations/` SHALL NOT import from
+`omrs.core`, `omrs.transports`, or `omrs.daemon`. No module SHALL
 import another module solely to preserve a test monkeypatch target. An
 import-linter contract SHALL enforce the direction.
 
 #### Scenario: Magika has no back-reference
 
-- **WHEN** `src/omrg/integrations/magika.py` is inspected
-- **THEN** it MUST NOT import `omrg.codebase_map` or
-  `omrg.core.codebase.codebase_map` in any form
+- **WHEN** `src/omrs/integrations/magika.py` is inspected
+- **THEN** it MUST NOT import `omrs.codebase_map` or
+  `omrs.core.codebase.codebase_map` in any form
 
 #### Scenario: Availability probe is patched at its own module
 
 - **WHEN** a test needs to simulate Magika being unavailable
-- **THEN** it MUST patch the probe on `omrg.integrations.magika`
+- **THEN** it MUST patch the probe on `omrs.integrations.magika`
 - **AND** the codebase map MUST observe the patched result through its normal
   call into that module
 
@@ -84,7 +84,7 @@ import-linter contract SHALL enforce the direction.
 ### Requirement: Full-package import boundary coverage
 
 The import-linter contract set SHALL cover every package under
-`src/omrg/`. The business-layer contract SHALL include
+`src/omrs/`. The business-layer contract SHALL include
 `core.ingestion`, `core.retrieval`, `core.metadata`, `core.chunking`,
 `core.vectordb`, `core.profiles`, `core.codebase`, `core.documents`,
 `core.community`, `core.answer`, `core.pipelines`, `core.workspace`,
@@ -95,7 +95,7 @@ coverage.
 #### Scenario: Every package is a contract source
 
 - **WHEN** the contract set in `pyproject.toml` is compared against the
-  packages present under `src/omrg/`
+  packages present under `src/omrs/`
 - **THEN** every package MUST appear as a source module in at least one
   applicable contract
 - **AND** new graph/workspace packages MUST not depend on FastAPI, notebook
@@ -104,7 +104,7 @@ coverage.
 #### Scenario: Transport import from core fails
 
 - **WHEN** any module under `core/` or `daemon/` imports from
-  `omrg.transports`
+  `omrs.transports`
 - **THEN** `uv run lint-imports` MUST fail
 
 ### Requirement: Use-case subsystems live under core
@@ -121,16 +121,16 @@ settings without direct ingestion/retrieval cross-imports.
 - **WHEN** ingestion needs file-type detection
 - **THEN** it MUST call the core codebase detector through `core.codebase`
   (a core-to-core import) or the sanctioned `integrations.magika` leaf
-- **AND** no `core/` module MUST import a top-level `omrg` module, except
-  the one sanctioned lazy import of `omrg.capabilities` in
+- **AND** no `core/` module MUST import a top-level `omrs` module, except
+  the one sanctioned lazy import of `omrs.capabilities` in
   `core/ingestion/pipeline.py` that builds an operation-owned OCR client
   when none is injected
 - **AND** `uv run lint-imports` MUST fail when any other `core/` module
-  imports a top-level `omrg` module
+  imports a top-level `omrs` module
 
 #### Scenario: Top-level business modules are gone
 
-- **WHEN** `src/omrg/` is listed after the change
+- **WHEN** `src/omrs/` is listed after the change
 - **THEN** public API and composition modules such as `__init__.py`,
   `engine.py`, `compose.py`, the `compose_*.py` composition helpers,
   `capabilities.py` (runtime capability probes), and
@@ -148,13 +148,13 @@ settings without direct ingestion/retrieval cross-imports.
 
 ### Requirement: Executable file-size ceiling
 
-No Python file under `src/omrg/` SHALL exceed 500 lines. This ceiling SHALL
+No Python file under `src/omrs/` SHALL exceed 500 lines. This ceiling SHALL
 be asserted by an automated test rather than by review convention, and the test
 SHALL report every offending file with its line count.
 
 #### Scenario: Ceiling holds across the package
 
-- **WHEN** the file-size test runs against `src/omrg/**/*.py`
+- **WHEN** the file-size test runs against `src/omrs/**/*.py`
 - **THEN** it MUST pass with zero files over 500 lines
 
 #### Scenario: Regression is caught
@@ -172,7 +172,7 @@ The shared community strategy package SHALL not import from codebase or document
 
 #### Scenario: Leiden adapter is inspected
 - **WHEN** the optional Leiden adapter is inspected
-- **THEN** it SHALL not import from `omrg.core`, `omrg.transports`, or `omrg.daemon`
+- **THEN** it SHALL not import from `omrs.core`, `omrs.transports`, or `omrs.daemon`
 
 ### Requirement: Graph scheduling is independent of domain implementations
 The generic graph runner SHALL receive operation adapters and resources through injection. It SHALL not import ingestion, retrieval, answering, provider, transport, or process-launch implementations. Domain adapters SHALL remain in their owning packages and use existing registries.
