@@ -14,7 +14,7 @@ stay indexed, and all three can score highly on the same query. The system
 hands the language model an obsolete rule and its replacement side by side and
 leaves the model to guess.
 
-This proposal adds an opt-in authority layer to OMRG, our modular RAG
+This proposal adds an opt-in authority layer to OMRS, our modular RAG
 framework. After ingestion it extracts typed, evidence-bearing relations
 between documents: one corroborates, explains, specialises, restricts, amends
 or supersedes another, or conflicts with it. At query time a deterministic
@@ -53,7 +53,7 @@ amendments, regulations, technical standards, API documentation across
 versions, clinical guidance and organisational procedures. Any domain where
 "which text applies" matters as much as "which text is similar" has it.
 
-## What exists already in OMRG
+## What exists already in OMRS
 
 The framework already has the foundations this layer needs.
 

@@ -1,7 +1,7 @@
 """Helpers for the MCP-over-HTTP tests: a live loopback server and clients.
 
 Not a test module. The server is a real Uvicorn on a pre-bound loopback
-socket (as ``omrg web`` binds it), so the SDK's streamable HTTP client
+socket (as ``omrs web`` binds it), so the SDK's streamable HTTP client
 talks to it over real HTTP, including server-sent events.
 """
 
@@ -25,10 +25,10 @@ import httpx  # noqa: E402
 import uvicorn  # noqa: E402
 
 from conftest import build_mcp_engine  # noqa: E402
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.runs_wiring import run_service_factory  # noqa: E402
-from omrg.transports.api.security import AccessPolicy  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.runs_wiring import run_service_factory  # noqa: E402
+from omrs.transports.api.security import AccessPolicy  # noqa: E402
 
 
 @dataclass

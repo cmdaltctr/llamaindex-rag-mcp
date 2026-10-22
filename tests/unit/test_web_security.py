@@ -19,10 +19,10 @@ from fastapi import Depends  # noqa: E402
 from fastapi.responses import StreamingResponse  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.bind_address import validate_bind_host  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.security import (  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.bind_address import validate_bind_host  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.security import (  # noqa: E402
     BEARER_SCOPES,
     AccessPolicy,
     RedactingFilter,
@@ -166,12 +166,12 @@ def test_bootstrap_exchanges_once_for_strict_httponly_cookie(tmp_path: Path) -> 
 def test_wrong_bootstrap_is_rejected_and_not_echoed(tmp_path: Path) -> None:
     app, policy = _make(tmp_path)
     with TestClient(app, base_url=BASE) as client:
-        response = client.post("/v1/session", json={"bootstrap": "omrg_bs_guess"}, headers=ORIGIN)
+        response = client.post("/v1/session", json={"bootstrap": "omrs_bs_guess"}, headers=ORIGIN)
         after = client.post(
             "/v1/session", json={"bootstrap": policy.bootstrap_secret}, headers=ORIGIN
         )
     assert response.status_code == 401
-    assert "omrg_bs_guess" not in response.text
+    assert "omrs_bs_guess" not in response.text
     assert after.status_code == 200  # a failed guess does not burn the secret
 
 
@@ -298,7 +298,7 @@ def test_every_protected_route_declares_a_scope(tmp_path: Path) -> None:
         if not path.startswith("/v1") or path in public:
             continue
         calls = [dep.call for dep in route.dependant.dependencies]
-        assert any(getattr(c, "omrg_scope", None) for c in calls), path
+        assert any(getattr(c, "omrs_scope", None) for c in calls), path
         checked += 1
     assert checked > 0, "no protected /v1 routes were inspected"
 
@@ -315,15 +315,15 @@ def test_redacting_filter_removes_every_credential_form() -> None:
         __file__,
         1,
         "GET %s auth=%s cookie=%s",
-        (f"/x#{policy.bootstrap_secret}", f"Bearer {token}", "omrg_ss_abcdef123456"),
+        (f"/x#{policy.bootstrap_secret}", f"Bearer {token}", "omrs_ss_abcdef123456"),
         None,
     )
     assert RedactingFilter().filter(record)
     text = record.getMessage()
     assert policy.bootstrap_secret not in text
     assert token not in text
-    assert "omrg_ss_abcdef123456" not in text
-    assert "omrg_bt_***" in text
+    assert "omrs_ss_abcdef123456" not in text
+    assert "omrs_bt_***" in text
 
 
 def test_two_keys_sharing_a_prefix_leave_no_fragment_of_either() -> None:
@@ -341,7 +341,7 @@ def test_two_keys_sharing_a_prefix_leave_no_fragment_of_either() -> None:
 
 def test_redacting_filter_scrubs_tracebacks() -> None:
     try:
-        raise RuntimeError("failed with omrg_bt_abc123.secretpart")
+        raise RuntimeError("failed with omrs_bt_abc123.secretpart")
     except RuntimeError:
         import sys
 
@@ -374,13 +374,13 @@ def test_validation_errors_use_envelope_without_echoing_input(tmp_path: Path) ->
     """A malformed body gets a 400 envelope that names the field, not its value."""
     app, _ = _make(tmp_path)
     with TestClient(app, base_url=BASE) as client:
-        response = client.post("/v1/session", json={"wrong": "omrg_bs_leak"}, headers=ORIGIN)
+        response = client.post("/v1/session", json={"wrong": "omrs_bs_leak"}, headers=ORIGIN)
     assert response.status_code == 400
     body = response.json()
     assert body["status"] == "error"
     assert body["error_type"] == "validation"
     assert "bootstrap" in body["message"]
-    assert "omrg_bs_leak" not in response.text
+    assert "omrs_bs_leak" not in response.text
 
 
 # ── Approved extra origins (--allow-origin) ──────────────────────────────
@@ -460,7 +460,7 @@ def test_policy_refuses_a_non_loopback_extra_origin() -> None:
 
 
 def test_secret_set_is_append_only_and_hides_values_in_repr() -> None:
-    from omrg.transports.api.security import RedactingFilter, SecretSet
+    from omrs.transports.api.security import RedactingFilter, SecretSet
 
     secrets = SecretSet(["first-secret-value", ""])
     secrets.add("second-secret-value")

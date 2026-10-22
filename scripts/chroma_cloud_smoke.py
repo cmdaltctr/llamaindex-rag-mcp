@@ -39,7 +39,7 @@ SMOKE_CORPUS = "smoke-check"
 
 def _smoke_collection_name() -> str:
     """Derive the disposable collection name (deterministic, rule-safe)."""
-    from omrg.core.vectordb.naming import experiment_collection_name
+    from omrs.core.vectordb.naming import experiment_collection_name
 
     return experiment_collection_name(
         experiment_id="smoke",
@@ -59,8 +59,8 @@ def run_smoke() -> int:
 
     load_dotenv(PROJECT_ROOT / ".env")
 
-    from omrg.config import Settings
-    from omrg.core.vectordb.chroma.store import build_chroma_vector_store
+    from omrs.config import Settings
+    from omrs.core.vectordb.chroma.store import build_chroma_vector_store
 
     settings = Settings()
     if settings.chroma_mode != "cloud":
@@ -70,8 +70,8 @@ def run_smoke() -> int:
     # The write/query paths embed via the LlamaIndex global model.
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from omrg.compose import build_embed_model
-    from omrg.core.vectordb.identity import redact_cloud_secrets, redact_secret
+    from omrs.compose import build_embed_model
+    from omrs.core.vectordb.identity import redact_cloud_secrets, redact_secret
 
     def _redact(message: str) -> str:
         """Redact every configured cloud credential and identifier."""

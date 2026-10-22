@@ -22,19 +22,19 @@ pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient  # noqa: E402
 from typer.testing import CliRunner  # noqa: E402
 
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.launch_link import LINK_FILE_NAME, RearmingAccessPolicy  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.page_secret import (  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.launch_link import LINK_FILE_NAME, RearmingAccessPolicy  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.page_secret import (  # noqa: E402
     PAGE_SECRET_FILE_NAME,
     PageSecret,
 )
-from omrg.transports.api.security import MAX_BOOTSTRAP_FAILURES, AccessPolicy  # noqa: E402
-from omrg.transports.cli import app as cli_app  # noqa: E402
+from omrs.transports.api.security import MAX_BOOTSTRAP_FAILURES, AccessPolicy  # noqa: E402
+from omrs.transports.cli import app as cli_app  # noqa: E402
 
 BASE = "http://127.0.0.1:8765"
 ORIGIN = {"Origin": BASE}
-_META = re.compile(r'<meta name="omrg-page-secret" content="([^"]+)"')
+_META = re.compile(r'<meta name="omrs-page-secret" content="([^"]+)"')
 runner = CliRunner()
 
 
@@ -47,7 +47,7 @@ def _static(tmp_path: Path) -> Path:
     static = tmp_path / "static"
     static.mkdir(exist_ok=True)
     (static / "index.html").write_text(
-        "<!doctype html><html><head><title>OMRG</title></head>"
+        "<!doctype html><html><head><title>OMRS</title></head>"
         "<body><div id=root></div></body></html>",
         encoding="utf-8",
     )
@@ -60,7 +60,7 @@ def _app(
     *,
     extra_origins: tuple[str, ...] = (),
 ) -> tuple[Any, AccessPolicy, PageSecret]:
-    """Build an app the way ``omrg web`` does: a fresh policy, the workspace secret."""
+    """Build an app the way ``omrs web`` does: a fresh policy, the workspace secret."""
     workspace = tmp_path / "ws"
     config = WebConfig(
         workspace=workspace, host="127.0.0.1", port=8765, static_dir=_static(tmp_path)
@@ -89,7 +89,7 @@ def test_first_start_creates_a_private_secret_file(tmp_path: Path) -> None:
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
     assert stat.S_IMODE(workspace.stat().st_mode) == 0o700
     assert path.read_text(encoding="utf-8").strip() == secret.value
-    assert secret.value.startswith("omrg_bs_")
+    assert secret.value.startswith("omrs_bs_")
     assert len(secret.value) >= 40
     assert secret.value not in repr(secret)
 
@@ -110,7 +110,7 @@ def test_a_loose_mode_is_tightened_with_a_warning(
     path = tmp_path / "ws" / PAGE_SECRET_FILE_NAME
     path.chmod(0o644)
 
-    with caplog.at_level(logging.WARNING, logger="omrg"):
+    with caplog.at_level(logging.WARNING, logger="omrs"):
         again = PageSecret.load_or_create(tmp_path / "ws")
 
     assert again.value == first.value
@@ -128,10 +128,10 @@ def test_a_broken_file_is_replaced_with_a_warning(
     path.write_text("not a secret\n", encoding="utf-8")
     path.chmod(0o600)
 
-    with caplog.at_level(logging.WARNING, logger="omrg"):
+    with caplog.at_level(logging.WARNING, logger="omrs"):
         secret = PageSecret.load_or_create(workspace)
 
-    assert secret.value.startswith("omrg_bs_")
+    assert secret.value.startswith("omrs_bs_")
     assert path.read_text(encoding="utf-8").strip() == secret.value
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
     assert "not a valid" in caplog.text
@@ -273,7 +273,7 @@ def test_the_secret_keeps_working_after_many_wrong_guesses(tmp_path: Path) -> No
     app, policy, secret = _app(tmp_path)
     with TestClient(app, base_url=BASE) as client:
         for _ in range(MAX_BOOTSTRAP_FAILURES + 1):
-            client.post("/v1/session", json={"bootstrap": "omrg_bs_guess"}, headers=ORIGIN)
+            client.post("/v1/session", json={"bootstrap": "omrs_bs_guess"}, headers=ORIGIN)
         assert policy.exchange_bootstrap(policy.bootstrap_secret) is None
         again = client.post("/v1/session", json={"bootstrap": secret.value}, headers=ORIGIN)
     assert again.status_code == 200
@@ -293,7 +293,7 @@ def test_the_one_time_link_still_signs_in_once(tmp_path: Path) -> None:
 
 
 def test_sign_in_with_the_secret_leaves_the_login_item_link_unused(tmp_path: Path) -> None:
-    """A silent sign-in must not renew the link that 'omrg web open --print' showed."""
+    """A silent sign-in must not renew the link that 'omrs web open --print' showed."""
     link_file = tmp_path / "ws" / LINK_FILE_NAME
     (tmp_path / "ws").mkdir(mode=0o700)
     policy = RearmingAccessPolicy.for_launch("127.0.0.1", 8765, link_file=link_file)
@@ -328,7 +328,7 @@ def test_the_secret_never_reaches_a_log_or_an_api_body(
     assert secret.value not in caplog.text
 
 
-def test_omrg_web_loads_the_secret_and_prints_nothing_of_it(tmp_path: Path) -> None:
+def test_omrs_web_loads_the_secret_and_prints_nothing_of_it(tmp_path: Path) -> None:
     captured: dict[str, Any] = {}
 
     def fake_serve(app: Any, sock: Any) -> None:
@@ -336,7 +336,7 @@ def test_omrg_web_loads_the_secret_and_prints_nothing_of_it(tmp_path: Path) -> N
         sock.close()
 
     workspace = tmp_path / "ws"
-    with patch("omrg.transports.cli.web._serve", side_effect=fake_serve):
+    with patch("omrs.transports.cli.web._serve", side_effect=fake_serve):
         result = runner.invoke(cli_app, ["web", "--port", "0", "--workspace", str(workspace)])
 
     assert result.exit_code == 0, result.output

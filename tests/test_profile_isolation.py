@@ -16,8 +16,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from omrg.core.profiles.resolver import ProfileResolver
-from omrg.core.settings import EffectiveSettings, MetadataBlock, RetrievalBlock
+from omrs.core.profiles.resolver import ProfileResolver
+from omrs.core.settings import EffectiveSettings, MetadataBlock, RetrievalBlock
 
 
 @pytest.fixture(autouse=True)
@@ -116,7 +116,7 @@ class TestNoGlobalMutation:
 
     def test_profile_difference_leaves_the_default_untouched(self) -> None:
         """Resolving profiles must not rewrite the composition-root default."""
-        from omrg.core.settings import get_default_effective_settings
+        from omrs.core.settings import get_default_effective_settings
 
         before = get_default_effective_settings()
         store = _store_with({"docs": "documents", "code": "codebase"})
@@ -151,8 +151,8 @@ def test_engines_resolve_same_named_collection_from_their_own_stores(
     The profile tag is read from the ENGINE's store, never from the
     process-default store (which may belong to another engine).
     """
-    from omrg.core.vectordb.lancedb.store import LanceVectorStore
-    from omrg.engine import Engine
+    from omrs.core.vectordb.lancedb.store import LanceVectorStore
+    from omrs.engine import Engine
 
     base = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
     engines: list[Engine] = []
@@ -180,8 +180,8 @@ def test_engines_resolve_same_named_collection_from_their_own_stores(
 
 def test_engine_search_propagates_invalid_profile_tag(tmp_path: Path) -> None:
     """An invalid tag on a collection surfaces from engine operations."""
-    from omrg.core.vectordb.lancedb.store import LanceVectorStore
-    from omrg.engine import Engine
+    from omrs.core.vectordb.lancedb.store import LanceVectorStore
+    from omrs.engine import Engine
 
     base = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
     store = LanceVectorStore(uri=str(tmp_path / "store-invalid"))

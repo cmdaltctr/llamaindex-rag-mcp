@@ -1,4 +1,4 @@
-"""``omrg search``, ``answer`` and ``ingest`` on user-profile collections (tasks 8.10, 8.11).
+"""``omrs search``, ``answer`` and ``ingest`` on user-profile collections (tasks 8.10, 8.11).
 
 Spec: user-profiles, "User profiles work in every process that reads the
 workspace" (design D11). The default workspace is a temporary home folder.
@@ -24,7 +24,7 @@ from tests.unit.test_cli_user_profiles_support import (
 )
 from typer.testing import CliRunner
 
-from omrg.transports.cli import app
+from omrs.transports.cli import app
 
 runner = CliRunner()
 
@@ -32,7 +32,7 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _cli_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     """Use a temporary home folder and the mock embedder; return the home folder."""
-    import omrg.transports.cli as cli_module
+    import omrs.transports.cli as cli_module
 
     monkeypatch.setattr(cli_module, "_runtime_details_enabled", False)
     use_mock_embedder(monkeypatch)
@@ -51,7 +51,7 @@ class _Model:
 @pytest.fixture(autouse=True)
 def _answer_model(monkeypatch: pytest.MonkeyPatch) -> None:
     """Give the Engine an answer model that needs no network."""
-    monkeypatch.setattr("omrg.compose_answer.build_answer_llm", lambda *_a, **_k: _Model())
+    monkeypatch.setattr("omrs.compose_answer.build_answer_llm", lambda *_a, **_k: _Model())
 
 
 @pytest.fixture
@@ -98,9 +98,9 @@ def test_ingest_into_a_user_profile_collection_indexes_the_files(
 # ── A built-in collection keeps the direct call ───────────────────────
 
 _DIRECT = {
-    "search": ("omrg.core.retrieval.search", {"return_value": []}),
-    "answer": ("omrg.core.answer.answer", {"new_callable": AsyncMock}),
-    "ingest": ("omrg.core.ingestion.ingest_path_async", {"new_callable": AsyncMock}),
+    "search": ("omrs.core.retrieval.search", {"return_value": []}),
+    "answer": ("omrs.core.answer.answer", {"new_callable": AsyncMock}),
+    "ingest": ("omrs.core.ingestion.ingest_path_async", {"new_callable": AsyncMock}),
 }
 _DIRECT_RESULT = {
     "answer": {"status": "no_evidence", "citations": [], "evidence": []},
@@ -136,7 +136,7 @@ def test_a_user_profile_without_a_workspace_fails_with_the_binding_message(
     result = _invoke(command, tmp_path, USER_COLLECTION)
     assert result.exit_code == 1
     text = one_line(result.stderr)
-    assert "'my-notes'" in text and "~/.omrg/workspace/workspace.db" in text
-    assert "Start `omrg web` once" in text
+    assert "'my-notes'" in text and "~/.omrs/workspace/workspace.db" in text
+    assert "Start `omrs web` once" in text
     assert "'documents' or 'codebase'" in text
     assert result.stdout == ""

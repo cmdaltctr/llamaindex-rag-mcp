@@ -1,7 +1,7 @@
-"""The web launch hands saved rows to ``omrg.jsonc`` and publishes the notice (task 6.2).
+"""The web launch hands saved rows to ``omrs.jsonc`` and publishes the notice (task 6.2).
 
 ``prepare_settings`` runs in the lifespan before the providers load. The user
-config folder is a temporary one (``OMRG_CONFIG_DIR``) and the keychain is a fake.
+config folder is a temporary one (``OMRS_CONFIG_DIR``) and the keychain is a fake.
 """
 
 from __future__ import annotations
@@ -15,10 +15,10 @@ pytest.importorskip("fastapi")
 
 from tests.unit import test_web_connections_edit as edit  # noqa: E402
 
-from omrg.config.settings_file import read_settings_file  # noqa: E402
-from omrg.core.workspace import WorkspaceLayout  # noqa: E402
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
-from omrg.integrations.workspace_sqlite.settings import WorkspaceSettings  # noqa: E402
+from omrs.config.settings_file import read_settings_file  # noqa: E402
+from omrs.core.workspace import WorkspaceLayout  # noqa: E402
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
+from omrs.integrations.workspace_sqlite.settings import WorkspaceSettings  # noqa: E402
 
 harness = edit.harness
 
@@ -55,7 +55,7 @@ def test_the_configuration_answers_when_no_rows_exist(harness: Any) -> None:
 
 
 def test_a_hand_edit_of_a_restart_only_key_is_pending_not_applied(harness: Any) -> None:
-    from omrg.config.settings_file_write import write_settings
+    from omrs.config.settings_file_write import write_settings
 
     with harness() as h:
         write_settings({"web_port": 9555}, revision=None)

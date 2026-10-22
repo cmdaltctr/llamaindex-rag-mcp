@@ -15,7 +15,7 @@ from typing import Any
 
 from tests.unit.test_engine_pipelines_support import build_engine, rerank_graph
 
-from omrg.core.pipelines import ControlSource, RunStatus
+from omrs.core.pipelines import ControlSource, RunStatus
 
 
 class ForbiddenReranker:

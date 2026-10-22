@@ -15,7 +15,7 @@ from tests.unit.test_pipeline_support import (
     search_graph,
 )
 
-from omrg.core.pipelines import (
+from omrs.core.pipelines import (
     EffectClass,
     EmbeddingRef,
     HostContext,
@@ -350,7 +350,7 @@ def test_preflight_runs_no_adapter() -> None:
     """Validation never calls an adapter, even when the graph is invalid."""
     from tests.unit.test_pipeline_support import fixture_descriptors
 
-    from omrg.core.pipelines import OperationCatalogue
+    from omrs.core.pipelines import OperationCatalogue
 
     calls: list[str] = []
 

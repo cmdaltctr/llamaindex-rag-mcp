@@ -35,7 +35,7 @@ describe("RestartDialog", () => {
     expect(await screen.findByRole("dialog")).toHaveTextContent("Two settings apply after a restart.");
   });
 
-  it("posts the restart, says the page signs in again by itself and names omrg web open", async () => {
+  it("posts the restart, says the page signs in again by itself and names omrs web open", async () => {
     const { user, server } = open({ ...MANAGED, "POST /v1/server/power": ACCEPTED });
     const dialog = await screen.findByRole("dialog");
     const button = within(dialog).getByRole("button", { name: "Restart now" });
@@ -45,14 +45,14 @@ describe("RestartDialog", () => {
     await waitFor(() => expect(server.find("POST", "/v1/server/power")).toHaveLength(1));
     expect(server.find("POST", "/v1/server/power")[0]?.body).toEqual({ action: "restart" });
     expect(await within(dialog).findByText(/^Restarting\./)).toHaveTextContent(/signs in again by itself/);
-    expect(within(dialog).getByText("omrg web open")).toBeInTheDocument();
+    expect(within(dialog).getByText("omrs web open")).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: "Restart now" })).not.toBeInTheDocument();
   });
 
   it("shows the command and no Restart now when the server runs in a terminal", async () => {
     const { server } = open(FOREGROUND);
     const dialog = await screen.findByRole("dialog");
-    await waitFor(() => expect(within(dialog).getByText("omrg web")).toBeInTheDocument());
+    await waitFor(() => expect(within(dialog).getByText("omrs web")).toBeInTheDocument());
     expect(dialog).toHaveTextContent(/runs in a terminal/i);
     expect(within(dialog).queryByRole("button", { name: "Restart now" })).not.toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Later" })).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe("RestartDialog", () => {
   it("shows the command when the power route does not answer", async () => {
     open({ "GET /v1/server/power": () => json({ detail: "no" }, 404) });
     const dialog = await screen.findByRole("dialog");
-    await waitFor(() => expect(within(dialog).getByText("omrg web")).toBeInTheDocument());
+    await waitFor(() => expect(within(dialog).getByText("omrs web")).toBeInTheDocument());
     expect(within(dialog).queryByRole("button", { name: "Restart now" })).not.toBeInTheDocument();
   });
 

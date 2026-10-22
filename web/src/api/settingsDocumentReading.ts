@@ -28,7 +28,7 @@ export interface DocumentReadingSetting {
   key: DocumentReadingKey;
   /** The value in force since this launch. For `pdf_reader` this is the configured name, which can be `auto`. */
   value: DocumentReadingValue;
-  /** The valid value `omrg.jsonc` holds now, or `null` when the file does not set it or holds a value that breaks its rule. */
+  /** The valid value `omrs.jsonc` holds now, or `null` when the file does not set it or holds a value that breaks its rule. */
   saved: DocumentReadingValue | null;
   source: "env" | "dotenv" | "config-file" | "default";
   /** True when `source` is `env` or `dotenv`. */
@@ -74,7 +74,7 @@ export interface DocumentReadingState {
   };
 }
 
-/** One to nine keys. `null` removes a key from `omrg.jsonc`, so its default applies. */
+/** One to nine keys. `null` removes a key from `omrs.jsonc`, so its default applies. */
 export type DocumentReadingValues = Partial<Record<DocumentReadingKey, DocumentReadingValue | null>>;
 
 export function getDocumentReadingSettings(api: ApiClient, options: CallOptions = {}): Promise<DocumentReadingState> {

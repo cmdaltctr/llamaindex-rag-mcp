@@ -34,7 +34,7 @@ SOFTWARE.
 
 ## Bundled runtime packages
 
-Used by: the built application in `src/omrg/transports/api/static/`. The production build (`npm run build`) bundles these npm packages into one script file. The build removes their licence comments, so their notices are kept here. Development-only packages (test, lint and type tools, `@types/*`) are not bundled and are not listed.
+Used by: the built application in `src/omrs/transports/api/static/`. The production build (`npm run build`) bundles these npm packages into one script file. The build removes their licence comments, so their notices are kept here. Development-only packages (test, lint and type tools, `@types/*`) are not bundled and are not listed.
 
 Versions are from `web/package-lock.json` on 2026-10-14. Update this list when a runtime dependency changes.
 

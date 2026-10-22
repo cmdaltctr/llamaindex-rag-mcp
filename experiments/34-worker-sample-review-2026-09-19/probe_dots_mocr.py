@@ -16,7 +16,7 @@
 
 Operator request 2026-09-24: check whether dots.mocr (3B, rednote-hilab) is usable
 on this machine before any wider comparison. It runs in its own throwaway uv
-environment (PEP 723 inline dependencies), never in the omrg install, because it
+environment (PEP 723 inline dependencies), never in the omrs install, because it
 needs PyTorch.
 
 Upstream targets CUDA: ``modeling_dots_vision.py`` imports ``flash_attn`` at module
@@ -48,7 +48,7 @@ EXP_DIR = Path(__file__).resolve().parent
 OUT_DIR = EXP_DIR / "output" / "dots_mocr"
 STATE = EXP_DIR / "output" / "dots_mocr_state.json"
 #: Upstream warns against periods in the model folder name (dynamic-module naming).
-MODEL_DIR = Path.home() / ".cache" / "omrg-exp34" / "DotsMOCR"
+MODEL_DIR = Path.home() / ".cache" / "omrs-exp34" / "DotsMOCR"
 REPO_ID = "rednote-hilab/dots.mocr"
 #: The operator's review set (commit 46147e1 scoped the review to these pages).
 DEFAULT_PAGES = "bd03:1,bd03:2,io06:28,io06:53,eq01:11"
@@ -87,7 +87,7 @@ def ensure_model() -> list[str]:
     hard_import = re.compile(r"^from flash_attn import flash_attn_varlen_func\n", re.MULTILINE)
     if hard_import.search(src):
         src = hard_import.sub(
-            "try:\n    from flash_attn import flash_attn_varlen_func\nexcept ImportError:  # omrg exp34: no CUDA on Apple Silicon\n    flash_attn_varlen_func = None\n",
+            "try:\n    from flash_attn import flash_attn_varlen_func\nexcept ImportError:  # omrs exp34: no CUDA on Apple Silicon\n    flash_attn_varlen_func = None\n",
             src,
         )
         vision.write_text(src, encoding="utf-8")

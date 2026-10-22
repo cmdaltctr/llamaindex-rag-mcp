@@ -25,9 +25,9 @@ import jsonschema  # noqa: E402
 from fastapi.routing import APIRoute  # noqa: E402
 from tests.unit.test_web_documents_support import openapi_doc  # noqa: E402
 
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig, get_runtime  # noqa: E402
-from omrg.transports.api.security import BEARER_SCOPES  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig, get_runtime  # noqa: E402
+from omrs.transports.api.security import BEARER_SCOPES  # noqa: E402
 
 API_PREFIX = "/v1"
 METHODS = ("get", "put", "post", "delete", "patch")
@@ -239,10 +239,10 @@ class RouteAccess:
 def route_access(route: APIRoute) -> RouteAccess:
     """Read the scope, session-only flag and runtime need of *route*."""
     calls = list(walk_dependencies(route))
-    scopes = {call.omrg_scope for call in calls if getattr(call, "omrg_scope", None)}
+    scopes = {call.omrs_scope for call in calls if getattr(call, "omrs_scope", None)}
     assert len(scopes) <= 1, f"{route.path} requires several scopes: {sorted(scopes)}"
     scope = next(iter(scopes), None)
-    flagged = any(getattr(call, "omrg_session_only", False) for call in calls)
+    flagged = any(getattr(call, "omrs_session_only", False) for call in calls)
     session_only = scope is not None and (flagged or scope not in BEARER_SCOPES)
     return RouteAccess(scope, session_only, any(call is get_runtime for call in calls))
 
@@ -369,13 +369,13 @@ class ContractChecker:
 
     @staticmethod
     def _check_frames(operation: dict[str, Any], frames: list[dict[str, Any]]) -> None:
-        """Validate every event frame against ``x-omrg-sse-events``.
+        """Validate every event frame against ``x-omrs-sse-events``.
 
         A GET stream reconnects, so it must open with a ``retry`` hint. A
         stream answering a request body (``streamAnswer``) never reconnects
         and sends no hint.
         """
-        schemas = operation["x-omrg-sse-events"]
+        schemas = operation["x-omrs-sse-events"]
         assert frames, "the stream sent no frame"
         if "requestBody" not in operation:
             assert frames[0].get("retry"), "the stream must open with a retry hint"

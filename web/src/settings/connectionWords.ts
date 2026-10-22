@@ -75,7 +75,7 @@ export function cloudHost(connection: Connection): string {
 export const SOURCE_WORDS: Record<string, string> = {
   env: "Set in the environment. Change it there.",
   dotenv: "Set in .env. Change it there.",
-  "config-file": "from omrg.jsonc",
+  "config-file": "from omrs.jsonc",
   keychain: "in system keychain",
   "key-file": "from key file",
   default: "default",

@@ -10,8 +10,8 @@ from typing import Any
 
 import pytest
 
-from omrg.config.jsonc_edit import JsoncEditError, remove_value, set_value
-from omrg.config.user_config import parse_jsonc
+from omrs.config.jsonc_edit import JsoncEditError, remove_value, set_value
+from omrs.config.user_config import parse_jsonc
 
 # ── Set an existing value ────────────────────────────────────────────────
 
@@ -65,9 +65,9 @@ def test_insert_into_an_empty_inline_object() -> None:
 
 
 def test_insert_into_a_header_only_file() -> None:
-    text = "// omrg settings\n{\n  // nothing yet\n}\n"
+    text = "// omrs settings\n{\n  // nothing yet\n}\n"
     out = set_value(text, ("a",), 1)
-    assert out == '// omrg settings\n{\n  // nothing yet\n  "a": 1\n}\n'
+    assert out == '// omrs settings\n{\n  // nothing yet\n  "a": 1\n}\n'
 
 
 def test_insert_into_an_inline_object_stays_inline() -> None:

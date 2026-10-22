@@ -1,6 +1,6 @@
 # Web workspace
 
-`omrg web` starts a local browser workspace for OMRG. It serves the application and the `/v1` HTTP API from one loopback address. This guide tells you how to install it, start it, sign in, give it file access, follow long work, and stop it.
+`omrs web` starts a local browser workspace for OMRS. It serves the application and the `/v1` HTTP API from one loopback address. This guide tells you how to install it, start it, sign in, give it file access, follow long work, and stop it.
 
 The web workspace is for one user on one machine. It does not accept remote connections.
 
@@ -9,8 +9,8 @@ Related guides:
 - [Local workspace](workspace.md): the workspace folder, its records, retention and cleanup.
 - [Pipeline graphs](pipelines.md): graph documents, operations and validation.
 - [Notebooks](notebooks.md): the optional marimo notebook plugin and its trust model.
-- `src/omrg/transports/api/README.md`: the API package, scopes and contract checks.
-- `src/omrg/transports/api/openapi.yaml`: the full HTTP contract.
+- `src/omrs/transports/api/README.md`: the API package, scopes and contract checks.
+- `src/omrs/transports/api/openapi.yaml`: the full HTTP contract.
 
 ## Install the web extra
 
@@ -25,30 +25,30 @@ uv sync --extra web
 From a package index:
 
 ```bash
-pip install "omrg[web]"
+pip install "omrs[web]"
 ```
 
-The wheel contains the built application files. You do not need Node or npm to run `omrg web`.
+The wheel contains the built application files. You do not need Node or npm to run `omrs web`.
 
-Without the extra, only `omrg web` fails. It writes this message to stderr and exits with code 1:
+Without the extra, only `omrs web` fails. It writes this message to stderr and exits with code 1:
 
 <!-- web-missing-extra -->
 ```text
-The web workspace needs the optional "web" extra. Install it with: pip install "omrg[web]"  (or, in a checkout: uv sync --extra web)
+The web workspace needs the optional "web" extra. Install it with: pip install "omrs[web]"  (or, in a checkout: uv sync --extra web)
 ```
 
-`import omrg`, `omrg --help`, the MCP server and the other `omrg` commands work without the extra.
+`import omrs`, `omrs --help`, the MCP server and the other `omrs` commands work without the extra.
 
 ## Start the server
 
 ```bash
-omrg web --root ~/papers
+omrs web --root ~/papers
 ```
 
 The command writes a link to stderr. It writes nothing to stdout. Open the link in your browser:
 
 ```text
-OMRG web workspace. Open this link in your browser (it works once):
+OMRS web workspace. Open this link in your browser (it works once):
 http://127.0.0.1:<port>/#bootstrap=<secret>
 Press Ctrl+C to stop.
 ```
@@ -58,7 +58,7 @@ Press Ctrl+C to stop.
 <!-- web-options -->
 | Option | Default | Use |
 |---|---|---|
-| `--workspace PATH` | `~/.omrg/workspace` | Directory for application records, run artefacts and uploads. |
+| `--workspace PATH` | `~/.omrs/workspace` | Directory for application records, run artefacts and uploads. |
 | `--port N` | the saved port, else `8765` | TCP port to listen on. `0` picks a free port. |
 | `--host ADDR` | `127.0.0.1` | Loopback address only: `127.0.0.1`, `::1` or `localhost`. |
 | `--root DIR` | none | Approve a directory for file access. Repeat the option for more directories. |
@@ -77,32 +77,32 @@ Rules for the options:
 
 ### One server for each workspace
 
-At startup the server takes a lock on the workspace. A second `omrg web` with the same `--workspace` stops with this message on stderr and exit code 1:
+At startup the server takes a lock on the workspace. A second `omrs web` with the same `--workspace` stops with this message on stderr and exit code 1:
 
 ```text
-Another OMRG web server is using the workspace <path>. Stop it, or start this one with a different --workspace.
+Another OMRS web server is using the workspace <path>. Stop it, or start this one with a different --workspace.
 ```
 
 `GET /v1/session` returns the workspace path that the server uses, in the `workspace` field. The Workspace section of Settings shows it.
 
 ## Keep the app running
 
-`omrg web` stops when you close its terminal window. On a Mac, a login item keeps the app running and starts it at every login. The commands are in the [CLI reference](cli-reference.md).
+`omrs web` stops when you close its terminal window. On a Mac, a login item keeps the app running and starts it at every login. The commands are in the [CLI reference](cli-reference.md).
 
 ```bash
-omrg web install    # write the login item and start it
-omrg web open       # open the app in your browser, signed in
+omrs web install    # write the login item and start it
+omrs web open       # open the app in your browser, signed in
 ```
 
 A login item has no terminal, so it signs you in in a different way:
 
-- **The link file.** The server writes the sign-in link to `<workspace>/launch-link`, as one line. It writes the link to no terminal and no log. `omrg web open` reads the file and opens the link in your browser.
+- **The link file.** The server writes the sign-in link to `<workspace>/launch-link`, as one line. It writes the link to no terminal and no log. `omrs web open` reads the file and opens the link in your browser.
 - **Who can read it.** Only your macOS user can read the file (mode `0600`). Any program that runs as you can read it and sign in, including AI agents on your Mac. This is the same trust level as `workspace.db`, which these programs can already read.
 - **The link renews.** The server writes a new link after each sign-in and after 20 wrong guesses. It removes the file when it stops, also after a stop signal.
-- **A stop signal restarts the app.** The login item starts again after a stop signal, because launchd treats it as a crash. Turn off in the power panel unloads it until the next login or `omrg web start`. Run `omrg web uninstall` to remove it for good.
-- **A restart keeps the open tab signed in.** Browser sessions live in memory only, so a restart ends them. The page then signs in again by itself with the workspace sign-in secret. See [Browser session](#browser-session). Run `omrg web open` only to open a new tab, or after a restart that changes the port.
+- **A stop signal restarts the app.** The login item starts again after a stop signal, because launchd treats it as a crash. Turn off in the power panel unloads it until the next login or `omrs web start`. Run `omrs web uninstall` to remove it for good.
+- **A restart keeps the open tab signed in.** Browser sessions live in memory only, so a restart ends them. The page then signs in again by itself with the workspace sign-in secret. See [Browser session](#browser-session). Run `omrs web open` only to open a new tab, or after a restart that changes the port.
 - **The access log is off.** The log files of the login item have no rotation, so the server writes only start-up and error lines.
-- **Settings come from `omrg.jsonc`.** The login item reads `omrg.jsonc` in the user config folder (`~/.config/omrg/omrg.jsonc` by default). It also reads `~/.omrg/.env` when that file exists. That `.env` is optional and overrides the file. A hand-run `omrg web` reads the `.env` file of the folder where you run it. Shell variables do not reach the login item. Run `omrg config init` to write a starter `omrg.jsonc`. The install command never copies or reads a `.env` file.
+- **Settings come from `omrs.jsonc`.** The login item reads `omrs.jsonc` in the user config folder (`~/.config/omrs/omrs.jsonc` by default). It also reads `~/.omrs/.env` when that file exists. That `.env` is optional and overrides the file. A hand-run `omrs web` reads the `.env` file of the folder where you run it. Shell variables do not reach the login item. Run `omrs config init` to write a starter `omrs.jsonc`. The install command never copies or reads a `.env` file.
 
 ## Sign in
 
@@ -115,7 +115,7 @@ Two secrets open a browser session. Both go to `POST /v1/session`.
 **The workspace sign-in secret.** This secret keeps the page signed in across restarts.
 
 1. On its first start, the server writes a new secret to `<workspace>/.auth-token`. Only your macOS user can read the file (mode `0600`). Every later start with the same workspace uses the same secret.
-2. The server puts the secret into the page that it serves, in a `<meta name="omrg-page-secret">` tag. It does this only for a page load from its own address, or from an address that you approved with `--allow-origin`. A request with a foreign `Host` gets 400. A request with a foreign `Origin`, or a cross-site fetch, gets the page without the secret.
+2. The server puts the secret into the page that it serves, in a `<meta name="omrs-page-secret">` tag. It does this only for a page load from its own address, or from an address that you approved with `--allow-origin`. A request with a foreign `Host` gets 400. A request with a foreign `Origin`, or a cross-site fetch, gets the page without the secret.
 3. The page reads the secret, removes the tag and sends the secret to `POST /v1/session`.
 4. When a request gets 401, for example after a restart, the page sends the secret again once and repeats the request once.
 
@@ -123,14 +123,14 @@ The server never writes the secret to a log, an API response, an error message o
 
 Any program that runs as you can read the file and sign in, including AI agents on your Mac. This is the same trust level as `workspace.db` and the login-item link file. See [ADR-088](../adr/088-persistent-workspace-sign-in-secret.md).
 
-**The one-time launch link.** The link that `omrg web` prints and `omrg web open` opens still works.
+**The one-time launch link.** The link that `omrs web` prints and `omrs web open` opens still works.
 
 1. The launch link carries a one-time secret in its `#bootstrap=` fragment. The browser does not send a fragment to the server, so the secret stays out of the access log.
 2. The page reads the fragment, removes it from the address bar, and sends it to `POST /v1/session`. If the link was already used, the page uses the workspace secret instead.
 
 The link works once. After 20 wrong guesses, the link stops working. Wrong guesses do not stop the workspace secret.
 
-Both secrets give the same session. The server sets the cookie `omrg_session_<port>`. The cookie is HttpOnly and SameSite=Strict.
+Both secrets give the same session. The server sets the cookie `omrs_session_<port>`. The cookie is HttpOnly and SameSite=Strict.
 
 The session holds every scope. A `POST`, `PUT`, `PATCH` or `DELETE` request with the cookie must also carry the application `Origin`.
 
@@ -143,7 +143,7 @@ POST /v1/credentials
 {"scopes": ["read", "graph", "run"], "label": "notebook"}
 ```
 
-The response shows the token once, in the form `omrg_bt_<id>.<secret>`. Send it as `Authorization: Bearer <token>`. The server keeps only a digest of the secret.
+The response shows the token once, in the form `omrs_bt_<id>.<secret>`. Send it as `Authorization: Bearer <token>`. The server keeps only a digest of the secret.
 
 - List credentials with `GET /v1/credentials`.
 - Revoke one with `DELETE /v1/credentials/{credential_id}`. The revocation applies to the next request.
@@ -183,7 +183,7 @@ The server checks every request before any route runs:
 Some preview panes, for example the Orca browser preview, serve the workspace page from their own address. The server then refuses the sign-in with 403, and the page shows "The workspace session was not accepted".
 
 1. Copy the origin from the address bar of the preview. It has the form `http://<name>.orca.localhost:<port>`.
-2. Start the server with `omrg web --allow-origin <origin>`.
+2. Start the server with `omrs web --allow-origin <origin>`.
 3. Open the link that the command prints, in the preview.
 
 The option approves that one origin for this run only. The host must be `localhost`, a `.localhost` name, `127.0.0.1` or `[::1]`. A wildcard, a path or any other host stops the command. The option does not change the `Host` check or the cookie rules. The preview can change its port, or the number at the end of its host name, when it reopens. If the sign-in fails again with 403, copy the new origin and start the server again. You can repeat `--allow-origin` to approve several host names in one launch.
@@ -210,7 +210,7 @@ Upload rules:
 
 - The limit is 50 MiB for each file by default. The server also counts bytes while it receives them. To change the limit, see [Set the upload limit](#set-the-upload-limit).
 - The file name must be a plain name. Separators, control characters, hidden names and URL schemes get 400.
-- The extension must be one that OMRG can ingest. Archives and other types get 415. A file over the limit gets 413.
+- The extension must be one that OMRS can ingest. Archives and other types get 415. A file over the limit gets 413.
 - The server writes to a private partial file first. A failed or cancelled upload leaves no partial file.
 - The response gives the upload `id`, `name`, `size` and `sha256`. It never gives the server path.
 
@@ -220,7 +220,7 @@ The initial release does not ingest from URLs.
 
 The per-file limit is a workspace setting, from 1 to 2048 MiB. The server uses the first value in this order:
 
-1. `omrg web --max-upload-mib <n>`.
+1. `omrs web --max-upload-mib <n>`.
 2. `WEB_MAX_UPLOAD_MIB` in the environment or `.env`.
 3. The value saved in Settings > Workspace.
 4. 50 MiB.
@@ -319,13 +319,13 @@ The server can serve MCP at `/mcp`. It is off by default. Turn it on with `PUT /
 |---|---|---|
 | `GET /v1/integrations` | `read` | One entry for each installable extra and for Magika. `availability` is `available`, `not-installed` or `unknown` (a probe failed). Each entry has copy-ready `install_command` and `pip_command` values. |
 | `GET /v1/connections` | `read` | `config_dir`, `user_config_dir` (the user config folder, with `~` for home), `keychain` (`available` or `unavailable`) and one entry for each registered LLM provider. Each entry has `fields[]` (`id`, `label`, `kind`, `value` for addresses, `source` (`env`, `dotenv`, `config-file`, `keychain`, `key-file`, `default` or `none`), `locked`, `lock_reason`, `required` (false for a key the provider can run without), `set`, `last4`, `state`), `read_only[]`, `roles`, `installed` and `install_hint`. A key is never returned. `last4` is set only when the key has 16 or more characters. |
-| `PUT /v1/connections/{provider}` | `manage` | Body `{fields: {<id>: url or null}}`. Saves or clears addresses. Returns 400 for a bad address, 404 for an unknown provider or field, and 409 for a locked field (from the environment, `.env` or `omrg.jsonc`). |
-| `PUT /v1/connections/{provider}/key` | `credentials` | Body `{api_key}`, 8 to 512 printable characters with no spaces. Saves the key to the system keychain. Returns 409 when the key comes from the environment, `.env` or `omrg.jsonc`, or when no keychain exists. A key file does not cause a 409. |
+| `PUT /v1/connections/{provider}` | `manage` | Body `{fields: {<id>: url or null}}`. Saves or clears addresses. Returns 400 for a bad address, 404 for an unknown provider or field, and 409 for a locked field (from the environment, `.env` or `omrs.jsonc`). |
+| `PUT /v1/connections/{provider}/key` | `credentials` | Body `{api_key}`, 8 to 512 printable characters with no spaces. Saves the key to the system keychain. Returns 409 when the key comes from the environment, `.env` or `omrs.jsonc`, or when no keychain exists. A key file does not cause a 409. |
 | `DELETE /v1/connections/{provider}/key` | `credentials` | Removes the key from the system keychain. |
 | `POST /v1/connections/{provider}/test` | `manage` | Optional body `{fields: {<id>: value}}`. Tests typed values and saves nothing. Returns `{reachable, reason}` after one request with a 5-second timeout. `reason` is `refused`, `timeout`, `unauthorised`, `http-<status>` or `not-configured`. No response body or error text is returned. |
 | `GET /v1/llamacpp/server` | `read` | `{state, reason, running_with, saved}`. `state` is `stopped`, `starting`, `running` or `failed`. `reason` is one of `binary-invalid`, `model-invalid`, `not-loopback`, `port-in-use`, `exited`, `timeout`, `not-configured`. `saved` holds `binary`, `model` and `context_window`, each with `source` and `locked`. No output of the server is returned. |
 | `PUT /v1/llamacpp/server` | `manage`; `credentials` when the body sets `binary` or `model` | Saves the program path, model, context window and idle sleep. Returns 400 for a rule failure and 409 for a locked field. |
-| `POST /v1/llamacpp/server/start` | `manage` | Starts the server that omrg owns. Waits for `GET /health` up to 180 seconds. |
+| `POST /v1/llamacpp/server/start` | `manage` | Starts the server that omrs owns. Waits for `GET /health` up to 180 seconds. |
 | `POST /v1/llamacpp/server/stop` | `manage` | SIGTERM to the owned process group, 10 seconds, then SIGKILL. |
 | `POST /v1/llamacpp/server/restart` | `manage` | Stop, then start with the saved values. |
 | `POST /v1/connections/{provider}/models` | `manage` | Optional body `{fields: {<id>: value}}`. Returns `{reachable, reason, models[], truncated}`. Reads at most 8 MiB and returns at most 1,000 names. |
@@ -344,42 +344,42 @@ Settings > Providers shows one card for each registered LLM provider. Today thes
 Each value comes from one source. The server uses the first source it finds:
 
 1. The process environment, then `.env`. The field shows "Set from environment (read-only here)" and is locked. A save returns 409 and names the variable to remove.
-2. `omrg.jsonc` in the user config folder. The field shows "Set from config file (read-only here)" and is locked. A save returns 409. The lock text reads "Set in ~/.config/omrg/omrg.jsonc. Edit that file and restart to change it." (the path comes from `user_config_dir`).
+2. `omrs.jsonc` in the user config folder. The field shows "Set from config file (read-only here)" and is locked. A save returns 409. The lock text reads "Set in ~/.config/omrs/omrs.jsonc. Edit that file and restart to change it." (the path comes from `user_config_dir`).
 3. A value saved in Settings. Addresses are stored in the workspace database. Keys are stored in the system keychain.
 4. A key file `secrets/<provider>.key` (keys only). The field shows "Set from key file (read-only here). Saving a key in the keychain overrides it." It is not locked: a saved key overrides it, and removing the saved key falls back to the file.
 5. The default.
 
 The user config folder is read-only. The app never writes to it, and the page cannot edit it. The CLI and the stdio MCP server read it too, but they do not see saved web values. The files are plaintext, so on a desktop the keychain stays the advice. Both files are read at launch, so a change needs a restart. Details and examples: [Configuration](configuration.md#user-config-folder).
 
-A saved value applies at once to new requests in the running `omrg web` process. You do not restart the server. A call that already started finishes with the old value. The Engine refuses a change that would alter an embedding field. The Ollama address is locked while embeddings use Ollama ("embeddings use it").
+A saved value applies at once to new requests in the running `omrs web` process. You do not restart the server. A call that already started finishes with the old value. The Engine refuses a change that would alter an embedding field. The Ollama address is locked while embeddings use Ollama ("embeddings use it").
 
 #### Keychain
 
-The server saves a key with the `keyring` package. The service name is `omrg` and the user name is the provider name, for example `openrouter`. All workspaces of one login share that entry. The database stores only the time of the save. The app never writes a key to `.env`, to the database or to a file. No response contains more than the last four characters of a key, and no log line contains a key.
+The server saves a key with the `keyring` package. The service name is `omrs` and the user name is the provider name, for example `openrouter`. All workspaces of one login share that entry. The database stores only the time of the save. The app never writes a key to `.env`, to the database or to a file. No response contains more than the last four characters of a key, and no log line contains a key.
 
 The server uses the macOS Keychain, Windows Credential Manager or the Secret Service on a Linux desktop (GNOME Keyring, or KWallet through Secret Service). It does not use a plaintext backend.
 
-If `omrg.jsonc` holds a `keychain://` reference and the keychain entry is gone, the card shows that the saved key is missing. If the keychain cannot be read, the card shows that the keychain is unreadable. In both cases the provider has no key.
+If `omrs.jsonc` holds a `keychain://` reference and the keychain entry is gone, the card shows that the saved key is missing. If the keychain cannot be read, the card shows that the keychain is unreadable. In both cases the provider has no key.
 
 #### No keychain
 
-In a container, in WSL without a keyring or on a headless server, no usable keychain exists. A key save returns 409 and the server stores nothing. The card says that no system keychain was found and names the variable to set, for example `OPENROUTER_API_KEY`. Set the variable in the environment or in `.env`, then start `omrg web`. Addresses still save in `omrg.jsonc`.
+In a container, in WSL without a keyring or on a headless server, no usable keychain exists. A key save returns 409 and the server stores nothing. The card says that no system keychain was found and names the variable to set, for example `OPENROUTER_API_KEY`. Set the variable in the environment or in `.env`, then start `omrs web`. Addresses still save in `omrs.jsonc`.
 
 #### Remove keys from the keychain
 
-Remove the key in Settings > Providers with Remove key. To remove an entry by hand, for example after you uninstall OMRG, use the steps for your system. Use the service name `omrg` and the provider name as the account.
+Remove the key in Settings > Providers with Remove key. To remove an entry by hand, for example after you uninstall OMRS, use the steps for your system. Use the service name `omrs` and the provider name as the account.
 
-1. macOS: open Keychain Access, search for `omrg`, select the entry and delete it. The command line also works: `security delete-generic-password -s omrg -a openrouter`.
-2. Windows: open Credential Manager, choose Windows Credentials, find the entry for `omrg`, expand it and select Remove.
-3. Linux: run `secret-tool clear service omrg username openrouter`.
+1. macOS: open Keychain Access, search for `omrs`, select the entry and delete it. The command line also works: `security delete-generic-password -s omrs -a openrouter`.
+2. Windows: open Credential Manager, choose Windows Credentials, find the entry for `omrs`, expand it and select Remove.
+3. Linux: run `secret-tool clear service omrs username openrouter`.
 
 #### What other processes do not see
 
-Saved addresses and saved keys apply to `omrg web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts do not read them. The saved Chat model and the saved claim check judge go in `omrg.jsonc`. The stdio MCP server and the CLI read them at their next launch. They read the environment, `.env` and the user config folder. To give those processes a value, put it in `.env` or in `omrg.jsonc`.
+Saved addresses and saved keys apply to `omrs web` and its MCP endpoint only. The stdio MCP server, the CLI and experiment contexts do not read them. The saved Chat model and the saved claim check judge go in `omrs.jsonc`. The stdio MCP server and the CLI read them at their next launch. They read the environment, `.env` and the user config folder. To give those processes a value, put it in `.env` or in `omrs.jsonc`.
 
 ### Local llama.cpp server
 
-The llama.cpp card has a Local server panel. It shows the state, the program path, the model, the context window, the idle sleep (default 300 seconds; 0 turns it off), and the buttons Start, Stop and Restart. The panel says: "omrg starts and stops only this server. It never touches a server you started yourself." After a save the server keeps running and the panel says "Restart to apply" when the saved values differ. The program path and model need a browser session with the `credentials` scope. The window and the buttons need `manage`. A bearer token never works. The server output goes to `llamacpp-server.log` in the workspace folder and is not shown. The Ollama card has a "Context window (tokens)" number field. Guardrails and limits: [Configuration](configuration.md#local-llamacpp-server).
+The llama.cpp card has a Local server panel. It shows the state, the program path, the model, the context window, the idle sleep (default 300 seconds; 0 turns it off), and the buttons Start, Stop and Restart. The panel says: "omrs starts and stops only this server. It never touches a server you started yourself." After a save the server keeps running and the panel says "Restart to apply" when the saved values differ. The program path and model need a browser session with the `credentials` scope. The window and the buttons need `manage`. A bearer token never works. The server output goes to `llamacpp-server.log` in the workspace folder and is not shown. The Ollama card has a "Context window (tokens)" number field. Guardrails and limits: [Configuration](configuration.md#local-llamacpp-server).
 
 ### Chat model
 
@@ -404,7 +404,7 @@ To set the judge:
 5. Optional: press Test to check the choice. Test saves nothing.
 6. Press Save. Save stays disabled while the model name is empty.
 
-The page writes `answer.verify_provider` and `answer.verify_model` together in `omrg.jsonc`. It writes a registry name only, never the alias `cloud` or `local`. The new judge applies at once in `omrg web`, with no restart. An answer that is running keeps its old judge. Press Remove to clear both keys and return to the default. Remove shows only when the source is `config-file`. The stdio MCP server and the CLI read the same `omrg.jsonc` at their next launch.
+The page writes `answer.verify_provider` and `answer.verify_model` together in `omrs.jsonc`. It writes a registry name only, never the alias `cloud` or `local`. The new judge applies at once in `omrs web`, with no restart. An answer that is running keeps its old judge. Press Remove to clear both keys and return to the default. Remove shows only when the source is `config-file`. The stdio MCP server and the CLI read the same `omrs.jsonc` at their next launch.
 
 The block locks when `ANSWER__VERIFY_PROVIDER` or `ANSWER__VERIFY_MODEL` is set in the environment or `.env`. A locked block names the variable and where it is set, and offers no Edit or Remove.
 
@@ -416,7 +416,7 @@ A cloud judge sends each claim and its cited passages off this machine. The bloc
 
 ### Document reading
 
-Settings > Document reading (`#/settings/document-reading`) sets how OMRG reads documents. It has one row for each of these nine keys:
+Settings > Document reading (`#/settings/document-reading`) sets how OMRS reads documents. It has one row for each of these nine keys:
 
 | Row | Key | Control |
 | --- | --- | --- |
@@ -436,9 +436,9 @@ Each row shows the value in force, where it comes from and the default. To chang
 2. Choose or type the new value.
 3. Select Save.
 
-Save writes the key to `omrg.jsonc`. It does not change the value in force. The changes apply after a restart of `omrg web`. Until the restart, the row shows the saved value and "Restart to apply". After the save, the restart dialog opens. Select "Restart now", or select Later and restart yourself.
+Save writes the key to `omrs.jsonc`. It does not change the value in force. The changes apply after a restart of `omrs web`. Until the restart, the row shows the saved value and "Restart to apply". After the save, the restart dialog opens. Select "Restart now", or select Later and restart yourself.
 
-Select "Use default" to remove the key from `omrg.jsonc`. The default then applies at the next launch. A blank engine name is refused. To use no fallback engine, set `OCR_ENGINE_FALLBACK=` in the environment or `.env`. The row is then locked and shows "None (no fallback)". A blank value in `omrg.jsonc` reads as not set, so the row shows "Not set".
+Select "Use default" to remove the key from `omrs.jsonc`. The default then applies at the next launch. A blank engine name is refused. To use no fallback engine, set `OCR_ENGINE_FALLBACK=` in the environment or `.env`. The row is then locked and shows "None (no fallback)". A blank value in `omrs.jsonc` reads as not set, so the row shows "Not set".
 
 These rules also apply:
 
@@ -448,7 +448,7 @@ These rules also apply:
 - When `auto` or a missing reader resolves to another reader, the PDF reader row shows the reader in use.
 - A Read document step in a pipeline can choose its own reader.
 
-The nine keys are part of the index identity. After a restart, the next ingest can read existing files again. A failed save shows the server message. When `omrg.jsonc` changed on disk, select Reload to read the new values, then save again.
+The nine keys are part of the index identity. After a restart, the next ingest can read existing files again. A failed save shows the server message. When `omrs.jsonc` changed on disk, select Reload to read the new values, then save again.
 
 ### Embedding model of a profile
 
@@ -457,7 +457,7 @@ A user profile can choose its own embedding provider and model (ADR-081). The em
 | Route | Scope | Body | Returns |
 |---|---|---|---|
 | `GET /v1/embedding-providers` | `read` | none | `providers` (`{name, available, reason}`; `reason` names the extra to install when `available` is false) and `server_default` (`{provider, model}`). No request goes to a provider. |
-| `POST /v1/embedding-providers/{provider}/check` | `manage` | `{model}` | `{ok, dimensions, norm, reason}`. The server embeds the text `OMRG model check` with a throwaway embedder. A failed check is still HTTP 200 with `ok: false` and a plain-English `reason`. An unregistered provider gives 404. |
+| `POST /v1/embedding-providers/{provider}/check` | `manage` | `{model}` | `{ok, dimensions, norm, reason}`. The server embeds the text `OMRS model check` with a throwaway embedder. A failed check is still HTTP 200 with `ok: false` and a plain-English `reason`. An unregistered provider gives 404. |
 | `PUT /v1/profiles/{profile_id}/embedding` | `manage` | `{provider, model}`, or `{provider: null, model: null}` for the server default | `{profile}`. The server runs the same check first. |
 
 "Check model" for llama.cpp first reads `GET {LLAMACPP_EMBED_URL}/models`. The model name must match a served model, because llama.cpp ignores the name in an embedding request. The check fails when the vector length is outside `EMBEDDING__NORM_TOLERANCE` while the norm guard is on. Credentials are removed from every `reason`.
@@ -482,7 +482,7 @@ Every item from `GET /v1/profiles` and `GET /v1/profiles/{profile_id}` has two m
 
 ## Stop the server
 
-Press Ctrl+C in the terminal that runs `omrg web`. The server then:
+Press Ctrl+C in the terminal that runs `omrs web`. The server then:
 
 1. stops new admission and ends open event streams with `server.closing`. An open MCP stream is closed after 5 seconds,
 2. cancels queued work,
@@ -496,7 +496,7 @@ If the process stops without this sequence, for example after a crash, unfinishe
 
 ## Screens
 
-The workspace has seven areas. Use the navigation on the left to open an area. The OMRG logo and name sit at the top of the navigation. Use the button next to them to collapse the navigation to a column of icons. In the collapsed column, the button sits under the logo. The browser remembers the choice. Under 768 px the navigation becomes one row of icons under the top bar. The top bar shows the collection count and one button that switches between Light and Dark. Choose System, Light or Dark in Settings.
+The workspace has seven areas. Use the navigation on the left to open an area. The OMRS logo and name sit at the top of the navigation. Use the button next to them to collapse the navigation to a column of icons. In the collapsed column, the button sits under the logo. The browser remembers the choice. Under 768 px the navigation becomes one row of icons under the top bar. The top bar shows the collection count and one button that switches between Light and Dark. Choose System, Light or Dark in Settings.
 
 Every area has its own address. Back and forward move between them. An address that the app does not know opens Home.
 
@@ -533,19 +533,19 @@ The side navigation ends with four icon buttons. In the collapsed navigation the
 
 1. **Theme.** One click switches between Light and Dark. It saves the same choice as the top bar and the Settings select.
 2. **Settings.** It opens the Settings view.
-3. **Power.** The icon is green while the server answers `GET /v1/health`. It is grey when the server does not answer. The panel states "Running" with the version, or "Not answering". It has two buttons, **Turn off** and **Restart**. It also shows the commands `omrg web restart` and `omrg web open`, each with a copy button.
-4. **GitHub.** It opens the OMRG repository in a new tab.
+3. **Power.** The icon is green while the server answers `GET /v1/health`. It is grey when the server does not answer. The panel states "Running" with the version, or "Not answering". It has two buttons, **Turn off** and **Restart**. It also shows the commands `omrs web restart` and `omrs web open`, each with a copy button.
+4. **GitHub.** It opens the OMRS repository in a new tab.
 
 #### Power panel buttons
 
 Each button opens a confirmation dialog first. Nothing happens until you confirm.
 
-- **Restart.** The app shuts down and launchd starts it again. The page then says that it signs in again by itself when OMRG is back, and names `omrg web open` in case it does not.
-- **Turn off.** The app shuts down and stays off. The plist stays in place, so the app starts again at the next login. The page then shows "Turned off. Run `omrg web start` in a terminal to turn it on."
+- **Restart.** The app shuts down and launchd starts it again. The page then says that it signs in again by itself when OMRS is back, and names `omrs web open` in case it does not.
+- **Turn off.** The app shuts down and stays off. The plist stays in place, so the app starts again at the next login. The page then shows "Turned off. Run `omrs web start` in a terminal to turn it on."
 
-Both actions end your browser session, because sessions live in server memory. When the app answers again, the page signs in again by itself with the workspace sign-in secret. If the port changed, the open tab cannot follow it. Run `omrg web open` in a terminal.
+Both actions end your browser session, because sessions live in server memory. When the app answers again, the page signs in again by itself with the workspace sign-in secret. If the port changed, the open tab cannot follow it. Run `omrs web open` in a terminal.
 
-The buttons work only when the app runs as the login item. For a foreground `omrg web` server, both buttons stay disabled and the panel states the reason. Press Ctrl+C in its terminal to stop it.
+The buttons work only when the app runs as the login item. For a foreground `omrs web` server, both buttons stay disabled and the panel states the reason. Press Ctrl+C in its terminal to stop it.
 
 While a run, an ingestion or a map call is in progress, the server answers `409` and the app keeps running. The page shows the reason in one line. Wait for the work to end, then try again.
 
@@ -557,7 +557,7 @@ Studio opens on a gallery of profiles. A profile is a group of three pipelines. 
 
 The gallery has two groups:
 
-1. Built-in profiles. They come with OMRG. You cannot change them.
+1. Built-in profiles. They come with OMRS. You cannot change them.
 2. Your profiles. They are copies that you can rename, change and delete.
 
 Each profile has three pipelines. Open them with the Ingest, Search and Answer links in the profile header.
@@ -641,7 +641,7 @@ Delete chats and folders. Each delete asks first and says how many chats it remo
 3. Choose the bin on a folder to delete the folder and every chat inside it.
 4. If you delete the open chat, Chat shows a new empty chat.
 
-Only the browser session of `omrg web` reads, changes or deletes chats. A bearer token gets 403. Saved answers hold evidence text from your documents, so keep `workspace.db` private. Deleting a source does not change a saved chat.
+Only the browser session of `omrs web` reads, changes or deletes chats. A bearer token gets 403. Saved answers hold evidence text from your documents, so keep `workspace.db` private. Deleting a source does not change a saved chat.
 
 ![Chat with history list](images/web-workspace/chat-history-dark-390.png)
 
@@ -810,7 +810,7 @@ Select the "Embed chunks" step of a user profile. Step settings then shows an em
 1. A built-in profile shows "Embedding model: <model> (server default, read-only)." To use another model, duplicate the profile first.
 2. A user profile with no lock shows a "Provider" list, a "Model" field and the buttons "Check model" and "Save model". "Check model" shows the vector size, for example "Vector size: 768". "Use server default" appears when the profile has its own choice. It clears the choice.
 3. A locked profile shows only the lock text and no controls: "Locked: papers already holds vectors made with nomic-embed-text. Create a new collection to use another model."
-4. When OMRG does not know the model that made the vectors, the text is: "Locked: papers already holds vectors, but the model that made them is not recorded. Create a new collection to use another model."
+4. When OMRS does not know the model that made the vectors, the text is: "Locked: papers already holds vectors, but the model that made them is not recorded. Create a new collection to use another model."
 
 A save that the server refuses with 409 shows the same lock text. A save that fails the check shows the reason from the check. The Embed chunks card shows "Model: <name>" with the model of the profile.
 
@@ -854,8 +854,8 @@ Third-party notices for the bundled application are in `web/THIRD_PARTY_NOTICES.
 
 | Part | Needed for | Install |
 |---|---|---|
-| `web` extra | `omrg web` | `uv sync --extra web` or `pip install "omrg[web]"` |
-| Experiment roots | Experiment workspaces and notebook runs | `omrg web --experiment-root DIR` |
-| marimo | The notebook editor | Outside OMRG. See [Notebooks](notebooks.md). |
+| `web` extra | `omrs web` | `uv sync --extra web` or `pip install "omrs[web]"` |
+| Experiment roots | Experiment workspaces and notebook runs | `omrs web --experiment-root DIR` |
+| marimo | The notebook editor | Outside OMRS. See [Notebooks](notebooks.md). |
 
 The workspace works without marimo. The Notebooks section of the Experiments area then shows how to install and register it.

@@ -52,10 +52,10 @@ async def _ingest(corpus: Path, target: Path, *, force_baseline: bool) -> None:
 
     # Re-import to pick up the env vars.
     for mod_name in list(sys.modules):
-        if mod_name.startswith("omrg"):
+        if mod_name.startswith("omrs"):
             sys.modules.pop(mod_name, None)
 
-    from omrg import ingestion as _ing
+    from omrs import ingestion as _ing
 
     if force_baseline:
         # Patch the ingestion module's read-and-chunk function so that
@@ -72,7 +72,7 @@ async def _ingest(corpus: Path, target: Path, *, force_baseline: bool) -> None:
             from llama_index.core import SimpleDirectoryReader
             from llama_index.core.node_parser import SentenceSplitter
 
-            from omrg.config import CHUNK_OVERLAP, CHUNK_SIZE
+            from omrs.config import CHUNK_OVERLAP, CHUNK_SIZE
 
             cs = chunk_size if chunk_size is not None else CHUNK_SIZE
             co = chunk_overlap if chunk_overlap is not None else CHUNK_OVERLAP

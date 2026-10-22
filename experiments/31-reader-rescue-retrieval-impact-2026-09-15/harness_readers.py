@@ -78,7 +78,7 @@ class Exp31PypdfGuardReader:
 
         result, markdown, metadata = _classify(file)
         if result.pdf_type == "text_based" and markdown == "" and result.page_count > 0:
-            from omrg.integrations.pdf.registry import get as _get_reader
+            from omrs.integrations.pdf.registry import get as _get_reader
 
             recovered = _get_reader("pypdf")().load_data(file)
             joined = "\n\n".join(doc.text for doc in recovered if doc.text and doc.text.strip())
@@ -111,7 +111,7 @@ def register_mirrors() -> None:
     Raises:
         ValueError: Propagated by the registry for a bad text_format.
     """
-    from omrg.integrations.pdf import registry as pdf_registry
+    from omrs.integrations.pdf import registry as pdf_registry
 
     pdf_registry.register(
         "exp31_inspector_only",
@@ -135,7 +135,7 @@ def register_mirrors() -> None:
 #: for Cell A). Mounting the mirrors under the sanctioned production
 #: name keeps Settings valid while the harness swaps the implementation.
 PRODUCTION_NAME = "pdf_inspector"
-_PRODUCTION_IMPORT = "omrg.integrations.pdf.pdf_inspector:PdfInspectorReader"
+_PRODUCTION_IMPORT = "omrs.integrations.pdf.pdf_inspector:PdfInspectorReader"
 
 #: Logical cell reader identity -> implementation import path.
 CELL_IMPLEMENTATIONS = {
@@ -155,7 +155,7 @@ def install_cell_reader(logical: str) -> None:
     Raises:
         KeyError: Unknown logical name.
     """
-    from omrg.integrations.pdf import registry as pdf_registry
+    from omrs.integrations.pdf import registry as pdf_registry
 
     pdf_registry.register(
         PRODUCTION_NAME,

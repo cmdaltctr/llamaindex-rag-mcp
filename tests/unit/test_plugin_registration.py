@@ -11,12 +11,12 @@ from pathlib import Path
 import pytest
 from tests.unit.test_plugin_manifest import valid_manifest
 
-from omrg.core.plugins import (
+from omrs.core.plugins import (
     ManifestError,
     PluginRegistry,
     PluginTrustError,
 )
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
 HELP = "--host --port --headless --token-password-file --skip-update-check --no-sandbox"
 
@@ -132,7 +132,7 @@ def test_incompatible_version_is_disabled_with_action(repo, files) -> None:
     state = reg.recheck("fakeedit")
     assert state.status == "incompatible" and not state.launchable
     assert "2.1.0" in state.message and ">=1.2.0,<2.0.0" in state.message
-    assert "outside OMRG" in state.message
+    assert "outside OMRS" in state.message
 
 
 @pytest.mark.parametrize(
@@ -220,7 +220,7 @@ def test_missing_executable_never_installs(repo, files) -> None:
     files[1].unlink()
     state = reg.recheck("fakeedit")
     assert state.status == "unavailable" and not state.launchable
-    assert "outside OMRG" in state.message
+    assert "outside OMRS" in state.message
     assert runner.calls == []  # nothing is run, so nothing can install
 
 

@@ -22,8 +22,8 @@ from pypdf.generic import (
     NumberObject,
 )
 
-from omrg.integrations.pdf import maths_pages
-from omrg.integrations.pdf.maths_pages import (
+from omrs.integrations.pdf import maths_pages
+from omrs.integrations.pdf.maths_pages import (
     MATHS_DETECTOR_VERSION,
     MATHS_FONT_PATTERNS,
     is_maths_font,
@@ -31,9 +31,9 @@ from omrg.integrations.pdf.maths_pages import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-#: The gitignored Experiment 34 copy, or any copy named by OMRG_EQ01_PDF.
+#: The gitignored Experiment 34 copy, or any copy named by OMRS_EQ01_PDF.
 EQ01_CANDIDATES = [
-    Path(os.environ.get("OMRG_EQ01_PDF", "/nonexistent")),
+    Path(os.environ.get("OMRS_EQ01_PDF", "/nonexistent")),
     REPO_ROOT / "experiments" / "34-worker-sample-review-2026-09-19" / "corpus" / "eq01.pdf",
 ]
 

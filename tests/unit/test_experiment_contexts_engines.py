@@ -23,20 +23,20 @@ from tests.unit.test_experiment_contexts_support import (
     under,
 )
 
-from omrg.compose_experiments import (
+from omrs.compose_experiments import (
     ExperimentEngines,
     experiment_registry,
     experiment_settings,
     live_backend_identity,
 )
-from omrg.core.experiments import (
+from omrs.core.experiments import (
     ExperimentAdmissionError,
     ExperimentPathError,
     check_credential_target,
 )
-from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition
-from omrg.core.pipelines import RunStatus
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.core.ingestion.graph_adapters import canonical_ingestion_definition
+from omrs.core.pipelines import RunStatus
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
 
 @pytest.fixture
@@ -332,7 +332,7 @@ def test_declared_store_factor_moves_the_store_backend(layout: dict[str, Path]) 
 
 def test_production_builder_composes_through_build_engine(layout: dict[str, Path]) -> None:
     """The default builder is ``compose.build_engine`` with experiment settings."""
-    from omrg import compose
+    from omrs import compose
 
     registry = experiment_registry([layout["root"]])
     engines = ExperimentEngines(registry, base_settings(layout["live"]))
@@ -359,8 +359,8 @@ async def test_poisoned_process_defaults_are_untouched(
     monkeypatch: pytest.MonkeyPatch, layout: dict[str, Path], engines: ExperimentEngines
 ) -> None:
     """Registration, build, admission and run read no process default."""
-    import omrg.core.settings as core_settings
-    import omrg.core.vectordb as vectordb
+    import omrs.core.settings as core_settings
+    import omrs.core.vectordb as vectordb
 
     pin_detection(monkeypatch)
     sources = copy_sources(layout["tmp"])

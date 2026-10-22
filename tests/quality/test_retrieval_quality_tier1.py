@@ -22,10 +22,10 @@ from tests.quality.runner import (
     validate_baseline,
 )
 
-from omrg.core.retrieval import search
-from omrg.core.retrieval.dense import _cached_query_embedding
-from omrg.core.settings import EffectiveSettings, RetrievalBlock
-from omrg.core.vectordb.score import (
+from omrs.core.retrieval import search
+from omrs.core.retrieval.dense import _cached_query_embedding
+from omrs.core.settings import EffectiveSettings, RetrievalBlock
+from omrs.core.vectordb.score import (
     DENSE_SCORE_KIND,
     canonical_score_from_l2,
 )

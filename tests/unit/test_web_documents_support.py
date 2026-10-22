@@ -25,22 +25,22 @@ import yaml  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from llama_index.core.embeddings import MockEmbedding  # noqa: E402
 
-from omrg.core.ingestion.source_state import (  # noqa: E402
+from omrs.core.ingestion.source_state import (  # noqa: E402
     build_source_id,
     canonical_source_path,
 )
-from omrg.core.vectordb.base import VectorStore  # noqa: E402
-from omrg.core.vectordb.identity import EmbeddingIdentity  # noqa: E402
-from omrg.core.vectordb.lancedb.store import LanceVectorStore  # noqa: E402
-from omrg.engine import Engine  # noqa: E402
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.security import AccessPolicy  # noqa: E402
+from omrs.core.vectordb.base import VectorStore  # noqa: E402
+from omrs.core.vectordb.identity import EmbeddingIdentity  # noqa: E402
+from omrs.core.vectordb.lancedb.store import LanceVectorStore  # noqa: E402
+from omrs.engine import Engine  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.security import AccessPolicy  # noqa: E402
 
 BASE = "http://127.0.0.1:8765"
 ORIGIN = {"Origin": BASE}
 OPENAPI = (
-    Path(__file__).resolve().parents[2] / "src" / "omrg" / "transports" / "api" / "openapi.yaml"
+    Path(__file__).resolve().parents[2] / "src" / "omrs" / "transports" / "api" / "openapi.yaml"
 )
 _IDENTITY = EmbeddingIdentity(provider="test", model="mock")
 

@@ -14,12 +14,12 @@ from typing import Any
 
 from llama_index.core import Settings as LlamaIndexSettings
 
-from omrg.core.ingestion.graph_adapters import (
+from omrs.core.ingestion.graph_adapters import (
     canonical_ingestion_definition,
     register_ingestion_operations,
 )
-from omrg.core.ingestion.graph_fingerprint import INGESTION_SHAPE_RESOURCE, ingestion_shape
-from omrg.core.pipelines import (
+from omrs.core.ingestion.graph_fingerprint import INGESTION_SHAPE_RESOURCE, ingestion_shape
+from omrs.core.pipelines import (
     AdmissionSnapshot,
     CancellationFlag,
     HostContext,

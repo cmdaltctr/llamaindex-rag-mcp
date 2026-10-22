@@ -6,7 +6,7 @@ import { createQueryClient } from "../api/queries";
 import { renderWithProviders } from "../test/providers";
 import { SaveErrorNotice } from "./SaveErrorNotice";
 
-const MESSAGE = "omrg.jsonc changed on disk. Reload to see the new values.";
+const MESSAGE = "omrs.jsonc changed on disk. Reload to see the new values.";
 
 describe("SaveErrorNotice", () => {
   it("reads the Settings routes again on Reload for a file conflict, then clears the error", async () => {

@@ -11,18 +11,18 @@ Settings come from six places. Each beats the one above it:
 | # | Source | What belongs here |
 |---|---|---|
 | 1 | Model defaults, in the code | Last resort. You never edit these directly. |
-| 2 | `src/omrg/config/defaults.yaml` | Project-wide defaults. Committed. Shared by everyone. |
+| 2 | `src/omrs/config/defaults.yaml` | Project-wide defaults. Committed. Shared by everyone. |
 | 3 | Profile YAML (`config/profiles/*.yaml`) | Per-collection behaviour |
-| 4 | `omrg.jsonc` in the [user config folder](#user-config-folder) | Your settings. Edit it by hand or on the Settings page. |
+| 4 | `omrs.jsonc` in the [user config folder](#user-config-folder) | Your settings. Edit it by hand or on the Settings page. |
 | 5 | `.env` | Your machine: tokens, URLs, paths |
 | 6 | Environment variables | Highest. Wins over everything. |
 
-The Settings page shows the source of each value: `env`, `dotenv`, `config-file`, `yaml` or `default`. Only `env` and `dotenv` lock a field on the page. A value in `omrg.jsonc` does not lock it.
+The Settings page shows the source of each value: `env`, `dotenv`, `config-file`, `yaml` or `default`. Only `env` and `dotenv` lock a field on the page. A value in `omrs.jsonc` does not lock it.
 
 **Rule of thumb:**
 
 - Sensible default for everyone → `defaults.yaml`
-- Your own settings, kept in one file you can edit or the page can edit → `omrg.jsonc`
+- Your own settings, kept in one file you can edit or the page can edit → `omrs.jsonc`
 - Secret, or specific to your machine → `.env`
 - Different for one collection → its profile
 - Just for this one command → an environment variable
@@ -46,11 +46,11 @@ Real example: `RETRIEVAL__TOP_K=5` in `.env` meant the `documents` profile
 (top_k 10) and the `codebase` profile (top_k 20) both returned 5 results.
 Profiles looked broken. Nothing warned about it.
 
-The same lever in `omrg.jsonc` does the opposite: each collection's profile
-replaces it, so it changes nothing. `omrg config show` still lists it with
+The same lever in `omrs.jsonc` does the opposite: each collection's profile
+replaces it, so it changes nothing. `omrs config show` still lists it with
 source `config-file`, so it looks in force (ADR-087 addendum).
 
-**Keep the profile levers out of `.env` and `omrg.jsonc`. Keep `.env` for connection details and secrets only.**
+**Keep the profile levers out of `.env` and `omrs.jsonc`. Keep `.env` for connection details and secrets only.**
 
 ---
 
@@ -132,7 +132,7 @@ RAG_PROFILE=documents
 Per collection, which is the point of the feature:
 
 ```bash
-omrg set-profile -c my_code -p codebase
+omrs set-profile -c my_code -p codebase
 ```
 
 Set `RAG_PROFILE=hybrid` to let each collection pick its own; untagged
@@ -152,18 +152,18 @@ profile id, for example `my-notes`. `RAG_PROFILE` and `default_profile` in
 `hybrid.yaml` accept `documents` and `codebase` only.
 
 The web server owns the workspace. It reads and writes the database file
-`workspace.db` in the folder of `omrg web --workspace` (default
-`~/.omrg/workspace`). Other processes read user profiles from that default
+`workspace.db` in the folder of `omrs web --workspace` (default
+`~/.omrs/workspace`). Other processes read user profiles from that default
 folder, read-only, when the file exists:
 
 | Process | Reads user profiles | Binds a user profile to a collection |
 |---|---|---|
-| `omrg web` and its MCP endpoint | Yes, from its own workspace | Yes |
-| Stdio MCP server (`omrg`) | Yes, from the default workspace | No |
-| CLI (`search`, `answer`, `ingest`, `watch`) | Yes, from the default workspace | No (`omrg set-profile` takes built-in names only) |
+| `omrs web` and its MCP endpoint | Yes, from its own workspace | Yes |
+| Stdio MCP server (`omrs`) | Yes, from the default workspace | No |
+| CLI (`search`, `answer`, `ingest`, `watch`) | Yes, from the default workspace | No (`omrs set-profile` takes built-in names only) |
 
 To bind a user profile, use Knowledge Base > Profile in the web app, or the
-`change_collection_profile` tool on the MCP endpoint of `omrg web`.
+`change_collection_profile` tool on the MCP endpoint of `omrs web`.
 
 If the default workspace file does not exist, a collection tagged with a user
 profile fails with this error:
@@ -171,17 +171,17 @@ profile fails with this error:
 ```text
 Collection 'notes' uses the profile 'my-notes', which is not a built-in
 profile. User profiles live in the web workspace, and no workspace database
-was found at ~/.omrg/workspace/workspace.db. Start `omrg web` once with the
+was found at ~/.omrs/workspace/workspace.db. Start `omrs web` once with the
 default workspace, or change the collection's profile to 'documents' or
 'codebase'.
 ```
 
 To fix it, do one of these:
 
-1. Start `omrg web` once with the default workspace.
-2. Run `omrg set-profile -c notes -p documents` (or `codebase`).
+1. Start `omrs web` once with the default workspace.
+2. Run `omrs set-profile -c notes -p documents` (or `codebase`).
 
-If you start `omrg web` with another `--workspace` folder, the other
+If you start `omrs web` with another `--workspace` folder, the other
 processes do not find its profiles. The error names the path they read.
 
 ### Why the reranker differs
@@ -273,7 +273,7 @@ experiment first.
 ### Chroma deployment mode
 
 Chroma is an explicit optional backend. Install it with `uv sync --extra chroma`
-in a source checkout, or `pip install "omrg[chroma]"` from a package. Set
+in a source checkout, or `pip install "omrs[chroma]"` from a package. Set
 `VECTOR_STORE=chroma` before using its local or cloud modes. CVE-2026-45829
 (PYSEC-2026-311) is active for this optional dependency. Do not expose Chroma's
 Python FastAPI server through this project.
@@ -402,9 +402,9 @@ Two Chat providers serve answering only. They are not valid for `EMBED_PROVIDER`
 | `EMBED_MODEL` | — | Model name for embeddings |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint |
 | `OLLAMA_CONTEXT_WINDOW` | `16384` | Ollama context window in tokens, 2,048 to 262,144. See [Context windows](#context-windows) |
-| `LLAMACPP_CONTEXT_WINDOW` | `16384` | Context window (`-c`) for the llama.cpp chat server that `omrg web` starts, 2,048 to 262,144 |
+| `LLAMACPP_CONTEXT_WINDOW` | `16384` | Context window (`-c`) for the llama.cpp chat server that `omrs web` starts, 2,048 to 262,144 |
 | `LLAMACPP_IDLE_SLEEP_SECONDS` | `300` | Idle seconds before that server frees its model (`--sleep-idle-seconds`), 0 to 86,400. 0 turns sleep off |
-| `LLAMACPP_SERVER_BINARY` | unset | Absolute path to `llama-server`, for the server that `omrg web` starts. See [Local llama.cpp server](#local-llamacpp-server) |
+| `LLAMACPP_SERVER_BINARY` | unset | Absolute path to `llama-server`, for the server that `omrs web` starts. See [Local llama.cpp server](#local-llamacpp-server) |
 | `LLAMACPP_SERVER_MODEL` | unset | Absolute `.gguf` path or Hugging Face id `org/name[:tag]` for that server |
 
 An unrecognised value for any of the four provider selections above
@@ -432,36 +432,36 @@ Connection details for each: [Providers](providers.md).
 
 #### Change provider values in the web workspace
 
-In `omrg web`, Settings > Providers saves these values in `omrg.jsonc`: `OLLAMA_BASE_URL`, `OLLAMA_CONTEXT_WINDOW`, `LLAMACPP_CHAT_URL`, `LLAMACPP_SERVER_BINARY`, `LLAMACPP_SERVER_MODEL`, `LLAMACPP_CONTEXT_WINDOW`, `LLAMACPP_IDLE_SLEEP_SECONDS`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`. The server uses the first source it finds, highest first:
+In `omrs web`, Settings > Providers saves these values in `omrs.jsonc`: `OLLAMA_BASE_URL`, `OLLAMA_CONTEXT_WINDOW`, `LLAMACPP_CHAT_URL`, `LLAMACPP_SERVER_BINARY`, `LLAMACPP_SERVER_MODEL`, `LLAMACPP_CONTEXT_WINDOW`, `LLAMACPP_IDLE_SLEEP_SECONDS`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` and `ANTHROPIC_API_KEY`. The server uses the first source it finds, highest first:
 
 | Rank | Source | Shown as | Locks the field |
 |---|---|---|---|
 | 1 | Process environment | `env` | yes |
 | 2 | `.env` | `dotenv` | yes |
-| 3 | `omrg.jsonc` in the [user config folder](#user-config-folder). A key field holds a reference: `env://` shows `config-file`, `file://` shows `key-file`, `keychain://` shows `keychain`. | `config-file`, `key-file`, `keychain` | no |
+| 3 | `omrs.jsonc` in the [user config folder](#user-config-folder). A key field holds a reference: `env://` shows `config-file`, `file://` shows `key-file`, `keychain://` shows `keychain`. | `config-file`, `key-file`, `keychain` | no |
 | 4 | A key file `secrets/<provider>.key` (keys only) | `key-file` | no |
 | 5 | YAML defaults and the profile bundle | `yaml` | no |
 | 6 | The code default | `default` | no |
 
-A locked field shows the variable name and where it is set. Remove the variable from the environment or `.env` to edit the field here. A value in `omrg.jsonc`, a key file or a key reference does not lock. A save on the page replaces it.
+A locked field shows the variable name and where it is set. Remove the variable from the environment or `.env` to edit the field here. A value in `omrs.jsonc`, a key file or a key reference does not lock. A save on the page replaces it.
 
-The page writes `omrg.jsonc`. It changes only the key you save. Comments, key order and the other keys stay. A key saved on the page goes in the system keychain (service `omrg`, user name equal to the provider name), and the file gets `keychain://<provider>`. The app never writes a key to `.env`, to the workspace database or to a file. If no keychain exists, set the key variable (for example `OPENROUTER_API_KEY`) in the environment, or use a key file.
+The page writes `omrs.jsonc`. It changes only the key you save. Comments, key order and the other keys stay. A key saved on the page goes in the system keychain (service `omrs`, user name equal to the provider name), and the file gets `keychain://<provider>`. The app never writes a key to `.env`, to the workspace database or to a file. If no keychain exists, set the key variable (for example `OPENROUTER_API_KEY`) in the environment, or use a key file.
 
-A saved or hand-edited value applies at once to new requests, with no restart. The Ollama address stays locked while embeddings use Ollama. Embedding providers and models are not editable on the page. The stdio MCP server and the CLI read `omrg.jsonc` when they start, so they see a page save at their next launch. See [Web workspace](web-workspace.md#provider-settings).
+A saved or hand-edited value applies at once to new requests, with no restart. The Ollama address stays locked while embeddings use Ollama. Embedding providers and models are not editable on the page. The stdio MCP server and the CLI read `omrs.jsonc` when they start, so they see a page save at their next launch. See [Web workspace](web-workspace.md#provider-settings).
 
 #### User config folder
 
-The user config folder holds `omrg.jsonc`. You can edit the file by hand. The Settings page also writes it. The CLI, the stdio MCP server and `omrg web` all read it. This mirrors the OMMS layout (`~/.config/omms/omms.jsonc`).
+The user config folder holds `omrs.jsonc`. You can edit the file by hand. The Settings page also writes it. The CLI, the stdio MCP server and `omrs web` all read it. This mirrors the OMMS layout (`~/.config/omms/omms.jsonc`).
 
 The folder is the first of these:
 
-1. `$OMRG_CONFIG_DIR`.
-2. `$XDG_CONFIG_HOME/omrg`.
-3. `~/.config/omrg`.
+1. `$OMRS_CONFIG_DIR`.
+2. `$XDG_CONFIG_HOME/omrs`.
+3. `~/.config/omrs`.
 
 A missing folder or file gives no values and no warning. The folder can hold two things:
 
-- `omrg.jsonc`: JSON with comments and trailing commas. It accepts every setting that the environment accepts.
+- `omrs.jsonc`: JSON with comments and trailing commas. It accepts every setting that the environment accepts.
 - `secrets/<provider>.key`: one key for each provider. The file name is the provider name (`openrouter`, `openai_compatible`, `anthropic`). The page never writes it.
 
 ##### Key names
@@ -477,7 +477,7 @@ ANSWER__MODEL        →  { "answer": { "model": "qwen3:8b" } }
 
 Three keys exist only in the file: `web_port`, `web_max_upload_mib` and `mcp_http_enabled`. `web_max_upload_mib` also has a launch twin, `WEB_MAX_UPLOAD_MIB`, which locks it.
 
-Example `omrg.jsonc` (fake values):
+Example `omrs.jsonc` (fake values):
 
 
 ```jsonc
@@ -500,37 +500,37 @@ A key field takes one of three references:
 
 - `env://NAME`: the value of the environment variable `NAME`.
 - `file://<path>`: a file inside `secrets/`. A leading `~` is the home folder.
-- `keychain://<provider>`: the system keychain entry `omrg` / `<provider>`. Every process resolves it: the web server, the CLI and the stdio MCP server. The first read can make macOS ask you to allow access. Use `env://` or `file://` to avoid the prompt.
+- `keychain://<provider>`: the system keychain entry `omrs` / `<provider>`. Every process resolves it: the web server, the CLI and the stdio MCP server. The first read can make macOS ask you to allow access. Use `env://` or `file://` to avoid the prompt.
 
 Example layout and permissions:
 
 
 ```text
-~/.config/omrg/
-  omrg.jsonc
+~/.config/omrs/
+  omrs.jsonc
   secrets/
     openrouter.key      one line: the key
     anthropic.key
 ```
 
 ```bash
-chmod 700 ~/.config/omrg/secrets
-chmod 600 ~/.config/omrg/secrets/*.key
+chmod 700 ~/.config/omrs/secrets
+chmod 600 ~/.config/omrs/secrets/*.key
 ```
 
 Rules the server applies:
-- A literal key in `omrg.jsonc` is ignored. The log names the field and never shows the value.
+- A literal key in `omrs.jsonc` is ignored. The log names the field and never shows the value.
 - A `file://` path must resolve inside `secrets/`. Any other path is refused.
 - A key file holds at most 4 KiB. The server strips surrounding whitespace.
 - The server refuses a symlink that leaves the folder, and a file that is not a regular file.
 - A key file looser than 0600, or a `secrets/` folder looser than 0700, is still read. The log shows one warning with the path and mode, never the content. Windows skips the check.
-- A new `omrg.jsonc` gets mode 0600 and a new folder gets mode 0700. A page save keeps the mode of an existing file.
+- A new `omrs.jsonc` gets mode 0600 and a new folder gets mode 0700. A page save keeps the mode of an existing file.
 - A page save goes to a temporary file that replaces the original, so a stop during a save never leaves half a file.
 - The server notices a hand edit before the next request that reads settings. A save from the page that was open before your edit is refused (409), and your edit stays. Reload the page to see it.
 
 ##### Problems in the file
 
-A problem never stops the server. The server starts and lists each problem by key, never by value. `omrg config show` and `GET /v1/settings/configuration` show the list.
+A problem never stops the server. The server starts and lists each problem by key, never by value. `omrs config show` and `GET /v1/settings/configuration` show the list.
 
 | Kind | When | What the server does |
 |---|---|---|
@@ -543,7 +543,7 @@ An ignored value falls back to the next source. A typo in `embed_provider` there
 
 ##### Settings that need a restart
 
-`omrg web` applies these hand edits at once: provider addresses and keys, the Chat provider and model, the claim check judge provider and model (`answer.verify_provider`, `answer.verify_model`), context windows, llama.cpp server values, `web_max_upload_mib` and `mcp_http_enabled`. `web_port` and the engine settings (embedding, vector store, chunking, ingestion, retrieval, metadata, OCR and the other `answer` keys) apply at the next launch. `omrg web` keeps the values it started with and marks each changed key "Restart to apply".
+`omrs web` applies these hand edits at once: provider addresses and keys, the Chat provider and model, the claim check judge provider and model (`answer.verify_provider`, `answer.verify_model`), context windows, llama.cpp server values, `web_max_upload_mib` and `mcp_http_enabled`. `web_port` and the engine settings (embedding, vector store, chunking, ingestion, retrieval, metadata, OCR and the other `answer` keys) apply at the next launch. `omrs web` keeps the values it started with and marks each changed key "Restart to apply".
 
 **Limit.** These files are plaintext. File permissions do not stop another process of the same user, and an AI coding agent runs as that user. A `file://` or `env://` reference gives no security gain over `.env`. Use them on headless machines and in containers with a mounted folder. On a desktop, save keys in the keychain.
 
@@ -551,17 +551,17 @@ An ignored value falls back to the next source. A typo in `embed_provider` there
 
 Ollama chat calls need an explicit context window. Without one, LlamaIndex read the model maximum (262,144 tokens for `qwen3:4b`) and sent it as `num_ctx`. Ollama then reserved about 43 GB, ran out of GPU memory and returned empty replies (TDR-036).
 
-- `OLLAMA_CONTEXT_WINDOW` (or `ollama_context_window` in `omrg.jsonc`) sets the window. The default is 16,384 tokens. The range is 2,048 to 262,144.
-- The first source wins, highest first: environment and `.env` (both lock), `omrg.jsonc`, the default. A page save writes `omrg.jsonc`.
+- `OLLAMA_CONTEXT_WINDOW` (or `ollama_context_window` in `omrs.jsonc`) sets the window. The default is 16,384 tokens. The range is 2,048 to 262,144.
+- The first source wins, highest first: environment and `.env` (both lock), `omrs.jsonc`, the default. A page save writes `omrs.jsonc`.
 - The Chat answer model and metadata extraction use it. A saved or hand-edited value applies to the next call. Ollama reloads the model at the new size.
 - Embedding models are not covered. A different window can change how text is cut, and so the vectors.
-- `LLAMACPP_CONTEXT_WINDOW` has the same range and default. It applies only to the llama.cpp server that `omrg web` starts.
+- `LLAMACPP_CONTEXT_WINDOW` has the same range and default. It applies only to the llama.cpp server that `omrs web` starts.
 
 ### Local llama.cpp server
 
-`omrg web` can start, stop and restart its own `llama-server` for Chat. Use the llama.cpp card in Settings > Providers, or set the values in the environment or in `omrg.jsonc`.
+`omrs web` can start, stop and restart its own `llama-server` for Chat. Use the llama.cpp card in Settings > Providers, or set the values in the environment or in `omrs.jsonc`.
 
-| Setting | Env | `omrg.jsonc` key |
+| Setting | Env | `omrs.jsonc` key |
 |---|---|---|
 | Program path | `LLAMACPP_SERVER_BINARY` | `llamacpp_server_binary` |
 | Model | `LLAMACPP_SERVER_MODEL` | `llamacpp_server_model` |
@@ -578,12 +578,12 @@ Guardrails:
 3. The port comes from `llamacpp_chat_url`. The URL must be `http` on a loopback host. The server binds to `127.0.0.1`.
 4. The arguments are fixed: `-m` or `-hf`, `--host 127.0.0.1`, `--port` and `-c`. No shell runs. You cannot add other arguments.
 5. The process gets a minimal environment with no API key.
-6. omrg starts and stops only this server. It never touches a server you started yourself. It never finds or stops a process by name or port.
+6. omrs starts and stops only this server. It never touches a server you started yourself. It never finds or stops a process by name or port.
 7. The output of the server goes to `llamacpp-server.log` in the workspace folder. The page and the routes never show it.
 
-States are `stopped`, `starting`, `running` and `failed`. A failed start gives one reason: `binary-invalid`, `model-invalid`, `not-loopback`, `port-in-use`, `exited`, `timeout` or `not-configured`. The start waits up to 180 seconds for `GET /health`. Stop sends SIGTERM, waits 10 seconds, then sends SIGKILL. The server stops when `omrg web` exits. A save does not restart a running server. The card then says "Restart to apply".
+States are `stopped`, `starting`, `running` and `failed`. A failed start gives one reason: `binary-invalid`, `model-invalid`, `not-loopback`, `port-in-use`, `exited`, `timeout` or `not-configured`. The start waits up to 180 seconds for `GET /health`. Stop sends SIGTERM, waits 10 seconds, then sends SIGKILL. The server stops when `omrs web` exits. A save does not restart a running server. The card then says "Restart to apply".
 
-Example `omrg.jsonc`:
+Example `omrs.jsonc`:
 
 ```jsonc
 {
@@ -599,7 +599,7 @@ Idle sleep. With the default of 300, the server frees the model after five idle 
 
 Limits. The program path is editable in the GUI by choice. The guardrails limit what can run to a file named `llama-server`. Anyone with the browser session and the `credentials` scope can still point the setting at any file with that name. The llama.cpp embedding server is not managed. The stdio MCP server and the CLI never start or stop the server.
 
-Tests set `OMRG_CONFIG_DIR` to a temporary folder, so they never read your real folder.
+Tests set `OMRS_CONFIG_DIR` to a temporary folder, so they never read your real folder.
 
 ### Chunking — `CHUNKING__*`
 
@@ -698,7 +698,7 @@ what the evaluated candidate instruction actually did on this workload.
 
 ### Answering — `ANSWER__*`
 
-The grounded answering operation (`omrg answer`, the `answer_documents`
+The grounded answering operation (`omrs answer`, the `answer_documents`
 MCP tool, and the HTTP contract). It performs one or more completion calls at
 query time. See [MCP tools](mcp-tools.md#answer_documents) and
 [ADR-057](../adr/057-answering-is-additive-and-injected.md).
@@ -715,8 +715,8 @@ query time. See [MCP tools](mcp-tools.md#answer_documents) and
 | `prefer_client_sampling` | `true` | Prefer the MCP client's model over the server model when the client advertises the sampling capability |
 | `allow_legacy_sampling` | `true` | Allow the deprecated sampling back-channel only on a negotiated pre-2026-07-28 session. Never on a modern session |
 | `verify_claims` | `false` | Opt-in claim-verification judge ([ADR-059](../adr/059-claim-verification-stage.md)). `true` adds one configured-judge call per cited prose sentence (~3.3 s P95 each on the tested GLM-5.3 cloud judge, experiment 20). An unavailable provider degrades to `verification_skipped`; the answer is never blocked |
-| `verify_model` | `""` | Judge model. Empty derives it from the provider's default model (e.g. `OPENROUTER_LLM_MODEL`). The default cloud provider has no default model, so claim checks are skipped until you set one. Settings > Chat can set it; applies at once in `omrg web` |
-| `verify_provider` | `cloud` | Judge provider. Aliases: `cloud` (or empty) resolves to the cloud backend, `local` to the local backend; anything else is a literal LLM-registry name. Unknown names fail startup. Settings > Chat can set it; applies at once in `omrg web` |
+| `verify_model` | `""` | Judge model. Empty derives it from the provider's default model (e.g. `OPENROUTER_LLM_MODEL`). The default cloud provider has no default model, so claim checks are skipped until you set one. Settings > Chat can set it; applies at once in `omrs web` |
+| `verify_provider` | `cloud` | Judge provider. Aliases: `cloud` (or empty) resolves to the cloud backend, `local` to the local backend; anything else is a literal LLM-registry name. Unknown names fail startup. Settings > Chat can set it; applies at once in `omrs web` |
 
 The three `verify_*` fields are the one answer-block group a profile
 bundle may override per collection — a `documents` collection can opt
@@ -724,9 +724,9 @@ into the configured judge while a `codebase` collection stays
 speed-first. The default judge provider is the cloud backend (the only
 tested path); a local judge can be selected but is unmeasured.
 
-In `omrg web`, Settings > Chat can save `provider` and `model` for Chat and for MCP clients of that server that cannot supply their own model. `ANSWER__PROVIDER` or `ANSWER__MODEL` in the environment or `.env` wins and locks the choice. A saved choice goes in `omrg.jsonc` as `answer.provider` and `answer.model`, and applies at once, with no restart. Metadata extraction keeps its own model. The judge has its own choice. The stdio MCP server and the CLI read the choice from `omrg.jsonc` when they start.
+In `omrs web`, Settings > Chat can save `provider` and `model` for Chat and for MCP clients of that server that cannot supply their own model. `ANSWER__PROVIDER` or `ANSWER__MODEL` in the environment or `.env` wins and locks the choice. A saved choice goes in `omrs.jsonc` as `answer.provider` and `answer.model`, and applies at once, with no restart. Metadata extraction keeps its own model. The judge has its own choice. The stdio MCP server and the CLI read the choice from `omrs.jsonc` when they start.
 
-Settings > Chat also has a "Claim check judge" block. It saves `verify_provider` and `verify_model` together in `omrg.jsonc` as `answer.verify_provider` and `answer.verify_model`. Both apply at once in `omrg web`, with no restart. A hand edit of either key also applies at once. `ANSWER__VERIFY_PROVIDER` or `ANSWER__VERIFY_MODEL` in the environment or `.env` wins and locks the block. The page saves a registry name only, never the alias `cloud` or `local`. It refuses an empty model. The block sets the judge only. `verify_claims` stays a profile lever ("Check claims" in Studio), so the judge runs only for collections whose profile turns it on. A profile that sets its own judge overrides the saved choice. A cloud judge sends each claim and its cited passages off this machine.
+Settings > Chat also has a "Claim check judge" block. It saves `verify_provider` and `verify_model` together in `omrs.jsonc` as `answer.verify_provider` and `answer.verify_model`. Both apply at once in `omrs web`, with no restart. A hand edit of either key also applies at once. `ANSWER__VERIFY_PROVIDER` or `ANSWER__VERIFY_MODEL` in the environment or `.env` wins and locks the block. The page saves a registry name only, never the alias `cloud` or `local`. It refuses an empty model. The block sets the judge only. `verify_claims` stays a profile lever ("Check claims" in Studio), so the judge runs only for collections whose profile turns it on. A profile that sets its own judge overrides the saved choice. A cloud judge sends each claim and its cited passages off this machine.
 
 With the defaults the judge cannot run. `verify_provider: cloud` resolves to OpenRouter, and `OPENROUTER_LLM_MODEL` is empty by default. An empty `verify_model` then leaves the judge with no model, and the answer reports `verification_skipped`. Set a judge model to turn claim checks on. Settings > Chat shows "Not set" and says that claim checks are skipped until you set one.
 Environment variables still win over the profile:
@@ -849,7 +849,7 @@ through Metal Performance Shaders (MPS). One-page smoke tests showed only
 7–9.5 GiB, so plan for the larger figure. PaddleOCR-VL peaked at about
 15 GiB on CPU in the same run. CPU execution is slower. Set
 `OCR_ENGINE_PRIMARY=paddleocr-vl` on machines with limited memory.
-PyTorch and Paddle packages stay outside the OMRG environment.
+PyTorch and Paddle packages stay outside the OMRS environment.
 
 **Migration:** re-provision the required engines, set `OCR_WORKERS_DIR`,
 and clear `OCR_WORKER_COMMAND` to use named routes. An existing explicit
@@ -858,8 +858,8 @@ command continues to override the primary, even when
 directory if retaining that override. See
 [provisioning and migration](ingestion.md#provision-the-engines).
 
-`OMRG_OCR_MODEL_CACHE` is a process-level variable read by the worker core.
-When set, engine `<name>` uses `$OMRG_OCR_MODEL_CACHE/<name>/`; otherwise
+`OMRS_OCR_MODEL_CACHE` is a process-level variable read by the worker core.
+When set, engine `<name>` uses `$OMRS_OCR_MODEL_CACHE/<name>/`; otherwise
 it uses its own `.model-cache/` directory. Set it consistently for
 provisioning and worker execution to preserve weights outside worktrees.
 
@@ -997,7 +997,7 @@ explicit algorithm selection is an operator contract. See
 
 ## Web workspace settings
 
-`omrg web` has one setting of its own in `.env`, `WEB_MAX_UPLOAD_MIB`. It also reads the engine settings that other commands read. Its other options are command-line flags only: `--workspace`, `--port`, `--host`, `--root` and `--experiment-root`. The server builds its Engine from the same settings sources as the other commands. See [Web workspace](web-workspace.md).
+`omrs web` has one setting of its own in `.env`, `WEB_MAX_UPLOAD_MIB`. It also reads the engine settings that other commands read. Its other options are command-line flags only: `--workspace`, `--port`, `--host`, `--root` and `--experiment-root`. The server builds its Engine from the same settings sources as the other commands. See [Web workspace](web-workspace.md).
 
 | Variable | Default | Use |
 |---|---|---|
@@ -1007,18 +1007,18 @@ The server uses the first upload limit it finds in this order:
 
 1. `--max-upload-mib`.
 2. `WEB_MAX_UPLOAD_MIB`, from the environment or `.env`.
-3. `web_max_upload_mib` in `omrg.jsonc`, which the page writes from Settings > Workspace.
+3. `web_max_upload_mib` in `omrs.jsonc`, which the page writes from Settings > Workspace.
 4. 50 MiB.
 
-A launch value (step 1 or 2) locks the limit for that run. Settings then shows the limit and cannot change it. A hand edit of `web_max_upload_mib` in `omrg.jsonc` applies to the next upload. Any other value stops `omrg web` with exit code 2 before it binds a port. The name is flat, because `omrg web` options are not engine settings.
+A launch value (step 1 or 2) locks the limit for that run. Settings then shows the limit and cannot change it. A hand edit of `web_max_upload_mib` in `omrs.jsonc` applies to the next upload. Any other value stops `omrs web` with exit code 2 before it binds a port. The name is flat, because `omrs web` options are not engine settings.
 
 ### Provider and Chat values
 
-`omrg web` also lets you save LLM provider addresses, API keys, the Chat model and the claim check judge in Settings. The order is environment, `.env`, `omrg.jsonc`, the key file, then the default. Only the environment and `.env` lock the field (see [User config folder](#user-config-folder)). A saved key lives in the system keychain only, and `omrg.jsonc` holds a `keychain://` reference to it. A saved value applies at once with no restart. Details: [Providers](#providers), [Answering](#answering--answer__) and [Web workspace](web-workspace.md#provider-settings).
+`omrs web` also lets you save LLM provider addresses, API keys, the Chat model and the claim check judge in Settings. The order is environment, `.env`, `omrs.jsonc`, the key file, then the default. Only the environment and `.env` lock the field (see [User config folder](#user-config-folder)). A saved key lives in the system keychain only, and `omrs.jsonc` holds a `keychain://` reference to it. A saved value applies at once with no restart. Details: [Providers](#providers), [Answering](#answering--answer__) and [Web workspace](web-workspace.md#provider-settings).
 
 ### Document reading values
 
-Settings > Document reading edits nine keys in `omrg.jsonc`: `pdf_reader`, `ocr_fallback_enabled`, `ocr_fallback_min_confidence`, `ocr_fallback_page_fraction`, `ocr_routing_unit`, `ocr_engine_primary`, `ocr_engine_fallback`, `ocr_maths_routing_enabled` and `ocr_maths_page_fraction`. See [PDF reading](#pdf-reading) and [OCR fallback and isolated engines](#ocr-fallback-and-isolated-engines).
+Settings > Document reading edits nine keys in `omrs.jsonc`: `pdf_reader`, `ocr_fallback_enabled`, `ocr_fallback_min_confidence`, `ocr_fallback_page_fraction`, `ocr_routing_unit`, `ocr_engine_primary`, `ocr_engine_fallback`, `ocr_maths_routing_enabled` and `ocr_maths_page_fraction`. See [PDF reading](#pdf-reading) and [OCR fallback and isolated engines](#ocr-fallback-and-isolated-engines).
 
 - Each key applies after a restart only. Until then, the row shows the value in force and the saved value with "Restart to apply".
 - Each key is part of the [index identity](#index-identity-and-re-ingestion). After the restart, the next ingest can read existing files again.
@@ -1027,13 +1027,13 @@ Settings > Document reading edits nine keys in `omrg.jsonc`: `pdf_reader`, `ocr_
 - The page refuses blank text. "Use default" removes the key from the file.
 - These checks run only when the page saves. At startup, an unknown `pdf_reader` from any source still logs a warning and falls back to `auto`.
 
-The page cannot set "no fallback engine" yet. To turn the fallback route off, set `OCR_ENGINE_FALLBACK=` in the environment or `.env`. A blank `"ocr_engine_fallback": ""` in `omrg.jsonc` does not turn it off: the file reader treats blank text as not set, and the row shows "Not set".
+The page cannot set "no fallback engine" yet. To turn the fallback route off, set `OCR_ENGINE_FALLBACK=` in the environment or `.env`. A blank `"ocr_engine_fallback": ""` in `omrs.jsonc` does not turn it off: the file reader treats blank text as not set, and the row shows "Not set".
 
 ---
 
 ## Index identity and re-ingestion
 
-OMRG skips a source it has already indexed when the file bytes and the
+OMRS skips a source it has already indexed when the file bytes and the
 index identity both match. Change the identity and every affected source
 re-ingests on the next run, even if not one byte of the file changed.
 

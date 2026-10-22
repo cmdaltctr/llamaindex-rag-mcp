@@ -6,7 +6,7 @@ import { json } from "../test/fakeDocumentsServer";
 import { startApp } from "../test/startApp";
 import { readingState, settingsServer } from "./test/fixtures";
 
-const RESTART_NOTE = "These settings apply after a restart of omrg web. Saving does not change the reading in force.";
+const RESTART_NOTE = "These settings apply after a restart of omrs web. Saving does not change the reading in force.";
 const IDENTITY_NOTE = "These settings are part of the index identity. After a restart, the next ingest can read existing files again.";
 
 async function openSection(handlers = {}) {
@@ -172,7 +172,7 @@ describe("Document reading", () => {
     await waitFor(() => expect(server.find("PUT", "/v1/settings/document-reading").map((call) => call.body)).toEqual([{ values: { ocr_maths_routing_enabled: false }, revision: "r1" }]));
   });
 
-  it("sends null for Use default, so the key leaves omrg.jsonc", async () => {
+  it("sends null for Use default, so the key leaves omrs.jsonc", async () => {
     const { user, server } = await openSection(savingServer(readingState({ ocr_engine_fallback: { value: "paddleocr-vl", saved: "my-engine", source: "default", restart_pending: true } }, { ocr: { ...readingState().ocr, engines: [...readingState().ocr.engines, { name: "my-engine", available: false, reason: "Not provisioned. Run python3 ocr-workers/provision.py my-engine." }] } })));
     await user.click(within(row("Fallback engine")).getByRole("button", { name: "Edit Fallback engine" }));
     await user.click(within(row("Fallback engine")).getByRole("button", { name: "Use default" }));
@@ -204,14 +204,14 @@ describe("Document reading", () => {
 
   it("offers Reload after a file conflict and reads the section again", async () => {
     const { user, server } = await openSection({
-      "PUT /v1/settings/document-reading": () => json({ status: "error", message: "omrg.jsonc changed on disk. Reload to see the new values." }, 409),
+      "PUT /v1/settings/document-reading": () => json({ status: "error", message: "omrs.jsonc changed on disk. Reload to see the new values." }, 409),
     });
     await user.click(within(row("OCR routing unit")).getByRole("button", { name: "Edit OCR routing unit" }));
     await user.click(within(row("OCR routing unit")).getByRole("combobox", { name: "OCR routing unit" }));
     await user.click(await screen.findByRole("option", { name: "page" }));
     await user.click(within(row("OCR routing unit")).getByRole("button", { name: "Save" }));
     const alert = await within(row("OCR routing unit")).findByRole("alert");
-    expect(alert).toHaveTextContent("omrg.jsonc changed on disk. Reload to see the new values.");
+    expect(alert).toHaveTextContent("omrs.jsonc changed on disk. Reload to see the new values.");
     expect(server.find("GET", "/v1/settings/document-reading")).toHaveLength(1);
     await user.click(within(alert).getByRole("button", { name: "Reload" }));
     await waitFor(() => expect(server.find("GET", "/v1/settings/document-reading")).toHaveLength(2));

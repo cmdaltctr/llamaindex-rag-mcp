@@ -19,7 +19,7 @@ from tests.unit.test_engine_pipelines_support import FakeStore, build_engine
 from tests.unit.test_engine_profiles_support import COLLECTION, PROFILE, make_env
 from tests.unit.test_profile_service import Env
 
-from omrg.core.profiles.resolver import ProfileResolver
+from omrs.core.profiles.resolver import ProfileResolver
 
 __all__ = [
     "COLLECTION",
@@ -82,8 +82,8 @@ def engine_builder(
 
 def build_web_server(engine: Any, profiles: Any) -> Any:
     """Build the MCP server as the web endpoint does: the context carries the profile service."""
-    from omrg.transports.mcp import create_mcp_server
-    from omrg.transports.mcp.context import McpContext, PathPolicy, no_admission
+    from omrs.transports.mcp import create_mcp_server
+    from omrs.transports.mcp.context import McpContext, PathPolicy, no_admission
 
     context = McpContext(engine, PathPolicy.allow_all(), no_admission, profiles=profiles)
 
@@ -104,7 +104,7 @@ def link_default_workspace(home: Path, env: Env) -> Path:
     Returns:
         The database file as the default workspace shows it.
     """
-    folder = home / ".omrg"
+    folder = home / ".omrs"
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "workspace").symlink_to(env.catalogue.path.parent, target_is_directory=True)
     return folder / "workspace" / "workspace.db"
@@ -126,7 +126,7 @@ def start_stdio_server(build: Callable[[Any], Any]) -> tuple[Any, dict[str, Any]
         The real MCP server that ``main()`` built, and a dict with the keys
         ``catalogue`` (what ``main()`` passed), ``engine`` and ``kwargs``.
     """
-    from omrg.transports import mcp as mcp_package
+    from omrs.transports import mcp as mcp_package
 
     seen: dict[str, Any] = {}
     real_factory = mcp_package.create_mcp_server
@@ -142,8 +142,8 @@ def start_stdio_server(build: Callable[[Any], Any]) -> tuple[Any, dict[str, Any]
         return SimpleNamespace(run=lambda **_: None)
 
     with (
-        patch("omrg.transports.mcp.compose.build_engine", side_effect=fake_build_engine),
-        patch("omrg.transports.mcp.create_mcp_server", side_effect=fake_create_server),
+        patch("omrs.transports.mcp.compose.build_engine", side_effect=fake_build_engine),
+        patch("omrs.transports.mcp.create_mcp_server", side_effect=fake_create_server),
         patch("logging.basicConfig"),
     ):
         mcp_package.main()

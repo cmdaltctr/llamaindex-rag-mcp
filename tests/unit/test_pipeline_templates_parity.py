@@ -36,11 +36,11 @@ from tests.unit.test_answer_graph_adapters_support import UNKNOWN_PROVIDER, Fake
 from tests.unit.test_engine_pipelines_support import Factory, FakeStore, build_engine
 from tests.unit.test_ingestion_graph_adapters_support import offline_settings
 
-from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition
-from omrg.core.pipelines import RunStatus
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
-from omrg.engine import Engine
-from omrg.pipeline_templates import answer_template, ingestion_template
+from omrs.core.ingestion.graph_adapters import canonical_ingestion_definition
+from omrs.core.pipelines import RunStatus
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.engine import Engine
+from omrs.pipeline_templates import answer_template, ingestion_template
 
 _COLLECTION = "parity"
 

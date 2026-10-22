@@ -40,18 +40,18 @@ Re-ingesting a file is an **upsert** — old chunks are removed before new ones 
 
 | Stage | Shared function | Module | Graph operation |
 |---|---|---|---|
-| Find eligible files | `gather_supported_files`, `iter_source_units` | `src/omrg/core/ingestion/loader.py`, `src/omrg/core/ingestion/sources.py` | `source.discover` |
-| Source identity and reuse check | `prepare_source`, `check_source_state` | `src/omrg/core/ingestion/sources.py` | `source.identify` |
-| Read | `read_document` | `src/omrg/core/ingestion/backends/orchestrator.py` | `read.document` |
-| Normalise reader output | `normalise_backend_read` | `src/omrg/core/ingestion/chunker.py` | `prepare.normalise` |
-| Metadata enrichment | `enrich_documents` | `src/omrg/core/ingestion/chunker.py` | `prepare.enrich` |
-| Split | `split_documents` | `src/omrg/core/ingestion/chunker.py` | `prepare.chunk` |
-| Embed | `prepare_source_embeddings` | `src/omrg/core/ingestion/replacement.py` | `embed.chunks` |
-| Protected commit | `commit_prepared_source` | `src/omrg/core/ingestion/commit.py` | `commit.source` |
+| Find eligible files | `gather_supported_files`, `iter_source_units` | `src/omrs/core/ingestion/loader.py`, `src/omrs/core/ingestion/sources.py` | `source.discover` |
+| Source identity and reuse check | `prepare_source`, `check_source_state` | `src/omrs/core/ingestion/sources.py` | `source.identify` |
+| Read | `read_document` | `src/omrs/core/ingestion/backends/orchestrator.py` | `read.document` |
+| Normalise reader output | `normalise_backend_read` | `src/omrs/core/ingestion/chunker.py` | `prepare.normalise` |
+| Metadata enrichment | `enrich_documents` | `src/omrs/core/ingestion/chunker.py` | `prepare.enrich` |
+| Split | `split_documents` | `src/omrs/core/ingestion/chunker.py` | `prepare.chunk` |
+| Embed | `prepare_source_embeddings` | `src/omrs/core/ingestion/replacement.py` | `embed.chunks` |
+| Protected commit | `commit_prepared_source` | `src/omrs/core/ingestion/commit.py` | `commit.source` |
 
-The adapters live in `src/omrg/core/ingestion/graph_adapters.py`. The descriptors and the canonical ingestion graph live in `src/omrg/core/ingestion/graph_adapters_catalogue.py`. The canonical `ingestion` template is that graph. It processes one source at a time and writes the same rows as `Engine.ingest` on the fixtures in `tests/fixtures/pipeline_parity/ingestion/`.
+The adapters live in `src/omrs/core/ingestion/graph_adapters.py`. The descriptors and the canonical ingestion graph live in `src/omrs/core/ingestion/graph_adapters_catalogue.py`. The canonical `ingestion` template is that graph. It processes one source at a time and writes the same rows as `Engine.ingest` on the fixtures in `tests/fixtures/pipeline_parity/ingestion/`.
 
-A graph cannot write to the vector store directly. `commit.source` keeps the lineage checks, the embedding write contract below, the source write lock and the stale-row clean-up. `src/omrg/core/ingestion/graph_fingerprint.py` adds the graph's index-shaping operations and parameters to the source identity. A changed chunker setting in a graph therefore makes the next explicit ingest rebuild the affected sources. A layout change or a query-only change does not.
+A graph cannot write to the vector store directly. `commit.source` keeps the lineage checks, the embedding write contract below, the source write lock and the stale-row clean-up. `src/omrs/core/ingestion/graph_fingerprint.py` adds the graph's index-shaping operations and parameters to the source identity. A changed chunker setting in a graph therefore makes the next explicit ingest rebuild the affected sources. A layout change or a query-only change does not.
 
 These values and behaviours are unchanged:
 
@@ -295,7 +295,7 @@ set and now routes by the calibrated thresholds.
 Workers live under `ocr-workers/`. The shared `core/` package owns the
 protocol, framing loop, validation and capability command. Each project
 under `engines/<engine>/` has its own environment and lockfile.
-Paddle and PyTorch packages stay in those environments; the OMRG main
+Paddle and PyTorch packages stay in those environments; the OMRS main
 install does not install them.
 
 ### Routing policy
@@ -507,8 +507,8 @@ python3 ocr-workers/provision.py dots-mocr --accept-model-licence
 
 The script syncs each engine's `uv.lock` with `uv sync --locked` and runs
 its fetch command when one is declared. It rejects Python outside
-3.11–3.13 and never changes the OMRG environment. A root-level `uv sync`
-installs OMRG; it does not provision engines.
+3.11–3.13 and never changes the OMRS environment. A root-level `uv sync`
+installs OMRS; it does not provision engines.
 
 Set the route configuration in `.env`:
 
@@ -521,7 +521,7 @@ OCR_WORKER_ENV_DIR=
 ```
 
 Each engine starts from `engines/<engine>/` using its `.venv` interpreter
-and `python -m omrg_ocr_worker_core`. An empty `OCR_WORKERS_DIR` makes
+and `python -m omrs_ocr_worker_core`. An empty `OCR_WORKERS_DIR` makes
 folder-based routes unavailable. An explicit command can still supply
 the primary route.
 
@@ -535,12 +535,12 @@ the primary route.
 
 A retained `OCR_WORKER_COMMAND` overrides the primary engine setting.
 For the moved Paddle engine, use its `.venv/bin/python` executable with
-`-m omrg_ocr_worker_core` and set `OCR_WORKER_ENV_DIR` to the engine
+`-m omrs_ocr_worker_core` and set `OCR_WORKER_ENV_DIR` to the engine
 project directory. The fallback still resolves from `OCR_WORKERS_DIR`.
 
 Each engine uses `<engine folder>/.model-cache/` by default. Set
-`OMRG_OCR_MODEL_CACHE` consistently during provisioning and execution to
-use `$OMRG_OCR_MODEL_CACHE/<engine>/` outside the worktree. See the
+`OMRS_OCR_MODEL_CACHE` consistently during provisioning and execution to
+use `$OMRS_OCR_MODEL_CACHE/<engine>/` outside the worktree. See the
 [Paddle cache record](../../ocr-workers/engines/paddleocr-vl/DATA_LOCATIONS.md)
 for preserved weights.
 
@@ -553,7 +553,7 @@ worker request.
 
 ### Worker lifecycle
 
-Each route has a lazy, long-lived worker owned by the OMRG engine or
+Each route has a lazy, long-lived worker owned by the OMRS engine or
 by the standalone ingestion operation. Identical routes share one client.
 
 1. Building an engine starts nothing. A metadata-only capability probe
@@ -569,10 +569,10 @@ by the standalone ingestion operation. Identical routes share one client.
 
 ### Protocol and diagnostics
 
-The two processes speak UTF-8 JSON Lines. OMRG writes one request per
+The two processes speak UTF-8 JSON Lines. OMRS writes one request per
 line to the worker's standard input; the worker writes one terminal
 response per line to standard output. Nothing else goes to standard
-output. All worker logs go to standard error, which OMRG drains
+output. All worker logs go to standard error, which OMRS drains
 separately and forwards through its own logging, so a noisy worker can
 never corrupt the protocol stream or block on a full pipe.
 
@@ -580,7 +580,7 @@ Protocol versions `1.0` and `1.1` are accepted. A request that
 carries a `pages` list speaks `1.1`; a request without one speaks
 `1.0`, so an un-upgraded worker keeps serving document-level requests
 during a rolling upgrade. Successful parse responses declare the output
-schema `omrg.ocr.parse_output` version `1`. A version or schema mismatch
+schema `omrs.ocr.parse_output` version `1`. A version or schema mismatch
 is a protocol failure, not a silent downgrade.
 
 The capability probe reports availability, protocol version, every
@@ -805,7 +805,7 @@ For comparison, the larger `qwen3-embedding:8b` model (4,096-dim vectors) takes 
 
 File reading is sequential. Tune throughput with `INGESTION__EMBED_BATCH_SIZE` and `INGESTION__EMBED_CONCURRENCY` rather than file-reader worker settings.
 
-Run `uv run omrg benchmark` to measure throughput on your own hardware.
+Run `uv run omrs benchmark` to measure throughput on your own hardware.
 
 ### Switching models
 
@@ -817,7 +817,7 @@ ollama pull mxbai-embed-large
 EMBED_MODEL=mxbai-embed-large
 
 # 3. Re-index your documents into a fresh collection
-omrg ingest /path/to/docs/
+omrs ingest /path/to/docs/
 ```
 
 > **Why re-index?** The selected vector store locks the vector dimension at collection creation time. Each model produces a different dimension (nomic=768, mxbai=1024, minilm=384). Switching models requires a fresh collection.
@@ -843,7 +843,7 @@ The default 512-character chunk size is safe for all models. For models with lar
 
 ```bash
 # 2048-char chunks are fine (2048 × 0.25 = 512 tokens)
-omrg ingest /path/to/docs/ --chunk-size 2048
+omrs ingest /path/to/docs/ --chunk-size 2048
 ```
 
 ### Markdown sources: token budget (default since ADR-063 promotion)

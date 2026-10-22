@@ -60,7 +60,7 @@ describe("Settings sections", () => {
       "#/settings/configuration",
       settingsServer({
         "GET /v1/settings/configuration": () => ({
-          path: "/home/u/.config/omrg/omrg.jsonc",
+          path: "/home/u/.config/omrs/omrs.jsonc",
           revision: "r1",
           settings: [{ key: "retrieval.top_k", value: 10, source: "default", applies: "restart", restart_pending: false }],
           problems: [],
@@ -71,7 +71,7 @@ describe("Settings sections", () => {
     expect(await screen.findByRole("region", { name: "Configuration" })).toBeInTheDocument();
     expect(chip("Configuration")).toHaveAttribute("aria-pressed", "true");
     expect(await screen.findByText("retrieval.top_k")).toBeInTheDocument();
-    expect(screen.getByText("/home/u/.config/omrg/omrg.jsonc")).toBeInTheDocument();
+    expect(screen.getByText("/home/u/.config/omrs/omrs.jsonc")).toBeInTheDocument();
   });
 
   it("opens the section the address names", async () => {
@@ -144,7 +144,7 @@ describe("Workspace", () => {
     const { user } = await openSettings();
     await user.click(chip("Workspace"));
     const workspace = screen.getByRole("region", { name: "Workspace" });
-    expect(await within(workspace).findByText("/home/u/.omrg/workspace")).toBeInTheDocument();
+    expect(await within(workspace).findByText("/home/u/.omrs/workspace")).toBeInTheDocument();
     const roots = await within(workspace).findByRole("table", { name: "File access" });
     const rows = within(roots).getAllByRole("row").slice(1);
     expect(rows[0]).toHaveTextContent("/srv/docs");
@@ -163,7 +163,7 @@ describe("Workspace", () => {
     await user.click(chip("Workspace"));
     const workspace = screen.getByRole("region", { name: "Workspace" });
     expect(await within(workspace).findByRole("button", { name: "Retry" })).toBeInTheDocument();
-    expect(within(workspace).getByText("/home/u/.omrg/workspace")).toBeInTheDocument();
+    expect(within(workspace).getByText("/home/u/.omrs/workspace")).toBeInTheDocument();
   });
 });
 

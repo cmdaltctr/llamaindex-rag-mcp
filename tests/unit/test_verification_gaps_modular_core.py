@@ -17,11 +17,11 @@ from llama_index.core import Settings as LlamaIndexSettings
 from tests.fixtures.pipeline_parity.ingestion.snapshot import collect_rows
 from tests.unit.test_ingestion_graph_adapters_support import offline_settings
 
-from omrg.core.chunking import registry as chunking_registry
-from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition
-from omrg.core.pipelines import EventKind, RunStatus
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
-from omrg.engine import Engine
+from omrs.core.chunking import registry as chunking_registry
+from omrs.core.ingestion.graph_adapters import canonical_ingestion_definition
+from omrs.core.pipelines import EventKind, RunStatus
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.engine import Engine
 
 _CONTENT_TYPES = {
     "script.txt": ("code", "python"),
@@ -50,7 +50,7 @@ _YAML = "service:\n  name: demo\n  port: 8080\n  replicas: 2\n"
 
 def _pin_types(monkeypatch: pytest.MonkeyPatch) -> None:
     """Report the scripted Magika types for the two sources."""
-    from omrg.core.codebase import codebase_map
+    from omrs.core.codebase import codebase_map
 
     def _detect(path: str, *, settings: Any) -> SimpleNamespace:
         entries = [

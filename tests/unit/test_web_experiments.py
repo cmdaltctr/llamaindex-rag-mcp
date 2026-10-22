@@ -31,7 +31,7 @@ from tests.unit.test_web_experiments_support import (  # noqa: E402
 )
 from tests.unit.test_web_runs_support import make_engine  # noqa: E402
 
-from omrg.compose_experiments import live_backend_identity  # noqa: E402
+from omrs.compose_experiments import live_backend_identity  # noqa: E402
 
 
 @pytest.fixture

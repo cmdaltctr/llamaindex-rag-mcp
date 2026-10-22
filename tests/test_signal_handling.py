@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.ingestion import ingest_path_async
-from omrg.core.ingestion._state import shutdown_requested as _shutdown_requested
-from omrg.core.ingestion.writer import embed_and_write_async as _embed_and_write_async
+from omrs.core.ingestion import ingest_path_async
+from omrs.core.ingestion._state import shutdown_requested as _shutdown_requested
+from omrs.core.ingestion.writer import embed_and_write_async as _embed_and_write_async
 
 
 class TestShutdownFlag:

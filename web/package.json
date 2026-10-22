@@ -1,8 +1,8 @@
 {
-  "name": "omrg-web",
+  "name": "omrs-web",
   "private": true,
   "version": "0.0.0",
-  "description": "Local web workspace for OMRG. Built into src/omrg/transports/api/static/ and served by the optional web transport.",
+  "description": "Local web workspace for OMRS. Built into src/omrs/transports/api/static/ and served by the optional web transport.",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {

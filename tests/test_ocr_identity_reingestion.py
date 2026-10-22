@@ -23,18 +23,18 @@ from typing import Any
 
 import pytest
 
-from omrg.capabilities import probe_ocr_worker, reset_ocr_fingerprint_cache
-from omrg.core.ingestion.ocr_identity import (
+from omrs.capabilities import probe_ocr_worker, reset_ocr_fingerprint_cache
+from omrs.core.ingestion.ocr_identity import (
     ocr_fingerprint_payload,
     ocr_routing_payload,
 )
-from omrg.core.ingestion.pipeline import ingest_path_async
-from omrg.core.ingestion.source_state import SOURCE_INDEX_IDENTITY_KEY
-from omrg.core.vectordb import get_default_store
-from omrg.integrations.ocr_worker.fingerprint import (
+from omrs.core.ingestion.pipeline import ingest_path_async
+from omrs.core.ingestion.source_state import SOURCE_INDEX_IDENTITY_KEY
+from omrs.core.vectordb import get_default_store
+from omrs.integrations.ocr_worker.fingerprint import (
     UNAVAILABLE_OCR_WORKER_FINGERPRINT,
 )
-from omrg.integrations.ocr_worker.managed import ManagedOcrClient
+from omrs.integrations.ocr_worker.managed import ManagedOcrClient
 
 pytest.importorskip("pdf_inspector", reason="pdf-inspector is a base dependency (ADR-050)")
 
@@ -196,8 +196,8 @@ def test_document_unit_identity_does_not_move(monkeypatch, effective_settings) -
     digest would pin the mock rather than the configuration, and break
     whenever the harness changed its embedder.
     """
-    from omrg.core.ingestion import embed_exclusions, source_state
-    from omrg.core.ingestion.source_state import build_index_identity
+    from omrs.core.ingestion import embed_exclusions, source_state
+    from omrs.core.ingestion.source_state import build_index_identity
 
     settings = effective_settings()
     grown = build_index_identity(settings, **_IDENTITY_KWARGS)
@@ -222,8 +222,8 @@ def test_page_unit_identity_includes_the_page_routing_keys(monkeypatch, effectiv
     hide a real change in embedded text, which is the failure the exclusion
     set is hashed to prevent.
     """
-    from omrg.core.ingestion import embed_exclusions, source_state
-    from omrg.core.ingestion.source_state import build_index_identity
+    from omrs.core.ingestion import embed_exclusions, source_state
+    from omrs.core.ingestion.source_state import build_index_identity
 
     settings = effective_settings(ocr_routing_unit="page")
     with_keys = build_index_identity(settings, **_IDENTITY_KWARGS)
@@ -241,7 +241,7 @@ def test_page_unit_identity_includes_the_page_routing_keys(monkeypatch, effectiv
 
 def test_unit_scoped_keys_are_a_subset_of_the_exclusion_set() -> None:
     """A unit-scoped key that is not excluded would reach the embedding model."""
-    from omrg.core.ingestion.embed_exclusions import (
+    from omrs.core.ingestion.embed_exclusions import (
         EXCLUDED_EMBED_METADATA_KEYS,
         PAGE_ROUTING_ONLY_EMBED_KEYS,
     )
@@ -251,7 +251,7 @@ def test_unit_scoped_keys_are_a_subset_of_the_exclusion_set() -> None:
 
 def test_page_unit_identity_differs_from_document_unit(effective_settings) -> None:
     """Opting into page routing reindexes: a different engine reads the pages."""
-    from omrg.core.ingestion.source_state import build_index_identity
+    from omrs.core.ingestion.source_state import build_index_identity
 
     document = build_index_identity(effective_settings(), **_IDENTITY_KWARGS)
     page = build_index_identity(effective_settings(ocr_routing_unit="page"), **_IDENTITY_KWARGS)
@@ -265,7 +265,7 @@ def test_page_unit_identity_ignores_the_model_directory(effective_settings) -> N
     Moving a model cache must not reindex a corpus. Only inputs that change
     the emitted text belong in the identity.
     """
-    from omrg.core.ingestion.source_state import build_index_identity
+    from omrs.core.ingestion.source_state import build_index_identity
 
     here = build_index_identity(
         effective_settings(ocr_routing_unit="page", ocr_local_model_directory="/models/a"),
@@ -281,7 +281,7 @@ def test_page_unit_identity_ignores_the_model_directory(effective_settings) -> N
 
 def test_page_unit_identity_follows_the_escalation_threshold(effective_settings) -> None:
     """The threshold decides which pages the worker rereads, so it must count."""
-    from omrg.core.ingestion.source_state import build_index_identity
+    from omrs.core.ingestion.source_state import build_index_identity
 
     default_cut = build_index_identity(
         effective_settings(ocr_routing_unit="page"), **_IDENTITY_KWARGS
@@ -299,7 +299,7 @@ def test_local_cut_default_change_only_moves_page_identity(
     effective_settings, unit: str, changes: bool
 ) -> None:
     """The previous 0.8 cut differs from the default only for page routing."""
-    from omrg.core.ingestion.source_state import build_index_identity
+    from omrs.core.ingestion.source_state import build_index_identity
 
     previous = build_index_identity(
         effective_settings(ocr_routing_unit=unit, ocr_local_min_confidence=0.8),
@@ -538,7 +538,7 @@ def test_unconditional_types_are_in_the_routing_payload(effective_settings) -> N
     assert set(payload["unconditional_types"]) == {"scanned", "image_based"}
     assert "mixed" not in payload["unconditional_types"]
 
-    from omrg.core.ingestion.source_state import build_index_identity
+    from omrs.core.ingestion.source_state import build_index_identity
 
     settings = _ocr_settings(effective_settings)
     kwargs = {
@@ -579,7 +579,7 @@ def test_mixed_is_not_in_unconditional_types() -> None:
     question ``ocr_fallback_page_fraction`` exists to answer, so routing
     it unconditionally skips the one check designed for it.
     """
-    from omrg.core.ingestion.ocr_identity import OCR_UNCONDITIONAL_TYPES
+    from omrs.core.ingestion.ocr_identity import OCR_UNCONDITIONAL_TYPES
 
     assert "mixed" not in OCR_UNCONDITIONAL_TYPES
     assert "scanned" in OCR_UNCONDITIONAL_TYPES
@@ -588,7 +588,7 @@ def test_mixed_is_not_in_unconditional_types() -> None:
 
 def test_ocr_routing_constant_is_consistent_across_modules() -> None:
     """Routing and identity re-export the same pure policy constant."""
-    from omrg.core.ingestion.ocr_identity import OCR_UNCONDITIONAL_TYPES as identity_types
-    from omrg.integrations.pdf.ocr_routing import OCR_UNCONDITIONAL_TYPES as routing_types
+    from omrs.core.ingestion.ocr_identity import OCR_UNCONDITIONAL_TYPES as identity_types
+    from omrs.integrations.pdf.ocr_routing import OCR_UNCONDITIONAL_TYPES as routing_types
 
     assert identity_types is routing_types

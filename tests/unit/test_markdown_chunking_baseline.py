@@ -45,13 +45,13 @@ def _chunk_markdown(text: str, settings) -> list:
     """Run the exact production markdown route (sentence.py + hooks)."""
     from llama_index.core import Document
 
-    from omrg.core.chunking.markdown import (
+    from omrs.core.chunking.markdown import (
         apply_heading_prepend,
         drop_small_markdown_chunks,
         ensure_heading_metadata,
     )
-    from omrg.core.chunking.sentence import _split_documents_sync
-    from omrg.core.settings import resolve_effective_settings
+    from omrs.core.chunking.sentence import _split_documents_sync
+    from omrs.core.settings import resolve_effective_settings
 
     resolved = resolve_effective_settings(settings)
     nodes = _split_documents_sync([Document(text=text)], True, BUDGET, OVERLAP)
@@ -86,11 +86,11 @@ def test_markdown_chunk_boundaries_baseline(effective_settings) -> None:
     token_counts = [len(tokenizer.encode(n.text)) for n in nodes]
     assert max(token_counts) <= BUDGET
     # Heading boundaries: Alpha and Beta never share a chunk.
-    alpha = [n for n in nodes if "OMRG-ALPHA-77" in n.text]
+    alpha = [n for n in nodes if "OMRS-ALPHA-77" in n.text]
     beta = [n for n in nodes if "- beta item" in n.text]
     assert len(alpha) == 1 and len(beta) == 1
     assert "beta item" not in alpha[0].text
-    assert "OMRG-ALPHA-77" not in beta[0].text
+    assert "OMRS-ALPHA-77" not in beta[0].text
 
     # The bullet list stays together when it fits.
     bullet_markers = ("- beta item one", "- beta item two", "- beta item three")
@@ -135,7 +135,7 @@ def test_budget_forces_oversized_section_to_split(effective_settings) -> None:
 
     # Sibling sections stay single chunks (identified by unique markers).
     singles = {
-        "OMRG-ALPHA-77": "/Baseline Markdown Fixture/",
+        "OMRS-ALPHA-77": "/Baseline Markdown Fixture/",
         "- beta item one": "/Baseline Markdown Fixture/",
         "| name | qty | price |": "/Baseline Markdown Fixture/",
     }
@@ -166,7 +166,7 @@ def test_four_char_estimate_drops_small_cjk_section() -> None:
     close to one token per character and would keep it (asserted by the
     cached-tokenizer leg below when a local Qwen tokenizer exists).
     """
-    from omrg.core.chunking.markdown import drop_small_markdown_chunks
+    from omrs.core.chunking.markdown import drop_small_markdown_chunks
 
     nodes = _markdown_nodes(CJK_MD.read_text(encoding="utf-8"))
     cjk_node = next(n for n in nodes if "汉字" in n.text)

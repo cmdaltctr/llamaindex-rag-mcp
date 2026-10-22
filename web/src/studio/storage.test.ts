@@ -9,12 +9,12 @@ afterEach(() => {
 });
 
 describe("draft storage", () => {
-  it("keeps one draft per pipeline under omrg-canvas-draft:<pipeline-id>", () => {
+  it("keeps one draft per pipeline under omrs-canvas-draft:<pipeline-id>", () => {
     const one = addNode(emptyDraft(), CATALOGUE[0]!).draft;
     writeDraft("p1", one);
     writeDraft("p2", setViewport(emptyDraft(), { x: 1, y: 2, zoom: 3 }));
-    expect(DRAFT_PREFIX).toBe("omrg-canvas-draft:");
-    expect(window.localStorage.getItem("omrg-canvas-draft:p1")).not.toBeNull();
+    expect(DRAFT_PREFIX).toBe("omrs-canvas-draft:");
+    expect(window.localStorage.getItem("omrs-canvas-draft:p1")).not.toBeNull();
     expect(readDraft("p1")).toEqual(one);
     expect(readDraft("p2")?.layout.viewport.zoom).toBe(3);
     expect(readDraft("p3")).toBeNull();
@@ -22,20 +22,20 @@ describe("draft storage", () => {
 
   it("stores no version field", () => {
     writeDraft("p1", emptyDraft());
-    expect(JSON.parse(window.localStorage.getItem("omrg-canvas-draft:p1") ?? "{}")).not.toHaveProperty("version");
+    expect(JSON.parse(window.localStorage.getItem("omrs-canvas-draft:p1") ?? "{}")).not.toHaveProperty("version");
   });
 
   it("ignores and removes corrupt or foreign data", () => {
-    window.localStorage.setItem("omrg-canvas-draft:p1", "{not json");
+    window.localStorage.setItem("omrs-canvas-draft:p1", "{not json");
     expect(readDraft("p1")).toBeNull();
-    window.localStorage.setItem("omrg-canvas-draft:p1", JSON.stringify({ graph: { nodes: "x" } }));
+    window.localStorage.setItem("omrs-canvas-draft:p1", JSON.stringify({ graph: { nodes: "x" } }));
     expect(readDraft("p1")).toBeNull();
-    expect(window.localStorage.getItem("omrg-canvas-draft:p1")).toBeNull();
+    expect(window.localStorage.getItem("omrs-canvas-draft:p1")).toBeNull();
   });
 
   it("loads a draft stored by an earlier version without its layout title", () => {
     const stored = { ...emptyDraft(), layout: { ...emptyDraft().layout, title: "Old title" } };
-    window.localStorage.setItem("omrg-canvas-draft:p1", JSON.stringify(stored));
+    window.localStorage.setItem("omrs-canvas-draft:p1", JSON.stringify(stored));
     const draft = readDraft("p1");
     expect(draft).not.toBeNull();
     expect(draft?.layout).not.toHaveProperty("title");
@@ -80,6 +80,6 @@ describe("draft storage", () => {
 
   it("no longer keeps a canvas session key", () => {
     writeDraft("p1", emptyDraft());
-    expect(window.localStorage.getItem("omrg-canvas-session")).toBeNull();
+    expect(window.localStorage.getItem("omrs-canvas-session")).toBeNull();
   });
 });

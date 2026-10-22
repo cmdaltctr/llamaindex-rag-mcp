@@ -9,7 +9,7 @@ Per cell, this script:
 
 1. pins the controlled environment (local ollama embeddings, lancedb,
    ``documents`` profile, metadata extraction disabled, OCR off);
-2. resets the ``omrg.config`` settings singleton so each engine resolves
+2. resets the ``omrs.config`` settings singleton so each engine resolves
    fresh from the pinned environment;
 3. ingests every held-out and distractor document into
    ``exp31_<cell>``;
@@ -140,7 +140,7 @@ def _index_bytes(uri: Path, table: str) -> int:
 
 
 async def _build_cell(cell: str, docs: list[dict], force: bool) -> dict:
-    import omrg.config as config_module
+    import omrs.config as config_module
 
     collection = f"exp31_{cell}"
     env = dict(PINNED_ENV)
@@ -155,7 +155,7 @@ async def _build_cell(cell: str, docs: list[dict], force: bool) -> dict:
         # the reader resolves lazily at ingest time, inside this block.
         harness_readers.install_cell_reader(CELL_READERS[cell])
 
-        from omrg.compose import build_engine
+        from omrs.compose import build_engine
 
         engine = build_engine()
         snapshot = _effective_snapshot(engine)

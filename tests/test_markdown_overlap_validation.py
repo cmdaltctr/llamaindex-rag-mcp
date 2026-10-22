@@ -7,8 +7,8 @@ import pytest
 
 def _settings_with_markdown_overlap(chunk_overlap: int, markdown_chunk_size: int):
     """Build resolved settings with explicit Markdown splitter values."""
-    from omrg.config import Settings
-    from omrg.core.chunking.settings import ChunkingSettings
+    from omrs.config import Settings
+    from omrs.core.chunking.settings import ChunkingSettings
 
     return Settings(
         _env_file=None,
@@ -22,7 +22,7 @@ def _settings_with_markdown_overlap(chunk_overlap: int, markdown_chunk_size: int
 
 def test_settings_to_effective_accepts_overlap_below_markdown_capacity() -> None:
     """Task 3.5a: overlap below the Markdown capacity reaches core settings."""
-    from omrg.compose import settings_to_effective
+    from omrs.compose import settings_to_effective
 
     effective = settings_to_effective(_settings_with_markdown_overlap(127, 128))
 
@@ -40,7 +40,7 @@ def test_settings_to_effective_rejects_markdown_overlap_at_or_above_capacity(
     markdown_chunk_size: int,
 ) -> None:
     """Task 3.5a: invalid overlap fails early and names both settings."""
-    from omrg.compose import settings_to_effective
+    from omrs.compose import settings_to_effective
 
     settings = _settings_with_markdown_overlap(chunk_overlap, markdown_chunk_size)
 

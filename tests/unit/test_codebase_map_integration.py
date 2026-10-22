@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from omrg.core.codebase.codebase_map import (
+from omrs.core.codebase.codebase_map import (
     CodebaseMap,
     FileInventory,
     _load_cache,
@@ -25,21 +25,21 @@ class TestBuildCodebaseMap:
         """Building a map with code files produces code communities."""
         (tmp_path / "app.py").write_text("from utils import helper\n")
         (tmp_path / "utils.py").write_text("def helper():\n    pass\n")
-        with patch("omrg.integrations.magika._is_magika_available", return_value=False):
+        with patch("omrs.integrations.magika._is_magika_available", return_value=False):
             m = build_codebase_map(str(tmp_path), settings=effective_settings())
         assert len(m.inventory.entries) >= 2
         assert "code/python" in m.inventory.type_counts
 
     def test_build_empty_directory(self, tmp_path: Path, effective_settings) -> None:
         """Empty directory produces empty map."""
-        with patch("omrg.integrations.magika._is_magika_available", return_value=False):
+        with patch("omrs.integrations.magika._is_magika_available", return_value=False):
             m = build_codebase_map(str(tmp_path), settings=effective_settings())
         assert len(m.inventory.entries) == 0
 
     def test_build_with_documents(self, tmp_path: Path, effective_settings) -> None:
         """Building with markdown files detects document types."""
         (tmp_path / "README.md").write_text("# Project\n\nHello world")
-        with patch("omrg.integrations.magika._is_magika_available", return_value=False):
+        with patch("omrs.integrations.magika._is_magika_available", return_value=False):
             m = build_codebase_map(str(tmp_path), settings=effective_settings())
         assert "document/markdown" in m.inventory.type_counts
 
@@ -47,8 +47,8 @@ class TestBuildCodebaseMap:
         """Building outside a git repo sets commit_hash to None."""
         (tmp_path / "app.py").write_text("x = 1\n")
         with (
-            patch("omrg.integrations.magika._is_magika_available", return_value=False),
-            patch("omrg.core.codebase.cache._get_git_commit_hash", return_value=None),
+            patch("omrs.integrations.magika._is_magika_available", return_value=False),
+            patch("omrs.core.codebase.cache._get_git_commit_hash", return_value=None),
         ):
             m = build_codebase_map(str(tmp_path), settings=effective_settings())
         assert m.commit_hash is None
@@ -72,7 +72,7 @@ class TestCaching:
         )
         _save_cache(str(tmp_path), m, cache_dir=".opencode", owner_context=_CTX)
 
-        with patch("omrg.core.codebase.cache._get_git_commit_hash", return_value="abc123"):
+        with patch("omrs.core.codebase.cache._get_git_commit_hash", return_value="abc123"):
             loaded = _load_cache(str(tmp_path), cache_dir=".opencode", owner_context=_CTX)
         assert loaded is not None
         assert loaded.commit_hash == "abc123"
@@ -86,7 +86,7 @@ class TestCaching:
         )
         _save_cache(str(tmp_path), m, cache_dir=".opencode", owner_context=_CTX)
 
-        with patch("omrg.core.codebase.cache._get_git_commit_hash", return_value="def456"):
+        with patch("omrs.core.codebase.cache._get_git_commit_hash", return_value="def456"):
             loaded = _load_cache(str(tmp_path), cache_dir=".opencode", owner_context=_CTX)
         assert loaded is None
 
@@ -110,7 +110,7 @@ class TestCaching:
         cache_file = cache_dir / "codebase-graph.json"
         cache_file.write_text("{invalid json")
 
-        with patch("omrg.core.codebase.cache._get_git_commit_hash", return_value="abc123"):
+        with patch("omrs.core.codebase.cache._get_git_commit_hash", return_value="abc123"):
             loaded = _load_cache(str(tmp_path), cache_dir=".opencode", owner_context=_CTX)
         assert loaded is None
 
@@ -137,8 +137,8 @@ class TestGetCodebaseMapText:
         (tmp_path / "app.py").write_text("x = 1\n")
         monkeypatch.chdir(tmp_path)
         with (
-            patch("omrg.integrations.magika._is_magika_available", return_value=False),
-            patch("omrg.core.codebase.cache._get_git_commit_hash", return_value=None),
+            patch("omrs.integrations.magika._is_magika_available", return_value=False),
+            patch("omrs.core.codebase.cache._get_git_commit_hash", return_value=None),
         ):
             result = get_codebase_map_text(path=".")
         assert "## File Types" in result
@@ -149,9 +149,9 @@ class TestGetCodebaseMapText:
         (tmp_path / "app.py").write_text("x = 1\n")
         monkeypatch.chdir(tmp_path)
         with (
-            patch("omrg.integrations.magika._is_magika_available", return_value=False),
-            patch("omrg.core.codebase.cache._get_git_commit_hash", return_value=None),
-            patch("omrg.core.codebase.cache._load_cache") as mock_load,
+            patch("omrs.integrations.magika._is_magika_available", return_value=False),
+            patch("omrs.core.codebase.cache._get_git_commit_hash", return_value=None),
+            patch("omrs.core.codebase.cache._load_cache") as mock_load,
         ):
             result = get_codebase_map_text(path=".", refresh=True)
             # _load_cache should not be called when refresh=True.
@@ -162,7 +162,7 @@ class TestGetCodebaseMapText:
         """MCP tool handler never raises — returns error JSON."""
         monkeypatch.chdir(tmp_path)
         with patch(
-            "omrg.core.codebase.codebase_map.build_codebase_map",
+            "omrs.core.codebase.codebase_map.build_codebase_map",
             side_effect=RuntimeError("boom"),
         ):
             result = get_codebase_map_text(path=".")

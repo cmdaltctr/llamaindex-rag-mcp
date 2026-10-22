@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.workspace import WorkspaceRepository
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.core.workspace import WorkspaceRepository
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
 
 @pytest.fixture

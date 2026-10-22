@@ -37,11 +37,11 @@ from tests.unit.test_mcp_stdio_profiles_support import (
 from tests.unit.test_pipeline_templates_parity import _store_rows
 
 from conftest import connected_client
-from omrg.core.retrieval import registry
-from omrg.integrations.workspace_sqlite import SqliteProfileCatalogue
+from omrs.core.retrieval import registry
+from omrs.integrations.workspace_sqlite import SqliteProfileCatalogue
 
 BINDING_MESSAGE = (
-    "Bind user profiles in Knowledge Base > Profile, or through the MCP endpoint of `omrg web`."
+    "Bind user profiles in Knowledge Base > Profile, or through the MCP endpoint of `omrs web`."
 )
 
 
@@ -97,7 +97,7 @@ def test_main_passes_no_catalogue_when_the_workspace_file_is_missing(
 ) -> None:
     _, seen = start_stdio_server(engine_builder(effective_settings(), [], PROFILE))
     assert seen["catalogue"] is None
-    assert not (home / ".omrg").exists(), "the stdio server must not create the workspace"
+    assert not (home / ".omrs").exists(), "the stdio server must not create the workspace"
 
 
 # ── 8.5 search and answer follow the user profile ─────────────────────
@@ -182,8 +182,8 @@ async def test_search_documents_without_a_workspace_names_the_profile_and_the_pa
     assert len(rows) == 1 and rows[0]["status"] == "error", rows
     message = rows[0]["message"]
     assert PROFILE in message
-    assert "~/.omrg/workspace/workspace.db" in message
-    assert "omrg web" in message
+    assert "~/.omrs/workspace/workspace.db" in message
+    assert "omrs web" in message
 
 
 async def test_answer_documents_without_a_workspace_names_the_profile_and_the_path(
@@ -196,8 +196,8 @@ async def test_answer_documents_without_a_workspace_names_the_profile_and_the_pa
         )
     assert result["status"] == "error", result
     assert PROFILE in result["error"]
-    assert "~/.omrg/workspace/workspace.db" in result["error"]
-    assert not (home / ".omrg").exists()
+    assert "~/.omrs/workspace/workspace.db" in result["error"]
+    assert not (home / ".omrs").exists()
 
 
 # ── 8.7 the stdio server cannot bind a user profile ───────────────────

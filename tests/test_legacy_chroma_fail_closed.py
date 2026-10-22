@@ -13,13 +13,13 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from omrg.compose import reset_runtime_setup
-from omrg.core.vectordb.legacy import (
+from omrs.compose import reset_runtime_setup
+from omrs.core.vectordb.legacy import (
     LegacyChromaDataError,
     classify_legacy_directory,
     evaluate_legacy_chroma_data,
 )
-from omrg.transports.cli import app
+from omrs.transports.cli import app
 
 
 def _make_sqlite_marker_dir(tmp_path: Path) -> Path:
@@ -173,7 +173,7 @@ def test_startup_wiring_reaches_cli_mcp_operator_path(
     # acknowledgement path instead of failing closed. Seeding the
     # settings singleton keeps the operator path intact while resolving
     # like a clean CI runner (repair-fast-suite-regressions D2).
-    import omrg.config as config_mod
+    import omrs.config as config_mod
 
     monkeypatch.setattr(config_mod, "_settings", config_mod.Settings(_env_file=None))
     reset_runtime_setup()

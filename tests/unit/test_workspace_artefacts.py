@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.workspace import (
+from omrs.core.workspace import (
     MAX_PREVIEW_ROWS,
     MAX_SUMMARY_BYTES,
     MAX_TEXT_BYTES,

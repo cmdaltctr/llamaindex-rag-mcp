@@ -54,7 +54,7 @@ describe("upload limit panel", () => {
     await user.type(input, "200");
     await user.click(within(panel).getByRole("button", { name: "Save" }));
     expect(await within(panel).findByText("The limit in force is 200 MiB per file.")).toBeInTheDocument();
-    expect(within(panel).getByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(within(panel).getByText("from omrs.jsonc")).toBeInTheDocument();
     expect(server.find("PUT", "/v1/settings/upload-limit").map((call) => call.body)).toEqual([{ max_mib: 200, revision: "r1" }]);
   });
 

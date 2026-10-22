@@ -6,41 +6,41 @@ Nine tools are exposed over the MCP protocol. All parameters are optional except
 
 ### Stdio
 
-Each client starts its own `omrg` process:
+Each client starts its own `omrs` process:
 
 ```json
-{ "mcpServers": { "omrg": { "command": "uv", "args": ["run", "omrg"] } } }
+{ "mcpServers": { "omrs": { "command": "uv", "args": ["run", "omrs"] } } }
 ```
 
 ### HTTP
 
-`omrg web` can serve the same nine tools at `/mcp`, so a client shares the running server and its Engine. The endpoint is off until you turn it on.
+`omrs web` can serve the same nine tools at `/mcp`, so a client shares the running server and its Engine. The endpoint is off until you turn it on.
 
-1. Start the server: `omrg web --root ~/papers`.
+1. Start the server: `omrs web --root ~/papers`.
 2. In the browser, open Settings > MCP. Turn on MCP over HTTP. Create a token. The token is shown once.
 3. Add the server to the client. The URL is the one that Settings shows, for example `http://127.0.0.1:8765/mcp`:
 
 ```json
 {
   "mcpServers": {
-    "omrg": {
+    "omrs": {
       "type": "http",
       "url": "http://127.0.0.1:8765/mcp",
-      "headers": { "Authorization": "Bearer omrg_mcp_<token>" }
+      "headers": { "Authorization": "Bearer omrs_mcp_<token>" }
     }
   }
 }
 ```
 
-With Claude Code: `claude mcp add --transport http omrg http://127.0.0.1:8765/mcp --header "Authorization: Bearer omrg_mcp_<token>"`.
+With Claude Code: `claude mcp add --transport http omrs http://127.0.0.1:8765/mcp --header "Authorization: Bearer omrs_mcp_<token>"`.
 
 Rules for HTTP:
 
-- A switched-off endpoint answers 404. A foreign `Origin` gets 403. An origin approved with `omrg web --allow-origin` is not foreign. A missing, wrong or revoked token gets 401. The checks run in that order.
+- A switched-off endpoint answers 404. A foreign `Origin` gets 403. An origin approved with `omrs web --allow-origin` is not foreign. A missing, wrong or revoked token gets 401. The checks run in that order.
 - Rotating the token ends access for the old token at the next request. Update each client.
 - `ingest_documents` and `get_codebase_map` accept only paths inside a directory that you approved with `--root`. A path outside, or a symlink that leads outside, returns `{"status": "error", ...}`. Stdio keeps its earlier behaviour.
 - The token works on `/mcp` only. It never opens a `/v1` route.
-- The server must run. Stop it and the client loses the connection. Use stdio if the client should start OMRG itself.
+- The server must run. Stop it and the client loses the connection. Use stdio if the client should start OMRS itself.
 - Without the saved port or `--port`, the server listens on 8765. Save a port in Settings > MCP, or start with `--port <n>`.
 
 ---
@@ -301,7 +301,7 @@ Configuration: `ANSWER__VERIFY_CLAIMS` (default `false`),
 resolve to the configured backends, anything else is a literal registry
 name validated at startup). Profile bundles may override the three keys
 per collection; environment variables still win over the profile. In
-`omrg web`, Settings > Chat can also set the judge provider and model; see
+`omrs web`, Settings > Chat can also set the judge provider and model; see
 [Web workspace](web-workspace.md#claim-check-judge). See
 [Configuration](configuration.md#answering--answer__).
 
@@ -392,7 +392,7 @@ Reuse is reduced in these cases:
 ## `change_collection_profile`
 
 Change the profile of a collection. The built-in profiles are `documents` and
-`codebase`. A ready user profile also works on the MCP endpoint of `omrg web`
+`codebase`. A ready user profile also works on the MCP endpoint of `omrs web`
 (see [User profiles](#user-profiles)). The change affects retrieval behaviour
 only. No chunk is re-chunked or re-embedded.
 
@@ -433,7 +433,7 @@ step both run this check.
 with this message and changes nothing:
 
 ```text
-Bind user profiles in Knowledge Base > Profile, or through the MCP endpoint of `omrg web`.
+Bind user profiles in Knowledge Base > Profile, or through the MCP endpoint of `omrs web`.
 ```
 
 ---
@@ -460,7 +460,7 @@ Each item has these fields:
 
 On the web endpoint (`/mcp`) the items are the same as `GET /v1/profiles`.
 On the stdio server the items come from the read-only catalogue of the
-default workspace (`~/.omrg/workspace/workspace.db`). Readiness and `used_by`
+default workspace (`~/.omrs/workspace/workspace.db`). Readiness and `used_by`
 use the same checks as the web server. When that file does not exist, the
 list holds the two built-in profiles.
 
@@ -477,17 +477,17 @@ those pipelines.
 
 | Server                | `search_documents`, `answer_documents`                                    | Bind a user profile (`change_collection_profile`)       |
 | --------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `omrg web` at `/mcp`  | Runs the user profile pipelines                                           | Yes, when the profile is ready                          |
-| stdio (`omrg`)        | Runs the user profile pipelines, when the default workspace file exists   | No. The tool refuses with the message above             |
+| `omrs web` at `/mcp`  | Runs the user profile pipelines                                           | Yes, when the profile is ready                          |
+| stdio (`omrs`)        | Runs the user profile pipelines, when the default workspace file exists   | No. The tool refuses with the message above             |
 
 The stdio server opens the default workspace database read-only. It never
-creates, migrates or writes the file. A workspace that `omrg web --workspace`
+creates, migrates or writes the file. A workspace that `omrs web --workspace`
 placed in another folder is not found.
 
 When the default workspace file does not exist and a collection follows a user
 profile, `search_documents` and `answer_documents` return an error. The error
-names the profile and the path `~/.omrg/workspace/workspace.db`. It tells you
-to start `omrg web` once with the default workspace, or to change the
+names the profile and the path `~/.omrs/workspace/workspace.db`. It tells you
+to start `omrs web` once with the default workspace, or to change the
 collection's profile to `documents` or `codebase`.
 
 Values that you pass to `search_documents` (`top_k`, `similarity_threshold`,

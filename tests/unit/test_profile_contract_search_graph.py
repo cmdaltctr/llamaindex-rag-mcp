@@ -15,10 +15,10 @@ from typing import Any
 import pytest
 from tests.test_profiles import _make_mock_store, _user_profile
 
-from omrg.core.profiles import generate_safety_contract
-from omrg.core.profiles.contract import _PREPARE_QUERY_LEVERS
-from omrg.core.retrieval.graph_adapters_catalogue import _descriptors
-from omrg.pipeline_templates import _search_graph
+from omrs.core.profiles import generate_safety_contract
+from omrs.core.profiles.contract import _PREPARE_QUERY_LEVERS
+from omrs.core.retrieval.graph_adapters_catalogue import _descriptors
+from omrs.pipeline_templates import _search_graph
 
 
 class _Catalogue:

@@ -64,8 +64,8 @@ PRIVATE_ERRORS = OUT_DIR / ".errors.private.json"
 #: Routing source bound into the run identity and guarded by the
 #: routing-code-clean preflight (relative to PROJECT_ROOT).
 ROUTING_SOURCES = (
-    "src/omrg/integrations/pdf/ocr_routing.py",
-    "src/omrg/integrations/pdf/ocr_policy.py",
+    "src/omrs/integrations/pdf/ocr_routing.py",
+    "src/omrs/integrations/pdf/ocr_policy.py",
 )
 
 #: sha256 of the gate implementation approved at freeze. The baseline
@@ -76,10 +76,10 @@ ROUTING_SOURCES = (
 #: source differs from the one this study measured; re-preregister the
 #: study to re-pin.
 GATE_SOURCE_SHA256 = {
-    "src/omrg/integrations/pdf/ocr_routing.py": (
+    "src/omrs/integrations/pdf/ocr_routing.py": (
         "d03250d525317326d28476c2d39e62ab13cb18cbbd7161be424dbacad2e2205c"
     ),
-    "src/omrg/integrations/pdf/ocr_policy.py": (
+    "src/omrs/integrations/pdf/ocr_policy.py": (
         "d1f7beb028ba70ce9a98a21036a131664c403e99034c5d6a0d4820271765f726"
     ),
 }
@@ -132,7 +132,7 @@ def _unconditional_types_at(revision: str, source_path: str) -> frozenset[str]:
 
 
 def _live_unconditional_types() -> frozenset[str]:
-    from omrg.integrations.pdf.ocr_policy import OCR_UNCONDITIONAL_TYPES
+    from omrs.integrations.pdf.ocr_policy import OCR_UNCONDITIONAL_TYPES
 
     return frozenset(OCR_UNCONDITIONAL_TYPES)
 
@@ -236,7 +236,7 @@ def _record_error(doc_id: str, exc: Exception, documents: list[dict]) -> dict:
 
 def _gate_decision(evidence: dict, gate: _Gate, unconditional: frozenset[str]) -> bool:
     """Route one document through the production gate under a policy."""
-    from omrg.integrations.pdf import ocr_routing
+    from omrs.integrations.pdf import ocr_routing
 
     original = ocr_routing.OCR_UNCONDITIONAL_TYPES
     try:
@@ -381,8 +381,8 @@ def main() -> None:
     if args.limit:
         verified = verified[: args.limit]
 
-    import omrg.integrations.pdf  # noqa: F401 - populates the reader registry
-    from omrg.integrations.pdf.registry import get as get_pdf_reader
+    import omrs.integrations.pdf  # noqa: F401 - populates the reader registry
+    from omrs.integrations.pdf.registry import get as get_pdf_reader
 
     reader_cls = get_pdf_reader("pdf_inspector")
     reader = reader_cls() if isinstance(reader_cls, type) else reader_cls

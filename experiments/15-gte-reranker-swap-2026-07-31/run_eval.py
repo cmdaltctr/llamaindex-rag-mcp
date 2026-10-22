@@ -9,7 +9,7 @@ Reuses Exp 12's ChromaDB hybrid index and ground truth.
 """
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
+# (omrs.ingestion, omrs.retrieval, omrs.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -73,13 +73,13 @@ def _patch_module_attrs(mod: Any, chroma_dir: Path) -> None:
 def _clear_caches() -> None:
     """Clear all retrieval caches between cells."""
     try:
-        from omrg.retrieval import _cached_query_embedding
+        from omrs.retrieval import _cached_query_embedding
 
         _cached_query_embedding.cache_clear()
     except Exception:
         pass
     try:
-        from omrg.sparse_retriever import BM25SparseRetriever
+        from omrs.sparse_retriever import BM25SparseRetriever
 
         BM25SparseRetriever.clear_all_caches()
     except Exception:
@@ -92,7 +92,7 @@ def _setup_reranker_model(model_name: str | None) -> None:
     Resets the CrossEncoderReranker singleton so the new model loads
     fresh on the next rerank() call.  For rerank-off cells, pass None.
     """
-    from omrg import reranker as reranker_mod
+    from omrs import reranker as reranker_mod
 
     # Reset the singleton — the new model will load on next use.
     reranker_mod.CrossEncoderReranker._instance = None
@@ -111,7 +111,7 @@ def _setup_environment(chroma_dir: Path) -> None:
     os.environ["HYBRID_SPARSE_BACKEND"] = "bm25"
     os.environ["CHROMA_PERSIST_DIR"] = str(chroma_dir)
 
-    for mod_name in ("omrg.config", "omrg.retrieval", "omrg.ingestion"):
+    for mod_name in ("omrs.config", "omrs.retrieval", "omrs.ingestion"):
         mod = sys.modules.get(mod_name)
         if mod is not None:
             _patch_module_attrs(mod, chroma_dir)
@@ -210,7 +210,7 @@ def _evaluate_cell(
     top_k: int,
     warmup_queries: int,
 ) -> dict[str, Any]:
-    import omrg.retrieval as retrieval
+    import omrs.retrieval as retrieval
 
     _setup_environment(chroma_dir)
     _setup_reranker_model(reranker_model)

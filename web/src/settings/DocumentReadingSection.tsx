@@ -57,7 +57,7 @@ function ReadingCard({ title, state, keys, onSaved }: { title: string; state: Do
   );
 }
 
-/** The PDF reader and the OCR settings, saved to `omrg.jsonc` for the next launch of `omrg web`. */
+/** The PDF reader and the OCR settings, saved to `omrs.jsonc` for the next launch of `omrs web`. */
 export function DocumentReadingSection() {
   const query = useQuery(documentReadingQuery(useApi()));
   const [restart, setRestart] = useState<RestartRequest | null>(null);
@@ -70,7 +70,7 @@ export function DocumentReadingSection() {
         Document reading
       </h2>
       <ul className="list-disc ps-5 text-meta text-muted-foreground">
-        <li>These settings apply after a restart of omrg web. Saving does not change the reading in force.</li>
+        <li>These settings apply after a restart of omrs web. Saving does not change the reading in force.</li>
         <li>{IDENTITY_NOTE}</li>
         <li>A Read document step in a pipeline can choose its own reader.</li>
       </ul>

@@ -19,7 +19,7 @@ from typing import Any
 
 import pytest
 
-from omrg.core.settings import EffectiveSettings, MetadataBlock
+from omrs.core.settings import EffectiveSettings, MetadataBlock
 
 _PROVIDERS = {
     "ollama": {"local_backend": "ollama"},
@@ -122,14 +122,14 @@ def capture(monkeypatch: pytest.MonkeyPatch) -> _Capture:
         return None
 
     for target in ("_common", "ollama", "llamacpp"):
-        monkeypatch.setattr(f"omrg.core.metadata.{target}._retry_sleep", _no_sleep)
+        monkeypatch.setattr(f"omrs.core.metadata.{target}._retry_sleep", _no_sleep)
     return fake
 
 
 @pytest.fixture(params=["absent", "poisoned"])
 def default_store(request: pytest.FixtureRequest) -> _PoisonStore | None:
     """Remove the process-default store, or replace it with a poisoned one."""
-    from omrg.core.vectordb import get_default_store, reset_default_store, set_default_store
+    from omrs.core.vectordb import get_default_store, reset_default_store, set_default_store
 
     reset_default_store()
     if request.param == "absent":
@@ -142,7 +142,7 @@ def default_store(request: pytest.FixtureRequest) -> _PoisonStore | None:
 
 
 def _classify(text: str, settings: EffectiveSettings, store: Any = None) -> tuple[dict, bool]:
-    from omrg.core.metadata.extractor import extract_metadata_with_status_async
+    from omrs.core.metadata.extractor import extract_metadata_with_status_async
 
     return asyncio.run(extract_metadata_with_status_async(text, "f.txt", settings, store=store))
 
@@ -182,7 +182,7 @@ def test_supplied_store_labels_reach_prompt(provider, capture, default_store) ->
 
 def test_disjoint_stores_interleaved(capture, default_store) -> None:
     """Concurrent classifications each see only their own store's labels."""
-    from omrg.core.metadata.extractor import extract_metadata_with_status_async
+    from omrs.core.metadata.extractor import extract_metadata_with_status_async
 
     store_a = _FakeStore({"docs": [{"category": "alpha_only"}], "notes": [{"category": "a2"}]})
     store_b = _FakeStore({"docs": [{"category": "beta_only"}]})
@@ -215,7 +215,7 @@ def test_disjoint_stores_interleaved(capture, default_store) -> None:
 def test_standalone_without_store_is_seed_only(provider, capture, default_store, caplog) -> None:
     """No store means seeds only: no default lookup, warning or degradation."""
     seeds = json.dumps([{"pattern": "x", "category": "Seed One"}])
-    with caplog.at_level(logging.DEBUG, logger="omrg.core.metadata._common"):
+    with caplog.at_level(logging.DEBUG, logger="omrs.core.metadata._common"):
         result, degraded = _classify("zenith", _settings(provider, keyword_rules=seeds))
 
     assert _prompt_categories(capture.prompts[0]) == {"seed one", "uncategorised"}
@@ -276,7 +276,7 @@ def test_llamaindex_import_fallback_forwards_store(monkeypatch, capture, default
     def _missing(_name: str) -> Any:
         raise ImportError("stub: package not installed")
 
-    monkeypatch.setattr("omrg.core.providers.llm.registry.get", _missing)
+    monkeypatch.setattr("omrs.core.providers.llm.registry.get", _missing)
     store = _FakeStore({"docs": [{"category": "owned_label"}]})
     result, degraded = _classify("zenith", _settings(mode="llamaindex"), store)
 
@@ -289,9 +289,9 @@ def test_llamaindex_import_fallback_forwards_store(monkeypatch, capture, default
 def test_llamaindex_pipeline_fallback_forwards_store(monkeypatch, capture, default_store) -> None:
     """A failing LlamaIndex pipeline falls back to local mode with the same store."""
     monkeypatch.setattr(
-        "omrg.core.providers.llm.registry.get", lambda _name: lambda *_a, **_kw: object()
+        "omrs.core.providers.llm.registry.get", lambda _name: lambda *_a, **_kw: object()
     )
-    monkeypatch.setattr("omrg.core.metadata.llamaindex._get_max_chunks", lambda: 0)
+    monkeypatch.setattr("omrs.core.metadata.llamaindex._get_max_chunks", lambda: 0)
     store = _FakeStore({"docs": [{"category": "owned_label"}]})
     result, degraded = _classify("zenith", _settings("llamacpp", mode="llamaindex"), store)
 
@@ -306,8 +306,8 @@ def test_llamaindex_pipeline_fallback_forwards_store(monkeypatch, capture, defau
 
 def test_registered_strategies_accept_keyword_only_store() -> None:
     """Built-ins keep positional text/file/settings and add keyword-only store."""
-    from omrg.core.metadata import registry
-    from omrg.core.metadata.extractor import (
+    from omrs.core.metadata import registry
+    from omrs.core.metadata.extractor import (
         _dispatch_local_extraction,
         extract_metadata_async,
         extract_metadata_with_status_async,
@@ -326,7 +326,7 @@ def test_registered_strategies_accept_keyword_only_store() -> None:
 
 def test_custom_strategy_receives_store_through_dispatch(monkeypatch) -> None:
     """The registry dispatch forwards the store keyword to any strategy."""
-    from omrg.core.metadata import registry
+    from omrs.core.metadata import registry
 
     seen: list[Any] = []
 
@@ -363,9 +363,9 @@ def test_modes_without_lookup_ignore_store(mode, default_store) -> None:
 def _engine(tmp_path, name: str, settings: EffectiveSettings) -> Any:
     from llama_index.core.embeddings import MockEmbedding
 
-    from omrg.core.profiles.resolver import ProfileResolver
-    from omrg.core.vectordb.lancedb.store import LanceVectorStore
-    from omrg.engine import Engine
+    from omrs.core.profiles.resolver import ProfileResolver
+    from omrs.core.vectordb.lancedb.store import LanceVectorStore
+    from omrs.engine import Engine
 
     store = LanceVectorStore(uri=str(tmp_path / f"store-{name}"), scan_page_size=1)
     return Engine(

@@ -24,12 +24,12 @@ from tests.unit.test_engine_pipelines_support import FakeEmbedder, FakeStore, ch
 from tests.unit.test_experiment_contexts_support import base_settings
 from tests.unit.test_web_runs_support import BASE, ORIGIN, GatedEngine, graph, login, new_pipeline
 
-from omrg.compose_experiments import ExperimentEngines, experiment_registry
-from omrg.core.profiles.resolver import ProfileResolver
-from omrg.transports.api.app import create_app
-from omrg.transports.api.lifespan import WebConfig
-from omrg.transports.api.runs_wiring import run_service_factory
-from omrg.transports.api.security import AccessPolicy
+from omrs.compose_experiments import ExperimentEngines, experiment_registry
+from omrs.core.profiles.resolver import ProfileResolver
+from omrs.transports.api.app import create_app
+from omrs.transports.api.lifespan import WebConfig
+from omrs.transports.api.runs_wiring import run_service_factory
+from omrs.transports.api.security import AccessPolicy
 
 __all__ = ["BASE", "ORIGIN", "graph", "login"]
 

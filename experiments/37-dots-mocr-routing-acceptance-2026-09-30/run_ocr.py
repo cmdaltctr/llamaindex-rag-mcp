@@ -132,8 +132,8 @@ class PeakFootprint:
 
 def build_routes(engine: str, workers_dir: str) -> Any:
     """Build the host OCR routes with *engine* as the only (primary) route."""
-    from omrg.capabilities import build_ocr_routes
-    from omrg.config import Settings
+    from omrs.capabilities import build_ocr_routes
+    from omrs.config import Settings
 
     settings = Settings(
         ocr_fallback_enabled=True,
@@ -161,8 +161,8 @@ def run_engine(
     engine: str, args: argparse.Namespace, state: dict[str, Any], save: Any, meter: PeakFootprint
 ) -> bool:
     """Run every run for one engine; return False on a hard stop."""
-    from omrg.integrations.ocr_worker.client import OcrWorkerError
-    from omrg.integrations.ocr_worker.routes import request_timeout
+    from omrs.integrations.ocr_worker.client import OcrWorkerError
+    from omrs.integrations.ocr_worker.routes import request_timeout
 
     lists, paths = page_lists(), doc_paths()
     settings, routes = build_routes(engine, args.workers_dir)

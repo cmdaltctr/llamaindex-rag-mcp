@@ -640,13 +640,13 @@ wheels = [
 ]
 
 [[package]]
-name = "omrg-ocr-dots-mocr"
+name = "omrs-ocr-dots-mocr"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
     { name = "huggingface-hub" },
-    { name = "omrg-ocr-worker-core" },
+    { name = "omrs-ocr-worker-core" },
     { name = "pillow" },
     { name = "pypdfium2" },
     { name = "qwen-vl-utils" },
@@ -659,7 +659,7 @@ dependencies = [
 requires-dist = [
     { name = "accelerate" },
     { name = "huggingface-hub" },
-    { name = "omrg-ocr-worker-core", directory = "../../core" },
+    { name = "omrs-ocr-worker-core", directory = "../../core" },
     { name = "pillow" },
     { name = "pypdfium2" },
     { name = "qwen-vl-utils" },
@@ -669,7 +669,7 @@ requires-dist = [
 ]
 
 [[package]]
-name = "omrg-ocr-worker-core"
+name = "omrs-ocr-worker-core"
 version = "0.1.0"
 source = { directory = "../../core" }
 dependencies = [

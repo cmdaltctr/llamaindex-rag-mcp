@@ -39,7 +39,7 @@ import sys
 import time
 
 PROTOCOL_VERSION = "1.0"
-OUTPUT_SCHEMA = {"id": "omrg.ocr.parse_output", "version": "1"}
+OUTPUT_SCHEMA = {"id": "omrs.ocr.parse_output", "version": "1"}
 
 CAPABILITY_MODES = ("json", "bad-json", "wrong-protocol", "wrong-schema", "fail", "hang")
 
@@ -125,7 +125,7 @@ def _run_capabilities(mode: str, backend_id: str = "paddleocr_vl") -> int:
     """Answer the metadata-only capability probe, then exit.
 
     The ``json`` mode prints a wire-valid fingerprint; every other mode
-    simulates one unavailability class the OMRG probe must collapse to
+    simulates one unavailability class the OMRS probe must collapse to
     the stable unavailable fingerprint.
     """
     if mode == "json":

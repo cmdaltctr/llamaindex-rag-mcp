@@ -14,7 +14,7 @@ from tests.unit.test_pipeline_support import (
     search_graph,
 )
 
-from omrg.core.pipelines import (
+from omrs.core.pipelines import (
     ControlSource,
     IssueCode,
     PipelineValidationError,
@@ -23,8 +23,8 @@ from omrg.core.pipelines import (
     parse_definition,
     preflight,
 )
-from omrg.core.pipelines.admission import draft_node_controls
-from omrg.core.profiles.resolver import ProfileResolver
+from omrs.core.pipelines.admission import draft_node_controls
+from omrs.core.profiles.resolver import ProfileResolver
 
 
 class FakeStore:

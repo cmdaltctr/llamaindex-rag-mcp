@@ -17,19 +17,19 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.ingestion import ingest_path_async
-from omrg.core.ingestion._state import (
+from omrs.core.ingestion import ingest_path_async
+from omrs.core.ingestion._state import (
     get_embed_semaphore as _get_embed_semaphore,
 )
-from omrg.core.ingestion._state import (
+from omrs.core.ingestion._state import (
     shutdown_requested as _shutdown_requested,
 )
-from omrg.core.ingestion._state import (
+from omrs.core.ingestion._state import (
     write_lock as _write_lock,
 )
-from omrg.core.ingestion.chunker import read_and_chunk_file_async
-from omrg.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
-from omrg.core.ingestion.loader import gather_supported_files as _gather_supported_files
+from omrs.core.ingestion.chunker import read_and_chunk_file_async
+from omrs.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
+from omrs.core.ingestion.loader import gather_supported_files as _gather_supported_files
 
 
 class TestGatherSupportedFiles:

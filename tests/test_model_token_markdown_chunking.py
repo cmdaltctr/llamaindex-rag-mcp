@@ -13,8 +13,8 @@ from pathlib import Path
 import pytest
 from llama_index.core import Document
 
-from omrg.core.chunking.sentence import chunk_sentence_file_async
-from omrg.core.settings import ChunkingBlock, EffectiveSettings, EmbeddingBlock, MetadataBlock
+from omrs.core.chunking.sentence import chunk_sentence_file_async
+from omrs.core.settings import ChunkingBlock, EffectiveSettings, EmbeddingBlock, MetadataBlock
 
 _MODEL = "Qwen/Qwen3-Embedding-4B"
 _STUB_MODEL = "test/word-level"
@@ -40,7 +40,7 @@ def _stub_settings(
     min_chunk_fraction: float = 0.0,
 ):
     """Install the in-memory tokenizer and build settings that resolve to it."""
-    from omrg.core.chunking import model_token
+    from omrs.core.chunking import model_token
 
     tokenizer = _stub_tokenizer()
     monkeypatch.setattr(model_token, "load_tokenizer", lambda *_args: tokenizer)
@@ -411,7 +411,7 @@ def test_unreducible_chunk_raises_instead_of_exceeding_the_cap(
     """A chunk that will not fit is reported per file, never emitted oversized."""
     import semantic_text_splitter
 
-    from omrg.core.chunking.model_token import (
+    from omrs.core.chunking.model_token import (
         MODEL_AWARE_PATH,
         MarkdownChunkingResolution,
         split_markdown_documents,
@@ -489,8 +489,8 @@ def test_unresolvable_configured_tokenizer_uses_legacy_with_diagnostic(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """An unavailable configured tokenizer must not claim exact chunking."""
-    from omrg.core.chunking import model_token
-    from omrg.integrations.tokenizer import TokenizerUnavailableError
+    from omrs.core.chunking import model_token
+    from omrs.integrations.tokenizer import TokenizerUnavailableError
 
     settings = EffectiveSettings(
         embedding=EmbeddingBlock(tokenizer_model=_MODEL, tokenizer_revision="missing"),

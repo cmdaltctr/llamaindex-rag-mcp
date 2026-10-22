@@ -21,14 +21,14 @@ from tests.unit.test_ingestion_graph_adapters_support import (
     offline_settings,
 )
 
-from omrg.core.ingestion.graph_adapters import CHUNK, canonical_ingestion_definition
-from omrg.core.ingestion.graph_fingerprint import (
+from omrs.core.ingestion.graph_adapters import CHUNK, canonical_ingestion_definition
+from omrs.core.ingestion.graph_fingerprint import (
     SHAPE_SCHEMA,
     graph_shape,
     ingestion_shape,
     standard_shape,
 )
-from omrg.core.pipelines import (
+from omrs.core.pipelines import (
     EffectClass,
     NodeOutput,
     OperationDescriptor,

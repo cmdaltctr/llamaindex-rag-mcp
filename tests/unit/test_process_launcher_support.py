@@ -58,7 +58,7 @@ record = {{
     "pgid": os.getpgid(0),
     "child_pid": child.pid,
 }}
-connection_path = os.environ.get("OMRG_CONNECTION_FILE")
+connection_path = os.environ.get("OMRS_CONNECTION_FILE")
 if connection_path:
     connection = json.loads(Path(connection_path).read_text())
     record["connection_path"] = connection_path

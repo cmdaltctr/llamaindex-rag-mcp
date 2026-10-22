@@ -30,7 +30,7 @@ export const SOURCES = [
 
 export const ROOTS = [
   { id: "root_operator", path: "/srv/docs", kind: "operator" },
-  { id: "root_managed", path: "/home/u/.omrg/workspace/uploads", kind: "managed" },
+  { id: "root_managed", path: "/home/u/.omrs/workspace/uploads", kind: "managed" },
 ];
 
 /** The two built-in profiles, both ready and unused. Tests that need a user profile pass their own `GET /v1/profiles` handler. */

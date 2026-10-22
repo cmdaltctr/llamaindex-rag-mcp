@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-import omrg.config as config
+import omrs.config as config
 
 
 class TestNoLegacyConstantShim:

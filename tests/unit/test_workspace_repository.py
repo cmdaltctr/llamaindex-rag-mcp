@@ -14,14 +14,14 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.workspace import (
+from omrs.core.workspace import (
     NONTERMINAL_RUN_STATUSES,
     RUN_STATUSES,
     TERMINAL_RUN_STATUSES,
     WorkspaceRepository,
 )
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
-from omrg.integrations.workspace_sqlite import repository as sqlite_repository
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.integrations.workspace_sqlite import repository as sqlite_repository
 
 _GRAPH = {"version": 1, "nodes": [{"id": "a", "op": "read"}], "edges": []}
 _GRAPH_CHANGED = {"version": 1, "nodes": [{"id": "a", "op": "chunk"}], "edges": []}

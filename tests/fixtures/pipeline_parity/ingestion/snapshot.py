@@ -57,7 +57,7 @@ FIXTURE_CONTENT_TYPES = {
 
 def pin_detection(monkeypatch: Any) -> None:
     """Replace Magika detection with the recorded fixture content types."""
-    from omrg.core.codebase import codebase_map
+    from omrs.core.codebase import codebase_map
 
     def _detect(path: str, *, settings: Any) -> SimpleNamespace:
         entries = [

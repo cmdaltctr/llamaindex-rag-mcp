@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import pytest
 
-from omrg.config import Settings
-from omrg.core.ingestion.settings import IngestionSettings
-from omrg.core.providers.embeddings import llamacpp, ollama, openrouter
+from omrs.config import Settings
+from omrs.core.ingestion.settings import IngestionSettings
+from omrs.core.providers.embeddings import llamacpp, ollama, openrouter
 
 try:  # pragma: no cover - exercised implicitly by the skip decision
     import llama_index.embeddings.openai_like  # noqa: F401

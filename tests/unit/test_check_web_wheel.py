@@ -16,7 +16,7 @@ from types import ModuleType
 import pytest
 
 _SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "check_web_wheel.py"
-_STATIC = "omrg/transports/api/static/"
+_STATIC = "omrs/transports/api/static/"
 _INDEX_HTML = (
     "<!doctype html><html><head>"
     '<script type="module" src="./assets/index-abc.js"></script>'
@@ -39,9 +39,9 @@ check_web_wheel = _load_script()
 
 def _wheel(tmp_path: Path, members: dict[str, str]) -> Path:
     """Write a zip file with the given members and return its path."""
-    path = tmp_path / "omrg-0.0.0-py3-none-any.whl"
+    path = tmp_path / "omrs-0.0.0-py3-none-any.whl"
     with zipfile.ZipFile(path, "w") as archive:
-        archive.writestr("omrg/__init__.py", "")
+        archive.writestr("omrs/__init__.py", "")
         for name, text in members.items():
             archive.writestr(name, text)
     return path
@@ -70,7 +70,7 @@ def test_wheel_without_index_fails_with_build_instruction(tmp_path: Path) -> Non
     problems = check_web_wheel.check_wheel(str(wheel))
 
     assert len(problems) == 1
-    assert "missing omrg/transports/api/static/index.html" in problems[0]
+    assert "missing omrs/transports/api/static/index.html" in problems[0]
     assert "npm run build" in problems[0]
     assert check_web_wheel.main([str(wheel)]) == 1
 
@@ -99,33 +99,33 @@ def test_index_that_references_no_assets_fails(tmp_path: Path) -> None:
 
 def test_wheel_with_folder_guides_fails_and_names_each(tmp_path: Path) -> None:
     members = _complete_members()
-    members["omrg/core/AGENTS.md"] = "# guide"
-    members["omrg/CLAUDE.md"] = "# guide"
+    members["omrs/core/AGENTS.md"] = "# guide"
+    members["omrs/CLAUDE.md"] = "# guide"
     wheel = _wheel(tmp_path, members)
 
     problems = check_web_wheel.check_wheel(str(wheel))
 
     assert problems == [
-        f"{wheel}: contains agent guide omrg/CLAUDE.md",
-        f"{wheel}: contains agent guide omrg/core/AGENTS.md",
+        f"{wheel}: contains agent guide omrs/CLAUDE.md",
+        f"{wheel}: contains agent guide omrs/core/AGENTS.md",
     ]
     assert check_web_wheel.main([str(wheel)]) == 1
 
 
 def test_folder_guides_are_reported_when_the_web_assets_are_missing(tmp_path: Path) -> None:
-    wheel = _wheel(tmp_path, {"omrg/core/AGENTS.md": "# guide"})
+    wheel = _wheel(tmp_path, {"omrs/core/AGENTS.md": "# guide"})
 
     problems = check_web_wheel.check_wheel(str(wheel))
 
     assert len(problems) == 2
-    assert any("missing omrg/transports/api/static/index.html" in p for p in problems)
-    assert f"{wheel}: contains agent guide omrg/core/AGENTS.md" in problems
+    assert any("missing omrs/transports/api/static/index.html" in p for p in problems)
+    assert f"{wheel}: contains agent guide omrs/core/AGENTS.md" in problems
 
 
 def test_only_files_named_exactly_like_a_guide_are_reported(tmp_path: Path) -> None:
     members = _complete_members()
-    members["omrg/MYAGENTS.md"] = "# not a guide"
-    members["omrg/AGENTS.md.bak"] = "# not a guide"
+    members["omrs/MYAGENTS.md"] = "# not a guide"
+    members["omrs/AGENTS.md.bak"] = "# not a guide"
     wheel = _wheel(tmp_path, members)
 
     assert check_web_wheel.check_wheel(str(wheel)) == []
@@ -149,4 +149,4 @@ def test_command_line_exit_code_follows_the_check(tmp_path: Path) -> None:
 
     assert ok.returncode == 0, ok.stderr
     assert failed.returncode == 1
-    assert "missing omrg/transports/api/static/index.html" in failed.stderr
+    assert "missing omrs/transports/api/static/index.html" in failed.stderr

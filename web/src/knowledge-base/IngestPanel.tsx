@@ -62,7 +62,7 @@ export function IngestPanel({ collection, roots, onJob }: IngestPanelProps) {
         </p>
       ) : approved.length === 0 ? (
         <p className="text-meta text-muted-foreground">
-          No folder is approved. Start the server with <code className="font-mono text-code">omrg web --root FOLDER</code> to approve one.
+          No folder is approved. Start the server with <code className="font-mono text-code">omrs web --root FOLDER</code> to approve one.
         </p>
       ) : (
         <>

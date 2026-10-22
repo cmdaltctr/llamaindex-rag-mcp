@@ -1,18 +1,18 @@
 # Local workspace
 
-The local web workspace keeps application records for `omrg web`. This guide tells you where the workspace is, what it stores, how long it keeps records, and how to remove old run records safely.
+The local web workspace keeps application records for `omrs web`. This guide tells you where the workspace is, what it stores, how long it keeps records, and how to remove old run records safely.
 
-Status: the record store, the run service and the cleanup service are available as library code in `omrg.core.workspace`. The running web server also offers cleanup through `POST /v1/workspace/cleanup/preview` and `POST /v1/workspace/cleanup` (see [Web workspace](web-workspace.md#confirm-destructive-actions)). The library interface in [Clean up old runs](#clean-up-old-runs) needs a stopped server.
+Status: the record store, the run service and the cleanup service are available as library code in `omrs.core.workspace`. The running web server also offers cleanup through `POST /v1/workspace/cleanup/preview` and `POST /v1/workspace/cleanup` (see [Web workspace](web-workspace.md#confirm-destructive-actions)). The library interface in [Clean up old runs](#clean-up-old-runs) needs a stopped server.
 
 ## Workspace location
 
-The default workspace is `~/.omrg/workspace`. To use a different directory, start the server with `--workspace`:
+The default workspace is `~/.omrs/workspace`. To use a different directory, start the server with `--workspace`:
 
 ```bash
-omrg web --workspace ~/projects/demo-workspace
+omrs web --workspace ~/projects/demo-workspace
 ```
 
-Use one workspace for one web server. At startup the server takes an advisory lock on the `.lock` file (`WorkspaceLock` in `src/omrg/transports/api/lifespan.py`). A second server on the same workspace stops with an error. Stop the first server, or give the second server a different `--workspace`. The operating system releases the lock when the process stops, so a crash does not leave a stale lock.
+Use one workspace for one web server. At startup the server takes an advisory lock on the `.lock` file (`WorkspaceLock` in `src/omrs/transports/api/lifespan.py`). A second server on the same workspace stops with an error. Stop the first server, or give the second server a different `--workspace`. The operating system releases the lock when the process stops, so a crash does not leave a stale lock.
 
 ## Workspace layout
 
@@ -26,7 +26,7 @@ Use one workspace for one web server. At startup the server takes an advisory lo
 | `workspace.db.v<old>-to-v<new>.<time>.bak` | Backup of the records before a schema upgrade. |
 <!-- /workspace-layout -->
 
-The Python names for these paths are in `omrg.core.workspace.WorkspaceLayout`.
+The Python names for these paths are in `omrs.core.workspace.WorkspaceLayout`.
 
 SQLite also uses its own lock on `workspace.db`. Each write is one `BEGIN IMMEDIATE` transaction. While a write runs, SQLite can create the temporary file `workspace.db-journal` next to the database.
 
@@ -41,7 +41,7 @@ The file `workspace.db` has these tables:
 | `runs` | Status, revision, redacted settings, resource identities, inputs, failure, result reference and times. |
 | `run_events` | Events of each run, with a sequence number for each run. |
 | `plugin_registrations` | Approved external tools and their compatibility status. |
-| `workspace_settings` | Empty. Older builds kept web-server settings here. The first launch of this build copies each row into the settings file (omrg.jsonc) and deletes it (ADR-087). The table stays so an older build still opens the file. |
+| `workspace_settings` | Empty. Older builds kept web-server settings here. The first launch of this build copies each row into the settings file (omrs.jsonc) and deletes it (ADR-087). The table stays so an older build still opens the file. |
 | `mcp_tokens` | The one MCP token, as a SHA-256 hash with its creation time. The token value is never stored. |
 | `profiles` | User profiles: id, title, description, base profile and the three pipelines (Ingest, Search, Answer) that each profile owns. Deleting a profile sets `archived_at`; the row stays. |
 | `chat_folders` | Folders for stored chats. One level. Deleting a folder deletes its chats. |
@@ -85,17 +85,17 @@ When the server starts, the run service marks each `queued`, `running` or `cance
 To repeat a run:
 
 1. Check the affected collection. An interrupted run can have changed the vector store before it stopped. Each source replacement is failure-safe, and the next ingestion processes an incomplete source again. See [Interrupted re-ingests resume](ingestion.md#interrupted-re-ingests-resume).
-2. Call `omrg.core.workspace.RunService.retry` with the run identifier. Only `failed`, `cancelled` and `interrupted` runs accept a retry.
+2. Call `omrs.core.workspace.RunService.retry` with the run identifier. Only `failed`, `cancelled` and `interrupted` runs accept a retry.
 3. Read the new run. It has `origin` `retry` and the `source_run_id` of the original run. The original record does not change.
 
 ## Clean up old runs
 
 Cleanup removes finished runs, their events and their artefact files. It has two steps:
 
-1. Preview. Call `omrg.core.workspace.WorkspaceCleanup.preview_cleanup` with a selector. The preview lists each run, its event count and its artefact files, with totals. Nothing changes.
-2. Confirm. Call `omrg.core.workspace.WorkspaceCleanup.apply_cleanup` with the preview token. The service removes only the listed items.
+1. Preview. Call `omrs.core.workspace.WorkspaceCleanup.preview_cleanup` with a selector. The preview lists each run, its event count and its artefact files, with totals. Nothing changes.
+2. Confirm. Call `omrs.core.workspace.WorkspaceCleanup.apply_cleanup` with the preview token. The service removes only the listed items.
 
-Use one of these selectors from `omrg.core.workspace.CleanupSelector`:
+Use one of these selectors from `omrs.core.workspace.CleanupSelector`:
 
 | Selector | Selects |
 |---|---|
@@ -109,10 +109,10 @@ When you give more than one criterion, a run must match all of them.
 ```python
 from pathlib import Path
 
-from omrg.core.workspace import CleanupSelector, WorkspaceCleanup, WorkspaceLayout
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.core.workspace import CleanupSelector, WorkspaceCleanup, WorkspaceLayout
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
-layout = WorkspaceLayout(Path.home() / ".omrg" / "workspace")
+layout = WorkspaceLayout(Path.home() / ".omrs" / "workspace")
 cleanup = WorkspaceCleanup.for_layout(SqliteWorkspaceRepository(layout.records), layout)
 
 preview = cleanup.preview_cleanup(CleanupSelector.older_than(30))

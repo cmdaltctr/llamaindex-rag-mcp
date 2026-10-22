@@ -25,8 +25,8 @@ import json
 
 import pytest
 
-from omrg.core.ingestion import embed_exclusions, source_state
-from omrg.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock
+from omrs.core.ingestion import embed_exclusions, source_state
+from omrs.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock
 
 EXPECTED_TOP_LEVEL_KEYS = {
     "schema",
@@ -243,7 +243,7 @@ def test_recorded_payload_is_exactly_what_is_hashed(monkeypatch: pytest.MonkeyPa
 def test_normaliser_version_and_toggle_change_identity_for_every_source(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from omrg.core.settings import IngestionBlock
+    from omrs.core.settings import IngestionBlock
 
     settings = EffectiveSettings(ingestion=IngestionBlock(normalise_reader_output=True))
 

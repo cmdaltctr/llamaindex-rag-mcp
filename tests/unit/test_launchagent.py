@@ -1,4 +1,4 @@
-"""Unit tests for ``omrg.transports.cli._launchagent``.
+"""Unit tests for ``omrs.transports.cli._launchagent``.
 
 Covers OpenSpec change ``add-login-watcher-installer``:
 - Requirement: LaunchAgent plist generation (deterministic label and paths;
@@ -26,7 +26,7 @@ import pytest
 @pytest.fixture
 def la():
     """Import the module under test; errors cleanly while unimplemented."""
-    from omrg.transports.cli import _launchagent
+    from omrs.transports.cli import _launchagent
 
     return _launchagent
 
@@ -36,19 +36,19 @@ def make_plan(la):
     """Return a factory building a fully-populated LaunchAgentPlan."""
 
     def _factory(**overrides):
-        from omrg.transports.cli._launchagent import LaunchAgentPlan
+        from omrs.transports.cli._launchagent import LaunchAgentPlan
 
         base = {
-            "label": "com.omrg.watch.docs",
+            "label": "com.omrs.watch.docs",
             "watch_path": Path("/docs"),
             "collection": "documents",
             "debounce": 2.0,
-            "command_path": "/usr/local/bin/omrg",
+            "command_path": "/usr/local/bin/omrs",
             "run_at_load": True,
             "keep_alive": False,
-            "plist_path": Path("/Users/t/Library/LaunchAgents/com.omrg.watch.docs.plist"),
-            "stdout_log": Path("/Users/t/Library/Logs/omrg/com.omrg.watch.docs.out.log"),
-            "stderr_log": Path("/Users/t/Library/Logs/omrg/com.omrg.watch.docs.err.log"),
+            "plist_path": Path("/Users/t/Library/LaunchAgents/com.omrs.watch.docs.plist"),
+            "stdout_log": Path("/Users/t/Library/Logs/omrs/com.omrs.watch.docs.out.log"),
+            "stderr_log": Path("/Users/t/Library/Logs/omrs/com.omrs.watch.docs.err.log"),
         }
         base.update(overrides)
         return LaunchAgentPlan(**base)
@@ -60,14 +60,14 @@ def make_plan(la):
 
 
 class TestGenerateLabel:
-    """Deterministic label derivation with com.omrg.watch. prefix."""
+    """Deterministic label derivation with com.omrs.watch. prefix."""
 
     def test_same_inputs_same_label(self, la, tmp_path: Path) -> None:
         """Identical watch path and collection produce identical labels."""
         first = la.generate_label(tmp_path, "research")
         second = la.generate_label(tmp_path, "research")
         assert first == second
-        assert first.startswith("com.omrg.watch.")
+        assert first.startswith("com.omrs.watch.")
 
     def test_different_collection_different_label(self, la, tmp_path: Path) -> None:
         """Changing the collection changes the derived label."""
@@ -76,9 +76,9 @@ class TestGenerateLabel:
     def test_custom_label_is_slugified(self, la) -> None:
         """A custom label is used after slugification."""
         label = la.generate_label(Path("/docs"), "research", custom="My Watcher!")
-        assert label.startswith("com.omrg.watch.")
+        assert label.startswith("com.omrs.watch.")
         # Slug characters only: no spaces or punctuation leftovers.
-        tail = label.removeprefix("com.omrg.watch.")
+        tail = label.removeprefix("com.omrs.watch.")
         assert tail and all(c.isalnum() or c in "-_" for c in tail)
 
 
@@ -181,11 +181,11 @@ class TestComputePaths:
     """Plist and log path layout under a supplied home."""
 
     def test_layout(self, la) -> None:
-        """Returns plist under LaunchAgents and logs under Logs/omrg."""
-        plist_path, out_log, err_log = la.compute_paths("com.omrg.watch.x", home=Path("/h"))
-        assert plist_path == Path("/h/Library/LaunchAgents/com.omrg.watch.x.plist")
-        assert out_log == Path("/h/Library/Logs/omrg/com.omrg.watch.x.out.log")
-        assert err_log == Path("/h/Library/Logs/omrg/com.omrg.watch.x.err.log")
+        """Returns plist under LaunchAgents and logs under Logs/omrs."""
+        plist_path, out_log, err_log = la.compute_paths("com.omrs.watch.x", home=Path("/h"))
+        assert plist_path == Path("/h/Library/LaunchAgents/com.omrs.watch.x.plist")
+        assert out_log == Path("/h/Library/Logs/omrs/com.omrs.watch.x.out.log")
+        assert err_log == Path("/h/Library/Logs/omrs/com.omrs.watch.x.err.log")
 
 
 class TestResolveCommandPath:
@@ -193,18 +193,18 @@ class TestResolveCommandPath:
 
     def test_override_used_verbatim(self, la) -> None:
         """An explicit override wins over discovery."""
-        assert la.resolve_command_path("/opt/homebrew/bin/omrg") == "/opt/homebrew/bin/omrg"
+        assert la.resolve_command_path("/opt/homebrew/bin/omrs") == "/opt/homebrew/bin/omrs"
 
     def test_relative_override_rejected(self, la) -> None:
         """A relative override fails loudly — launchd could never start it (audit F2)."""
         with pytest.raises(la.InstallerError) as exc_info:
-            la.resolve_command_path("bin/omrg")
+            la.resolve_command_path("bin/omrs")
         assert "absolute" in str(exc_info.value)
 
     def test_shutil_which_preferred_when_present(self, la) -> None:
         """shutil.which result is preferred and returned absolute."""
-        with patch("shutil.which", return_value="/fake/bin/omrg"):
-            assert la.resolve_command_path(None) == str(Path("/fake/bin/omrg"))
+        with patch("shutil.which", return_value="/fake/bin/omrs"):
+            assert la.resolve_command_path(None) == str(Path("/fake/bin/omrs"))
 
     def test_shutil_which_relative_result_resolved_to_absolute(
         self, la, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -216,14 +216,14 @@ class TestResolveCommandPath:
         stored here would silently fail to start (CodeRabbit).
         """
         monkeypatch.chdir(tmp_path)
-        with patch("shutil.which", return_value="bin/omrg"):
+        with patch("shutil.which", return_value="bin/omrs"):
             resolved = la.resolve_command_path(None)
         assert Path(resolved).is_absolute()
-        assert resolved == str((tmp_path / "bin" / "omrg").resolve())
+        assert resolved == str((tmp_path / "bin" / "omrs").resolve())
 
     def test_sibling_of_interpreter_as_fallback(self, la) -> None:
         """Without which(), the interpreter's bin sibling is used if present."""
-        sibling = Path(sys.executable).parent / "omrg"
+        sibling = Path(sys.executable).parent / "omrs"
         sibling_exists = sibling.exists()
 
         with patch("shutil.which", return_value=None):
@@ -239,7 +239,7 @@ class TestResolveCommandPath:
 
         Simulates an environment where only the removed ``rag-mcp`` alias
         is installed (a stale v2 venv, say): ``shutil.which`` only knows
-        about ``rag-mcp``, and no ``omrg`` sibling exists next to the
+        about ``rag-mcp``, and no ``omrs`` sibling exists next to the
         interpreter. Resolution must fail rather than silently accept the
         legacy name.
         """
@@ -255,7 +255,7 @@ class TestResolveCommandPath:
         ):
             with pytest.raises(la.InstallerError) as exc_info:
                 la.resolve_command_path(None)
-        assert "omrg" in str(exc_info.value)
+        assert "omrs" in str(exc_info.value)
 
 
 # ── Command argv builders (task 2.4) ─────────────────────────────────
@@ -288,20 +288,20 @@ class TestCommandBuilders:
 
     def test_bootout_command(self, la) -> None:
         """bootout targets gui/<uid>/<label>."""
-        cmd = la.bootout_command(501, "com.omrg.watch.x")
+        cmd = la.bootout_command(501, "com.omrs.watch.x")
         assert cmd[1] == "bootout"
-        assert cmd[-1] == "gui/501/com.omrg.watch.x"
+        assert cmd[-1] == "gui/501/com.omrs.watch.x"
 
     def test_kickstart_command(self, la) -> None:
         """kickstart targets gui/<uid>/<label>."""
-        cmd = la.kickstart_command(501, "com.omrg.watch.x")
+        cmd = la.kickstart_command(501, "com.omrs.watch.x")
         assert cmd[1] == "kickstart"
-        assert cmd[-1] == "gui/501/com.omrg.watch.x"
+        assert cmd[-1] == "gui/501/com.omrs.watch.x"
 
     def test_kill_command(self, la) -> None:
         """kill sends a named signal to gui/<uid>/<label>."""
-        cmd = la.kill_command(501, "com.omrg.web", "SIGTERM")
-        assert cmd == ["launchctl", "kill", "SIGTERM", "gui/501/com.omrg.web"]
+        cmd = la.kill_command(501, "com.omrs.web", "SIGTERM")
+        assert cmd == ["launchctl", "kill", "SIGTERM", "gui/501/com.omrs.web"]
 
 
 # ── Plist rendering and writing (tasks 2.1, 2.2) ─────────────────────
@@ -371,7 +371,7 @@ class TestFindExistingPlist:
                 {
                     "Label": label or plist_path.stem,
                     "ProgramArguments": [
-                        "/fake/bin/omrg",
+                        "/fake/bin/omrs",
                         "watch",
                         str(watch_path),
                         "--collection",
@@ -387,7 +387,7 @@ class TestFindExistingPlist:
     def test_exact_planned_path_returned_first(self, la, make_plan, tmp_path: Path) -> None:
         """The exact planned path short-circuits — no parsing needed."""
         agents = tmp_path / "Library/LaunchAgents"
-        planned = agents / "com.omrg.watch.docs-1a2b3c4d.plist"
+        planned = agents / "com.omrs.watch.docs-1a2b3c4d.plist"
         planned.parent.mkdir(parents=True)
         planned.write_bytes(b"junk-but-exact-path")
         watched = tmp_path / "docs"
@@ -402,10 +402,10 @@ class TestFindExistingPlist:
         agents = tmp_path / "Library/LaunchAgents"
         watched = tmp_path / "docs"
         watched.mkdir()
-        other = self._seed(agents / "com.omrg.watch.docs-00000000.plist", watched.resolve())
+        other = self._seed(agents / "com.omrs.watch.docs-00000000.plist", watched.resolve())
         plan = make_plan(
             watch_path=watched.resolve(),
-            plist_path=agents / "com.omrg.watch.docs-1a2b3c4d.plist",
+            plist_path=agents / "com.omrs.watch.docs-1a2b3c4d.plist",
         )
         assert la.find_existing_plist(plan) == other
 
@@ -418,10 +418,10 @@ class TestFindExistingPlist:
         watched.mkdir()
         backup = tmp_path / "docs-backup"
         backup.mkdir()
-        self._seed(agents / "com.omrg.watch.docs-backup-00000000.plist", backup.resolve())
+        self._seed(agents / "com.omrs.watch.docs-backup-00000000.plist", backup.resolve())
         plan = make_plan(
             watch_path=watched.resolve(),
-            plist_path=agents / "com.omrg.watch.docs-1a2b3c4d.plist",
+            plist_path=agents / "com.omrs.watch.docs-1a2b3c4d.plist",
         )
         assert la.find_existing_plist(plan) is None
 
@@ -431,10 +431,10 @@ class TestFindExistingPlist:
         agents.mkdir(parents=True)
         watched = tmp_path / "docs"
         watched.mkdir()
-        (agents / "com.omrg.watch.docs-00000000.plist").write_bytes(b"not-a-plist")
+        (agents / "com.omrs.watch.docs-00000000.plist").write_bytes(b"not-a-plist")
         plan = make_plan(
             watch_path=watched.resolve(),
-            plist_path=agents / "com.omrg.watch.docs-1a2b3c4d.plist",
+            plist_path=agents / "com.omrs.watch.docs-1a2b3c4d.plist",
         )
         assert la.find_existing_plist(plan) is None
 
@@ -449,12 +449,12 @@ class TestFindExistingPlist:
         agents.mkdir(parents=True)
         watched = tmp_path / "docs"
         watched.mkdir()
-        (agents / "com.omrg.watch.docs-00000000.plist").write_bytes(
+        (agents / "com.omrs.watch.docs-00000000.plist").write_bytes(
             b'<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict><key>Label</key>'
         )
         plan = make_plan(
             watch_path=watched.resolve(),
-            plist_path=agents / "com.omrg.watch.docs-1a2b3c4d.plist",
+            plist_path=agents / "com.omrs.watch.docs-1a2b3c4d.plist",
         )
         assert la.find_existing_plist(plan) is None
 
@@ -466,7 +466,7 @@ class TestFindExistingPlist:
         watched.mkdir()
         plan = make_plan(
             watch_path=watched.resolve(),
-            plist_path=agents / "com.omrg.watch.docs-1a2b3c4d.plist",
+            plist_path=agents / "com.omrs.watch.docs-1a2b3c4d.plist",
         )
         assert la.find_existing_plist(plan) is None
 
@@ -476,7 +476,7 @@ class TestFindExistingPlist:
         """A legacy ``com.rag-mcp.watch.`` plist for the same folder is found.
 
         Migration (task 2.4) depends on discovery reaching both label
-        generations, not just the current ``com.omrg.watch.`` prefix.
+        generations, not just the current ``com.omrs.watch.`` prefix.
         """
         agents = tmp_path / "Library/LaunchAgents"
         watched = tmp_path / "docs"
@@ -486,7 +486,7 @@ class TestFindExistingPlist:
         )
         plan = make_plan(
             watch_path=watched.resolve(),
-            plist_path=agents / "com.omrg.watch.docs-1a2b3c4d.plist",
+            plist_path=agents / "com.omrs.watch.docs-1a2b3c4d.plist",
         )
         assert la.find_existing_plist(plan) == legacy
 
@@ -502,7 +502,7 @@ class TestFindExistingPlist:
         self._seed(agents / f"{la.LEGACY_LABEL_PREFIX}docs-00000000.plist", other_folder.resolve())
         plan = make_plan(
             watch_path=watched.resolve(),
-            plist_path=agents / "com.omrg.watch.docs-1a2b3c4d.plist",
+            plist_path=agents / "com.omrs.watch.docs-1a2b3c4d.plist",
         )
         assert la.find_existing_plist(plan) is None
 
@@ -522,7 +522,7 @@ class TestFindExistingPlist:
         legacy = self._seed(agents / f"{la.LEGACY_LABEL_PREFIX}nightly.plist", watched.resolve())
         plan = make_plan(
             watch_path=watched.resolve(),
-            plist_path=agents / "com.omrg.watch.docs-1a2b3c4d.plist",
+            plist_path=agents / "com.omrs.watch.docs-1a2b3c4d.plist",
         )
         assert la.find_existing_plist(plan) == legacy
 
@@ -544,7 +544,7 @@ class TestRunLaunchctl:
         done = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
         monkeypatch.setattr(sys, "platform", "darwin")
         with patch(
-            "omrg.transports.cli._launchagent.subprocess.run",
+            "omrs.transports.cli._launchagent.subprocess.run",
             return_value=done,
         ) as mock_run:
             result = la.run_launchctl(["launchctl", "print"])

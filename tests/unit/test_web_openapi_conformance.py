@@ -33,7 +33,7 @@ from tests.unit.test_web_openapi_conformance_support import (  # noqa: E402
     runtime_operations,
 )
 
-from omrg.transports.api.security import BEARER_SCOPES, SESSION_SCOPES  # noqa: E402
+from omrs.transports.api.security import BEARER_SCOPES, SESSION_SCOPES  # noqa: E402
 
 BOUNDS = ("minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems")
 _METADATA_BOUNDS = {
@@ -107,7 +107,7 @@ def test_operation_ids_agree_where_the_runtime_names_them(runtime: dict) -> None
 
 
 def test_scope_catalogue_matches_the_access_policy() -> None:
-    catalogue = openapi_doc()["x-omrg-scope-catalogue"]
+    catalogue = openapi_doc()["x-omrs-scope-catalogue"]
     assert set(catalogue) == set(SESSION_SCOPES)
     for scope, entry in catalogue.items():
         assert entry["session_only"] is (scope not in BEARER_SCOPES), scope
@@ -122,8 +122,8 @@ def test_declared_scopes_match_route_dependencies(runtime: dict) -> None:
             continue
         access = route_access(route)
         expected = [] if access.scope is None else [access.scope]
-        if operation.get("x-omrg-scopes") != expected:
-            problems.append(f"{_label(key)}: x-omrg-scopes {operation.get('x-omrg-scopes')}")
+        if operation.get("x-omrs-scopes") != expected:
+            problems.append(f"{_label(key)}: x-omrs-scopes {operation.get('x-omrs-scopes')}")
         if access.scope is None:
             wanted: list[dict[str, list[str]]] = []
         else:
@@ -377,17 +377,17 @@ def test_long_running_operations_declare_202_with_an_identifier(
 
 def test_status_event_and_cancel_routes_are_protected() -> None:
     for operation_id in ("getJobStatus", "getRun", "listRunEvents", "streamRunEvents"):
-        assert _operation(operation_id)["x-omrg-scopes"] == ["read"], operation_id
-    assert _operation("cancelRun")["x-omrg-scopes"] == ["run"]
+        assert _operation(operation_id)["x-omrs-scopes"] == ["read"], operation_id
+    assert _operation("cancelRun")["x-omrs-scopes"] == ["run"]
     stream = _operation("streamRunEvents")
     assert "text/event-stream" in stream["responses"]["200"]["content"]
-    assert set(stream["x-omrg-sse-events"].values()) <= set(openapi_doc()["components"]["schemas"])
+    assert set(stream["x-omrs-sse-events"].values()) <= set(openapi_doc()["components"]["schemas"])
 
 
 def test_display_name_operation_is_session_only_without_confirmation() -> None:
     operation = _operation("setCollectionDisplayName")
     assert operation["security"] == [{"sessionCookie": ["manage"]}]
-    assert operation["x-omrg-scopes"] == ["manage"]
+    assert operation["x-omrs-scopes"] == ["manage"]
     assert {"400", "403", "404"} <= set(operation["responses"])
     assert not {"409", "428"} & set(operation["responses"])
 
@@ -422,8 +422,8 @@ def test_unknown_api_path_never_serves_html(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
     from tests.unit.test_web_openapi_conformance_support import validate
 
-    from omrg.transports.api.app import create_app
-    from omrg.transports.api.lifespan import WebConfig
+    from omrs.transports.api.app import create_app
+    from omrs.transports.api.lifespan import WebConfig
 
     static = tmp_path / "static"
     static.mkdir()

@@ -16,8 +16,8 @@ from unittest.mock import patch
 
 import pytest
 
-from omrg.core.codebase import codebase_map as cm
-from omrg.core.codebase.codebase_map import CodebaseMap, FileInventory
+from omrs.core.codebase import codebase_map as cm
+from omrs.core.codebase.codebase_map import CodebaseMap, FileInventory
 
 _SRC = str(Path(__file__).resolve().parents[2] / "src")
 
@@ -59,13 +59,13 @@ def poisoned_defaults(monkeypatch: pytest.MonkeyPatch) -> list[str]:
         hits.append("store")
         raise AssertionError("default store must not be read")
 
-    import omrg.core.settings as core_settings
-    import omrg.core.vectordb as vectordb
+    import omrs.core.settings as core_settings
+    import omrs.core.vectordb as vectordb
 
     monkeypatch.setattr(core_settings, "get_default_effective_settings", _poison_settings)
     monkeypatch.setattr(vectordb, "get_default_store", _poison_store)
     # Module-level bindings made with ``from ... import`` before the repair.
-    for mod_name in ("omrg.core.codebase.cache", "omrg.core.codebase.codebase_map"):
+    for mod_name in ("omrs.core.codebase.cache", "omrs.core.codebase.codebase_map"):
         mod = sys.modules.get(mod_name)
         if mod is not None and hasattr(mod, "get_default_effective_settings"):
             monkeypatch.setattr(mod, "get_default_effective_settings", _poison_settings)
@@ -74,7 +74,7 @@ def poisoned_defaults(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 
 @pytest.fixture(autouse=True)
 def _no_magika():
-    with patch("omrg.integrations.magika._is_magika_available", return_value=False):
+    with patch("omrs.integrations.magika._is_magika_available", return_value=False):
         yield
 
 
@@ -84,8 +84,8 @@ def _no_magika():
 @pytest.mark.parametrize(
     "first, second",
     [
-        ("omrg.core.codebase.cache", "omrg.core.codebase.codebase_map"),
-        ("omrg.core.codebase.codebase_map", "omrg.core.codebase.cache"),
+        ("omrs.core.codebase.cache", "omrs.core.codebase.codebase_map"),
+        ("omrs.core.codebase.codebase_map", "omrs.core.codebase.cache"),
     ],
     ids=["cache-first", "map-first"],
 )
@@ -93,7 +93,7 @@ def test_fresh_import_order_is_independent(first: str, second: str) -> None:
     """Both orders import in a fresh interpreter and share one model class."""
     code = (
         f"import {first}, {second}\n"
-        "from omrg.core.codebase import cache, codebase_map, models\n"
+        "from omrs.core.codebase import cache, codebase_map, models\n"
         "assert cache.CodebaseMap is codebase_map.CodebaseMap is models.CodebaseMap\n"
         "assert cache.FileInventory is codebase_map.FileInventory is models.FileInventory\n"
         "print('OK')\n"
@@ -110,7 +110,7 @@ def test_fresh_import_order_is_independent(first: str, second: str) -> None:
 
 def test_models_round_trip_through_cache_serialisers() -> None:
     """Facade classes are the shared ones and JSON round trips keep fields."""
-    from omrg.core.codebase import cache, models
+    from omrs.core.codebase import cache, models
 
     assert CodebaseMap is models.CodebaseMap
     assert FileInventory is models.FileInventory
@@ -160,7 +160,7 @@ def test_store_less_map_has_no_document_communities(
 ) -> None:
     """A deliberate store-less map never queries a hidden default store."""
     (tmp_path / "README.md").write_text("# Doc\n")
-    with patch("omrg.core.documents.doc_graph.build_document_graph") as build_doc:
+    with patch("omrs.core.documents.doc_graph.build_document_graph") as build_doc:
         build_doc.side_effect = lambda collection, threshold=None: __import__("networkx").Graph()
         result = cm.build_codebase_map(str(tmp_path), settings=effective_settings(), store=None)
     assert result.doc_communities == []
@@ -175,24 +175,24 @@ def test_both_document_graph_calls_receive_supplied_threshold(
     """Community and cross-link graph builds both get the supplied threshold."""
     import networkx as nx
 
-    from omrg.core.codebase.code_graph import Community
-    from omrg.core.documents.doc_graph import DocCommunity
+    from omrs.core.codebase.code_graph import Community
+    from omrs.core.documents.doc_graph import DocCommunity
 
     (tmp_path / "app.py").write_text("x = 1\n")
     (tmp_path / "README.md").write_text("# Doc\n")
     settings = effective_settings(doc_similarity_threshold=0.42)
     store = _FakeStore("lance:e1:3", rows=2)
     with (
-        patch("omrg.core.documents.doc_graph.build_document_graph") as build_doc,
+        patch("omrs.core.documents.doc_graph.build_document_graph") as build_doc,
         patch(
-            "omrg.core.codebase.code_graph.detect_communities",
+            "omrs.core.codebase.code_graph.detect_communities",
             return_value=[Community(label="Core", files=["app.py"], edge_count=0)],
         ),
         patch(
-            "omrg.core.documents.doc_graph.detect_document_communities",
+            "omrs.core.documents.doc_graph.detect_document_communities",
             return_value=[DocCommunity(label="Docs", chunks=["c1"], category="x")],
         ),
-        patch("omrg.core.documents.doc_graph.compute_cross_links", return_value=[]),
+        patch("omrs.core.documents.doc_graph.compute_cross_links", return_value=[]),
     ):
         build_doc.return_value = nx.Graph()
         cm.build_codebase_map(str(tmp_path), settings=settings, store=store)
@@ -214,7 +214,7 @@ def test_two_contexts_use_their_own_cache_directories(
     monkeypatch.chdir(tmp_path)
     first = effective_settings(codebase_map_cache_dir=".cache-one")
     second = effective_settings(codebase_map_cache_dir=".cache-two")
-    with patch("omrg.core.codebase.cache._get_git_commit_hash", return_value="c0ffee"):
+    with patch("omrs.core.codebase.cache._get_git_commit_hash", return_value="c0ffee"):
         for settings in (first, second):
             text = cm.get_codebase_map_text(".", False, settings=settings, store=None)
             assert "## File Types" in text, text
@@ -229,9 +229,9 @@ async def test_mcp_handler_forwards_composed_context(
 ) -> None:
     """The MCP boundary supplies the Engine's settings and store to core."""
     from conftest import build_mcp_server, direct_ctx
-    from omrg.core.settings import get_default_effective_settings
-    from omrg.core.vectordb import get_default_store
-    from omrg.transports.mcp import codebase as mcp_codebase
+    from omrs.core.settings import get_default_effective_settings
+    from omrs.core.vectordb import get_default_store
+    from omrs.transports.mcp import codebase as mcp_codebase
 
     expected_settings = get_default_effective_settings()
     expected_store = get_default_store()
@@ -257,7 +257,7 @@ async def test_mcp_handler_settings_failure_returns_error_json(
 ) -> None:
     """A settings failure at the boundary keeps the JSON error shape."""
     from conftest import build_mcp_server, direct_ctx
-    from omrg.transports.mcp import codebase as mcp_codebase
+    from omrs.transports.mcp import codebase as mcp_codebase
 
     def _boom(_collection=None):
         raise RuntimeError("no settings")
@@ -273,10 +273,10 @@ async def test_mcp_handler_reads_no_process_default(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The handler never touches the process-default settings or store."""
-    import omrg.core.settings as core_settings
-    import omrg.core.vectordb as vectordb
+    import omrs.core.settings as core_settings
+    import omrs.core.vectordb as vectordb
     from conftest import build_mcp_server, direct_ctx
-    from omrg.transports.mcp import codebase as mcp_codebase
+    from omrs.transports.mcp import codebase as mcp_codebase
 
     server = build_mcp_server(profile_resolver_factory=None)  # built before the poison
     hits: list[str] = []
@@ -315,7 +315,7 @@ def _count_builds(monkeypatch: pytest.MonkeyPatch) -> list[object]:
 def git_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (tmp_path / "app.py").write_text("x = 1\n")
     monkeypatch.chdir(tmp_path)
-    with patch("omrg.core.codebase.cache._get_git_commit_hash", return_value="c0ffee"):
+    with patch("omrs.core.codebase.cache._get_git_commit_hash", return_value="c0ffee"):
         yield tmp_path
 
 
@@ -356,7 +356,7 @@ def test_unscoped_old_record_is_a_safe_miss(
     git_project: Path, monkeypatch: pytest.MonkeyPatch, effective_settings
 ) -> None:
     """A pre-repair record without owner context is ignored, not deleted early."""
-    from omrg.core.codebase import cache
+    from omrs.core.codebase import cache
 
     cache_file = git_project / ".opencode" / "codebase-graph.json"
     cache_file.parent.mkdir()

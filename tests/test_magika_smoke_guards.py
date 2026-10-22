@@ -18,11 +18,11 @@ from pathlib import Path
 
 import pytest
 
-from omrg.integrations.magika import FileEntry
+from omrs.integrations.magika import FileEntry
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _SMOKE_TOOL = _REPO_ROOT / "scripts" / "magika_label_smoke.py"
-_BANNED_ROOTS = ("omrg.core.ingestion", "omrg.core.vectordb", "omrg.compose", "llama_index")
+_BANNED_ROOTS = ("omrs.core.ingestion", "omrs.core.vectordb", "omrs.compose", "llama_index")
 _BANNED_SYMBOLS = {"build_codebase_map", "Engine"}
 
 
@@ -109,7 +109,7 @@ def test_static_guard_rejects_forbidden_symbols_and_is_mutation_sensitive(tmp_pa
     mutated = tmp_path / "mutated_smoke.py"
     mutated.write_text(
         _SMOKE_TOOL.read_text(encoding="utf-8")
-        + "\nfrom omrg.core.codebase.codebase_map import build_codebase_map\n",
+        + "\nfrom omrs.core.codebase.codebase_map import build_codebase_map\n",
         encoding="utf-8",
     )
     with pytest.raises(AssertionError, match="banned symbol"):
@@ -122,7 +122,7 @@ def test_static_guard_rejects_dynamic_forbidden_import(tmp_path: Path) -> None:
     mutated = tmp_path / "dynamic_smoke.py"
     mutated.write_text(
         _SMOKE_TOOL.read_text(encoding="utf-8")
-        + "\nimport importlib\nimportlib.import_module('omrg.core.ingestion')\n",
+        + "\nimport importlib\nimportlib.import_module('omrs.core.ingestion')\n",
         encoding="utf-8",
     )
     with pytest.raises(AssertionError, match="banned module"):
@@ -140,7 +140,7 @@ def test_static_guard_rejects_computed_dynamic_import(tmp_path: Path) -> None:
     mutated = tmp_path / "computed_import_smoke.py"
     mutated.write_text(
         _SMOKE_TOOL.read_text(encoding="utf-8")
-        + "\nimport importlib\nname = 'omrg.core.ingestion'\n"
+        + "\nimport importlib\nname = 'omrs.core.ingestion'\n"
         "importlib.import_module(name)\n",
         encoding="utf-8",
     )
@@ -198,7 +198,7 @@ def _run_with_import_blocker(path: Path) -> subprocess.CompletedProcess[str]:
         import importlib.util
         import sys
 
-        BANNED = ('omrg.core.ingestion', 'omrg.core.vectordb', 'omrg.compose', 'llama_index')
+        BANNED = ('omrs.core.ingestion', 'omrs.core.vectordb', 'omrs.compose', 'llama_index')
 
         class Blocker:
             def find_spec(self, fullname, path=None, target=None):
@@ -238,7 +238,7 @@ def test_isolated_import_blocker_allows_detection_only_tool_and_catches_mutation
     mutated = tmp_path / "dynamic_forbidden_smoke.py"
     mutated.write_text(
         _SMOKE_TOOL.read_text(encoding="utf-8")
-        + "\nimport importlib\nimportlib.import_module('omrg.core.ingestion')\n",
+        + "\nimport importlib\nimportlib.import_module('omrs.core.ingestion')\n",
         encoding="utf-8",
     )
     blocked = _run_with_import_blocker(mutated)
@@ -250,7 +250,7 @@ def test_isolated_import_blocker_catches_transitive_forbidden_import(tmp_path: P
     """Task 1.7: imports cannot hide a prohibited dependency in a helper."""
     assert _SMOKE_TOOL.exists(), f"smoke tool missing: {_SMOKE_TOOL}"
     helper = tmp_path / "transitive_helper.py"
-    helper.write_text("import omrg.core.vectordb\n", encoding="utf-8")
+    helper.write_text("import omrs.core.vectordb\n", encoding="utf-8")
     mutated = tmp_path / "transitive_smoke.py"
     mutated.write_text(
         _SMOKE_TOOL.read_text(encoding="utf-8")

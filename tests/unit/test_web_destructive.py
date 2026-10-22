@@ -33,8 +33,8 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
     undeclared_keys,
 )
 
-from omrg.core.profiles.resolver import ProfileResolver  # noqa: E402
-from omrg.transports.api.confirmations import (  # noqa: E402
+from omrs.core.profiles.resolver import ProfileResolver  # noqa: E402
+from omrs.transports.api.confirmations import (  # noqa: E402
     CONFIRMATIONS_STATE,
     ConfirmationBook,
 )
@@ -243,8 +243,8 @@ def test_bearer_credentials_cannot_run_destructive_actions(setup: dict) -> None:
 
 def test_destructive_scope_is_session_only() -> None:
     """``manage`` guards deletion and profile changes; no bearer may hold it."""
-    from omrg.transports.api.routes import admin as routes_admin
-    from omrg.transports.api.security import BEARER_SCOPES, SESSION_SCOPES, AccessPolicy
+    from omrs.transports.api.routes import admin as routes_admin
+    from omrs.transports.api.security import BEARER_SCOPES, SESSION_SCOPES, AccessPolicy
 
     assert "manage" in SESSION_SCOPES and "manage" not in BEARER_SCOPES
     policy = AccessPolicy("127.0.0.1", 8765, bootstrap_secret=secrets.token_hex(8))
@@ -428,7 +428,7 @@ def test_a_deleted_profile_is_refused(setup: dict) -> None:
 
 def _save_search_revision(tmp_path: Path, item: dict[str, Any]) -> None:
     """Save a new Search revision of the profile, as Studio would."""
-    from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+    from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
     repository = SqliteWorkspaceRepository(tmp_path / "ws" / "workspace.db")
     pipeline = repository.get_pipeline(item["slots"]["search"])
@@ -480,7 +480,7 @@ def test_a_profile_that_stops_being_ready_before_confirm_is_refused(
         token = client.patch(PROFILE, json={"profile": item["profile_id"]}, headers=ORIGIN).json()[
             "confirmation"
         ]["token"]
-        from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+        from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
         repository = SqliteWorkspaceRepository(tmp_path / "ws" / "workspace.db")
         pipeline = repository.get_pipeline(item["slots"]["search"])

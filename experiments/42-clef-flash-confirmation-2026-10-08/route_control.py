@@ -33,9 +33,9 @@ def main() -> None:
     plan()
     if git("status", "--porcelain", "--", "../../src"):
         raise SystemExit("src/ has uncommitted changes; the control commit would not be pinned")
-    from omrg.compose import settings_to_effective
-    from omrg.config import Settings
-    from omrg.core.ingestion.backends.local import read_documents
+    from omrs.compose import settings_to_effective
+    from omrs.config import Settings
+    from omrs.core.ingestion.backends.local import read_documents
 
     effective = settings_to_effective(Settings())
     identity = {

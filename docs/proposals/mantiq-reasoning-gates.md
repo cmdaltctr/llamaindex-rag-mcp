@@ -9,7 +9,7 @@ OpenSpec change: `openspec/changes/mantiq-reasoning-gates/`.
 A retrieval-augmented generation (RAG) system can hold correct evidence and
 still give a wrong answer. It can misread a term, treat "may" as "always", or
 draw a conclusion the premises do not licence. This proposal adds two opt-in
-checks around the answering step of OMRG, our modular RAG framework. The first
+checks around the answering step of OMRS, our modular RAG framework. The first
 check fixes what the question means before we search. The second check tests
 whether each conclusion in the answer follows validly from the claims the
 evidence supports. Between them sits the claim-verification stage we already
@@ -40,10 +40,10 @@ Errors in a RAG answer come from four places.
 
 Retrieval error is well studied. Judgement error at the single-claim level is
 what our Experiment 20 measured and ADR-059 addressed. Concept error and
-reasoning error have no gate in OMRG today, and we found no RAG system that
+reasoning error have no gate in OMRS today, and we found no RAG system that
 gates them explicitly.
 
-## What exists already in OMRG
+## What exists already in OMRS
 
 - **Claim verification (ADR-059).** After the model writes an answer, a judge
   reads each cited sentence with its cited evidence and returns `supported`

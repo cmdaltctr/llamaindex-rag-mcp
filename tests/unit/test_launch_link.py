@@ -21,13 +21,13 @@ pytest.importorskip("fastapi")
 
 from typer.testing import CliRunner  # noqa: E402
 
-from omrg.transports.api.launch_link import (  # noqa: E402
+from omrs.transports.api.launch_link import (  # noqa: E402
     LINK_FILE_NAME,
     RearmingAccessPolicy,
     write_link_file,
 )
-from omrg.transports.api.security import MAX_BOOTSTRAP_FAILURES  # noqa: E402
-from omrg.transports.cli import app as cli_app  # noqa: E402
+from omrs.transports.api.security import MAX_BOOTSTRAP_FAILURES  # noqa: E402
+from omrs.transports.cli import app as cli_app  # noqa: E402
 
 runner = CliRunner()
 LINK_FRAGMENT = "#bootstrap="
@@ -74,7 +74,7 @@ def test_failure_limit_renews_the_link(tmp_path: Path) -> None:
     old = link_file.read_text(encoding="utf-8")
 
     for _ in range(MAX_BOOTSTRAP_FAILURES):
-        assert policy.exchange_bootstrap("omrg_bs_guess") is None
+        assert policy.exchange_bootstrap("omrs_bs_guess") is None
 
     assert policy.exchange_bootstrap(_secret(old)) is None
     new = link_file.read_text(encoding="utf-8")
@@ -87,7 +87,7 @@ def test_failures_below_the_limit_keep_the_link(tmp_path: Path) -> None:
     first = link_file.read_text(encoding="utf-8")
 
     for _ in range(MAX_BOOTSTRAP_FAILURES - 1):
-        policy.exchange_bootstrap("omrg_bs_guess")
+        policy.exchange_bootstrap("omrs_bs_guess")
 
     assert link_file.read_text(encoding="utf-8") == first
     assert policy.exchange_bootstrap(_secret(first)) is not None
@@ -117,7 +117,7 @@ def test_a_failed_write_does_not_break_sign_in(tmp_path: Path) -> None:
     policy, link_file = _make(tmp_path)
     secret = _secret(link_file.read_text(encoding="utf-8"))
 
-    with patch("omrg.transports.api.launch_link.write_link_file", side_effect=OSError("disk full")):
+    with patch("omrs.transports.api.launch_link.write_link_file", side_effect=OSError("disk full")):
         token = policy.exchange_bootstrap(secret)
 
     assert token is not None
@@ -136,7 +136,7 @@ def test_a_failed_renewal_is_retried_on_the_next_attempt(tmp_path: Path) -> None
             raise OSError("disk full")
         real_write(path, url)
 
-    with patch("omrg.transports.api.launch_link.write_link_file", side_effect=flaky):
+    with patch("omrs.transports.api.launch_link.write_link_file", side_effect=flaky):
         assert policy.exchange_bootstrap(_secret(spent)) is not None
         assert link_file.read_text(encoding="utf-8") == spent
         # A browser that opened the spent link posts it again and is refused ...
@@ -152,9 +152,9 @@ def test_a_failed_renewal_that_keeps_failing_never_breaks_sign_in(tmp_path: Path
     policy, link_file = _make(tmp_path)
     spent = link_file.read_text(encoding="utf-8")
 
-    with patch("omrg.transports.api.launch_link.write_link_file", side_effect=OSError("full")):
+    with patch("omrs.transports.api.launch_link.write_link_file", side_effect=OSError("full")):
         assert policy.exchange_bootstrap(_secret(spent)) is not None
-        assert policy.exchange_bootstrap("omrg_bs_guess") is None
+        assert policy.exchange_bootstrap("omrs_bs_guess") is None
 
     assert link_file.read_text(encoding="utf-8") == spent
 
@@ -188,8 +188,8 @@ def _run_web(workspace: Path, *args: str) -> tuple[Any, _Served]:
     sock = MagicMock()
     sock.getsockname.return_value = ("127.0.0.1", 4242)
     with (
-        patch("omrg.transports.cli.web._bind_socket", return_value=sock),
-        patch("omrg.transports.cli.web._serve", side_effect=fake_serve),
+        patch("omrs.transports.cli.web._bind_socket", return_value=sock),
+        patch("omrs.transports.cli.web._serve", side_effect=fake_serve),
     ):
         result = runner.invoke(cli_app, ["web", "--workspace", str(workspace), *args])
     return result, served
@@ -229,8 +229,8 @@ def test_the_file_is_removed_when_the_server_fails_to_start(tmp_path: Path) -> N
     sock.getsockname.return_value = ("127.0.0.1", 4242)
 
     with (
-        patch("omrg.transports.cli.web._bind_socket", return_value=sock),
-        patch("omrg.transports.cli.web._serve", return_value=False),
+        patch("omrs.transports.cli.web._bind_socket", return_value=sock),
+        patch("omrs.transports.cli.web._serve", return_value=False),
     ):
         result = runner.invoke(cli_app, ["web", "--workspace", str(workspace), "--login-item"])
 
@@ -251,12 +251,12 @@ def test_foreground_launch_is_unchanged(tmp_path: Path) -> None:
 
 
 def test_serve_passes_the_access_log_choice_to_uvicorn() -> None:
-    from omrg.transports.cli.web import _serve
+    from omrs.transports.cli.web import _serve
 
     with (
         patch("uvicorn.Config") as config,
         patch("uvicorn.Server.run"),
-        patch("omrg.transports.api.security.install_log_redaction"),
+        patch("omrs.transports.api.security.install_log_redaction"),
     ):
         _serve(MagicMock(), MagicMock(), access_log=False)
         assert config.call_args.kwargs["access_log"] is False
@@ -275,7 +275,7 @@ def _serve_through_shutdown(**kwargs: Any) -> list[str]:
     """Run ``_serve`` with a fake ``run`` that only drives ``shutdown``."""
     import asyncio
 
-    from omrg.transports.cli.web import _serve
+    from omrs.transports.cli.web import _serve
 
     order: list[str] = []
 
@@ -289,7 +289,7 @@ def _serve_through_shutdown(**kwargs: Any) -> list[str]:
         patch("uvicorn.Config"),
         patch("uvicorn.Server.shutdown", parent_shutdown),
         patch("uvicorn.Server.run", run),
-        patch("omrg.transports.api.security.install_log_redaction"),
+        patch("omrs.transports.api.security.install_log_redaction"),
     ):
         _serve(MagicMock(), MagicMock(), **kwargs)
     return order
@@ -306,7 +306,7 @@ def test_on_stop_runs_once() -> None:
 def test_on_stop_comes_after_the_parent_shutdown() -> None:
     import asyncio
 
-    from omrg.transports.cli.web import _serve
+    from omrs.transports.cli.web import _serve
 
     order: list[str] = []
 
@@ -320,7 +320,7 @@ def test_on_stop_comes_after_the_parent_shutdown() -> None:
         patch("uvicorn.Config"),
         patch("uvicorn.Server.shutdown", parent_shutdown),
         patch("uvicorn.Server.run", run),
-        patch("omrg.transports.api.security.install_log_redaction"),
+        patch("omrs.transports.api.security.install_log_redaction"),
     ):
         _serve(MagicMock(), MagicMock(), on_stop=lambda: order.append("on_stop"))
 
@@ -344,8 +344,8 @@ import sys
 import types
 from pathlib import Path
 
-from omrg.transports.api.launch_link import write_link_file
-from omrg.transports.cli.web import _bind_socket, _serve
+from omrs.transports.api.launch_link import write_link_file
+from omrs.transports.cli.web import _bind_socket, _serve
 
 link_file = Path(sys.argv[1])
 port_file = Path(sys.argv[2])

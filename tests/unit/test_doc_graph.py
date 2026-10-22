@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import networkx as nx
 
-from omrg.core.documents.doc_graph import (
+from omrs.core.documents.doc_graph import (
     build_document_graph,
     compute_cross_links,
     compute_heading_edges,

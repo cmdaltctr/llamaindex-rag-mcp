@@ -28,7 +28,7 @@ from tests.unit.test_engine_profiles_support import (
 )
 from tests.unit.test_pipeline_templates_parity import _store_rows
 
-from omrg.engine_answer import ClientCompletion
+from omrs.engine_answer import ClientCompletion
 
 
 @pytest.fixture(autouse=True)

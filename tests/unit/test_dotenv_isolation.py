@@ -1,6 +1,6 @@
 """A developer's ``.env`` or shell keys must not reach a test.
 
-A ``.env`` in the working folder reaches a test two ways: ``omrg.config`` copies
+A ``.env`` in the working folder reaches a test two ways: ``omrs.config`` copies
 it into ``os.environ`` at import, and ``Settings()`` reads it each time it is
 built. A provider key exported in the developer's shell reaches it through
 ``os.environ`` directly, so "no key" tests fail locally while CI, which has no
@@ -73,7 +73,7 @@ def assert_one_passed(done: subprocess.CompletedProcess[str]) -> None:
 @pytest.mark.parametrize(
     "target",
     [
-        # Leak through os.environ: a .env retrieval value beat omrg.jsonc.
+        # Leak through os.environ: a .env retrieval value beat omrs.jsonc.
         "tests/unit/test_settings_file.py::test_one_bad_value_does_not_drop_the_good_ones",
         # Leak through Settings(env_file=".env"): a .env key beat the key file.
         "tests/unit/test_cli_config_show.py::test_key_file_key_shows_last_four_and_key_file",

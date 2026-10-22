@@ -32,7 +32,7 @@ from tests.unit.test_web_runs_support import (  # noqa: E402
     wait_run,
 )
 
-from omrg.transports.api.lifespan import request_shutdown  # noqa: E402
+from omrs.transports.api.lifespan import request_shutdown  # noqa: E402
 
 
 @pytest.fixture

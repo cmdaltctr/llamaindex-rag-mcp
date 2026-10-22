@@ -8,13 +8,13 @@ from typing import Any
 
 import pytest
 
-from omrg import compose
-from omrg.compose_providers import (
+from omrs import compose
+from omrs.compose_providers import (
     ProviderValues,
     apply_provider_values,
     locked_fields,
 )
-from omrg.config import Settings
+from omrs.config import Settings
 
 SECRET = "sk-or-v1-SECRETVALUE0123456789"  # noqa: S105 - fake key
 
@@ -153,7 +153,7 @@ class _Catalogue:
 
 
 def test_profiles_use_ollama_reads_the_catalogue() -> None:
-    from omrg.core.profiles.catalogue import uses_ollama_embeddings as profiles_use_ollama
+    from omrs.core.profiles.catalogue import uses_ollama_embeddings as profiles_use_ollama
 
     assert profiles_use_ollama(None) is False
     assert profiles_use_ollama(_Catalogue({"profile_id": "a"})) is False
@@ -222,7 +222,7 @@ def settings_with_reference(provider: str = "openrouter") -> Settings:
 
 
 def test_a_keychain_reference_resolves_to_the_saved_key() -> None:
-    from omrg.compose_providers import resolve_keychain_references
+    from omrs.compose_providers import resolve_keychain_references
 
     store = FakeKeychain({"openrouter": SECRET})
     resolved, problems = resolve_keychain_references(settings_with_reference(), store=store)
@@ -233,7 +233,7 @@ def test_a_keychain_reference_resolves_to_the_saved_key() -> None:
 
 
 def test_a_missing_keychain_entry_says_so_and_leaves_no_key() -> None:
-    from omrg.compose_providers import resolve_keychain_references
+    from omrs.compose_providers import resolve_keychain_references
 
     resolved, problems = resolve_keychain_references(
         settings_with_reference(), store=FakeKeychain({})
@@ -243,7 +243,7 @@ def test_a_missing_keychain_entry_says_so_and_leaves_no_key() -> None:
 
 
 def test_no_usable_keychain_is_unreadable_and_reads_nothing() -> None:
-    from omrg.compose_providers import resolve_keychain_references
+    from omrs.compose_providers import resolve_keychain_references
 
     store = FakeKeychain({"openrouter": SECRET}, available=False)
     resolved, problems = resolve_keychain_references(settings_with_reference(), store=store)
@@ -253,8 +253,8 @@ def test_no_usable_keychain_is_unreadable_and_reads_nothing() -> None:
 
 
 def test_a_failing_keychain_call_is_unreadable() -> None:
-    from omrg.compose_providers import resolve_keychain_references
-    from omrg.integrations.keychain import KeychainUnavailableError
+    from omrs.compose_providers import resolve_keychain_references
+    from omrs.integrations.keychain import KeychainUnavailableError
 
     class Failing(FakeKeychain):
         def read(self, provider: str) -> FakeSecret | None:
@@ -265,7 +265,7 @@ def test_a_failing_keychain_call_is_unreadable() -> None:
 
 
 def test_the_input_settings_are_not_changed_by_resolving() -> None:
-    from omrg.compose_providers import resolve_keychain_references
+    from omrs.compose_providers import resolve_keychain_references
 
     base = settings_with_reference()
     resolve_keychain_references(base, store=FakeKeychain({"openrouter": SECRET}))
@@ -276,8 +276,8 @@ def test_no_reference_means_no_keychain_and_no_keyring_import(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A CLI run without ``keychain://`` must not load keyring or build a store."""
-    from omrg.compose_providers import resolve_keychain_references
-    from omrg.integrations import keychain
+    from omrs.compose_providers import resolve_keychain_references
+    from omrs.integrations import keychain
 
     monkeypatch.setitem(sys.modules, "keyring", None)  # an import now raises ImportError
 
@@ -294,7 +294,7 @@ def test_no_reference_means_no_keychain_and_no_keyring_import(
 def test_the_default_store_reports_unreadable_when_keyring_cannot_load(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from omrg.compose_providers import resolve_keychain_references
+    from omrs.compose_providers import resolve_keychain_references
 
     monkeypatch.setitem(sys.modules, "keyring", None)
     resolved, problems = resolve_keychain_references(settings_with_reference())
@@ -305,15 +305,15 @@ def test_the_default_store_reports_unreadable_when_keyring_cannot_load(
 def test_a_reference_from_the_file_resolves_end_to_end(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The CLI path: omrg.jsonc holds the reference, the resolver reads the keychain."""
-    from omrg.compose_providers import resolve_keychain_references
+    """The CLI path: omrs.jsonc holds the reference, the resolver reads the keychain."""
+    from omrs.compose_providers import resolve_keychain_references
 
-    folder = tmp_path / "omrg-config"
+    folder = tmp_path / "omrs-config"
     folder.mkdir()
-    (folder / "omrg.jsonc").write_text(
+    (folder / "omrs.jsonc").write_text(
         '{"openrouter_api_key": "keychain://openrouter"}', encoding="utf-8"
     )
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(folder))
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(folder))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     settings = Settings(_env_file=None)
     resolved, problems = resolve_keychain_references(
@@ -326,19 +326,19 @@ def test_a_reference_from_the_file_resolves_end_to_end(
 
 
 def _reference_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, text: str) -> None:
-    folder = tmp_path / "omrg-config"
+    folder = tmp_path / "omrs-config"
     folder.mkdir()
-    (folder / "omrg.jsonc").write_text(text, encoding="utf-8")
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(folder))
+    (folder / "omrs.jsonc").write_text(text, encoding="utf-8")
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(folder))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-    monkeypatch.setattr("omrg.config._settings", None)
+    monkeypatch.setattr("omrs.config._settings", None)
 
 
 def test_compose_get_settings_resolves_a_keychain_reference(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from omrg import compose
-    from omrg.integrations import keychain
+    from omrs import compose
+    from omrs.integrations import keychain
 
     _reference_folder(tmp_path, monkeypatch, '{"openrouter_api_key": "keychain://openrouter"}')
     store = FakeKeychain({"openrouter": SECRET})
@@ -348,28 +348,28 @@ def test_compose_get_settings_resolves_a_keychain_reference(
     assert first.setting_sources["openrouter_api_key"] == "keychain"
     assert compose.get_settings() is first  # resolved once for one launch
     assert store.reads == ["openrouter"]
-    monkeypatch.setattr("omrg.config._settings", None)
+    monkeypatch.setattr("omrs.config._settings", None)
 
 
 def test_compose_get_settings_without_a_reference_never_loads_the_keychain(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from omrg import compose
+    from omrs import compose
 
     _reference_folder(tmp_path, monkeypatch, '{"llamacpp_chat_url": "http://gpu:8081/v1"}')
-    monkeypatch.delitem(sys.modules, "omrg.integrations.keychain", raising=False)
+    monkeypatch.delitem(sys.modules, "omrs.integrations.keychain", raising=False)
     monkeypatch.setitem(sys.modules, "keyring", None)  # an import now raises ImportError
     settings = compose.get_settings()
     assert settings.llamacpp_chat_url == "http://gpu:8081/v1"
-    assert "omrg.integrations.keychain" not in sys.modules
-    monkeypatch.setattr("omrg.config._settings", None)
+    assert "omrs.integrations.keychain" not in sys.modules
+    monkeypatch.setattr("omrs.config._settings", None)
 
 
 def test_compose_get_settings_logs_a_missing_entry_by_provider_name_only(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    from omrg import compose
-    from omrg.integrations import keychain
+    from omrs import compose
+    from omrs.integrations import keychain
 
     _reference_folder(tmp_path, monkeypatch, '{"openrouter_api_key": "keychain://openrouter"}')
     monkeypatch.setattr(keychain, "KeychainStore", lambda: FakeKeychain({}))
@@ -377,23 +377,23 @@ def test_compose_get_settings_logs_a_missing_entry_by_provider_name_only(
         settings = compose.get_settings()
     assert settings.openrouter_api_key == ""
     assert "openrouter" in caplog.text and "keychain-missing" in caplog.text
-    monkeypatch.setattr("omrg.config._settings", None)
+    monkeypatch.setattr("omrs.config._settings", None)
 
 
 # ── provider_values_from_file: the file over the launch settings (D7) ─────
 
 
 def _file(tmp_path: Path, text: str) -> Any:
-    from omrg.config.settings_file import read_settings_file
+    from omrs.config.settings_file import read_settings_file
 
     folder = tmp_path / "cfg"
     folder.mkdir(exist_ok=True)
-    (folder / "omrg.jsonc").write_text(text, encoding="utf-8")
+    (folder / "omrs.jsonc").write_text(text, encoding="utf-8")
     return read_settings_file(folder)
 
 
 def test_values_from_the_file_override_the_launch_settings(tmp_path: Path) -> None:
-    from omrg.compose_providers import provider_values_from_file
+    from omrs.compose_providers import provider_values_from_file
 
     text = '{"llamacpp_chat_url": "http://gpu:1/v1", "answer": {"model": "m"}}'
     values = provider_values_from_file(make_settings(), _file(tmp_path, text), None)
@@ -403,7 +403,7 @@ def test_values_from_the_file_override_the_launch_settings(tmp_path: Path) -> No
 
 
 def test_a_field_the_file_dropped_goes_back_to_the_code_default(tmp_path: Path) -> None:
-    from omrg.compose_providers import provider_values_from_file
+    from omrs.compose_providers import provider_values_from_file
 
     base = make_settings(llamacpp_chat_url="http://old:1/v1")
     object.__setattr__(base, "setting_sources", {"llamacpp_chat_url": "config-file"})
@@ -414,7 +414,7 @@ def test_a_field_the_file_dropped_goes_back_to_the_code_default(tmp_path: Path) 
 
 
 def test_a_key_the_file_dropped_is_unset(tmp_path: Path) -> None:
-    from omrg.compose_providers import provider_values_from_file
+    from omrs.compose_providers import provider_values_from_file
 
     base = make_settings(openrouter_api_key=SECRET)
     object.__setattr__(base, "setting_sources", {"openrouter_api_key": "keychain"})
@@ -426,7 +426,7 @@ def test_a_key_the_file_dropped_is_unset(tmp_path: Path) -> None:
 
 
 def test_an_environment_field_is_left_to_the_environment(tmp_path: Path) -> None:
-    from omrg.compose_providers import provider_values_from_file
+    from omrs.compose_providers import provider_values_from_file
 
     base = make_settings()
     object.__setattr__(base, "provider_explicit", frozenset({"llamacpp_chat_url"}))
@@ -437,7 +437,7 @@ def test_an_environment_field_is_left_to_the_environment(tmp_path: Path) -> None
 
 
 def test_a_keychain_reference_resolves_through_the_given_store(tmp_path: Path) -> None:
-    from omrg.compose_providers import provider_values_from_file
+    from omrs.compose_providers import provider_values_from_file
 
     store = FakeKeychain({"openrouter": SECRET})
     values = provider_values_from_file(
@@ -450,7 +450,7 @@ def test_a_keychain_reference_resolves_through_the_given_store(tmp_path: Path) -
 
 
 def test_a_reference_with_no_keychain_is_unreadable_and_unset(tmp_path: Path) -> None:
-    from omrg.compose_providers import provider_values_from_file
+    from omrs.compose_providers import provider_values_from_file
 
     values = provider_values_from_file(
         make_settings(), _file(tmp_path, '{"openrouter_api_key": "keychain://openrouter"}'), None
@@ -460,7 +460,7 @@ def test_a_reference_with_no_keychain_is_unreadable_and_unset(tmp_path: Path) ->
 
 
 def test_the_chat_pair_locks_together(tmp_path: Path) -> None:
-    from omrg.compose_providers import provider_values_from_file
+    from omrs.compose_providers import provider_values_from_file
 
     base = make_settings()
     object.__setattr__(base, "provider_explicit", frozenset({"answer.model"}))

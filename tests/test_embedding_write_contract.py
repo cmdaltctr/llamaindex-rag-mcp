@@ -36,9 +36,9 @@ from llama_index.core.embeddings import MockEmbedding
 from llama_index.core.schema import BaseNode, TextNode
 from pydantic import Field
 
-from omrg.core.vectordb.base import VectorStore
-from omrg.core.vectordb.identity import EmbeddingIdentity
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.core.vectordb.base import VectorStore
+from omrs.core.vectordb.identity import EmbeddingIdentity
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
 _CHROMA_EXTRA = find_spec("chromadb") is not None
 
@@ -51,7 +51,7 @@ def _store_class(backend: str) -> type[VectorStore]:
     """Resolve the concrete class lazily (chromadb may be absent)."""
     if backend == "lancedb":
         return LanceVectorStore
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     return ChromaVectorStore
 
@@ -72,7 +72,7 @@ def store(request: pytest.FixtureRequest, tmp_path) -> VectorStore:
 
 def _contract_error() -> type[Exception]:
     """Return the shared contract error class (lazy import, see module docstring)."""
-    from omrg.core.vectordb.validation import EmbeddingWriteContractError
+    from omrs.core.vectordb.validation import EmbeddingWriteContractError
 
     return EmbeddingWriteContractError
 
@@ -86,7 +86,7 @@ def _validate(
     existing_dimension: int | None = None,
 ) -> None:
     """Invoke the shared structural validator (lazy import, see module docstring)."""
-    from omrg.core.vectordb.validation import validate_embedding_batch
+    from omrs.core.vectordb.validation import validate_embedding_batch
 
     validate_embedding_batch(
         identifiers,
@@ -388,7 +388,7 @@ class TestIngestionWritePath:
             "embed_model",
             _CannedBatchEmbedding(embed_dim=2, batch_vectors=[[1.0, 0.0], [0.0, 1.0]]),
         )
-        from omrg.core.ingestion.writer import embed_and_write_async
+        from omrs.core.ingestion.writer import embed_and_write_async
 
         written = await embed_and_write_async(
             [TextNode(text="one"), TextNode(text="two")],
@@ -416,7 +416,7 @@ class TestIngestionWritePath:
             "embed_model",
             _CannedBatchEmbedding(embed_dim=2, batch_vectors=vectors),
         )
-        from omrg.core.ingestion.writer import embed_and_write_async
+        from omrs.core.ingestion.writer import embed_and_write_async
 
         with pytest.raises(_contract_error()):
             await embed_and_write_async(
@@ -437,7 +437,7 @@ class TestIngestionWritePath:
             "embed_model",
             _CannedBatchEmbedding(embed_dim=2, batch_vectors=[[1.0, 0.0], []]),
         )
-        from omrg.core.ingestion.writer import embed_and_write_async
+        from omrs.core.ingestion.writer import embed_and_write_async
 
         with pytest.raises(_contract_error()):
             await embed_and_write_async(
@@ -463,7 +463,7 @@ def _replacement_nodes(vectors: list[list[float]]) -> list[BaseNode]:
 
 
 async def _replace(store: VectorStore, collection: str, vectors: list[list[float]]):
-    from omrg.core.ingestion.replacement import replace_source_nodes_async
+    from omrs.core.ingestion.replacement import replace_source_nodes_async
 
     return await replace_source_nodes_async(
         _replacement_nodes(vectors),
@@ -509,8 +509,8 @@ class TestReplacementWritePath:
         await _replace(store, "replace-safe", [[1.0, 0.0], [0.0, 1.0]])
         generation = store.get_generation("replace-safe")
 
-        from omrg.core.ingestion.replacement import IngestionStageError
-        from omrg.core.norm_guard import EmbeddingNormViolationError
+        from omrs.core.ingestion.replacement import IngestionStageError
+        from omrs.core.norm_guard import EmbeddingNormViolationError
 
         with pytest.raises(IngestionStageError) as excinfo:
             await _replace(store, "replace-safe", bad_vectors)

@@ -40,7 +40,7 @@ async def _patched_read_and_chunk(file_path, **kwargs):
     older versions of this test pass against an ingest that failed before it
     was actually in flight when new chunker parameters were introduced.
     """
-    from omrg.core.ingestion import chunker as _chunker
+    from omrs.core.ingestion import chunker as _chunker
 
     await _pause.wait()
     return await _chunker.read_and_chunk_file_async(file_path, **kwargs)
@@ -53,8 +53,8 @@ class TestIngestResponsiveness:
         self, dir_with_docs: str, monkeypatch
     ) -> None:
         """Concurrent MCP search returns while ingest is blocked mid-flight."""
-        from omrg.core.ingestion import ingest_path_async
-        from omrg.transports.mcp import search_documents
+        from omrs.core.ingestion import ingest_path_async
+        from omrs.transports.mcp import search_documents
 
         coll = "resp_test"
         await ingest_path_async(dir_with_docs, collection_name=coll)
@@ -63,7 +63,7 @@ class TestIngestResponsiveness:
         _pause = asyncio.Event()
 
         monkeypatch.setattr(
-            "omrg.core.ingestion.pipeline.read_and_chunk_file_async",
+            "omrs.core.ingestion.pipeline.read_and_chunk_file_async",
             _patched_read_and_chunk,
         )
 
@@ -98,8 +98,8 @@ class TestIngestResponsiveness:
         self, dir_with_docs: str, monkeypatch
     ) -> None:
         """Concurrent ``list_collections`` returns during in-flight ingest."""
-        from omrg.core.ingestion import ingest_path_async
-        from omrg.core.retrieval import list_collections
+        from omrs.core.ingestion import ingest_path_async
+        from omrs.core.retrieval import list_collections
 
         coll = "list_resp"
         await ingest_path_async(dir_with_docs, collection_name=coll)
@@ -107,7 +107,7 @@ class TestIngestResponsiveness:
         global _pause
         _pause = asyncio.Event()
         monkeypatch.setattr(
-            "omrg.core.ingestion.pipeline.read_and_chunk_file_async",
+            "omrs.core.ingestion.pipeline.read_and_chunk_file_async",
             _patched_read_and_chunk,
         )
 
@@ -134,7 +134,7 @@ class TestIngestResponsiveness:
 
     async def test_async_search_offloads_blocking_retrieval(self, monkeypatch) -> None:
         """Slow synchronous retrieval runs in a worker, not the event loop."""
-        from omrg.transports.mcp import search_documents
+        from omrs.transports.mcp import search_documents
 
         def slow_search(*args, **kwargs):
             time.sleep(0.3)
@@ -177,7 +177,7 @@ class TestResponsivenessRegression:
         self, dir_with_docs: str, monkeypatch
     ) -> None:
         """Insert ``time.sleep(2)`` into the async path; confirm test catches it."""
-        import omrg.core.ingestion.pipeline as _ing
+        import omrs.core.ingestion.pipeline as _ing
 
         original = _ing.read_and_chunk_file_async
 
@@ -194,11 +194,11 @@ class TestResponsivenessRegression:
             )
 
         monkeypatch.setattr(
-            "omrg.core.ingestion.pipeline.read_and_chunk_file_async",
+            "omrs.core.ingestion.pipeline.read_and_chunk_file_async",
             _blocking_patched,
         )
 
-        from omrg.core.ingestion import ingest_path_async
+        from omrs.core.ingestion import ingest_path_async
 
         coll = "regress_test"
         start = time.monotonic()
@@ -235,8 +235,8 @@ class TestSplitterOffload:
         """A slow splitter must not stall a concurrent search call."""
         from llama_index.core.node_parser import SentenceSplitter
 
-        from omrg.core.ingestion import ingest_path_async
-        from omrg.transports.mcp import search_documents
+        from omrs.core.ingestion import ingest_path_async
+        from omrs.transports.mcp import search_documents
 
         coll = "splitter_offload"
         await ingest_path_async(dir_with_docs, collection_name=coll)

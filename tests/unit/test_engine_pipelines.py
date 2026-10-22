@@ -23,7 +23,7 @@ from tests.unit.test_engine_pipelines_support import (
     retrieval_graph,
 )
 
-from omrg.core.pipelines import (
+from omrs.core.pipelines import (
     AdmissionSnapshot,
     PipelineDefinition,
     PipelineResult,
@@ -32,7 +32,7 @@ from omrg.core.pipelines import (
     RunStatus,
     parse_definition,
 )
-from omrg.core.vectordb.identity import EmbeddingIdentity
+from omrs.core.vectordb.identity import EmbeddingIdentity
 
 # ── Validation ────────────────────────────────────────────────────────
 
@@ -163,7 +163,7 @@ def test_retrieval_graph_runs_on_the_engine_store(effective_settings) -> None:
 
 def test_caller_cancellation_is_run_scoped(effective_settings) -> None:
     """A cancelled caller token cancels that run only."""
-    from omrg.core.pipelines import RunCancellation
+    from omrs.core.pipelines import RunCancellation
 
     engine = build_engine(effective_settings())
     token = RunCancellation()

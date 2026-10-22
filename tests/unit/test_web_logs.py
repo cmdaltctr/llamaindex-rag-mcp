@@ -41,13 +41,13 @@ from tests.unit.test_web_openapi_conformance_support import (  # noqa: E402
 )
 from typer.testing import CliRunner  # noqa: E402
 
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig, request_shutdown  # noqa: E402
-from omrg.transports.api.log_buffer import LogBuffer  # noqa: E402
-from omrg.transports.api.security import RedactingFilter  # noqa: E402
-from omrg.transports.cli import app as cli_app  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig, request_shutdown  # noqa: E402
+from omrs.transports.api.log_buffer import LogBuffer  # noqa: E402
+from omrs.transports.api.security import RedactingFilter  # noqa: E402
+from omrs.transports.cli import app as cli_app  # noqa: E402
 
-LOGGER = "omrg.test.logs"
+LOGGER = "omrs.test.logs"
 
 
 @pytest.fixture
@@ -86,7 +86,7 @@ def test_record_shape(buffer: LogBuffer) -> None:
 def test_the_openrouter_key_never_enters_the_buffer(buffer: LogBuffer) -> None:
     emit(logging.ERROR, "call failed with key %s", SECRET)
     emit(logging.ERROR, f"call failed with key {SECRET}")
-    emit(logging.ERROR, "token omrg_bt_abc123.secretpart and Bearer abcdef123456")
+    emit(logging.ERROR, "token omrs_bt_abc123.secretpart and Bearer abcdef123456")
     try:
         raise RuntimeError(f"upstream said {SECRET}")
     except RuntimeError:
@@ -140,7 +140,7 @@ def test_a_bad_format_does_not_break_logging(buffer: LogBuffer) -> None:
 def setup(tmp_path: Path, effective_settings: Any, buffer: LogBuffer):
     engine = make_engine(lance_store(tmp_path), effective_settings())
     config = WebConfig(workspace=tmp_path / "ws", port=8765, static_dir=None)
-    from omrg.transports.api.security import AccessPolicy
+    from omrs.transports.api.security import AccessPolicy
 
     policy = AccessPolicy.for_launch(config.host, config.port)
     app = create_app(config, policy=policy, engine_factory=lambda: engine, log_buffer=buffer)
@@ -308,10 +308,10 @@ def test_stream_frames_conform(tmp_path: Path, effective_settings: Any, buffer: 
     assert check.operations >= FAMILIES["logs"] - {"getLogs"}
 
 
-# ── omrg web installs the handler ────────────────────────────────────────
+# ── omrs web installs the handler ────────────────────────────────────────
 
 
-def test_omrg_web_installs_the_buffer_on_the_root_logger_and_removes_it_on_exit(
+def test_omrs_web_installs_the_buffer_on_the_root_logger_and_removes_it_on_exit(
     tmp_path: Path,
 ) -> None:
     captured: dict[str, Any] = {}
@@ -321,7 +321,7 @@ def test_omrg_web_installs_the_buffer_on_the_root_logger_and_removes_it_on_exit(
         captured["attached"] = app.state.log_buffer in logging.getLogger().handlers
         sock.close()
 
-    with patch("omrg.transports.cli.web._serve", side_effect=fake_serve):
+    with patch("omrs.transports.cli.web._serve", side_effect=fake_serve):
         # --port 0: a login item on this machine can hold the default port 8765.
         result = CliRunner().invoke(
             cli_app, ["web", "--port", "0", "--workspace", str(tmp_path / "ws")]
@@ -338,7 +338,7 @@ def test_omrg_web_installs_the_buffer_on_the_root_logger_and_removes_it_on_exit(
 
 
 def build_app_with_buffer(tmp_path: Path, engine: Any, log_buffer: LogBuffer) -> tuple[Any, Any]:
-    from omrg.transports.api.security import AccessPolicy
+    from omrs.transports.api.security import AccessPolicy
 
     config = WebConfig(workspace=tmp_path / "ws", port=8765, static_dir=None)
     policy = AccessPolicy.for_launch(config.host, config.port)
@@ -429,7 +429,7 @@ REPLACED = "sk-or-v1-replaced-key-fedcba9876543210"
 @pytest.fixture
 def live_secrets() -> Iterator[tuple[LogBuffer, Any]]:
     """A buffer that starts with no keys, sharing a ``SecretSet`` with the app."""
-    from omrg.transports.api.security import SecretSet
+    from omrs.transports.api.security import SecretSet
 
     secrets = SecretSet()
     log_buffer = LogBuffer(secrets)

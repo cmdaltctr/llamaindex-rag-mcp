@@ -16,8 +16,8 @@ from typing import Any
 import pytest
 
 from conftest import build_mcp_server, connected_client
-from omrg.core.settings import reset_default_effective_settings
-from omrg.core.vectordb import reset_default_store
+from omrs.core.settings import reset_default_effective_settings
+from omrs.core.vectordb import reset_default_store
 
 _SNAPSHOT = Path(__file__).resolve().parents[1] / "fixtures" / "mcp_tool_list.json"
 
@@ -39,7 +39,7 @@ async def test_every_tool_works_with_process_defaults_cleared(fixtures_dir: Path
     reset_default_store()
     reset_default_effective_settings()
     with pytest.raises(RuntimeError):
-        from omrg.core.vectordb import get_default_store
+        from omrs.core.vectordb import get_default_store
 
         get_default_store()
 

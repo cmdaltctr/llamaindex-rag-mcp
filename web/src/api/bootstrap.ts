@@ -9,7 +9,7 @@
  *   reads the secret, removes it from the address bar and history with
  *   `history.replaceState`, and only then exchanges it.
  * - The workspace sign-in secret, which the server puts into its own page in
- *   a `<meta name="omrg-page-secret">` tag. It lasts across server restarts,
+ *   a `<meta name="omrs-page-secret">` tag. It lasts across server restarts,
  *   so the page uses it on load and again whenever a request gets 401.
  */
 
@@ -17,7 +17,7 @@ import type { FetchLike, SessionRenewal } from "./client";
 
 const FRAGMENT_KEY = "bootstrap";
 const SESSION_PATH = "/v1/session";
-const PAGE_SECRET_META = "omrg-page-secret";
+const PAGE_SECRET_META = "omrs-page-secret";
 
 export type BootstrapOutcome = "none" | "ok" | "failed";
 

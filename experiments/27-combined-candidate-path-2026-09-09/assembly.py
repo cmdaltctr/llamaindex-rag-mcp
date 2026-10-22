@@ -84,7 +84,7 @@ def _query_token_cost(queries: dict, *, runtime_manifest: dict | None = None) ->
     instruction = manifest["embedding"]["candidate_instruction"]
     try:
         sys.path.insert(0, str(EXP_DIR.parent.parent / "src"))
-        from omrg.integrations.tokenizer import load_tokenizer
+        from omrs.integrations.tokenizer import load_tokenizer
 
         tokenizer = load_tokenizer(
             "Qwen/Qwen3-Embedding-4B", "5cf2132abc99cad020ac570b19d031efec650f2b"

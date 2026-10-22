@@ -16,11 +16,11 @@ from llama_index.core import Settings as LlamaIndexSettings
 from tests.fixtures.pipeline_parity.ingestion.snapshot import copy_sources, pin_detection
 from tests.unit.test_ingestion_graph_adapters_support import offline_settings
 
-from omrg.core.ingestion import graph_adapters
-from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition
-from omrg.core.pipelines import NodeStatus, PipelineResult, RunCancellation, RunStatus
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
-from omrg.engine import Engine
+from omrs.core.ingestion import graph_adapters
+from omrs.core.ingestion.graph_adapters import canonical_ingestion_definition
+from omrs.core.pipelines import NodeStatus, PipelineResult, RunCancellation, RunStatus
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.engine import Engine
 
 _FAILING_SOURCE = "notes.txt"
 

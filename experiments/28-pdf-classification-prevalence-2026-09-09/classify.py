@@ -120,7 +120,7 @@ def _save_checkpoint(payload: dict) -> None:
 
 def _classify_one(reader, path: Path, gate) -> dict:
     """Classify one PDF and compute the routing decision it would receive."""
-    from omrg.integrations.pdf.ocr_routing import ocr_required_by_gate
+    from omrs.integrations.pdf.ocr_routing import ocr_required_by_gate
 
     documents = reader.load_data(path)
     evidence = documents[0].metadata if documents else {}
@@ -159,8 +159,8 @@ def main() -> None:
     if not LIBRARY_ROOT.exists():
         raise SystemExit(f"population root not found: {LIBRARY_ROOT}")
 
-    import omrg.integrations.pdf  # noqa: F401 - populates the reader registry
-    from omrg.integrations.pdf.registry import get as get_pdf_reader
+    import omrs.integrations.pdf  # noqa: F401 - populates the reader registry
+    from omrs.integrations.pdf.registry import get as get_pdf_reader
 
     reader_cls = get_pdf_reader("pdf_inspector")
     reader = reader_cls() if isinstance(reader_cls, type) else reader_cls

@@ -118,8 +118,8 @@ describe("ClaimList", () => {
   }
 
   it("renders inline code in a claim as code, with no backticks left", () => {
-    const { container } = claims([{ claim: "Run `omrg --version` first.", verdict: "unsupported", ordinals: [1] }]);
-    expect(screen.getByText("omrg --version").tagName).toBe("CODE");
+    const { container } = claims([{ claim: "Run `omrs --version` first.", verdict: "unsupported", ordinals: [1] }]);
+    expect(screen.getByText("omrs --version").tagName).toBe("CODE");
     expect(container).not.toHaveTextContent("`");
   });
 

@@ -19,7 +19,7 @@ delta vs overlap=64 ≤ 15 %.
 """
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
+# (omrs.ingestion, omrs.retrieval, omrs.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -130,7 +130,7 @@ def _setup_overlap(overlap: int, chroma_dir: str) -> None:
     os.environ["RERANK_MAX_FETCH"] = str(DEFAULT_RERANK_MAX_FETCH)
     os.environ["RERANK_FETCH_MULTIPLIER"] = str(DEFAULT_RERANK_FETCH_MULTIPLIER)
 
-    for mod_name in ("omrg.ingestion", "omrg.retrieval", "omrg.config"):
+    for mod_name in ("omrs.ingestion", "omrs.retrieval", "omrs.config"):
         mod = sys.modules.get(mod_name)
         if mod is None:
             continue
@@ -140,7 +140,7 @@ def _setup_overlap(overlap: int, chroma_dir: str) -> None:
             mod.CHROMA_PERSIST_DIR = chroma_dir
 
     try:
-        from omrg.reranker import CrossEncoderReranker
+        from omrs.reranker import CrossEncoderReranker
         CrossEncoderReranker._instance = None  # type: ignore[attr-defined]
     except Exception:
         pass
@@ -152,8 +152,8 @@ def _evaluate_overlap(
     """Ingest under one overlap value and run the query set."""
     import asyncio
 
-    from omrg.ingestion import ingest_path_async
-    from omrg.retrieval import search
+    from omrs.ingestion import ingest_path_async
+    from omrs.retrieval import search
 
     chroma_dir = str((EXPERIMENT_DIR / f"chroma_overlap_{overlap}").resolve())
     shutil.rmtree(chroma_dir, ignore_errors=True)
@@ -332,8 +332,8 @@ def main() -> None:
     print(f"  Rerank pool: max_fetch={DEFAULT_RERANK_MAX_FETCH}, "
           f"multiplier={DEFAULT_RERANK_FETCH_MULTIPLIER}")
 
-    import omrg.ingestion  # noqa: F401
-    import omrg.retrieval  # noqa: F401
+    import omrs.ingestion  # noqa: F401
+    import omrs.retrieval  # noqa: F401
 
     evaluations: list[OverlapEvaluation] = []
     for overlap in overlaps:

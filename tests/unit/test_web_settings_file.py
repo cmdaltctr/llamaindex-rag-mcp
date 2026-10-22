@@ -1,9 +1,9 @@
-"""The web server keeps its settings in ``omrg.jsonc`` (ADR-087, tasks 5.1, 5.3, 5.5, 5.6).
+"""The web server keeps its settings in ``omrs.jsonc`` (ADR-087, tasks 5.1, 5.3, 5.5, 5.6).
 
 The routes write the file and read it back, a hand edit applies at the next
 request, a key lives only in the keychain behind a ``keychain://`` reference,
 and no refused value appears in an answer. The keychain is a fake and the user
-config folder is a temporary one (``OMRG_CONFIG_DIR``).
+config folder is a temporary one (``OMRS_CONFIG_DIR``).
 """
 
 from __future__ import annotations
@@ -18,14 +18,14 @@ pytest.importorskip("fastapi")
 
 from tests.unit import test_web_connections_edit as edit  # noqa: E402
 
-from omrg.config.settings_file import read_settings_file  # noqa: E402
-from omrg.config.settings_file_write import write_settings  # noqa: E402
-from omrg.config.user_config import user_config_dir  # noqa: E402
+from omrs.config.settings_file import read_settings_file  # noqa: E402
+from omrs.config.settings_file_write import write_settings  # noqa: E402
+from omrs.config.user_config import user_config_dir  # noqa: E402
 
 harness = edit.harness
 KEY = edit.KEY64
 OTHER_KEY = "sk-or-v1-" + "Q9w8E7r6T5y4U3i2" * 3 + "Aa1Bb2C"  # fake, 64 characters
-STALE = "omrg.jsonc changed on disk. Reload to see the new values."
+STALE = "omrs.jsonc changed on disk. Reload to see the new values."
 
 
 def hand_edit(changes: dict[str, Any]) -> None:
@@ -78,7 +78,7 @@ def test_a_hand_edit_of_an_engine_setting_is_not_applied_live(harness: Any) -> N
     with harness() as h:
         before = h.engines[0]._effective_settings.retrieval.top_k
         hand_edit({"ollama_base_url": edit.NEW_URL})  # one live key, so a reload happens
-        (user_config_dir() / "omrg.jsonc").write_text(
+        (user_config_dir() / "omrs.jsonc").write_text(
             f'{{ "retrieval": {{ "top_k": 3 }}, "ollama_base_url": "{edit.NEW_URL}" }}'
         )
         h.client.get("/v1/settings/chat")
@@ -89,7 +89,7 @@ def test_a_hand_edit_of_an_engine_setting_is_not_applied_live(harness: Any) -> N
 def test_a_broken_file_gives_the_defaults_and_the_server_stays_up(harness: Any) -> None:
     with harness() as h:
         hand_edit({"ollama_base_url": edit.NEW_URL})
-        (user_config_dir() / "omrg.jsonc").write_text("{ not json", encoding="utf-8")
+        (user_config_dir() / "omrs.jsonc").write_text("{ not json", encoding="utf-8")
         assert h.field("ollama", "base_url")["source"] == "default"
         assert h.client.get("/v1/connections").status_code == 200
 
@@ -195,19 +195,19 @@ def test_a_save_with_the_current_revision_succeeds(harness: Any) -> None:
 def test_a_broken_file_is_not_overwritten_by_a_save(harness: Any) -> None:
     with harness() as h:
         user_config_dir().mkdir(parents=True, exist_ok=True)
-        (user_config_dir() / "omrg.jsonc").write_text("{ not json", encoding="utf-8")
+        (user_config_dir() / "omrs.jsonc").write_text("{ not json", encoding="utf-8")
         response = h.put("ollama", {"base_url": edit.NEW_URL})
         assert response.status_code == 409
         assert response.json()["message"] == (
-            "omrg.jsonc could not be read. Fix it, then save again."
+            "omrs.jsonc could not be read. Fix it, then save again."
         )
-        assert (user_config_dir() / "omrg.jsonc").read_text() == "{ not json"
+        assert (user_config_dir() / "omrs.jsonc").read_text() == "{ not json"
 
 
 def test_a_save_keeps_comments_and_other_keys(harness: Any) -> None:
     with harness() as h:
         user_config_dir().mkdir(parents=True, exist_ok=True)
-        (user_config_dir() / "omrg.jsonc").write_text(
+        (user_config_dir() / "omrs.jsonc").write_text(
             '// my notes\n{\n  "retrieval": { "top_k": 7 }, // keep\n  "web_port": 9100\n}\n',
             encoding="utf-8",
         )
@@ -390,8 +390,8 @@ def test_a_key_in_the_keychain_without_a_reference_is_not_used(harness: Any) -> 
 
 
 def test_a_literal_key_in_the_file_is_ignored(harness: Any) -> None:
-    (user_config_dir() / "omrg.jsonc").parent.mkdir(parents=True, exist_ok=True)
-    (user_config_dir() / "omrg.jsonc").write_text(
+    (user_config_dir() / "omrs.jsonc").parent.mkdir(parents=True, exist_ok=True)
+    (user_config_dir() / "omrs.jsonc").write_text(
         '{ "openrouter_api_key": "sk-or-literal-in-file-0001" }', encoding="utf-8"
     )
     with harness() as h:

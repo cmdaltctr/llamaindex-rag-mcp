@@ -20,10 +20,10 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from omrg.capabilities import build_ocr_routes, probe_ocr_worker, reset_ocr_fingerprint_cache
-from omrg.config import Settings
-from omrg.integrations.ocr_worker.fingerprint import UNAVAILABLE_OCR_WORKER_FINGERPRINT
-from omrg.integrations.ocr_worker.routes import (
+from omrs.capabilities import build_ocr_routes, probe_ocr_worker, reset_ocr_fingerprint_cache
+from omrs.config import Settings
+from omrs.integrations.ocr_worker.fingerprint import UNAVAILABLE_OCR_WORKER_FINGERPRINT
+from omrs.integrations.ocr_worker.routes import (
     WORKER_CORE_MODULE,
     OcrRoutes,
     RouteCommand,
@@ -51,7 +51,7 @@ def _fresh_caches() -> Iterator[None]:
 def make_engine(workers_dir: Path, name: str, backend_id: str) -> Path:
     """Create a fake provisioned engine whose python runs the stub worker.
 
-    The fake interpreter ignores ``-m omrg_ocr_worker_core`` and runs the
+    The fake interpreter ignores ``-m omrs_ocr_worker_core`` and runs the
     stub with the given backend id, so the probe and a parse both work.
     """
     engine_dir = workers_dir / "engines" / name
@@ -60,7 +60,7 @@ def make_engine(workers_dir: Path, name: str, backend_id: str) -> Path:
     python = bin_dir / "python"
     python.write_text(
         "#!/bin/sh\n"
-        'shift 2  # drop "-m omrg_ocr_worker_core"\n'
+        'shift 2  # drop "-m omrs_ocr_worker_core"\n'
         f'exec "{sys.executable}" "{STUB_WORKER}" --backend-id {backend_id} "$@"\n',
         encoding="utf-8",
     )
@@ -131,7 +131,7 @@ def test_maths_page_fraction_accepts_the_ends(monkeypatch: pytest.MonkeyPatch, v
 
 def test_effective_settings_carry_the_route_fields(monkeypatch: pytest.MonkeyPatch) -> None:
     """The composition root copies the six fields into EffectiveSettings."""
-    from omrg.compose_settings import settings_to_effective
+    from omrs.compose_settings import settings_to_effective
 
     monkeypatch.setenv("OCR_ENGINE_FALLBACK", "")
     monkeypatch.setenv("OCR_MATHS_PAGE_FRACTION", "0.3")
@@ -146,7 +146,7 @@ def test_effective_settings_carry_the_route_fields(monkeypatch: pytest.MonkeyPat
 
 
 def test_engine_command_comes_from_the_workers_dir(tmp_path: Path) -> None:
-    """``<dir>/engines/<name>/.venv/bin/python -m omrg_ocr_worker_core``, cwd the folder."""
+    """``<dir>/engines/<name>/.venv/bin/python -m omrs_ocr_worker_core``, cwd the folder."""
     engine_dir = make_engine(tmp_path, "any-engine", "any_engine")
     route = resolve_engine_command("any-engine", str(tmp_path))
     assert route == RouteCommand(
@@ -182,14 +182,14 @@ def test_explicit_command_overrides_the_primary_route_only(
     make_engine(tmp_path, "paddleocr-vl", "paddleocr_vl")
     settings = settings_for(
         effective_settings,
-        ocr_worker_command="/opt/legacy/python -m omrg_ocr_worker",
+        ocr_worker_command="/opt/legacy/python -m omrs_ocr_worker",
         ocr_worker_env_dir=" /opt/legacy ",
         ocr_workers_dir=str(tmp_path),
     )
     primary = resolve_route_command("dots-mocr", settings, primary=True)
     fallback = resolve_route_command("paddleocr-vl", settings, primary=False)
     assert primary == RouteCommand(
-        command=("/opt/legacy/python", "-m", "omrg_ocr_worker"), cwd="/opt/legacy"
+        command=("/opt/legacy/python", "-m", "omrs_ocr_worker"), cwd="/opt/legacy"
     )
     assert fallback.command[0] == str(
         tmp_path / "engines" / "paddleocr-vl" / ".venv" / "bin" / "python"
@@ -328,7 +328,7 @@ def test_start_up_log_names_both_engines_once(
     """The resolved primary and fallback engines are logged once per process."""
     make_engine(tmp_path, "paddleocr-vl", "paddleocr_vl")
     settings = settings_for(effective_settings, ocr_workers_dir=str(tmp_path))
-    with caplog.at_level(logging.INFO, logger="omrg.integrations.ocr_worker.routes"):
+    with caplog.at_level(logging.INFO, logger="omrs.integrations.ocr_worker.routes"):
         build_route_clients(settings, probe=probe_ocr_worker)
         build_route_clients(settings, probe=probe_ocr_worker)
     lines = [r.getMessage() for r in caplog.records if r.getMessage().startswith("OCR routes:")]
@@ -389,7 +389,7 @@ def test_timeout_never_drops_below_the_floor(
 
 def test_timeout_reaches_the_client(effective_settings: Any, tmp_path: Path) -> None:
     """The managed client forwards the per-request timeout to the subprocess client."""
-    from omrg.integrations.ocr_worker.managed import ManagedOcrClient
+    from omrs.integrations.ocr_worker.managed import ManagedOcrClient
 
     seen: dict[str, Any] = {}
 
@@ -432,8 +432,8 @@ def test_engine_close_stops_both_route_processes(
     """The engine owns the route pair; close() stops every started route."""
     from unittest.mock import MagicMock
 
-    from omrg.core.vectordb.lancedb.store import LanceVectorStore
-    from omrg.engine import Engine
+    from omrs.core.vectordb.lancedb.store import LanceVectorStore
+    from omrs.engine import Engine
 
     make_engine(tmp_path, "dots-mocr", "dots_mocr")
     make_engine(tmp_path, "paddleocr-vl", "paddleocr_vl")
@@ -466,7 +466,7 @@ def test_operation_owned_routes_close_after_ingest(
     """Without an injected client, ingestion builds its own routes and closes them."""
     import asyncio
 
-    from omrg.core.ingestion.pipeline import ingest_path_async
+    from omrs.core.ingestion.pipeline import ingest_path_async
 
     closed: list[bool] = []
     real_build = build_ocr_routes
@@ -482,7 +482,7 @@ def test_operation_owned_routes_close_after_ingest(
         object.__setattr__(routes, "close", close)
         return routes
 
-    monkeypatch.setattr("omrg.capabilities.build_ocr_routes", recording_build)
+    monkeypatch.setattr("omrs.capabilities.build_ocr_routes", recording_build)
     source = tmp_path / "note.txt"
     source.write_text("plain text", encoding="utf-8")
     settings = effective_settings(
@@ -496,7 +496,7 @@ def test_operation_owned_routes_close_after_ingest(
 @pytest.mark.parametrize(("backend_id", "expected"), [(7, None), ("dots_mocr", "dots_mocr")])
 def test_fingerprint_backend_id_must_be_a_string(backend_id: Any, expected: Any) -> None:
     """A non-string ``backend_id`` makes the payload invalid; a string is kept."""
-    from omrg.integrations.ocr_worker.fingerprint import fingerprint_from_payload
+    from omrs.integrations.ocr_worker.fingerprint import fingerprint_from_payload
 
     payload = {
         "protocol_version": "1.1",
@@ -504,7 +504,7 @@ def test_fingerprint_backend_id_must_be_a_string(backend_id: Any, expected: Any)
         "packages": {},
         "pipeline": {"identity": "p", "revision": "1"},
         "model": {"identity": "m", "revision": "1"},
-        "output_schema": {"id": "omrg.ocr.parse_output", "version": "1"},
+        "output_schema": {"id": "omrs.ocr.parse_output", "version": "1"},
     }
     fingerprint = fingerprint_from_payload(payload)
     assert (fingerprint.backend_id if fingerprint else None) == expected

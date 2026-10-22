@@ -22,8 +22,8 @@ from tests.unit.test_engine_profiles_support import (
 )
 from tests.unit.test_ingestion_graph_adapters_support import offline_settings
 
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
-from omrg.engine import Engine
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.engine import Engine
 
 
 class World:

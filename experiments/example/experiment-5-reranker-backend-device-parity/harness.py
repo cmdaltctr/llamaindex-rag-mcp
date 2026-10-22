@@ -21,8 +21,8 @@ inference-only benchmark:
   >= 5 measured steady-state passes per repetition.
 
 Only production reranker classes are measured:
-``omrg.core.retrieval.reranker.CrossEncoderReranker`` (ONNX) and
-``omrg.core.retrieval.reranker_torch.SentenceTransformerReranker``
+``omrs.core.retrieval.reranker.CrossEncoderReranker`` (ONNX) and
+``omrs.core.retrieval.reranker_torch.SentenceTransformerReranker``
 (torch).  Device control happens at process level — the ONNX route
 reads ``RERANK_ONNX_PROVIDER`` from the environment (production
 behaviour), and the torch-CPU route hides MPS availability before the
@@ -183,11 +183,11 @@ def construct_reranker(cell: dict[str, Any], model_id: str = MODEL_ID) -> Any:
     """Build the production reranker class for *cell* (nothing else)."""
     factors = cell["factors"]
     if factors["backend"] == "onnx":
-        from omrg.core.retrieval.reranker import CrossEncoderReranker
+        from omrs.core.retrieval.reranker import CrossEncoderReranker
 
         return CrossEncoderReranker(model_id=model_id)
     if factors["backend"] == "torch":
-        from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
+        from omrs.core.retrieval.reranker_torch import SentenceTransformerReranker
 
         return SentenceTransformerReranker(model_id=model_id)
     raise ValueError(f"unsupported backend factor {factors['backend']!r}")

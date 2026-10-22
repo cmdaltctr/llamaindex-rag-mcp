@@ -31,8 +31,8 @@ from tests.unit.test_web_experiments_support import (  # noqa: E402
 )
 from tests.unit.test_web_runs_support import make_engine  # noqa: E402
 
-from omrg.core.pipelines import NodeOutcome, NodeStatus  # noqa: E402
-from omrg.core.workspace.artefacts import ArtefactStore  # noqa: E402
+from omrs.core.pipelines import NodeOutcome, NodeStatus  # noqa: E402
+from omrs.core.workspace.artefacts import ArtefactStore  # noqa: E402
 
 SECRET = "sk-live-abcdefghijklmnopqrstuvwx"  # noqa: S105 - fake value the test must not see
 

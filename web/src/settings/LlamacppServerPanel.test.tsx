@@ -6,12 +6,12 @@ import { json } from "../test/fakeDocumentsServer";
 import { startApp } from "../test/startApp";
 import { serverStatus, settingsServer } from "./test/fixtures";
 
-const NOTE = "omrg starts and stops only this server. It never touches a server you started yourself.";
+const NOTE = "omrs starts and stops only this server. It never touches a server you started yourself.";
 
 const PROGRAM_RULE = "The program must be the absolute path of an executable file named llama-server, not a script or a program in a hidden folder.";
 
 /** A session that holds the `credentials` scope, which the program path and the model need. */
-const WITH_CREDENTIALS = { "GET /v1/session": () => ({ status: "ok", kind: "session", scopes: ["credentials", "files", "graph", "read", "run"], workspace: "/home/u/.omrg/workspace" }) };
+const WITH_CREDENTIALS = { "GET /v1/session": () => ({ status: "ok", kind: "session", scopes: ["credentials", "files", "graph", "read", "run"], workspace: "/home/u/.omrs/workspace" }) };
 
 async function open(handlers = {}) {
   const server = settingsServer({ ...WITH_CREDENTIALS, ...handlers });
@@ -47,13 +47,13 @@ describe("Local server block on the llama.cpp card", () => {
     expect(panel()).toHaveTextContent(/embedding server is not managed/i);
   });
 
-  it("shows file values with the omrg.jsonc words and keeps them editable", async () => {
+  it("shows file values with the omrs.jsonc words and keeps them editable", async () => {
     const { panel } = await open({
       "GET /v1/llamacpp/server": () =>
         serverStatus({}, { binary: { value: "/opt/homebrew/bin/llama-server", source: "config-file" }, model: { value: "a/b", source: "config-file" }, context_window: { value: 8192, source: "config-file" } }),
     });
     expect(within(panel()).getByText("/opt/homebrew/bin/llama-server")).toBeInTheDocument();
-    expect(within(panel()).getAllByText("from omrg.jsonc")).toHaveLength(3);
+    expect(within(panel()).getAllByText("from omrs.jsonc")).toHaveLength(3);
     expect(within(panel()).getByRole("button", { name: "Edit Model" })).toBeInTheDocument();
   });
 
@@ -75,7 +75,7 @@ describe("Local server block on the llama.cpp card", () => {
     await user.click(within(panel()).getByRole("button", { name: "Save" }));
     expect(put).toEqual([{ binary: "/opt/llama/llama-server", revision: "r1" }]);
     expect(await within(panel()).findByText("/opt/llama/llama-server")).toBeInTheDocument();
-    expect(within(panel()).getByText("from omrg.jsonc")).toBeInTheDocument();
+    expect(within(panel()).getByText("from omrs.jsonc")).toBeInTheDocument();
     expect(within(panel()).queryByRole("textbox")).toBeNull();
   });
 
@@ -185,8 +185,8 @@ describe("Local server block on the llama.cpp card", () => {
     expect(await within(panel()).findByRole("alert")).toHaveTextContent(message);
   });
 
-  it("shows the conflict with a Reload action when omrg.jsonc changed on disk", async () => {
-    const message = "omrg.jsonc changed on disk. Reload to see the new values.";
+  it("shows the conflict with a Reload action when omrs.jsonc changed on disk", async () => {
+    const message = "omrs.jsonc changed on disk. Reload to see the new values.";
     const { user, panel, server } = await open({ "PUT /v1/llamacpp/server": () => json({ status: "error", message }, 409) });
     await user.click(within(panel()).getByRole("button", { name: "Edit Program path" }));
     await user.type(within(panel()).getByRole("textbox", { name: "Program path" }), "/x/llama-server");
@@ -254,8 +254,8 @@ describe("Local server block on the llama.cpp card", () => {
     ["not-configured", "Set the program path first."],
     ["binary-invalid", "The program path is not a runnable file named llama-server."],
     ["model-invalid", "The model is not an existing .gguf file or a Hugging Face id."],
-    ["not-loopback", "The chat address is not on this machine, so omrg will not start a server for it."],
-    ["port-in-use", "Another program already uses the chat port. omrg did not touch it."],
+    ["not-loopback", "The chat address is not on this machine, so omrs will not start a server for it."],
+    ["port-in-use", "Another program already uses the chat port. omrs did not touch it."],
     ["timeout", "The server did not become ready in time and was stopped."],
   ] as const)("shows a friendly sentence for %s", async (reason, sentence) => {
     const { panel } = await open({ "GET /v1/llamacpp/server": () => serverStatus({ state: "failed", reason }) });

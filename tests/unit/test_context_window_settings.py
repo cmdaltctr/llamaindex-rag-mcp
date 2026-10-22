@@ -1,7 +1,7 @@
 """Context window settings: sources, locks and live apply (Parts A.1 to A.4).
 
 ``ollama_context_window`` and ``llamacpp_context_window`` follow the provider
-precedence of ADR-087: environment and ``.env`` lock, ``omrg.jsonc`` applies
+precedence of ADR-087: environment and ``.env`` lock, ``omrs.jsonc`` applies
 and does not lock, then the default of 16,384 tokens. No test calls a
 provider or reads the real user config folder.
 """
@@ -16,11 +16,11 @@ import pytest
 from pydantic import ValidationError
 from tests.unit import test_web_connections_edit as edit
 
-from omrg import compose
-from omrg.compose_providers import ProviderValues, apply_provider_values, locked_fields
-from omrg.config import Settings
-from omrg.core.providers.llm import registry
-from omrg.core.providers.llm.connection import (
+from omrs import compose
+from omrs.compose_providers import ProviderValues, apply_provider_values, locked_fields
+from omrs.config import Settings
+from omrs.core.providers.llm import registry
+from omrs.core.providers.llm.connection import (
     ConnectionDescriptor,
     ConnectionField,
     ConnectionTarget,
@@ -44,9 +44,9 @@ TEXT_FIELDS = {
 def folder(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     for variable in (*FIELDS.values(), *TEXT_FIELDS.values(), "LLAMACPP_IDLE_SLEEP_SECONDS"):
         monkeypatch.delenv(variable, raising=False)
-    root = tmp_path / "omrg-config"
+    root = tmp_path / "omrs-config"
     root.mkdir(mode=0o700)
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(root))
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(root))
     return root
 
 
@@ -95,7 +95,7 @@ def test_bad_environment_value_fails_startup(
 def test_config_file_sets_and_does_not_lock(
     folder: Path, tmp_path: Path, field: str, raw: str
 ) -> None:
-    (folder / "omrg.jsonc").write_text(f'{{"{field}": {raw}}}', encoding="utf-8")
+    (folder / "omrs.jsonc").write_text(f'{{"{field}": {raw}}}', encoding="utf-8")
     settings = build(tmp_path)
     assert getattr(settings, field) == 8192
     assert isinstance(getattr(settings, field), int)
@@ -108,7 +108,7 @@ def test_config_file_sets_and_does_not_lock(
 def test_invalid_config_file_value_is_ignored_with_one_warning(
     folder: Path, tmp_path: Path, caplog: pytest.LogCaptureFixture, raw: str
 ) -> None:
-    (folder / "omrg.jsonc").write_text(f'{{"ollama_context_window": {raw}}}', encoding="utf-8")
+    (folder / "omrs.jsonc").write_text(f'{{"ollama_context_window": {raw}}}', encoding="utf-8")
     with caplog.at_level(logging.WARNING):
         settings = build(tmp_path)
     assert settings.ollama_context_window == 16384
@@ -121,7 +121,7 @@ def test_invalid_config_file_value_is_ignored_with_one_warning(
 def test_environment_beats_config_file(
     folder: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    (folder / "omrg.jsonc").write_text('{"ollama_context_window": 4096}', encoding="utf-8")
+    (folder / "omrs.jsonc").write_text('{"ollama_context_window": 4096}', encoding="utf-8")
     monkeypatch.setenv("OLLAMA_CONTEXT_WINDOW", "8192")
     settings = build(tmp_path)
     assert settings.ollama_context_window == 8192
@@ -186,7 +186,7 @@ def test_url_fields_have_no_bounds(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_descriptor_bounds_match_the_settings_bounds() -> None:
-    from omrg.config.user_config import INT_KEY_BOUNDS
+    from omrs.config.user_config import INT_KEY_BOUNDS
 
     spec = next(f for f in registry.describe_all()["ollama"].fields if f.kind == "int")
     assert (spec.minimum, spec.maximum) == INT_KEY_BOUNDS[spec.settings_field]
@@ -352,7 +352,7 @@ def test_server_text_fields_take_dotenv_and_lock(tmp_path: Path, field: str, var
 def test_server_text_fields_take_the_config_file_and_do_not_lock(
     folder: Path, tmp_path: Path, field: str
 ) -> None:
-    (folder / "omrg.jsonc").write_text(f'{{"{field}": "/from/file"}}', encoding="utf-8")
+    (folder / "omrs.jsonc").write_text(f'{{"{field}": "/from/file"}}', encoding="utf-8")
     settings = build(tmp_path)
     assert getattr(settings, field) == "/from/file"
     assert field in settings.config_file_fields
@@ -395,7 +395,7 @@ def test_idle_sleep_from_the_environment_locks(
 def test_idle_sleep_from_the_config_file_applies_and_does_not_lock(
     folder: Path, tmp_path: Path
 ) -> None:
-    (folder / "omrg.jsonc").write_text('{"llamacpp_idle_sleep_seconds": 900}', encoding="utf-8")
+    (folder / "omrs.jsonc").write_text('{"llamacpp_idle_sleep_seconds": 900}', encoding="utf-8")
     settings = build(tmp_path)
     assert getattr(settings, IDLE) == 900
     assert IDLE in settings.config_file_fields

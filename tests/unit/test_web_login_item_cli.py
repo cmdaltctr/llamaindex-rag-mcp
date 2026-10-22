@@ -1,4 +1,4 @@
-"""``omrg web install | uninstall | status | restart | open`` (add-web-login-item, group 4).
+"""``omrs web install | uninstall | status | restart | open`` (add-web-login-item, group 4).
 
 Every case runs on the fakes in ``test_web_login_item_support``: a
 temporary home, a fake ``launchctl`` runner, a fake health check and a
@@ -15,7 +15,7 @@ from typing import Any
 import pytest
 from tests.unit.test_web_login_item_support import Harness, flat, healthy
 
-from omrg.transports.cli import web_login_item as wl
+from omrs.transports.cli import web_login_item as wl
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def test_install_prints_the_plan(h: Harness) -> None:
     result = _install(h, "--yes")
 
     text = flat(result.output)
-    assert "com.omrg.web" in text
+    assert "com.omrs.web" in text
     assert f"{h.command} web --login-item" in text
     assert str(h.plist) in text
     assert str(h.error_log) in text
@@ -49,7 +49,7 @@ def test_install_writes_the_plist_and_loads_it(h: Harness) -> None:
 
     assert result.exit_code == 0, result.output
     data = plistlib.loads(h.plist.read_bytes())
-    assert data["Label"] == "com.omrg.web"
+    assert data["Label"] == "com.omrs.web"
     assert data["ProgramArguments"] == [str(h.command), "web", "--login-item"]
     assert h.launchctl_calls[-1] == ["launchctl", "bootstrap", f"gui/{h.uid}", str(h.plist)]
     assert h.verbs() == ["bootout", "bootstrap"]
@@ -63,15 +63,15 @@ def test_install_waits_for_the_app_and_reports_it(h: Harness) -> None:
     assert result.exit_code == 0, result.output
     assert h.now >= 5.0
     assert "2.5.0" in result.output
-    assert "omrg web open" in flat(result.output)
+    assert "omrs web open" in flat(result.output)
 
 
-def test_install_creates_the_omrg_folder_and_the_log_folder(h: Harness) -> None:
+def test_install_creates_the_omrs_folder_and_the_log_folder(h: Harness) -> None:
     h.serve(link_port=8765)
 
     _install(h, "--yes")
 
-    assert (h.home / ".omrg").is_dir()
+    assert (h.home / ".omrs").is_dir()
     assert h.error_log.parent.is_dir()
 
 
@@ -108,7 +108,7 @@ def test_force_replaces_an_existing_plist(h: Harness) -> None:
     result = _install(h, "--force", "--yes")
 
     assert result.exit_code == 0, result.output
-    assert plistlib.loads(h.plist.read_bytes())["Label"] == "com.omrg.web"
+    assert plistlib.loads(h.plist.read_bytes())["Label"] == "com.omrs.web"
     assert "bootstrap" in h.verbs()
 
 
@@ -117,11 +117,11 @@ def test_dry_run_writes_nothing_and_skips_launchctl(h: Harness) -> None:
 
     assert result.exit_code == 0, result.output
     assert not h.plist.exists()
-    assert not (h.home / ".omrg").exists()
+    assert not (h.home / ".omrs").exists()
     assert not (h.home / "Library").exists()
     assert h.launchctl_calls == []
     text = flat(result.output)
-    assert "com.omrg.web" in text
+    assert "com.omrs.web" in text
     assert str(h.plist) in text
 
 
@@ -146,7 +146,7 @@ def test_install_is_refused_outside_macos(h: Harness) -> None:
 
 
 def test_relative_command_path_is_refused(h: Harness) -> None:
-    result = h.invoke("install", "--command-path", "omrg", "--yes")
+    result = h.invoke("install", "--command-path", "omrs", "--yes")
 
     assert result.exit_code != 0
     assert "absolute" in flat(result.output)
@@ -183,7 +183,7 @@ def checkout(h: Harness, tmp_path: Path) -> Path:
     proj = tmp_path / "proj"
     (proj / ".git").mkdir(parents=True)
     (proj / ".venv" / "bin").mkdir(parents=True)
-    h.command = proj / ".venv" / "bin" / "omrg"
+    h.command = proj / ".venv" / "bin" / "omrs"
     h.command.write_text("#!/bin/sh\n", encoding="utf-8")
     return proj
 
@@ -237,7 +237,7 @@ def test_a_health_time_out_exits_non_zero_and_keeps_the_plist(h: Harness) -> Non
     assert h.now >= 60.0
     text = flat(result.output)
     assert str(h.error_log) in text
-    assert "omrg web status" in text
+    assert "omrs web status" in text
 
 
 def test_a_launchctl_failure_exits_non_zero(h: Harness) -> None:
@@ -261,10 +261,10 @@ def test_install_never_reads_or_creates_a_dotenv(h: Harness) -> None:
     result = _install(h, "--yes")
 
     assert (dotenv.read_text(encoding="utf-8"), dotenv.stat().st_mtime_ns) == before
-    assert not (h.home / ".omrg" / ".env").exists()
+    assert not (h.home / ".omrs" / ".env").exists()
     assert "sentinel-value" not in result.output
     assert "does not read" in flat(result.output)
-    assert "omrg config init" in flat(result.output)
+    assert "omrs config init" in flat(result.output)
 
 
 def test_dry_run_names_the_settings_file_and_suggests_config_init(h: Harness) -> None:
@@ -276,28 +276,28 @@ def test_dry_run_names_the_settings_file_and_suggests_config_init(h: Harness) ->
 
     text = flat(result.output)
     assert result.exit_code == 0, result.output
-    assert "~/.config/omrg/omrg.jsonc" in text
-    assert "~/.omrg/.env is optional" in text
+    assert "~/.config/omrs/omrs.jsonc" in text
+    assert "~/.omrs/.env is optional" in text
     assert "does not read" in text
     assert str(dotenv) in text
-    assert "omrg config init" in text
+    assert "omrs config init" in text
     assert "sentinel-value" not in result.output
     assert (dotenv.read_text(encoding="utf-8"), dotenv.stat().st_mtime_ns) == before
-    assert not (h.home / ".omrg").exists()
+    assert not (h.home / ".omrs").exists()
     assert not (h.home / ".config").exists()
 
 
-def test_dry_run_honours_omrg_config_dir(h: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_dry_run_honours_omrs_config_dir(h: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     folder = h.home.parent / "elsewhere"
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(folder))
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(folder))
 
     result = _install(h, "--dry-run")
 
-    assert str(folder / "omrg.jsonc") in flat(result.output)
+    assert str(folder / "omrs.jsonc") in flat(result.output)
 
 
 def test_install_does_not_report_success_for_a_server_it_did_not_start(h: Harness) -> None:
-    """A hand-run 'omrg web' answers health but writes no link file."""
+    """A hand-run 'omrs web' answers health but writes no link file."""
     h.serve()
 
     result = _install(h, "--yes")
@@ -330,12 +330,12 @@ def test_uninstall_unloads_the_agent_and_deletes_the_plist(h: Harness) -> None:
 
     assert result.exit_code == 0, result.output
     assert not h.plist.exists()
-    assert h.launchctl_calls == [["launchctl", "bootout", f"gui/{h.uid}/com.omrg.web"]]
+    assert h.launchctl_calls == [["launchctl", "bootout", f"gui/{h.uid}/com.omrs.web"]]
 
 
 def test_uninstall_keeps_the_workspace_and_the_logs(h: Harness) -> None:
     h.install_plist()
-    record = h.home / ".omrg" / "workspace" / "workspace.db"
+    record = h.home / ".omrs" / "workspace" / "workspace.db"
     record.parent.mkdir(parents=True)
     record.write_bytes(b"data")
     h.error_log.parent.mkdir(parents=True)
@@ -422,7 +422,7 @@ def test_status_says_a_restart_picks_up_a_newer_install(h: Harness) -> None:
     text = flat(result.output)
     assert "1.0.0" in text
     assert "1.1.0" in text
-    assert "omrg web restart" in text
+    assert "omrs web restart" in text
 
 
 def test_status_when_not_installed(h: Harness) -> None:
@@ -431,7 +431,7 @@ def test_status_when_not_installed(h: Harness) -> None:
     assert result.exit_code == 1
     text = flat(result.output).lower()
     assert "not installed" in text
-    assert "omrg web install" in text
+    assert "omrs web install" in text
     assert h.launchctl_calls == []
 
 
@@ -461,7 +461,7 @@ def test_status_json_is_one_object_with_the_facts(h: Harness) -> None:
     assert data["running_version"] == "1.0.0"
     assert data["installed_version"] == "1.2.0"
     assert data["port"] == 8765
-    assert data["workspace"] == str(h.home / ".omrg" / "workspace")
+    assert data["workspace"] == str(h.home / ".omrs" / "workspace")
     assert data["plist"] == str(h.plist)
     assert data["stderr_log"] == str(h.error_log)
     assert data["restart_needed"] is True
@@ -498,7 +498,7 @@ def test_status_falls_back_to_the_plist_port_and_then_the_default(h: Harness) ->
     h.install_real_plist(port=9000)
     h.serve()
     h.invoke("status")
-    (h.home / "Library" / "LaunchAgents" / "com.omrg.web.plist").unlink()
+    (h.home / "Library" / "LaunchAgents" / "com.omrs.web.plist").unlink()
     h.install_real_plist()
     h.invoke("status")
 
@@ -507,7 +507,7 @@ def test_status_falls_back_to_the_plist_port_and_then_the_default(h: Harness) ->
 
 def test_status_never_prints_the_sign_in_secret(h: Harness) -> None:
     h.install_real_plist()
-    h.write_link(fragment="omrg_bs_TOPSECRET")
+    h.write_link(fragment="omrs_bs_TOPSECRET")
     h.serve()
 
     plain = h.invoke("status")
@@ -544,8 +544,8 @@ def test_restart_stops_with_sigterm_then_starts_without_dash_k(h: Harness) -> No
 
     assert result.exit_code == 0, result.output
     assert [c for c in h.launchctl_calls if c[1] != "print"] == [
-        ["launchctl", "kill", "SIGTERM", f"gui/{h.uid}/com.omrg.web"],
-        ["launchctl", "kickstart", f"gui/{h.uid}/com.omrg.web"],
+        ["launchctl", "kill", "SIGTERM", f"gui/{h.uid}/com.omrs.web"],
+        ["launchctl", "kickstart", f"gui/{h.uid}/com.omrs.web"],
     ]
     assert "1.1.0" in result.output
 
@@ -647,7 +647,7 @@ def test_restart_stops_when_the_old_app_does_not_stop(h: Harness) -> None:
     assert result.exit_code != 0
     assert h.changes() == ["kill"]
     assert h.now >= 15.0
-    assert "omrg web status" in flat(result.output)
+    assert "omrs web status" in flat(result.output)
 
 
 def test_restart_starts_an_app_that_is_not_running(h: Harness) -> None:
@@ -771,7 +771,7 @@ def test_restart_fails_without_kickstart_when_the_old_process_never_ends(h: Harn
     assert result.exit_code != 0
     assert h.changes() == ["kill"]
     assert h.now >= wl.STOP_TIMEOUT
-    assert "omrg web status" in flat(result.output)
+    assert "omrs web status" in flat(result.output)
 
 
 def test_restart_only_kills_and_kickstarts_when_nothing_is_running(h: Harness) -> None:
@@ -807,7 +807,7 @@ def test_restart_treats_the_same_process_id_as_not_restarted_although_health_bli
 
     assert result.exit_code != 0
     assert h.changes() == ["kill"]
-    assert "omrg web status" in flat(result.output)
+    assert "omrs web status" in flat(result.output)
 
 
 def test_restart_waits_for_health_to_stop_when_the_process_id_is_unreadable(h: Harness) -> None:
@@ -855,7 +855,7 @@ def test_restart_when_not_installed(h: Harness) -> None:
 
     assert result.exit_code != 0
     assert "not installed" in flat(result.output).lower()
-    assert "omrg web install" in flat(result.output)
+    assert "omrs web install" in flat(result.output)
     assert h.launchctl_calls == []
 
 
@@ -864,26 +864,26 @@ def test_restart_when_not_installed(h: Harness) -> None:
 
 def test_open_opens_the_link_and_hides_the_secret(h: Harness) -> None:
     h.install_real_plist()
-    h.write_link(fragment="omrg_bs_TOPSECRET")
+    h.write_link(fragment="omrs_bs_TOPSECRET")
     h.serve()
 
     result = h.invoke("open")
 
     assert result.exit_code == 0, result.output
-    assert h.opened == ["http://127.0.0.1:8765/#bootstrap=omrg_bs_TOPSECRET"]
+    assert h.opened == ["http://127.0.0.1:8765/#bootstrap=omrs_bs_TOPSECRET"]
     assert "TOPSECRET" not in result.output
     assert "http://127.0.0.1:8765/" in result.output
 
 
 def test_open_print_shows_the_full_link_and_opens_nothing(h: Harness) -> None:
     h.install_real_plist()
-    h.write_link(fragment="omrg_bs_TOPSECRET")
+    h.write_link(fragment="omrs_bs_TOPSECRET")
     h.serve()
 
     result = h.invoke("open", "--print")
 
     assert result.exit_code == 0, result.output
-    assert "http://127.0.0.1:8765/#bootstrap=omrg_bs_TOPSECRET" in flat(result.output)
+    assert "http://127.0.0.1:8765/#bootstrap=omrs_bs_TOPSECRET" in flat(result.output)
     assert h.opened == []
 
 
@@ -917,7 +917,7 @@ def test_open_without_a_link_file_says_the_login_item_is_not_running(h: Harness)
 
     assert result.exit_code != 0
     assert "not running" in flat(result.output)
-    assert "omrg web status" in flat(result.output)
+    assert "omrs web status" in flat(result.output)
     assert h.opened == []
 
 
@@ -942,7 +942,7 @@ def test_open_when_not_installed(h: Harness) -> None:
 
 def test_open_reports_a_browser_that_does_not_open(h: Harness) -> None:
     h.install_real_plist()
-    h.write_link(fragment="omrg_bs_TOPSECRET")
+    h.write_link(fragment="omrs_bs_TOPSECRET")
     h.serve()
     h.open_rc = 1
 

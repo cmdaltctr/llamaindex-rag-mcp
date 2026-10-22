@@ -10,7 +10,7 @@ import type { ApiClient, CallOptions } from "./client";
 export type PowerAction = "restart" | "off";
 
 export interface PowerState {
-  /** True when the running app is the login item; false for a foreground `omrg web`. */
+  /** True when the running app is the login item; false for a foreground `omrs web`. */
   managed: boolean;
 }
 

@@ -4,7 +4,7 @@ The web workspace turns hybrid retrieval on and off with a pure draft
 transform (``web/src/studio/hybrid.ts``). It reads the steps and connections
 to add from ``web/src/studio/hybridShape.json``. These tests compare that file
 with the difference between the hybrid and the plain template graphs in
-``omrg.pipeline_templates``. When a test fails, update the JSON file so that
+``omrs.pipeline_templates``. When a test fails, update the JSON file so that
 it matches the template (studio-full-settings, design D1).
 """
 
@@ -16,7 +16,7 @@ from typing import Any
 
 import pytest
 
-from omrg.pipeline_templates import _answer_graph, _search_graph
+from omrs.pipeline_templates import _answer_graph, _search_graph
 
 _SHAPE_FILE = Path(__file__).resolve().parents[2] / "web" / "src" / "studio" / "hybridShape.json"
 

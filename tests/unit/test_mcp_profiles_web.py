@@ -20,8 +20,8 @@ from tests.unit.test_mcp_stdio_profiles_support import (
 )
 
 from conftest import direct_ctx
-from omrg.core.vectordb.identity import IDENTITY_MODEL_KEY, IDENTITY_PROVIDER_KEY
-from omrg.transports.mcp import change_collection_profile, list_profiles
+from omrs.core.vectordb.identity import IDENTITY_MODEL_KEY, IDENTITY_PROVIDER_KEY
+from omrs.transports.mcp import change_collection_profile, list_profiles
 
 
 @pytest.fixture
@@ -111,7 +111,7 @@ async def test_a_built_in_profile_is_refused_for_a_collection_made_with_another_
     web: Any, confirm: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     env, server, engine = web
-    # On `omrg web` the service and the endpoint share one Engine and store.
+    # On `omrs web` the service and the endpoint share one Engine and store.
     monkeypatch.setattr(env.service.embedding, "_store", lambda **_: engine.test_store)
     engine.test_store.update_collection_metadata(
         COLLECTION, {IDENTITY_PROVIDER_KEY: "other-provider", IDENTITY_MODEL_KEY: "other-model"}

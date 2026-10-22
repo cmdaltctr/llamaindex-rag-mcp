@@ -1,7 +1,7 @@
 /**
  * Typed client for the graph and run routes of the local `/v1` API.
  *
- * Shapes follow `src/omrg/transports/api/routes/graphs.py` and
+ * Shapes follow `src/omrs/transports/api/routes/graphs.py` and
  * `runs.py`. Every function takes the `ApiClient` first. An error
  * envelope with `issues` becomes `PipelineIssuesError`, so the canvas can mark
  * nodes and ports.

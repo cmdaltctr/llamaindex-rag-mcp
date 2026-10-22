@@ -1,6 +1,6 @@
 # dots.mocr licence notes
 
-This file records the terms of the dots.mocr model licence that affect OMRG.
+This file records the terms of the dots.mocr model licence that affect OMRS.
 It is a record of terms. It is not legal advice.
 
 - **Model:** `rednote-hilab/dots.mocr`, revision `e539fbb52280393adc081b289ec597430a0f9031`.
@@ -14,7 +14,7 @@ It is a record of terms. It is not legal advice.
 ## Why provisioning asks for acceptance
 
 `python3 ocr-workers/provision.py dots-mocr` stops before it installs anything unless the
-operator adds `--accept-model-licence`. OMRG downloads the weights at provisioning time and
+operator adds `--accept-model-licence`. OMRS downloads the weights at provisioning time and
 does not redistribute them. Commercial use and on-premises deployment are allowed (clauses
 2.1 and 3.2).
 

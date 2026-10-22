@@ -38,7 +38,7 @@ from pathlib import Path
 
 from extra_pages import EXTRA_PAGES
 
-from omrg.core.ingestion.normalise import NORMALISER_VERSION, normalise_reader_text
+from omrs.core.ingestion.normalise import NORMALISER_VERSION, normalise_reader_text
 
 #: Set by --raw: render engine output without the normaliser.
 NORMALISE = True

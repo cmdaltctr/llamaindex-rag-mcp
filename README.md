@@ -1,10 +1,10 @@
-# omrg — a standalone retrieval framework
+# omrs — a standalone retrieval framework
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Requires llama.cpp, Ollama, or OpenRouter](https://img.shields.io/badge/requires-llama.cpp_or_Ollama_or_OpenRouter-000000)](https://github.com/ggml-org/llama.cpp)
 
-`omrg` is a local-first retrieval framework. Point it at your files — PDFs,
+`omrs` is a local-first retrieval framework. Point it at your files — PDFs,
 Word docs, notes, papers, source code — and search them by meaning rather
 than keywords.
 
@@ -29,7 +29,7 @@ relevant passages.
 ## Library usage
 
 ```python
-from omrg import Engine
+from omrs import Engine
 
 engine = Engine.from_environment()
 engine.ingest("./docs", collection_name="docs")
@@ -57,8 +57,8 @@ settings. You pick per collection.
 | Search           | embeddings only                       | embeddings + keyword (BM25)           |
 
 ```bash
-omrg set-profile -c my_papers -p documents
-omrg set-profile -c my_code   -p codebase
+omrs set-profile -c my_papers -p documents
+omrs set-profile -c my_code   -p codebase
 ```
 
 Both collections then behave correctly in the same running engine. See
@@ -70,7 +70,7 @@ Both collections then behave correctly in the same running engine. See
 
 You need [uv](https://docs.astral.sh/uv/) and one of
 [llama.cpp](https://github.com/ggml-org/llama.cpp) (default),
-[Ollama](https://ollama.com), or an [OpenRouter](https://openrouter.ai) key. `omrg web` can also start and stop its own llama.cpp chat server and set the Ollama context window (see [Configuration](docs/guides/configuration.md#local-llamacpp-server)).
+[Ollama](https://ollama.com), or an [OpenRouter](https://openrouter.ai) key. `omrs web` can also start and stop its own llama.cpp chat server and set the Ollama context window (see [Configuration](docs/guides/configuration.md#local-llamacpp-server)).
 
 ```bash
 cp .env.example .env      # then edit it — see below
@@ -80,7 +80,7 @@ uv sync                   # the llama.cpp backend needs no extra
 llama-server -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 --port 8080 --embeddings &
 llama-server -hf Qwen/Qwen3-0.6B-GGUF:Q8_0 --port 8081 &
 
-uv run omrg            # Ctrl-C to stop
+uv run omrs            # Ctrl-C to stop
 ```
 
 No output means it is working — it waits silently for MCP messages on stdin.
@@ -102,7 +102,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 # plus any API keys
 ```
 
-Tuning belongs in `src/omrg/config/defaults.yaml`; per-collection behaviour
+Tuning belongs in `src/omrs/config/defaults.yaml`; per-collection behaviour
 belongs in a profile. Putting tuning in `.env` silently overrides your
 profiles — see [Configuration](docs/guides/configuration.md) for the
 precedence rules.
@@ -117,7 +117,7 @@ checkout:
 uv sync --extra chroma
 ```
 
-For an installed package, use `pip install "omrg[chroma]"`. Then set
+For an installed package, use `pip install "omrs[chroma]"`. Then set
 `VECTOR_STORE=chroma`. CVE-2026-45829 (PYSEC-2026-311) remains active for
 this optional dependency. Do not expose Chroma's Python FastAPI server
 through this project.
@@ -154,28 +154,28 @@ Details: [MCP tools reference](docs/guides/mcp-tools.md).
 
 ### CLI
 
-The same `omrg` command is both the MCP server and a terminal tool.
+The same `omrs` command is both the MCP server and a terminal tool.
 
 | Command                    | What it does                          |
 | -------------------------- | ------------------------------------- |
-| `omrg`                  | Start the MCP server                  |
-| `omrg ingest <path>`    | Index a file or directory             |
-| `omrg search <query>`   | Search from the terminal              |
-| `omrg list`             | List indexed documents                |
-| `omrg list-collections` | List all collections                  |
-| `omrg watch <dir>`      | Auto-ingest new and changed files     |
-| `omrg install-login-watcher` | Install a macOS login watcher for a folder |
-| `omrg delete`           | Delete documents or drop a collection |
-| `omrg set-profile`      | Bind a collection to a profile        |
-| `omrg benchmark`        | Benchmark embedding throughput        |
-| `omrg web`              | Start the local web workspace (`web` extra) |
+| `omrs`                  | Start the MCP server                  |
+| `omrs ingest <path>`    | Index a file or directory             |
+| `omrs search <query>`   | Search from the terminal              |
+| `omrs list`             | List indexed documents                |
+| `omrs list-collections` | List all collections                  |
+| `omrs watch <dir>`      | Auto-ingest new and changed files     |
+| `omrs install-login-watcher` | Install a macOS login watcher for a folder |
+| `omrs delete`           | Delete documents or drop a collection |
+| `omrs set-profile`      | Bind a collection to a profile        |
+| `omrs benchmark`        | Benchmark embedding throughput        |
+| `omrs web`              | Start the local web workspace (`web` extra) |
 
 Every flag and example: [CLI reference](docs/guides/cli-reference.md).
 
 ### Watcher
 
-`omrg watch` monitors a directory and auto-ingests new and changed files.
-`omrg install-login-watcher` installs a macOS launch agent so the watcher
+`omrs watch` monitors a directory and auto-ingests new and changed files.
+`omrs install-login-watcher` installs a macOS launch agent so the watcher
 starts at login. Both delegate to the same `Engine` as the other transports.
 
 ---
@@ -196,7 +196,7 @@ it for exact identifiers, error codes, product names, citations. On by
 default in the `codebase` profile.
 
 ```bash
-uv run omrg search "What fixes MCP-1138?" --hybrid
+uv run omrs search "What fixes MCP-1138?" --hybrid
 ```
 
 **Ollama instead of llama.cpp** — simpler model management.
@@ -219,7 +219,7 @@ EMBED_MODEL=qwen3-embedding:0.6b
 uv sync
 ```
 
-Chat answers can also use any OpenAI-compatible server (OpenAI, Together, vLLM, LM Studio) with no extra, or Anthropic with `uv sync --extra anthropic`. Set them in `omrg web` under Settings > Providers, or in the read-only user config folder (`~/.config/omrg/omrg.jsonc` and `secrets/<provider>.key`, also read by the CLI and the stdio server; see [Configuration](docs/guides/configuration.md#user-config-folder)). See also [Providers](docs/guides/providers.md).
+Chat answers can also use any OpenAI-compatible server (OpenAI, Together, vLLM, LM Studio) with no extra, or Anthropic with `uv sync --extra anthropic`. Set them in `omrs web` under Settings > Providers, or in the read-only user config folder (`~/.config/omrs/omrs.jsonc` and `secrets/<provider>.key`, also read by the CLI and the stdio server; see [Configuration](docs/guides/configuration.md#user-config-folder)). See also [Providers](docs/guides/providers.md).
 
 ```bash
 # .env
@@ -255,7 +255,7 @@ Full setup for each: [Providers](docs/guides/providers.md).
 | [Metadata extraction](docs/guides/metadata-extraction.md) | Auto-categorisation and filtering                |
 | [Reranker](docs/guides/reranker.md)                       | When reranking helps, and when it does not       |
 | [Testing](docs/guides/testing.md)                         | Running the suite, writing tests                 |
-| [Web workspace](docs/guides/web-workspace.md)             | `omrg web`: launch, sign-in, file grants, jobs   |
+| [Web workspace](docs/guides/web-workspace.md)             | `omrs web`: launch, sign-in, file grants, jobs   |
 | [Notebooks](docs/guides/notebooks.md)                     | Optional marimo plugin, trust, starter notebook  |
 | [Decision records](docs/adr/)                             | Why things are the way they are                  |
 | [Contributing](CONTRIBUTING.md)                           | Workflow and conventions                         |
@@ -270,9 +270,9 @@ broke three things. If you are coming from v1:
 - **Settings are renamed.** `TOP_K` is now `RETRIEVAL__TOP_K`, `CHUNK_SIZE`
   is `CHUNKING__CHUNK_SIZE`, and so on. The engine refuses to start on an
   old name and tells you the replacement rather than silently ignoring it.
-- **Old import paths are gone.** `omrg.server`, `omrg.cli`,
-  `omrg.ingestion` and the rest now live under `omrg.core.*`,
-  `omrg.transports.*` and `omrg.integrations.*`.
+- **Old import paths are gone.** `omrs.server`, `omrs.cli`,
+  `omrs.ingestion` and the rest now live under `omrs.core.*`,
+  `omrs.transports.*` and `omrs.integrations.*`.
 - **Custom profile YAML needs converting** to nested blocks.
 
 Your ChromaDB collections, CLI commands and MCP tool signatures are

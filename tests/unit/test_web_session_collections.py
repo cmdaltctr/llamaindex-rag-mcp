@@ -93,7 +93,7 @@ def test_collections_name_the_configured_vector_store(
     label: str,
 ) -> None:
     """Spec: local-web-workspace, 'The collection list names the vector database'."""
-    monkeypatch.setattr("omrg.compose.configured_vector_store", lambda: adapter)
+    monkeypatch.setattr("omrs.compose.configured_vector_store", lambda: adapter)
     store = lance_store(tmp_path)
     seed(store, "notes", str(tmp_path / "b.md"), 1)
     app, policy = build_app(tmp_path, make_engine(store, effective_settings()))
@@ -113,7 +113,7 @@ def test_store_field_carries_no_cloud_details(
     monkeypatch.setenv("CHROMA_CLOUD_TENANT", "tenant-secret-xyz")
     monkeypatch.setenv("CHROMA_CLOUD_DATABASE", "database-secret-xyz")
     monkeypatch.setenv("CHROMA_CLOUD_API_KEY", "ck-secret-key-xyz")
-    monkeypatch.setattr("omrg.compose.configured_vector_store", lambda: "chroma")
+    monkeypatch.setattr("omrs.compose.configured_vector_store", lambda: "chroma")
     store = lance_store(tmp_path)
     seed(store, "notes", str(tmp_path / "b.md"), 1)
     app, policy = build_app(tmp_path, make_engine(store, effective_settings()))

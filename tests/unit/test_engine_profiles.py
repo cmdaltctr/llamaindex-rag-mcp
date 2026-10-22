@@ -24,8 +24,8 @@ from tests.unit.test_engine_profiles_support import (
     tagged_engine,
 )
 
-from omrg.core.retrieval import registry
-from omrg.engine_profiles import ProfileRunError
+from omrs.core.retrieval import registry
+from omrs.engine_profiles import ProfileRunError
 
 _CASES = harness.load_cases()
 _REQUEST_KEYS = ("top_k", "similarity_threshold", "rerank", "fetch_k", "metadata_filter")

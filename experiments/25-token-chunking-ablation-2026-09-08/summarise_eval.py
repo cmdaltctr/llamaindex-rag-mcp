@@ -249,7 +249,7 @@ def main() -> None:
             "qrels_sha256": qrels_sha,
             "latency_note": "query latency includes network round-trip to OpenRouter; "
             "measured around pipeline.search exactly as exp 22 did (no warm-up pass)",
-            "index_note": "omrg production ingestion with the model-token-aware "
+            "index_note": "omrs production ingestion with the model-token-aware "
             "Markdown chunker (ADR-063); relevance is path-level",
             "chunker_tokenizer": tokenizer,
             "preflight_assertions": {

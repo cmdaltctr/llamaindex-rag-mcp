@@ -22,14 +22,14 @@ from typing import Any
 
 import pytest
 
-from omrg.capabilities import probe_ocr_worker, reset_ocr_fingerprint_cache
-from omrg.core.ingestion import source_state
-from omrg.core.ingestion.ocr_identity import maths_routing_payload, route_fingerprints
-from omrg.core.ingestion.pipeline import ingest_path_async
-from omrg.integrations.ocr_worker.fingerprint import UNAVAILABLE_OCR_WORKER_FINGERPRINT
-from omrg.integrations.ocr_worker.managed import ManagedOcrClient
-from omrg.integrations.ocr_worker.routes import OcrRoutes
-from omrg.integrations.pdf import maths_pages
+from omrs.capabilities import probe_ocr_worker, reset_ocr_fingerprint_cache
+from omrs.core.ingestion import source_state
+from omrs.core.ingestion.ocr_identity import maths_routing_payload, route_fingerprints
+from omrs.core.ingestion.pipeline import ingest_path_async
+from omrs.integrations.ocr_worker.fingerprint import UNAVAILABLE_OCR_WORKER_FINGERPRINT
+from omrs.integrations.ocr_worker.managed import ManagedOcrClient
+from omrs.integrations.ocr_worker.routes import OcrRoutes
+from omrs.integrations.pdf import maths_pages
 
 pytest.importorskip("pdf_inspector", reason="pdf-inspector is a base dependency (ADR-050)")
 

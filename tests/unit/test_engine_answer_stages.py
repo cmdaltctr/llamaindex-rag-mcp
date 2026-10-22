@@ -29,8 +29,8 @@ from tests.unit.test_engine_profiles_support import (
     slot_graph,
 )
 
-from omrg.core.answer.progress import AnswerStage
-from omrg.engine_answer import ClientCompletion
+from omrs.core.answer.progress import AnswerStage
+from omrs.engine_answer import ClientCompletion
 
 S, W, C, V = (
     AnswerStage.SEARCHING,
@@ -156,7 +156,7 @@ async def test_graph_without_cite_step_lists_only_what_ran(
 async def test_several_retrieval_steps_report_searching_once(
     tmp_path: Path, effective_settings: Any
 ) -> None:
-    from omrg.pipeline_templates import _answer_graph
+    from omrs.pipeline_templates import _answer_graph
 
     graph = _answer_graph(None, hybrid=True, rerank=False)
     graph["profile"] = "documents"

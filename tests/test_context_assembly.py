@@ -16,7 +16,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Any
 
-from omrg.core.retrieval.assembly import (
+from omrs.core.retrieval.assembly import (
     ASSEMBLY_INTERNAL_FIELDS,
     MERGED_CHUNK_IDS_KEY,
     assemble,
@@ -569,7 +569,7 @@ class TestAssemblyObservability:
 
     def test_internal_fields_are_listed_for_stripping(self) -> None:
         """The strip helper removes every assembly-internal field."""
-        from omrg.core.retrieval.pipeline import _strip_internal_result_fields
+        from omrs.core.retrieval.pipeline import _strip_internal_result_fields
 
         row = _row("alpha", 0)
         row.update(dict.fromkeys(ASSEMBLY_INTERNAL_FIELDS, True))
@@ -637,8 +637,8 @@ def _run_search(
     chunks: list[tuple[str, int, str, float]] | None = None,
 ) -> list[dict[str, Any]]:
     """Run search() over the stub store with mocked embeddings."""
-    from omrg.core.retrieval import search
-    from omrg.core.settings import EffectiveSettings
+    from omrs.core.retrieval import search
+    from omrs.core.settings import EffectiveSettings
 
     return search(
         "unique words",
@@ -762,8 +762,8 @@ class TestCitationsRemainVerifiable:
 
     def test_merged_chunk_ids_resolve_to_exactly_one_stored_chunk(self) -> None:
         """Scenario: constituent chunk_id values are usable metadata filters."""
-        from omrg.core.vectordb import get_default_store
-        from omrg.core.vectordb.identity import EmbeddingIdentity
+        from omrs.core.vectordb import get_default_store
+        from omrs.core.vectordb.identity import EmbeddingIdentity
 
         store = get_default_store()
         collection = "assembly_citations"

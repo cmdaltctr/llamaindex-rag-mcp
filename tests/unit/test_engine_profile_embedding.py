@@ -15,8 +15,8 @@ from tests.unit.test_engine_pipelines_support import (
     chunks,
 )
 
-from omrg.core.vectordb.identity import EmbeddingIdentity
-from omrg.engine_embedders import EngineEmbedders
+from omrs.core.vectordb.identity import EmbeddingIdentity
+from omrs.engine_embedders import EngineEmbedders
 
 HOST = EmbeddingIdentity(provider="ollama", model="model-a")
 CHOICE_B = EmbeddingIdentity(provider="llamacpp", model="model-b")
@@ -111,7 +111,7 @@ def test_ingest_writes_with_the_profile_identity(effective_settings, monkeypatch
         seen.update(kwargs)
         return {"status": "ok"}
 
-    monkeypatch.setattr("omrg.core.ingestion.pipeline.ingest_path_async", fake_ingest)
+    monkeypatch.setattr("omrs.core.ingestion.pipeline.ingest_path_async", fake_ingest)
     asyncio.run(engine.ingest(str(tmp_path), collection_name="papers"))
 
     assert seen["embed_model"] is built[0]

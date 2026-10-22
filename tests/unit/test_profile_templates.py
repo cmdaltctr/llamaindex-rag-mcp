@@ -5,9 +5,9 @@ from __future__ import annotations
 import pytest
 from tests.unit.test_engine_pipelines_support import build_engine
 
-from omrg.compose_templates import profile_templates
-from omrg.core.pipelines import AdmissionSnapshot, PreflightReport
-from omrg.core.profiles.resolver import ProfileResolver
+from omrs.compose_templates import profile_templates
+from omrs.core.pipelines import AdmissionSnapshot, PreflightReport
+from omrs.core.profiles.resolver import ProfileResolver
 
 SLOTS = ("ingest", "search", "answer")
 _INPUTS = {"ingest": {"path": "."}, "search": {"query": "q"}, "answer": {"query": "q"}}

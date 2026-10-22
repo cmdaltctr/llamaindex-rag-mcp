@@ -3,7 +3,7 @@
 OpenSpec change ``add-local-web-pipeline-workspace``, task 1.3 (design D4,
 D7, D10; spec ``architecture-boundary-enforcement``). A forbidden contract
 that names a module the code never imports passes for the wrong reason, so
-these tests build a throwaway ``omrg`` tree, add one deliberate violation for
+these tests build a throwaway ``omrs`` tree, add one deliberate violation for
 every forbidden module, and run ``lint-imports`` against the contract copied
 from ``pyproject.toml``. The contract must be broken by each violation and
 kept by the same tree without them.
@@ -25,10 +25,10 @@ _LINT_IMPORTS = Path(sys.executable).parent / "lint-imports"
 # core-wide contracts use a domain adapter location, because graph adapters
 # live in their owning domain packages (design D4).
 _NEW_CONTRACTS = {
-    "pipeline-runner-independent-of-domains": "omrg.core.pipelines.violation",
-    "workspace-services-independent-of-domains-and-web": "omrg.core.workspace.violation",
-    "core-never-imports-transports": "omrg.core.retrieval.graph_adapter",
-    "core-free-of-web-notebook-and-sqlite-runtimes": "omrg.core.retrieval.graph_adapter",
+    "pipeline-runner-independent-of-domains": "omrs.core.pipelines.violation",
+    "workspace-services-independent-of-domains-and-web": "omrs.core.workspace.violation",
+    "core-never-imports-transports": "omrs.core.retrieval.graph_adapter",
+    "core-free-of-web-notebook-and-sqlite-runtimes": "omrs.core.retrieval.graph_adapter",
 }
 
 _WEB_AND_NOTEBOOK = {"fastapi", "starlette", "uvicorn", "marimo"}
@@ -37,31 +37,31 @@ _WEB_AND_NOTEBOOK = {"fastapi", "starlette", "uvicorn", "marimo"}
 # A contract may forbid more; dropping any of these fails the test.
 _REQUIRED_FORBIDDEN = {
     "pipeline-runner-independent-of-domains": {
-        "omrg.core.ingestion",
-        "omrg.core.retrieval",
-        "omrg.core.answer",
-        "omrg.core.providers",
-        "omrg.transports",
+        "omrs.core.ingestion",
+        "omrs.core.retrieval",
+        "omrs.core.answer",
+        "omrs.core.providers",
+        "omrs.transports",
         "subprocess",
         "sqlite3",
     }
     | _WEB_AND_NOTEBOOK,
     "workspace-services-independent-of-domains-and-web": {
-        "omrg.core.ingestion",
-        "omrg.core.retrieval",
-        "omrg.core.answer",
-        "omrg.transports",
+        "omrs.core.ingestion",
+        "omrs.core.retrieval",
+        "omrs.core.answer",
+        "omrs.transports",
     }
     | _WEB_AND_NOTEBOOK,
-    "core-never-imports-transports": {"omrg.transports"},
+    "core-never-imports-transports": {"omrs.transports"},
     "core-free-of-web-notebook-and-sqlite-runtimes": _WEB_AND_NOTEBOOK | {"sqlite3"},
 }
 
 _REQUIRED_SOURCES = {
-    "pipeline-runner-independent-of-domains": {"omrg.core.pipelines"},
-    "workspace-services-independent-of-domains-and-web": {"omrg.core.workspace"},
-    "core-never-imports-transports": {"omrg.core"},
-    "core-free-of-web-notebook-and-sqlite-runtimes": {"omrg.core"},
+    "pipeline-runner-independent-of-domains": {"omrs.core.pipelines"},
+    "workspace-services-independent-of-domains-and-web": {"omrs.core.workspace"},
+    "core-never-imports-transports": {"omrs.core"},
+    "core-free-of-web-notebook-and-sqlite-runtimes": {"omrs.core"},
 }
 
 
@@ -87,7 +87,7 @@ def _write_config(path: Path, contract: dict) -> None:
     """Write ``contract`` alone as an INI import-linter configuration."""
     lines = [
         "[importlinter]",
-        "root_package = omrg",
+        "root_package = omrs",
         "include_external_packages = True",
         "",
         "[importlinter:contract:under-test]",
@@ -104,7 +104,7 @@ def _lint(tmp_path: Path, contract: dict, violator: str, *, violate: bool):
     """Build a minimal tree for ``contract`` and run ``lint-imports`` on it."""
     src = tmp_path / "src"
     for module in contract["source_modules"] + contract["forbidden_modules"]:
-        if module.startswith("omrg"):
+        if module.startswith("omrs"):
             _write_package(src, module)
     body = ""
     if violate:
@@ -139,8 +139,8 @@ def test_contract_is_declared_strictly(name: str) -> None:
 def test_business_contract_covers_new_packages() -> None:
     """The provider/transport business contract names both new packages."""
     sources = _contracts()["core-business-avoids-providers-transports"]["source_modules"]
-    assert "omrg.core.pipelines" in sources
-    assert "omrg.core.workspace" in sources
+    assert "omrs.core.pipelines" in sources
+    assert "omrs.core.workspace" in sources
 
 
 @pytest.mark.skipif(not _LINT_IMPORTS.exists(), reason="import-linter not installed")

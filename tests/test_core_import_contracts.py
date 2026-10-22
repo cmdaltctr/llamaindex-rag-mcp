@@ -2,9 +2,9 @@
 
 Spec ``architecture-boundary-enforcement`` (add-local-web-pipeline-workspace,
 verification gaps A11 and B): core modules must not import top-level
-``omrg`` modules, ingestion and retrieval must not import one another, and
+``omrs`` modules, ingestion and retrieval must not import one another, and
 core must not import a transport framework. Each test copies the real
-``src/omrg`` tree, runs ``lint-imports`` with one contract taken from
+``src/omrs`` tree, runs ``lint-imports`` with one contract taken from
 ``pyproject.toml``, and then adds one forbidden import to the copy.
 """
 
@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 _REPO = Path(__file__).resolve().parent.parent
-_SRC = _REPO / "src" / "omrg"
+_SRC = _REPO / "src" / "omrs"
 _LINT_IMPORTS = Path(sys.executable).parent / "lint-imports"
 
 _TOP_LEVEL = "core-never-imports-top-level-modules"
@@ -28,8 +28,8 @@ _DOMAINS_REVERSE = "retrieval-stays-independent-of-ingestion"
 _FRAMEWORKS = "core-free-of-transport-frameworks"
 
 # The one sanctioned edge: an operation-owned OCR client under an enabled
-# fallback (core/ingestion/pipeline.py imports omrg.capabilities lazily).
-_SANCTIONED_TOP_LEVEL_EDGE = "omrg.core.ingestion.pipeline -> omrg.capabilities"
+# fallback (core/ingestion/pipeline.py imports omrs.capabilities lazily).
+_SANCTIONED_TOP_LEVEL_EDGE = "omrs.core.ingestion.pipeline -> omrs.capabilities"
 
 
 def _contracts() -> dict[str, dict]:
@@ -40,15 +40,15 @@ def _contracts() -> dict[str, dict]:
 
 
 def _top_level_modules() -> set[str]:
-    """Return the dotted names of the top-level ``src/omrg/*.py`` modules."""
-    return {f"omrg.{path.stem}" for path in _SRC.glob("*.py") if path.stem != "__init__"}
+    """Return the dotted names of the top-level ``src/omrs/*.py`` modules."""
+    return {f"omrs.{path.stem}" for path in _SRC.glob("*.py") if path.stem != "__init__"}
 
 
 def _write_config(path: Path, contract: dict) -> None:
     """Write ``contract`` alone as an INI import-linter configuration."""
     lines = [
         "[importlinter]",
-        "root_package = omrg",
+        "root_package = omrs",
         "include_external_packages = True",
         "",
         "[importlinter:contract:under-test]",
@@ -70,9 +70,9 @@ def _write_config(path: Path, contract: dict) -> None:
 def _lint(tmp_path: Path, contract: dict, *, append: dict[str, str] | None = None):
     """Copy the source tree, append violations, and lint one contract."""
     src = tmp_path / "src"
-    shutil.copytree(_SRC, src / "omrg", ignore=shutil.ignore_patterns("__pycache__", "static"))
+    shutil.copytree(_SRC, src / "omrs", ignore=shutil.ignore_patterns("__pycache__", "static"))
     for relative, line in (append or {}).items():
-        target = src / "omrg" / relative
+        target = src / "omrs" / relative
         target.write_text(target.read_text(encoding="utf-8") + f"\n{line}\n", encoding="utf-8")
     config = tmp_path / ".importlinter"
     _write_config(config, contract)
@@ -91,7 +91,7 @@ def test_top_level_contract_forbids_every_top_level_module() -> None:
     """A new top-level module is forbidden to core without a contract edit."""
     contract = _contracts()[_TOP_LEVEL]
     assert contract["type"] == "forbidden"
-    assert contract["source_modules"] == ["omrg.core"]
+    assert contract["source_modules"] == ["omrs.core"]
     assert set(contract["forbidden_modules"]) == _top_level_modules()
     assert contract["ignore_imports"] == [_SANCTIONED_TOP_LEVEL_EDGE]
     assert contract["unmatched_ignore_imports_alerting"] == "error"
@@ -100,12 +100,12 @@ def test_top_level_contract_forbids_every_top_level_module() -> None:
 def test_framework_and_domain_contracts_are_strict() -> None:
     """Neither contract may silence an edge."""
     frameworks = _contracts()[_FRAMEWORKS]
-    assert frameworks["source_modules"] == ["omrg.core"]
+    assert frameworks["source_modules"] == ["omrs.core"]
     assert {"mcp", "typer", "click"} <= set(frameworks["forbidden_modules"])
     assert not frameworks.get("ignore_imports")
     pairs = {
-        _DOMAINS: ("omrg.core.ingestion", "omrg.core.retrieval"),
-        _DOMAINS_REVERSE: ("omrg.core.retrieval", "omrg.core.ingestion"),
+        _DOMAINS: ("omrs.core.ingestion", "omrs.core.retrieval"),
+        _DOMAINS_REVERSE: ("omrs.core.retrieval", "omrs.core.ingestion"),
     }
     for name, (source, forbidden) in pairs.items():
         contract = _contracts()[name]
@@ -125,28 +125,28 @@ def test_contract_is_kept_on_the_real_tree(tmp_path: Path, name: str) -> None:
     [
         (
             _TOP_LEVEL,
-            {"core/ingestion/sources.py": "import omrg.engine  # violation"},
-            "omrg.core.ingestion.sources -> omrg.engine",
+            {"core/ingestion/sources.py": "import omrs.engine  # violation"},
+            "omrs.core.ingestion.sources -> omrs.engine",
         ),
         (
             _TOP_LEVEL,
-            {"core/codebase/codebase_map.py": "import omrg.capabilities  # violation"},
-            "omrg.core.codebase.codebase_map -> omrg.capabilities",
+            {"core/codebase/codebase_map.py": "import omrs.capabilities  # violation"},
+            "omrs.core.codebase.codebase_map -> omrs.capabilities",
         ),
         (
             _DOMAINS,
-            {"core/ingestion/sources.py": "import omrg.core.retrieval.policy  # violation"},
-            "omrg.core.ingestion.sources -> omrg.core.retrieval.policy",
+            {"core/ingestion/sources.py": "import omrs.core.retrieval.policy  # violation"},
+            "omrs.core.ingestion.sources -> omrs.core.retrieval.policy",
         ),
         (
             _DOMAINS_REVERSE,
-            {"core/retrieval/policy.py": "import omrg.core.ingestion.sources  # violation"},
-            "omrg.core.retrieval.policy -> omrg.core.ingestion.sources",
+            {"core/retrieval/policy.py": "import omrs.core.ingestion.sources  # violation"},
+            "omrs.core.retrieval.policy -> omrs.core.ingestion.sources",
         ),
         (
             _FRAMEWORKS,
             {"core/pipelines/__init__.py": "import typer  # violation"},
-            "omrg.core.pipelines -> typer",
+            "omrs.core.pipelines -> typer",
         ),
     ],
 )

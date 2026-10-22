@@ -76,7 +76,7 @@ describe("uploads", () => {
     expect(results).not.toHaveTextContent("RAW");
     // Rejected files never send their bytes; the upload is ingested by its managed-root path.
     expect(server.find("POST", "/v1/uploads").filter((call) => call.path === "/v1/uploads")).toHaveLength(1);
-    expect(server.find("POST", "/v1/ingestions")[0]?.body).toEqual({ path: "/home/u/.omrg/workspace/uploads/u1/ok.md", collection: "documents" });
+    expect(server.find("POST", "/v1/ingestions")[0]?.body).toEqual({ path: "/home/u/.omrs/workspace/uploads/u1/ok.md", collection: "documents" });
   });
 
   it("shows the ingest job status after an upload and refreshes the counts when it finishes", async () => {
@@ -276,7 +276,7 @@ describe("folder ingest", () => {
 
   it("states that no folder is approved and names the --root flag in a code element", async () => {
     await openAdd({ "GET /v1/roots": () => ({ status: "ok", roots: [{ id: "m", path: "/uploads", kind: "managed" }] }) });
-    const flag = await screen.findByText("omrg web --root FOLDER");
+    const flag = await screen.findByText("omrs web --root FOLDER");
     expect(flag.tagName).toBe("CODE");
     expect(screen.getByText(/No folder is approved/)).toBeInTheDocument();
     expect(screen.queryByLabelText("Path inside the folder")).not.toBeInTheDocument();

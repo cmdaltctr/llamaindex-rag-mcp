@@ -31,7 +31,7 @@ export function OneTimeSecret({ title, secret, children, onHide }: OneTimeSecret
       <code dir="ltr" className="rounded-small border border-border bg-card px-2 py-1.5 font-mono text-code [overflow-wrap:anywhere]">
         {secret}
       </code>
-      <p className="text-meta">Shown once. OMRG cannot show it again. Copy it now, then hide it.</p>
+      <p className="text-meta">Shown once. OMRS cannot show it again. Copy it now, then hide it.</p>
       {children}
       <div className="flex flex-wrap gap-2">
         <Button size="sm" onClick={() => void copySecret()}>

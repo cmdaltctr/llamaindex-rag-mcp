@@ -1,7 +1,7 @@
 /**
  * Typed client for the experiment context routes and bound credentials.
  *
- * Shapes follow `src/omrg/transports/api/routes/experiments.py` and
+ * Shapes follow `src/omrs/transports/api/routes/experiments.py` and
  * `POST /v1/credentials` in `routes/foundation.py`. Experiment refusals carry a stable
  * `code`; the user sees the server's `message`.
  */

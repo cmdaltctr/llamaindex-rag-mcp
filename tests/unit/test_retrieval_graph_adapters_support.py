@@ -13,8 +13,8 @@ import asyncio
 from collections.abc import Mapping
 from typing import Any
 
-from omrg.core.pipelines import CancellationFlag, NodeContext, NodeOutput, OperationCatalogue
-from omrg.core.retrieval.graph_adapters import register_retrieval_operations
+from omrs.core.pipelines import CancellationFlag, NodeContext, NodeOutput, OperationCatalogue
+from omrs.core.retrieval.graph_adapters import register_retrieval_operations
 
 
 def build_catalogue() -> OperationCatalogue:

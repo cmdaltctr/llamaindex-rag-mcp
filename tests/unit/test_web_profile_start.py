@@ -25,13 +25,13 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
     seed,
 )
 
-from omrg import compose  # noqa: E402
-from omrg.compose_templates import profile_templates  # noqa: E402
-from omrg.core.profiles.resolver import ProfileResolver  # noqa: E402
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.security import AccessPolicy  # noqa: E402
+from omrs import compose  # noqa: E402
+from omrs.compose_templates import profile_templates  # noqa: E402
+from omrs.core.profiles.resolver import ProfileResolver  # noqa: E402
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.security import AccessPolicy  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

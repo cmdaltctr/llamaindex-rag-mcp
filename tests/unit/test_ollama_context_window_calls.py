@@ -17,8 +17,8 @@ import pytest
 from llama_index.core.llms import ChatMessage
 from tests.test_metadata_extractor import _GOOD_RESPONSE, _capturing_async_client, _set_mode
 
-from omrg.config import Settings
-from omrg.core.providers.llm import ollama
+from omrs.config import Settings
+from omrs.core.providers.llm import ollama
 
 #: Model maximum that the fake ``/api/show`` would report if it were asked.
 MODEL_MAXIMUM = 262144
@@ -98,7 +98,7 @@ def test_chat_sends_the_configured_window(fake: FakeOllama) -> None:
 
 
 def test_metadata_generate_carries_num_ctx(monkeypatch: pytest.MonkeyPatch) -> None:
-    from omrg.core.metadata import extract_metadata_async
+    from omrs.core.metadata import extract_metadata_async
 
     _set_mode(
         monkeypatch, "local", local_backend="ollama", max_attempts=1, ollama_context_window=8192
@@ -110,7 +110,7 @@ def test_metadata_generate_carries_num_ctx(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 def test_metadata_generate_uses_the_default_window(monkeypatch: pytest.MonkeyPatch) -> None:
-    from omrg.core.metadata import extract_metadata_async
+    from omrs.core.metadata import extract_metadata_async
 
     _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=1)
     payloads = _capturing_async_client(monkeypatch, [_GOOD_RESPONSE])

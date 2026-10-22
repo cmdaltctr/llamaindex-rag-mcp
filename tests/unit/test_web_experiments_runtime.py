@@ -1,6 +1,6 @@
 """Experiment and plugin runtime wiring of the web lifespan (tasks 8.5, 8.6).
 
-Approved experiment roots come only from ``omrg web --experiment-root``.
+Approved experiment roots come only from ``omrs web --experiment-root``.
 The base settings come from the composition root. Shutdown order is: run
 service, owned notebook editors, experiment Engines, then the live Engine.
 """
@@ -20,12 +20,12 @@ from tests.unit.test_experiment_contexts_support import base_settings  # noqa: E
 from tests.unit.test_web_launch import FakeEngine, FakeRunService  # noqa: E402
 from typer.testing import CliRunner  # noqa: E402
 
-from omrg import compose_engine  # noqa: E402
-from omrg.compose_experiments import ExperimentEngines  # noqa: E402
-from omrg.transports.api import lifespan  # noqa: E402
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import PluginHost, WebConfig  # noqa: E402
-from omrg.transports.cli import app as cli_app  # noqa: E402
+from omrs import compose_engine  # noqa: E402
+from omrs.compose_experiments import ExperimentEngines  # noqa: E402
+from omrs.transports.api import lifespan  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import PluginHost, WebConfig  # noqa: E402
+from omrs.transports.cli import app as cli_app  # noqa: E402
 
 BASE = "http://127.0.0.1:8765"
 
@@ -112,7 +112,7 @@ def test_default_factory_uses_the_composition_root_settings(tmp_path: Path) -> N
 
 def test_experiment_base_settings_is_the_resolved_settings() -> None:
     sentinel = object()
-    with patch("omrg.config.get_settings", return_value=sentinel):
+    with patch("omrs.config.get_settings", return_value=sentinel):
         assert compose_engine.experiment_base_settings() is sentinel
 
 
@@ -131,8 +131,8 @@ def test_cli_passes_repeatable_experiment_roots(tmp_path: Path) -> None:
     for root in roots:
         args += ["--experiment-root", str(root)]
     with (
-        patch("omrg.transports.api.app.create_app", side_effect=fake_create_app),
-        patch("omrg.transports.cli.web._serve", side_effect=lambda app, sock: sock.close()),
+        patch("omrs.transports.api.app.create_app", side_effect=fake_create_app),
+        patch("omrs.transports.cli.web._serve", side_effect=lambda app, sock: sock.close()),
     ):
         result = CliRunner().invoke(cli_app, args)
     assert result.exit_code == 0, result.output
@@ -140,7 +140,7 @@ def test_cli_passes_repeatable_experiment_roots(tmp_path: Path) -> None:
 
 
 def test_cli_rejects_a_missing_experiment_root(tmp_path: Path) -> None:
-    with patch("omrg.transports.cli.web._serve") as serve:
+    with patch("omrs.transports.cli.web._serve") as serve:
         result = CliRunner().invoke(
             cli_app,
             ["web", "--workspace", str(tmp_path / "ws"), "--experiment-root", str(tmp_path / "x")],

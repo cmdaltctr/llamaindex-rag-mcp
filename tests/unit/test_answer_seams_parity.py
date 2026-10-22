@@ -2,7 +2,7 @@
 
 Task 3.6 of ``add-local-web-pipeline-workspace``. Each case in
 ``tests/fixtures/pipeline_parity/answer/cases.json`` drives the existing
-``omrg.core.answer.answer`` entry point with pre-retrieved rows and
+``omrs.core.answer.answer`` entry point with pre-retrieved rows and
 scripted fake seams. ``expected.json`` holds the outcome each case
 produced on the pre-extraction pipeline, so these tests prove the seam
 extraction kept the public result shape, citation guarantees, failure

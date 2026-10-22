@@ -18,10 +18,10 @@ import pytest
 from llama_index.core import Document
 from llama_index.core.schema import TextNode
 
-from omrg.core.chunking import registry as chunking_registry
-from omrg.core.ingestion import chunker, pipeline
-from omrg.core.ingestion.backends.orchestrator import BackendRead
-from omrg.core.ingestion.normalise import normalise_reader_text
+from omrs.core.chunking import registry as chunking_registry
+from omrs.core.ingestion import chunker, pipeline
+from omrs.core.ingestion.backends.orchestrator import BackendRead
+from omrs.core.ingestion.normalise import normalise_reader_text
 
 SENTINEL_TEXT = "SEAM-SENTINEL-OUTPUT"
 _sentinel_calls: list[dict[str, Any]] = []
@@ -70,7 +70,7 @@ def _offline(effective_settings, **overrides) -> Any:
 
 def test_iter_source_units_is_lazy_and_keeps_content_types(tmp_path: Path) -> None:
     """Units are yielded one at a time with their detected content type."""
-    from omrg.core.ingestion.sources import SourceUnit, iter_source_units
+    from omrs.core.ingestion.sources import SourceUnit, iter_source_units
 
     first, second = tmp_path / "a.txt", tmp_path / "sub" / "b.md"
     units = iter_source_units(tmp_path, [first, second], {"sub/b.md": "text/markdown"})
@@ -88,8 +88,8 @@ def test_detect_content_types_degrades_to_empty_map(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings
 ) -> None:
     """A detector failure keeps extension routing, exactly as before."""
-    from omrg.core.codebase import codebase_map
-    from omrg.core.ingestion.sources import detect_content_types
+    from omrs.core.codebase import codebase_map
+    from omrs.core.ingestion.sources import detect_content_types
 
     def _boom(*args: Any, **kwargs: Any) -> Any:
         raise RuntimeError("detector unavailable")
@@ -105,8 +105,8 @@ def test_detect_content_types_forwards_injected_settings(
     """Detection receives the operation's settings, never a process default."""
     from types import SimpleNamespace
 
-    from omrg.core.codebase import codebase_map
-    from omrg.core.ingestion.sources import detect_content_types
+    from omrs.core.codebase import codebase_map
+    from omrs.core.ingestion.sources import detect_content_types
 
     seen: list[Any] = []
 
@@ -127,14 +127,14 @@ async def test_prepare_source_matches_source_state_identity(
     tmp_path: Path, effective_settings
 ) -> None:
     """The prepared identity uses the shared source_state formulas."""
-    from omrg.core.chunking.model_token import resolve_markdown_chunking
-    from omrg.core.ingestion.hashing import sha256_file
-    from omrg.core.ingestion.source_state import (
+    from omrs.core.chunking.model_token import resolve_markdown_chunking
+    from omrs.core.ingestion.hashing import sha256_file
+    from omrs.core.ingestion.source_state import (
         build_source_id,
         build_source_version,
         canonical_source_path,
     )
-    from omrg.core.ingestion.sources import (
+    from omrs.core.ingestion.sources import (
         build_ingestion_context,
         prepare_source,
     )
@@ -164,14 +164,14 @@ async def test_check_source_state_rejects_pre_lineage_rows(
     tmp_path: Path, effective_settings
 ) -> None:
     """The compatibility guard runs before any parse or mutation."""
-    from omrg.core.chunking.model_token import resolve_markdown_chunking
-    from omrg.core.ingestion.source_state import IncompatibleSourceLineageError
-    from omrg.core.ingestion.sources import (
+    from omrs.core.chunking.model_token import resolve_markdown_chunking
+    from omrs.core.ingestion.source_state import IncompatibleSourceLineageError
+    from omrs.core.ingestion.sources import (
         build_ingestion_context,
         check_source_state,
         prepare_source,
     )
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     source = tmp_path / "legacy.txt"
     source.write_text("Legacy body.", encoding="utf-8")
@@ -261,7 +261,7 @@ async def test_enrich_documents_forwards_store_settings_and_taxonomy(
     monkeypatch: pytest.MonkeyPatch, effective_settings
 ) -> None:
     """Metadata extraction sees the owning store and the injected settings."""
-    from omrg.core.metadata import extractor
+    from omrs.core.metadata import extractor
 
     captured: list[dict[str, Any]] = []
 
@@ -407,8 +407,8 @@ async def test_directory_ingestion_finishes_each_source_before_the_next(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings
 ) -> None:
     """One source is read, chunked and committed before the next is read."""
-    from omrg.core.codebase import codebase_map
-    from omrg.core.ingestion.replacement import ReplaceSourceOutcome, WriteTimings
+    from omrs.core.codebase import codebase_map
+    from omrs.core.ingestion.replacement import ReplaceSourceOutcome, WriteTimings
 
     for name in ("a.txt", "b.txt", "c.txt"):
         (tmp_path / name).write_text(f"Body of {name}.", encoding="utf-8")
@@ -450,7 +450,7 @@ async def test_failed_source_keeps_sibling_commits(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings
 ) -> None:
     """A per-file failure is reported while sibling commits survive."""
-    from omrg.core.codebase import codebase_map
+    from omrs.core.codebase import codebase_map
 
     (tmp_path / "good.txt").write_text("Good body text.", encoding="utf-8")
     (tmp_path / "zbad.txt").write_text("Bad body text.", encoding="utf-8")

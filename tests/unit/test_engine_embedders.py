@@ -7,8 +7,8 @@ import time
 
 import pytest
 
-from omrg.core.vectordb.identity import EmbeddingIdentity
-from omrg.engine_embedders import EngineEmbedders
+from omrs.core.vectordb.identity import EmbeddingIdentity
+from omrs.engine_embedders import EngineEmbedders
 
 HOST = EmbeddingIdentity(provider="ollama", model="host-model")
 OTHER = EmbeddingIdentity(provider="llamacpp", model="other-model")

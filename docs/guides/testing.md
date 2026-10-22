@@ -7,7 +7,7 @@
 uv run pytest -m "not slow" -v
 
 # With coverage
-uv run pytest -m "not slow" --cov=omrg --cov-report=term-missing
+uv run pytest -m "not slow" --cov=omrs --cov-report=term-missing
 
 # The slow end-to-end test (starts a real server over stdio)
 uv run pytest -m slow -v
@@ -93,7 +93,7 @@ the vector store, the PDF factory, the Magika wrapper. For those, install a
 default:
 
 ```python
-from omrg.core.settings import EffectiveSettings, set_default_effective_settings
+from omrs.core.settings import EffectiveSettings, set_default_effective_settings
 
 set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=1))
 ```
@@ -110,11 +110,11 @@ re-exports it does nothing at all.
 
 | Function                                             | Lives in                       |
 | ---------------------------------------------------- | ------------------------------ |
-| `_is_magika_available`                               | `omrg.integrations.magika`  |
-| `_get_git_commit_hash`, `_load_cache`, `_save_cache` | `omrg.core.codebase.cache`  |
-| `format_codebase_map`                                | `omrg.core.codebase.format` |
-| `Observer`                                           | `omrg.daemon.runner`        |
-| `search`, `_list_documents`                          | `omrg.transports.mcp`       |
+| `_is_magika_available`                               | `omrs.integrations.magika`  |
+| `_get_git_commit_hash`, `_load_cache`, `_save_cache` | `omrs.core.codebase.cache`  |
+| `format_codebase_map`                                | `omrs.core.codebase.format` |
+| `Observer`                                           | `omrs.daemon.runner`        |
+| `search`, `_list_documents`                          | `omrs.transports.mcp`       |
 
 ---
 
@@ -157,7 +157,7 @@ Enforced per tier, not as one flat number.
 | Overall       | 90%   | everything                                                                                                                                               |
 
 ```bash
-uv run pytest -m "not slow" --cov=omrg
+uv run pytest -m "not slow" --cov=omrs
 ```
 
 Nothing is excluded. The old exclusion list covered compatibility shims, which
@@ -216,6 +216,6 @@ check (`scripts/chroma_cloud_smoke.py`) is manual-only and never runs in CI.
 Before committing:
 
 ```bash
-uv run pytest -m "not slow" --cov=omrg
+uv run pytest -m "not slow" --cov=omrs
 uv run lint-imports
 ```

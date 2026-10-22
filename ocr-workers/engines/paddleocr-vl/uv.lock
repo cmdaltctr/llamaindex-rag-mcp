@@ -1191,24 +1191,24 @@ wheels = [
 ]
 
 [[package]]
-name = "omrg-ocr-paddleocr-vl"
+name = "omrs-ocr-paddleocr-vl"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "omrg-ocr-worker-core" },
+    { name = "omrs-ocr-worker-core" },
     { name = "paddleocr", extra = ["doc-parser"] },
     { name = "paddlepaddle" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "omrg-ocr-worker-core", directory = "../../core" },
+    { name = "omrs-ocr-worker-core", directory = "../../core" },
     { name = "paddleocr", extras = ["doc-parser"] },
     { name = "paddlepaddle" },
 ]
 
 [[package]]
-name = "omrg-ocr-worker-core"
+name = "omrs-ocr-worker-core"
 version = "0.1.0"
 source = { directory = "../../core" }
 dependencies = [

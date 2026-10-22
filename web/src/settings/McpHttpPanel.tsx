@@ -11,7 +11,7 @@ import { SaveErrorNotice } from "./SaveErrorNotice";
 
 /** The configuration of an HTTP client. The token placeholder is replaced by the token shown once. */
 export function httpConfiguration(url: string): string {
-  const config = { mcpServers: { omrg: { type: "http", url, headers: { Authorization: "Bearer omrg_mcp_<token>" } } } };
+  const config = { mcpServers: { omrs: { type: "http", url, headers: { Authorization: "Bearer omrs_mcp_<token>" } } } };
   return JSON.stringify(config, null, 2);
 }
 

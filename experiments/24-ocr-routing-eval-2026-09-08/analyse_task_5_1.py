@@ -134,7 +134,7 @@ def _fidelity(fixture: str, extracted: str) -> dict | None:
 
 async def _chunk_cell(cell_rows: list[dict]) -> list[dict]:
     """Chunk every non-empty extraction through the production chunker."""
-    from omrg.core.ingestion.chunker import read_and_chunk_file_async
+    from omrs.core.ingestion.chunker import read_and_chunk_file_async
 
     chunks: list[dict] = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -152,7 +152,7 @@ async def _chunk_cell(cell_rows: list[dict]) -> list[dict]:
 
 def _retrieval(chunks: list[dict]) -> dict:
     """Rank the evidence queries over one cell's chunks with production BM25."""
-    from omrg.core.retrieval.sparse import _make_bm25, tokenize_english
+    from omrs.core.retrieval.sparse import _make_bm25, tokenize_english
 
     if not chunks:
         return {"chunks": 0, "recall_at_1": 0.0, "mrr_at_10": 0.0, "per_query": []}
@@ -178,7 +178,7 @@ def _retrieval(chunks: list[dict]) -> dict:
 
 def main() -> None:
     """Compute the supplementary figures and write them atomically."""
-    from omrg.compose import ensure_runtime_setup
+    from omrs.compose import ensure_runtime_setup
 
     ensure_runtime_setup()
     state = json.loads(ABLATION.read_text(encoding="utf-8"))
@@ -200,7 +200,7 @@ def main() -> None:
         print(f"[analyse] {cell}: {retrieval[cell]['chunks']} chunks", flush=True)
     result["downstream_evidence_retrieval"] = retrieval
 
-    from omrg.core.settings import resolve_effective_settings
+    from omrs.core.settings import resolve_effective_settings
 
     resolved = resolve_effective_settings(None)
     result["chunking_context"] = {

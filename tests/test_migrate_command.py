@@ -18,8 +18,8 @@ from unittest.mock import patch
 import pytest
 from typer.testing import CliRunner
 
-from omrg.integrations import legacy_migration as lm
-from omrg.transports.cli import app
+from omrs.integrations import legacy_migration as lm
+from omrs.transports.cli import app
 
 runner = CliRunner()
 
@@ -146,7 +146,7 @@ def _snapshot(home: Path) -> dict[str, bytes]:
 
 
 def _invoke(world: World, *args: str, input: str | None = None):  # noqa: A002
-    with patch("omrg.transports.cli.migrate._context", return_value=world.context()):
+    with patch("omrs.transports.cli.migrate._context", return_value=world.context()):
         return runner.invoke(app, ["migrate", *args], input=input, env=ENV)
 
 

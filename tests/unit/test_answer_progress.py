@@ -6,7 +6,7 @@ import logging
 
 import pytest
 
-from omrg.core.answer.progress import (
+from omrs.core.answer.progress import (
     AnswerStage,
     StageReporter,
     report_stage,
@@ -53,7 +53,7 @@ def test_raising_callback_is_logged_and_swallowed(caplog: pytest.LogCaptureFixtu
         raise RuntimeError("consumer gone")
 
     reporter = StageReporter(broken)
-    with caplog.at_level(logging.WARNING, logger="omrg.core.answer.progress"):
+    with caplog.at_level(logging.WARNING, logger="omrs.core.answer.progress"):
         reporter.enter(AnswerStage.SEARCHING)
         reporter.enter(AnswerStage.WRITING)
     assert "stage callback failed" in caplog.text

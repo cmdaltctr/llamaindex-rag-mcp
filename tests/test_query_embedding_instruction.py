@@ -11,7 +11,7 @@ from typing import Any, cast
 import pytest
 from llama_index.core.schema import MetadataMode, TextNode
 
-from omrg.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock, RetrievalBlock
+from omrs.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock, RetrievalBlock
 
 INSTRUCTION = "Retrieve passages that answer the question."
 RAW_QUERY = "What proves the theorem?"
@@ -77,8 +77,8 @@ def test_embedding_query_instruction_has_empty_default_and_nested_env_shape(
     """Task 4.1: settings expose EMBEDDING__QUERY_INSTRUCTION."""
     from pydantic import ValidationError
 
-    from omrg.compose import settings_to_effective
-    from omrg.config import Settings
+    from omrs.compose import settings_to_effective
+    from omrs.config import Settings
 
     monkeypatch.delenv("EMBEDDING__QUERY_INSTRUCTION", raising=False)
     assert Settings().embedding.query_instruction == ""
@@ -94,11 +94,11 @@ def test_embedding_query_instruction_has_empty_default_and_nested_env_shape(
 
 def test_dense_query_embedding_uses_exact_prepared_text_and_cache_key(monkeypatch) -> None:
     """Tasks 4.2 and 4.4: dense receives the exact prepared query once."""
-    from omrg.core.retrieval.pipeline import search
+    from omrs.core.retrieval.pipeline import search
 
     embedder = _RecordingEmbedding("dense-test-model")
     cache: OrderedDict = OrderedDict()
-    monkeypatch.setattr("omrg.core.retrieval.pipeline.assemble", lambda results, **_kwargs: results)
+    monkeypatch.setattr("omrs.core.retrieval.pipeline.assemble", lambda results, **_kwargs: results)
 
     search(
         RAW_QUERY,
@@ -116,10 +116,10 @@ def test_dense_query_embedding_uses_exact_prepared_text_and_cache_key(monkeypatc
 
 def test_empty_instruction_preserves_the_raw_query(monkeypatch) -> None:
     """Task 4.3: empty configuration must not add formatting bytes."""
-    from omrg.core.retrieval.pipeline import search
+    from omrs.core.retrieval.pipeline import search
 
     embedder = _RecordingEmbedding("empty-instruction-model")
-    monkeypatch.setattr("omrg.core.retrieval.pipeline.assemble", lambda results, **_kwargs: results)
+    monkeypatch.setattr("omrs.core.retrieval.pipeline.assemble", lambda results, **_kwargs: results)
 
     search(
         RAW_QUERY,
@@ -136,11 +136,11 @@ def test_empty_instruction_preserves_the_raw_query(monkeypatch) -> None:
 
 def test_instruction_change_uses_a_distinct_prepared_query_cache_entry(monkeypatch) -> None:
     """Tasks 4.5-4.6: prepared cache entries separate and then reuse."""
-    from omrg.core.retrieval.pipeline import search
+    from omrs.core.retrieval.pipeline import search
 
     embedder = _RecordingEmbedding("instruction-change-model")
     cache: OrderedDict = OrderedDict()
-    monkeypatch.setattr("omrg.core.retrieval.pipeline.assemble", lambda results, **_kwargs: results)
+    monkeypatch.setattr("omrs.core.retrieval.pipeline.assemble", lambda results, **_kwargs: results)
 
     search(
         RAW_QUERY,
@@ -180,8 +180,8 @@ def test_instruction_change_uses_a_distinct_prepared_query_cache_entry(monkeypat
 
 def test_document_embedding_text_never_uses_the_query_instruction() -> None:
     """Task 4.3: document embedding remains separate from query preparation."""
-    from omrg.core.ingestion.replacement import _embed_missing_nodes
-    from omrg.core.settings import EmbeddingBlock
+    from omrs.core.ingestion.replacement import _embed_missing_nodes
+    from omrs.core.settings import EmbeddingBlock
 
     embedder = _RecordingEmbedding("document-test-model")
     node = TextNode(text="Document evidence", metadata={"category": "proof"})
@@ -197,7 +197,7 @@ def test_document_embedding_text_never_uses_the_query_instruction() -> None:
 
 def test_hybrid_dense_uses_prepared_query_while_sparse_and_reranker_stay_raw(monkeypatch) -> None:
     """Task 4.6: preparation applies only to the dense embedding call."""
-    import omrg.core.retrieval.pipeline as pipeline
+    import omrs.core.retrieval.pipeline as pipeline
 
     sparse_inputs: list[str] = []
     reranker_inputs: list[str] = []
@@ -236,9 +236,9 @@ def test_each_engine_owns_its_prepared_query_cache_and_close_clears_only_its_cac
     monkeypatch,
 ) -> None:
     """Tasks 4.4 and 4.7: engine cache lifecycle remains isolated."""
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
-    monkeypatch.setattr("omrg.core.retrieval.pipeline.assemble", lambda results, **_kwargs: results)
+    monkeypatch.setattr("omrs.core.retrieval.pipeline.assemble", lambda results, **_kwargs: results)
     embedder_a = _RecordingEmbedding("engine-model")
     embedder_b = _RecordingEmbedding("engine-model")
     engine_a = Engine(
@@ -270,7 +270,7 @@ def test_each_engine_owns_its_prepared_query_cache_and_close_clears_only_its_cac
 
 def test_query_instruction_does_not_change_source_index_identity() -> None:
     """Task 4.8: query-only configuration keeps unchanged source detection valid."""
-    from omrg.core.ingestion.source_state import build_index_identity
+    from omrs.core.ingestion.source_state import build_index_identity
 
     baseline = build_index_identity(
         _settings(""), content_type="text/markdown", chunk_size=512, chunk_overlap=100
@@ -289,8 +289,8 @@ async def test_query_instruction_change_keeps_unchanged_source_skipped(sample_md
     """Task 4.8: query-only configuration must not trigger a re-index."""
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from omrg.core.ingestion.pipeline import ingest_path_async
-    from omrg.core.vectordb.lancedb.store import LanceVectorStore
+    from omrs.core.ingestion.pipeline import ingest_path_async
+    from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
     store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
     embedder = LlamaIndexSettings.embed_model

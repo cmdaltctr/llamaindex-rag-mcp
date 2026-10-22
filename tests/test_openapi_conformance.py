@@ -23,7 +23,7 @@ import yaml
 
 # ── Path to the OpenAPI contract ──────────────────────────────────────
 _OPENAPI_PATH = (
-    Path(__file__).parent.parent / "src" / "omrg" / "transports" / "api" / "openapi.yaml"
+    Path(__file__).parent.parent / "src" / "omrs" / "transports" / "api" / "openapi.yaml"
 )
 
 # ── Maintained semantic sets (design D6/D7) ───────────────────────────
@@ -85,7 +85,7 @@ def _derive_search_params() -> dict[str, Any]:
     ``/v1/collections/{collection}/search``, not a body field. ``query`` is
     NOT excluded: it is a declared body field and must stay under the check.
     """
-    from omrg.transports.mcp import search_documents
+    from omrs.transports.mcp import search_documents
 
     sig = inspect.signature(search_documents)
     return {
@@ -125,8 +125,8 @@ class _StubListingStore:
 
 def _derive_listing_keys() -> set[str]:
     """Return the set of keys a core ``list_documents`` result row carries."""
-    from omrg.core.ingestion.loader import list_documents
-    from omrg.core.vectordb.base import VectorStore
+    from omrs.core.ingestion.loader import list_documents
+    from omrs.core.vectordb.base import VectorStore
 
     # Duck-typed stub (same seam as test_orphaned_source_visibility.py);
     # cast because VectorStore is an ABC the stub intentionally partial-fills.
@@ -218,8 +218,8 @@ class _StubReranker:
 @pytest.fixture(autouse=True)
 def _clear_retrieval_caches() -> Iterator[None]:
     """Clear the embedding LRU and BM25 caches for deterministic derivation."""
-    from omrg.core.retrieval.dense import _cached_query_embedding
-    from omrg.core.retrieval.sparse import BM25SparseRetriever
+    from omrs.core.retrieval.dense import _cached_query_embedding
+    from omrs.core.retrieval.sparse import BM25SparseRetriever
 
     _cached_query_embedding.cache_clear()
     BM25SparseRetriever._cache.clear()
@@ -237,8 +237,8 @@ def _derive_result_keys() -> tuple[set[str], set[str]]:
     full path so fusion, rerank, norm-guard, and sparse-backend diagnostic
     fields are all derived.
     """
-    from omrg.core.retrieval import search
-    from omrg.core.settings import EffectiveSettings
+    from omrs.core.retrieval import search
+    from omrs.core.settings import EffectiveSettings
 
     store = _StubSearchStore()
     settings = EffectiveSettings()
@@ -682,7 +682,7 @@ class TestAnswerCollectionConformance:
         wider range than core accepts, or clients would build requests
         that always fail.
         """
-        from omrg.core.answer.pipeline import (
+        from omrs.core.answer.pipeline import (
             _EXPAND_WINDOW_MAX,
             _QUERY_MAX_CHARS,
             _TOP_K_MAX,

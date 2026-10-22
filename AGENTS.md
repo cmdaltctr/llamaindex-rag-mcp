@@ -1,4 +1,4 @@
-# AGENTS.md for OMRG — Opinionated Modular RAG
+# AGENTS.md for OMRS — Opinionated Modular RAG System
 
 Conventions, constraints, and workflow for AI agents. Only what you **cannot infer** from reading the code — details live in `docs/guides/`.
 
@@ -6,12 +6,12 @@ Conventions, constraints, and workflow for AI agents. Only what you **cannot inf
 
 ```bash
 uv sync                          # Install deps (uv, not pip/poetry)
-uv run omrg                   # Start MCP server (stdio)
-uv run omrg ingest ./docs     # CLI ingest
-uv run omrg config init       # Write a commented starter omrg.jsonc
+uv run omrs                   # Start MCP server (stdio)
+uv run omrs ingest ./docs     # CLI ingest
+uv run omrs config init       # Write a commented starter omrs.jsonc
 uv run pytest -m "not slow" -v   # Fast tests (no Ollama, no disk I/O)
 uv run pytest -n auto -m "not slow" --deselect tests/test_clean_base_tripwire.py -q  # Parallel, ~2.5 min (xdist; serial ~7.5 min). Quick feedback; the tripwire has its own step
-uv run pytest --cov=omrg      # Coverage
+uv run pytest --cov=omrs      # Coverage
 ./scripts/local_ci.sh         # PR-blocking CI jobs, run locally before pushing
 ```
 
@@ -23,6 +23,7 @@ uv run pytest --cov=omrg      # Coverage
 - Backup tag: `v3-backup-pre-repair-evidence` (immutable, same commit)
 - Backup branch: `v3-backup` (same commit, visible in GitHub branch list)
 - Created 2026-09-11 before merging `repair-input-quality-experiment-evidence`.
+- Before the OMRS rename: branch `v4` at `8f0d18e` (the commit that proposed the rename). Revert the rename's merge commit to go back.
 
 ## WHEN YOU WRITE
 
@@ -45,16 +46,16 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 
 → Full detail: [`docs/guides/architecture.md`](docs/guides/architecture.md)
 
-1. **`config/` is the single source of truth for settings data; `compose.py` constructs everything.** `config/` is a LEAF: it must not import `core/` business logic (only the pure-data `core/*/settings.py` models). There is **no** `config.settings` singleton and no `RESOLVED_*` constants — importing `config` resolves nothing. `compose.py` is the only production caller of `get_settings()`, and it owns the runtime capability probes (sparse backend, PDF reader). Source order, highest first: explicit option, process environment (`env`), `.env` (`dotenv`), `omrg.jsonc` (`config-file`), YAML defaults and profile bundle, code default (ADR-087). Only `env` and `dotenv` lock a field in Settings.
-2. **No cross-imports** between `core/ingestion/` and `core/retrieval/` — they share only settings. The v1 top-level shims (`ingestion.py`, `retrieval.py`, `server.py`, `cli.py`, `readers/`, …) were **deleted in v2.0.0**; `src/omrg/` holds the package marker, the public Engine and the composition-root modules, pinned by `tests/unit/test_verification_gaps_boundaries.py`.
-3. **Transports are thin wrappers** — `transports/mcp/` (MCP server, split by tool), `transports/cli/` (CLI split by command group), and `transports/api/` (optional local HTTP transport for `omrg web`, `web` extra, with its OpenAPI 3.1 contract; route groups live in `transports/api/routes/`) all delegate to `core/`. No transport contains business logic. The `core/` layer never imports from `transports/`.
+1. **`config/` is the single source of truth for settings data; `compose.py` constructs everything.** `config/` is a LEAF: it must not import `core/` business logic (only the pure-data `core/*/settings.py` models). There is **no** `config.settings` singleton and no `RESOLVED_*` constants — importing `config` resolves nothing. `compose.py` is the only production caller of `get_settings()`, and it owns the runtime capability probes (sparse backend, PDF reader). Source order, highest first: explicit option, process environment (`env`), `.env` (`dotenv`), `omrs.jsonc` (`config-file`), YAML defaults and profile bundle, code default (ADR-087). Only `env` and `dotenv` lock a field in Settings.
+2. **No cross-imports** between `core/ingestion/` and `core/retrieval/` — they share only settings. The v1 top-level shims (`ingestion.py`, `retrieval.py`, `server.py`, `cli.py`, `readers/`, …) were **deleted in v2.0.0**; `src/omrs/` holds the package marker, the public Engine and the composition-root modules, pinned by `tests/unit/test_verification_gaps_boundaries.py`.
+3. **Transports are thin wrappers** — `transports/mcp/` (MCP server, split by tool), `transports/cli/` (CLI split by command group), and `transports/api/` (optional local HTTP transport for `omrs web`, `web` extra, with its OpenAPI 3.1 contract; route groups live in `transports/api/routes/`) all delegate to `core/`. No transport contains business logic. The `core/` layer never imports from `transports/`.
 4. **All ingestion is async** — `ingest_path_async` is the sole entry point.
 5. **Balanced retrieval defaults are intentional** (ADR-018): `retrieval.top_k=10`, `chunking.chunk_overlap=100`. Read from the injected `EffectiveSettings`, never hardcode. Env vars are nested: `RETRIEVAL__TOP_K`, `CHUNKING__CHUNK_OVERLAP` (ADR-037). **Note:** the code default is `RERANK_ENABLED=false` (flipped off after Experiment 10, which showed the reranker degrades technical-workload retrieval by 19–27%). Phase 4 profiles restore ADR-018's balanced intent per use case: the `documents` profile sets `reranker_enabled: true` (semantic workloads benefit from the reranker), while the `codebase` profile keeps it `false` (speed-first for coding agents). The profile-level value takes precedence over the global default at operation time.
 6. **Codebase/document graph modules live under `core/`** — `core/codebase/{codebase_map,code_graph,ast_extract,communities,cache,format}.py` and `core/documents/{doc_graph,similarity}.py` (ADR-037). They have no cross-imports with `core/ingestion/` or `core/retrieval/`. Magika detection lives in `integrations/magika.py` and does **not** import back into the codebase map.
 7. **Azure SDK import is lazy** (ADR-024) — `integrations/azure.py` never imports `azure-ai-documentintelligence` at module top-level. Import happens inside `_get_client()`.
 8. **Graph construction is deterministic** — no LLM involvement in code graph, document graph, or community detection.
 9. **Settings are injected, never global** (ADR-037). `core/` and `integrations/` MUST NOT import a settings singleton. Entry points (`search`, `ingest_path_async`) resolve `EffectiveSettings` **once at the boundary**; everything below takes it as a parameter. `EffectiveSettings` and all four of its blocks are frozen. `Engine` owns its embedder, store and settings; `EMBEDDING_PROVIDER_SCOPE = "engine"` (was `"process"`), so each engine gets an isolated embedder lifecycle.
-10. **`Engine` is the public API.** The public surface is `omrg.Engine`, `omrg.EffectiveSettings` and `omrg.__version__` — exported via PEP 562 lazy imports. There is no module-level default engine. `compose.build_engine()` is the single construction path; `ensure_runtime_setup()` is the legacy installer for pre-v2 callers.
+10. **`Engine` is the public API.** The public surface is `omrs.Engine`, `omrs.EffectiveSettings` and `omrs.__version__` — exported via PEP 562 lazy imports. There is no module-level default engine. `compose.build_engine()` is the single construction path; `ensure_runtime_setup()` is the legacy installer for pre-v2 callers.
 11. **Registries are the dispatch mechanism** (PROPOSAL §4.4). A new strategy = one new file + one `register()` line. Dispatch modules MUST NOT import concrete strategy modules at module level, and MUST NOT branch `if/elif` over strategy names. Each vector-store backend has its own folder under `core/vectordb/` (`lancedb/`, `chroma/`).
 12. **No file exceeds 500 lines.** Enforced by `tests/test_file_size_ceiling.py`.
 
@@ -73,14 +74,14 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
    8c. **A stale `ignore_imports` entry fails the build.** All contracts set `unmatched_ignore_imports_alerting = "error"`. When you fix a violation, delete its ignore — that failure is the signal, not a nuisance.
 9. **Codebase map cache is keyed by git commit hash.** If not a git repo, caching is disabled — map is rebuilt every call.
 10. **`DOC_SIMILARITY_THRESHOLD` default (0.85) needs calibration.** Don't change without running experiment 10.1.
-11. **Pre-v2 flat env vars raise at startup.** `TOP_K`, `CHUNK_SIZE`, `METADATA_EXTRACTION_MODE` … are no longer read; a startup tripwire fails with the nested replacement named. Retirement lifetime is **shape-aware** (see `config/legacy.py` docstring): nested entries expire one major after the rename; flat entries persist while an upgrade path exists because pydantic cannot detect them.
+11. **Pre-v2 flat env vars raise at startup.** `TOP_K`, `CHUNK_SIZE`, `METADATA_EXTRACTION_MODE` … are no longer read; a startup tripwire fails with the nested replacement named. Retirement lifetime is **shape-aware** (see `config/legacy.py` docstring): nested entries expire one major after the rename; flat entries persist while an upgrade path exists because pydantic cannot detect them. Variables, folders and login items from before the rename to OMRS also stop startup (`config/legacy_install.py`, read-only, no keychain call); `omrs migrate` moves them (ADR-092).
 12. **OpenSpec validation is a guardrail, not a constitution.** If a spec has factually wrong content (wrong default value, wrong scenario name, stale accepted-set), fix it. When `openspec validate --strict` then complains that a MODIFIED block "drops" scenarios from the baseline, the baseline spec itself is wrong — fix the baseline in `openspec/specs/` too. Do not work around the validator by keeping incorrect content and adding explanatory notes. The tool serves the spec, not the other way around.
 13. **Dependency floors are enforced by `tests/test_dependency_floors.py` and the `floors` CI job.** The test fails when a declared floor drifts more than one minor below its locked version (or sits above it). The `floors` job installs with `--resolution lowest-direct` and runs the fast suite. When raising a floor, update the exemption dict in the test if the gap is intentional (with a comment naming the reason). See ADR-042.
 14. **BM25 cache validity is durable where the store supports it.** `_get_or_build_index` resolves an explicitly tagged validity token: durable `(omrg_dataset_epoch, table.version)` from `get_data_version()` on Lance, else the tagged process-local generation counter. Cross-process writes therefore invalidate the server's BM25 cache. Chroma falls back to the local counter and warns once per collection naming the reduced guarantee; a transition between the two modes never compares equal.
-15. **Worktree removal destroys gitignored history.** Before `git worktree remove` on a merged branch, copy the preserve-class gitignored artefacts to `/Users/aizat/Development/DATA/omrg/experiments/<experiment folder>/`, using the same layout: experiment `output/`, `eval_results.json`, `ground-truth.json`, `corpus/`. Do not copy `graphify-out/`: the graphify commit hook rebuilds it in the target checkout. Record each copy's SHA-256 in `DATA/omrg/experiments/copy-receipt.json` and summarise it in `DATA/omrg/DATA_LOCATIONS.md`. Verify the copy before removal. Never copy `.env`. Drop regenerable caches (`.coverage`, `__pycache__`, `.venv`, `.ruff_cache`, `.pytest_cache`, `.import_linter_cache`). Keep the data local: do not upload artefacts to GitHub Releases or any public host.
+15. **Worktree removal destroys gitignored history.** Before `git worktree remove` on a merged branch, copy the preserve-class gitignored artefacts to `/Users/aizat/Development/DATA/omrg/experiments/<experiment folder>/`, using the same layout: experiment `output/`, `eval_results.json`, `ground-truth.json`, `corpus/`. Do not copy `graphify-out/`: the graphify commit hook rebuilds it in the target checkout. Record each copy's SHA-256 in `DATA/omrg/experiments/copy-receipt.json` and summarise it in `DATA/omrg/DATA_LOCATIONS.md`. Verify the copy before removal. Never copy `.env`. Drop regenerable caches (`.coverage`, `__pycache__`, `.venv`, `.ruff_cache`, `.pytest_cache`, `.import_linter_cache`). Keep the data local: do not upload artefacts to GitHub Releases or any public host. The folder name `DATA/omrg/` is historical: the project is now OMRS, and the folder keeps its name (ADR-092).
 16. **Run decision models (`/v1/systemone`) at 8-bit or higher.** Experiment 38 compared Clef-flash builds with hosted scores on all 1,322 page/tier pairs. The 8-bit builds (llama.cpp Q8_0 and MLX 8-bit) correlated with hosted above 0.999 and gave the same gate outcome. MLX 4-bit differed on 96 to 177 pages per wording and sent a usable document to OCR. Use llama.cpp build b11510 or later (it includes the Metal fix from PR #30100; `llama update` can lag behind the main release) or MLX 8-bit. Do not use a 4-bit build until its scores are checked against a reference on the full set, not on a few documents. Time local servers one request at a time, because MLX queues requests and the saved per-request times then include waiting. The evidence covers Clef-flash on 40 documents only; other models are untested. See ADR-074 (Proposed) and `experiments/38-rescue-quality-signal-2026-09-30/report.md`.
-17. **The web server owns the workspace; other processes only read it.** User profiles live in `~/.omrg/workspace/workspace.db` (or the `omrg web --workspace` folder). The stdio MCP server, the CLI and the watcher open the default file read-only through `compose_profiles.workspace_profile_catalogue()` and never create, migrate or write it. Only `omrg web` and its MCP endpoint bind a user profile to a collection. A built-in profile (`documents`, `codebase`) keeps the direct Engine path and runs no saved pipeline; only a user-profile collection runs graphs in the request (`engine_profiles.py`). See ADR-080. Only `omrg web` writes `omrg.jsonc` (gotcha 18); the other processes read it.
-18. **`omrg.jsonc` is the single store of settings** (ADR-087, supersedes ADR-083 rules 12 and 13). It lives in `$OMRG_CONFIG_DIR`, else `$XDG_CONFIG_HOME/omrg`, else `~/.config/omrg`. A key is the environment name in lower case and `__` nests one level (`RETRIEVAL__TOP_K` is `retrieval.top_k`). The Settings page writes the file (only allowed keys, revision check, atomic replace, comments kept). The `workspace_settings` table holds no settings. A key field holds a reference only: `env://NAME`, `file://~/.config/omrg/secrets/<name>.key` or `keychain://<provider>`. Never write a literal key, `.env` or `secrets/` from code. A value in the file does not lock a field. Tests set `OMRG_CONFIG_DIR` to a tmp folder and never read the real `~/.config/omrg`. `omrg config init` builds its template from the `Settings` model, so a new setting needs no template edit.
+17. **The web server owns the workspace; other processes only read it.** User profiles live in `~/.omrs/workspace/workspace.db` (or the `omrs web --workspace` folder). The stdio MCP server, the CLI and the watcher open the default file read-only through `compose_profiles.workspace_profile_catalogue()` and never create, migrate or write it. Only `omrs web` and its MCP endpoint bind a user profile to a collection. A built-in profile (`documents`, `codebase`) keeps the direct Engine path and runs no saved pipeline; only a user-profile collection runs graphs in the request (`engine_profiles.py`). See ADR-080. Only `omrs web` writes `omrs.jsonc` (gotcha 18); the other processes read it.
+18. **`omrs.jsonc` is the single store of settings** (ADR-087, supersedes ADR-083 rules 12 and 13). It lives in `$OMRS_CONFIG_DIR`, else `$XDG_CONFIG_HOME/omrs`, else `~/.config/omrs`. A key is the environment name in lower case and `__` nests one level (`RETRIEVAL__TOP_K` is `retrieval.top_k`). The Settings page writes the file (only allowed keys, revision check, atomic replace, comments kept). The `workspace_settings` table holds no settings. A key field holds a reference only: `env://NAME`, `file://~/.config/omrs/secrets/<name>.key` or `keychain://<provider>`. Never write a literal key, `.env` or `secrets/` from code. A value in the file does not lock a field. Tests set `OMRS_CONFIG_DIR` to a tmp folder and never read the real `~/.config/omrs`. `omrs config init` builds its template from the `Settings` model, so a new setting needs no template edit.
 
 ## Hard Boundaries
 
@@ -88,12 +89,12 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ⚠️ Ask    | Cloud dependencies & API keys — local-first by default, cloud allowed as opt-in (see ADR-024). All cloud features must degrade gracefully to local. |
 | 🚫 Never  | PyTorch in the base install or on the default retrieval path. ONNX Runtime only. PyTorch behind the optional `torch` extra is allowed without approval (ADR-073).               |
-| 🚫 Never  | Hardcoded paths or secrets. Everything via `.env` or `omrg.jsonc`.                                                                                                  |
+| 🚫 Never  | Hardcoded paths or secrets. Everything via `.env` or `omrs.jsonc`.                                                                                                  |
 | 🚫 Never  | Modifying `config.py` to depend on `ingestion.py` or `retrieval.py`.                                                                                |
 | ⚠️ Ask    | Adding new core dependencies. Mixing embedding models (ChromaDB locks dims).                                                                        |
 | ✅ Always | Type annotations + `from __future__ import annotations` in new modules.                                                                             |
 | ✅ Always | Google-style docstrings on public functions and classes.                                                                                            |
-| ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=omrg` before committing.                                                                             |
+| ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=omrs` before committing.                                                                             |
 
 ## Change Workflow
 
@@ -123,7 +124,7 @@ Releases via `python-semantic-release` on every push to `main`. `feat:` → mino
 | Orchestration | ≥85%     | `daemon/watcher`, `transports/cli`                                                                                                                      |
 | **Overall**   | **≥90%** | all (excluding deprecated compat shims — see below)                                                                                                     |
 
-> All modules under `src/omrg/` are in the gate. The v1 compat-shim
+> All modules under `src/omrs/` are in the gate. The v1 compat-shim
 > `omit` list was removed with the shims themselves in v2.0.0 (ADR-037).
 >
 > Coverage is measured with branch coverage (`--cov-branch`), which scores
@@ -136,14 +137,14 @@ Releases via `python-semantic-release` on every push to `main`. `feat:` → mino
 
 Each folder below has a short `AGENTS.md` (and a `CLAUDE.md` link to it). Read the guide before you edit in that folder.
 
-- [`src/omrg/`](src/omrg/AGENTS.md): composition root and public Engine
-- [`src/omrg/core/`](src/omrg/core/AGENTS.md): business logic
-- [`src/omrg/core/vectordb/`](src/omrg/core/vectordb/AGENTS.md): vector stores, one folder per backend
-- [`src/omrg/core/retrieval/`](src/omrg/core/retrieval/AGENTS.md): search and reranker
-- [`src/omrg/core/ingestion/`](src/omrg/core/ingestion/AGENTS.md): indexing
-- [`src/omrg/core/pipelines/`](src/omrg/core/pipelines/AGENTS.md): graph runner
-- [`src/omrg/transports/`](src/omrg/transports/AGENTS.md): MCP, CLI and HTTP API
-- [`src/omrg/integrations/`](src/omrg/integrations/AGENTS.md): external services
+- [`src/omrs/`](src/omrs/AGENTS.md): composition root and public Engine
+- [`src/omrs/core/`](src/omrs/core/AGENTS.md): business logic
+- [`src/omrs/core/vectordb/`](src/omrs/core/vectordb/AGENTS.md): vector stores, one folder per backend
+- [`src/omrs/core/retrieval/`](src/omrs/core/retrieval/AGENTS.md): search and reranker
+- [`src/omrs/core/ingestion/`](src/omrs/core/ingestion/AGENTS.md): indexing
+- [`src/omrs/core/pipelines/`](src/omrs/core/pipelines/AGENTS.md): graph runner
+- [`src/omrs/transports/`](src/omrs/transports/AGENTS.md): MCP, CLI and HTTP API
+- [`src/omrs/integrations/`](src/omrs/integrations/AGENTS.md): external services
 - [`web/src/`](web/src/AGENTS.md): workspace front end
 - [`tests/`](tests/AGENTS.md): Python test suite
 
@@ -160,9 +161,9 @@ Each folder below has a short `AGENTS.md` (and a `CLAUDE.md` link to it). Read t
 | Configuration                 | [`docs/guides/configuration.md`](docs/guides/configuration.md)             |
 | Testing                       | [`docs/guides/testing.md`](docs/guides/testing.md)                         |
 | ADRs (27 decisions)           | [`docs/adr/`](docs/adr/)                                                   |
-| Config vars                   | `.env.example`, `omrg config init` (starter `omrg.jsonc`) + defaults in `config/` |
+| Config vars                   | `.env.example`, `omrs config init` (starter `omrs.jsonc`) + defaults in `config/` |
 | OpenSpec specs                | `openspec/specs/` + `openspec/changes/`                                    |
-| NiftyPM local source of truth | `niftypm/omrg.json`                                                        |
+| NiftyPM local source of truth | `niftypm/omrs.json`                                                        |
 
 ## graphify
 

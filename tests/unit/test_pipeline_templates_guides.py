@@ -3,7 +3,7 @@
 Checks, for the pipeline, library, ingestion, retrieval (reranker) and
 architecture guides:
 
-* every ``src/omrg/...`` path they name exists;
+* every ``src/omrs/...`` path they name exists;
 * every function named in a "stages as graph operations" table exists in
   the module that the same row names, and the row's graph operation is in
   the Engine catalogue;
@@ -22,16 +22,16 @@ import pytest
 import yaml
 from tests.fixtures.pipeline_parity.retrieval import harness
 
-from omrg.compose_pipelines import build_operation_catalogue
-from omrg.core.chunking.settings import ChunkingSettings
-from omrg.core.retrieval.policy import _effective_threshold
-from omrg.core.retrieval.settings import RetrievalSettings
+from omrs.compose_pipelines import build_operation_catalogue
+from omrs.core.chunking.settings import ChunkingSettings
+from omrs.core.retrieval.policy import _effective_threshold
+from omrs.core.retrieval.settings import RetrievalSettings
 
 _ROOT = Path(__file__).resolve().parents[2]
 _GUIDES = _ROOT / "docs" / "guides"
 TOUCHED = ("pipelines.md", "library-usage.md", "ingestion.md", "reranker.md", "architecture.md")
 _STAGE_TABLES = ("ingestion.md", "reranker.md")
-_SRC_PATH = re.compile(r"src/omrg/[\w./-]+\.py")
+_SRC_PATH = re.compile(r"src/omrs/[\w./-]+\.py")
 _TICKED = re.compile(r"`([^`]+)`")
 
 
@@ -86,7 +86,7 @@ def test_documented_defaults_equal_code_defaults() -> None:
     retrieval, chunking = RetrievalSettings(), ChunkingSettings()
     assert (retrieval.top_k, retrieval.rerank_enabled) == (10, False)
     assert (chunking.chunk_size, chunking.chunk_overlap) == (512, 100)
-    profiles = _ROOT / "src" / "omrg" / "config" / "profiles"
+    profiles = _ROOT / "src" / "omrs" / "config" / "profiles"
     documents = yaml.safe_load((profiles / "documents.yaml").read_text(encoding="utf-8"))
     codebase = yaml.safe_load((profiles / "codebase.yaml").read_text(encoding="utf-8"))
     assert documents["retrieval"]["rerank_enabled"] is True
@@ -112,7 +112,7 @@ def documented_ingest_keys() -> set[str]:
 
 def test_documented_ingest_keys_match_the_ingest_result_builder() -> None:
     """The listed keys are the keys ``ingest_path_async`` builds."""
-    source = (_ROOT / "src/omrg/core/ingestion/pipeline.py").read_text(encoding="utf-8")
+    source = (_ROOT / "src/omrs/core/ingestion/pipeline.py").read_text(encoding="utf-8")
     built = set(re.findall(r'^\s+"(\w+)": ', source[source.index("common = {") :], re.M))
     built |= {"status", "error_type", "message", "warnings"}
     assert documented_ingest_keys() == built

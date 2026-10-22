@@ -35,12 +35,12 @@ def main() -> int:
             "LANCEDB_URI": os.environ.get("LANCEDB_URI"),
         }
 
-        from omrg.compose import ensure_runtime_setup
+        from omrs.compose import ensure_runtime_setup
 
         ensure_runtime_setup()
 
-        from omrg.core.retrieval import search
-        from omrg.core.vectordb import get_default_store
+        from omrs.core.retrieval import search
+        from omrs.core.vectordb import get_default_store
 
         store = get_default_store()
         count = store.count("qual_documents")

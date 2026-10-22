@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from tests.unit.test_pipeline_support import fixture_descriptors
 
-from omrg.core.pipelines import EffectClass
-from omrg.core.pipelines.scheduler import Lease, ReadyScheduler, lease_for
+from omrs.core.pipelines import EffectClass
+from omrs.core.pipelines.scheduler import Lease, ReadyScheduler, lease_for
 
 DIAMOND = {"a": set(), "b": set(), "c": {"a", "b"}, "d": {"c"}}
 ORDER = ("a", "b", "c", "d")

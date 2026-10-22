@@ -3685,7 +3685,7 @@ wheels = [
 ]
 
 [[package]]
-name = "omrg"
+name = "omrs"
 version = "2.2.0"
 source = { editable = "." }
 dependencies = [

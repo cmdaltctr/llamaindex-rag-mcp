@@ -43,7 +43,7 @@ type ButtonProps = ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & { asChild?: boolean };
 
 /**
- * Button with the OMRG treatment. Renders `type="button"` unless the caller
+ * Button with the OMRS treatment. Renders `type="button"` unless the caller
  * sets another type, so a button inside a form never submits by accident.
  */
 function Button({ className, variant, size, asChild = false, type, ...props }: ButtonProps) {

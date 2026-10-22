@@ -26,9 +26,9 @@ from mcp.client import Client
 from mcp.types import CreateMessageResult, SamplingCapability, TextContent
 
 from conftest import build_mcp_server, direct_ctx
-from omrg.core.ingestion import ingest_path_async
-from omrg.transports.mcp import answer_documents
-from omrg.transports.mcp.answer_mrtr import (
+from omrs.core.ingestion import ingest_path_async
+from omrs.transports.mcp import answer_documents
+from omrs.transports.mcp.answer_mrtr import (
     _MAX_MRTR_ROUNDS,
     _client_seam,
     _outstanding_payloads,
@@ -75,7 +75,7 @@ def _counting_search(server: Any, *, delay: float = 0.0) -> list[int]:
 
 def _settings_with(**answer: Any) -> Any:
     """Return the default settings with an overridden answer block."""
-    from omrg.core.settings import AnswerBlock, get_default_effective_settings
+    from omrs.core.settings import AnswerBlock, get_default_effective_settings
 
     return get_default_effective_settings().model_copy(update={"answer": AnswerBlock(**answer)})
 
@@ -89,7 +89,7 @@ def _scripted_planner(
     round whose reply count is absent ends the chain (``None``).  The
     default asks exactly one round.
     """
-    from omrg.transports.mcp import answer_mrtr
+    from omrs.transports.mcp import answer_mrtr
 
     if prompts_for_rounds is None:
         prompts_for_rounds = {0: "planned prompt round 1"}
@@ -220,7 +220,7 @@ async def test_resolver_planning_failure_returns_structured_generation_error(
 ) -> None:
     """A planning failure inside the resolver chain reports generation."""
     await _ingest_collection(tmp_path)
-    from omrg.transports.mcp import answer_mrtr
+    from omrs.transports.mcp import answer_mrtr
 
     async def _boom(*args: Any, **kwargs: Any) -> str:
         raise RuntimeError("planner exploded")
@@ -361,7 +361,7 @@ async def test_exhausted_client_seam_is_a_generation_error(
     mcp_server, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Synthesis outliving the client replies is an honest generation error."""
-    from omrg.core.answer import pipeline as answer_pipeline
+    from omrs.core.answer import pipeline as answer_pipeline
 
     await _ingest_collection(tmp_path)
     # Planning asks two rounds; the body's synthesis demands three seam

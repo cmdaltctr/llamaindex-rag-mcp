@@ -19,10 +19,10 @@ from types import SimpleNamespace
 import pytest
 from llama_index.core import Document
 
-from omrg.integrations.ocr_worker.client import OcrWorkerError
-from omrg.integrations.ocr_worker.protocol import make_success
-from omrg.integrations.pdf.ocr_routing import OcrPostDispatchError, OcrRoutedPdfInspector
-from omrg.integrations.pdf.page_routing import OCR_BACKEND_FAST_PATH, OCR_BACKEND_LOCAL_OCR
+from omrs.integrations.ocr_worker.client import OcrWorkerError
+from omrs.integrations.ocr_worker.protocol import make_success
+from omrs.integrations.pdf.ocr_routing import OcrPostDispatchError, OcrRoutedPdfInspector
+from omrs.integrations.pdf.page_routing import OCR_BACKEND_FAST_PATH, OCR_BACKEND_LOCAL_OCR
 
 pytest.importorskip("pdf_inspector", reason="pdf-inspector is a base dependency (ADR-050)")
 

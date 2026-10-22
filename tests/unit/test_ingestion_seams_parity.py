@@ -22,7 +22,7 @@ from tests.fixtures.pipeline_parity.ingestion.snapshot import (
     portable_rows,
 )
 
-from omrg.core.ingestion import pipeline
+from omrs.core.ingestion import pipeline
 
 
 def _offline(effective_settings) -> Any:
@@ -34,9 +34,9 @@ def _offline(effective_settings) -> Any:
 
 async def _ingest_through_seams(root: Path, settings: Any, store: Any, collection: str) -> int:
     """Compose the extracted seams the way a graph runner will."""
-    from omrg.core.chunking.model_token import resolve_markdown_chunking
-    from omrg.core.ingestion.loader import gather_supported_files
-    from omrg.core.ingestion.sources import (
+    from omrs.core.chunking.model_token import resolve_markdown_chunking
+    from omrs.core.ingestion.loader import gather_supported_files
+    from omrs.core.ingestion.sources import (
         build_ingestion_context,
         check_source_state,
         chunk_source,
@@ -72,7 +72,7 @@ async def test_seam_composition_matches_ingest_path_async(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings
 ) -> None:
     """Chunk ids, texts and metadata are identical on both paths."""
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     pin_detection(monkeypatch)
     root = copy_sources(tmp_path)
@@ -98,7 +98,7 @@ async def test_seam_composition_reuses_complete_sources(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings
 ) -> None:
     """A second seam pass over unchanged sources skips every source."""
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     pin_detection(monkeypatch)
     root = copy_sources(tmp_path)
@@ -119,8 +119,8 @@ async def test_seam_composition_never_reads_process_defaults(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings
 ) -> None:
     """With no process defaults installed, explicit seams still ingest."""
-    from omrg.core.settings import reset_default_effective_settings
-    from omrg.core.vectordb import get_default_store, reset_default_store
+    from omrs.core.settings import reset_default_effective_settings
+    from omrs.core.vectordb import get_default_store, reset_default_store
 
     pin_detection(monkeypatch)
     root = copy_sources(tmp_path)

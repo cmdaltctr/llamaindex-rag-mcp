@@ -137,9 +137,9 @@ def run_search(
     settings_factory: Callable[..., Any],
 ) -> list[dict]:
     """Run one recorded case through the standard ``search()`` path."""
-    from omrg.core.retrieval import registry
-    from omrg.core.retrieval.pipeline import search
-    from omrg.core.settings import set_default_effective_settings
+    from omrs.core.retrieval import registry
+    from omrs.core.retrieval.pipeline import search
+    from omrs.core.settings import set_default_effective_settings
 
     chunks = [] if case.get("empty_collection") else corpus["chunks"]
     monkeypatch.setitem(registry._cache, "dense", make_dense(chunks))

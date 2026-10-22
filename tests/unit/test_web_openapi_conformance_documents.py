@@ -31,11 +31,11 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
 )
 from tests.unit.test_web_openapi_conformance_support import FAMILIES, ContractChecker  # noqa: E402
 
-from omrg import __version__  # noqa: E402
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.runs_wiring import run_service_factory  # noqa: E402
-from omrg.transports.api.security import AccessPolicy  # noqa: E402
+from omrs import __version__  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.runs_wiring import run_service_factory  # noqa: E402
+from omrs.transports.api.security import AccessPolicy  # noqa: E402
 
 COLLECTION = "notes"
 
@@ -67,7 +67,7 @@ def _poll(client: TestClient, check: ContractChecker, job_id: str) -> dict[str, 
 def test_foundation_and_job_responses_conform(
     tmp_path: Path, effective_settings: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from omrg.core.codebase import codebase_map
+    from omrs.core.codebase import codebase_map
 
     monkeypatch.setattr(codebase_map, "get_codebase_map_text", lambda **_: "MAP")
     root = tmp_path / "approved"

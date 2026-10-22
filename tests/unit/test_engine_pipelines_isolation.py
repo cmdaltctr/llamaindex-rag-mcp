@@ -19,7 +19,7 @@ from tests.unit.test_engine_pipelines_support import (
     retrieval_graph,
 )
 
-from omrg.core.pipelines import RunStatus
+from omrs.core.pipelines import RunStatus
 
 
 async def _until(event: threading.Event) -> None:
@@ -105,9 +105,9 @@ def test_poisoned_process_defaults_are_never_read(monkeypatch, effective_setting
     """Validation and execution use only the Engine's own composition."""
     import llama_index.core
 
-    from omrg.core import settings as settings_mod
-    from omrg.core import vectordb
-    from omrg.core.retrieval import pipeline
+    from omrs.core import settings as settings_mod
+    from omrs.core import vectordb
+    from omrs.core.retrieval import pipeline
 
     def poisoned(*args, **kwargs):
         raise AssertionError("process default read")

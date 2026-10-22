@@ -2,7 +2,7 @@
 
 The builder imports no web framework, so these tests need no ``fastapi``. A
 plain namespace stands in for ``ConfigurationState``. Every test points
-``OMRG_CONFIG_DIR`` at a temporary folder and never reads the real one.
+``OMRS_CONFIG_DIR`` at a temporary folder and never reads the real one.
 """
 
 from __future__ import annotations
@@ -13,18 +13,18 @@ from typing import Any
 
 import pytest
 
-from omrg import capabilities
-from omrg.config import Settings, provenance
-from omrg.config.rules import DOCUMENT_READING_KEYS
-from omrg.config.settings_file import file_revision, read_settings_file
-from omrg.transports.api import document_reading
-from omrg.transports.api.document_reading import (
+from omrs import capabilities
+from omrs.config import Settings, provenance
+from omrs.config.rules import DOCUMENT_READING_KEYS
+from omrs.config.settings_file import file_revision, read_settings_file
+from omrs.transports.api import document_reading
+from omrs.transports.api.document_reading import (
     build_document_reading,
     lock_reason,
     reset_reader_in_use,
     update_refusal,
 )
-from omrg.transports.api.restart_snapshot import capture
+from omrs.transports.api.restart_snapshot import capture
 
 VARIABLES = tuple(key.upper() for key in DOCUMENT_READING_KEYS) + (
     "OCR_WORKERS_DIR",
@@ -53,7 +53,7 @@ class Harness:
         self.state: Any = None
 
     def write(self, text: str) -> None:
-        (self.folder / "omrg.jsonc").write_text(text, encoding="utf-8")
+        (self.folder / "omrs.jsonc").write_text(text, encoding="utf-8")
 
     def launch(self) -> None:
         file = read_settings_file(self.folder)
@@ -78,9 +78,9 @@ def harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Harness:
     monkeypatch.setattr(capabilities, "pdf_reader_options", lambda: dict(OPTIONS))
     monkeypatch.setattr(capabilities, "resolve_pdf_reader", lambda settings: "pypdf")
     reset_reader_in_use()
-    folder = tmp_path / "omrg-config"
+    folder = tmp_path / "omrs-config"
     folder.mkdir(mode=0o700)
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(folder))
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(folder))
     empty_env = tmp_path / "none.env"
     empty_env.write_text("", encoding="utf-8")
     yield Harness(folder, empty_env)
@@ -224,7 +224,7 @@ def test_a_hand_written_blank_fallback_comes_back_as_not_set(harness: Harness) -
 def test_a_missing_state_uses_the_launch_settings_and_nothing_is_pending(
     harness: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from omrg import compose
+    from omrs import compose
 
     harness.write('{ "pdf_reader": "liteparse" }')
     monkeypatch.setattr(compose, "get_settings", lambda: Settings(_env_file=harness.empty_env))

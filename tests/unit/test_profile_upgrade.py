@@ -9,8 +9,8 @@ from typing import Any
 import pytest
 from tests.unit.test_profile_service import Env
 
-from omrg.compose_templates import profile_templates
-from omrg.core.workspace import TASK_LAYOUT_KEY
+from omrs.compose_templates import profile_templates
+from omrs.core.workspace import TASK_LAYOUT_KEY
 
 SLOTS = ("ingest", "search", "answer")
 

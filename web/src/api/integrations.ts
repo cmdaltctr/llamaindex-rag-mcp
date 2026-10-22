@@ -1,7 +1,7 @@
 /**
  * Typed client for `GET /v1/integrations`.
  *
- * Shapes follow `src/omrg/transports/api/integrations_catalogue.py`. The
+ * Shapes follow `src/omrs/transports/api/integrations_catalogue.py`. The
  * server reports availability for the running launch. Nothing here installs
  * a package.
  */
@@ -18,7 +18,7 @@ export interface Integration {
   extra: string | null;
   /** `uv sync --extra <name>`, or null when there is nothing to install. */
   install_command: string | null;
-  /** `pip install "omrg[<name>]"`, or null when there is nothing to install. */
+  /** `pip install "omrs[<name>]"`, or null when there is nothing to install. */
   pip_command: string | null;
   availability: IntegrationAvailability;
 }

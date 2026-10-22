@@ -21,8 +21,8 @@ from keyring.backends import fail, null  # noqa: E402
 from keyring.backends.chainer import ChainerBackend  # noqa: E402
 from keyring.errors import KeyringError  # noqa: E402
 
-from omrg.integrations import keychain  # noqa: E402
-from omrg.integrations.keychain import (  # noqa: E402
+from omrs.integrations import keychain  # noqa: E402
+from omrs.integrations.keychain import (  # noqa: E402
     SERVICE,
     KeychainStore,
     KeychainUnavailableError,
@@ -74,13 +74,13 @@ def store() -> KeychainStore:
 # ── Save, read, delete ───────────────────────────────────────────────────
 
 
-def test_save_read_delete_use_service_omrg_and_provider_as_user(
+def test_save_read_delete_use_service_omrs_and_provider_as_user(
     backend: MemoryBackend, store: KeychainStore
 ) -> None:
     assert store.available
     store.save("openrouter", KEY)
-    assert backend.data == {("omrg", "openrouter"): KEY}
-    assert SERVICE == "omrg"
+    assert backend.data == {("omrs", "openrouter"): KEY}
+    assert SERVICE == "omrs"
     value = store.read("openrouter")
     assert isinstance(value, Secret) and value.reveal() == KEY
     store.delete("openrouter")
@@ -278,7 +278,7 @@ def test_a_module_under_keyrings_alt_counts_as_plaintext() -> None:
 def test_importing_the_module_does_not_import_keyring() -> None:
     import subprocess
 
-    code = "import sys, omrg.integrations.keychain;sys.exit(1 if 'keyring' in sys.modules else 0)"
+    code = "import sys, omrs.integrations.keychain;sys.exit(1 if 'keyring' in sys.modules else 0)"
     assert subprocess.run([sys.executable, "-c", code], check=False).returncode == 0
 
 
@@ -288,8 +288,8 @@ def test_importing_the_module_does_not_import_keyring() -> None:
 def test_a_saved_key_is_in_no_row_file_or_env(
     backend: MemoryBackend, store: KeychainStore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
-    from omrg.integrations.workspace_sqlite.settings import WorkspaceSettings
+    from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
+    from omrs.integrations.workspace_sqlite.settings import WorkspaceSettings
 
     work = tmp_path / "cwd"
     work.mkdir()
@@ -304,7 +304,7 @@ def test_a_saved_key_is_in_no_row_file_or_env(
     store.save("openrouter", KEY)
     settings = WorkspaceSettings(db)
     settings.set("provider.openrouter.key_saved_at", "2026-10-18T10:00:00+00:00")
-    assert backend.data[("omrg", "openrouter")] == KEY
+    assert backend.data[("omrs", "openrouter")] == KEY
 
     needle = KEY.encode()
     conn = sqlite3.connect(db)

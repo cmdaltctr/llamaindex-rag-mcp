@@ -11,8 +11,8 @@ from typing import Any
 
 import pytest
 
-from omrg.core.workspace import PROFILE_ID_PATTERN, ProfileRepository
-from omrg.integrations.workspace_sqlite import (
+from omrs.core.workspace import PROFILE_ID_PATTERN, ProfileRepository
+from omrs.integrations.workspace_sqlite import (
     SCHEMA_MIGRATIONS,
     SqliteProfileCatalogue,
     SqliteProfileRepository,
@@ -459,7 +459,7 @@ def test_a_file_that_is_not_a_workspace_is_refused_with_the_path(tmp_path: Path)
     conn.execute("CREATE TABLE vectors (id INTEGER)")
     conn.close()
     before = _digest(path)
-    with pytest.raises(WorkspaceSchemaError, match="not an OMRG workspace") as excinfo:
+    with pytest.raises(WorkspaceSchemaError, match="not an OMRS workspace") as excinfo:
         SqliteProfileCatalogue(path).list_profiles()
     assert str(path) in str(excinfo.value)
     assert _digest(path) == before
@@ -549,7 +549,7 @@ def test_create_can_carry_an_embedding_choice(
 def test_the_catalogue_exposes_the_embedding_keys(
     stores: tuple[SqliteWorkspaceRepository, SqliteProfileRepository],
 ) -> None:
-    from omrg.integrations.workspace_sqlite import SqliteProfileCatalogue
+    from omrs.integrations.workspace_sqlite import SqliteProfileCatalogue
 
     profiles = stores[1]
     record = profiles.create_profile(

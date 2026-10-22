@@ -41,7 +41,7 @@ from tests.unit.test_web_runs_support import (  # noqa: E402
     wait_run,
 )
 
-from omrg.core.retrieval import registry  # noqa: E402
+from omrs.core.retrieval import registry  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
