@@ -10,7 +10,7 @@ Gives retrieval a second axis beside relevance: which of several legitimate, ind
 The system SHALL expose an `authority` settings block on `EffectiveSettings` with `enabled` defaulting to `false`, resolved like every other block. When the stage does not run, the system SHALL NOT import `core/authority/`, and the output of `search()`, `Engine.search`, MCP `search_documents`, the HTTP search route, `Engine.ingest` and answer evidence SHALL equal the output captured before this capability existed.
 
 #### Scenario: Disabled by default
-- **WHEN** no `AUTHORITY__ENABLED` environment variable, no `omrg.jsonc` value and no profile `authority.enabled` value is set
+- **WHEN** no `AUTHORITY__ENABLED` environment variable, no `omrs.jsonc` value and no profile `authority.enabled` value is set
 - **THEN** `EffectiveSettings.authority.enabled` is `false` and `search()` returns rows without `authority_status`, `authority_reason` or `authority_conflicts` keys
 
 #### Scenario: Every surface matches the golden output when off
@@ -59,7 +59,7 @@ The system SHALL store edges and pending references in files under `<store root>
 - **THEN** `list_collections()` returns the same names as without the folder
 
 #### Scenario: Chroma Cloud is not supported
-- **WHEN** `omrg authority rebuild docs` runs with `CHROMA_MODE=cloud`
+- **WHEN** `omrs authority rebuild docs` runs with `CHROMA_MODE=cloud`
 - **THEN** the command exits non-zero with a message that the relation sidecar needs a local store folder
 
 #### Scenario: Search on an unsupported store stays unchanged
@@ -67,7 +67,7 @@ The system SHALL store edges and pending references in files under `<store root>
 - **THEN** rows carry no authority keys and each row carries `authority_skipped` naming the reason
 
 ### Requirement: Linking runs after ingestion and does not depend on order
-The system SHALL extract relations in a pass that runs after `Engine.ingest` and through `omrg authority rebuild`. The pass SHALL extract from new or changed sources, remove the outgoing edges of deleted sources, mark their incoming edges `target_present=false`, and re-resolve stored pending references against the current sources. Ingestion itself SHALL NOT extract relations.
+The system SHALL extract relations in a pass that runs after `Engine.ingest` and through `omrs authority rebuild`. The pass SHALL extract from new or changed sources, remove the outgoing edges of deleted sources, mark their incoming edges `target_present=false`, and re-resolve stored pending references against the current sources. Ingestion itself SHALL NOT extract relations.
 
 #### Scenario: Superseding source ingested first
 - **WHEN** source B, which states that it supersedes A, is ingested before A, and A is ingested in a later call
@@ -82,7 +82,7 @@ The system SHALL extract relations in a pass that runs after `Engine.ingest` and
 - **THEN** the edge remains with `target_present=false` and the resolver ignores it
 
 #### Scenario: Rebuild links an existing collection
-- **WHEN** `authority.enabled` becomes `true` for a collection indexed earlier and `omrg authority rebuild` runs
+- **WHEN** `authority.enabled` becomes `true` for a collection indexed earlier and `omrs authority rebuild` runs
 - **THEN** the sidecar holds the edges of every source, although no file was re-ingested
 
 ### Requirement: Deterministic extraction runs first and needs no model

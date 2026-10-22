@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines how OMRG evaluates a quality signal on reader-rescue text before any change lets that signal decide whether a rescue zeroes OCR evidence.
+Defines how OMRS evaluates a quality signal on reader-rescue text before any change lets that signal decide whether a rescue zeroes OCR evidence.
 
 ## Requirements
 
@@ -50,7 +50,7 @@ The evaluation SHALL report whether `rf06` and `rf07` would route to OCR when th
 
 ### Requirement: Candidate models SHALL run locally by default and hosted models SHALL need operator approval
 
-Every candidate SHALL run on the operator's machine unless the operator approves a hosted service in the plan before any page text is sent. A hosted candidate SHALL be registered in `plan.json` under a dated amendment that names the provider and the text sent. The evaluation SHALL NOT add PyTorch to the OMRG core dependencies. The optional `torch` extra MAY be used without approval (ADR-073). A model download SHALL wait for operator approval.
+Every candidate SHALL run on the operator's machine unless the operator approves a hosted service in the plan before any page text is sent. A hosted candidate SHALL be registered in `plan.json` under a dated amendment that names the provider and the text sent. The evaluation SHALL NOT add PyTorch to the OMRS core dependencies. The optional `torch` extra MAY be used without approval (ADR-073). A model download SHALL wait for operator approval.
 
 #### Scenario: Hosted model proposed
 

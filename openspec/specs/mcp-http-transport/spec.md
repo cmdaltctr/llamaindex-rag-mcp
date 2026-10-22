@@ -1,13 +1,13 @@
 # mcp-http-transport Specification
 
 ## Purpose
-Serve the OMRG MCP tools over streamable HTTP from the local web server, so MCP clients and the browser share one running server and one Engine, with explicit on/off control and token authentication.
+Serve the OMRS MCP tools over streamable HTTP from the local web server, so MCP clients and the browser share one running server and one Engine, with explicit on/off control and token authentication.
 
 ## Requirements
 
 ### Requirement: The web server serves MCP over streamable HTTP when enabled
 
-The `omrg web` server SHALL serve the same MCP tools as the stdio server over streamable HTTP at `/mcp`, with stateful sessions so sampling and multi-round answers work. The endpoint SHALL be off on a new workspace. While it is off, every request to `/mcp` SHALL receive 404, including requests on sessions opened before it was turned off.
+The `omrs web` server SHALL serve the same MCP tools as the stdio server over streamable HTTP at `/mcp`, with stateful sessions so sampling and multi-round answers work. The endpoint SHALL be off on a new workspace. While it is off, every request to `/mcp` SHALL receive 404, including requests on sessions opened before it was turned off.
 
 #### Scenario: Same tools as stdio
 
@@ -26,16 +26,16 @@ The `omrg web` server SHALL serve the same MCP tools as the stdio server over st
 
 ### Requirement: The on/off state persists and changes only from the browser session
 
-`GET /v1/mcp` (read scope) SHALL return `{ enabled, source, url, token }`, where `url` is the full `/mcp` address on the bound host and port and `token` describes the MCP token without its value (`{ exists, created_at }`). `PUT /v1/mcp` with `{ enabled }` SHALL require the browser session, SHALL write `mcp_http_enabled` to `omrg.jsonc`, SHALL take effect without a restart, and SHALL return the new state. The file value SHALL apply on every later launch, and a hand edit of it SHALL apply without a restart.
+`GET /v1/mcp` (read scope) SHALL return `{ enabled, source, url, token }`, where `url` is the full `/mcp` address on the bound host and port and `token` describes the MCP token without its value (`{ exists, created_at }`). `PUT /v1/mcp` with `{ enabled }` SHALL require the browser session, SHALL write `mcp_http_enabled` to `omrs.jsonc`, SHALL take effect without a restart, and SHALL return the new state. The file value SHALL apply on every later launch, and a hand edit of it SHALL apply without a restart.
 
 #### Scenario: Enable survives a restart
 
 - **WHEN** the browser session enables MCP over HTTP and the server restarts
-- **THEN** `omrg.jsonc` MUST hold `"mcp_http_enabled": true`, `GET /v1/mcp` MUST report `enabled: true` and `/mcp` MUST accept a valid token
+- **THEN** `omrs.jsonc` MUST hold `"mcp_http_enabled": true`, `GET /v1/mcp` MUST report `enabled: true` and `/mcp` MUST accept a valid token
 
 #### Scenario: Turned off by hand
 
-- **WHEN** the server serves `/mcp` and the user sets `mcp_http_enabled` to `false` in `omrg.jsonc`
+- **WHEN** the server serves `/mcp` and the user sets `mcp_http_enabled` to `false` in `omrs.jsonc`
 - **THEN** the next request to `/mcp` MUST receive 404
 
 #### Scenario: Bearer credential cannot toggle

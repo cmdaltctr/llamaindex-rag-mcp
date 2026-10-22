@@ -1,7 +1,7 @@
 # pipeline-graphs Specification
 
 ## Purpose
-Define executable user-connected RAG graphs that reuse OMRG operations, resolve settings per run, and retain retrieval and ingestion safeguards.
+Define executable user-connected RAG graphs that reuse OMRS operations, resolve settings per run, and retain retrieval and ingestion safeguards.
 
 ## Requirements
 

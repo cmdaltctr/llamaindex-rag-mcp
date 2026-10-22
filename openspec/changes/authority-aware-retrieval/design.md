@@ -8,7 +8,7 @@ See proposal.md, Why. The relevant current state:
 - ADR-080 profile-owned pipeline graphs: `compose_pipelines.py::build_operation_catalogue` (lines 59–70) registers each domain's graph operations. Retrieval operations are described in `core/retrieval/graph_adapters_catalogue.py` and registered by `core/retrieval/graph_adapters.py::register_retrieval_operations`. `Engine.search` (`engine.py:219`) and `Engine.ingest` (`engine.py:176`) send user-profile collections to `engine_profiles.search` and `engine_profiles.ingest`, which run the profile's graphs. An edit to the built-in `search()` path alone never reaches these collections.
 - Graph settings reach nodes through `lever_params`. `OperationDescriptor` refuses a lever path that is not in `core/pipelines/levers.py::ALLOWED_LEVERS`. Request values reach node parameters through `engine_profiles._REQUEST_TARGETS`.
 - Canonical graphs come from `pipeline_templates.py` (`search_template`, `canonical_templates`). `compose_templates.py::profile_templates` maps each template name to a profile slot, so a new template name would need a new slot.
-- `EffectiveSettings` is frozen and composed of frozen blocks (`chunking`, `ingestion`, `embedding`, `retrieval`, `metadata`, `answer`). The `answer` block is the pattern for a new block: a pure-data `core/answer/settings.py` model, nested in `config/__init__.py:96`, copied into `AnswerBlock` at `compose_settings.py:65`, defaults in `config/defaults.yaml`, settable in `omrg.jsonc` (ADR-087), and profile-overlaid levers in `core/profiles/resolver.py`.
+- `EffectiveSettings` is frozen and composed of frozen blocks (`chunking`, `ingestion`, `embedding`, `retrieval`, `metadata`, `answer`). The `answer` block is the pattern for a new block: a pure-data `core/answer/settings.py` model, nested in `config/__init__.py:96`, copied into `AnswerBlock` at `compose_settings.py:65`, defaults in `config/defaults.yaml`, settable in `omrs.jsonc` (ADR-087), and profile-overlaid levers in `core/profiles/resolver.py`.
 - ADR-052 gives every chunk a stable `source_id`, `source_version` and `chunk_id`. ADR-048 keeps the previous version of a source when a replacement fails verification. Ingestion skips unchanged files (`core/ingestion/pipeline.py:291–313`). `build_index_identity` (`core/ingestion/source_state.py:128`) does not and will not include authority settings, so enabling authority never re-ingests a file.
 - `core/documents/doc_graph.py` builds a deterministic graph. `core/documents/similarity.py::compute_similarity_edges` builds a full N×N cosine matrix over document chunks. Invariant 8: no LLM in graph construction.
 - `core/answer/evidence.py::_EVIDENCE_FIELDS` (line 17) lists the lineage keys copied onto each answer evidence row. `core/answer/retriever.py:106` calls `search()` with keyword arguments and needs no change.
@@ -46,7 +46,7 @@ Modules: `settings.py`, `relations.py`, `storage.py`, `extract.py`, `link.py`, `
 
 - `core.authority` SHALL NOT import `core.ingestion`, `core.retrieval`, `core.answer` or `core.pipelines`. It reads metadata by plain key strings (`source_id`, `source_version`, `chunk_id`, `header_path`), as `core/retrieval/dense.py:139` does with `LINEAGE_METADATA_KEYS`.
 - `core.authority` MAY import `core.vectordb` (the store read contract), `core.settings`, and `core.documents` (only `pairs.py`, for the model-tier pair proposer).
-- `core.ingestion`, `core.retrieval` and `core.answer` SHALL NOT import `core.authority`. Retrieval reaches it only through the registry string `omrg.core.authority.resolve:resolve_rows`.
+- `core.ingestion`, `core.retrieval` and `core.answer` SHALL NOT import `core.authority`. Retrieval reaches it only through the registry string `omrs.core.authority.resolve:resolve_rows`.
 - `core.authority.settings` joins `settings-models-are-pure-data`.
 
 ### D2. Two-tier extraction, deterministic first
@@ -75,7 +75,7 @@ Every write goes to `<name>.tmp` and is renamed into place. `resolve.py` caches 
 
 `EffectiveSettings` carries no `chroma_mode`, so core cannot detect a cloud store by itself. `compose_settings.py` resolves the root once and bakes it into the host-owned field `AuthorityBlock.sidecar_root` (the same pattern as the resolved `hybrid_sparse_backend` at `compose_settings.py:61`). An empty value means "not supported".
 
-Unsupported stores: Chroma Cloud (`chroma_mode=cloud`, ADR-045) and a `lancedb_uri` that contains `://` have no local disk, so `sidecar_root` is empty. Chosen behaviour: the authority stage is not supported there. Search rows get no authority keys, and with diagnostics each row carries `authority_skipped` naming the reason. The post-ingest pass logs one warning per collection. `omrg authority rebuild` exits non-zero with "The relation sidecar needs a local store folder. Chroma Cloud and remote LanceDB URIs are not supported." A workspace-side store was rejected: it splits one collection's state across two places.
+Unsupported stores: Chroma Cloud (`chroma_mode=cloud`, ADR-045) and a `lancedb_uri` that contains `://` have no local disk, so `sidecar_root` is empty. Chosen behaviour: the authority stage is not supported there. Search rows get no authority keys, and with diagnostics each row carries `authority_skipped` naming the reason. The post-ingest pass logs one warning per collection. `omrs authority rebuild` exits non-zero with "The relation sidecar needs a local store folder. Chroma Cloud and remote LanceDB URIs are not supported." A workspace-side store was rejected: it splits one collection's state across two places.
 
 ### D4. Linking runs after ingestion and does not depend on order
 
@@ -85,7 +85,7 @@ Unsupported stores: Chroma Cloud (`chroma_mode=cloud`, ADR-045) and a `lancedb_u
 2. For each marked source, read its chunks with `store.iter_documents(collection)`, run tier 1 (and tier 2 when on), and replace that source's outgoing edges and pending references. For each removed source, delete its outgoing edges and set `target_present=false` on incoming edges.
 3. Re-resolve every pending reference against the current inventory. A reference that now matches becomes an edge and leaves `pending.jsonl`.
 
-Callers: `Engine.ingest` calls `engine_authority.link_after_ingest(...)` after either branch (built-in or user profile) when the collection's resolved `authority.enabled` is true or the bound user profile's Search graph has an `authority.resolve` step. The check reads settings first, so `core.authority` is not imported when off. `omrg authority rebuild <collection>` calls the same function with an empty inventory, so every source is extracted.
+Callers: `Engine.ingest` calls `engine_authority.link_after_ingest(...)` after either branch (built-in or user profile) when the collection's resolved `authority.enabled` is true or the bound user profile's Search graph has an `authority.resolve` step. The check reads settings first, so `core.authority` is not imported when off. `omrs authority rebuild <collection>` calls the same function with an empty inventory, so every source is extracted.
 
 Consequences:
 
@@ -93,7 +93,7 @@ Consequences:
 - ADR-048 failure safety holds by construction: a failed replacement leaves the old `source_version` in the store, so the pass sees no change and keeps the old edges.
 - Deletion through `delete_documents` needs no hook: the next pass or rebuild marks the edges. The resolver never sees a deleted source as a candidate.
 - `core/ingestion/{pipeline,replacement,writer}.py` stay untouched.
-- Existing collections: ingestion skips unchanged files and `build_index_identity` ignores authority settings, so the next ingest only links changed sources. `omrg authority rebuild` is the documented first step for an existing collection.
+- Existing collections: ingestion skips unchanged files and `build_index_identity` ignores authority settings, so the next ingest only links changed sources. `omrs authority rebuild` is the documented first step for an existing collection.
 - Direct `ingest_path_async` callers that bypass `Engine.ingest` (the daemon watcher and the login watcher for built-in profiles) do not run the pass. The next `Engine.ingest` or a rebuild catches up.
 
 ### D5. Resolver contract: exact statuses, annotate, never filter
@@ -153,7 +153,7 @@ Ordering rationale: it is the uṣūl sequence for taʿāruḍ al-adillah render
 
 ### D9. Settings block and profile overlay
 
-`core/authority/settings.py::AuthoritySettings` (pydantic, `extra="forbid"`): `enabled: bool = False`, `model_tier: Literal["off","onnx_decision","nli"] = "off"`, `model: str = ""`, `max_candidate_pairs_per_source: int = 50`. Wiring follows the `answer` block: `AuthorityBlock` in `core/settings.py`, with the four fields above plus the derived, host-owned `sidecar_root: str = ""` (D3); `authority: AuthoritySettings` in `config/__init__.py` next to line 96; `authority=AuthorityBlock(...)` in `compose_settings.py` next to line 65; an `authority:` section in `config/defaults.yaml`; `omrg.jsonc` accepts `authority.enabled` by the ADR-087 naming rule. The profile overlay for `enabled` and `model_tier` lives in a new `core/profiles/authority_overlay.py`, called once from `resolver.py`, because `resolver.py` is at 483 lines. Env keys `AUTHORITY__ENABLED` and `AUTHORITY__MODEL_TIER` win over the bundle. `config/legacy.py` gains no entries.
+`core/authority/settings.py::AuthoritySettings` (pydantic, `extra="forbid"`): `enabled: bool = False`, `model_tier: Literal["off","onnx_decision","nli"] = "off"`, `model: str = ""`, `max_candidate_pairs_per_source: int = 50`. Wiring follows the `answer` block: `AuthorityBlock` in `core/settings.py`, with the four fields above plus the derived, host-owned `sidecar_root: str = ""` (D3); `authority: AuthoritySettings` in `config/__init__.py` next to line 96; `authority=AuthorityBlock(...)` in `compose_settings.py` next to line 65; an `authority:` section in `config/defaults.yaml`; `omrs.jsonc` accepts `authority.enabled` by the ADR-087 naming rule. The profile overlay for `enabled` and `model_tier` lives in a new `core/profiles/authority_overlay.py`, called once from `resolver.py`, because `resolver.py` is at 483 lines. Env keys `AUTHORITY__ENABLED` and `AUTHORITY__MODEL_TIER` win over the bundle. `config/legacy.py` gains no entries.
 
 ### D10. Experiment 43 design
 
@@ -190,22 +190,22 @@ Sixteen weeks, from week 1 (week of 12 October 2026) to week 16 (ending 31 Janua
 
 - [Deterministic patterns miss real-world phrasing] → Report extractor recall on the real corpus separately; the model tier exists for this gap; pending references are logged so the pattern table can grow from evidence.
 - [Clause anchors are absent in many PDFs] → An unanchored row of a partially amended source is `qualified`, never `superseded`; the report states how often that happened.
-- [The sidecar lags the store] → Each `Engine.ingest` re-links changed sources; `omrg authority rebuild <collection>` regenerates everything; direct `ingest_path_async` callers are named in D4.
+- [The sidecar lags the store] → Each `Engine.ingest` re-links changed sources; `omrs authority rebuild <collection>` regenerates everything; direct `ingest_path_async` callers are named in D4.
 - [The link pass reads the whole inventory on every ingest] → `iter_metadatas` pages are bounded; chunk text is read only for changed sources; the report states pass time per corpus.
 - [Model tier cost] → Typed pairs are capped per source; the similarity proposer's N×N matrix is the existing cost of the document graph and is reported.
 - [The sidecar folder confuses a store listing] → A test asserts `list_collections()` is unchanged with `_authority/` present, on LanceDB and local Chroma.
 - [Reviewers read "Islamic methodology" as domain-specific] → The vocabulary and ordering are presented as a general normative-relation model with its provenance stated; the real corpus is UK legislation.
 - [The chosen decision model does not load] → Task 9.2 smoke-tests it before any model-tier code; D2 gives the fallback order.
-- [Watchers skip linking] → The folder watcher and the login watcher call ingestion directly, so a source they index gets no edges until the next `Engine.ingest` or `omrg authority rebuild`. See Open Questions.
+- [Watchers skip linking] → The folder watcher and the login watcher call ingestion directly, so a source they index gets no edges until the next `Engine.ingest` or `omrs authority rebuild`. See Open Questions.
 - [Reranker consumers start reading `authority_status`] → The spec forbids it; a test asserts reranker output is invariant to the annotation.
 - [Head-room moves introduce a regression] → They come first, carry no behaviour change, and must pass the golden tests on their own.
 
 ## Migration Plan
 
-Additive. With `enabled=false` nothing changes. To enable on an existing collection: set `AUTHORITY__ENABLED=true` (or the profile or `omrg.jsonc` value), then run `omrg authority rebuild <collection>`. Later ingests keep the sidecar current. Rollback is `AUTHORITY__ENABLED=false`; the `_authority/<collection>/` folder can be deleted safely.
+Additive. With `enabled=false` nothing changes. To enable on an existing collection: set `AUTHORITY__ENABLED=true` (or the profile or `omrs.jsonc` value), then run `omrs authority rebuild <collection>`. Later ingests keep the sidecar current. Rollback is `AUTHORITY__ENABLED=false`; the `_authority/<collection>/` folder can be deleted safely.
 
 ## Open Questions
 
 - Which UK Act to use for the real corpus. Candidate: one with a well-populated "changes to legislation" table and three or more amending instruments after 2015. This affects only the experiment's `corpus/` directory.
 - Which model-tier candidate to use (task 9.1). Deferred by the user on 22 October 2026. Experiment 38 found Julia 1 weaker than Clef-flash. Decide before group 9; nothing in groups 0 to 8 depends on it.
-- How watchers get edges. Options: (1) run a link pass when a watcher batch ends; (2) document `omrg authority rebuild` for watched collections. Decide before the watcher is used with authority on.
+- How watchers get edges. Options: (1) run a link pass when a watcher batch ends; (2) document `omrs authority rebuild` for watched collections. Decide before the watcher is used with authority on.

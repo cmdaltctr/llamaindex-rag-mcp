@@ -106,7 +106,7 @@ def _numeric_table_version(uri: str, collection: str) -> int:
     return lancedb.connect(uri).open_table(collection).version
 
 
-# ── Stored key keeps its original name (rename-omrg-to-omrs, task 4.6) ──
+# ── Stored key keeps its original name (OMRS rename, task 4.6) ──
 
 
 def test_an_epoch_stored_under_the_original_key_is_read(tmp_path: Path) -> None:

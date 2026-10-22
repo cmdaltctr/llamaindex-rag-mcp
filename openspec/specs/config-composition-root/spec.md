@@ -41,7 +41,7 @@ import concrete provider classes or a settings singleton.
 
 #### Scenario: config.py meets its size target
 
-- **WHEN** `src/omrg/config/__init__.py` is measured
+- **WHEN** `src/omrs/config/__init__.py` is measured
 - **THEN** it MUST be at or below approximately 150 lines
 
 #### Scenario: compose.py is the single construction site
@@ -68,11 +68,11 @@ import concrete provider classes or a settings singleton.
 The system SHALL resolve the effective `Settings` by layering sources in a
 documented precedence order: subpackage model defaults (lowest),
 `config/defaults.yaml`, the selected YAML profile bundle when present,
-`omrg.jsonc` in the user config folder, `.env`, the process environment, then
+`omrs.jsonc` in the user config folder, `.env`, the process environment, then
 explicit per-operation options (highest). `config/defaults.yaml` and profile
 bundles SHALL be expressed as nested mappings keyed by subpackage block
 (`chunking:`, `retrieval:`, `metadata:`) plus top-level cross-cutting keys, and
-SHALL be deep-merged rather than flattened. `omrg.jsonc` SHALL use the same
+SHALL be deep-merged rather than flattened. `omrs.jsonc` SHALL use the same
 nesting and SHALL be deep-merged in the same way. The YAML files SHALL contain
 no secrets, provider keys, or machine-specific absolute paths. YAML files SHALL
 be loaded via `importlib.resources` so they resolve correctly in both
@@ -86,15 +86,15 @@ source of each value so the transports can report it.
   process environment
 - **THEN** the environment value MUST win
 
-#### Scenario: omrg.jsonc overrides YAML
+#### Scenario: omrs.jsonc overrides YAML
 
-- **WHEN** `config/defaults.yaml` sets `retrieval.top_k` to 10 and `omrg.jsonc`
+- **WHEN** `config/defaults.yaml` sets `retrieval.top_k` to 10 and `omrs.jsonc`
   sets it to 7, and no environment value sets it
 - **THEN** the resolved value MUST be 7 with the source `config-file`
 
-#### Scenario: .env overrides omrg.jsonc
+#### Scenario: .env overrides omrs.jsonc
 
-- **WHEN** `omrg.jsonc` sets `retrieval.top_k` to 7 and `.env` sets
+- **WHEN** `omrs.jsonc` sets `retrieval.top_k` to 7 and `.env` sets
   `RETRIEVAL__TOP_K=12`
 - **THEN** the resolved value MUST be 12 with the source `dotenv`
 
@@ -105,9 +105,9 @@ source of each value so the transports can report it.
 - **THEN** the resolved settings MUST carry both values
 - **AND** the profile MUST NOT replace the whole `retrieval` block
 
-#### Scenario: Nested omrg.jsonc is deep-merged
+#### Scenario: Nested omrs.jsonc is deep-merged
 
-- **WHEN** `omrg.jsonc` declares only `retrieval.top_k`
+- **WHEN** `omrs.jsonc` declares only `retrieval.top_k`
 - **THEN** every other `retrieval` value MUST come from the lower sources
 
 #### Scenario: YAML contains no secrets

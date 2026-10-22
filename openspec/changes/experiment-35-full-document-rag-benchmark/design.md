@@ -1,4 +1,4 @@
-# Design: Experiment 35 Local OMRG Profile Baselines
+# Design: Experiment 35 Local OMRS Profile Baselines
 
 ## Status
 
@@ -6,7 +6,7 @@ DRAFT. Measured execution must not begin until both local subsets and the evalua
 
 ## Context
 
-OMRG has strong component-level evidence but needs a complete baseline for each primary profile. A large benchmark is premature while the evaluation harness, observability, answer scoring, and cloud deployment path are still being established.
+OMRS has strong component-level evidence but needs a complete baseline for each primary profile. A large benchmark is premature while the evaluation harness, observability, answer scoring, and cloud deployment path are still being established.
 
 Experiment 35 therefore starts with two small local benchmarks that run sequentially on the operator's Mac.
 
@@ -15,12 +15,12 @@ Experiment 35 therefore starts with two small local benchmarks that run sequenti
 - Evaluate the current `documents` profile end to end on a small real document benchmark.
 - Evaluate the current `codebase` profile end to end on a small repository-understanding benchmark.
 - Capture stage-level observability so failures can be attributed to the correct pipeline stage.
-- Add optional RAGAS evaluation without coupling RAGAS to production OMRG.
+- Add optional RAGAS evaluation without coupling RAGAS to production OMRS.
 - Establish a reproducible local baseline before cloud scale-up.
 
 ## Non-Goals
 
-- Do not compare against historical OMRG.
+- Do not compare against historical OMRS.
 - Do not compare against LlamaIndex, Haystack, LangChain, or other frameworks.
 - Do not run a large benchmark locally.
 - Do not tune production defaults on the measured subsets.
@@ -132,7 +132,7 @@ Minimum trace fields:
 - answer-stage model identity
 - error/degraded status
 
-This local schema should be simple enough to map to OpenTelemetry later when OMRG moves to cloud deployment. Experiment 35 does not require an OpenTelemetry dependency.
+This local schema should be simple enough to map to OpenTelemetry later when OMRS moves to cloud deployment. Experiment 35 does not require an OpenTelemetry dependency.
 
 ## RAGAS
 
@@ -140,7 +140,7 @@ RAGAS is a secondary evaluation layer, not the primary retrieval metric.
 
 Where the benchmark supports answer/reference evaluation, the harness may report selected RAGAS metrics such as context precision, context recall, faithfulness, and answer correctness. The exact RAGAS version, metric set, judge/provider, and model identity must be frozen before measured use.
 
-RAGAS must be installed only in an evaluation/dev environment or optional evaluation extra. It must not become a base OMRG dependency.
+RAGAS must be installed only in an evaluation/dev environment or optional evaluation extra. It must not become a base OMRS dependency.
 
 If a RAGAS metric requires a paid cloud judge, the operator must approve the provider and budget before execution.
 
@@ -158,7 +158,7 @@ If a smoke run shows that the frozen subset cannot complete inside that envelope
 
 - Freeze exact FinanceBench question IDs and source PDF hashes.
 - Freeze exact RepoProbe repository identities, commit SHAs, and question IDs.
-- Freeze effective OMRG settings and all model/provider identities.
+- Freeze effective OMRS settings and all model/provider identities.
 - Freeze scoring code and metric definitions.
 - Record repository SHA and dependency-lock hashes.
 - Preserve failed documents, repositories, and queries in denominators.
@@ -177,6 +177,6 @@ If a smoke run shows that the frozen subset cannot complete inside that envelope
 
 ## Decision Rule
 
-Experiment 35 establishes two local OMRG baselines. It does not need to prove superiority over another framework.
+Experiment 35 establishes two local OMRS baselines. It does not need to prove superiority over another framework.
 
 The report should identify quality, failure stage, latency, and resource bottlenecks. Larger benchmark runs and external framework comparisons belong in later proposals.
