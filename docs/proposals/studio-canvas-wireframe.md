@@ -350,4 +350,4 @@ The draft is safe. Small unsaved things inside the closed section reset: the ope
 | Design (decisions D1 to D8) | `openspec/changes/studio-canvas-layout/design.md` |
 | Spec deltas | `openspec/changes/studio-canvas-layout/specs/{workspace-studio,workspace-presentation,web-ui-stack}/spec.md` |
 | Tasks (7 groups) | `openspec/changes/studio-canvas-layout/tasks.md` |
-| Worktree | `/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-studio-canvas-layout` |
+| Worktree | `../llamaindex-rag-mcp-feat-studio-canvas-layout` |
