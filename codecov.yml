@@ -1,4 +1,4 @@
-# Codecov configuration — replaces SonarCloud coverage gating.
+# Codecov configuration: coverage gating for pull requests.
 # Coverage tiers mirror AGENTS.md:
 #   core + MCP >= 95%, orchestration >= 85%, overall >= 90%.
 # Project checks are informational (not CI-blocking) while targets are
