@@ -8,7 +8,7 @@ These rules apply to every group of cards in any view.
 
 - Cards of the same size: use a plain grid, `grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3`.
 - Cards of different heights in one group: use the masonry layout. Settings > Providers is the example: the llama.cpp card holds a Local server panel and is much taller.
-- For masonry, use the shared `MasonryColumns` component in `web/src/settings/MasonryColumns.tsx`. It deals cards left to right into 1, 2 or 3 column stacks. The breakpoints are 768px and 1280px, the same as Tailwind `md` and `xl`. The reading order stays left to right. A card that grows during an edit stays in its column.
+- For masonry, use the shared `MasonryColumns` component in `web/src/settings/MasonryColumns.tsx`. It fits as many columns of at least 300px as the area allows, up to three. It puts each card in the shortest column, so a short card does not sit under a tall one. It places the cards again when the area or a card changes size. It does not move a card while focus is inside the cards, so a card that grows during an edit stays in its column. The cards move when focus leaves.
 - Keep a tall card in one column at its full length. Do not make it span two columns. Do not put its content side by side to make it shorter.
 - Put an extra panel under the card's fields. Separate it with `border-t border-border pt-3`.
 - Do not use CSS columns (`columns-2`) for card groups. The order then reads down each column, and cards move to a different column when their height changes.

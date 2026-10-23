@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import type { Connection, ConnectionList, ProviderField } from "../api/settings";
@@ -18,25 +18,75 @@ function openrouter(change: Partial<ProviderField>): Connection {
 
 const NO_KEY: Partial<ProviderField> = { set: false, last4: null, source: "none" };
 
-/** Answers `(min-width: Npx)` media queries as a window of *width* pixels would. Returns a restore function. */
-function matchWidth(width: number): () => void {
-  const original = window.matchMedia;
-  window.matchMedia = ((query: string) => {
-    const min = /min-width:\s*(\d+)px/.exec(query);
-    return {
-      matches: min !== null && width >= Number(min[1]),
-      media: query,
-      onchange: null,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      dispatchEvent: () => false,
-    } as MediaQueryList;
-  }) as typeof window.matchMedia;
-  return () => {
-    window.matchMedia = original;
+/**
+ * Fakes layout sizes: the masonry area is *width* pixels wide and each card has
+ * the height given for its title. Returns a function that sets new heights and
+ * one that restores the real method.
+ */
+function fakeSizes(width: number, heights: Record<string, number> = {}) {
+  const original = HTMLElement.prototype.getBoundingClientRect;
+  let current = heights;
+  HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+    let w = 0;
+    let h = 0;
+    if (this.dataset.testid === "masonry") w = width;
+    if (this.dataset.masonryItem !== undefined) h = current[this.querySelector("h3")?.textContent ?? ""] ?? 0;
+    return { width: w, height: h, top: 0, left: 0, right: w, bottom: h, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
   };
+  return {
+    setHeights: (next: Record<string, number>) => {
+      current = next;
+    },
+    restore: () => {
+      HTMLElement.prototype.getBoundingClientRect = original;
+    },
+  };
+}
+
+/** Replaces the no-op ResizeObserver stub with one whose callbacks the test can fire. */
+function fakeResizeObserver() {
+  const original = globalThis.ResizeObserver;
+  const callbacks = new Set<() => void>();
+  const observed = new Set<Element>();
+  globalThis.ResizeObserver = class {
+    private readonly callback: () => void;
+    constructor(callback: () => void) {
+      this.callback = callback;
+      callbacks.add(callback);
+    }
+    observe(target: Element) {
+      observed.add(target);
+    }
+    unobserve(target: Element) {
+      observed.delete(target);
+    }
+    disconnect() {
+      callbacks.delete(this.callback);
+      observed.clear();
+    }
+  } as unknown as typeof ResizeObserver;
+  return {
+    observed,
+    fire: () => callbacks.forEach((callback) => callback()),
+    restore: () => {
+      globalThis.ResizeObserver = original;
+    },
+  };
+}
+
+const FIVE = () =>
+  list(
+    OLLAMA,
+    LLAMACPP,
+    OPENROUTER,
+    { ...OPENROUTER, provider: "openai_compatible", display_name: "OpenAI-compatible" },
+    { ...OPENROUTER, provider: "anthropic", display_name: "Anthropic" },
+  );
+
+const TALL_LLAMA = { Ollama: 400, "llama.cpp": 1000, OpenRouter: 380, "OpenAI-compatible": 450, Anthropic: 370 };
+
+function names(column: HTMLElement) {
+  return within(column).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent);
 }
 
 async function openProviders(handlers = {}) {
@@ -73,27 +123,88 @@ describe("Providers", () => {
     expect(within(extra).queryByRole("button", { name: "Test" })).toBeNull();
   });
 
-  it("deals the cards left to right into masonry columns that follow the page width", async () => {
-    const restore = matchWidth(1024);
+  it("fits as many 300 px columns as the area allows, up to three", async () => {
+    const sizes = fakeSizes(700);
     try {
       await openProviders();
+      await waitFor(() => expect(screen.getAllByTestId("masonry-column")).toHaveLength(2));
       const columns = screen.getAllByTestId("masonry-column");
-      expect(columns).toHaveLength(2);
-      const names = (column: HTMLElement) => within(column).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent);
       expect(names(columns[0]!)).toEqual(["Ollama", "OpenRouter"]);
       expect(names(columns[1]!)).toEqual(["llama.cpp"]);
     } finally {
-      restore();
+      sizes.restore();
+    }
+  });
+
+  it("puts each card in the shortest column, so a short card does not sit under a tall one", async () => {
+    const sizes = fakeSizes(1000, TALL_LLAMA);
+    try {
+      await openProviders({ "GET /v1/connections": FIVE });
+      // Dealt in turn, Anthropic would sit under the 1000 px llama.cpp card.
+      await waitFor(() => expect(names(screen.getAllByTestId("masonry-column")[0]!)).toEqual(["Ollama", "Anthropic"]));
+      const columns = screen.getAllByTestId("masonry-column");
+      expect(columns).toHaveLength(3);
+      expect(names(columns[1]!)).toEqual(["llama.cpp"]);
+      expect(names(columns[2]!)).toEqual(["OpenRouter", "OpenAI-compatible"]);
+    } finally {
+      sizes.restore();
+    }
+  });
+
+  it("does not move a card while focus is inside the cards, and places them again when focus leaves", async () => {
+    const sizes = fakeSizes(1000, TALL_LLAMA);
+    const resizes = fakeResizeObserver();
+    try {
+      const { user } = await openProviders({ "GET /v1/connections": FIVE });
+      await waitFor(() => expect(names(screen.getAllByTestId("masonry-column")[0]!)).toEqual(["Ollama", "Anthropic"]));
+      // Ollama grows while the user edits it; Anthropic would now fit better under OpenRouter.
+      await user.click(within(card("Ollama")).getAllByRole("button", { name: /edit/i })[0]!);
+      const field = within(card("Ollama")).getAllByRole("textbox")[0]!;
+      act(() => field.focus());
+      sizes.setHeights({ ...TALL_LLAMA, Ollama: 900 });
+      await act(async () => {
+        resizes.fire();
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      });
+      expect(names(screen.getAllByTestId("masonry-column")[0]!)).toEqual(["Ollama", "Anthropic"]);
+      act(() => field.blur());
+      await waitFor(() => expect(names(screen.getAllByTestId("masonry-column")[0]!)).toEqual(["Ollama"]));
+    } finally {
+      resizes.restore();
+      sizes.restore();
+    }
+  });
+
+  it("keeps watching a card's size after it moves to another column", async () => {
+    const sizes = fakeSizes(1000, TALL_LLAMA);
+    const resizes = fakeResizeObserver();
+    try {
+      await openProviders({ "GET /v1/connections": FIVE });
+      await waitFor(() => expect(names(screen.getAllByTestId("masonry-column")[0]!)).toEqual(["Ollama", "Anthropic"]));
+      // Ollama grows (a panel finished loading) with three columns still in place: Anthropic
+      // moves to the OpenRouter column, so React gives it a new element.
+      sizes.setHeights({ ...TALL_LLAMA, Ollama: 900 });
+      await act(async () => {
+        resizes.fire();
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      });
+      await waitFor(() => expect(names(screen.getAllByTestId("masonry-column")[0]!)).toEqual(["Ollama"]));
+      const items = Array.from(document.querySelectorAll("[data-masonry-item]"));
+      expect(items).toHaveLength(5);
+      for (const item of items) expect(resizes.observed.has(item)).toBe(true);
+    } finally {
+      resizes.restore();
+      sizes.restore();
     }
   });
 
   it("stacks every card in one column on a phone", async () => {
-    const restore = matchWidth(390);
+    const sizes = fakeSizes(358);
     try {
       await openProviders();
       expect(screen.getAllByTestId("masonry-column")).toHaveLength(1);
     } finally {
-      restore();
+      sizes.restore();
     }
   });
 
