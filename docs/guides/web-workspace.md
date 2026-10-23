@@ -393,12 +393,12 @@ The server keeps the last 1,000 log records in memory and writes no log file. Th
 
 Settings > Chat has two cards: "Answer model" and "Claim check judge". The judge checks each cited prose sentence in an answer against its cited passage ([ADR-059](../adr/059-claim-verification-stage.md)). The judge card shows the judge provider and the judge model, each with its source. An alias shows with the provider it resolves to, for example "cloud (OpenRouter)".
 
-The judge model is empty by default. The default provider, OpenRouter, has no default model. The block then shows "Not set" and says: "Claim checks are skipped until you set a judge model."
+The judge model is empty by default. The default provider, OpenRouter, has no default model. The card then shows "Not set" and says: "Claim checks are skipped until you set a judge model."
 
 To set the judge:
 
 1. Open Settings > Chat.
-2. In the "Claim check judge" block, press Edit.
+2. In the "Claim check judge" card, press Edit.
 3. Select the provider.
 4. Type the model name, or press List models and pick one.
 5. Optional: press Test to check the choice. Test saves nothing.
@@ -406,7 +406,7 @@ To set the judge:
 
 The page writes `answer.verify_provider` and `answer.verify_model` together in `omrs.jsonc`. It writes a registry name only, never the alias `cloud` or `local`. The new judge applies at once in `omrs web`, with no restart. An answer that is running keeps its old judge. Press Remove to clear both keys and return to the default. Remove shows only when the source is `config-file`. The stdio MCP server and the CLI read the same `omrs.jsonc` at their next launch.
 
-The block locks when `ANSWER__VERIFY_PROVIDER` or `ANSWER__VERIFY_MODEL` is set in the environment or `.env`. A locked block names the variable and where it is set, and offers no Edit or Remove.
+The card locks when `ANSWER__VERIFY_PROVIDER` or `ANSWER__VERIFY_MODEL` is set in the environment or `.env`. A locked card names the variable and where it is set, and offers no Edit or Remove.
 
 The block sets which judge runs. It does not turn claim checks on. The profile lever "Check claims" in Studio does that, per collection. The judge runs only for collections whose profile turns on "Check claims". A profile that sets its own judge overrides this choice.
 
