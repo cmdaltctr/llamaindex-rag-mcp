@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useApi } from "../api/ApiProvider";
 import { connectionsQuery } from "../api/queries";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { MasonryColumns } from "./MasonryColumns";
 import { ProviderCard } from "./ProviderCard";
 
 /** The provider cards. Addresses and keys are saved to `omrs.jsonc` (keys to the keychain) and apply at once to this web server. */
@@ -36,11 +37,11 @@ export function ProvidersSection() {
             </code>{" "}
             wins and cannot be changed here. A key is never shown again after you save it.
           </p>
-          <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <MasonryColumns>
             {list.connections.map((connection) => (
               <ProviderCard key={connection.provider} connection={connection} keychain={list.keychain} configDir={list.config_dir} />
             ))}
-          </div>
+          </MasonryColumns>
         </>
       )}
     </section>

@@ -18,6 +18,27 @@ function openrouter(change: Partial<ProviderField>): Connection {
 
 const NO_KEY: Partial<ProviderField> = { set: false, last4: null, source: "none" };
 
+/** Answers `(min-width: Npx)` media queries as a window of *width* pixels would. Returns a restore function. */
+function matchWidth(width: number): () => void {
+  const original = window.matchMedia;
+  window.matchMedia = ((query: string) => {
+    const min = /min-width:\s*(\d+)px/.exec(query);
+    return {
+      matches: min !== null && width >= Number(min[1]),
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    } as MediaQueryList;
+  }) as typeof window.matchMedia;
+  return () => {
+    window.matchMedia = original;
+  };
+}
+
 async function openProviders(handlers = {}) {
   const server = settingsServer(handlers);
   startApp("#/settings/providers", server);
@@ -40,15 +61,40 @@ describe("Providers", () => {
     expect(within(card("llama.cpp")).getByText("Embeddings")).toBeInTheDocument();
   });
 
-  it("lets a card with an extra panel span two columns and puts the panel in its own column", async () => {
+  it("keeps a card with an extra panel in one column, with the panel under the fields", async () => {
     await openProviders();
     const llamacpp = card("llama.cpp");
-    expect(llamacpp.className).toMatch(/\bmd:col-span-2\b/);
-    expect(card("Ollama").className).not.toMatch(/col-span-2/);
+    expect(llamacpp.className).not.toMatch(/col-span/);
     const panel = await within(llamacpp).findByRole("heading", { level: 4, name: "Local server" });
-    const extraColumn = panel.closest("[data-slot='provider-extra']");
-    expect(extraColumn).not.toBeNull();
-    expect(within(extraColumn as HTMLElement).queryByRole("button", { name: "Test" })).toBeNull();
+    const extra = panel.closest("[data-slot='provider-extra']") as HTMLElement;
+    expect(extra).not.toBeNull();
+    expect(extra.className).not.toMatch(/border-l/);
+    expect(extra.parentElement?.className ?? "").not.toMatch(/grid-cols-2/);
+    expect(within(extra).queryByRole("button", { name: "Test" })).toBeNull();
+  });
+
+  it("deals the cards left to right into masonry columns that follow the page width", async () => {
+    const restore = matchWidth(1024);
+    try {
+      await openProviders();
+      const columns = screen.getAllByTestId("masonry-column");
+      expect(columns).toHaveLength(2);
+      const names = (column: HTMLElement) => within(column).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent);
+      expect(names(columns[0]!)).toEqual(["Ollama", "OpenRouter"]);
+      expect(names(columns[1]!)).toEqual(["llama.cpp"]);
+    } finally {
+      restore();
+    }
+  });
+
+  it("stacks every card in one column on a phone", async () => {
+    const restore = matchWidth(390);
+    try {
+      await openProviders();
+      expect(screen.getAllByTestId("masonry-column")).toHaveLength(1);
+    } finally {
+      restore();
+    }
   });
 
   it("shows read-only values as read-only and the install command when not installed", async () => {

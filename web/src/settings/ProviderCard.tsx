@@ -97,26 +97,17 @@ export function ProviderCard({ connection, keychain, configDir }: ProviderCardPr
     </CardHeader>
   );
 
-  // A card with an extra panel spans two grid columns from md up, with the
-  // provider fields on the left and the panel on the right, so it stays as
-  // short as the other cards. Below md everything stacks in one column.
-  if (ProviderExtra !== undefined) {
-    return (
-      <Card role="region" aria-labelledby={titleId} className="md:col-span-2">
-        {header}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6">
-          <div className="flex min-w-0 flex-col gap-3">{body}</div>
-          <div data-slot="provider-extra" className="min-w-0 md:border-l md:border-border md:pl-6">
-            <ProviderExtra />
-          </div>
-        </div>
-      </Card>
-    );
-  }
+  // A card with an extra panel stays in one column and grows taller, with the
+  // panel under the provider fields. The masonry columns absorb the height.
   return (
     <Card role="region" aria-labelledby={titleId}>
       {header}
       {body}
+      {ProviderExtra !== undefined && (
+        <div data-slot="provider-extra" className="min-w-0 border-t border-border pt-3">
+          <ProviderExtra />
+        </div>
+      )}
     </Card>
   );
 }
