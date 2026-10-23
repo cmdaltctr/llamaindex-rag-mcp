@@ -55,6 +55,9 @@ def build(
         model=(answer_model if answer_model is not None else settings.openrouter_llm_model),
         api_base=_OPENROUTER_API_BASE,
         api_key=settings.openrouter_api_key,
+        # The default False sends prompts to the legacy /completions endpoint,
+        # where a reasoning model writes its reasoning into the answer (TDR-037).
+        is_chat_model=True,
         # OpenAILike names this ``timeout``; ``request_timeout`` is the Ollama
         # spelling and is silently dropped, leaving the 60s default in place.
         timeout=(timeout if timeout is not None else settings.metadata.classify_timeout),
