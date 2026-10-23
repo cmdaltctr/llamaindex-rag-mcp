@@ -3606,7 +3606,10 @@ paths:
         (`env`, `dotenv`, `config-file` or `default`), whether the environment locks it and
         why, whether answering is `enabled`, and whether Chat is `ready`. When
         it is not ready, `reason` is `disabled`, `unknown-provider`,
-        `not-installed` or `not-configured`. This route sends no request to
+        `not-installed` or `not-configured`. `reasoning` is the saved reasoning level
+        (`""` means the provider default), `reasoning_locked` and `reasoning_lock_reason`
+        say whether `ANSWER__REASONING` sets it, and `reasoning_ignored` says whether the
+        provider sends no level to the model. This route sends no request to
         any provider.
       security:
         - sessionCookie: [read]
@@ -3633,12 +3636,17 @@ paths:
       operationId: setChatSettings
       summary: Save or clear the Chat provider and model
       description: >
-        Body `{provider, model, revision?}` writes `answer.provider` and `answer.model`
-        to `omrs.jsonc`. A body with only `revision`, an empty body or `null` clears both
-        keys. The Engine uses the choice from the next answer, with no restart.
-        Returns 400 for an unknown provider, a bad model name or only one of the two,
-        and 409 when the environment or `.env` sets the choice, `omrs.jsonc` changed since
-        `revision`, or the Engine refuses it. Browser session only.
+        Body `{provider, model, reasoning?, revision?}` writes `answer.provider`,
+        `answer.model` and `answer.reasoning` to `omrs.jsonc` in one write. `reasoning`
+        left out keeps the saved level, and `""` removes it. A body with only `reasoning`
+        (and `revision`) sets the level and keeps the choice. A body with only `revision`,
+        an empty body or `null` clears the choice and its level. The Engine uses the
+        choice from the next answer, with no restart.
+        Returns 400 for an unknown provider, a bad model name, only one of the two or a
+        level outside `^[A-Za-z0-9_-]{1,32}$`, and 409 when the environment or `.env` sets
+        the choice (for a body that writes it) or `ANSWER__REASONING` sets the level (for a
+        body that sends `reasoning`), `omrs.jsonc` changed since `revision`, or the Engine
+        refuses it. Browser session only.
       security:
         - sessionCookie: [manage]
       x-omrs-scopes: [manage]
@@ -3680,7 +3688,10 @@ paths:
         whether the environment locks it and why, whether answering is `enabled`, and
         whether the judge is `ready`. When it is not ready, `reason` is `disabled`,
         `unknown-provider`, `not-installed`, `not-configured` or `no-model` (the judge
-        model in force is empty). It does not say whether claim checks are on: a profile
+        model in force is empty). The four `reasoning*` fields report
+        `answer.verify_reasoning` like the Chat route, with the lock variable
+        `ANSWER__VERIFY_REASONING` and `reasoning_ignored` for the resolved provider.
+        It does not say whether claim checks are on: a profile
         decides that per collection. This route sends no request to any provider.
       security:
         - sessionCookie: [read]
@@ -3707,10 +3718,12 @@ paths:
       operationId: setJudgeSettings
       summary: Save or clear the claim check judge provider and model
       description: >
-        Body `{provider, model, revision?}` writes `answer.verify_provider` and
-        `answer.verify_model` to `omrs.jsonc` as one unit. `provider` is a registry name;
-        an alias (`cloud`, `local`) is refused. A body with only `revision`, an empty body
-        or `null` clears both keys. The Engine uses the choice from the next answer, with
+        Body `{provider, model, reasoning?, revision?}` writes `answer.verify_provider` and
+        `answer.verify_model` to `omrs.jsonc` as one unit, with `answer.verify_reasoning` in
+        the same write. `provider` is a registry name; an alias (`cloud`, `local`) is
+        refused. `reasoning` follows the Chat route rules; a bad level is 400 and a level
+        set by `ANSWER__VERIFY_REASONING` is 409. A body with only `revision`, an empty body
+        or `null` clears the choice and its level. The Engine uses the choice from the next answer, with
         no restart. Returns 400 for an unknown provider, an alias, an empty or bad model
         name or only one of the two, and 409 when `ANSWER__VERIFY_PROVIDER` or
         `ANSWER__VERIFY_MODEL` comes from the environment or `.env`, `omrs.jsonc` changed
@@ -3774,6 +3787,88 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ChatTestResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /settings/chat/reasoning-levels:
+    get:
+      operationId: getReasoningLevels
+      summary: List the reasoning levels a model accepts
+      description: >
+        Returns `{known: true, levels, default, mandatory, ignored}` when the provider
+        publishes a model catalogue that lists `model` with reasoning levels, else
+        `{known: false, ignored}`. `ignored` says whether `provider` sends no level to the
+        model at all. For OpenRouter the server reads the public
+        `GET https://openrouter.ai/api/v1/models` with no API key and keeps the parsed
+        catalogue in memory for 10 minutes. A provider without a catalogue sends no
+        request. A failed read gives `{known: false}` and is not cached.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrs-scopes: [read]
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+        - name: model
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+      responses:
+        "200":
+          description: The level list, or `known` false.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReasoningLevels"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /usage/credit:
+    get:
+      operationId: getUsageCredit
+      summary: Read the credit left on the Chat provider key
+      description: >
+        Returns `{available: true, limit_usd, remaining_usd}` when the Chat provider
+        publishes the key's spending limit, else `{available: false}`. For OpenRouter the
+        server sends one `GET https://openrouter.ai/api/v1/key` with the key. A key with no
+        limit, a missing key, a provider without credit data and any failure give
+        `{available: false}`; only the provider with credit data and a key is contacted.
+        Nothing is cached. The key never appears in the response or the log.
+      security:
+        - sessionCookie: [read]
+        - bearerToken: [read]
+      x-omrs-scopes: [read]
+      responses:
+        "200":
+          description: The credit, or `available` false.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageCredit"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -7802,7 +7897,7 @@ components:
       type: object
       additionalProperties: false
       required:
-        [provider, display_name, locality, installed, install_hint, fields, read_only, roles]
+        [provider, display_name, locality, installed, install_hint, extra, fields, read_only, roles]
       properties:
         provider:
           type: string
@@ -7815,6 +7910,11 @@ components:
           type: boolean
         install_hint:
           type: [string, "null"]
+        extra:
+          type: [string, "null"]
+          description: >
+            The `pyproject.toml` extra that supplies the provider, or null when the base
+            install has it. The install command is `uv sync --extra <extra>`.
         fields:
           type: array
           items:
@@ -7899,6 +7999,13 @@ components:
           type: [string, "null"]
           minLength: 1
           maxLength: 200
+        reasoning:
+          type: [string, "null"]
+          maxLength: 32
+          pattern: "^(?:[A-Za-z0-9_-]{1,32})?$"
+          description: >
+            The reasoning level, written in the same save. `""` removes the saved level, so
+            the provider default applies. Left out, the saved level stays.
         revision:
           type: [string, "null"]
           maxLength: 128
@@ -7909,7 +8016,21 @@ components:
     ChatSettings:
       type: object
       additionalProperties: false
-      required: [status, revision, provider, model, source, locked, lock_reason, enabled, ready, reason]
+      required:
+        - status
+        - revision
+        - provider
+        - model
+        - source
+        - locked
+        - lock_reason
+        - enabled
+        - ready
+        - reason
+        - reasoning
+        - reasoning_locked
+        - reasoning_lock_reason
+        - reasoning_ignored
       properties:
         status:
           type: string
@@ -7937,6 +8058,17 @@ components:
         reason:
           type: [string, "null"]
           enum: [disabled, unknown-provider, not-installed, not-configured, null]
+        reasoning:
+          type: string
+          description: The saved reasoning level. `""` means the provider default.
+        reasoning_locked:
+          type: boolean
+          description: True when the environment or `.env` sets the level. A save that sends it gives 409.
+        reasoning_lock_reason:
+          type: [string, "null"]
+        reasoning_ignored:
+          type: boolean
+          description: True when the provider sends no reasoning level to the model.
 
     JudgeSaveRequest:
       type: [object, "null"]
@@ -7951,6 +8083,13 @@ components:
           type: [string, "null"]
           minLength: 1
           maxLength: 200
+        reasoning:
+          type: [string, "null"]
+          maxLength: 32
+          pattern: "^(?:[A-Za-z0-9_-]{1,32})?$"
+          description: >
+            The reasoning level, written in the same save. `""` removes the saved level, so
+            the provider default applies. Left out, the saved level stays.
         revision:
           type: [string, "null"]
           maxLength: 128
@@ -7973,6 +8112,10 @@ components:
         - enabled
         - ready
         - reason
+        - reasoning
+        - reasoning_locked
+        - reasoning_lock_reason
+        - reasoning_ignored
       properties:
         status:
           type: string
@@ -8005,6 +8148,82 @@ components:
         reason:
           type: [string, "null"]
           enum: [disabled, unknown-provider, not-installed, not-configured, no-model, null]
+        reasoning:
+          type: string
+          description: The saved reasoning level. `""` means the provider default.
+        reasoning_locked:
+          type: boolean
+          description: True when the environment or `.env` sets the level. A save that sends it gives 409.
+        reasoning_lock_reason:
+          type: [string, "null"]
+        reasoning_ignored:
+          type: boolean
+          description: True when the provider sends no reasoning level to the model.
+
+    ReasoningLevels:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [status, known, ignored]
+          properties:
+            status:
+              type: string
+              enum: [ok]
+            known:
+              const: false
+            ignored:
+              type: boolean
+        - type: object
+          additionalProperties: false
+          required: [status, known, levels, default, mandatory, ignored]
+          properties:
+            status:
+              type: string
+              enum: [ok]
+            known:
+              const: true
+            levels:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                pattern: "^[A-Za-z0-9_-]{1,32}$"
+            default:
+              type: [string, "null"]
+              description: The level the provider uses when none is sent, or null when not published.
+            mandatory:
+              type: boolean
+              description: True when the model always reasons; no level turns it off.
+            ignored:
+              type: boolean
+              description: True when the provider sends no reasoning level to the model.
+
+    UsageCredit:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [status, available]
+          properties:
+            status:
+              type: string
+              enum: [ok]
+            available:
+              const: false
+        - type: object
+          additionalProperties: false
+          required: [status, available, limit_usd, remaining_usd]
+          properties:
+            status:
+              type: string
+              enum: [ok]
+            available:
+              const: true
+            limit_usd:
+              type: number
+              description: The key's spending limit in US dollars.
+            remaining_usd:
+              type: number
+              description: The part of the limit left, in US dollars.
 
     ChatTestResult:
       type: object

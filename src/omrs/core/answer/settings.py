@@ -27,6 +27,9 @@ def _parse_legacy_bool(value: object) -> object:
 
 LegacyBool = Annotated[bool, BeforeValidator(_parse_legacy_bool)]
 
+#: A reasoning level: empty, or 1 to 32 letters, digits, ``-`` and ``_``.
+REASONING_LEVEL_PATTERN = r"^(?:[A-Za-z0-9_-]{1,32})?$"
+
 
 class AnswerSettings(BaseModel):
     """Configuration knobs for the grounded answering operation.
@@ -91,3 +94,10 @@ class AnswerSettings(BaseModel):
     # → the cloud backend, "local" → the local backend, anything else
     # is a literal LLM-registry name validated at startup.
     verify_provider: str = "cloud"
+
+    # ── Reasoning levels (add-chat-reasoning-and-usage D4) ─────────
+    # Empty sends no reasoning field, so the provider uses its own
+    # default. A set level goes to every call for that role; each
+    # provider maps it to its own request field (design D2).
+    reasoning: str = Field(default="", pattern=REASONING_LEVEL_PATTERN)
+    verify_reasoning: str = Field(default="", pattern=REASONING_LEVEL_PATTERN)

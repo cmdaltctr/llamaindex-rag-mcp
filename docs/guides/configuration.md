@@ -543,7 +543,7 @@ An ignored value falls back to the next source. A typo in `embed_provider` there
 
 ##### Settings that need a restart
 
-`omrs web` applies these hand edits at once: provider addresses and keys, the Chat provider and model, the claim check judge provider and model (`answer.verify_provider`, `answer.verify_model`), context windows, llama.cpp server values, `web_max_upload_mib` and `mcp_http_enabled`. `web_port` and the engine settings (embedding, vector store, chunking, ingestion, retrieval, metadata, OCR and the other `answer` keys) apply at the next launch. `omrs web` keeps the values it started with and marks each changed key "Restart to apply".
+`omrs web` applies these hand edits at once: provider addresses and keys, the Chat provider and model, the claim check judge provider and model (`answer.verify_provider`, `answer.verify_model`), reasoning levels (`answer.reasoning`, `answer.verify_reasoning`), context windows, llama.cpp server values, `web_max_upload_mib` and `mcp_http_enabled`. `web_port` and the engine settings (embedding, vector store, chunking, ingestion, retrieval, metadata, OCR and the other `answer` keys) apply at the next launch. `omrs web` keeps the values it started with and marks each changed key "Restart to apply".
 
 **Limit.** These files are plaintext. File permissions do not stop another process of the same user, and an AI coding agent runs as that user. A `file://` or `env://` reference gives no security gain over `.env`. Use them on headless machines and in containers with a mounted folder. On a desktop, save keys in the keychain.
 
@@ -717,6 +717,8 @@ query time. See [MCP tools](mcp-tools.md#answer_documents) and
 | `verify_claims` | `false` | Opt-in claim-verification judge ([ADR-059](../adr/059-claim-verification-stage.md)). `true` adds one configured-judge call per cited prose sentence (~3.3 s P95 each on the tested GLM-5.3 cloud judge, experiment 20). An unavailable provider degrades to `verification_skipped`; the answer is never blocked |
 | `verify_model` | `""` | Judge model. Empty derives it from the provider's default model (e.g. `OPENROUTER_LLM_MODEL`). The default cloud provider has no default model, so claim checks are skipped until you set one. Settings > Chat can set it; applies at once in `omrs web` |
 | `verify_provider` | `cloud` | Judge provider. Aliases: `cloud` (or empty) resolves to the cloud backend, `local` to the local backend; anything else is a literal LLM-registry name. Unknown names fail startup. Settings > Chat can set it; applies at once in `omrs web` |
+| `reasoning` | `""` | Reasoning level for the Chat model, for example `low`, `high` or `none`. Empty sends no reasoning field, so the provider default applies. 1 to 32 letters, digits, `-` and `_`. Settings > Chat can set it; applies at once in `omrs web` |
+| `verify_reasoning` | `""` | Reasoning level for the claim check judge. Same rules as `reasoning`, set apart so the judge can think less than the Chat model. Settings > Chat can set it; applies at once in `omrs web` |
 
 The three `verify_*` fields are the one answer-block group a profile
 bundle may override per collection — a `documents` collection can opt
@@ -727,6 +729,17 @@ tested path); a local judge can be selected but is unmeasured.
 In `omrs web`, Settings > Chat can save `provider` and `model` for Chat and for MCP clients of that server that cannot supply their own model. `ANSWER__PROVIDER` or `ANSWER__MODEL` in the environment or `.env` wins and locks the choice. A saved choice goes in `omrs.jsonc` as `answer.provider` and `answer.model`, and applies at once, with no restart. Metadata extraction keeps its own model. The judge has its own choice. The stdio MCP server and the CLI read the choice from `omrs.jsonc` when they start.
 
 Settings > Chat also has a "Claim check judge" block. It saves `verify_provider` and `verify_model` together in `omrs.jsonc` as `answer.verify_provider` and `answer.verify_model`. Both apply at once in `omrs web`, with no restart. A hand edit of either key also applies at once. `ANSWER__VERIFY_PROVIDER` or `ANSWER__VERIFY_MODEL` in the environment or `.env` wins and locks the block. The page saves a registry name only, never the alias `cloud` or `local`. It refuses an empty model. The block sets the judge only. `verify_claims` stays a profile lever ("Check claims" in Studio), so the judge runs only for collections whose profile turns it on. A profile that sets its own judge overrides the saved choice. A cloud judge sends each claim and its cited passages off this machine.
+
+Each provider sends the reasoning level in its own request field:
+
+| Provider | Request field |
+|---|---|
+| `openrouter` | `reasoning: {"effort": <level>}` |
+| `openai_compatible` | `reasoning_effort: <level>` |
+| `ollama` | `think`: `low`, `medium` and `high` go as text, `none` sends `false`, any other level sends `true` |
+| `llamacpp`, `anthropic` | Nothing. The level is saved, and Settings > Chat says the provider ignores it |
+
+`ANSWER__REASONING` in the environment or `.env` wins and locks `answer.reasoning`. `ANSWER__VERIFY_REASONING` locks `answer.verify_reasoning`. Each level locks on its own; it does not lock the provider or model. A level is a server setting. A profile cannot change it.
 
 With the defaults the judge cannot run. `verify_provider: cloud` resolves to OpenRouter, and `OPENROUTER_LLM_MODEL` is empty by default. An empty `verify_model` then leaves the judge with no model, and the answer reports `verification_skipped`. Set a judge model to turn claim checks on. Settings > Chat shows "Not set" and says that claim checks are skipped until you set one.
 Environment variables still win over the profile:

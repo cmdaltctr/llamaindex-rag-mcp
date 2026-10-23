@@ -69,6 +69,23 @@ class ConnectionTarget:
 
 
 @dataclass(frozen=True)
+class ProviderLookup:
+    """One read the server sends to a provider on request, and how to read the answer.
+
+    The transport sends the request; this module never touches the network.
+
+    Attributes:
+        target: Returns the request for a settings object. Empty ``urls``
+            means nothing is sent.
+        parse: Returns the useful part of the decoded JSON answer, or
+            ``None`` when the payload has an unexpected shape.
+    """
+
+    target: Callable[[Any], ConnectionTarget]
+    parse: Callable[[object], Any]
+
+
+@dataclass(frozen=True)
 class ConnectionDescriptor:
     """Everything a provider card needs to know about one provider.
 
@@ -84,6 +101,12 @@ class ConnectionDescriptor:
         models_target: Returns the request that lists models.
         parse_models: Returns model names from a decoded model-list payload;
             an empty list when the payload has an unexpected shape.
+        reasoning_levels: Optional catalogue read. Its parser returns a map
+            of model name to ``{"levels", "default", "mandatory"}``. ``None``
+            means the provider publishes no level list.
+        credit: Optional read of the key's spending limit. Its parser returns
+            ``{"limit_usd", "remaining_usd"}`` or ``None``. ``None`` here
+            means the provider publishes no credit figure.
     """
 
     display_name: str
@@ -95,6 +118,8 @@ class ConnectionDescriptor:
     test_targets: Callable[[Any], ConnectionTarget]
     models_target: Callable[[Any], ConnectionTarget]
     parse_models: Callable[[object], list[str]]
+    reasoning_levels: ProviderLookup | None = None
+    credit: ProviderLookup | None = None
 
 
 def join_url(base: str, path: str) -> tuple[str, ...]:

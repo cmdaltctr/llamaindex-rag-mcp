@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 from . import engine_profiles
 from .compose_pipelines import EnginePipelines
 from .core.vectordb.identity import RedactionSecrets
-from .engine_answer import ClientCompletion, build_verifier, select_completion
+from .engine_answer import ClientCompletion, CompletionLedger, build_verifier, select_completion
 from .engine_embedders import EngineEmbedders, definition_collection, embedding_for
 from .engine_lifecycle import (
     graph_host,
@@ -316,14 +316,15 @@ class Engine(EngineProviders):
                     settings=effective,
                 )
             embed_model, identity = embedding_for(self, collection_name, binding)
+            ledger = CompletionLedger() if client_completion is None else None
             complete, effective, source = select_completion(
-                effective, client_completion, self._get_answer_llm
+                effective, client_completion, self._get_answer_llm, ledger
             )
             verify_complete, verify_unavailable_reason = build_verifier(
-                effective, self._verify_llm_factory, self.redact
+                effective, self._verify_llm_factory, self.redact, ledger
             )
 
-            return await core_answer(
+            result = await core_answer(
                 question,
                 top_k=top_k,
                 similarity_threshold=similarity_threshold,
@@ -345,6 +346,7 @@ class Engine(EngineProviders):
                 embedding_identity=identity,
                 query_cache=self._query_cache,
             )
+            return ledger.attach(result) if ledger is not None else result
 
     def list_collections(self) -> list[str]:
         """Return every collection name in the engine's store."""

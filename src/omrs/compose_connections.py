@@ -229,8 +229,9 @@ def build_connection_summary(
         ``{"config_dir": str, "user_config_dir": str, "keychain": "available" | "unavailable",
         "connections": [entry, ...]}``, one entry per registered provider.
         An entry has ``provider``, ``display_name``, ``locality``,
-        ``installed``, ``install_hint``, ``fields``, ``read_only`` and
-        ``roles``. No key value is included.
+        ``installed``, ``install_hint``, ``extra`` (the ``pyproject.toml``
+        extra that supplies the provider, or ``None``), ``fields``,
+        ``read_only`` and ``roles``. No key value is included.
     """
     values = values or ProviderValues()
     profiles_ollama = uses_ollama_embeddings(catalogue)
@@ -249,6 +250,7 @@ def build_connection_summary(
                     if installed or descriptor.extra is None
                     else f"uv sync --extra {descriptor.extra}"
                 ),
+                "extra": descriptor.extra,
                 "fields": _fields(provider, descriptor, settings, values, profiles_ollama),
                 "read_only": [
                     {"label": row.label, "value": row.value}

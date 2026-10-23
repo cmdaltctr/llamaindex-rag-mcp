@@ -18,6 +18,8 @@ from .connection import (
     join_url,
     models_from,
 )
+from .reply import ReplyFacts
+from .reply_read import read_openai_reply
 
 if TYPE_CHECKING:
     from ....config import Settings
@@ -26,11 +28,22 @@ if TYPE_CHECKING:
 _NO_KEY = "no-key"
 
 
+def reasoning_kwargs(level: str) -> dict[str, Any] | None:
+    """Return ``{"reasoning_effort": level}``, or ``None`` for an empty level."""
+    return {"reasoning_effort": level} if level else None
+
+
+def read_reply(raw: Any) -> ReplyFacts:
+    """Return reasoning text and tokens from an OpenAI-shaped chat completion."""
+    return read_openai_reply(raw)
+
+
 def build(
     settings: Settings,
     *,
     timeout: float | None = None,
     answer_model: str | None = None,
+    reasoning: str = "",
 ) -> Any:
     """Construct an ``OpenAILike`` chat LLM for the saved address from *settings*.
 
@@ -41,6 +54,8 @@ def build(
             passes ``answer.timeout``.
         answer_model: The model name. This provider has no model setting of
             its own, so the Chat model is required.
+        reasoning: Reasoning level (add-chat-reasoning-and-usage D2), sent as
+            ``reasoning_effort``. Empty sends nothing.
 
     Returns:
         A configured ``OpenAILike`` LLM.
@@ -60,6 +75,8 @@ def build(
         # OpenAILike names this ``timeout``; ``request_timeout`` is the Ollama
         # spelling and is silently dropped, leaving the 60s default in place.
         timeout=(timeout if timeout is not None else settings.metadata.classify_timeout),
+        # An empty level adds nothing, so the request stays as it was.
+        **({"additional_kwargs": extra} if (extra := reasoning_kwargs(reasoning)) else {}),
     )
 
 

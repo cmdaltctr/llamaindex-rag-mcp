@@ -145,7 +145,10 @@ DESCRIPTION = (
     "completion calls — use search_documents instead when you only "
     "need ranked chunks without that cost. When ANSWER__VERIFY_CLAIMS "
     "is enabled, each cited claim additionally costs one cloud-judge "
-    "call (~3.3 s P95 each, ADR-059)."
+    "call (~3.3 s P95 each, ADR-059). When the server's own model "
+    "answers, the result carries usage (tokens, cost in US dollars "
+    "and call count; null when the provider did not report a figure). "
+    "Set include_reasoning=true to also get the model's reasoning text."
 )
 ANNOTATIONS = ToolAnnotations(read_only_hint=True, destructive_hint=False)
 
@@ -160,6 +163,7 @@ async def answer_documents(
     diagnostics: bool = False,
     collection: str = "documents",
     metadata_filter: dict | None = None,
+    include_reasoning: bool = False,
     *,
     ctx: Context,
     client_round_1: Annotated[CreateMessageResult | None, Resolve(_mrtr_round_1)] = None,
@@ -184,6 +188,8 @@ async def answer_documents(
         diagnostics: Include per-stage timings and completion counts.
         collection: Collection to answer over.
         metadata_filter: Store filter restricting evidence.
+        include_reasoning: Keep the model's ``reasoning`` text in the result.
+            ``usage`` is returned either way.
         ctx: MCP request context (framework-injected; never part of the tool schema).
         client_round_1..4: Client completions resolved by the MRTR chain
             (framework-injected; never part of the tool schema).
@@ -253,7 +259,7 @@ async def answer_documents(
         # Claim verification (ADR-059) stays Engine-owned and server-side:
         # a client completion never replaces the judge.
         async with mcp.admit():
-            return await mcp.engine.answer(
+            result = await mcp.engine.answer(
                 query,
                 top_k=top_k,
                 similarity_threshold=similarity_threshold,
@@ -266,6 +272,9 @@ async def answer_documents(
                 client_completion=client_completion,
                 rows=preflight,
             )
+        if not include_reasoning and isinstance(result, dict):
+            result = {k: v for k, v in result.items() if k != "reasoning"}
+        return result
     except Exception as exc:  # Never raise from a tool handler (gotcha #1).
         log_tool_error(mcp, "answer_documents", exc)
         return {

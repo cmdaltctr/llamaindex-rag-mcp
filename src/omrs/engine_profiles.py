@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from .core.answer.progress import AnswerStage, report_stage
 from .core.pipelines import EventKind, RunStatus
 from .core.profiles.readiness import slot_title
+from .engine_answer import CompletionLedger, collecting
 
 if TYPE_CHECKING:
     from .core.pipelines import PipelineEvent, PipelineResult
@@ -263,11 +264,12 @@ async def answer(
     """
     block = getattr(settings, "answer", None)
     sink = None if block is not None and not block.enabled else _report_searching
-    result, unused = await _run_async(
-        engine, binding, "answer", {"query": question}, collection, values, sink
-    )
+    with collecting(CompletionLedger()) as ledger:
+        result, unused = await _run_async(
+            engine, binding, "answer", {"query": question}, collection, values, sink
+        )
     _require_success(binding, "answer", result)
-    answer_result = dict(result.outputs["answer"])
+    answer_result = ledger.attach(dict(result.outputs["answer"]))
     if values.get("include_diagnostics") and unused:
         answer_result["unused_request_values"] = list(unused)
     return answer_result

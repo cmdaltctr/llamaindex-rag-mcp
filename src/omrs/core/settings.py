@@ -241,6 +241,10 @@ class AnswerBlock(BaseModel):
     verify_claims: bool = False
     verify_model: str = ""
     verify_provider: str = "cloud"
+    # Reasoning levels (add-chat-reasoning-and-usage D4). Server-level, not
+    # profile-overlaid. Keep in sync with AnswerSettings.
+    reasoning: str = Field(default="", pattern=r"^(?:[A-Za-z0-9_-]{1,32})?$")
+    verify_reasoning: str = Field(default="", pattern=r"^(?:[A-Za-z0-9_-]{1,32})?$")
 
 
 class EffectiveSettings(BaseModel):

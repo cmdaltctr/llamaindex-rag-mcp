@@ -89,6 +89,9 @@ async def test_answer_template_matches_engine_answer(name: str, effective_settin
 
     engine, complete, judge = _engine(case, settings)
     standard = await engine.answer(QUERY, collection_name=_COLLECTION, include_diagnostics=True)
+    # ``usage``/``reasoning`` are attached by Engine.answer and the user-profile
+    # answer wrapper (design D3), not by a raw pipeline run, so they are not compared.
+    standard = {k: v for k, v in standard.items() if k not in ("usage", "reasoning")}
     want = observation(standard, complete, judge)
 
     engine, complete, judge = _engine(case, settings)

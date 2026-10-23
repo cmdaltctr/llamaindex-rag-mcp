@@ -17,9 +17,21 @@ from .connection import (
     join_url,
     models_from,
 )
+from .reply import ReplyFacts
+from .reply_read import read_openai_reply
 
 if TYPE_CHECKING:
     from ....config import Settings
+
+
+def reasoning_kwargs(level: str) -> dict[str, Any] | None:
+    """Return ``None``: llama.cpp has no stable request field for a level."""
+    return None
+
+
+def read_reply(raw: Any) -> ReplyFacts:
+    """Return reasoning text and tokens from a llama.cpp chat completion."""
+    return read_openai_reply(raw)
 
 
 def build(
@@ -27,6 +39,7 @@ def build(
     *,
     timeout: float | None = None,
     answer_model: str | None = None,
+    reasoning: str = "",
 ) -> Any:
     """Construct an ``OpenAILike`` LLM for llama.cpp from *settings*.
 
@@ -40,6 +53,8 @@ def build(
             answering operation so it never silently reuses the
             metadata classification model.  ``None`` keeps
             ``llamacpp_chat_model`` (existing callers).
+        reasoning: Accepted and ignored: llama.cpp has no stable request
+            field for a level (add-chat-reasoning-and-usage D2).
 
     Returns:
         A configured ``OpenAILike`` LLM.

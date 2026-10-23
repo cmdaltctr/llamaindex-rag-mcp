@@ -13,6 +13,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from .compose_pipelines import build_graph_host
+from .engine_answer import judge_provider_of, recording_answer_llm, recording_judge
 from .engine_embedders import embedding_for
 
 if TYPE_CHECKING:
@@ -103,6 +104,7 @@ def graph_host(engine: Engine, collection: str | None) -> Any:
     # when a provider update replaces the generation (design D3).
     generation = engine._gen
     answer_llm = generation.get_answer_llm if generation.answer_llm_factory is not None else None
+    settings = engine._effective_settings
     embedder, choice = embedding_for(engine, collection)
     resources = {
         "store": engine._store,
@@ -110,8 +112,10 @@ def graph_host(engine: Engine, collection: str | None) -> Any:
         "embedding_identity": choice or engine._embedders.host_identity,
         "reranker": engine._reranker,
         "ocr": engine._ocr_client,
-        "answer_llm": answer_llm,
-        "verify_llm": engine._pipelines.judge(generation.verify_llm_factory),
+        "answer_llm": recording_answer_llm(answer_llm, settings.answer.provider.strip()),
+        "verify_llm": recording_judge(
+            engine._pipelines.judge(generation.verify_llm_factory), judge_provider_of(settings)
+        ),
     }
     from dataclasses import replace
 

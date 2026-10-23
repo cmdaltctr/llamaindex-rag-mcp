@@ -95,6 +95,10 @@ def test_default_judge_has_no_model(setup: Any) -> None:
         "enabled": True,
         "ready": False,
         "reason": "no-model",
+        "reasoning": "",
+        "reasoning_locked": False,
+        "reasoning_lock_reason": None,
+        "reasoning_ignored": False,
     }
 
 

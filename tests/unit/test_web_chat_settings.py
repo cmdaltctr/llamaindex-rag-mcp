@@ -91,6 +91,10 @@ def test_get_default_choice(setup: Any) -> None:
         "enabled": True,
         "ready": True,
         "reason": None,
+        "reasoning": "",
+        "reasoning_locked": False,
+        "reasoning_lock_reason": None,
+        "reasoning_ignored": False,
     }
 
 

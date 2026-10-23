@@ -72,6 +72,9 @@ def test_the_allowed_keys_are_the_ones_the_page_edits() -> None:
         "answer.model",
         "answer.verify_provider",
         "answer.verify_model",
+        # add-chat-reasoning-and-usage D4: one reasoning level per role
+        "answer.reasoning",
+        "answer.verify_reasoning",
         "web_port",
         "web_max_upload_mib",
         "mcp_http_enabled",
@@ -86,7 +89,7 @@ def test_the_allowed_keys_are_the_ones_the_page_edits() -> None:
         "ocr_maths_routing_enabled",
         "ocr_maths_page_fraction",
     }
-    assert len(ALLOWED_KEYS) == 27
+    assert len(ALLOWED_KEYS) == 29
 
 
 def test_a_key_outside_the_list_is_refused_and_changes_nothing(existing: Path) -> None:

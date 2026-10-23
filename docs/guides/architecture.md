@@ -152,6 +152,24 @@ operation catalogue and plans graph runs for one Engine.
 `pipeline_templates.py` publishes the canonical graphs. These modules sit at
 the top level because they import more than one domain.
 
+**Answer reasoning and usage** (ADR-093). The core answer seam stays "prompt
+in, whole reply text out". `engine_answer.py` keeps one `CompletionLedger` for
+each answer request beside the seam:
+
+1. `server_seam()` calls the model and returns the reply text.
+2. It passes the raw provider reply to the provider's `read_reply`, found
+   through `core/providers/llm/registry.reply_reader()`.
+3. It adds the result (`ReplyFacts`) to the ledger. The judge seam adds to the
+   same ledger, for usage only.
+4. `Engine.answer` adds `usage` and `reasoning` to the result after synthesis.
+
+A user-profile answer runs a pipeline graph. Core cannot take a ledger there,
+so `engine_profiles.answer` sets the ledger as the active ledger of the task
+(`collecting()`). `graph_host` wraps the `answer_llm` and `verify_llm`
+resources so each call records into it. A raw `Engine.run_pipeline` call sets
+no ledger and records nothing. A client-sampled answer has no ledger, because
+OMRS cannot see the client's model.
+
 ### `core/` — does the work
 
 | Folder             | Job                                                                                        |

@@ -106,6 +106,7 @@ def test_entry_shape_and_config_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: P
         "locality",
         "installed",
         "install_hint",
+        "extra",
         "fields",
         "read_only",
         "roles",

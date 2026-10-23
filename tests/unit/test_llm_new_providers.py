@@ -248,6 +248,8 @@ def test_provider_fields_match_the_descriptors() -> None:
         "answer.model",
         "answer.verify_provider",
         "answer.verify_model",
+        "answer.reasoning",
+        "answer.verify_reasoning",
     }
     ints = {
         f.settings_field

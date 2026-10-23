@@ -25,6 +25,17 @@ if TYPE_CHECKING:
     from .config import Settings
 
 
+def _level(level: object) -> dict[str, str]:
+    """Return ``{"reasoning": level}``, or nothing for an empty level.
+
+    An empty level passes no argument, so the provider call stays as it was
+    and a provider whose ``build()`` has no ``reasoning`` keyword still works
+    (add-chat-reasoning-and-usage D2).
+    """
+    text = str(level or "").strip()
+    return {"reasoning": text} if text else {}
+
+
 def build_answer_llm(settings: Settings | None = None) -> Any:
     """Construct the answer language model from the answer settings block.
 
@@ -69,6 +80,7 @@ def build_answer_llm(settings: Settings | None = None) -> Any:
             settings,
             timeout=settings.answer.timeout,
             answer_model=settings.answer.model,
+            **_level(settings.answer.reasoning),
         )
     except ModuleNotFoundError:
         # Missing optional package. The optional SDK import happens
@@ -230,6 +242,7 @@ def build_verify_llm(
             settings,
             timeout=settings.answer.timeout,
             answer_model=(verify_model or None),
+            **_level(getattr(block, "verify_reasoning", "")),
         )
     except ModuleNotFoundError:
         # Missing optional package — same policy as build_answer_llm:

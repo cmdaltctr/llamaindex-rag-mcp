@@ -17,6 +17,8 @@ from .connection import (
     join_url,
     models_from,
 )
+from .reply import NO_FACTS, ReplyFacts
+from .reply_read import count, field, text
 
 if TYPE_CHECKING:
     from ....config import Settings
@@ -25,11 +27,41 @@ _ANTHROPIC_API_BASE = "https://api.anthropic.com"
 _ANTHROPIC_VERSION = "2023-06-01"
 
 
+def reasoning_kwargs(level: str) -> dict[str, Any] | None:
+    """Return ``None``: Anthropic thinking needs a token budget, not a level."""
+    return None
+
+
+def read_reply(raw: Any) -> ReplyFacts:
+    """Return thinking text and tokens from an Anthropic message.
+
+    Thinking comes from ``content`` blocks of type ``thinking``, joined with a
+    blank line. Usage comes from ``usage.input_tokens`` and
+    ``usage.output_tokens``. Anthropic reports no cost.
+    """
+    try:
+        blocks = field(raw, "content")
+        thoughts = [
+            found
+            for block in (blocks if isinstance(blocks, (list, tuple)) else ())
+            if field(block, "type") == "thinking" and (found := text(field(block, "thinking")))
+        ]
+        usage = field(raw, "usage")
+        return ReplyFacts(
+            reasoning="\n\n".join(thoughts) or None,
+            input_tokens=count(field(usage, "input_tokens")),
+            output_tokens=count(field(usage, "output_tokens")),
+        )
+    except Exception:  # noqa: BLE001 - a reader must never raise
+        return NO_FACTS
+
+
 def build(
     settings: Settings,
     *,
     timeout: float | None = None,
     answer_model: str | None = None,
+    reasoning: str = "",
 ) -> Any:
     """Construct an Anthropic chat LLM from *settings*.
 
@@ -40,6 +72,8 @@ def build(
             passes ``answer.timeout``.
         answer_model: The model name. This provider has no model setting of
             its own, so the Chat model is required.
+        reasoning: Accepted and ignored: Anthropic needs a token budget, not
+            a level (add-chat-reasoning-and-usage D2).
 
     Returns:
         A configured ``llama_index.llms.anthropic.Anthropic`` LLM.

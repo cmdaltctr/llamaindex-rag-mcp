@@ -4,7 +4,7 @@
       "destructive_hint": false,
       "read_only_hint": true
     },
-    "description": "Answer a question from the indexed documents using retrieved evidence, returning the answer together with deterministic, verifiable citations (every cited chunk_id re-fetches exactly one stored chunk). Performs ONE OR MORE language-model completion calls \u2014 use search_documents instead when you only need ranked chunks without that cost. When ANSWER__VERIFY_CLAIMS is enabled, each cited claim additionally costs one cloud-judge call (~3.3 s P95 each, ADR-059).",
+    "description": "Answer a question from the indexed documents using retrieved evidence, returning the answer together with deterministic, verifiable citations (every cited chunk_id re-fetches exactly one stored chunk). Performs ONE OR MORE language-model completion calls \u2014 use search_documents instead when you only need ranked chunks without that cost. When ANSWER__VERIFY_CLAIMS is enabled, each cited claim additionally costs one cloud-judge call (~3.3 s P95 each, ADR-059). When the server's own model answers, the result carries usage (tokens, cost in US dollars and call count; null when the provider did not report a figure). Set include_reasoning=true to also get the model's reasoning text.",
     "inputSchema": {
       "properties": {
         "collection": {
@@ -33,6 +33,11 @@
           ],
           "default": null,
           "title": "Hybrid"
+        },
+        "include_reasoning": {
+          "default": false,
+          "title": "Include Reasoning",
+          "type": "boolean"
         },
         "metadata_filter": {
           "anyOf": [

@@ -15,9 +15,41 @@ from .connection import (
     join_url,
     models_from,
 )
+from .reply import NO_FACTS, ReplyFacts
+from .reply_read import count, field, text
 
 if TYPE_CHECKING:
     from ....config import Settings
+
+
+#: Levels that Ollama's ``think`` field takes as text. Other levels turn
+#: thinking on (``True``); ``none`` turns it off.
+_THINK_LEVELS = frozenset({"low", "medium", "high"})
+
+
+def reasoning_kwargs(level: str) -> dict[str, Any] | None:
+    """Return ``{"think": ...}`` for reasoning *level*, or ``None`` for an empty level."""
+    if not level:
+        return None
+    if level == "none":
+        return {"think": False}
+    return {"think": level if level in _THINK_LEVELS else True}
+
+
+def read_reply(raw: Any) -> ReplyFacts:
+    """Return thinking text and tokens from an Ollama chat reply.
+
+    Thinking comes from ``message.thinking``, tokens from ``prompt_eval_count``
+    and ``eval_count``. Ollama reports no cost and no separate reasoning count.
+    """
+    try:
+        return ReplyFacts(
+            reasoning=text(field(field(raw, "message"), "thinking")),
+            input_tokens=count(field(raw, "prompt_eval_count")),
+            output_tokens=count(field(raw, "eval_count")),
+        )
+    except Exception:  # noqa: BLE001 - a reader must never raise
+        return NO_FACTS
 
 
 def build(
@@ -25,6 +57,7 @@ def build(
     *,
     timeout: float | None = None,
     answer_model: str | None = None,
+    reasoning: str = "",
 ) -> Any:
     """Construct an ``Ollama`` LLM from *settings*.
 
@@ -38,6 +71,8 @@ def build(
             answering operation so it never silently reuses the
             metadata classification model.  ``None`` keeps the
             metadata-classification model (existing callers).
+        reasoning: Reasoning level (add-chat-reasoning-and-usage D2), sent as
+            the top-level ``think`` field. Empty sends nothing.
 
     Returns:
         A configured ``Ollama`` LLM.
@@ -55,6 +90,9 @@ def build(
         # Ollama genuinely accepts ``request_timeout`` — unlike OpenAILike,
         # which names it ``timeout`` and silently drops this spelling.
         request_timeout=(timeout if timeout is not None else settings.metadata.classify_timeout),
+        # ``think`` is a top-level request field. ``additional_kwargs`` would put
+        # it in ``options``, where Ollama ignores it, so it goes in ``thinking``.
+        **({"thinking": think["think"]} if (think := reasoning_kwargs(reasoning)) else {}),
     )
 
 

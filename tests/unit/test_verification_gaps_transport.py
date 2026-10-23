@@ -44,6 +44,7 @@ _V3_TOOLS: dict[str, tuple[dict[str, Any], list[str], dict[str, bool]]] = {
             "diagnostics": False,
             "expand_window": 0,
             "hybrid": None,
+            "include_reasoning": False,
             "metadata_filter": None,
             "query": _REQUIRED,
             "rerank": None,

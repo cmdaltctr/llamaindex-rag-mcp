@@ -152,6 +152,7 @@ language-model completion calls. Retrieval is cheaper. Use
 | `diagnostics`          | bool   | `false`         | Include retrieval and generation timings, and the completion-call count                                |
 | `collection`           | string | `"documents"`   | Collection to answer over                                                                              |
 | `metadata_filter`      | dict   | `null`          | ChromaDB-compatible `where` clause restricting the evidence, e.g. `{"category": "AI"}`                 |
+| `include_reasoning`    | bool   | `false`         | Keep the model's `reasoning` text in the result. `usage` is returned either way                        |
 
 Retrieval runs through the same profile-resolved path as
 `search_documents`. The answer is synthesised only from the retrieved
@@ -188,6 +189,30 @@ ran and passed, the result carries `verified: true`; when the judge could
 not run or had no cited prose sentence to check, the result carries
 `verification_skipped` with the reason (see
 [Claim verification](#claim-verification-optional)).
+
+When the server's own model answers (`completion_source` is `server`) and at
+least one model call ran, the result carries `usage`:
+
+| Field              | Meaning                                                       |
+| ------------------ | ------------------------------------------------------------- |
+| `input_tokens`     | Prompt tokens, summed over every call                         |
+| `output_tokens`    | Completion tokens, summed over every call                     |
+| `reasoning_tokens` | Reasoning tokens inside the completion, summed                |
+| `cost_usd`         | Cost in US dollars, summed                                    |
+| `calls`            | Number of model calls, judge calls included                   |
+
+A figure is `null` unless every call reported it. OMRS never shows a partial
+sum as the total. For example, Ollama reports tokens but no cost, so
+`cost_usd` is `null`. A client-sampled answer carries no `usage`, because OMRS
+cannot see the client's model.
+
+When the provider returns reasoning text apart from the answer, the result can
+carry `reasoning`. The tool keeps it only with `include_reasoning: true`, so
+an agent does not pay tokens for text it did not ask for. Several answer calls
+are joined in call order with a blank line. Judge reasoning is not included.
+The text is capped at 64 KB with a `[reasoning truncated]` marker. The HTTP
+answer route always returns `reasoning`, and a saved Chat turn keeps both
+fields.
 
 Citations and evidence rows carry `ordinal`, `chunk_id`, `chunk_ids`,
 `source_id`, `source_version`, `source`, `source_chunk_index`, `score`, and

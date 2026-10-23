@@ -34,7 +34,8 @@ PROVIDER_INT_FIELDS: tuple[str, ...] = tuple(INT_KEY_BOUNDS)
 PROVIDER_SERVER_FIELDS: tuple[str, ...] = ("llamacpp_server_binary", "llamacpp_server_model")
 
 #: Editable provider fields, as ``Settings`` paths. ``answer.*`` live in the
-#: nested answer block: the Chat choice and the claim check judge choice.
+#: nested answer block: the Chat choice, the claim check judge choice and the
+#: reasoning level of each (locked one by one, add-chat-reasoning-and-usage D4).
 PROVIDER_FIELDS: tuple[str, ...] = (
     *PROVIDER_ADDRESS_FIELDS,
     *PROVIDER_SECRET_FIELDS,
@@ -44,6 +45,8 @@ PROVIDER_FIELDS: tuple[str, ...] = (
     "answer.model",
     "answer.verify_provider",
     "answer.verify_model",
+    "answer.reasoning",
+    "answer.verify_reasoning",
 )
 
 

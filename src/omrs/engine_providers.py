@@ -33,7 +33,14 @@ if TYPE_CHECKING:
 
 #: Server-default settings a provider update may change.
 _EDITABLE_TOP = (*PROVIDER_ADDRESS_FIELDS, *PROVIDER_SECRET_FIELDS, *PROVIDER_INT_FIELDS)
-_EDITABLE_ANSWER = ("provider", "model", "verify_provider", "verify_model")
+_EDITABLE_ANSWER = (
+    "provider",
+    "model",
+    "verify_provider",
+    "verify_model",
+    "reasoning",
+    "verify_reasoning",
+)
 
 
 @dataclass
@@ -193,7 +200,8 @@ class EngineProviders:
 
         Allowed differences are the provider addresses and API keys (see
         ``PROVIDER_ADDRESS_FIELDS`` and ``PROVIDER_SECRET_FIELDS``), the
-        answer provider and model, and the judge provider and model. The next answer, judge,
+        answer provider, model and reasoning level, and the judge provider, model
+        and reasoning level. The next answer, judge,
         ingest and graph run build their resources from the new values
         through the factories the composition root gave. A call that already
         started finishes with the old values. The embedder, store and
@@ -216,8 +224,9 @@ class EngineProviders:
         )
         if names:
             raise ValueError(
-                "Only LLM provider addresses, keys, the answer provider and model and the "
-                "claim check judge provider and model can change while the server runs "
+                "Only LLM provider addresses, keys, the answer provider, model and reasoning "
+                "level and the claim check judge provider, model and reasoning level can "
+                "change while the server runs "
                 "(embedding settings need a restart). "
                 f"These differ: {', '.join(names)}."
             )

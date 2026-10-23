@@ -26,6 +26,7 @@ from .middleware import GuardMiddleware
 from .page_secret import PageSecret
 from .routes.admin import router as admin_router
 from .routes.answer_stream import router as answer_stream_router
+from .routes.chat_reasoning import router as chat_reasoning_router
 from .routes.chat_settings import router as chat_settings_router
 from .routes.chats import router as chats_router
 from .routes.configuration import router as configuration_router
@@ -48,6 +49,7 @@ from .routes.power import router as power_router
 from .routes.profiles import router as profiles_router
 from .routes.runs import router as runs_router
 from .routes.templates import router as templates_router
+from .routes.usage_credit import router as usage_credit_router
 from .security import AccessPolicy, SecretSet
 from .static import FrontendFallback
 
@@ -63,7 +65,9 @@ API_ROUTERS: tuple[APIRouter, ...] = (
     profiles_router,
     chats_router,
     chat_settings_router,
+    chat_reasoning_router,
     judge_settings_router,
+    usage_credit_router,
     configuration_router,
     document_reading_router,
     embedding_router,

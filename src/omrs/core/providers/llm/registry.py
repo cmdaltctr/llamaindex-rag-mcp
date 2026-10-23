@@ -12,6 +12,7 @@ from collections.abc import Callable
 from typing import Any
 
 from .connection import ConnectionDescriptor
+from .reply import NO_FACTS, ReplyFacts
 
 _registry: dict[str, str] = {}
 _cache: dict[str, Callable[..., Any]] = {}
@@ -81,6 +82,38 @@ def describe_all() -> dict[str, ConnectionDescriptor]:
         if descriptor is not None:
             described[name] = descriptor
     return described
+
+
+def _module_attr(name: str, attr: str) -> Any:
+    """Return *attr* of provider *name*'s module, or ``None`` when absent or unknown."""
+    import_path = _registry.get(name)
+    if import_path is None:
+        return None
+    return getattr(importlib.import_module(import_path.split(":")[0]), attr, None)
+
+
+def reasoning_kwargs(name: str, level: str) -> dict[str, Any] | None:
+    """Return the request fields provider *name* sends for reasoning *level*.
+
+    ``None`` means nothing is sent: the level is empty, or the provider
+    ignores levels (it has no ``reasoning_kwargs`` or it returns ``None``).
+    """
+    if not level:
+        return None
+    mapper = _module_attr(name, "reasoning_kwargs")
+    return mapper(level) if mapper is not None else None
+
+
+def ignores_reasoning(name: str) -> bool:
+    """Return whether provider *name* sends nothing for any reasoning level."""
+    mapper = _module_attr(name, "reasoning_kwargs")
+    return mapper is None or mapper("low") is None
+
+
+def reply_reader(name: str) -> Callable[[Any], ReplyFacts]:
+    """Return provider *name*'s ``read_reply``, or a reader that reports nothing."""
+    reader = _module_attr(name, "read_reply")
+    return reader if reader is not None else (lambda _raw: NO_FACTS)
 
 
 def available() -> list[str]:

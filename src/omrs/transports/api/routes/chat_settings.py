@@ -3,7 +3,8 @@
 ``GET /v1/settings/chat`` reports the provider and model that answer Chat
 and whether Chat is ready. It sends no request to any provider.
 ``PUT /v1/settings/chat`` writes or clears ``answer.provider`` and
-``answer.model`` in ``omrs.jsonc``, and the Engine takes the choice at once.
+``answer.model`` in ``omrs.jsonc``, with ``answer.reasoning`` in the same
+write (add-chat-reasoning-and-usage D4), and the Engine takes the choice at once.
 Both routes carry the file ``revision`` (ADR-087).
 ``POST /v1/settings/chat/test`` builds the model, sends one short prompt and
 reports a reason from a fixed set. A test never saves, and no reply text or
@@ -29,12 +30,14 @@ from pydantic import BaseModel, ConfigDict, Field
 from ....compose_providers import ProviderValues, locked_fields
 from ....compose_providers import provider_settings as _provider_settings
 from ....config.settings_file_write import SettingsFileError
+from ....core.answer.settings import REASONING_LEVEL_PATTERN
 from ....core.providers.llm import registry as llm_registry
 from ..engine_access import ReadScope, RuntimeDep, admitted
 from ..errors import error_response
 from ..lifespan import WebRuntime
 from ..provider_state import EngineRefused
 from ..settings_store import refusal_response
+from .chat_reasoning import CHAT_LEVEL, level_changes, level_lock_response, level_view
 from .experiments import ManageScope
 from .graphs import ok
 
@@ -60,17 +63,25 @@ class ChatChoice(BaseModel):
     model: Annotated[str, Field(min_length=1, max_length=MAX_MODEL_CHARS)]
 
 
+#: A reasoning level in a save body: ``""`` removes the saved level.
+ReasoningLevel = Annotated[str, Field(max_length=32, pattern=REASONING_LEVEL_PATTERN)] | None
+
+
 class ChatSaveBody(BaseModel):
     """Body of ``PUT /v1/settings/chat``.
 
-    A choice has both ``provider`` and ``model``. A body with neither (only an
-    optional ``revision``), or no body, clears the choice.
+    A choice has both ``provider`` and ``model``. ``reasoning`` is optional:
+    left out keeps the saved level, ``""`` removes it. A body with only
+    ``reasoning`` sets the level and keeps the choice. A body with none of
+    the three (only an optional ``revision``), or no body, clears the choice
+    and its level.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     provider: Annotated[str, Field(min_length=1, max_length=64)] | None = None
     model: Annotated[str, Field(min_length=1, max_length=MAX_MODEL_CHARS)] | None = None
+    reasoning: ReasoningLevel = None
     revision: Annotated[str, Field(max_length=128)] | None = None
 
 
@@ -162,6 +173,7 @@ def _status(runtime: WebRuntime) -> dict[str, Any]:
         "enabled": settings.answer.enabled,
         "ready": reason is None,
         "reason": reason,
+        **level_view(settings, CHAT_LEVEL, provider),
     }
 
 
@@ -205,16 +217,19 @@ async def set_chat_settings(
     runtime: RuntimeDep,
     body: Annotated[ChatSaveBody | None, Body()] = None,
 ) -> Response:
-    """Write the Chat provider and model to `omrs.jsonc`, or clear both.
+    """Write the Chat provider, model and reasoning level to `omrs.jsonc`, or clear them.
 
-    A body without `provider` and `model`, or no body, clears the choice.
-    The Engine uses the choice from the next answer. 400 for an unknown
-    provider or bad model name, 409 when the environment sets the choice,
+    `reasoning` left out keeps the saved level; `""` removes it. A body with
+    only `reasoning` keeps the choice. A body without `provider`, `model` and
+    `reasoning`, or no body, clears the choice and its level. The Engine uses
+    the choice from the next answer. 400 for an unknown provider, a bad model
+    name or a bad level; 409 when the environment sets what the body writes,
     the file changed since `revision`, or the Engine refuses it. The answer
     carries the new `revision`.
     """
     body = body or ChatSaveBody()
     choice = None
+    writes_choice = body.reasoning is None or body.provider is not None or body.model is not None
     if body.provider is not None or body.model is not None:
         if body.provider is None or body.model is None:
             return error_response(400, "Send both provider and model, or neither to clear.")
@@ -230,16 +245,27 @@ async def set_chat_settings(
         return error_response(404, "Provider settings are not available.")
     async with admitted(runtime), state.lock:
         settings = await run_in_threadpool(_provider_settings, provider_values_of(runtime))
-        if (locked := _locked_response(settings)) is not None:
+        if writes_choice and (locked := _locked_response(settings)) is not None:
             return locked
+        if (
+            body.reasoning is not None
+            and (locked := level_lock_response(settings, CHAT_LEVEL)) is not None
+        ):
+            return locked
+        changes: dict[str, str | None] = {}
+        if writes_choice:
+            provider, model = choice if choice is not None else (None, None)
+            changes = {_PROVIDER_PATH: provider, _MODEL_PATH: model}
+        clearing = writes_choice and choice is None
+        changes |= level_changes(settings, CHAT_LEVEL, body.reasoning, clearing)
         try:
-            await run_in_threadpool(state.save_chat, runtime.engine, choice, body.revision)
+            await run_in_threadpool(state.save_fields, runtime.engine, changes, body.revision)
         except SettingsFileError as exc:
             return refusal_response(exc)
         except EngineRefused:
             return error_response(409, "The running server could not take this Chat choice.")
         result = await run_in_threadpool(_status, runtime)
-    logger.info("Chat choice %s", "cleared" if choice is None else "saved")
+    logger.info("Chat choice %s", "cleared" if writes_choice and choice is None else "saved")
     return ok(result)
 
 
