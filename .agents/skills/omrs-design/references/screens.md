@@ -2,6 +2,19 @@
 
 This file turns the `redesign-web-workspace` spec deltas into layout and styling decisions. The deltas stay the contract. Read the delta for the view you touch, then apply the design rules here. If they disagree, the delta wins. Report the disagreement.
 
+## Card groups
+
+These rules apply to every group of cards in any view.
+
+- Cards of the same size: use a plain grid, `grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3`.
+- Cards of different heights in one group: use the masonry layout. Settings > Providers is the example: the llama.cpp card holds a Local server panel and is much taller.
+- For masonry, use the shared `MasonryColumns` component in `web/src/settings/MasonryColumns.tsx`. It deals cards left to right into 1, 2 or 3 column stacks. The breakpoints are 768px and 1280px, the same as Tailwind `md` and `xl`. The reading order stays left to right. A card that grows during an edit stays in its column.
+- Keep a tall card in one column at its full length. Do not make it span two columns. Do not put its content side by side to make it shorter.
+- Put an extra panel under the card's fields. Separate it with `border-t border-border pt-3`.
+- Do not use CSS columns (`columns-2`) for card groups. The order then reads down each column, and cards move to a different column when their height changes.
+- Do not use native CSS masonry (`grid-lanes`) yet. Browser support is not ready.
+- You can place a small fixed group by hand in column stacks when the order is important. Settings > MCP does this in `web/src/settings/McpSection.tsx`.
+
 ## Shell
 
 Navigation has seven items in this order: Home, Chat, Knowledge Base, Studio, Experiments, Integrations, Settings. Home is the landing view. Each row has a Lucide icon before its label and `aria-current="page"` on the active row.
@@ -85,7 +98,7 @@ Seven sections switched with `chip` buttons, one at a time (redesign design D13)
 - Appearance: the same theme `Select` as the top bar.
 - Providers: one card per registered LLM provider (Ollama, llama.cpp, OpenRouter, OpenAI-compatible, Anthropic; names come from the server) with read-only URLs and model names in `code`, role badges, "Installed" or an install hint, an address `Input` with source line, Save and Reset, a key `Input type="password"` (write-only, empties after save, Save key and Remove key), and a Test button that shows reachable or the reason as a status badge. An environment value shows "Set from environment (read-only here)" and locks the field. A config-file value shows "Set from config file (read-only here)" with the lock text "Set in ~/.config/omrs/omrs.jsonc. Edit that file and restart to change it." and locks the field. A key-file value shows "Set from key file (read-only here). Saving a key in the keychain overrides it." and keeps the key input. With no system keychain, one line replaces the key input and names the environment variable. Saved values apply at once, so show no restart banner. Show a key only as "Key set", its source, the save time and the last four characters when the server sends them. Never render a full key.
 - Ollama card: add a number `Input` "Context window (tokens)" (2048 to 262144) with its source line and lock text; friendly error "Enter 2,048 to 262,144." for a bad value.
-- A card with an extra panel (llama.cpp) spans two grid columns from `md` up: provider fields on the left, the panel on the right after a left rule. Below `md` it stacks in one column and the panel keeps its top rule.
+- Provider cards have different heights, so the section uses `MasonryColumns` (see Card groups). The llama.cpp card stays in one column. Its "Local server" panel sits under the provider fields after `border-t border-border pt-3`.
 - llama.cpp card, "Local server" panel: state `Badge` with text (`stopped`, `starting`, `running`, `failed`) and one friendly line for each fixed reason (`binary-invalid`, `model-invalid`, `not-loopback`, `port-in-use`, `exited`, `timeout`, `not-configured`); `Input` fields for program path, model, context window and idle sleep with source lines, plus a one-line note on what idle sleep does; Start, Stop and Restart buttons (Start disabled while starting or running, Stop disabled while stopped); the line "omrs starts and stops only this server. It never touches a server you started yourself."; "Restart to apply" when saved values differ; program and model read-only without the `credentials` scope. Never show output of the server.
 - Chat: a `Select` for the provider (items not ready are disabled with the reason), an `Input` for the model name, List models (fills a second `Select`), Test, Save and Clear. Say where the choice applies: MCP clients of this server without their own model, not metadata extraction, not stdio or the CLI. Show the cloud warning when the provider is cloud.
 - MCP: the stdio client configuration (`uv run --directory <config_dir> omrs`) in a `code` block with a copy button, and, from `add-mcp-http-transport`: the HTTP on/off switch (show only the state the server returns), the HTTP configuration with the `/mcp` URL, token rotate and revoke with a new token shown once, and the saved web port with a next-launch notice.
