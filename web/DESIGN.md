@@ -217,10 +217,11 @@ Copy is plain British English. Buttons say what they do ("Upload files", "Run pi
 - The Chat section holds a provider `Select`, a model `Input`, List models, Test, Save and Clear. A provider that is not ready is disabled and shows its reason. A cloud provider shows a notice that questions and passages leave this machine.
 - Card grids use `items-start` so short cards do not stretch.
 - Cards of the same size use a plain grid: `grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3`.
-- Cards of different heights in one group use `MasonryColumns` (`web/src/settings/MasonryColumns.tsx`). It fits as many columns of at least 300px as the area allows, up to three, and puts each card in the shortest column. It places the cards again when a size changes, but not while focus is inside the cards, so a card that grows during an edit stays in its column.
+- Cards of different heights in one group use `MasonryColumns` (`web/src/components/MasonryColumns.tsx`). It fits as many columns of at least 300px as the area allows, up to three, and puts each card in the shortest column. It places the cards again when a size changes, but not while focus is inside the cards, so a card that grows during an edit stays in its column.
 - A tall card stays in one column at its full length. It does not span two columns or put its content side by side. An extra panel sits under the card's fields after `border-t border-border pt-3`.
 - Card groups do not use CSS columns (`columns-2`) or native CSS masonry (`grid-lanes`).
 - A small fixed group where the order is important can be placed by hand in column stacks, as Settings > MCP does.
+- Each part of a card (one setting, field, read-only list, status block or drop zone) sits in its own `CardInset` mini card: `rounded-control border border-border bg-background/60 p-3`, lighter than the card, no shadow. `SettingRow`, `KeySettingRow` and `ReadingSettingRow` render one already. A `Card` never sits inside a `Card`.
 - Use logical properties only (`ms-*`, `pe-*`, `border-s`, `text-start`), so the layout mirrors for right-to-left text.
 - At 390px wide there is no horizontal page scroll.
 
@@ -246,7 +247,7 @@ Use the primitives. Import them; do not copy their classes.
 // web/src/<area>/SomeView.tsx: relative imports; the project has no path alias
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardInset } from "../components/ui/card";
 import { cn } from "../lib/utils";
 ```
 

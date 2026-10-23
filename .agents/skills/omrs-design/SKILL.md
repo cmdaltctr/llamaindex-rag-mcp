@@ -33,6 +33,7 @@ Check `web/package.json` and `web/src/components/ui/` before you rely on any of 
 | Buttons, badges, fields, dialogs, nav rows, icons, shadcn CLI use | [Component guidance](references/components.md), plus foundations |
 | What a specific view contains and how it is laid out | [Screen guidance](references/screens.md) |
 | Layout of a group of cards (grid or masonry) | [Screen guidance](references/screens.md), section Card groups |
+| Parts inside a card (settings, fields, lists): mini cards | [Screen guidance](references/screens.md), section Mini cards inside cards |
 | Visible text, error and empty states, accessibility, right-to-left safety | [Copy and accessibility](references/copy-and-accessibility.md) |
 | Any rendered UI change | [Verification](references/verification.md) before you start and before you report |
 

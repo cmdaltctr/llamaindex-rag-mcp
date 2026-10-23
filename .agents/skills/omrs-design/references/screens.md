@@ -8,12 +8,24 @@ These rules apply to every group of cards in any view.
 
 - Cards of the same size: use a plain grid, `grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3`.
 - Cards of different heights in one group: use the masonry layout. Settings > Providers is the example: the llama.cpp card holds a Local server panel and is much taller.
-- For masonry, use the shared `MasonryColumns` component in `web/src/settings/MasonryColumns.tsx`. It fits as many columns of at least 300px as the area allows, up to three. It puts each card in the shortest column, so a short card does not sit under a tall one. It places the cards again when the area or a card changes size. It does not move a card while focus is inside the cards, so a card that grows during an edit stays in its column. The cards move when focus leaves.
+- For masonry, use the shared `MasonryColumns` component in `web/src/components/MasonryColumns.tsx`. It fits as many columns of at least 300px as the area allows, up to three. It puts each card in the shortest column, so a short card does not sit under a tall one. It places the cards again when the area or a card changes size. It does not move a card while focus is inside the cards, so a card that grows during an edit stays in its column. The cards move when focus leaves.
 - Keep a tall card in one column at its full length. Do not make it span two columns. Do not put its content side by side to make it shorter.
 - Put an extra panel under the card's fields. Separate it with `border-t border-border pt-3`.
 - Do not use CSS columns (`columns-2`) for card groups. The order then reads down each column, and cards move to a different column when their height changes.
 - Do not use native CSS masonry (`grid-lanes`) yet. Browser support is not ready.
 - You can place a small fixed group by hand in column stacks when the order is important. Settings > MCP does this in `web/src/settings/McpSection.tsx`.
+
+## Mini cards inside cards
+
+Every card holds its parts in mini cards. Apply this rule in every view without being asked.
+
+- Use `CardInset` from `web/src/components/ui/card.tsx` for one part of a card: one setting, one field, one read-only list, one status block, one drop zone.
+- `CardInset` is lighter than the card: `rounded-control border border-border bg-background/60 p-3`, no shadow. It is the same pattern as the OMMS inner cards.
+- Give each setting its own `CardInset`. Do not stack several settings in one.
+- `SettingRow`, `KeySettingRow` (`web/src/settings/SettingRow.tsx`) and `ReadingSettingRow` already render a `CardInset`. Use them for a new setting, and do not wrap them again.
+- Keep the card title, the card description, notices such as "Text you send leaves this machine" and the card's own action (for example Test) outside the mini cards.
+- Never put a `Card` inside a `Card`. A section that brings its own cards (for example Knowledge Base > Add) sits outside the section card.
+- A view with no cards at all is wrong. Put each panel of the view in a `Card`, then its parts in mini cards.
 
 ## Shell
 
@@ -56,6 +68,9 @@ Reuse `views/shared/ChunkViewer.tsx` (or its moved location). Delete `views/sear
 Four sections, switched with `chip` buttons and shown one at a time: Sources, Search, Add, Profile (owner decision).
 
 Manages the active project's sources: file upload (managed upload plus an ingest job), folder ingest from approved roots, and the source table.
+
+- Sources, Search and Profile sit in one section card. Add shows two cards in `MasonryColumns`: Upload files and Ingest from an approved folder.
+- Pick files with `FileDropZone` (`web/src/knowledge-base/FileDropZone.tsx`): drop files on the zone or press Choose files. Each pick adds to the list. Each listed file shows its size and a Remove button. The list clears when the upload run ends, and the results list replaces it.
 
 - Show job status as text with a status badge.
 - Refuse an oversized file in the client with a friendly message before any upload. Never send it.
