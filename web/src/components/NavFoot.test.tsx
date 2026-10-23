@@ -8,7 +8,7 @@ import { documentsServer, json } from "../test/fakeDocumentsServer";
 import { createQueryClient } from "../api/queries";
 import { renderWithProviders } from "../test/providers";
 
-const REPOSITORY = "https://github.com/cmdaltctr/llamaindex-rag-mcp";
+const REPOSITORY = "https://github.com/cmdaltctr/omrs";
 const HEALTH_UP = { "GET /v1/health": () => ({ status: "ok", ready: true, version: "2.3.4" }) };
 const HEALTH_DOWN = { "GET /v1/health": () => json({ detail: "down" }, 503) };
 

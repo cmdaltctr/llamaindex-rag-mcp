@@ -1,10 +1,14 @@
-# omrs — a standalone retrieval framework
+<p align="center">
+  <img src="web/public/omrs-logo.svg" alt="OMRS logo" width="96" height="96" />
+</p>
+
+# OMRS: Opinionated Modular RAG System
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Requires llama.cpp, Ollama, or OpenRouter](https://img.shields.io/badge/requires-llama.cpp_or_Ollama_or_OpenRouter-000000)](https://github.com/ggml-org/llama.cpp)
 
-`omrs` is a local-first retrieval framework. Point it at your files — PDFs,
+OMRS is a standalone, local-first retrieval framework. Point it at your files — PDFs,
 Word docs, notes, papers, source code — and search them by meaning rather
 than keywords.
 
