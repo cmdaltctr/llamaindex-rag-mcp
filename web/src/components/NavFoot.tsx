@@ -5,7 +5,7 @@ import { PowerMenu } from "./PowerMenu";
 import { ThemeToggle } from "./ThemeControls";
 import { Button } from "./ui/button";
 
-const REPOSITORY_URL = "https://github.com/cmdaltctr/llamaindex-rag-mcp";
+const REPOSITORY_URL = "https://github.com/cmdaltctr/omrs";
 
 // lucide-react 1.x ships no brand icons, so the GitHub mark is inline.
 function GitHubMark() {

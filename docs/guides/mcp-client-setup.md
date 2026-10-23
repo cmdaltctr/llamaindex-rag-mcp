@@ -9,12 +9,12 @@
 3. Fill in:
    - Name: `rag-docs`
    - Transport: **Local / stdio**
-   - Command (one token per line): `uv` / `run` / `--project` / `/absolute/path/to/llamaindex-rag-mcp` / `omrs`
+   - Command (one token per line): `uv` / `run` / `--project` / `/absolute/path/to/omrs` / `omrs`
 4. Environment variables:
    - `EMBED_MODEL` = `nomic-embed-text`
    - `OLLAMA_BASE_URL` = `http://localhost:11434`
    - `VECTOR_STORE` = `lancedb`
-   - `LANCEDB_URI` = `/absolute/path/to/llamaindex-rag-mcp/lancedb`
+   - `LANCEDB_URI` = `/absolute/path/to/omrs/lancedb`
 5. Click **Create** — the server should connect immediately (green indicator).
 
 ### Method B — Direct JSON edit
@@ -26,12 +26,12 @@ Add this block to `~/.opencode/opencode.json` (available in all projects) or `<p
   "mcp": {
     "rag-docs": {
       "type": "local",
-      "command": ["uv", "run", "--project", "/absolute/path/to/llamaindex-rag-mcp", "omrs"],
+      "command": ["uv", "run", "--project", "/absolute/path/to/omrs", "omrs"],
       "environment": {
         "EMBED_MODEL": "nomic-embed-text",
         "OLLAMA_BASE_URL": "http://localhost:11434",
         "VECTOR_STORE": "lancedb",
-        "LANCEDB_URI": "/absolute/path/to/llamaindex-rag-mcp/lancedb"
+        "LANCEDB_URI": "/absolute/path/to/omrs/lancedb"
       },
       "enabled": true
     }
@@ -63,7 +63,7 @@ Put a per-project `opencode.json` inside each project with its own `LANCEDB_URI`
   "mcp": {
     "rag-docs": {
       "type": "local",
-      "command": ["uv", "run", "--project", "/absolute/path/to/llamaindex-rag-mcp", "omrs"],
+      "command": ["uv", "run", "--project", "/absolute/path/to/omrs", "omrs"],
       "environment": {
         "EMBED_MODEL": "nomic-embed-text",
         "OLLAMA_BASE_URL": "http://localhost:11434",
@@ -120,7 +120,7 @@ ollama serve &
 ollama pull nomic-embed-text
 
 # Set up the server
-cd /path/to/llamaindex-rag-mcp
+cd /path/to/omrs
 cp .env.example .env
 uv sync
 

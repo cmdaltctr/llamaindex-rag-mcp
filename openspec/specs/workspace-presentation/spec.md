@@ -176,7 +176,7 @@ The Settings link SHALL open the Settings view.
 
 The power control SHALL show a light that follows `GET /v1/health`: green while the app answers and grey when it does not. Pressing it SHALL open a panel. The panel SHALL say "Running" with the running version while the app answers, and "Not answering" when it does not. The panel SHALL offer a Turn off button and a Restart button. Each button SHALL open a confirmation dialog that names the action. The Restart dialog SHALL say that the page signs in again by itself once the app is back, and SHALL name `omrs web open` for the case where it does not. After Turn off the dialog SHALL name `omrs web start`. After Restart it SHALL name `omrs web open`. The buttons SHALL be disabled when `GET /v1/server/power` answers `managed: false` or does not answer. The panel SHALL then show the commands `omrs web restart` and `omrs web open`, and one line that says why the buttons are disabled. When the server answers 409 because work is in progress, the panel SHALL show that reason in one line and SHALL keep the app running. The state SHALL NOT rely on colour alone.
 
-The GitHub link SHALL point to https://github.com/cmdaltctr/llamaindex-rag-mcp, SHALL open in a new tab and SHALL carry a `rel` value with `noopener` and `noreferrer`.
+The GitHub link SHALL point to https://github.com/cmdaltctr/omrs, SHALL open in a new tab and SHALL carry a `rel` value with `noopener` and `noreferrer`.
 
 #### Scenario: Four controls in order
 
@@ -234,7 +234,7 @@ The GitHub link SHALL point to https://github.com/cmdaltctr/llamaindex-rag-mcp, 
 #### Scenario: GitHub link
 
 - **WHEN** the navigation renders
-- **THEN** the GitHub link MUST point to https://github.com/cmdaltctr/llamaindex-rag-mcp
+- **THEN** the GitHub link MUST point to https://github.com/cmdaltctr/omrs
 - **AND** the link MUST open in a new tab and MUST carry a `rel` value with `noopener` and `noreferrer`
 
 #### Scenario: Collapsed navigation

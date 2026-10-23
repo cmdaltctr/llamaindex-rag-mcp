@@ -72,52 +72,55 @@ internal and free to change without a major version.
   skipped dependants in the public result contract
 - **AND** existing ingest/search/answer return shapes SHALL remain unchanged
 
-### Requirement: Package identity is `omrg`
+### Requirement: Package identity is `omrs`
 
 The distribution name, import name, and only supported console command SHALL
-be `omrg`. The previous `rag_mcp` import path, `rag-mcp` distribution name,
-and `rag-mcp` console command SHALL be absent. No compatibility shim,
-console-script alias, or automatic fallback SHALL be provided.
+be `omrs`. The previous `omrg` and `rag_mcp` import paths, the `omrg` and
+`rag-mcp` distribution names, and the `omrg` and `rag-mcp` console commands
+SHALL be absent. No compatibility shim, console-script alias, or automatic
+fallback SHALL be provided.
 
-This is a v3 breaking change. Existing stored vector data remains compatible.
-A legacy watcher is migrated only when its user explicitly reruns `omrg
-install-login-watcher` and confirms replacement or supplies `--force`.
+This is a breaking change. Existing stored vector data remains compatible.
+A legacy `com.rag-mcp.watch.` watcher is migrated only when its user
+explicitly reruns `omrs install-login-watcher` and confirms replacement or
+supplies `--force`.
 
 #### Scenario: The new import path works
 
-- **WHEN** a consumer imports `omrg`
+- **WHEN** a consumer imports `omrs`
 - **THEN** the import SHALL succeed
 
 #### Scenario: The old import path is gone
 
-- **WHEN** a consumer imports `rag_mcp`
+- **WHEN** a consumer imports `omrg` or `rag_mcp`
 - **THEN** the import SHALL fail with a standard `ModuleNotFoundError`
 - **AND** no shim module SHALL exist to soften it
 
 #### Scenario: Entry points follow the package
 
-- **WHEN** a user installs the v3 distribution
-- **THEN** the distribution SHALL install an `omrg` console command that
-  resolves into the `omrg` package
-- **AND** the distribution SHALL NOT install a `rag-mcp` console command
+- **WHEN** a user installs the distribution
+- **THEN** the distribution SHALL install an `omrs` console command that
+  resolves into the `omrs` package
+- **AND** the distribution SHALL NOT install an `omrg` or `rag-mcp` console
+  command
 
 #### Scenario: The legacy command fails rather than falling back
 
-- **WHEN** a user invokes `rag-mcp` after upgrading to v3
-- **THEN** OMRG SHALL NOT provide a compatibility command or redirect
-- **AND** the invocation SHALL fail rather than starting an OMRG transport
+- **WHEN** a user invokes `omrg` or `rag-mcp` after upgrading
+- **THEN** OMRS SHALL NOT provide a compatibility command or redirect
+- **AND** the invocation SHALL fail rather than starting an OMRS transport
 
 #### Scenario: Installed watchers survive the command rename
 
 - **GIVEN** a legacy LaunchAgent whose label starts `com.rag-mcp.watch.` and
   whose ProgramArguments contain an absolute `rag-mcp` executable
-- **WHEN** the user runs `omrg install-login-watcher` for the same watched
+- **WHEN** the user runs `omrs install-login-watcher` for the same watched
   directory
 - **THEN** the installer SHALL discover the legacy plist
 - **AND** the installer SHALL require interactive confirmation or `--force`
   before removing it
-- **AND** a replacement watcher SHALL use an absolute `omrg` executable, a
-  `com.omrg.watch.` label, and OMRG log paths
+- **AND** a replacement watcher SHALL use an absolute `omrs` executable, a
+  `com.omrs.watch.` label, and OMRS log paths
 - **AND** the installer SHALL NOT retain or invoke the legacy executable
 
 #### Scenario: Stored data survives the rename
