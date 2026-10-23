@@ -62,7 +62,7 @@
 - [x] 7.3 Run `openspec validate rename-omrg-to-omrs --strict`.
 - [x] 7.4 Run `/opsx:verify` for this change.
 - [x] 7.5 Build the wheel in a throwaway environment and check that `omrs` imports, `omrs --help` runs, the packaged YAML defaults load, and no `omrg` console script exists.
-- [ ] 7.6 Open the pull request into `v4`: `gh pr create --base v4`. Title `feat!: rename OMRG to OMRS`. Wait for the required checks.
+- [x] 7.6 Open the pull request into `v4`: `gh pr create --base v4`. Title `feat!: rename OMRG to OMRS`. Wait for the required checks. Done: PR #125, all required checks green after the tripwire re-pin, merged into `v4` as `2d93b01` on 2026-10-23.
 
 ## 8. Owner hand-off (outside the repository; the agent cannot do these)
 
