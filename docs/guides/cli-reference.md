@@ -489,6 +489,12 @@ The login item is a copy of your `omrs` that launchd starts. A stop signal does 
     ```
 
     Do not use editable mode (`-e`): it keeps running the source files of the checkout. To update the copy later, run the same command with `--reinstall`, then `omrs web restart`.
+
+    Name every extra you use in the brackets. A reinstall builds the environment again from that list, so it drops an extra that the Integrations page installed (ADR-094). Each Integrations entry shows the lasting command with your current extras plus its own, for example:
+
+    ```bash
+    uv tool install --reinstall "omrs[web,hybrid,anthropic] @ ~/src/omrs"
+    ```
 2. **Settings come from `omrs.jsonc`.** The login item reads `omrs.jsonc` in the user config folder (`~/.config/omrs/omrs.jsonc` by default). It also reads `~/.omrs/.env` when that file exists. That `.env` is optional and overrides the file. launchd starts the login item in `~/.omrs` with no shell variables, so variables you export in your shell do not reach it. `install` shows the path of the settings file. When the folder where you ran it has a `.env` file, `install` tells you that the login item does not read it. Run `omrs config init` to write a starter file, then copy the settings you need into it. The command never reads, copies or moves a `.env` file.
 3. **The `PATH` is fixed.** The login item gets `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin`, so it can start tools such as `llama-server`. A tool in another folder is not found.
 4. **A running copy does not change when you install a newer one.** `status` shows the running version and the installed version. Run `omrs web restart` to start the installed version. Open tabs sign in again by themselves after the restart.
