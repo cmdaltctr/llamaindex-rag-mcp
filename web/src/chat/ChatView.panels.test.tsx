@@ -73,3 +73,54 @@ describe("hideable cards beside the chat", () => {
     expect(panel.getByRole("button", { name: /^documents/ })).toHaveAttribute("aria-pressed", "true");
   });
 });
+
+describe("side cards while the chat scrolls", () => {
+  it("keeps both cards in view on a wide screen", async () => {
+    setup();
+    await grid();
+    for (const name of ["Chat history", "Knowledge base panel"]) {
+      expect(screen.getByRole("complementary", { name })).toHaveClass("lg:sticky", "lg:top-16", "lg:overflow-y-auto");
+    }
+  });
+
+  it("pins the knowledge base card under the top bar in the single column", async () => {
+    setup();
+    // A sticky grid item cannot leave its own row, so the single column is a flex column.
+    expect(await grid()).toHaveClass("flex", "flex-col", "lg:grid");
+    expect(await grid()).not.toHaveClass("grid");
+    expect(screen.getByRole("complementary", { name: "Knowledge base panel" })).toHaveClass("sticky", "top-12");
+  });
+});
+
+describe("folding the knowledge base card in the single column", () => {
+  it("has a fold chevron that shows only below the wide layout", async () => {
+    setup();
+    await grid();
+    const fold = screen.getByRole("button", { name: "Fold knowledge bases" });
+    expect(fold).toHaveClass("lg:hidden");
+    expect(fold).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("folds the card to its icon row and opens it again", async () => {
+    const user = setup();
+    await grid();
+    const panel = screen.getByRole("complementary", { name: "Knowledge base panel" });
+    const views = within(panel).getByTestId("knowledge-panel-views");
+    expect(views).not.toHaveClass("max-lg:hidden");
+    await user.click(screen.getByRole("button", { name: "Fold knowledge bases" }));
+    expect(views).toHaveClass("max-lg:hidden");
+    expect(within(panel).getByRole("tablist", { name: "Knowledge base panel views" })).toBeInTheDocument();
+    const unfold = screen.getByRole("button", { name: "Unfold knowledge bases" });
+    expect(unfold).toHaveAttribute("aria-expanded", "false");
+    await user.click(unfold);
+    expect(views).not.toHaveClass("max-lg:hidden");
+  });
+
+  it("opens a folded card when a tab is chosen", async () => {
+    const user = setup();
+    await grid();
+    await user.click(screen.getByRole("button", { name: "Fold knowledge bases" }));
+    await user.click(screen.getByRole("tab", { name: "Citations" }));
+    expect(screen.getByTestId("knowledge-panel-views")).not.toHaveClass("max-lg:hidden");
+  });
+});

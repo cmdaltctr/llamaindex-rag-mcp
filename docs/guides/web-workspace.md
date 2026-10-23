@@ -625,7 +625,8 @@ Chat stores every finished answer in the workspace database, so a reload shows t
 2. Chat skips an answer with an error status. A Retry that works is saved.
 3. Choose New chat to start an empty chat. The old chat stays in the history list.
 4. On a screen 1024 px wide or more, the history list sits at the left of the transcript. On a narrow screen, choose History to open it.
-5. On a screen 1024 px wide or more, the history list and the knowledge base list each sit in a card. Choose the chevron on a card to hide it. A narrow strip with a show button stays in its place, and the chat grows into the free room. The cards show again after you reload the page, and they are always shown on a narrower screen.
+5. On a screen 1024 px wide or more, the history list and the knowledge base list each sit in a card. Choose the chevron on a card to hide it. A narrow strip with a show button stays in its place, and the chat grows into the free room. The cards show again after you reload the page, and they are always shown on a narrower screen. On a wide screen both cards stay in view when a long chat scrolls.
+6. On a screen narrower than 1024 px, the knowledge base card stays at the top under the top bar. Choose the chevron at the right of its icons to fold it to that row. Choose the chevron again, or choose an icon, to open it.
 
 Group chats in folders. A folder holds chats and no other folder.
 

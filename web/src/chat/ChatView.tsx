@@ -25,6 +25,10 @@ import { useChatSession, type Turn } from "./useChatSession";
 import { useLatestAnswer } from "./useLatestAnswer";
 
 /** Wide-screen columns by hidden cards. A hidden card keeps a strip for its show button. */
+// On a wide screen both cards stay in view under the top bar while a long chat
+// scrolls the page; a card taller than the window scrolls inside itself.
+const STICKY_WIDE = "lg:sticky lg:top-16 lg:z-auto lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto";
+
 function gridColumns(historyHidden: boolean, knowledgeHidden: boolean): string {
   if (historyHidden) return knowledgeHidden ? "lg:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem]" : "lg:grid-cols-[2.25rem_minmax(0,1fr)_16rem]";
   return knowledgeHidden ? "lg:grid-cols-[16rem_minmax(0,1fr)_2.25rem]" : "lg:grid-cols-[16rem_minmax(0,1fr)_16rem]";
@@ -98,8 +102,9 @@ export function ChatView() {
       >
         {(active, collections) => (
           // The column fills the remaining height so the composer can dock at its bottom.
-          <div data-testid="chat-grid" className={`grid flex-1 grid-cols-1 gap-6 lg:grid-rows-[1fr] ${gridColumns(historyHidden, knowledgeHidden)}`}>
-            <aside aria-label="Chat history" className={`flex-col self-start lg:order-none lg:flex ${historyOpen ? "order-first flex" : "hidden"}`}>
+          // Below the wide layout it is a flex column: a sticky grid item cannot leave its row.
+          <div data-testid="chat-grid" className={`flex flex-1 flex-col gap-6 lg:grid lg:grid-rows-[1fr] ${gridColumns(historyHidden, knowledgeHidden)}`}>
+            <aside aria-label="Chat history" className={`flex-col self-stretch lg:order-none lg:self-start lg:flex ${STICKY_WIDE} ${historyOpen ? "order-first flex" : "hidden"}`}>
               <SidePanel side="left" label="chat history" collapsed={historyHidden} onToggle={() => setHistoryHidden(!historyHidden)}>
                 {(hide) => (
                   <ChatHistory activeChatId={chatId} onOpen={openFromHistory} onRemoved={(ids) => (chatId !== null && ids.includes(chatId) ? newChat() : undefined)} trailing={hide} />
@@ -145,7 +150,7 @@ export function ChatView() {
               ) : null}
               <Composer collection={active.name} busy={busy} unavailable={unavailable} onSend={send(active.name)} />
             </div>
-            <aside aria-label="Knowledge base panel" className="order-first flex flex-col gap-2 self-start lg:order-none">
+            <aside aria-label="Knowledge base panel" className={`sticky top-12 z-[5] order-first flex flex-col gap-2 self-stretch lg:order-none lg:self-start ${STICKY_WIDE}`}>
               <SidePanel side="right" label="knowledge bases" collapsed={knowledgeHidden} onToggle={() => setKnowledgeHidden(!knowledgeHidden)}>
                 {(hide) => (
                   <KnowledgePanel
