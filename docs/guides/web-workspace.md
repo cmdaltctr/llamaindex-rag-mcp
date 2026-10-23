@@ -634,7 +634,8 @@ Group chats in folders. A folder holds chats and no other folder.
 3. Right-click a chat, or choose the more button (three dots) on it, then choose Move to a folder. A side menu lists No folder and each folder, with a tick on the current one. The more button also works with the keyboard and by touch.
 4. To move many chats, choose Select and tick the chats. Then choose Move selected and choose a folder or No folder.
 5. To change the folder order, choose Select. Drag the grip on the left of a folder name onto another folder. Or focus the grip and press Up arrow or Down arrow. The order is saved in `workspace.db`.
-6. Choose Rename on a folder to change its name.
+6. A folder with more than one chat has a chevron before its name. Choose it to close or open the folder. A closed folder shows its chat count. The browser remembers which folders you closed.
+7. Choose Rename on a folder to change its name.
 
 Delete chats and folders. Each delete asks first and says how many chats it removes. A delete is permanent and cannot be undone.
 

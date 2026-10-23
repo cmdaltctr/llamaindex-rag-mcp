@@ -1,5 +1,5 @@
-import { Pencil } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { ChevronDown, ChevronRight, Pencil } from "lucide-react";
+import { useId, useState, type ReactNode } from "react";
 import type { ChatFolder } from "../api/chats";
 import { Button } from "../components/ui/button";
 import { cn } from "../lib/utils";
@@ -20,14 +20,22 @@ interface ChatFolderSectionProps {
   leading?: ReactNode;
   /** Extra header actions, such as the folder delete button. */
   actions?: ReactNode;
+  /** How many chats the folder holds. With more than one, a chevron opens and closes it. */
+  count?: number;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
   children: ReactNode;
 }
 
 /** A folder, or the "No folder" group, as a drop target that lists its chats. */
-export function ChatFolderSection({ folder, onRename, onDrop, folderDragOver = false, leading, actions, children }: ChatFolderSectionProps) {
+export function ChatFolderSection({ folder, onRename, onDrop, folderDragOver = false, leading, actions, count = 0, collapsed = false, onToggleCollapsed, children }: ChatFolderSectionProps) {
   const [renaming, setRenaming] = useState(false);
   const [over, setOver] = useState(false);
   const [edge, setEdge] = useState<DropEdge | null>(null);
+  const listId = useId();
+  const foldable = folder !== null && count > 1 && onToggleCollapsed !== undefined;
+  const closed = foldable && collapsed;
+  const Chevron = closed ? ChevronRight : ChevronDown;
   // The top half of the section means "above it", the bottom half "below it".
   const edgeAt = (event: React.DragEvent<HTMLElement>): DropEdge => {
     const box = event.currentTarget.getBoundingClientRect();
@@ -60,6 +68,11 @@ export function ChatFolderSection({ folder, onRename, onDrop, folderDragOver = f
       )}
       <div className="flex min-h-8 items-center gap-1">
         {leading}
+        {foldable ? (
+          <Button variant="ghost" size="icon-xs" aria-label={`${closed ? "Expand" : "Collapse"} folder ${name}`} aria-expanded={!closed} aria-controls={listId} onClick={onToggleCollapsed}>
+            <Chevron aria-hidden="true" />
+          </Button>
+        ) : null}
         {renaming && folder !== null ? (
           <FolderNameField
             initial={folder.name}
@@ -70,7 +83,10 @@ export function ChatFolderSection({ folder, onRename, onDrop, folderDragOver = f
             }}
           />
         ) : (
-          <h3 className="min-w-0 flex-1 truncate text-meta font-semibold text-muted-foreground">{name}</h3>
+          <h3 className="min-w-0 flex-1 truncate text-meta font-semibold text-muted-foreground">
+            {name}
+            {closed ? <span className="ms-1 font-normal">({count})</span> : null}
+          </h3>
         )}
         {folder !== null && !renaming ? (
           <Button variant="ghost" size="icon-xs" aria-label={`Rename folder ${name}`} onClick={() => setRenaming(true)}>
@@ -79,7 +95,11 @@ export function ChatFolderSection({ folder, onRename, onDrop, folderDragOver = f
         ) : null}
         {renaming ? null : actions}
       </div>
-      <ul className="flex flex-col gap-1">{children}</ul>
+      {closed ? null : (
+        <ul id={listId} className="flex flex-col gap-1">
+          {children}
+        </ul>
+      )}
     </section>
   );
 }

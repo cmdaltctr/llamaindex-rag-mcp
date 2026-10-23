@@ -1,4 +1,4 @@
-import { createEvent, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, createEvent, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { ChatSummary } from "../api/chats";
@@ -185,6 +185,56 @@ function dragFolder(name: string, targetLabel: string, id: string, half: Half) {
 }
 
 const folderOrder = () => screen.getAllByRole("region", { name: /^Folder / }).map((region) => region.getAttribute("aria-label"));
+
+const BUSY: FakeChatSeed = {
+  folders: [
+    { folder_id: "f1", name: "Work", created_at: "t1" },
+    { folder_id: "f2", name: "Home", created_at: "t2" },
+  ],
+  chats: [
+    { chat_id: "c1", folder_id: "f1", title: "First filed" },
+    { chat_id: "c2", folder_id: "f1", title: "Second filed" },
+    { chat_id: "c3", folder_id: "f2", title: "Only one" },
+    { chat_id: "c4", folder_id: null, title: "Loose" },
+  ],
+};
+
+describe("folding folders", () => {
+  it("gives a chevron only to a folder with more than one chat", async () => {
+    setup(BUSY);
+    await screen.findByText("First filed");
+    expect(within(group("Folder Work")).getByRole("button", { name: "Collapse folder Work" })).toHaveAttribute("aria-expanded", "true");
+    expect(within(group("Folder Home")).queryByRole("button", { name: /^(Collapse|Expand) folder Home$/ })).toBeNull();
+    expect(within(group("No folder")).queryByRole("button", { name: /^(Collapse|Expand)/ })).toBeNull();
+  });
+
+  it("hides the chats and shows their count when collapsed, and shows them again", async () => {
+    const { user } = setup(BUSY);
+    await user.click(await screen.findByRole("button", { name: "Collapse folder Work" }));
+    expect(within(group("Folder Work")).queryByText("First filed")).toBeNull();
+    expect(within(group("Folder Work")).getByText("(2)")).toBeInTheDocument();
+    const expand = within(group("Folder Work")).getByRole("button", { name: "Expand folder Work" });
+    expect(expand).toHaveAttribute("aria-expanded", "false");
+    await user.click(expand);
+    expect(within(group("Folder Work")).getByText("First filed")).toBeInTheDocument();
+  });
+
+  it("remembers a collapsed folder in this browser", async () => {
+    const { user } = setup(BUSY);
+    await user.click(await screen.findByRole("button", { name: "Collapse folder Work" }));
+    cleanup();
+    setup(BUSY);
+    expect(await within(await screen.findByRole("region", { name: "Folder Work" })).findByRole("button", { name: "Expand folder Work" })).toBeInTheDocument();
+    expect(screen.queryByText("First filed")).toBeNull();
+  });
+
+  it("still takes a dropped chat while collapsed", async () => {
+    const { user, store } = setup(BUSY);
+    await user.click(await screen.findByRole("button", { name: "Collapse folder Work" }));
+    drag(screen.getByText("Loose").closest("li")!, group("Folder Work"), "c4");
+    await waitFor(() => expect(store.chats.get("c4")?.folder_id).toBe("f1"));
+  });
+});
 
 describe("reordering folders", () => {
   it("shows a reorder handle on each folder only in select mode", async () => {

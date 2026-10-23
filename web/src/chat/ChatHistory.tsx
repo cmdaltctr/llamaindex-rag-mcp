@@ -13,6 +13,7 @@ import { DeleteChatsDialog, type DeleteRequest } from "./DeleteChatsDialog";
 import { FolderNameField } from "./FolderNameField";
 import { FolderReorderHandle } from "./FolderReorderHandle";
 import { MoveSelectedMenu } from "./MoveSelectedMenu";
+import { useCollapsedFolders } from "./useCollapsedFolders";
 
 interface ChatHistoryProps {
   activeChatId: string | null;
@@ -42,6 +43,7 @@ export function ChatHistory({ activeChatId, onOpen, onRemoved, trailing }: ChatH
   const [request, setRequest] = useState<DeleteRequest | null>(null);
   const dragged = useRef<string | null>(null);
   const draggedFolder = useRef<string | null>(null);
+  const [collapsedFolders, toggleCollapsed] = useCollapsedFolders();
   const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [naming, setNaming] = useState(false);
@@ -201,6 +203,9 @@ export function ChatHistory({ activeChatId, onOpen, onRemoved, trailing }: ChatH
           folder={folder}
           onDrop={onDrop}
           folderDragOver={draggingFolderId !== null && draggingFolderId !== folder.folder_id}
+          count={chats.filter((chat) => chat.folder_id === folder.folder_id).length}
+          collapsed={collapsedFolders.has(folder.folder_id)}
+          onToggleCollapsed={() => toggleCollapsed(folder.folder_id)}
           onRename={(folderId, name) => renameFolder.mutate({ folderId, name })}
           leading={
             selectMode ? (
