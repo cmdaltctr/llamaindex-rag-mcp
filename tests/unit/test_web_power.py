@@ -224,6 +224,22 @@ def test_an_active_or_waiting_run_blocks_the_action(
     assert harness.recorder.argvs == []
 
 
+def test_a_running_integration_install_blocks_the_action(
+    harness: Harness, client: TestClient
+) -> None:
+    # A restart during an install would leave uv running with no job to report it.
+    harness.manage()
+    runtime = harness.app.state.runtime
+    original = runtime.installs
+    runtime.installs = SimpleNamespace(running=True)
+    try:
+        response = client.post(URL, json={"action": "restart"}, headers=ORIGIN)
+    finally:
+        runtime.installs = original
+    assert response.status_code == 409
+    assert harness.recorder.argvs == []
+
+
 def test_an_idle_run_service_does_not_block(harness: Harness, client: TestClient) -> None:
     harness.manage()
     runtime = harness.app.state.runtime

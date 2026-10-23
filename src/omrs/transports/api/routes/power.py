@@ -58,13 +58,13 @@ def _control(request: Request) -> PowerControl | None:
 
 
 def _is_busy(runtime: WebRuntime) -> bool:
-    """Return whether admitted work, a running graph or a waiting run exists.
+    """Return whether admitted work, an install, a running graph or a waiting run exists.
 
     Ingestion and map jobs run through the run service. Other engine calls
     hold admission. The run service may be absent or a test double, so its
     counters are read with ``getattr``.
     """
-    if runtime.admission.active:
+    if runtime.admission.active or runtime.installs.running:
         return True
     service = getattr(runtime.run_service, "service", None)
     if service is None:

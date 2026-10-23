@@ -4,20 +4,20 @@ Implement after `add-chat-reasoning-and-usage`, in the same worktree.
 
 ## 1. Install type and copy commands
 
-- [ ] 1.1 Add install type detection (`uv-tool`, `checkout`, `other`), receipt parsing and `uv` lookup. Verify: unit tests with a fake receipt in a tmp folder, a fake checkout and neither. Each fails before the code.
-- [ ] 1.2 Return the correct copy command for each install type, with `~` for the home folder. Verify: tests for the three command forms, including the receipt extras plus the new extra.
-- [ ] 1.3 Report `installable` and its reason on each catalogue entry; exclude `web` and `torch`. Verify: tests for an allowed extra, an excluded extra, and `uv` not found.
+- [x] 1.1 Add install type detection (`uv-tool`, `checkout`, `other`), receipt parsing and `uv` lookup. Verify: unit tests with a fake receipt in a tmp folder, a fake checkout and neither. Each fails before the code.
+- [x] 1.2 Return the correct copy command for each install type, with `~` for the home folder. Verify: tests for the three command forms, including the receipt extras plus the new extra.
+- [x] 1.3 Report `installable` and its reason on each catalogue entry; exclude `web` and `torch`. Verify: tests for an allowed extra, an excluded extra, and `uv` not found.
 
 ## 2. Install job
 
-- [ ] 2.1 Read the extra's requirements from the installed package metadata. Verify: a test that `anthropic` gives `llama-index-llms-anthropic>=0.11.0` with no marker, and an unknown extra gives nothing.
-- [ ] 2.2 Add `InstallJob` on `WebRuntime`: one job at a time, argument list with no shell, environment without `*_API_KEY`, 40-line redacted output, 600 s timeout, `restart_needed` set. Verify: tests with a fake `uv` script for success, failure, timeout and a second start while running; a test that a key value in the output is redacted.
+- [x] 2.1 Read the extra's requirements from the installed package metadata. Verify: a test that `anthropic` gives `llama-index-llms-anthropic>=0.11.0` with no marker, and an unknown extra gives nothing.
+- [x] 2.2 Add `InstallJob` on `WebRuntime`: one job at a time, argument list with no shell, environment without `*_API_KEY`, 40-line redacted output, 600 s timeout, `restart_needed` set. Verify: tests with a fake `uv` script for success, failure, timeout and a second start while running; a test that a key value in the output is redacted.
 - [ ] 2.3 Live check on a scratch `uv tool` environment, never the live login item: install `anthropic`, restart, and confirm the provider reports installed. Record the time taken.
 
 ## 3. Routes
 
-- [ ] 3.1 Add `POST /v1/integrations/{extra}/install` (`manage` session only) and `GET /v1/integrations/install`. Verify: route tests for 202, 404 unknown, 409 excluded, 409 running, 409 not `uv-tool`, and 403 for a bearer token.
-- [ ] 3.2 Update the OpenAPI 3.1 contract and its contract test.
+- [x] 3.1 Add `POST /v1/integrations/{extra}/install` (`manage` session only) and `GET /v1/integrations/install`. Verify: route tests for 202, 404 unknown, 409 excluded, 409 running, 409 not `uv-tool`, and 403 for a bearer token.
+- [x] 3.2 Update the OpenAPI 3.1 contract and its contract test.
 
 ## 4. Integrations page
 

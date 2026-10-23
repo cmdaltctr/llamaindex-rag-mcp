@@ -3111,12 +3111,16 @@ paths:
       description: >
         Returns one entry for each installable extra (chroma, hybrid,
         pdf-pypdfium2, pdf-inspector, community-leiden, azure, llamacpp,
-        openrouter, torch, web) and for the always-on magika integration.
-        `availability` comes from the probes of the running server, so it
-        describes this launch only. A probe that fails gives `unknown`; no
-        probe text is returned. The server never installs a package:
-        `install_command` and `pip_command` are for the user to run outside
-        the app, followed by a server restart.
+        openrouter, anthropic, torch, web) and for the always-on magika
+        integration. `availability` comes from the probes of the running
+        server, so it describes this launch only. A probe that fails gives
+        `unknown`; no probe text is returned. `restart-needed` means an
+        install from the app succeeded in this launch. `install_type` says
+        how the server is installed and decides `install_command`. An entry
+        with `installable` true can be installed with
+        `POST /v1/integrations/{extra}/install`; otherwise `install_reason`
+        says why not, and the user runs `install_command` outside the app
+        and restarts the server.
       security:
         - sessionCookie: [read]
         - bearerToken: [read]
@@ -3134,6 +3138,88 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /integrations/install:
+    get:
+      operationId: getIntegrationInstall
+      summary: Read the state of the running or last integration install
+      description: >
+        Returns `idle` when no install ran in this launch, else the state of
+        the running or last install with its extra, start and end times and
+        at most the last 40 lines of output. The output is redacted: it never
+        holds an API key or a value from the settings secrets. The state is
+        kept in memory, so a restart returns `idle`. Session only: a bearer
+        credential gets 403.
+      security:
+        - sessionCookie: [manage]
+      x-omrs-scopes: [manage]
+      responses:
+        "200":
+          description: The install state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntegrationInstallReply"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /integrations/{extra}/install:
+    post:
+      operationId: installIntegration
+      summary: Install an allowed optional extra into the server's own environment
+      description: >
+        Starts `uv pip install --python <server Python> <requirements>` with
+        the requirements the installed OMRS package declares for `extra`. The
+        argument list is built by the server; no request text reaches it
+        other than the choice of a listed extra. Only one install runs at a
+        time and it stops after 600 s (state `failed`, reason `timed-out`).
+        The route answers 202 with the running state; poll
+        `GET /v1/integrations/install`. After success the entry reports
+        `restart-needed` until the server restarts. An extra that is not in
+        the catalogue gets 404. Every refusal of a listed extra gets 409 with
+        `reason`: `not-installable-here` (`web`, `torch` or an entry without
+        an extra), `not-uv-tool`, `uv-not-found`, `already-installed`,
+        `no-requirements` or `install-running`. Session only: a bearer
+        credential gets 403.
+      security:
+        - sessionCookie: [manage]
+      x-omrs-scopes: [manage]
+      parameters:
+        - name: extra
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        "202":
+          description: The install started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntegrationInstallReply"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "500":
           $ref: "#/components/responses/InternalError"
         "503":
@@ -4146,7 +4232,7 @@ paths:
         choice of the two actions: another action name gets 422 and a body
         of the wrong shape gets 400. The route answers
         409 and changes nothing when the app is not the login item or when an
-        ingestion, a run or a map call is in progress. Session only: a bearer
+        ingestion, a run, a map call or an integration install is in progress. Session only: a bearer
         credential gets 403.
       security:
         - sessionCookie: [manage]
@@ -4429,7 +4515,8 @@ components:
           type: string
           description: >
             Present on the 422 from `setProfileEmbedding`: why the model
-            check failed.
+            check failed. Present on the 409 from `installIntegration`: why
+            the extra cannot be installed now.
         collections:
           type: array
           description: >
@@ -7799,7 +7886,7 @@ components:
     Integration:
       type: object
       additionalProperties: false
-      required: [id, name, purpose, extra, install_command, pip_command, availability]
+      required: [id, name, purpose, extra, install_command, pip_command, availability, installable, install_reason, packages]
       properties:
         id:
           type: string
@@ -7814,28 +7901,98 @@ components:
           description: The pip extra, or null for an always-on integration.
         install_command:
           type: [string, "null"]
-          description: Copy-ready `uv sync --extra <extra>`, or null without an extra.
+          description: >
+            Copy-ready command for this install type, or null without an
+            extra. `uv-tool`: `uv tool install --reinstall
+            "omrs[<receipt extras>,<extra>] @ <receipt source>"` with the home
+            folder written as `~` (the lasting command). `checkout`: `uv sync
+            --extra <extra>`. `other`: `pip install "omrs[<extra>]"`.
         pip_command:
           type: [string, "null"]
           description: Copy-ready `pip install "omrs[<extra>]"`, or null without an extra.
         availability:
           type: string
-          enum: [available, not-installed, unknown]
+          enum: [available, not-installed, unknown, restart-needed]
           description: >
             `unknown` means the probe failed or reported a broken install.
+            `restart-needed` means an install from the app succeeded in this
+            launch and the server must restart to use it.
+        installable:
+          type: boolean
+          description: Whether `POST /v1/integrations/{extra}/install` would start an install now.
+        install_reason:
+          type: [string, "null"]
+          enum: [not-installable-here, not-uv-tool, uv-not-found, already-installed, no-requirements, null]
+          description: Why `installable` is false, or null when it is true.
+        packages:
+          type: array
+          items:
+            type: string
+          description: >
+            Requirements the installed OMRS package declares for the extra,
+            without the extra marker (for example
+            `llama-index-llms-anthropic>=0.11.0`). Empty without an extra.
 
     IntegrationList:
       type: object
       additionalProperties: false
-      required: [status, integrations]
+      required: [status, install_type, integrations]
       properties:
         status:
           type: string
           enum: [ok]
+        install_type:
+          type: string
+          enum: [uv-tool, checkout, other]
+          description: >
+            `uv-tool` when `uv-receipt.toml` sits in the server's own Python
+            environment folder, `checkout` when the package runs from a folder
+            with `pyproject.toml` and `uv.lock`, else `other`.
         integrations:
           type: array
           items:
             $ref: "#/components/schemas/Integration"
+
+    IntegrationInstall:
+      type: object
+      additionalProperties: false
+      required: [state, extra, started_at, finished_at, reason, exit_code, output]
+      properties:
+        state:
+          type: string
+          enum: [idle, running, succeeded, failed]
+        extra:
+          type: [string, "null"]
+          description: The extra of the running or last install; null when idle.
+        started_at:
+          type: [string, "null"]
+          format: date-time
+        finished_at:
+          type: [string, "null"]
+          format: date-time
+        reason:
+          type: [string, "null"]
+          enum: [exit-code, timed-out, start-failed, null]
+          description: Why the install failed; null unless `state` is `failed`.
+        exit_code:
+          type: [integer, "null"]
+        output:
+          type: array
+          maxItems: 40
+          items:
+            type: string
+          description: The last output lines, redacted.
+
+    IntegrationInstallReply:
+      type: object
+      additionalProperties: false
+      required: [status, install]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        install:
+          $ref: "#/components/schemas/IntegrationInstall"
 
     # ── Provider connections ────────────────────────────────────────────
     ProviderField:

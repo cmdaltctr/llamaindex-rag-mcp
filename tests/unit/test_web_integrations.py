@@ -27,6 +27,7 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
 from tests.unit.test_web_openapi_conformance_support import FAMILIES, ContractChecker  # noqa: E402
 
 import omrs.capabilities as capabilities  # noqa: E402
+from omrs.transports.api.install_environment import InstallEnvironment  # noqa: E402
 from omrs.transports.api.integrations_catalogue import CATALOGUE  # noqa: E402
 
 DECLARED = (
@@ -80,6 +81,8 @@ def test_catalogue_matches_pyproject_extras() -> None:
 
 def test_install_commands_use_the_exact_forms(setup: Any) -> None:
     client, _ = setup
+    checkout = InstallEnvironment(install_type="checkout")
+    client.app.state.runtime.installs.detect = lambda: checkout  # type: ignore[attr-defined]
     entries = _by_id(client)
     assert entries["azure"]["extra"] == "azure"
     assert entries["azure"]["install_command"] == "uv sync --extra azure"

@@ -40,6 +40,7 @@ from ...integrations.workspace_sqlite.schema import make_private_dirs
 from .admission import Admission as Admission
 from .admission import AdmissionClosed as AdmissionClosed
 from .grants import RootGrants
+from .install_job import InstallJob
 from .live_settings import initial_upload_limit
 from .provider_state import build_engine, load_providers
 from .settings_launch import prepare_settings
@@ -208,6 +209,7 @@ class WebRuntime:
     grants: RootGrants
     uploads: UploadStore
     admission: Admission = field(default_factory=Admission)
+    installs: InstallJob = field(default_factory=InstallJob)
     run_service: RunServiceHook | None = None
     loop: asyncio.AbstractEventLoop | None = None
     experiments: Any | None = None

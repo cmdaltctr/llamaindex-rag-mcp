@@ -7,24 +7,35 @@ already owns (``omrs.capabilities`` for modules, PDF readers and Magika;
 the vector-store and community registries). A probe that raises gives the
 ``unknown`` state, never an error response, and no probe text is returned.
 
-The page shows availability and install commands. Nothing here installs,
-downloads or changes a package.
+Each entry also says whether the app can install its extra
+(``installable`` and ``install_reason``), the requirements it would add
+(``packages``) and the copy command for this install type
+(``install_command``, design D4). An extra installed by the app in this
+launch reports ``restart-needed``. Nothing here installs a package: the
+install job lives in ``install_job.py``.
 """
 
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from typing import Any
 
 from ... import capabilities
+from .install_environment import (
+    InstallEnvironment,
+    copy_command,
+    extra_requirements,
+    install_reason,
+)
 
 logger = logging.getLogger(__name__)
 
 AVAILABLE = "available"
 NOT_INSTALLED = "not-installed"
 UNKNOWN = "unknown"
+RESTART_NEEDED = "restart-needed"
 
 #: ``settings`` is the Engine's frozen ``EffectiveSettings``, or ``None``.
 Probe = Callable[[Any], str]
@@ -177,31 +188,70 @@ CATALOGUE: tuple[Integration, ...] = (
 )
 
 
-def _entry(item: Integration, settings: Any) -> dict[str, Any]:
-    try:
-        availability = item.probe(settings)
-    except Exception:
-        # Detail stays in the (redacted) log. The client gets the state only.
-        logger.warning("Integration probe %r failed.", item.id, exc_info=True)
-        availability = UNKNOWN
+def find_integration(extra: str) -> Integration | None:
+    """Return the catalogue entry whose extra is *extra*, or ``None``."""
+    return next((item for item in CATALOGUE if item.extra and item.extra == extra), None)
+
+
+def describe_entry(
+    item: Integration,
+    settings: Any,
+    environment: InstallEnvironment,
+    restart_needed: Collection[str] = (),
+    requirements: Callable[[str], list[str]] = extra_requirements,
+) -> dict[str, Any]:
+    """Return one catalogue entry with its availability and install fields.
+
+    Args:
+        item: The catalogue entry.
+        settings: The Engine's frozen ``EffectiveSettings``, or ``None``.
+        environment: The detected install type and ``uv`` program.
+        restart_needed: Extras the app installed in this launch.
+        requirements: Returns an extra's requirements.
+    """
     extra = item.extra
+    if extra is not None and extra in restart_needed:
+        availability = RESTART_NEEDED
+    else:
+        try:
+            availability = item.probe(settings)
+        except Exception:
+            # Detail stays in the (redacted) log. The client gets the state only.
+            logger.warning("Integration probe %r failed.", item.id, exc_info=True)
+            availability = UNKNOWN
+    packages = [] if extra is None else requirements(extra)
+    reason = install_reason(extra, availability, packages, environment)
     return {
         "id": item.id,
         "name": item.name,
         "purpose": item.purpose,
         "extra": extra,
-        "install_command": None if extra is None else f"uv sync --extra {extra}",
+        "install_command": None if extra is None else copy_command(environment, extra),
         "pip_command": None if extra is None else f'pip install "omrs[{extra}]"',
         "availability": availability,
+        "installable": reason is None,
+        "install_reason": reason,
+        "packages": packages,
     }
 
 
-def describe_integrations(settings: Any | None) -> list[dict[str, Any]]:
+def describe_integrations(
+    settings: Any | None,
+    environment: InstallEnvironment,
+    restart_needed: Collection[str] = (),
+    requirements: Callable[[str], list[str]] = extra_requirements,
+) -> list[dict[str, Any]]:
     """Return every catalogue entry with its resolved availability.
 
     Args:
         settings: The Engine's frozen ``EffectiveSettings``, or ``None``
             when they cannot be read (the Magika probe then reports
             ``unknown``).
+        environment: The detected install type and ``uv`` program.
+        restart_needed: Extras the app installed in this launch.
+        requirements: Returns an extra's requirements.
     """
-    return [_entry(item, settings) for item in CATALOGUE]
+    return [
+        describe_entry(item, settings, environment, restart_needed, requirements)
+        for item in CATALOGUE
+    ]
