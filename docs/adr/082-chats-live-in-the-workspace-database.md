@@ -18,13 +18,14 @@ Chat transcripts lived in React state. A reload lost them. The `workspace-chat` 
 4. **Delete is permanent.** A confirmation states the count. Deleting a folder deletes its chats through `ON DELETE CASCADE`.
 5. **Only the browser session of `omrg web` reads or writes chats** (ADR-080). The routes use `require_session`, so a bearer token for an MCP or notebook client is refused even with the `read` scope. Deletes need the `manage` scope, as other destructive routes do. The CLI, the stdio MCP server and the watcher do not read chats.
 6. **The spec rule "Transcripts SHALL NOT be stored server-side" is removed.**
+7. **The user sets the folder order (schema version 6, 2026-10-23).** Migration 6 adds `chat_folders.position` and numbers existing folders in creation order. `PUT /v1/chat-folders/order` takes every folder id once. A new folder goes to the end.
 
 ## Consequences
 
 - Answers contain evidence text from the user's documents. They sit in the same owner-only file as other workspace records. A user who deletes a source still has the old evidence text in saved chats until the chat is deleted.
 - A reload during a pending answer loses that one turn.
 - Each later change to the chat tables needs a numbered migration.
-- An older `omrg` install that opens the version 5 file refuses it as newer than it supports. Migration 4 had the same effect.
+- An older `omrg` install that opens the version 5 file refuses it as newer than it supports. Migration 4 had the same effect. An `omrs` install from before migration 6 refuses a version 6 file in the same way.
 
 ## Alternatives considered
 

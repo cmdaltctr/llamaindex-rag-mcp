@@ -12,7 +12,7 @@ chat logic.
 * ``POST /v1/chats/{chat_id}/turns`` saves one finished answer.
 * ``POST /v1/chats/delete`` deletes many chats, all or nothing.
 * ``/v1/chat-folders`` creates, renames and deletes folders. A folder delete
-  removes its chats.
+  removes its chats. ``PUT /v1/chat-folders/order`` sets the folder order.
 """
 
 from __future__ import annotations
@@ -29,6 +29,7 @@ from ....core.workspace.chats import (
     MAX_ANSWER_BYTES,
     MAX_BULK_DELETE,
     MAX_FOLDER_NAME,
+    MAX_FOLDERS,
     MAX_QUESTION,
     MAX_TITLE,
 )
@@ -84,6 +85,16 @@ class FolderBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(min_length=1, max_length=MAX_FOLDER_NAME)
+
+
+class FolderOrderBody(BaseModel):
+    """Body of ``PUT /v1/chat-folders/order`` (schema ``ChatFolderOrderRequest``)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    folder_ids: list[Annotated[str, Field(max_length=128)]] = Field(
+        min_length=1, max_length=MAX_FOLDERS
+    )
 
 
 def get_chats(runtime: RuntimeDep) -> Any:
@@ -224,6 +235,20 @@ async def rename_folder(
     except ValueError as exc:
         return _invalid(runtime, exc)
     return ok({"folder": folder})
+
+
+@router.put("/chat-folders/order", operation_id="reorderChatFolders")
+async def reorder_folders(
+    _: ReadSession, body: FolderOrderBody, runtime: RuntimeDep, chats: ChatsDep
+) -> Response:
+    """Set the folder order. The list names every folder once."""
+    try:
+        folders = await _call(runtime, chats.reorder_folders, body.folder_ids)
+    except KeyError as exc:
+        return _unknown(runtime, exc)
+    except ValueError as exc:
+        return _invalid(runtime, exc)
+    return ok({"folders": folders})
 
 
 @router.delete("/chat-folders/{folder_id}", operation_id="deleteChatFolder")

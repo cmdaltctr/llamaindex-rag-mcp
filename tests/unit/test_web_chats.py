@@ -149,6 +149,9 @@ def test_chat_responses_conform_to_the_contract(web: Any) -> None:
     check.check(client.get("/v1/chats"), 200)
     check.check(client.get(f"/v1/chats/{chat}"), 200)
     check.check(client.patch(f"/v1/chats/{chat}", json={"folder_id": None}, headers=ORIGIN), 200)
+    order = {"folder_ids": [folder]}
+    check.check(client.put("/v1/chat-folders/order", json=order, headers=ORIGIN), 200)
+    check.check(client.put("/v1/chat-folders/order", json={"folder_ids": []}, headers=ORIGIN), 400)
     check.check(client.get("/v1/chats/nope"), 404)
     check.check(_turn(client, chat, {"answer": "x" * (2 * 1024 * 1024)}), 413)
     check.check(client.post("/v1/chats", json={"title": " "}, headers=ORIGIN), 400)
@@ -210,3 +213,29 @@ def test_chat_routes_answer_503_when_the_server_has_no_chat_store(web: Any) -> N
         assert client.get("/v1/chats").status_code == 503
     finally:
         runtime.chats = saved
+
+
+def test_reorder_folders_changes_the_listing_order(web: Any) -> None:
+    client = web[0]
+    ids = [
+        client.post("/v1/chat-folders", json={"name": name}, headers=ORIGIN).json()["folder"][
+            "folder_id"
+        ]
+        for name in ("A", "B", "C")
+    ]
+    order = [ids[2], ids[0], ids[1]]
+    response = client.put("/v1/chat-folders/order", json={"folder_ids": order}, headers=ORIGIN)
+    assert response.status_code == 200, response.text
+    assert [f["folder_id"] for f in response.json()["folders"]] == order
+    assert [f["folder_id"] for f in client.get("/v1/chats").json()["folders"]] == order
+
+
+def test_reorder_folders_rejects_a_partial_or_unknown_list(web: Any) -> None:
+    client = web[0]
+    a = client.post("/v1/chat-folders", json={"name": "A"}, headers=ORIGIN).json()["folder"][
+        "folder_id"
+    ]
+    client.post("/v1/chat-folders", json={"name": "B"}, headers=ORIGIN)
+    partial = client.put("/v1/chat-folders/order", json={"folder_ids": [a]}, headers=ORIGIN)
+    unknown = client.put("/v1/chat-folders/order", json={"folder_ids": [a, "nope"]}, headers=ORIGIN)
+    assert (partial.status_code, unknown.status_code) == (400, 404)

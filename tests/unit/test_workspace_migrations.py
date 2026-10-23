@@ -289,7 +289,7 @@ def test_version_three_database_gains_the_embedding_columns_with_backup(tmp_path
     columns = _columns(path, "profiles")
     assert {"embed_provider", "embed_model", "embed_dimensions"} <= set(columns)
     (backup,) = list(tmp_path.glob("*.bak"))
-    assert "v3-to-v5" in backup.name
+    assert f"v3-to-v{_LATEST}" in backup.name
     assert _user_version(backup) == 3
     assert "embed_model" not in _columns(backup, "profiles")
 

@@ -186,6 +186,18 @@ SCHEMA_MIGRATIONS: tuple[Migration, ...] = (
             "CREATE INDEX chats_by_updated ON chats (updated_at)",
         ),
     ),
+    (
+        6,
+        (
+            # The user's folder order. Existing folders keep their creation order.
+            "ALTER TABLE chat_folders ADD COLUMN position INTEGER NOT NULL DEFAULT 0",
+            """UPDATE chat_folders SET position = (
+                SELECT COUNT(*) FROM chat_folders AS other
+                WHERE (other.created_at, other.folder_id)
+                    <= (chat_folders.created_at, chat_folders.folder_id)
+            )""",
+        ),
+    ),
 )
 
 

@@ -50,6 +50,9 @@ def _chat(row: sqlite3.Row) -> dict[str, Any]:
     }
 
 
+_FOLDERS_IN_ORDER = "SELECT * FROM chat_folders ORDER BY position, created_at, folder_id"
+
+
 def _folder(row: sqlite3.Row) -> dict[str, Any]:
     return {"folder_id": row["folder_id"], "name": row["name"], "created_at": row["created_at"]}
 
@@ -57,8 +60,8 @@ def _folder(row: sqlite3.Row) -> dict[str, Any]:
 class SqliteChatRepository:
     """Reads and writes chats in an already migrated workspace database.
 
-    Open ``SqliteWorkspaceRepository`` on the same file first, so migration 5
-    has run. Each call uses a short-lived connection.
+    Open ``SqliteWorkspaceRepository`` on the same file first, so migrations 5
+    and 6 have run. Each call uses a short-lived connection.
 
     Args:
         path: The workspace database file.
@@ -76,9 +79,9 @@ class SqliteChatRepository:
     # --- reads -----------------------------------------------------------
 
     def list_chats(self) -> dict[str, list[dict[str, Any]]]:
-        """Return all folders (oldest first) and chats (newest first, no turns)."""
+        """Return all folders (in the user's order) and chats (newest first, no turns)."""
         with read_connection(self.path) as conn:
-            folders = conn.execute("SELECT * FROM chat_folders ORDER BY created_at, folder_id")
+            folders = conn.execute(_FOLDERS_IN_ORDER)
             chats = conn.execute("SELECT * FROM chats ORDER BY updated_at DESC, chat_id")
             return {"folders": [_folder(r) for r in folders], "chats": [_chat(r) for r in chats]}
 
@@ -208,7 +211,11 @@ class SqliteChatRepository:
         cleaned = _bounded(name, MAX_FOLDER_NAME, "folder name")
         folder_id, now = new_id(), self._now()
         with write_transaction(self.path) as conn:
-            conn.execute("INSERT INTO chat_folders VALUES (?, ?, ?)", (folder_id, cleaned, now))
+            conn.execute(
+                """INSERT INTO chat_folders (folder_id, name, created_at, position)
+                SELECT ?, ?, ?, COALESCE(MAX(position), 0) + 1 FROM chat_folders""",
+                (folder_id, cleaned, now),
+            )
         return {"folder_id": folder_id, "name": cleaned, "created_at": now}
 
     def rename_folder(self, folder_id: str, name: str) -> dict[str, Any]:
@@ -229,6 +236,25 @@ class SqliteChatRepository:
                     "SELECT * FROM chat_folders WHERE folder_id = ?", (folder_id,)
                 ).fetchone()
             )
+
+    def reorder_folders(self, folder_ids: Sequence[str]) -> list[dict[str, Any]]:
+        """Put the folders in the given order and return them in it.
+
+        Raises:
+            KeyError: If an id names no folder.
+            ValueError: If the list does not name every folder exactly once.
+        """
+        with write_transaction(self.path) as conn:
+            for folder_id in folder_ids:
+                self._require_folder(conn, folder_id)
+            known = {row[0] for row in conn.execute("SELECT folder_id FROM chat_folders")}
+            if len(folder_ids) != len(known) or set(folder_ids) != known:
+                raise ValueError("The new order must name every folder exactly once.")
+            conn.executemany(
+                "UPDATE chat_folders SET position = ? WHERE folder_id = ?",
+                [(index, folder_id) for index, folder_id in enumerate(folder_ids, start=1)],
+            )
+            return [_folder(r) for r in conn.execute(_FOLDERS_IN_ORDER)]
 
     def delete_folder(self, folder_id: str) -> dict[str, int]:
         """Delete a folder and the chats inside it.

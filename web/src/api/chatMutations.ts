@@ -13,6 +13,8 @@ import {
   deleteChats,
   moveChat,
   renameChatFolder,
+  reorderChatFolders,
+  type ChatListing,
   type ChatTurnInput,
 } from "./chats";
 import { queryKeys } from "./queries";
@@ -49,6 +51,18 @@ export function useMoveChat() {
   });
 }
 
+/** Moves several chats with one request each, then refreshes the listing once. */
+export function useMoveChats() {
+  const api = useApi();
+  const refresh = useRefreshChats();
+  return useMutation({
+    mutationFn: async (input: { chatIds: string[]; folderId: string | null }) => {
+      await Promise.all(input.chatIds.map((chatId) => moveChat(api, chatId, input.folderId)));
+    },
+    onSettled: refresh,
+  });
+}
+
 export function useDeleteChat() {
   const api = useApi();
   const refresh = useRefreshChats();
@@ -80,4 +94,26 @@ export function useDeleteChatFolder() {
   const api = useApi();
   const refresh = useRefreshChats();
   return useMutation({ mutationFn: (folderId: string) => deleteChatFolder(api, folderId), onSuccess: refresh });
+}
+
+/**
+ * Saves a new folder order. The list shows the new order at once, so a moved
+ * folder keeps its place and focus while the request runs; a failed save
+ * puts the server's order back on the refresh.
+ */
+export function useReorderChatFolders() {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const refresh = useRefreshChats();
+  return useMutation({
+    mutationFn: (folderIds: string[]) => reorderChatFolders(api, folderIds),
+    onMutate: (folderIds) => {
+      queryClient.setQueryData<ChatListing>(queryKeys.chats(), (current) => {
+        if (current === undefined) return current;
+        const byId = new Map(current.folders.map((folder) => [folder.folder_id, folder]));
+        return { ...current, folders: folderIds.flatMap((id) => byId.get(id) ?? []) };
+      });
+    },
+    onSettled: refresh,
+  });
 }

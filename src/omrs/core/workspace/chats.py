@@ -20,6 +20,8 @@ MAX_QUESTION = 10_000
 MAX_ANSWER_BYTES = 2 * 1024 * 1024
 #: Most chats one bulk delete may name.
 MAX_BULK_DELETE = 500
+#: Most folders one reorder may name.
+MAX_FOLDERS = 500
 
 
 @runtime_checkable
@@ -31,7 +33,10 @@ class ChatRepository(Protocol):
     """
 
     def list_chats(self) -> dict[str, list[dict[str, Any]]]:
-        """Return ``{"folders": [...], "chats": [...]}``; chats come newest first, without turns."""
+        """Return ``{"folders": [...], "chats": [...]}``.
+
+        Folders come in the user's order. Chats come newest first, without turns.
+        """
         ...
 
     def create_chat(self, title: str, folder_id: str | None = None) -> dict[str, Any]:
@@ -66,6 +71,10 @@ class ChatRepository(Protocol):
 
     def rename_folder(self, folder_id: str, name: str) -> dict[str, Any]:
         """Rename a folder."""
+        ...
+
+    def reorder_folders(self, folder_ids: Sequence[str]) -> list[dict[str, Any]]:
+        """Put the folders in the given order, which must name each folder once."""
         ...
 
     def delete_folder(self, folder_id: str) -> dict[str, int]:

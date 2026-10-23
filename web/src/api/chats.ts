@@ -110,6 +110,11 @@ export async function renameChatFolder(api: ApiClient, folderId: string, name: s
   return (await api.request<{ folder: ChatFolder }>("PATCH", folderPath(folderId), { body: { name }, signal: options.signal })).folder;
 }
 
+/** Sets the folder order. The list names every folder once. */
+export async function reorderChatFolders(api: ApiClient, folderIds: string[], options: CallOptions = {}): Promise<ChatFolder[]> {
+  return (await api.request<{ folders: ChatFolder[] }>("PUT", "/v1/chat-folders/order", { body: { folder_ids: folderIds }, signal: options.signal })).folders;
+}
+
 /** Deletes the folder and every chat inside it. */
 export async function deleteChatFolder(api: ApiClient, folderId: string, options: CallOptions = {}): Promise<DeleteCounts> {
   return counts(await api.request("DELETE", folderPath(folderId), { signal: options.signal }));

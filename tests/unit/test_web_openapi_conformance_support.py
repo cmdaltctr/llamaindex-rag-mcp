@@ -90,6 +90,7 @@ FAMILIES: dict[str, frozenset[str]] = {
             "appendChatTurn",
             "createChatFolder",
             "renameChatFolder",
+            "reorderChatFolders",
             "deleteChatFolder",
         }
     ),

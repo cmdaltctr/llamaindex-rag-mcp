@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { createEvent, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { ChatSummary } from "../api/chats";
@@ -151,6 +151,175 @@ const THREE: FakeChatSeed = {
     { chat_id: "c4", folder_id: "f1", title: "Four" },
   ],
 };
+
+const FOLDERS: FakeChatSeed = {
+  folders: [
+    { folder_id: "f1", name: "Work", created_at: "t1" },
+    { folder_id: "f2", name: "Home", created_at: "t2" },
+    { folder_id: "f3", name: "Ideas", created_at: "t3" },
+  ],
+  chats: [{ chat_id: "c1", folder_id: null, title: "Loose chat" }],
+};
+
+type Half = "top" | "bottom";
+
+/** Gives the target a 40px box and puts the pointer in its top or bottom half. */
+function overFolder(target: HTMLElement, dataTransfer: object, half: Half, event: "dragOver" | "drop" = "dragOver") {
+  target.getBoundingClientRect = () => ({ top: 100, bottom: 140, height: 40, left: 0, right: 200, width: 200, x: 0, y: 100, toJSON: () => ({}) });
+  // jsdom has no DragEvent, so the pointer position is set on the plain event.
+  const dragEvent = createEvent[event](target, { dataTransfer });
+  Object.defineProperty(dragEvent, "clientY", { value: half === "top" ? 105 : 135 });
+  fireEvent(target, dragEvent);
+}
+
+function startFolderDrag(name: string) {
+  const dataTransfer = { setData: vi.fn(), getData: () => "", effectAllowed: "", dropEffect: "" };
+  fireEvent.dragStart(screen.getByRole("button", { name: `Reorder folder ${name}` }), { dataTransfer });
+  return dataTransfer;
+}
+
+function dragFolder(name: string, targetLabel: string, id: string, half: Half) {
+  const dataTransfer = { ...startFolderDrag(name), getData: () => id };
+  overFolder(group(targetLabel), dataTransfer, half);
+  overFolder(group(targetLabel), dataTransfer, half, "drop");
+}
+
+const folderOrder = () => screen.getAllByRole("region", { name: /^Folder / }).map((region) => region.getAttribute("aria-label"));
+
+describe("reordering folders", () => {
+  it("shows a reorder handle on each folder only in select mode", async () => {
+    const { user } = setup(FOLDERS);
+    await screen.findByText("Loose chat");
+    expect(screen.queryByRole("button", { name: /^Reorder folder/ })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Select" }));
+    expect(screen.getAllByRole("button", { name: /^Reorder folder/ }).map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Reorder folder Work",
+      "Reorder folder Home",
+      "Reorder folder Ideas",
+    ]);
+    expect(within(group("No folder")).queryByRole("button", { name: /^Reorder/ })).toBeNull();
+  });
+
+  it("drops a folder above the target when the pointer is in its top half", async () => {
+    const { user, store } = setup(FOLDERS);
+    await user.click(await screen.findByRole("button", { name: "Select" }));
+    dragFolder("Ideas", "Folder Work", "f3", "top");
+    await waitFor(() => expect([...store.folders.keys()]).toEqual(["f3", "f1", "f2"]));
+    await waitFor(() => expect(folderOrder()).toEqual(["Folder Ideas", "Folder Work", "Folder Home"]));
+  });
+
+  it("drops a folder below the target when the pointer is in its bottom half", async () => {
+    const { user, store } = setup(FOLDERS);
+    await user.click(await screen.findByRole("button", { name: "Select" }));
+    dragFolder("Ideas", "Folder Work", "f3", "bottom");
+    await waitFor(() => expect([...store.folders.keys()]).toEqual(["f1", "f3", "f2"]));
+  });
+
+  it("sends nothing when the drop leaves the order as it was", async () => {
+    const { user, server } = setup(FOLDERS);
+    await user.click(await screen.findByRole("button", { name: "Select" }));
+    dragFolder("Work", "Folder Home", "f1", "top");
+    expect(server.find("PUT", "/v1/chat-folders/order")).toHaveLength(0);
+  });
+
+  it("draws a line on the side of the target where the folder will land", async () => {
+    const { user } = setup(FOLDERS);
+    await user.click(await screen.findByRole("button", { name: "Select" }));
+    const target = group("Folder Home");
+    const dataTransfer = startFolderDrag("Work");
+    overFolder(target, dataTransfer, "top");
+    expect(target).toHaveAttribute("data-drop-edge", "before");
+    overFolder(target, dataTransfer, "bottom");
+    expect(target).toHaveAttribute("data-drop-edge", "after");
+    fireEvent.dragLeave(target, { dataTransfer });
+    expect(target).not.toHaveAttribute("data-drop-edge");
+  });
+
+  it("draws no line on the dragged folder itself or for a dragged chat", async () => {
+    const { user } = setup(FOLDERS);
+    await user.click(await screen.findByRole("button", { name: "Select" }));
+    const dataTransfer = startFolderDrag("Work");
+    overFolder(group("Folder Work"), dataTransfer, "top");
+    expect(group("Folder Work")).not.toHaveAttribute("data-drop-edge");
+    fireEvent.dragEnd(screen.getByRole("button", { name: "Reorder folder Work" }), { dataTransfer });
+    const chat = { setData: vi.fn(), getData: () => "c1", effectAllowed: "", dropEffect: "" };
+    fireEvent.dragStart(screen.getByText("Loose chat").closest("li")!, { dataTransfer: chat });
+    overFolder(group("Folder Home"), chat, "top");
+    expect(group("Folder Home")).not.toHaveAttribute("data-drop-edge");
+  });
+
+  it("moves a folder one place with the arrow keys and keeps focus on its handle", async () => {
+    const { user, store } = setup(FOLDERS);
+    await user.click(await screen.findByRole("button", { name: "Select" }));
+    screen.getByRole("button", { name: "Reorder folder Work" }).focus();
+    await user.keyboard("{ArrowDown}");
+    await waitFor(() => expect([...store.folders.keys()]).toEqual(["f2", "f1", "f3"]));
+    expect(screen.getByRole("button", { name: "Reorder folder Work" })).toHaveFocus();
+    await user.keyboard("{ArrowUp}");
+    await waitFor(() => expect([...store.folders.keys()]).toEqual(["f1", "f2", "f3"]));
+  });
+
+  it("sends nothing when the first folder is moved up", async () => {
+    const { user, server } = setup(FOLDERS);
+    await user.click(await screen.findByRole("button", { name: "Select" }));
+    screen.getByRole("button", { name: "Reorder folder Work" }).focus();
+    await user.keyboard("{ArrowUp}");
+    expect(server.find("PUT", "/v1/chat-folders/order")).toHaveLength(0);
+  });
+
+  it("does not move a chat when a folder is dropped on a folder", async () => {
+    const { user, store } = setup(FOLDERS);
+    await user.click(await screen.findByRole("button", { name: "Select" }));
+    const dataTransfer = startFolderDrag("Home");
+    overFolder(group("No folder"), dataTransfer, "top");
+    expect(group("No folder")).not.toHaveAttribute("data-drop-edge");
+    overFolder(group("No folder"), dataTransfer, "top", "drop");
+    expect(store.chats.get("c1")?.folder_id).toBeNull();
+    expect([...store.folders.keys()]).toEqual(["f1", "f2", "f3"]);
+  });
+});
+
+describe("moving selected chats", () => {
+  it("moves several selected chats into a folder in one step", async () => {
+    const { user, store } = setup(THREE);
+    await user.click(await screen.findByRole("button", { name: "Select" }));
+    await user.click(screen.getByRole("checkbox", { name: "Select One" }));
+    await user.click(screen.getByRole("checkbox", { name: "Select Two" }));
+    await user.click(screen.getByRole("button", { name: "Move selected (2)" }));
+    await user.click(await screen.findByRole("button", { name: "Work" }));
+    await waitFor(() => expect([store.chats.get("c1")?.folder_id, store.chats.get("c2")?.folder_id]).toEqual(["f1", "f1"]));
+    await waitFor(() => expect(within(group("Folder Work")).getByText("One")).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Select" })).toBeInTheDocument();
+  });
+
+  it("takes selected chats out of their folder", async () => {
+    const { user, store } = setup(THREE);
+    await user.click(await screen.findByRole("button", { name: "Select" }));
+    await user.click(screen.getByRole("checkbox", { name: "Select Three" }));
+    await user.click(screen.getByRole("checkbox", { name: "Select Four" }));
+    await user.click(screen.getByRole("button", { name: "Move selected (2)" }));
+    await user.click(await screen.findByRole("button", { name: "No folder" }));
+    await waitFor(() => expect([store.chats.get("c3")?.folder_id, store.chats.get("c4")?.folder_id]).toEqual([null, null]));
+  });
+
+  it("sends no request for a chat already in the chosen folder", async () => {
+    const { user, server } = setup(THREE);
+    await user.click(await screen.findByRole("button", { name: "Select" }));
+    await user.click(screen.getByRole("checkbox", { name: "Select One" }));
+    await user.click(screen.getByRole("checkbox", { name: "Select Three" }));
+    await user.click(screen.getByRole("button", { name: "Move selected (2)" }));
+    await user.click(await screen.findByRole("button", { name: "Work" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Select" })).toBeInTheDocument());
+    expect(server.find("PATCH", "/v1/chats/c3")).toHaveLength(0);
+    expect(server.find("PATCH", "/v1/chats/c1")).toHaveLength(1);
+  });
+
+  it("is off until a chat is selected", async () => {
+    const { user } = setup(THREE);
+    await user.click(await screen.findByRole("button", { name: "Select" }));
+    expect(screen.getByRole("button", { name: "Move selected (0)" })).toBeDisabled();
+  });
+});
 
 describe("deleting chats", () => {
   it("deletes several selected chats after a count confirmation", async () => {

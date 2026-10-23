@@ -141,3 +141,32 @@ def test_turn_limits(chats: SqliteChatRepository) -> None:
         chats.append_turn(chat_id, "docs", "q" * 10_001, ANSWER)
     with pytest.raises(ValueError):
         chats.append_turn(chat_id, "docs", "q", {"answer": "x" * (2 * 1024 * 1024)})
+
+
+def test_new_folders_go_to_the_end(chats: SqliteChatRepository) -> None:
+    first = chats.create_folder("First")["folder_id"]
+    second = chats.create_folder("Second")["folder_id"]
+    assert [f["folder_id"] for f in chats.list_chats()["folders"]] == [first, second]
+
+
+def test_reorder_folders_sets_the_listing_order(chats: SqliteChatRepository) -> None:
+    a, b, c = (chats.create_folder(name)["folder_id"] for name in ("A", "B", "C"))
+    returned = chats.reorder_folders([c, a, b])
+    assert [f["folder_id"] for f in returned] == [c, a, b]
+    assert [f["folder_id"] for f in chats.list_chats()["folders"]] == [c, a, b]
+    later = chats.create_folder("D")["folder_id"]
+    assert chats.list_chats()["folders"][-1]["folder_id"] == later
+
+
+@pytest.mark.parametrize("order", [["A"], ["A", "A", "B"], ["A", "B", "B"]])
+def test_reorder_needs_every_folder_once(chats: SqliteChatRepository, order: list[str]) -> None:
+    ids = {name: chats.create_folder(name)["folder_id"] for name in ("A", "B")}
+    with pytest.raises(ValueError):
+        chats.reorder_folders([ids[name] for name in order])
+    assert [f["name"] for f in chats.list_chats()["folders"]] == ["A", "B"]
+
+
+def test_reorder_with_an_unknown_folder_raises_key_error(chats: SqliteChatRepository) -> None:
+    a = chats.create_folder("A")["folder_id"]
+    with pytest.raises(KeyError):
+        chats.reorder_folders([a, "nope"])

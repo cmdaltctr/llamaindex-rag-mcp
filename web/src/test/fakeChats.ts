@@ -96,6 +96,14 @@ export function fakeChats(seed: FakeChatSeed = {}) {
       folder.name = String(body.name);
       return { status: "ok", folder };
     },
+    "PUT /v1/chat-folders/order": (body) => {
+      const ids = body.folder_ids as string[];
+      if (ids.length !== folders.size || ids.some((id) => !folders.has(id))) return json({ status: "error", message: "The new order must name every folder exactly once." }, 400);
+      const ordered = ids.map((id) => folders.get(id)!);
+      folders.clear();
+      ordered.forEach((folder) => folders.set(folder.folder_id, folder));
+      return { status: "ok", folders: ordered };
+    },
     "DELETE /v1/chat-folders/:id": (_body, call) => {
       const id = idOf(call, "chat-folders");
       if (!folders.delete(id)) return missing();

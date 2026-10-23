@@ -2363,6 +2363,43 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
+  /chat-folders/order:
+    put:
+      operationId: reorderChatFolders
+      summary: Set the chat folder order
+      description: >
+        Lists every folder once, in the new order. The response lists the
+        folders in that order. A partial or repeated list is 400; an unknown
+        folder is 404.
+      security:
+        - sessionCookie: [read]
+      x-omrs-scopes: [read]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatFolderOrderRequest"
+      responses:
+        "200":
+          description: Folders in the new order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatFolderOrderEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
   /chat-folders/{folder_id}:
     patch:
       operationId: renameChatFolder
@@ -5867,6 +5904,27 @@ components:
           minItems: 1
           maxItems: 500
           items: {type: string}
+
+    ChatFolderOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [folder_ids]
+      properties:
+        folder_ids:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items: {type: string, maxLength: 128}
+
+    ChatFolderOrderEnvelope:
+      type: object
+      additionalProperties: false
+      required: [status, folders]
+      properties:
+        status: {type: string, enum: [ok]}
+        folders:
+          type: array
+          items: {$ref: "#/components/schemas/ChatFolderItem"}
 
     ChatFolderRequest:
       type: object

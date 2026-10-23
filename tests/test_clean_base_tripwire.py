@@ -130,7 +130,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # test_web_documents.py (2) and test_web_answer_stream.py (1). All 3 need fastapi.
 # +2 (2026-10-22, OMRS rename): the no-old-identity guard. No fastapi needed. The rename
 # itself adds and removes no test (7491 -> 7493).
-_BASE_EXECUTED = 7493
+# +9 (2026-10-23, chat folder order): migration 6 (1), the repository reorder cases (6)
+# and the reorder routes in test_web_chats.py (2). The 2 route cases need fastapi.
+_BASE_EXECUTED = 7502
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -422,7 +424,8 @@ if not _has_qwen_tokenizer:
 # ran 6229 executed against 6248 pinned. A collect-only count with fastapi hidden gave the
 # same total on the base commit and the branch (plus the 2 guard tests), so the 19 cases
 # came in with v3 work, not with the rename (1257).
-_WEB_EXTRA_CASES = 1257
+# +2 (2026-10-23, chat folder order): the reorder route cases in test_web_chats.py (1259).
+_WEB_EXTRA_CASES = 1259
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)

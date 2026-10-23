@@ -37,14 +37,16 @@ def test_v4_file_with_profiles_migrates_with_backup(tmp_path: Path) -> None:
     assert upgraded.get_pipeline(pipeline_id)["title"] == "Kept"
     assert {"chat_folders", "chats", "chat_turns"} <= _names(path, "table")
     assert {"chats_by_folder", "chats_by_updated"} <= _names(path, "index")
-    backups = list(tmp_path.glob("*.v4-to-v5.*.bak"))
+    backups = list(tmp_path.glob(f"*.v4-to-v{SCHEMA_MIGRATIONS[-1][0]}.*.bak"))
     assert len(backups) == 1
 
 
 def _seed_chat(path: Path) -> None:
     conn = connect(path)
     try:
-        conn.execute("INSERT INTO chat_folders VALUES ('f1', 'Work', 't')")
+        conn.execute(
+            "INSERT INTO chat_folders (folder_id, name, created_at) VALUES ('f1', 'Work', 't')"
+        )
         conn.execute("INSERT INTO chats VALUES ('c1', 'f1', 'Title', 't', 't')")
         conn.execute("INSERT INTO chat_turns VALUES ('c1', 1, 'docs', 'q', '{}', 't')")
     finally:
@@ -83,5 +85,27 @@ def test_cascade_is_what_removes_the_rows(tmp_path: Path) -> None:
         assert _count(path, "chat_turns") == 0
         with pytest.raises(sqlite3.IntegrityError):
             conn.execute("INSERT INTO chat_turns VALUES ('missing', 1, 'd', 'q', '{}', 't')")
+    finally:
+        conn.close()
+
+
+def test_migration_six_numbers_existing_folders_in_creation_order(tmp_path: Path) -> None:
+    path = tmp_path / "app.sqlite3"
+    SqliteWorkspaceRepository(path, migrations=SCHEMA_MIGRATIONS[:5])
+    conn = sqlite3.connect(path)
+    try:
+        conn.executemany(
+            "INSERT INTO chat_folders VALUES (?, ?, ?)",
+            [("b", "Second", "2026-01-02"), ("a", "First", "2026-01-01")],
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    SqliteWorkspaceRepository(path)
+    conn = sqlite3.connect(path)
+    try:
+        rows = conn.execute("SELECT folder_id, position FROM chat_folders ORDER BY position")
+        assert [tuple(row) for row in rows] == [("a", 1), ("b", 2)]
     finally:
         conn.close()

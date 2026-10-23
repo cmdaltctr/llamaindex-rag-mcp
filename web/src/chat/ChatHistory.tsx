@@ -2,15 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { FolderPlus, Trash2 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { useApi } from "../api/ApiProvider";
-import { useCreateChatFolder, useDeleteChat, useDeleteChatFolder, useDeleteChats, useMoveChat, useRenameChatFolder } from "../api/chatMutations";
+import { useCreateChatFolder, useDeleteChat, useDeleteChatFolder, useDeleteChats, useMoveChat, useMoveChats, useRenameChatFolder, useReorderChatFolders } from "../api/chatMutations";
 import type { ChatFolder, ChatSummary } from "../api/chats";
 import { chatsQuery } from "../api/queries";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Button } from "../components/ui/button";
-import { ChatFolderSection } from "./ChatFolderSection";
+import { ChatFolderSection, type DropEdge } from "./ChatFolderSection";
 import { ChatRow } from "./ChatRow";
 import { DeleteChatsDialog, type DeleteRequest } from "./DeleteChatsDialog";
 import { FolderNameField } from "./FolderNameField";
+import { FolderReorderHandle } from "./FolderReorderHandle";
+import { MoveSelectedMenu } from "./MoveSelectedMenu";
 
 interface ChatHistoryProps {
   activeChatId: string | null;
@@ -30,6 +32,8 @@ export function ChatHistory({ activeChatId, onOpen, onRemoved, trailing }: ChatH
   const createFolder = useCreateChatFolder();
   const renameFolder = useRenameChatFolder();
   const move = useMoveChat();
+  const moveMany = useMoveChats();
+  const reorder = useReorderChatFolders();
   const deleteChat = useDeleteChat();
   const deleteChats = useDeleteChats();
   const deleteFolder = useDeleteChatFolder();
@@ -37,6 +41,8 @@ export function ChatHistory({ activeChatId, onOpen, onRemoved, trailing }: ChatH
   const [selected, setSelected] = useState<string[]>([]);
   const [request, setRequest] = useState<DeleteRequest | null>(null);
   const dragged = useRef<string | null>(null);
+  const draggedFolder = useRef<string | null>(null);
+  const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [naming, setNaming] = useState(false);
 
@@ -51,7 +57,43 @@ export function ChatHistory({ activeChatId, onOpen, onRemoved, trailing }: ChatH
     event.dataTransfer?.setData("text/plain", chatId);
   };
   const onDragEnd = () => setDraggingId(null);
-  const onDropChat = (folderId: string | null, event: React.DragEvent) => {
+  const saveOrder = (ids: string[]) => {
+    if (ids.some((id, index) => id !== folders[index]?.folder_id)) reorder.mutate(ids);
+  };
+  // The arrow keys move a folder one place.
+  const stepFolder = (folderId: string, index: number) => {
+    const ids = folders.map((folder) => folder.folder_id);
+    const from = ids.indexOf(folderId);
+    if (from === -1 || index < 0 || index >= ids.length || index === from) return;
+    ids.splice(from, 1);
+    ids.splice(index, 0, folderId);
+    saveOrder(ids);
+  };
+  // A dropped folder goes above or below the target, where the line showed.
+  const dropFolder = (folderId: string, targetId: string, edge: DropEdge) => {
+    if (folderId === targetId) return;
+    const ids = folders.map((folder) => folder.folder_id).filter((id) => id !== folderId);
+    const at = ids.indexOf(targetId);
+    if (at === -1) return;
+    ids.splice(edge === "after" ? at + 1 : at, 0, folderId);
+    saveOrder(ids);
+  };
+  const endFolderDrag = () => {
+    draggedFolder.current = null;
+    setDraggingFolderId(null);
+  };
+  const onFolderDragStart = (folderId: string, event: React.DragEvent) => {
+    draggedFolder.current = folderId;
+    setDraggingFolderId(folderId);
+    event.dataTransfer?.setData("text/plain", folderId);
+  };
+  const onDrop = (folderId: string | null, event: React.DragEvent, edge: DropEdge | null) => {
+    const movedFolder = draggedFolder.current;
+    if (movedFolder !== null) {
+      endFolderDrag();
+      if (folderId !== null && edge !== null) dropFolder(movedFolder, folderId, edge);
+      return;
+    }
     const chatId = dragged.current ?? event.dataTransfer?.getData("text/plain") ?? "";
     dragged.current = null;
     setDraggingId(null);
@@ -81,6 +123,13 @@ export function ChatHistory({ activeChatId, onOpen, onRemoved, trailing }: ChatH
         setSelectMode(false);
       },
     });
+  };
+  // Only chats outside the chosen folder need a request. Select mode ends, as after a bulk delete.
+  const moveSelected = (folderId: string | null) => {
+    const chatIds = chats.filter((chat) => selected.includes(chat.chat_id) && chat.folder_id !== folderId).map((chat) => chat.chat_id);
+    if (chatIds.length > 0) moveMany.mutate({ chatIds, folderId });
+    setSelected([]);
+    setSelectMode(false);
   };
   const askDeleteFolder = (folder: ChatFolder) => {
     const inside = chats.filter((chat) => chat.folder_id === folder.folder_id).map((chat) => chat.chat_id);
@@ -122,10 +171,13 @@ export function ChatHistory({ activeChatId, onOpen, onRemoved, trailing }: ChatH
         {trailing === undefined ? null : <span className="ms-auto">{trailing}</span>}
       </div>
       {selectMode ? (
-        <Button variant="destructive" size="sm" disabled={selected.length === 0} onClick={askDeleteSelected}>
-          <Trash2 aria-hidden="true" />
-          {`Delete selected (${selected.length})`}
-        </Button>
+        <div className="flex flex-col gap-1">
+          <MoveSelectedMenu count={selected.length} folders={folders} onMove={moveSelected} />
+          <Button variant="destructive" size="sm" disabled={selected.length === 0} onClick={askDeleteSelected}>
+            <Trash2 aria-hidden="true" />
+            {`Delete selected (${selected.length})`}
+          </Button>
+        </div>
       ) : null}
       {naming ? (
         <FolderNameField
@@ -139,12 +191,27 @@ export function ChatHistory({ activeChatId, onOpen, onRemoved, trailing }: ChatH
       ) : null}
       {chats.length === 0 && folders.length === 0 ? <p className="text-meta text-muted-foreground">No chats yet. Ask a question to start one.</p> : null}
       {showNoFolder ? (
-        <ChatFolderSection folder={null} onDropChat={onDropChat}>
+        <ChatFolderSection folder={null} onDrop={onDrop}>
           {rows(null)}
         </ChatFolderSection>
       ) : null}
-      {folders.map((folder) => (
-        <ChatFolderSection key={folder.folder_id} folder={folder} onDropChat={onDropChat} onRename={(folderId, name) => renameFolder.mutate({ folderId, name })}
+      {folders.map((folder, index) => (
+        <ChatFolderSection
+          key={folder.folder_id}
+          folder={folder}
+          onDrop={onDrop}
+          folderDragOver={draggingFolderId !== null && draggingFolderId !== folder.folder_id}
+          onRename={(folderId, name) => renameFolder.mutate({ folderId, name })}
+          leading={
+            selectMode ? (
+              <FolderReorderHandle
+                name={folder.name}
+                onDragStart={(event) => onFolderDragStart(folder.folder_id, event)}
+                onDragEnd={endFolderDrag}
+                onStep={(step) => stepFolder(folder.folder_id, index + step)}
+              />
+            ) : null
+          }
           actions={
             <Button variant="ghost" size="icon-xs" aria-label={`Delete folder ${folder.name}`} onClick={() => askDeleteFolder(folder)}>
               <Trash2 aria-hidden="true" />
