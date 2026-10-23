@@ -40,7 +40,7 @@
 - [x] 5.1 Load the `omrg-design` skill (the owner may have renamed it by now; use whichever name exists). Rename `web/package.json` name, `web/index.html` title and logo, `web/public/omrg-logo.svg`, and update `web/DESIGN.md` and `web/src/AGENTS.md`.
 - [x] 5.2 Rename the five storage keys and their tests (`lib/preferences.ts`, `lib/navCollapsed.ts`, `studio/storage.ts` and the session and UI keys). Rename the `omrg_bt_` display text in `settings/McpHttpPanel.tsx`.
 - [x] 5.3 Update `web/vite.config.ts` (`OMRS_API_URL`, build output `../src/omrs/transports/api/static`).
-- [ ] 5.4 Run the web lint, typecheck, unit tests and build. Do a browser check at 1280 px and 390 px. Warn the owner before starting the dev server or a browser run.
+- [x] 5.4 Run the web lint, typecheck, unit tests and build. Do a browser check at 1280 px and 390 px. Warn the owner before starting the dev server or a browser run. Lint, typecheck, 1750 unit tests and the build passed in local CI. Browser check on 2026-10-23 from `v4` at `2d93b01`, in an Orca tab against a scratch `omrs web` server (empty workspace and config folder, own port): Home, Chat, Knowledge Base, Studio, Experiments, Integrations and Settings at 1280 px and 390 px, dark and light. All show the title "OMRS workspace" and the OMRS name, no old name, no horizontal overflow, no console errors. Settings shows `omrs.jsonc`, the `omrs` MCP server key and the `omrs_mcp_` token prefix. The favicon is `omrs-logo.svg`. The theme switch writes `omrs-preferences` and nothing under the old key.
 - [x] 5.5 Commit this group.
 
 ## 6. Docs, specs and active changes
