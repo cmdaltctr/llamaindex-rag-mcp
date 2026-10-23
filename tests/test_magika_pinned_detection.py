@@ -6,7 +6,7 @@ content, not by filename. These tests assert the installed-detector
 path with no skip-if-absent guards — after this change the package is a
 base dependency and is always present. Degradation coverage (binary
 genuinely unavailable) stays with the fallback tests that patch
-``omrg.integrations.magika._is_magika_available`` to ``False``.
+``omrs.integrations.magika._is_magika_available`` to ``False``.
 """
 
 from __future__ import annotations
@@ -17,8 +17,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from omrg.core.codebase.codebase_map import detect_file_types
-from omrg.integrations.magika import _is_magika_available
+from omrs.core.codebase.codebase_map import detect_file_types
+from omrs.integrations.magika import _is_magika_available
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _SMOKE_TOOL = _REPO_ROOT / "scripts" / "magika_label_smoke.py"
@@ -79,7 +79,7 @@ def test_smoke_tool_imports_no_ingestion_store_or_embedding() -> None:
     assert _SMOKE_TOOL.exists(), f"smoke tool missing: {_SMOKE_TOOL}"
     tree = ast.parse(_SMOKE_TOOL.read_text(encoding="utf-8"))
 
-    banned_roots = ("omrg.core.ingestion", "omrg.core.vectordb", "omrg.compose", "llama_index")
+    banned_roots = ("omrs.core.ingestion", "omrs.core.vectordb", "omrs.compose", "llama_index")
     banned_symbols = {"build_codebase_map", "Engine"}
     imported: list[str] = []
     for node in ast.walk(tree):

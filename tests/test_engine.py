@@ -16,20 +16,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from omrg.core.settings import EffectiveSettings, MetadataBlock
+from omrs.core.settings import EffectiveSettings, MetadataBlock
 
 # ── Public API surface ────────────────────────────────────────────────
 
 
 def test_public_api_exports_engine_effective_settings_version() -> None:
-    """``omrg`` exports exactly the engine, settings, graph types and version."""
-    import omrg
+    """``omrs`` exports exactly the engine, settings, graph types and version."""
+    import omrs
 
-    assert hasattr(omrg, "Engine")
-    assert hasattr(omrg, "EffectiveSettings")
-    assert hasattr(omrg, "__version__")
-    assert omrg.__version__ != "1.8.0"  # not the stale literal
-    assert omrg.__all__ == [
+    assert hasattr(omrs, "Engine")
+    assert hasattr(omrs, "EffectiveSettings")
+    assert hasattr(omrs, "__version__")
+    assert omrs.__version__ != "1.8.0"  # not the stale literal
+    assert omrs.__all__ == [
         "Engine",
         "EffectiveSettings",
         "PipelineDefinition",
@@ -40,27 +40,27 @@ def test_public_api_exports_engine_effective_settings_version() -> None:
     ]
 
 
-def test_importing_omrg_constructs_nothing() -> None:
+def test_importing_omrs_constructs_nothing() -> None:
     """Importing the package does not resolve settings or construct providers."""
-    # Re-import omrg in a fresh module context and verify no settings
+    # Re-import omrs in a fresh module context and verify no settings
     # singleton is created.
-    import omrg
+    import omrs
 
-    importlib.reload(omrg)
+    importlib.reload(omrs)
     # If importing had constructed settings, the config module would
     # have a cached singleton. We just verify the import succeeds and
     # the lazy attributes are accessible.
-    assert omrg.Engine is not None
-    assert omrg.EffectiveSettings is not None
+    assert omrs.Engine is not None
+    assert omrs.EffectiveSettings is not None
 
 
 def test_version_comes_from_package_metadata() -> None:
-    """``__version__`` derives from ``importlib.metadata.version("omrg")``."""
+    """``__version__`` derives from ``importlib.metadata.version("omrs")``."""
     import importlib.metadata
 
-    import omrg
+    import omrs
 
-    assert omrg.__version__ == importlib.metadata.version("omrg")
+    assert omrs.__version__ == importlib.metadata.version("omrs")
 
 
 # ── Direct construction without ensure_runtime_setup ──────────────────
@@ -72,8 +72,8 @@ def test_engine_constructs_directly_without_runtime_setup(tmp_path: Path) -> Non
     No ``ensure_runtime_setup()`` call is needed — the engine owns its
     store, embedder and settings.
     """
-    from omrg.core.vectordb.lancedb.store import LanceVectorStore
-    from omrg.engine import Engine
+    from omrs.core.vectordb.lancedb.store import LanceVectorStore
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -93,10 +93,10 @@ def test_engine_constructs_directly_without_runtime_setup(tmp_path: Path) -> Non
 
 def test_engine_from_environment_delegates_to_build_engine() -> None:
     """``Engine.from_environment()`` delegates to ``compose.build_engine()``."""
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     mock_engine = MagicMock()
-    with patch("omrg.compose.build_engine", return_value=mock_engine):
+    with patch("omrs.compose.build_engine", return_value=mock_engine):
         result = Engine.from_environment()
     assert result is mock_engine
 
@@ -106,8 +106,8 @@ def test_engine_from_environment_delegates_to_build_engine() -> None:
 
 def test_two_engines_have_independent_query_caches(tmp_path: Path) -> None:
     """Two engines do not share query-embedding caches."""
-    from omrg.core.vectordb.lancedb.store import LanceVectorStore
-    from omrg.engine import Engine
+    from omrs.core.vectordb.lancedb.store import LanceVectorStore
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -128,9 +128,9 @@ def test_two_engines_have_independent_query_caches(tmp_path: Path) -> None:
 
 def test_engine_close_evicts_only_own_bm25_entries(tmp_path: Path) -> None:
     """Closing one engine evicts only its own BM25 cache entries."""
-    from omrg.core.retrieval.sparse import BM25SparseRetriever
-    from omrg.core.vectordb.lancedb.store import LanceVectorStore
-    from omrg.engine import Engine
+    from omrs.core.retrieval.sparse import BM25SparseRetriever
+    from omrs.core.vectordb.lancedb.store import LanceVectorStore
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -162,8 +162,8 @@ def test_engine_close_evicts_only_own_bm25_entries(tmp_path: Path) -> None:
 
 def test_engine_close_is_idempotent(tmp_path: Path) -> None:
     """Calling close() twice is safe."""
-    from omrg.core.vectordb.lancedb.store import LanceVectorStore
-    from omrg.engine import Engine
+    from omrs.core.vectordb.lancedb.store import LanceVectorStore
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -182,7 +182,7 @@ def test_engine_close_is_idempotent(tmp_path: Path) -> None:
 
 def test_engine_search_passes_injected_dependencies(tmp_path: Path) -> None:
     """``Engine.search`` passes the engine's store, embed_model and cache."""
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -200,7 +200,7 @@ def test_engine_search_passes_injected_dependencies(tmp_path: Path) -> None:
         captured.update(kwargs)
         return []
 
-    with patch("omrg.core.retrieval.pipeline.search", side_effect=fake_search):
+    with patch("omrs.core.retrieval.pipeline.search", side_effect=fake_search):
         engine.search("test query", collection_name="docs")
 
     assert captured.get("store") is store
@@ -218,7 +218,7 @@ def test_install_login_watcher_contention_warning_uses_compose_surface() -> None
     # No ``get_settings()`` call is made inside it.
     import inspect
 
-    from omrg.transports.cli.install_login_watcher import _contention_warning
+    from omrs.transports.cli.install_login_watcher import _contention_warning
 
     sig = inspect.signature(_contention_warning)
     assert "adapter" in sig.parameters
@@ -232,7 +232,7 @@ def test_engine_ingest_passes_injected_dependencies(tmp_path: Path) -> None:
     """``Engine.ingest`` passes the engine's store and embed_model."""
     import asyncio
 
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -250,7 +250,7 @@ def test_engine_ingest_passes_injected_dependencies(tmp_path: Path) -> None:
         captured.update(kwargs)
         return {"status": "ok", "files_indexed": 0}
 
-    with patch("omrg.core.ingestion.pipeline.ingest_path_async", side_effect=fake_ingest):
+    with patch("omrs.core.ingestion.pipeline.ingest_path_async", side_effect=fake_ingest):
         result = asyncio.run(engine.ingest(str(tmp_path), collection_name="docs"))
 
     assert result["status"] == "ok"
@@ -265,7 +265,7 @@ def test_engine_ingest_passes_injected_dependencies(tmp_path: Path) -> None:
 
 def test_engine_list_collections_delegates_to_store(tmp_path: Path) -> None:
     """``Engine.list_collections`` returns collection names from the store."""
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -283,7 +283,7 @@ def test_engine_list_collections_delegates_to_store(tmp_path: Path) -> None:
             {"name": "code", "document_count": 3, "chunk_count": 7},
         ]
 
-    with patch("omrg.core.retrieval.pipeline.list_collections", side_effect=fake_list_collections):
+    with patch("omrs.core.retrieval.pipeline.list_collections", side_effect=fake_list_collections):
         result = engine.list_collections()
 
     assert result == ["docs", "code"]
@@ -292,7 +292,7 @@ def test_engine_list_collections_delegates_to_store(tmp_path: Path) -> None:
 
 def test_engine_delete_collection_delegates_to_store(tmp_path: Path) -> None:
     """``Engine.delete_collection`` calls the store's delete_collection."""
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -315,7 +315,7 @@ def test_engine_answer_builds_completion_seam_lazily(tmp_path: Path) -> None:
     """``Engine.answer`` builds the answer LLM lazily via the factory."""
     import asyncio
 
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -346,7 +346,7 @@ def test_engine_answer_builds_completion_seam_lazily(tmp_path: Path) -> None:
         captured.update(kwargs)
         return {"status": "ok", "answer": "test"}
 
-    with patch("omrg.core.answer.pipeline.answer", side_effect=fake_answer):
+    with patch("omrs.core.answer.pipeline.answer", side_effect=fake_answer):
         result = asyncio.run(engine.answer("test question", collection_name="docs"))
 
     assert result["status"] == "ok"
@@ -362,7 +362,7 @@ def test_engine_answer_with_no_llm_factory_passes_none_complete(tmp_path: Path) 
     """``Engine.answer`` with no factory passes ``complete=None``."""
     import asyncio
 
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -380,7 +380,7 @@ def test_engine_answer_with_no_llm_factory_passes_none_complete(tmp_path: Path) 
         captured.update(kwargs)
         return {"status": "ok", "answer": "test"}
 
-    with patch("omrg.core.answer.pipeline.answer", side_effect=fake_answer):
+    with patch("omrs.core.answer.pipeline.answer", side_effect=fake_answer):
         asyncio.run(engine.answer("test question", collection_name="docs"))
 
     assert captured.get("complete") is None
@@ -392,7 +392,7 @@ def test_engine_answer_with_no_llm_factory_passes_none_complete(tmp_path: Path) 
 
 def test_engine_install_as_process_default_sets_globals(tmp_path: Path) -> None:
     """``_install_as_process_default`` installs store, settings and LlamaIndex global."""
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -405,8 +405,8 @@ def test_engine_install_as_process_default_sets_globals(tmp_path: Path) -> None:
     engine = Engine(settings, store=store, embed_model=embed_model)
 
     with (
-        patch("omrg.core.vectordb.set_default_store") as mock_set_store,
-        patch("omrg.core.settings.set_default_effective_settings") as mock_set_settings,
+        patch("omrs.core.vectordb.set_default_store") as mock_set_store,
+        patch("omrs.core.settings.set_default_effective_settings") as mock_set_settings,
         patch("llama_index.core.Settings") as mock_li_settings,
     ):
         engine._install_as_process_default()
@@ -422,7 +422,7 @@ def test_engine_install_as_process_default_sets_globals(tmp_path: Path) -> None:
 
 def test_engine_close_drops_query_cache(tmp_path: Path) -> None:
     """``close()`` clears the engine-owned query embedding cache."""
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -445,7 +445,7 @@ def test_engine_close_drops_query_cache(tmp_path: Path) -> None:
 
 def test_build_engine_constructs_engine_from_settings(tmp_path: Path) -> None:
     """``compose.build_engine`` constructs an Engine from resolved settings."""
-    from omrg.compose_engine import build_engine
+    from omrs.compose_engine import build_engine
 
     mock_settings = MagicMock()
     mock_settings.chroma_scan_page_size = 10000
@@ -461,14 +461,14 @@ def test_build_engine_constructs_engine_from_settings(tmp_path: Path) -> None:
     )
 
     with (
-        patch("omrg.compose.build_embed_model", return_value=mock_embed),
-        patch("omrg.compose.build_vector_store", return_value=mock_store),
-        patch("omrg.compose.settings_to_effective", return_value=mock_effective),
-        patch("omrg.compose.build_reranker", return_value=mock_reranker),
-        patch("omrg.compose._resolve_active_strategies"),
-        patch("omrg.compose._log_norm_guard_state"),
-        patch("omrg.core.vectordb.legacy.evaluate_legacy_chroma_data"),
-        patch("omrg.compose.get_settings", return_value=mock_settings) as mock_get_settings,
+        patch("omrs.compose.build_embed_model", return_value=mock_embed),
+        patch("omrs.compose.build_vector_store", return_value=mock_store),
+        patch("omrs.compose.settings_to_effective", return_value=mock_effective),
+        patch("omrs.compose.build_reranker", return_value=mock_reranker),
+        patch("omrs.compose._resolve_active_strategies"),
+        patch("omrs.compose._log_norm_guard_state"),
+        patch("omrs.core.vectordb.legacy.evaluate_legacy_chroma_data"),
+        patch("omrs.compose.get_settings", return_value=mock_settings) as mock_get_settings,
     ):
         engine = build_engine()
 
@@ -483,7 +483,7 @@ def test_build_engine_constructs_engine_from_settings(tmp_path: Path) -> None:
 
 def test_build_engine_reranker_failure_degrades_to_none(tmp_path: Path) -> None:
     """``build_engine`` returns None reranker when construction fails."""
-    from omrg.compose_engine import build_engine
+    from omrs.compose_engine import build_engine
 
     mock_settings = MagicMock()
     mock_effective = EffectiveSettings(
@@ -492,12 +492,12 @@ def test_build_engine_reranker_failure_degrades_to_none(tmp_path: Path) -> None:
     )
 
     with (
-        patch("omrg.compose.build_embed_model", return_value=MagicMock()),
-        patch("omrg.compose.build_vector_store", return_value=MagicMock()),
-        patch("omrg.compose.settings_to_effective", return_value=mock_effective),
-        patch("omrg.compose.build_reranker", side_effect=RuntimeError("no onnx")),
-        patch("omrg.compose._resolve_active_strategies"),
-        patch("omrg.compose._log_norm_guard_state"),
+        patch("omrs.compose.build_embed_model", return_value=MagicMock()),
+        patch("omrs.compose.build_vector_store", return_value=MagicMock()),
+        patch("omrs.compose.settings_to_effective", return_value=mock_effective),
+        patch("omrs.compose.build_reranker", side_effect=RuntimeError("no onnx")),
+        patch("omrs.compose._resolve_active_strategies"),
+        patch("omrs.compose._log_norm_guard_state"),
     ):
         engine = build_engine(mock_settings)
 
@@ -507,10 +507,10 @@ def test_build_engine_reranker_failure_degrades_to_none(tmp_path: Path) -> None:
 
 def test_configured_vector_store_returns_adapter_name() -> None:
     """``configured_vector_store`` returns the vector store name from settings."""
-    from omrg.compose_engine import configured_vector_store
+    from omrs.compose_engine import configured_vector_store
 
     mock_settings = MagicMock(vector_store="lancedb")
-    with patch("omrg.config.get_settings", return_value=mock_settings):
+    with patch("omrs.config.get_settings", return_value=mock_settings):
         result = configured_vector_store()
     assert result == "lancedb"
 
@@ -520,7 +520,7 @@ def test_configured_vector_store_returns_adapter_name() -> None:
 
 def test_engine_public_method_surface_is_exactly_documented() -> None:
     """The Engine public method set is exactly the documented surface."""
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     # Task 4.3 adds graph validation and execution, and a read-only
     # settings accessor for transports (add-local-web-pipeline-workspace).
@@ -560,16 +560,16 @@ def test_engine_construction_failure_leaves_no_partial_state(tmp_path: Path) -> 
     propagate the error without leaving a partially-constructed Engine
     accessible to the caller.
     """
-    from omrg.compose_engine import build_engine
+    from omrs.compose_engine import build_engine
 
     mock_settings = MagicMock()
     with (
         patch(
-            "omrg.compose.build_embed_model",
+            "omrs.compose.build_embed_model",
             side_effect=ValueError("invalid embed_provider='bogus'"),
         ),
-        patch("omrg.compose._resolve_active_strategies"),
-        patch("omrg.compose._log_norm_guard_state"),
+        patch("omrs.compose._resolve_active_strategies"),
+        patch("omrs.compose._log_norm_guard_state"),
     ):
         with pytest.raises(ValueError, match="bogus"):
             build_engine(mock_settings)
@@ -582,16 +582,16 @@ def test_engine_construction_failure_leaves_no_partial_state(tmp_path: Path) -> 
 
 def test_build_engine_fail_fast_on_invalid_embed_provider(tmp_path: Path) -> None:
     """``build_engine`` propagates ValueError for an invalid embed provider."""
-    from omrg.compose_engine import build_engine
+    from omrs.compose_engine import build_engine
 
     mock_settings = MagicMock()
     with (
         patch(
-            "omrg.compose.build_embed_model",
+            "omrs.compose.build_embed_model",
             side_effect=ValueError("unknown provider 'bogus'"),
         ),
-        patch("omrg.compose._resolve_active_strategies"),
-        patch("omrg.compose._log_norm_guard_state"),
+        patch("omrs.compose._resolve_active_strategies"),
+        patch("omrs.compose._log_norm_guard_state"),
     ):
         with pytest.raises(ValueError, match="bogus"):
             build_engine(mock_settings)
@@ -599,14 +599,14 @@ def test_build_engine_fail_fast_on_invalid_embed_provider(tmp_path: Path) -> Non
 
 def test_build_engine_fail_fast_on_invalid_store(tmp_path: Path) -> None:
     """``build_engine`` propagates ValueError for an invalid vector store."""
-    from omrg.compose_engine import build_engine
+    from omrs.compose_engine import build_engine
 
     mock_settings = MagicMock()
     with (
-        patch("omrg.compose.build_embed_model", return_value=MagicMock()),
-        patch("omrg.compose.build_vector_store", side_effect=ValueError("unknown store 'bogus'")),
-        patch("omrg.compose._resolve_active_strategies"),
-        patch("omrg.compose._log_norm_guard_state"),
+        patch("omrs.compose.build_embed_model", return_value=MagicMock()),
+        patch("omrs.compose.build_vector_store", side_effect=ValueError("unknown store 'bogus'")),
+        patch("omrs.compose._resolve_active_strategies"),
+        patch("omrs.compose._log_norm_guard_state"),
     ):
         with pytest.raises(ValueError, match="bogus"):
             build_engine(mock_settings)
@@ -617,7 +617,7 @@ def test_build_engine_fail_fast_on_invalid_store(tmp_path: Path) -> None:
 
 def test_direct_engine_construction_never_calls_get_settings(tmp_path: Path) -> None:
     """An engine built from explicit dependencies never calls ``get_settings``."""
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -627,7 +627,7 @@ def test_direct_engine_construction_never_calls_get_settings(tmp_path: Path) -> 
     store.cache_identity = "test-identity"
     embed_model = MagicMock(model_name="test-model")
 
-    with patch("omrg.config.get_settings") as mock_get_settings:
+    with patch("omrs.config.get_settings") as mock_get_settings:
         engine = Engine(settings, store=store, embed_model=embed_model)
         mock_get_settings.assert_not_called()
     engine.close()
@@ -645,7 +645,7 @@ def test_injected_embedding_identity_matches_global_for_same_embedder(
     an injected embedder produces the same fingerprint as the global path.
     This ensures existing collections do not reprocess after the switch.
     """
-    from omrg.core.ingestion import source_state
+    from omrs.core.ingestion import source_state
 
     mock_embed = MagicMock()
     mock_embed.__class__.__name__ = "MockEmbedding"
@@ -669,7 +669,7 @@ def test_injected_embedding_identity_matches_global_for_same_embedder(
 
 def test_source_index_identity_changes_with_different_embedders() -> None:
     """``build_index_identity`` produces different identities for different embedders."""
-    from omrg.core.ingestion import source_state
+    from omrs.core.ingestion import source_state
 
     settings = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
 
@@ -705,7 +705,7 @@ def test_engine_profile_resolution_errors_propagate() -> None:
     running the operation on base settings would change retrieval
     behaviour without the operator knowing.
     """
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = MagicMock()
     failed_factory = Engine(
@@ -737,7 +737,7 @@ def test_engine_verification_provider_paths() -> None:
     """Answering adapts an available judge and reports an unavailable judge."""
     import asyncio
 
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     effective = MagicMock()
     effective.answer.verify_claims = True
@@ -750,7 +750,7 @@ def test_engine_verification_provider_paths() -> None:
         captured.append(kwargs)
         return {"status": "ok"}
 
-    with patch("omrg.core.answer.pipeline.answer", side_effect=fake_answer):
+    with patch("omrs.core.answer.pipeline.answer", side_effect=fake_answer):
         available = Engine(
             effective,
             store=store,
@@ -780,26 +780,26 @@ def test_llm_builders_propagate_configuration_errors() -> None:
     missing credentials stay loud so the first ``engine.answer()`` call
     surfaces the actionable message instead of silently degrading.
     """
-    from omrg.compose_engine import _build_answer_llm, _build_verify_llm
+    from omrs.compose_engine import _build_answer_llm, _build_verify_llm
 
     settings = MagicMock()
     answer_block = MagicMock()
     answer_llm = MagicMock()
     verify_llm = MagicMock()
 
-    with patch("omrg.compose_answer.build_answer_llm", return_value=answer_llm):
+    with patch("omrs.compose_answer.build_answer_llm", return_value=answer_llm):
         assert _build_answer_llm(settings) is answer_llm
     with patch(
-        "omrg.compose_answer.build_answer_llm",
+        "omrs.compose_answer.build_answer_llm",
         side_effect=ValueError("ANSWER__PROVIDER='bogus' is not registered"),
     ):
         with pytest.raises(ValueError, match="bogus"):
             _build_answer_llm(settings)
-    with patch("omrg.compose_answer.build_verify_llm", return_value=verify_llm) as build_verify:
+    with patch("omrs.compose_answer.build_verify_llm", return_value=verify_llm) as build_verify:
         assert _build_verify_llm(settings, answer_block) is verify_llm
         build_verify.assert_called_once_with(settings, answer_block=answer_block)
     with patch(
-        "omrg.compose_answer.build_verify_llm",
+        "omrs.compose_answer.build_verify_llm",
         side_effect=RuntimeError("credential rejected"),
     ):
         # The ENGINE converts this into verification_skipped; the builder
@@ -820,7 +820,7 @@ def test_build_engine_env_route_runs_legacy_env_tripwire(
     the library construction path must fail the same way transport
     startup does.
     """
-    from omrg.compose_engine import build_engine
+    from omrs.compose_engine import build_engine
 
     monkeypatch.setenv("TOP_K", "10")
     monkeypatch.setenv("LANCEDB_URI", str(tmp_path / "lancedb_store"))
@@ -837,8 +837,8 @@ def test_build_engine_env_route_fails_closed_on_recognised_chroma(
     fail closed before any store is constructed — the library path can no
     longer silently select default LanceDB over existing Chroma data.
     """
-    from omrg.compose_engine import build_engine
-    from omrg.core.vectordb.legacy import LegacyChromaDataError
+    from omrs.compose_engine import build_engine
+    from omrs.core.vectordb.legacy import LegacyChromaDataError
 
     legacy_dir = tmp_path / "legacy_chroma"
     legacy_dir.mkdir()
@@ -852,7 +852,7 @@ def test_build_engine_env_route_fails_closed_on_recognised_chroma(
     # fail-closed contract into the acknowledgement path. Seeding the
     # settings singleton keeps build_engine() on get_settings() while
     # resolving like a clean CI runner (repair-fast-suite-regressions D2).
-    import omrg.config as config_mod
+    import omrs.config as config_mod
 
     monkeypatch.setattr(config_mod, "_settings", config_mod.Settings(_env_file=None))
     with pytest.raises(LegacyChromaDataError, match="VECTOR_STORE=chroma"):
@@ -863,8 +863,8 @@ def test_build_engine_validates_strategies_for_explicit_settings(
     tmp_path: Path,
 ) -> None:
     """Explicit-settings construction still runs the shared strategy gate."""
-    from omrg.compose_engine import build_engine
-    from omrg.config import get_settings
+    from omrs.compose_engine import build_engine
+    from omrs.config import get_settings
 
     settings = get_settings().model_copy(update={"community_algorithm": "not-a-strategy"})
     with pytest.raises(ValueError, match="not-a-strategy"):
@@ -879,7 +879,7 @@ def test_build_engine_wires_store_and_env_snapshot_into_resolver_factory(
     The snapshot is taken at composition time: later environment changes
     must not alter an already-constructed engine.
     """
-    from omrg.compose_engine import build_engine
+    from omrs.compose_engine import build_engine
 
     mock_settings = MagicMock()
     mock_settings.chroma_scan_page_size = 10000
@@ -899,13 +899,13 @@ def test_build_engine_wires_store_and_env_snapshot_into_resolver_factory(
         monkeypatch.delenv(key, raising=False)
 
     with (
-        patch("omrg.compose.build_embed_model", return_value=MagicMock()),
-        patch("omrg.compose.build_vector_store", return_value=mock_store),
-        patch("omrg.compose.settings_to_effective", return_value=mock_effective),
-        patch("omrg.compose.build_reranker", return_value=MagicMock()),
-        patch("omrg.compose._resolve_active_strategies"),
-        patch("omrg.compose._log_norm_guard_state"),
-        patch("omrg.compose.build_profile_resolver") as mock_bpr,
+        patch("omrs.compose.build_embed_model", return_value=MagicMock()),
+        patch("omrs.compose.build_vector_store", return_value=mock_store),
+        patch("omrs.compose.settings_to_effective", return_value=mock_effective),
+        patch("omrs.compose.build_reranker", return_value=MagicMock()),
+        patch("omrs.compose._resolve_active_strategies"),
+        patch("omrs.compose._log_norm_guard_state"),
+        patch("omrs.compose.build_profile_resolver") as mock_bpr,
     ):
         engine = build_engine(mock_settings)
         engine._profile_resolver_factory()
@@ -917,13 +917,13 @@ def test_build_engine_wires_store_and_env_snapshot_into_resolver_factory(
     # A later environment change must not reach an engine built before it.
     monkeypatch.setenv("RETRIEVAL__TOP_K", "9")
     with (
-        patch("omrg.compose.build_embed_model", return_value=MagicMock()),
-        patch("omrg.compose.build_vector_store", return_value=mock_store),
-        patch("omrg.compose.settings_to_effective", return_value=mock_effective),
-        patch("omrg.compose.build_reranker", return_value=MagicMock()),
-        patch("omrg.compose._resolve_active_strategies"),
-        patch("omrg.compose._log_norm_guard_state"),
-        patch("omrg.compose.build_profile_resolver") as mock_bpr_late,
+        patch("omrs.compose.build_embed_model", return_value=MagicMock()),
+        patch("omrs.compose.build_vector_store", return_value=mock_store),
+        patch("omrs.compose.settings_to_effective", return_value=mock_effective),
+        patch("omrs.compose.build_reranker", return_value=MagicMock()),
+        patch("omrs.compose._resolve_active_strategies"),
+        patch("omrs.compose._log_norm_guard_state"),
+        patch("omrs.compose.build_profile_resolver") as mock_bpr_late,
     ):
         late_engine = build_engine(mock_settings)
         late_engine._profile_resolver_factory()
@@ -940,7 +940,7 @@ def test_engine_answer_threads_embedder_and_query_cache() -> None:
     """
     import asyncio
 
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     effective = MagicMock()
     effective.answer.verify_claims = False
@@ -956,7 +956,7 @@ def test_engine_answer_threads_embedder_and_query_cache() -> None:
         store=MagicMock(cache_identity="answer-threading"),
         embed_model=embed,
     )
-    with patch("omrg.core.answer.pipeline.answer", side_effect=fake_core_answer):
+    with patch("omrs.core.answer.pipeline.answer", side_effect=fake_core_answer):
         asyncio.run(engine.answer("question"))
 
     assert captured["embed_model"] is embed
@@ -968,7 +968,7 @@ def test_engine_answer_llm_factory_failure_propagates() -> None:
     """An answer-provider construction error surfaces from ``answer()``."""
     import asyncio
 
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     effective = MagicMock()
     effective.answer.verify_claims = False
@@ -994,8 +994,8 @@ def test_engine_answer_verify_failure_degrades_with_redacted_reason() -> None:
     """A verify-provider failure degrades to a redacted skipped reason."""
     import asyncio
 
-    from omrg.core.vectordb.identity import RedactionSecrets
-    from omrg.engine import Engine
+    from omrs.core.vectordb.identity import RedactionSecrets
+    from omrs.engine import Engine
 
     effective = MagicMock()
     effective.answer.verify_claims = True
@@ -1015,7 +1015,7 @@ def test_engine_answer_verify_failure_degrades_with_redacted_reason() -> None:
         verify_llm_factory=failing_verify_factory,
         redaction=RedactionSecrets(provider_keys=("sk-SECRET123",)),
     )
-    with patch("omrg.core.answer.pipeline.answer", side_effect=fake_core_answer):
+    with patch("omrs.core.answer.pipeline.answer", side_effect=fake_core_answer):
         result = asyncio.run(engine.answer("question"))
 
     assert result == {"status": "ok"}  # the answer itself never fails
@@ -1033,7 +1033,7 @@ def test_engine_close_rejects_operations_and_releases_references(
     """A closed engine refuses operations and drops owned references."""
     import asyncio
 
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -1082,7 +1082,7 @@ def test_engine_close_survives_store_close_failure(
     """A store close() failure is logged; the release still completes."""
     import logging
 
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),

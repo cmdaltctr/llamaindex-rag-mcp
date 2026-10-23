@@ -88,7 +88,7 @@ The citation popover SHALL show the citation ordinal, the source name, the score
 
 ### Requirement: Chats are stored in the workspace
 
-Each chat SHALL be stored in the workspace database with its turns. A turn SHALL keep the question, the collection it was sent to and the answer result. A turn SHALL be stored when a usable answer arrives. A failed call, or an answer with an error status, SHALL NOT be stored; a Retry that then succeeds SHALL store the turn. Opening a stored chat SHALL show its saved turns in order and MUST NOT call `answerCollection` for them. A chat title SHALL come from the first question, cut to 60 characters. Chats SHALL survive a page reload and a server restart. Only the browser session of `omrg web` SHALL read, change or delete chats; a bearer token MUST be refused.
+Each chat SHALL be stored in the workspace database with its turns. A turn SHALL keep the question, the collection it was sent to and the answer result. A turn SHALL be stored when a usable answer arrives. A failed call, or an answer with an error status, SHALL NOT be stored; a Retry that then succeeds SHALL store the turn. Opening a stored chat SHALL show its saved turns in order and MUST NOT call `answerCollection` for them. A chat title SHALL come from the first question, cut to 60 characters. Chats SHALL survive a page reload and a server restart. Only the browser session of `omrs web` SHALL read, change or delete chats; a bearer token MUST be refused.
 
 #### Scenario: Reload keeps the chat
 

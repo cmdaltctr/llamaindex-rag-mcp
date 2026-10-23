@@ -8,8 +8,8 @@ import pytest
 
 pytest.importorskip("fastapi")
 
-from omrg.transports.api import lifespan  # noqa: E402
-from omrg.transports.api.admission import Admission, AdmissionClosed  # noqa: E402
+from omrs.transports.api import lifespan  # noqa: E402
+from omrs.transports.api.admission import Admission, AdmissionClosed  # noqa: E402
 
 
 def test_lifespan_re_exports_the_moved_names() -> None:

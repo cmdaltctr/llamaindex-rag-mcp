@@ -22,8 +22,8 @@ from typing import Any
 
 import pytest
 
-from omrg.core.vectordb.base import VectorStore
-from omrg.core.vectordb.score import DENSE_SCORE_KIND, NATIVE_SPARSE_SCORE_KIND
+from omrs.core.vectordb.base import VectorStore
+from omrs.core.vectordb.score import DENSE_SCORE_KIND, NATIVE_SPARSE_SCORE_KIND
 
 
 class _ThirdPartyStore(VectorStore):
@@ -126,7 +126,7 @@ def test_chroma_store_keeps_explicit_unsupported_response() -> None:
     pytest.importorskip(
         "chromadb", reason="chroma extra not installed; runs in the chroma-extra CI job"
     )
-    from omrg.core.vectordb.chroma.store import ChromaVectorStore
+    from omrs.core.vectordb.chroma.store import ChromaVectorStore
 
     store = ChromaVectorStore()
     with pytest.raises(NotImplementedError, match="does not support native sparse"):
@@ -138,14 +138,14 @@ def test_chroma_store_keeps_explicit_unsupported_response() -> None:
 
 def _lance_store(tmp_path, name: str = "fts"):
     """Return a LanceVectorStore over an isolated tmp_path database."""
-    from omrg.core.vectordb.lancedb.store import LanceVectorStore
+    from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
     return LanceVectorStore(uri=str(tmp_path / name))
 
 
 def _write_rows(store, collection: str, rows: list[tuple[str, str, str]]) -> None:
     """Upsert (id, text, category) rows through the precomputed seam."""
-    from omrg.core.vectordb.identity import EmbeddingIdentity
+    from omrs.core.vectordb.identity import EmbeddingIdentity
 
     store.upsert_precomputed(
         collection,
@@ -196,7 +196,7 @@ class TestNativeSparseQueries:
 
     def test_canonical_row_shape(self, tmp_path) -> None:
         """Task 2.3: rows normalise to the shared store-level contract."""
-        from omrg.core.vectordb.score import NATIVE_SPARSE_SCORE_KIND
+        from omrs.core.vectordb.score import NATIVE_SPARSE_SCORE_KIND
 
         store = _lance_store(tmp_path)
         _write_rows(store, "docs", _CORPUS)
@@ -220,7 +220,7 @@ class TestCollectionsWithoutFTSIndexes:
     """Task 2.2: collections without an FTS index keep working."""
 
     def test_dense_and_bm25_work_without_index(self, tmp_path) -> None:
-        from omrg.core.retrieval.sparse import BM25SparseRetriever
+        from omrs.core.retrieval.sparse import BM25SparseRetriever
 
         store = _lance_store(tmp_path)
         _write_rows(store, "docs", _CORPUS)
@@ -300,7 +300,7 @@ class TestFTSLifecycle:
 
     def test_index_creation_failure_propagates_for_fallback(self, tmp_path, monkeypatch) -> None:
         """First-use creation failure raises (the BM25 fallback signal)."""
-        from omrg.core.vectordb.lancedb import fts as lance_fts
+        from omrs.core.vectordb.lancedb import fts as lance_fts
 
         store = _lance_store(tmp_path)
         _write_rows(store, "docs", _CORPUS)
@@ -314,7 +314,7 @@ class TestFTSLifecycle:
 
     def test_refresh_failure_propagates_for_fallback(self, tmp_path, monkeypatch) -> None:
         """Refresh failure on a stale index raises (lifecycle fallback)."""
-        from omrg.core.vectordb.lancedb import fts as lance_fts
+        from omrs.core.vectordb.lancedb import fts as lance_fts
 
         store = _lance_store(tmp_path)
         _write_rows(store, "docs", _CORPUS)
@@ -333,7 +333,7 @@ class TestNativeFTSProbe:
     """The real capability probe used by composition (task 3.2 input)."""
 
     def test_probe_true_on_locked_runtime(self) -> None:
-        from omrg.core.vectordb.lancedb.fts import probe_native_fts
+        from omrs.core.vectordb.lancedb.fts import probe_native_fts
 
         assert probe_native_fts() is True
 
@@ -341,7 +341,7 @@ class TestNativeFTSProbe:
         """A runtime without the FTS surface probes as unavailable."""
         import sys
 
-        from omrg.core.vectordb.lancedb.fts import probe_native_fts
+        from omrs.core.vectordb.lancedb.fts import probe_native_fts
 
         # A None module entry makes `from lancedb.index import FTS`
         # raise ImportError inside the probe, which must report False.
@@ -367,7 +367,7 @@ class TestHybridNativePipeline:
 
     @staticmethod
     def _patch_dense_query(monkeypatch, dim: int = 4) -> None:
-        import omrg.core.retrieval.dense as dense
+        import omrs.core.retrieval.dense as dense
 
         # Unit-norm so the (default-on) embedding norm guard admits it.
         value = [1.0 / (dim**0.5)] * dim
@@ -377,8 +377,8 @@ class TestHybridNativePipeline:
         self, tmp_path, monkeypatch, effective_settings
     ) -> None:
         """Real native execution: FTS ranking feeds the hybrid fusion."""
-        import omrg.core.retrieval.pipeline as retrieval
-        from omrg.core.retrieval.sparse_dispatch import reset_warning_state
+        import omrs.core.retrieval.pipeline as retrieval
+        from omrs.core.retrieval.sparse_dispatch import reset_warning_state
 
         store = _lance_store(tmp_path)
         _write_rows(store, "docs", _CORPUS)
@@ -406,9 +406,9 @@ class TestHybridNativePipeline:
         """A native runtime failure warns once and serves BM25 results."""
         import logging
 
-        import omrg.core.retrieval.pipeline as retrieval
-        from omrg.core.retrieval import sparse_dispatch
-        from omrg.core.retrieval.sparse_dispatch import reset_warning_state
+        import omrs.core.retrieval.pipeline as retrieval
+        from omrs.core.retrieval import sparse_dispatch
+        from omrs.core.retrieval.sparse_dispatch import reset_warning_state
 
         store = _lance_store(tmp_path)
         _write_rows(store, "docs", _CORPUS)
@@ -447,8 +447,8 @@ class TestHybridNativePipeline:
         """Partial FTS coverage triggers the one-shot restated warning."""
         import logging
 
-        import omrg.core.retrieval.pipeline as retrieval
-        from omrg.core.retrieval.sparse_dispatch import reset_warning_state
+        import omrs.core.retrieval.pipeline as retrieval
+        from omrs.core.retrieval.sparse_dispatch import reset_warning_state
 
         store = _lance_store(tmp_path)
         _write_rows(store, "docs", _CORPUS)
@@ -461,7 +461,7 @@ class TestHybridNativePipeline:
         def _no_refresh(_table):  # keep the stale marker durable
             pass
 
-        from omrg.core.vectordb.lancedb import fts as lance_fts
+        from omrs.core.vectordb.lancedb import fts as lance_fts
 
         monkeypatch.setattr(lance_fts, "refresh_fts_index", _no_refresh)
         with caplog.at_level(logging.WARNING):
@@ -484,8 +484,8 @@ class TestHybridNativePipeline:
         """The BM25 path never emits the FTS mixed-coverage warning."""
         import logging
 
-        import omrg.core.retrieval.pipeline as retrieval
-        from omrg.core.retrieval.sparse_dispatch import reset_warning_state
+        import omrs.core.retrieval.pipeline as retrieval
+        from omrs.core.retrieval.sparse_dispatch import reset_warning_state
 
         store = _lance_store(tmp_path)
         _write_rows(store, "docs", _CORPUS)
@@ -509,8 +509,8 @@ class TestHybridNativePipeline:
         self, tmp_path, monkeypatch, effective_settings
     ) -> None:
         """Hybrid metadata filters constrain the native sparse ranking."""
-        import omrg.core.retrieval.pipeline as retrieval
-        from omrg.core.retrieval.sparse_dispatch import reset_warning_state
+        import omrs.core.retrieval.pipeline as retrieval
+        from omrs.core.retrieval.sparse_dispatch import reset_warning_state
 
         store = _lance_store(tmp_path)
         _write_rows(store, "docs", _CORPUS)
@@ -566,7 +566,7 @@ class TestMixedCoverageWarningState:
     def test_fts_partial_coverage_warns_once(self, caplog) -> None:
         import logging
 
-        from omrg.core.retrieval.sparse_dispatch import (
+        from omrs.core.retrieval.sparse_dispatch import (
             _emit_mixed_coverage_warning,
             reset_warning_state,
         )
@@ -582,7 +582,7 @@ class TestMixedCoverageWarningState:
     def test_fts_full_or_absent_coverage_stays_silent(self, caplog) -> None:
         import logging
 
-        from omrg.core.retrieval.sparse_dispatch import (
+        from omrs.core.retrieval.sparse_dispatch import (
             _emit_mixed_coverage_warning,
             reset_warning_state,
         )
@@ -598,7 +598,7 @@ class TestMixedCoverageWarningState:
     def test_coverage_probe_failure_stays_silent(self, caplog) -> None:
         import logging
 
-        from omrg.core.retrieval.sparse_dispatch import (
+        from omrs.core.retrieval.sparse_dispatch import (
             _emit_mixed_coverage_warning,
             reset_warning_state,
         )
@@ -612,7 +612,7 @@ class TestMixedCoverageWarningState:
         """Stores without the coverage signal keep the Chroma-era scan."""
         import logging
 
-        from omrg.core.retrieval.sparse_dispatch import (
+        from omrs.core.retrieval.sparse_dispatch import (
             _emit_mixed_coverage_warning,
             reset_warning_state,
         )
@@ -629,7 +629,7 @@ class TestMixedCoverageWarningState:
     def test_legacy_scan_failure_stays_silent(self, caplog) -> None:
         import logging
 
-        from omrg.core.retrieval.sparse_dispatch import (
+        from omrs.core.retrieval.sparse_dispatch import (
             _emit_mixed_coverage_warning,
             reset_warning_state,
         )
@@ -646,7 +646,7 @@ class TestSparseRegistryErrors:
     def test_unknown_name_lists_available(self) -> None:
         import pytest as _pytest
 
-        from omrg.core.retrieval import sparse_registry
+        from omrs.core.retrieval import sparse_registry
 
         with _pytest.raises(KeyError, match="Available"):
             sparse_registry.get("tantivy")
@@ -654,7 +654,7 @@ class TestSparseRegistryErrors:
     def test_broken_import_string_raises_import_error(self) -> None:
         import pytest as _pytest
 
-        from omrg.core.retrieval import sparse_registry
+        from omrs.core.retrieval import sparse_registry
 
         sparse_registry.register("__broken__", "rag_mpp.nonexistent_module:Thing")
         try:
@@ -669,14 +669,14 @@ class TestNativeRetrieverEdges:
     """Edge branches of the retrieval-level native backend."""
 
     def test_zero_top_n_returns_empty(self, tmp_path) -> None:
-        from omrg.core.retrieval.native_sparse import NativeSparseRetriever
+        from omrs.core.retrieval.native_sparse import NativeSparseRetriever
 
         store = _lance_store(tmp_path)
         assert NativeSparseRetriever("docs", store=store).query("anything", 0) == []
 
     def test_default_store_resolution(self) -> None:
-        from omrg.core.retrieval.native_sparse import NativeSparseRetriever
-        from omrg.core.vectordb import get_default_store
+        from omrs.core.retrieval.native_sparse import NativeSparseRetriever
+        from omrs.core.vectordb import get_default_store
 
         retriever = NativeSparseRetriever("documents")
         assert retriever._get_store() is get_default_store()
@@ -689,8 +689,8 @@ class TestNativeRetrieverEdges:
         a mismatched store cannot create an FTS index on a collection
         it does not own.
         """
-        from omrg.core.vectordb.identity import EmbeddingIdentity
-        from omrg.core.vectordb.lancedb.store import LanceVectorStore
+        from omrs.core.vectordb.identity import EmbeddingIdentity
+        from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
         uri = str(tmp_path / "identity-guard")
         writer = LanceVectorStore(

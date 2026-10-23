@@ -21,8 +21,8 @@ from typing import Any
 import pytest
 from tests.fixtures.ocr_worker.isolation import isolated_worker_modules
 
-from omrg.integrations.ocr_worker import OcrWorkerClient, OcrWorkerError
-from omrg.integrations.ocr_worker import protocol as omrg_protocol
+from omrs.integrations.ocr_worker import OcrWorkerClient, OcrWorkerError
+from omrs.integrations.ocr_worker import protocol as omrs_protocol
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STUB_WORKER = REPO_ROOT / "tests" / "fixtures" / "ocr_worker" / "stub_worker.py"
@@ -56,7 +56,7 @@ def test_round_trip_returns_correlated_success(small_pdf: Path) -> None:
     """
     with OcrWorkerClient(_stub_command("echo")) as client:
         result = client.parse(str(small_pdf))
-    assert isinstance(result, omrg_protocol.ParseSuccess)
+    assert isinstance(result, omrs_protocol.ParseSuccess)
     assert str(small_pdf) in result.markdown
     assert result.metadata["ocr_backend"] == "stub-worker"
     assert result.metadata["page_count"] == 1
@@ -73,7 +73,7 @@ def test_pages_request_reaches_the_wire_and_returns_per_page_markdown(
     """
     with OcrWorkerClient(_stub_command("echo")) as client:
         result = client.parse(str(small_pdf), pages=[2, 5])
-    assert isinstance(result, omrg_protocol.ParseSuccess)
+    assert isinstance(result, omrs_protocol.ParseSuccess)
     assert result.protocol_version == "1.1"
     assert result.metadata["stub_request_pages"] == [2, 5]
     assert result.pages_markdown == ("# Stub page 2", "# Stub page 5")
@@ -99,7 +99,7 @@ def test_multiple_requests_share_one_process(small_pdf: Path) -> None:
     with OcrWorkerClient(_stub_command("echo")) as client:
         for _ in range(5):
             result = client.parse(str(small_pdf))
-            assert isinstance(result, omrg_protocol.ParseSuccess)
+            assert isinstance(result, omrs_protocol.ParseSuccess)
         assert client.is_started is True
 
 
@@ -126,7 +126,7 @@ def test_heavy_stderr_never_blocks_or_contaminates_stdout(small_pdf: Path) -> No
     command = _stub_command("echo", "--stderr-lines", str(STDERR_FLOOD_LINES))
     with OcrWorkerClient(command, request_timeout=60.0, on_stderr_line=seen.append) as client:
         result = client.parse(str(small_pdf))
-    assert isinstance(result, omrg_protocol.ParseSuccess)
+    assert isinstance(result, omrs_protocol.ParseSuccess)
     assert result.metadata["ocr_backend"] == "stub-worker"
     noise = [line for line in seen if "noise" in line]
     assert len(noise) == STDERR_FLOOD_LINES
@@ -222,7 +222,7 @@ def test_timeout_is_structured(small_pdf: Path) -> None:
 
 def test_spawn_failure_is_structured(small_pdf: Path) -> None:
     """A command that cannot spawn produces a structured error."""
-    client = OcrWorkerClient(["/definitely/not/an/executable-omrg-test"])
+    client = OcrWorkerClient(["/definitely/not/an/executable-omrs-test"])
     with pytest.raises(OcrWorkerError) as excinfo:
         client.parse(str(small_pdf))
     assert excinfo.value.code == "spawn_failed"
@@ -258,9 +258,9 @@ def _load_worker_modules(monkeypatch: pytest.MonkeyPatch) -> tuple[Any, Any, Any
     """Import the core framing, core protocol and Paddle engine from source."""
     monkeypatch.syspath_prepend(str(PADDLE_SRC))
     monkeypatch.syspath_prepend(str(CORE_SRC))
-    import omrg_ocr_paddleocr_vl.engine as paddle_engine
-    import omrg_ocr_worker_core.framing as framing
-    import omrg_ocr_worker_core.protocol as worker_protocol
+    import omrs_ocr_paddleocr_vl.engine as paddle_engine
+    import omrs_ocr_worker_core.framing as framing
+    import omrs_ocr_worker_core.protocol as worker_protocol
 
     return framing, worker_protocol, paddle_engine
 
@@ -276,13 +276,13 @@ def _serve(framing: Any, engine: Any, lines: str, monkeypatch: pytest.MonkeyPatc
 
 def _paddle_env(tmp_path: Path) -> dict[str, str]:
     """Subprocess environment registering the Paddle engine from source."""
-    dist = tmp_path / "omrg_ocr_paddleocr_vl-0.0.dist-info"
+    dist = tmp_path / "omrs_ocr_paddleocr_vl-0.0.dist-info"
     dist.mkdir(parents=True)
     (dist / "METADATA").write_text(
-        "Metadata-Version: 2.1\nName: omrg-ocr-paddleocr-vl\nVersion: 0.0\n", encoding="utf-8"
+        "Metadata-Version: 2.1\nName: omrs-ocr-paddleocr-vl\nVersion: 0.0\n", encoding="utf-8"
     )
     (dist / "entry_points.txt").write_text(
-        "[omrg.ocr_engine]\npaddleocr-vl = omrg_ocr_paddleocr_vl.engine:ENGINE\n",
+        "[omrs.ocr_engine]\npaddleocr-vl = omrs_ocr_paddleocr_vl.engine:ENGINE\n",
         encoding="utf-8",
     )
     env = dict(os.environ)
@@ -307,12 +307,12 @@ def test_worker_loop_success_framing_in_process(
         )
 
     monkeypatch.setattr(framing, "parse_document", fake_parse)
-    request = omrg_protocol.make_request("req-loop-1", str(small_pdf))
-    lines = _serve(framing, paddle.ENGINE, omrg_protocol.encode_line(request) + "\n", monkeypatch)
+    request = omrs_protocol.make_request("req-loop-1", str(small_pdf))
+    lines = _serve(framing, paddle.ENGINE, omrs_protocol.encode_line(request) + "\n", monkeypatch)
 
     assert len(lines) == 1
-    decoded = omrg_protocol.decode_response_line(lines[0], expected_id="req-loop-1")
-    assert isinstance(decoded, omrg_protocol.ParseSuccess)
+    decoded = omrs_protocol.decode_response_line(lines[0], expected_id="req-loop-1")
+    assert isinstance(decoded, omrs_protocol.ParseSuccess)
     assert decoded.markdown == "# Parsed"
     assert decoded.metadata["ocr_backend"] == paddle.WORKER_BACKEND
 
@@ -327,12 +327,12 @@ def test_worker_loop_internal_error_is_one_bounded_envelope(
         raise RuntimeError("boom\nsecond line of a fake traceback")
 
     monkeypatch.setattr(framing, "parse_document", exploding_parse)
-    request = omrg_protocol.make_request("req-loop-2", str(small_pdf))
-    lines = _serve(framing, paddle.ENGINE, omrg_protocol.encode_line(request) + "\n", monkeypatch)
+    request = omrs_protocol.make_request("req-loop-2", str(small_pdf))
+    lines = _serve(framing, paddle.ENGINE, omrs_protocol.encode_line(request) + "\n", monkeypatch)
 
     assert len(lines) == 1
-    decoded = omrg_protocol.decode_response_line(lines[0], expected_id="req-loop-2")
-    assert isinstance(decoded, omrg_protocol.ParseFailure)
+    decoded = omrs_protocol.decode_response_line(lines[0], expected_id="req-loop-2")
+    assert isinstance(decoded, omrs_protocol.ParseFailure)
     assert decoded.error.code == "internal_error"
     assert "\n" not in decoded.error.message
     assert "RuntimeError" in decoded.error.message
@@ -352,7 +352,7 @@ def test_worker_loop_failure_envelopes_echo_the_request_version(
     structured failure. Both failure paths must echo the request version.
     """
     framing, _worker_protocol, paddle = _load_worker_modules(monkeypatch)
-    from omrg_ocr_worker_core.engine import WorkerParseError
+    from omrs_ocr_worker_core.engine import WorkerParseError
 
     def failing_parse(engine, request):
         if failure_kind == "worker_parse_error":
@@ -360,13 +360,13 @@ def test_worker_loop_failure_envelopes_echo_the_request_version(
         raise RuntimeError("boom")
 
     monkeypatch.setattr(framing, "parse_document", failing_parse)
-    request = omrg_protocol.make_request("req-loop-v10", str(small_pdf))
+    request = omrs_protocol.make_request("req-loop-v10", str(small_pdf))
     assert request.protocol_version == "1.0"
-    lines = _serve(framing, paddle.ENGINE, omrg_protocol.encode_line(request) + "\n", monkeypatch)
+    lines = _serve(framing, paddle.ENGINE, omrs_protocol.encode_line(request) + "\n", monkeypatch)
 
     assert len(lines) == 1
-    decoded = omrg_protocol.decode_response_line(lines[0], expected_id="req-loop-v10")
-    assert isinstance(decoded, omrg_protocol.ParseFailure)
+    decoded = omrs_protocol.decode_response_line(lines[0], expected_id="req-loop-v10")
+    assert isinstance(decoded, omrs_protocol.ParseFailure)
     assert decoded.protocol_version == "1.0"
 
 
@@ -375,28 +375,28 @@ def test_worker_loop_invalid_path_uses_real_seam(
 ) -> None:
     """The real seam rejects a missing file with a structured error."""
     framing, _worker_protocol, paddle = _load_worker_modules(monkeypatch)
-    request = omrg_protocol.make_request("req-loop-3", str(tmp_path / "missing.pdf"))
-    lines = _serve(framing, paddle.ENGINE, omrg_protocol.encode_line(request) + "\n", monkeypatch)
+    request = omrs_protocol.make_request("req-loop-3", str(tmp_path / "missing.pdf"))
+    lines = _serve(framing, paddle.ENGINE, omrs_protocol.encode_line(request) + "\n", monkeypatch)
 
     assert len(lines) == 1
-    decoded = omrg_protocol.decode_response_line(lines[0], expected_id="req-loop-3")
-    assert isinstance(decoded, omrg_protocol.ParseFailure)
+    decoded = omrs_protocol.decode_response_line(lines[0], expected_id="req-loop-3")
+    assert isinstance(decoded, omrs_protocol.ParseFailure)
     assert decoded.error.code == "invalid_pdf_path"
 
 
 def test_worker_subprocess_stdout_is_pure_json_lines(small_pdf: Path, tmp_path: Path) -> None:
-    """The real ``python -m omrg_ocr_worker_core`` keeps stdout protocol-only.
+    """The real ``python -m omrs_ocr_worker_core`` keeps stdout protocol-only.
 
     The main environment has no Paddle packages, so the terminal envelope
     for the registered Paddle engine is a ``paddle_unavailable`` error.
     This still proves the framing: exactly one JSON line on stdout, logs
     on stderr, exit status 0.
     """
-    request = omrg_protocol.make_request("req-sub-1", str(small_pdf))
+    request = omrs_protocol.make_request("req-sub-1", str(small_pdf))
     completed = subprocess.run(
-        [sys.executable, "-m", "omrg_ocr_worker_core"],
+        [sys.executable, "-m", "omrs_ocr_worker_core"],
         env=_paddle_env(tmp_path / "dists"),
-        input=omrg_protocol.encode_line(request) + "\n",
+        input=omrs_protocol.encode_line(request) + "\n",
         capture_output=True,
         text=True,
         timeout=30,
@@ -406,8 +406,8 @@ def test_worker_subprocess_stdout_is_pure_json_lines(small_pdf: Path, tmp_path: 
     assert completed.returncode == 0
     stdout_lines = [line for line in completed.stdout.splitlines() if line.strip()]
     assert len(stdout_lines) == 1
-    decoded = omrg_protocol.decode_response_line(stdout_lines[0], expected_id="req-sub-1")
-    assert isinstance(decoded, omrg_protocol.ParseFailure)
+    decoded = omrs_protocol.decode_response_line(stdout_lines[0], expected_id="req-sub-1")
+    assert isinstance(decoded, omrs_protocol.ParseFailure)
     assert decoded.error.code == "paddle_unavailable"
     # Worker logs travel on stderr only.
     assert "starting" in completed.stderr
@@ -417,7 +417,7 @@ def test_worker_subprocess_rejects_wrong_version_request(tmp_path: Path) -> None
     """A wrong-version request gets a correlated invalid_request envelope."""
     raw = '{"id":"req-sub-2","protocol_version":"0.9","type":"parse","pdf_path":"x"}'
     completed = subprocess.run(
-        [sys.executable, "-m", "omrg_ocr_worker_core"],
+        [sys.executable, "-m", "omrs_ocr_worker_core"],
         env=_paddle_env(tmp_path / "dists"),
         input=raw + "\n",
         capture_output=True,
@@ -429,8 +429,8 @@ def test_worker_subprocess_rejects_wrong_version_request(tmp_path: Path) -> None
     assert completed.returncode == 0
     stdout_lines = [line for line in completed.stdout.splitlines() if line.strip()]
     assert len(stdout_lines) == 1
-    decoded = omrg_protocol.decode_response_line(stdout_lines[0], expected_id="req-sub-2")
-    assert isinstance(decoded, omrg_protocol.ParseFailure)
+    decoded = omrs_protocol.decode_response_line(stdout_lines[0], expected_id="req-sub-2")
+    assert isinstance(decoded, omrs_protocol.ParseFailure)
     assert decoded.error.code == "invalid_request"
     assert "unsupported_protocol_version" in decoded.error.message
 
@@ -461,14 +461,14 @@ def test_worker_loop_pages_request_reaches_the_seam_and_answers_per_page(
         )
 
     monkeypatch.setattr(framing, "parse_document", fake_parse)
-    request = omrg_protocol.make_request("req-loop-pages", str(small_pdf), pages=[2, 5])
-    lines = _serve(framing, paddle.ENGINE, omrg_protocol.encode_line(request) + "\n", monkeypatch)
+    request = omrs_protocol.make_request("req-loop-pages", str(small_pdf), pages=[2, 5])
+    lines = _serve(framing, paddle.ENGINE, omrs_protocol.encode_line(request) + "\n", monkeypatch)
 
     assert seen["pages"] == (2, 5)
     assert seen["version"] == "1.1"
     assert len(lines) == 1
-    decoded = omrg_protocol.decode_response_line(lines[0], expected_id="req-loop-pages")
-    assert isinstance(decoded, omrg_protocol.ParseSuccess)
+    decoded = omrs_protocol.decode_response_line(lines[0], expected_id="req-loop-pages")
+    assert isinstance(decoded, omrs_protocol.ParseSuccess)
     assert decoded.protocol_version == "1.1"
     assert decoded.pages_markdown == ("# P2", "# P5")
 
@@ -489,19 +489,19 @@ def test_worker_loop_answers_a_1_0_request_in_1_0(
         )
 
     monkeypatch.setattr(framing, "parse_document", fake_parse)
-    request = omrg_protocol.make_request("req-loop-10", str(small_pdf))
+    request = omrs_protocol.make_request("req-loop-10", str(small_pdf))
     assert request.protocol_version == "1.0"
-    lines = _serve(framing, paddle.ENGINE, omrg_protocol.encode_line(request) + "\n", monkeypatch)
+    lines = _serve(framing, paddle.ENGINE, omrs_protocol.encode_line(request) + "\n", monkeypatch)
 
-    decoded = omrg_protocol.decode_response_line(lines[0], expected_id="req-loop-10")
-    assert isinstance(decoded, omrg_protocol.ParseSuccess)
+    decoded = omrs_protocol.decode_response_line(lines[0], expected_id="req-loop-10")
+    assert isinstance(decoded, omrs_protocol.ParseSuccess)
     assert decoded.protocol_version == "1.0"
 
 
 def test_worker_subprocess_exits_on_uncorrelatable_line(tmp_path: Path) -> None:
     """A non-JSON request line ends the process without any stdout output."""
     completed = subprocess.run(
-        [sys.executable, "-m", "omrg_ocr_worker_core"],
+        [sys.executable, "-m", "omrs_ocr_worker_core"],
         env=_paddle_env(tmp_path / "dists"),
         input="definitely not json {{{\n",
         capture_output=True,
@@ -572,9 +572,9 @@ def test_worker_forces_worker_local_paddle_cache_env(
     downloads to a location outside the engine-owned, git-ignored cache.
     """
     _framing, _worker_protocol, paddle = _load_worker_modules(monkeypatch)
-    monkeypatch.delenv("OMRG_OCR_MODEL_CACHE", raising=False)
-    monkeypatch.setenv("PADDLE_OCR_BASE_DIR", "/elsewhere/omrg-test/ocr")
-    monkeypatch.setenv("PADDLE_PDX_CACHE_HOME", "/elsewhere/omrg-test/pdx")
+    monkeypatch.delenv("OMRS_OCR_MODEL_CACHE", raising=False)
+    monkeypatch.setenv("PADDLE_OCR_BASE_DIR", "/elsewhere/omrs-test/ocr")
+    monkeypatch.setenv("PADDLE_PDX_CACHE_HOME", "/elsewhere/omrs-test/pdx")
     paddle._apply_worker_cache_env()
     expected = str(paddle.WORKER_DIR / ".model-cache")
     assert os.environ["PADDLE_OCR_BASE_DIR"] == expected
@@ -584,9 +584,9 @@ def test_worker_forces_worker_local_paddle_cache_env(
 def test_paddle_cache_follows_the_shared_cache_variable(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """With OMRG_OCR_MODEL_CACHE set, Paddle reads $OMRG_OCR_MODEL_CACHE/paddleocr-vl/."""
+    """With OMRS_OCR_MODEL_CACHE set, Paddle reads $OMRS_OCR_MODEL_CACHE/paddleocr-vl/."""
     _framing, _worker_protocol, paddle = _load_worker_modules(monkeypatch)
-    monkeypatch.setenv("OMRG_OCR_MODEL_CACHE", str(tmp_path))
+    monkeypatch.setenv("OMRS_OCR_MODEL_CACHE", str(tmp_path))
     paddle._apply_worker_cache_env()
     assert os.environ["PADDLE_PDX_CACHE_HOME"] == str(tmp_path / "paddleocr-vl")
 
@@ -658,7 +658,7 @@ def test_page_listed_request_fails_loudly_on_page_count_mismatch(
     from pypdf import PdfWriter
 
     framing, worker_protocol, paddle = _load_worker_modules(monkeypatch)
-    from omrg_ocr_worker_core.engine import WorkerParseError
+    from omrs_ocr_worker_core.engine import WorkerParseError
 
     pdf = tmp_path / "one_page.pdf"
     writer = PdfWriter()

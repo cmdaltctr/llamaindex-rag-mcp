@@ -9,9 +9,9 @@ from typing import Any
 import pytest
 from llama_index.core.embeddings import MockEmbedding
 
-from omrg.core.ingestion import ingest_path_async
-from omrg.core.vectordb.identity import EmbeddingIdentity
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.core.ingestion import ingest_path_async
+from omrs.core.vectordb.identity import EmbeddingIdentity
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
 IDENTITY_A = EmbeddingIdentity(provider="ollama", model="model-a")
 IDENTITY_B = EmbeddingIdentity(provider="ollama", model="model-b")

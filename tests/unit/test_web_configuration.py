@@ -3,7 +3,7 @@
 Each test follows a scenario of the ``settings-file`` and ``workspace-settings``
 deltas. The app is built without its lifespan, so no Engine, keychain or
 workspace runs. A fake keychain and a temporary config folder replace the real
-ones. No test reads the real ``~/.config/omrg``.
+ones. No test reads the real ``~/.config/omrs``.
 """
 
 from __future__ import annotations
@@ -23,14 +23,14 @@ from tests.unit.test_web_openapi_conformance_support import (  # noqa: E402
     iter_api_routes,
 )
 
-from omrg.config import Settings, provenance  # noqa: E402
-from omrg.config.settings_file import file_revision, read_settings_file, setting_paths  # noqa: E402
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.restart_snapshot import capture  # noqa: E402
-from omrg.transports.api.routes.configuration import ConfigurationState, router  # noqa: E402
-from omrg.transports.api.security import AccessPolicy  # noqa: E402
-from omrg.transports.api.settings_handover import HandoverResult  # noqa: E402
+from omrs.config import Settings, provenance  # noqa: E402
+from omrs.config.settings_file import file_revision, read_settings_file, setting_paths  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.restart_snapshot import capture  # noqa: E402
+from omrs.transports.api.routes.configuration import ConfigurationState, router  # noqa: E402
+from omrs.transports.api.security import AccessPolicy  # noqa: E402
+from omrs.transports.api.settings_handover import HandoverResult  # noqa: E402
 
 URL = "/v1/settings/configuration"
 KEY = "Zq9XkP3lM7wVb2NrT4yQ1234"  # no run of five characters matches a path or a word
@@ -72,7 +72,7 @@ class Harness:
         self.empty_env = empty_env
 
     def write(self, text: str) -> None:
-        (self.folder / "omrg.jsonc").write_text(text, encoding="utf-8")
+        (self.folder / "omrs.jsonc").write_text(text, encoding="utf-8")
 
     def settings(self) -> Settings:
         return Settings(_env_file=self.empty_env)
@@ -101,9 +101,9 @@ def harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Harness:
     for variable in VARIABLES:
         monkeypatch.delenv(variable, raising=False)
     monkeypatch.setattr(provenance, "DOTENV_KEYS", frozenset())
-    folder = tmp_path / "omrg-config"
+    folder = tmp_path / "omrs-config"
     folder.mkdir(mode=0o700)
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(folder))
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(folder))
     empty_env = tmp_path / "none.env"
     empty_env.write_text("", encoding="utf-8")
     config = WebConfig(workspace=tmp_path / "ws", port=8765, static_dir=None)
@@ -153,7 +153,7 @@ def test_lists_every_setting_once_with_path_and_revision(
     harness.launch()
     body = get(client)
     assert [row["key"] for row in body["settings"]] == list(setting_paths())
-    assert body["path"].endswith("omrg.jsonc")
+    assert body["path"].endswith("omrs.jsonc")
     assert body["revision"] == file_revision(harness.folder)
     assert body["problems"] == []
     assert body["handover"] == {"pending": False, "folder": None}
@@ -303,9 +303,9 @@ def test_live_file_only_values_follow_the_file(harness: Harness, client: TestCli
 
 
 def test_file_only_defaults_match_the_launch_defaults() -> None:
-    from omrg.transports.api.uploads import DEFAULT_MAX_UPLOAD_BYTES, MIB
-    from omrg.transports.cli.web import DEFAULT_PORT
-    from omrg.transports.settings_view import FILE_ONLY_DEFAULTS
+    from omrs.transports.api.uploads import DEFAULT_MAX_UPLOAD_BYTES, MIB
+    from omrs.transports.cli.web import DEFAULT_PORT
+    from omrs.transports.settings_view import FILE_ONLY_DEFAULTS
 
     assert FILE_ONLY_DEFAULTS["web_port"] == DEFAULT_PORT
     assert FILE_ONLY_DEFAULTS["web_max_upload_mib"] * MIB == DEFAULT_MAX_UPLOAD_BYTES
@@ -373,7 +373,7 @@ def test_an_unset_key_has_no_last4(harness: Harness, client: TestClient) -> None
 
 
 def test_every_key_field_is_masked(harness: Harness, client: TestClient) -> None:
-    from omrg.config.rules import SECRET_FIELDS
+    from omrs.config.rules import SECRET_FIELDS
 
     harness.launch()
     found = rows(get(client))
@@ -416,8 +416,8 @@ def test_a_broken_file_is_listed_and_the_server_answers(
     harness.write('{ "retrieval": { "top_k": ')
     harness.launch()
     body = get(client)
-    assert [(p["key"], p["kind"]) for p in body["problems"]] == [("omrg.jsonc", "broken")]
-    assert body["problems"][0]["message"] == "omrg.jsonc could not be read"
+    assert [(p["key"], p["kind"]) for p in body["problems"]] == [("omrs.jsonc", "broken")]
+    assert body["problems"][0]["message"] == "omrs.jsonc could not be read"
     assert not any(row["restart_pending"] for row in body["settings"])
 
 
@@ -425,8 +425,8 @@ def test_a_broken_file_is_listed_and_the_server_answers(
 
 
 def test_pending_handover_shows_the_folder(harness: Harness, client: TestClient) -> None:
-    harness.launch(handover=HandoverResult(pending=True, folder="~/.config/omrg"))
-    assert get(client)["handover"] == {"pending": True, "folder": "~/.config/omrg"}
+    harness.launch(handover=HandoverResult(pending=True, folder="~/.config/omrs"))
+    assert get(client)["handover"] == {"pending": True, "folder": "~/.config/omrs"}
 
 
 # ── Failure ──────────────────────────────────────────────────────────────
@@ -454,7 +454,7 @@ def test_responses_conform_to_the_contract(harness: Harness, client: TestClient)
         ' "openrouter_api_key": "keychain://openrouter" }'
     )
     harness.app.state.keychain = FakeKeychain({"openrouter": KEY})
-    harness.launch(handover=HandoverResult(pending=True, folder="~/.config/omrg"))
+    harness.launch(handover=HandoverResult(pending=True, folder="~/.config/omrs"))
     harness.write('{ "retrieval": { "top_k": 5 }, "retreival": 1, "web_port": 9200 }')
     body = check.check(client.get(URL), 200)
     assert rows(body)["retrieval.top_k"]["restart_pending"] is True

@@ -64,14 +64,14 @@ def main() -> None:
     strategy_fallback, and one operation-scoped markdown chunking
     resolution — the same call shape ``ingest_path_async`` uses.
     """
-    from omrg.compose import ensure_runtime_setup
-    from omrg.core.chunking.model_token import resolve_markdown_chunking
-    from omrg.core.codebase.codebase_map import detect_file_types
-    from omrg.core.ingestion.chunker import (
+    from omrs.compose import ensure_runtime_setup
+    from omrs.core.chunking.model_token import resolve_markdown_chunking
+    from omrs.core.codebase.codebase_map import detect_file_types
+    from omrs.core.ingestion.chunker import (
         read_and_chunk_file_async,
         resolve_effective_settings,
     )
-    from omrg.integrations.tokenizer import load_tokenizer
+    from omrs.integrations.tokenizer import load_tokenizer
 
     ensure_runtime_setup()
     tokenizer = load_tokenizer(TOKENIZER_MODEL, TOKENIZER_REVISION)

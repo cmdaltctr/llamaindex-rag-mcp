@@ -17,8 +17,8 @@ from pathlib import Path
 
 from llama_index.core.schema import MetadataMode, TextNode
 
-from omrg.core.ingestion.pipeline import gather_supported_files
-from omrg.core.ingestion.source_state import (
+from omrs.core.ingestion.pipeline import gather_supported_files
+from omrs.core.ingestion.source_state import (
     _RETAINED_EMBED_METADATA_KEYS,
     SOURCE_ID_KEY,
 )
@@ -48,9 +48,9 @@ def test_embed_payload_keeps_retained_and_excludes_lineage_keys() -> None:
         "content_type": "text/markdown",
         "header_path": "/Report/Findings/",
         SOURCE_ID_KEY: "src_abc",
-        "omrg_source_version": "v1",
-        "omrg_source_attempt": "att_1",
-        "omrg_chunk_id": "chk_1",
+        "omrs_source_version": "v1",
+        "omrs_source_attempt": "att_1",
+        "omrs_chunk_id": "chk_1",
     }
     node = TextNode(text="chunk body text", metadata=metadata)
     retained = set(_RETAINED_EMBED_METADATA_KEYS)

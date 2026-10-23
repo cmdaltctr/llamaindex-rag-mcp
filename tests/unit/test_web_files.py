@@ -19,12 +19,12 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from omrg.core.ingestion.settings import DEFAULT_INGEST_EXTENSIONS  # noqa: E402
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.grants import GrantDenied, RootGrants  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.security import AccessPolicy  # noqa: E402
-from omrg.transports.api.uploads import (  # noqa: E402
+from omrs.core.ingestion.settings import DEFAULT_INGEST_EXTENSIONS  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.grants import GrantDenied, RootGrants  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.security import AccessPolicy  # noqa: E402
+from omrs.transports.api.uploads import (  # noqa: E402
     DEFAULT_MAX_UPLOAD_BYTES,
     UploadRejected,
     UploadStore,

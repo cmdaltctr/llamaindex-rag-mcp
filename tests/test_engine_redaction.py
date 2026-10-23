@@ -6,7 +6,7 @@ import asyncio
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from omrg.core.settings import AnswerBlock, EffectiveSettings, MetadataBlock
+from omrs.core.settings import AnswerBlock, EffectiveSettings, MetadataBlock
 
 _KEY = "0" * 8 + "-chroma-test-key"
 _TENANT = "9" * 8 + "-tenant"
@@ -15,7 +15,7 @@ _OPENROUTER = "sk-or-" + "4" * 12
 
 
 def _secrets() -> Any:
-    from omrg.core.vectordb.identity import RedactionSecrets
+    from omrs.core.vectordb.identity import RedactionSecrets
 
     return RedactionSecrets(
         chroma_cloud_api_key=_KEY,
@@ -33,13 +33,13 @@ def test_redaction_secrets_remove_every_value_and_long_prefixes() -> None:
 
 
 def test_empty_redaction_secrets_change_nothing() -> None:
-    from omrg.core.vectordb.identity import RedactionSecrets
+    from omrs.core.vectordb.identity import RedactionSecrets
 
     assert RedactionSecrets().redact("plain text") == "plain text"
 
 
 def test_engine_redact_uses_the_injected_secrets(tmp_path: Any) -> None:
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     engine = Engine(
         EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled")),
@@ -51,7 +51,7 @@ def test_engine_redact_uses_the_injected_secrets(tmp_path: Any) -> None:
 
 
 def test_engine_without_secrets_redacts_nothing() -> None:
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     engine = Engine(
         EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled")),
@@ -62,7 +62,7 @@ def test_engine_without_secrets_redacts_nothing() -> None:
 
 
 def test_verifier_error_with_chroma_tenant_is_redacted() -> None:
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     def factory(_block: Any) -> Any:
         raise RuntimeError(f"401 for tenant={_TENANT}")
@@ -83,7 +83,7 @@ def test_verifier_error_with_chroma_tenant_is_redacted() -> None:
         verify_llm_factory=factory,
         redaction=_secrets(),
     )
-    with patch("omrg.core.answer.pipeline.answer", side_effect=fake_answer):
+    with patch("omrs.core.answer.pipeline.answer", side_effect=fake_answer):
         asyncio.run(engine.answer("q"))
 
     assert _TENANT not in captured["verify_unavailable_reason"]
@@ -93,8 +93,8 @@ def test_verifier_error_with_chroma_tenant_is_redacted() -> None:
 def test_build_engine_fills_redaction_from_settings() -> None:
     from llama_index.core.embeddings import MockEmbedding
 
-    from omrg import compose
-    from omrg.config import Settings
+    from omrs import compose
+    from omrs.config import Settings
 
     cloud = Settings(
         _env_file=None,
@@ -109,10 +109,10 @@ def test_build_engine_fills_redaction_from_settings() -> None:
         embed_model="nomic-embed-text",
     )
     with (
-        patch("omrg.compose.get_settings", return_value=cloud),
-        patch("omrg.compose.build_embed_model", return_value=MockEmbedding(embed_dim=384)),
-        patch("omrg.compose.build_vector_store", return_value=MagicMock(cache_identity="i")),
-        patch("omrg.compose.build_reranker", return_value=None),
+        patch("omrs.compose.get_settings", return_value=cloud),
+        patch("omrs.compose.build_embed_model", return_value=MockEmbedding(embed_dim=384)),
+        patch("omrs.compose.build_vector_store", return_value=MagicMock(cache_identity="i")),
+        patch("omrs.compose.build_reranker", return_value=None),
     ):
         engine = compose.build_engine()
     try:

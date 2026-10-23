@@ -24,9 +24,9 @@ from tests.unit.test_ingestion_graph_adapters_support import (
     run_by_hand,
 )
 
-from omrg.core.ingestion.graph_fingerprint import INGESTION_SHAPE_RESOURCE, IngestionShape
-from omrg.core.ingestion.source_state import build_index_identity
-from omrg.core.ingestion.sources import SourceUnit, build_ingestion_context
+from omrs.core.ingestion.graph_fingerprint import INGESTION_SHAPE_RESOURCE, IngestionShape
+from omrs.core.ingestion.source_state import build_index_identity
+from omrs.core.ingestion.sources import SourceUnit, build_ingestion_context
 
 FIXTURE = Path(__file__).resolve().parents[1] / "fixtures" / "smoke_text.pdf"
 
@@ -65,7 +65,7 @@ async def test_identify_builds_the_identity_with_the_shape_reader(
     pdf_root: Path, effective_settings: Any
 ) -> None:
     """A shape reader of ``pdf_inspector`` wins over the host ``pypdf``."""
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     host = offline_settings(effective_settings)
     assert host.pdf_reader == "pypdf"
@@ -94,8 +94,8 @@ async def test_reader_change_reprocesses_and_stores_the_step_identity(
     """Indexed, unchanged, reader change (indexed again), unchanged again."""
     from tests.fixtures.pipeline_parity.ingestion.snapshot import collect_rows
 
-    from omrg.core.ingestion.graph_fingerprint import ingestion_shape
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.ingestion.graph_fingerprint import ingestion_shape
+    from omrs.core.vectordb import get_default_store
 
     host = offline_settings(effective_settings)
     store = get_default_store()

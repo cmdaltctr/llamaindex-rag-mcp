@@ -10,7 +10,7 @@ export function runServer(options: Partial<RunRouterOptions> = {}) {
   const fetchImpl = vi.fn<FetchLike>(async (path, init) => {
     const method = init?.method ?? "GET";
     calls.push({ method, path });
-    return router.route(method, new URL(path, "http://omrg.test"));
+    return router.route(method, new URL(path, "http://omrs.test"));
   });
   return { fetchImpl, calls, runs: router.runs };
 }

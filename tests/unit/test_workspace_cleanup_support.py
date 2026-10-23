@@ -6,8 +6,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from omrg.core.workspace import ArtefactStore, WorkspaceLayout
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.core.workspace import ArtefactStore, WorkspaceLayout
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
 GRAPH: dict[str, Any] = {"version": 1, "nodes": [{"id": "a", "op": "read"}], "edges": []}
 START = datetime(2026, 1, 1, tzinfo=UTC)

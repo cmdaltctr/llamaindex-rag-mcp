@@ -1,6 +1,6 @@
 """Top-level module allow-list (verification gap B, architecture boundaries).
 
-Business logic lives below ``omrg.core``. The top level of ``src/omrg``
+Business logic lives below ``omrs.core``. The top level of ``src/omrs``
 holds only the package marker, the Engine and composition-root helpers.
 A new top-level module fails this test, so a reviewer decides whether it
 belongs below ``core`` or in the composition root.
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import omrg
+import omrs
 
 #: The top-level modules that exist today, with their role.
 _ALLOWED_TOP_LEVEL = {
@@ -42,11 +42,11 @@ _ALLOWED_TOP_LEVEL = {
 
 
 def _package_dir() -> Path:
-    return Path(omrg.__file__).resolve().parent
+    return Path(omrs.__file__).resolve().parent
 
 
 def test_top_level_modules_match_the_allow_list() -> None:
-    """Every ``src/omrg/*.py`` file is on the allow-list, and nothing is missing."""
+    """Every ``src/omrs/*.py`` file is on the allow-list, and nothing is missing."""
     found = {path.name for path in _package_dir().glob("*.py")}
     assert found == set(_ALLOWED_TOP_LEVEL), (
         f"unexpected: {sorted(found - set(_ALLOWED_TOP_LEVEL))}, "

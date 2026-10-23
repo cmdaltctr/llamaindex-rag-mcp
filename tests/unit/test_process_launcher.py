@@ -21,7 +21,7 @@ from tests.unit.test_process_launcher_support import (
     wait_gone,
 )
 
-from omrg.integrations.process_launcher import (
+from omrs.integrations.process_launcher import (
     LaunchError,
     OwnedProcessLauncher,
     PortInUseError,

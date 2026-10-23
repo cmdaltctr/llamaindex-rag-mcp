@@ -24,7 +24,7 @@ side effects alone SHALL not remove their existing importable names.
 - **WHEN** the CLI is inspected after the move
 - **THEN** `transports/cli/` MUST retain separate modules per existing
   command group
-- **AND** existing `omrg` subcommands MUST retain their behaviour
+- **AND** existing `omrs` subcommands MUST retain their behaviour
 - **AND** the explicit web command MUST live in its own thin module
 
 #### Scenario: MCP split by tool
@@ -36,7 +36,7 @@ side effects alone SHALL not remove their existing importable names.
 
 #### Scenario: MCP server entry unchanged
 
-- **WHEN** `omrg` is run with no arguments
+- **WHEN** `omrs` is run with no arguments
 - **THEN** the MCP server MUST start with its existing tool signatures
 - **AND** the web workspace or notebook editor MUST not start implicitly
 
@@ -159,7 +159,7 @@ transports.
 
 #### Scenario: Watch behaviour unchanged
 
-- **WHEN** `omrg watch` runs after the move
+- **WHEN** `omrs watch` runs after the move
 - **THEN** debouncing, hashing, and ingestion triggering MUST behave
   identically to the pre-refactor watcher
 
@@ -192,7 +192,7 @@ enforced by a test or an import-linter contract.
   that import-linter contracts already cover the boundaries, and ADR-036 §3's
   claim about the Magika extraction MUST each be either true of the code or
   amended with a correction note
-- **AND** ADR-033's reference to `src/omrg/server.py` for reranker wiring
+- **AND** ADR-033's reference to `src/omrs/server.py` for reranker wiring
   MUST point at `transports/mcp/`
 
 #### Scenario: Reference documents match the shipped tree

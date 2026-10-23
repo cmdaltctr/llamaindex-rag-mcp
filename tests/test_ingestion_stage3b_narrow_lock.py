@@ -25,10 +25,10 @@ from typing import Any
 import pytest
 from llama_index.core.schema import MetadataMode, TextNode
 
-from omrg.core.ingestion import replacement
-from omrg.core.ingestion._state import shutdown_requested, write_lock
-from omrg.core.ingestion.replacement import replace_source_nodes_async
-from omrg.core.ingestion.source_state import (
+from omrs.core.ingestion import replacement
+from omrs.core.ingestion._state import shutdown_requested, write_lock
+from omrs.core.ingestion.replacement import replace_source_nodes_async
+from omrs.core.ingestion.source_state import (
     SOURCE_ATTEMPT_KEY,
     SOURCE_CHUNK_COUNT_KEY,
     SOURCE_CONTENT_HASH_KEY,
@@ -37,8 +37,8 @@ from omrg.core.ingestion.source_state import (
     new_source_attempt,
     stamp_source_lineage,
 )
-from omrg.core.vectordb import get_default_store
-from omrg.core.vectordb.base import VectorStore
+from omrs.core.vectordb import get_default_store
+from omrs.core.vectordb.base import VectorStore
 
 _COLLECTION = "stage3b_narrow_lock"
 

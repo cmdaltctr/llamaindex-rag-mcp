@@ -3,6 +3,8 @@
 This directory records the significant architectural decisions made during the
 development of OMRG — Opinionated Modular RAG.
 
+> **Name.** The project was named OMRG until ADR-092. It is now OMRS, "Opinionated Modular RAG System". ADRs, TDRs and archived changes keep the name the project had when they were written, and file names such as `087-settings-live-in-omrg-jsonc.md` stay so that links hold.
+
 ## Index
 
 | ADR                                                                | Title                                                                                        | Date       | Status   |
@@ -96,6 +98,7 @@ development of OMRG — Opinionated Modular RAG.
 | [087](./087-settings-live-in-omrg-jsonc.md) | Settings Live in omrg.jsonc | 2026-10-19 | Accepted |
 | [088](./088-persistent-workspace-sign-in-secret.md) | Persistent Workspace Sign-in Secret | 2026-10-20 | Accepted |
 | [089](./089-answer-stage-progress.md) | Answer Stage Progress over a Streamed POST | 2026-10-21 | Proposed |
+| [092](./092-rename-project-to-omrs.md) | Rename OMRG to OMRS | 2026-10-22 | Proposed |
 
 ## Convention
 

@@ -38,12 +38,12 @@ const OPENED: EditorOpened = {
 describe("plugins client", () => {
   it("lists plugin states, running editors, the install hint and the trust notice", async () => {
     const server = documentsServer({
-      "GET /v1/plugins": () => ({ status: "ok", plugins: [STATE], editors: [], install_hint: "Install outside OMRG.", trust_notice: "Trust text." }),
+      "GET /v1/plugins": () => ({ status: "ok", plugins: [STATE], editors: [], install_hint: "Install outside OMRS.", trust_notice: "Trust text." }),
     });
     const api = createApiClient(server.fetchImpl);
     const list = await listPlugins(api);
     expect(list.plugins[0]!.status).toBe("compatible");
-    expect(list.install_hint).toBe("Install outside OMRG.");
+    expect(list.install_hint).toBe("Install outside OMRS.");
   });
 
   it("registers only with explicit approval", async () => {

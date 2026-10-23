@@ -15,8 +15,8 @@ describe("preferences", () => {
   it("stores only theme and lastCollection under one key", () => {
     updatePreferences({ theme: "dark" });
     updatePreferences({ lastCollection: "papers" });
-    expect(PREFERENCES_KEY).toBe("omrg-preferences");
-    expect(JSON.parse(window.localStorage.getItem("omrg-preferences") ?? "null")).toEqual({ theme: "dark", lastCollection: "papers" });
+    expect(PREFERENCES_KEY).toBe("omrs-preferences");
+    expect(JSON.parse(window.localStorage.getItem("omrs-preferences") ?? "null")).toEqual({ theme: "dark", lastCollection: "papers" });
     expect(readPreferences()).toEqual({ theme: "dark", lastCollection: "papers" });
   });
 
@@ -32,7 +32,7 @@ describe("preferences", () => {
   });
 
   it("does not read the retired workspace keys", () => {
-    window.localStorage.setItem("omrg-workspace-ui", JSON.stringify({ version: 1, view: "runs", theme: "dark", inspectorOpen: true }));
+    window.localStorage.setItem("omrs-workspace-ui", JSON.stringify({ version: 1, view: "runs", theme: "dark", inspectorOpen: true }));
     expect(readPreferences()).toEqual(DEFAULT_PREFERENCES);
   });
 

@@ -3,7 +3,7 @@
  * turning hybrid on adds a Sparse retrieval step and a Reciprocal rank fusion
  * step with the canonical wiring; turning it off removes them again. The steps
  * and connections come from `hybridShape.json`, which a pytest pins to
- * `src/omrg/pipeline_templates.py` (studio-full-settings, design D1 and D2).
+ * `src/omrs/pipeline_templates.py` (studio-full-settings, design D1 and D2).
  */
 import type { EdgeSpec, GraphOutput, NodeSpec, OperationDescriptor, PortRef } from "../api/pipelines";
 import { findOperation } from "./connections";

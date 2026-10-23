@@ -80,8 +80,8 @@ def main() -> None:
 
     gate = _preflight_cost_gate()
 
-    from omrg.compose import ensure_runtime_setup
-    from omrg.core.ingestion import ingest_path_async
+    from omrs.compose import ensure_runtime_setup
+    from omrs.core.ingestion import ingest_path_async
 
     ensure_runtime_setup()
     started = time.perf_counter()
@@ -100,7 +100,7 @@ def main() -> None:
         stats["packs"][pack] = result  # type: ignore[index]
         print(f"[build]   -> {result}", flush=True)
 
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrs.core.vectordb.lancedb import LanceVectorStore
 
     store = LanceVectorStore(uri=str(STORE_URI))
     stats["chunk_count"] = store.count(COLLECTION)

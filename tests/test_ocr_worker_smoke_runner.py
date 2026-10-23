@@ -32,11 +32,11 @@ def _load_smoke_module() -> Any:
     sys.path.insert(0, str(WORKER_DIR))
     try:
         spec = importlib.util.spec_from_file_location(
-            "omrg_ocr_smoke_test", WORKER_DIR / "smoke_test.py"
+            "omrs_ocr_smoke_test", WORKER_DIR / "smoke_test.py"
         )
         assert spec is not None and spec.loader is not None
         module = importlib.util.module_from_spec(spec)
-        sys.modules["omrg_ocr_smoke_test"] = module
+        sys.modules["omrs_ocr_smoke_test"] = module
         spec.loader.exec_module(module)
     finally:
         sys.path.remove(str(WORKER_DIR))
@@ -95,10 +95,10 @@ def test_dry_run_plan_resolves_every_command() -> None:
     assert plan["probe_command"] == [
         worker_python,
         "-m",
-        "omrg_ocr_worker_core",
+        "omrs_ocr_worker_core",
         "--capabilities",
     ]
-    assert plan["parse_command"] == [worker_python, "-m", "omrg_ocr_worker_core"]
+    assert plan["parse_command"] == [worker_python, "-m", "omrs_ocr_worker_core"]
 
 
 def test_main_dry_run_prints_plan_and_runs_no_subprocess(
@@ -282,8 +282,8 @@ def test_worker_environment_overrides_inherited_uv_targets(
     pruning its extraneous packages. The worker environment must pin
     both selectors to worker-owned targets.
     """
-    monkeypatch.setenv("UV_PROJECT", "/elsewhere/omrg-test/root")
-    monkeypatch.setenv("UV_PROJECT_ENVIRONMENT", "/elsewhere/omrg-test/root/.venv")
+    monkeypatch.setenv("UV_PROJECT", "/elsewhere/omrs-test/root")
+    monkeypatch.setenv("UV_PROJECT_ENVIRONMENT", "/elsewhere/omrs-test/root/.venv")
     environment = smoke._worker_environment()
     assert environment["UV_PROJECT"] == str(smoke.WORKER_DIR)
     assert environment["UV_PROJECT_ENVIRONMENT"] == str(smoke.WORKER_DIR / ".venv")

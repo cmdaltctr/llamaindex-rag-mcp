@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from omrg.config import Settings
+from omrs.config import Settings
 
 #: Editable provider fields (design D2) and the variable that sets each.
 VARIABLES = {
@@ -85,7 +85,7 @@ def test_a_value_only_in_defaults_yaml_or_a_profile_is_a_default(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """Task 3.1: YAML layers never lock a field; only env and ``.env`` do."""
-    from omrg.config import sources
+    from omrs.config import sources
 
     monkeypatch.setattr(
         sources._YamlDefaultsSource,

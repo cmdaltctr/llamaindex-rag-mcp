@@ -1,6 +1,6 @@
-# OMRG OCR workers
+# OMRS OCR workers
 
-This folder holds the isolated OCR engines that OMRG calls for scanned
+This folder holds the isolated OCR engines that OMRS calls for scanned
 PDFs, gate-selected PDFs, escalated pages and maths pages. OpenSpec change
 `modular-ocr-workers-dots-mocr` sets the layout (design D1 to D9).
 
@@ -8,31 +8,31 @@ PDFs, gate-selected PDFs, escalated pages and maths pages. OpenSpec change
 ocr-workers/
   README.md        this file
   provision.py     provisions one engine: python3 provision.py <engine>
-  core/            omrg-ocr-worker-core: protocol, framing, capabilities, engine contract
+  core/            omrs-ocr-worker-core: protocol, framing, capabilities, engine contract
   engines/
     dots-mocr/     primary engine (PyTorch, licence gate)
     paddleocr-vl/  fallback engine (PaddlePaddle)
 ```
 
-## How OMRG talks to an engine
+## How OMRS talks to an engine
 
-Each engine runs as a local subprocess in its own environment. OMRG and the
+Each engine runs as a local subprocess in its own environment. OMRS and the
 engine exchange JSON Lines over standard input and standard output:
 
-- OMRG writes one request object per line.
+- OMRS writes one request object per line.
 - The engine writes one terminal response object per line. Nothing else goes
   to standard output.
 - All logs go to standard error.
 
-The protocol lives in `core/src/omrg_ocr_worker_core/protocol.py`. OMRG keeps
-a byte-identical copy in `src/omrg/integrations/ocr_worker/protocol.py`. The
+The protocol lives in `core/src/omrs_ocr_worker_core/protocol.py`. OMRS keeps
+a byte-identical copy in `src/omrs/integrations/ocr_worker/protocol.py`. The
 same rule applies to `validation.py`. A test fails if the copies differ by one
 byte. Do not make one import the other.
 
-OMRG starts an engine with this command, from the engine folder:
+OMRS starts an engine with this command, from the engine folder:
 
 ```bash
-<OCR_WORKERS_DIR>/engines/<engine>/.venv/bin/python -m omrg_ocr_worker_core
+<OCR_WORKERS_DIR>/engines/<engine>/.venv/bin/python -m omrs_ocr_worker_core
 ```
 
 The core loads the one engine that the environment registers. An environment
@@ -40,7 +40,7 @@ with zero engines, or with more than one, reports itself unavailable.
 
 ## Routes
 
-OMRG reads two route settings:
+OMRS reads two route settings:
 
 | Setting               | Default        | Meaning                                  |
 | --------------------- | -------------- | ---------------------------------------- |
@@ -69,19 +69,19 @@ The script:
    and you did not give `--accept-model-licence`. The error names the licence
    file.
 3. Rejects any Python outside `>=3.11,<3.14`.
-4. Runs `uv sync --locked` in the engine folder. It never changes the OMRG
+4. Runs `uv sync --locked` in the engine folder. It never changes the OMRS
    main environment.
-5. Runs the engine's `omrg-ocr-fetch` script, if the engine has one, to
+5. Runs the engine's `omrs-ocr-fetch` script, if the engine has one, to
    download pinned weights and apply patches. `--dry-run` skips this step.
 
 Do not run `uv sync` from the repository root to provision an engine. That
-command installs the OMRG main environment.
+command installs the OMRS main environment.
 
 ### Model cache
 
 Each engine keeps its weights in `<engine folder>/.model-cache/`. This folder
-is gitignored. To keep weights outside a worktree, set `OMRG_OCR_MODEL_CACHE`.
-Engine `<name>` then uses `$OMRG_OCR_MODEL_CACHE/<name>/`.
+is gitignored. To keep weights outside a worktree, set `OMRS_OCR_MODEL_CACHE`.
+Engine `<name>` then uses `$OMRS_OCR_MODEL_CACHE/<name>/`.
 
 ## Engines
 
@@ -105,7 +105,7 @@ Engine `<name>` then uses `$OMRG_OCR_MODEL_CACHE/<name>/`.
 
 ## Add an engine
 
-A new engine needs one folder and one route setting. OMRG code does not
+A new engine needs one folder and one route setting. OMRS code does not
 change. The stub engine in `tests/fixtures/ocr_worker/stub_engine/` has the
 same parts.
 
@@ -113,14 +113,14 @@ same parts.
    `_` and `-`.
 2. Add `engines/<name>/pyproject.toml` with:
    - `requires-python = ">=3.11,<3.14"`;
-   - `omrg-ocr-worker-core` in `dependencies`, with
-     `[tool.uv.sources] omrg-ocr-worker-core = { path = "../../core" }`;
+   - `omrs-ocr-worker-core` in `dependencies`, with
+     `[tool.uv.sources] omrs-ocr-worker-core = { path = "../../core" }`;
    - the model runtime packages;
    - one entry point:
-     `[project.entry-points."omrg.ocr_engine"] <name> = "<module>:ENGINE"`;
-   - if the model licence adds terms: `[tool.omrg-ocr] licence-file = "..."`
+     `[project.entry-points."omrs.ocr_engine"] <name> = "<module>:ENGINE"`;
+   - if the model licence adds terms: `[tool.omrs-ocr] licence-file = "..."`
      and `requires-acceptance = true`;
-   - if the engine downloads weights: `[project.scripts] omrg-ocr-fetch = "..."`.
+   - if the engine downloads weights: `[project.scripts] omrs-ocr-fetch = "..."`.
 3. Add the engine module. Its `ENGINE` object has:
    - `name`: the folder name;
    - `backend_id`: the diagnostic name, for example `dots_mocr`;

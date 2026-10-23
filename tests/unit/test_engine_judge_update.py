@@ -11,8 +11,8 @@ import asyncio
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from omrg.core.settings import AnswerBlock
-from omrg.engine import Engine
+from omrs.core.settings import AnswerBlock
+from omrs.engine import Engine
 
 
 class NamedJudge:
@@ -66,7 +66,7 @@ def test_next_answer_uses_the_saved_judge_and_a_running_one_keeps_its_own(
         first_release.set()
         await running
 
-    with patch("omrg.core.answer.pipeline.answer", side_effect=fake_answer):
+    with patch("omrs.core.answer.pipeline.answer", side_effect=fake_answer):
         asyncio.run(run())
     engine.close()
 

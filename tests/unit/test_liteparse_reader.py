@@ -21,8 +21,8 @@ CORPUS_PDF = Path(__file__).resolve().parents[2] / (
 
 def test_default_constructor_reads_effective_settings(monkeypatch, tmp_path, effective_settings):
     """Normal LiteParse use still reads both injected parser settings."""
-    from omrg.core.settings import set_default_effective_settings
-    from omrg.integrations.pdf.liteparse import LiteParseReader
+    from omrs.core.settings import set_default_effective_settings
+    from omrs.integrations.pdf.liteparse import LiteParseReader
 
     observed: list[tuple[bool, int | None, bool]] = []
 
@@ -55,7 +55,7 @@ class TestLiteParseReader:
         if not CORPUS_PDF.exists():
             pytest.skip("Corpus PDF not available")
 
-        from omrg.integrations.pdf.liteparse import LiteParseReader
+        from omrs.integrations.pdf.liteparse import LiteParseReader
 
         reader = LiteParseReader()
         documents = reader.load_data(file=CORPUS_PDF)
@@ -74,7 +74,7 @@ class TestLiteParseReader:
         if not CORPUS_PDF.exists():
             pytest.skip("Corpus PDF not available")
 
-        from omrg.integrations.pdf.liteparse import LiteParseReader
+        from omrs.integrations.pdf.liteparse import LiteParseReader
 
         reader = LiteParseReader()
         documents = reader.load_data(file=CORPUS_PDF)
@@ -87,7 +87,7 @@ class TestLiteParseReader:
         if not CORPUS_PDF.exists():
             pytest.skip("Corpus PDF not available")
 
-        from omrg.integrations.pdf.liteparse import LiteParseReader
+        from omrs.integrations.pdf.liteparse import LiteParseReader
 
         reader = LiteParseReader()
         documents = reader.load_data(file=CORPUS_PDF)
@@ -120,7 +120,7 @@ def _two_column_items() -> list[SimpleNamespace]:
 
 def _read(monkeypatch, tmp_path, pages):
     """Load documents from a stubbed LiteParse returning *pages*."""
-    from omrg.integrations.pdf.liteparse import LiteParseReader
+    from omrs.integrations.pdf.liteparse import LiteParseReader
 
     class _StubLiteParse:
         def __init__(self, **_kwargs) -> None:

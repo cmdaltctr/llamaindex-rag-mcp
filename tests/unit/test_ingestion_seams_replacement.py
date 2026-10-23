@@ -17,16 +17,16 @@ from typing import Any
 import pytest
 from llama_index.core.schema import TextNode
 
-from omrg.core.ingestion import replacement
-from omrg.core.ingestion._state import shutdown_requested, write_lock
-from omrg.core.ingestion.replacement import IngestionStageError
-from omrg.core.ingestion.source_state import (
+from omrs.core.ingestion import replacement
+from omrs.core.ingestion._state import shutdown_requested, write_lock
+from omrs.core.ingestion.replacement import IngestionStageError
+from omrs.core.ingestion.source_state import (
     SOURCE_ATTEMPT_KEY,
     SOURCE_CHUNK_INDEX_KEY,
     SOURCE_ID_KEY,
     new_source_attempt,
 )
-from omrg.core.vectordb import get_default_store
+from omrs.core.vectordb import get_default_store
 
 _COLLECTION = "seam_replacement"
 _SOURCE_ID = "src_seam"

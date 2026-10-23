@@ -1,6 +1,6 @@
 """Executable file-size ceiling.
 
-Asserts that no Python file under ``src/omrg/`` exceeds 500 lines, per
+Asserts that no Python file under ``src/omrs/`` exceeds 500 lines, per
 the architecture-v2 conformance target (PROPOSAL §5.1, AGENTS.md invariant).
 
 This test is added as ``xfail(strict=True)`` in group 1 so the pre-fix
@@ -15,11 +15,11 @@ from pathlib import Path
 import pytest
 
 _CEILING = 500
-_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "omrg"
+_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "omrs"
 
 
 def _python_files() -> list[Path]:
-    """Return every ``.py`` file under ``src/omrg/`` excluding caches."""
+    """Return every ``.py`` file under ``src/omrs/`` excluding caches."""
     return sorted(p for p in _SRC_ROOT.rglob("*.py") if "__pycache__" not in p.parts)
 
 
@@ -30,7 +30,7 @@ def _line_count(path: Path) -> int:
 
 
 def test_no_file_exceeds_500_lines() -> None:
-    """No file under ``src/omrg/`` may exceed 500 lines."""
+    """No file under ``src/omrs/`` may exceed 500 lines."""
     assert _SRC_ROOT.is_dir(), f"configured source root is missing: {_SRC_ROOT}"
     offenders: list[tuple[Path, int]] = []
     for path in _python_files():

@@ -13,9 +13,9 @@ See proposal.md, "Why". The relevant current state, checked against v4 HEAD:
   (`supported` / `unsupported`, plus `unparseable`) over the
   `(claim, ordinals)` pairs from `split_claims()` (`verify.py:173`).
 - ADR-080 profile-owned graphs: `build_operation_catalogue()`
-  (`src/omrg/compose_pipelines.py:59-70`) registers each domain's operations.
+  (`src/omrs/compose_pipelines.py:59-70`) registers each domain's operations.
   A user profile names its answer graph through `answer_pipeline_id`
-  (`src/omrg/core/workspace/records.py:71`). `engine_profiles.answer()`
+  (`src/omrs/core/workspace/records.py:71`). `engine_profiles.answer()`
   returns the graph's `answer` output unchanged (`engine_profiles.py:269-273`).
   User-profile collections answer only through their graph with the server
   model (`transports/mcp/answer.py:196-199`, design D17 of that change).
@@ -72,7 +72,7 @@ See proposal.md, "Why". The relevant current state, checked against v4 HEAD:
 
 ### D1. One package: `core/mantiq/`
 
-All manṭiq code lives in `src/omrg/core/mantiq/`: `records.py`, `params.py`,
+All manṭiq code lives in `src/omrs/core/mantiq/`: `records.py`, `params.py`,
 `concept_frame.py`, `tasdiq.py`, `inference.py`, `checks.py`, `gates.py`,
 `graph_adapters.py` and `templates.py`. It may import `core.answer` public
 helpers and `core.pipelines`. It may not import `core.retrieval`,

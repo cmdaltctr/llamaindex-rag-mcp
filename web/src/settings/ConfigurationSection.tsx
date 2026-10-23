@@ -73,7 +73,7 @@ export function ConfigurationView({ state, onRestart }: ConfigurationViewProps) 
       </div>
       {state.handover.pending ? (
         <div className="flex flex-col gap-1">
-          <p className="text-ui">Saved settings could not be moved to omrg.jsonc</p>
+          <p className="text-ui">Saved settings could not be moved to omrs.jsonc</p>
           {state.handover.folder !== null ? (
             <code dir="ltr" className={CODE}>
               {state.handover.folder}
@@ -83,8 +83,8 @@ export function ConfigurationView({ state, onRestart }: ConfigurationViewProps) 
       ) : null}
       {state.problems.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <h3 className="text-subsection-title font-semibold">Problems in omrg.jsonc</h3>
-          <ul aria-label="Problems in omrg.jsonc" className="flex flex-col gap-1">
+          <h3 className="text-subsection-title font-semibold">Problems in omrs.jsonc</h3>
+          <ul aria-label="Problems in omrs.jsonc" className="flex flex-col gap-1">
             {state.problems.map((problem) => (
               <li key={`${problem.key}-${problem.kind}`} className="text-ui">
                 <code dir="ltr" className={CODE}>

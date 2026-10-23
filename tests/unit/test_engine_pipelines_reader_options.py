@@ -15,9 +15,9 @@ import pytest
 from tests.unit.test_engine_pipelines_support import build_engine
 from tests.unit.test_ingestion_graph_adapters_support import offline_settings
 
-from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition
-from omrg.core.pipelines import IssueCode, PipelineValidationError
-from omrg.integrations.pdf import registry
+from omrs.core.ingestion.graph_adapters import canonical_ingestion_definition
+from omrs.core.pipelines import IssueCode, PipelineValidationError
+from omrs.integrations.pdf import registry
 
 
 @pytest.fixture
@@ -103,7 +103,7 @@ def test_selecting_an_installed_reader_validates(
 
 def test_pdf_reader_options_names_the_missing_package(probes: list[str]) -> None:
     """Installed readers map to ``None``; a missing one gives a reason with the package."""
-    from omrg.capabilities import pdf_reader_options
+    from omrs.capabilities import pdf_reader_options
 
     options = pdf_reader_options()
     assert set(options) == set(registry.available())

@@ -97,8 +97,8 @@ def _load_tokenizer_module(
 ):
     """Import the loader after replacing its external dependencies."""
     hub, pretrained = _install_fake_dependencies(monkeypatch, state)
-    monkeypatch.delitem(sys.modules, "omrg.integrations.tokenizer", raising=False)
-    module = importlib.import_module("omrg.integrations.tokenizer")
+    monkeypatch.delitem(sys.modules, "omrs.integrations.tokenizer", raising=False)
+    module = importlib.import_module("omrs.integrations.tokenizer")
     module.load_tokenizer.cache_clear()
     return module, hub, pretrained
 

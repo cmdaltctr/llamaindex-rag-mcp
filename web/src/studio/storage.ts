@@ -1,6 +1,6 @@
 /**
  * Per-browser canvas state: one unsaved draft per pipeline, kept under
- * `omrg-canvas-draft:<pipeline-id>` and cleared when a revision is saved.
+ * `omrs-canvas-draft:<pipeline-id>` and cleared when a revision is saved.
  * Browser storage can be blocked, so each draft is also held in memory for the
  * rest of the session: a graph seeded from a gallery card still opens, and
  * edits survive moving between areas. The server stays the source of truth
@@ -9,7 +9,7 @@
 import { emptyDraft, type Draft } from "./graph";
 import { readStored, removeStored, writeStored } from "../lib/storage";
 
-export const DRAFT_PREFIX = "omrg-canvas-draft:";
+export const DRAFT_PREFIX = "omrs-canvas-draft:";
 
 const sessionDrafts = new Map<string, Draft>();
 

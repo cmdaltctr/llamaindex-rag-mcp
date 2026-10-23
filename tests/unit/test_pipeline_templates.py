@@ -16,16 +16,16 @@ import pytest
 from tests.fixtures.pipeline_parity.retrieval import harness
 from tests.unit.test_engine_pipelines_support import FakeStore, build_engine
 
-from omrg.compose_pipelines import build_operation_catalogue, pipeline_templates
-from omrg.core.pipelines import (
+from omrs.compose_pipelines import build_operation_catalogue, pipeline_templates
+from omrs.core.pipelines import (
     AdmissionSnapshot,
     PortKind,
     PreflightReport,
     RunStatus,
     parse_definition,
 )
-from omrg.core.retrieval import registry
-from omrg.pipeline_templates import (
+from omrs.core.retrieval import registry
+from omrs.pipeline_templates import (
     TEMPLATE_NAMES,
     answer_template,
     canonical_templates,

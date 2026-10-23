@@ -212,7 +212,7 @@ An answer on a collection that uses a user profile SHALL run that profile's curr
 
 ### Requirement: User profiles work in every process that reads the workspace
 
-The stdio MCP server, the CLI and the watcher SHALL resolve user profiles from the default workspace database (`~/.omrg/workspace/workspace.db`, the default folder of `omrg web`) when that file exists. They SHALL open it read-only and SHALL NOT create, migrate or write it. A search, answer or ingestion on a collection that uses a user profile SHALL then run that profile's pipelines, as in the web server. When the file does not exist, they SHALL refuse a collection that uses a user profile with an error that names the profile, names the path that was read, and tells the user to start `omrg web` once with the default workspace or to change the collection's profile to `documents` or `codebase`. Binding a user profile to a collection SHALL stay in the web server and its MCP endpoint.
+The stdio MCP server, the CLI and the watcher SHALL resolve user profiles from the default workspace database (`~/.omrs/workspace/workspace.db`, the default folder of `omrs web`) when that file exists. They SHALL open it read-only and SHALL NOT create, migrate or write it. A search, answer or ingestion on a collection that uses a user profile SHALL then run that profile's pipelines, as in the web server. When the file does not exist, they SHALL refuse a collection that uses a user profile with an error that names the profile, names the path that was read, and tells the user to start `omrs web` once with the default workspace or to change the collection's profile to `documents` or `codebase`. Binding a user profile to a collection SHALL stay in the web server and its MCP endpoint.
 
 #### Scenario: Stdio MCP search on a user profile
 
@@ -222,7 +222,7 @@ The stdio MCP server, the CLI and the watcher SHALL resolve user profiles from t
 
 #### Scenario: CLI search on a user profile
 
-- **WHEN** the default workspace holds user profile `my-notes`, collection `notes` uses it, and the user runs `omrg search` on `notes`
+- **WHEN** the default workspace holds user profile `my-notes`, collection `notes` uses it, and the user runs `omrs search` on `notes`
 - **THEN** the results MUST come from the Search pipeline of `my-notes`
 
 #### Scenario: Watcher ingests into a user profile
@@ -233,8 +233,8 @@ The stdio MCP server, the CLI and the watcher SHALL resolve user profiles from t
 #### Scenario: No workspace database
 
 - **WHEN** the default workspace database does not exist and the CLI, the watcher or the stdio MCP server handles collection `notes`, which is tagged `my-notes`
-- **THEN** it MUST fail with an error that names `my-notes` and the path `~/.omrg/workspace/workspace.db`
-- **AND** the error MUST tell the user to start `omrg web` once or to change the collection to `documents` or `codebase`
+- **THEN** it MUST fail with an error that names `my-notes` and the path `~/.omrs/workspace/workspace.db`
+- **AND** the error MUST tell the user to start `omrs web` once or to change the collection to `documents` or `codebase`
 
 #### Scenario: Older workspace schema
 
@@ -244,8 +244,8 @@ The stdio MCP server, the CLI and the watcher SHALL resolve user profiles from t
 
 #### Scenario: Bind from the CLI
 
-- **WHEN** a user runs `omrg set-profile` with the user profile id `my-notes`
-- **THEN** the CLI MUST refuse with a message that tells the user to bind user profiles in Knowledge Base or through the MCP endpoint of `omrg web`
+- **WHEN** a user runs `omrs set-profile` with the user profile id `my-notes`
+- **THEN** the CLI MUST refuse with a message that tells the user to bind user profiles in Knowledge Base or through the MCP endpoint of `omrs web`
 - **AND** the collection's profile tag MUST stay unchanged
 
 ### Requirement: Ingestion into a user-profile collection runs its Ingest pipeline
@@ -285,7 +285,7 @@ Saving a revision of a pipeline that belongs to a profile in use SHALL return `a
 
 ### Requirement: Saved Studio pipelines become user profiles on upgrade
 
-On the first start after upgrade, each saved Studio pipeline that belongs to no profile SHALL become a user profile. A workspace job pipeline, whose layout holds the key `omrg_task`, SHALL be skipped. The profile title SHALL be the pipeline's `layout.title` when it is not empty after trimming, else the pipeline title. The base profile SHALL be the `graph.profile` of the current revision when it is `documents` or `codebase`, else `documents`. The pipeline SHALL fill the slot whose contract its current revision matches first (Ingest, Search, Answer). The other slots SHALL get the standard graphs of the base profile. A pipeline with no saved revision, or a graph that matches no contract, SHALL go in the Search slot, and the profile SHALL be not ready. When the current revision names another operational profile than the base, the upgrade SHALL save one new revision that names the base profile, and SHALL keep the earlier revisions and their runs.
+On the first start after upgrade, each saved Studio pipeline that belongs to no profile SHALL become a user profile. A workspace job pipeline, whose layout holds the key `omrs_task`, SHALL be skipped. The profile title SHALL be the pipeline's `layout.title` when it is not empty after trimming, else the pipeline title. The base profile SHALL be the `graph.profile` of the current revision when it is `documents` or `codebase`, else `documents`. The pipeline SHALL fill the slot whose contract its current revision matches first (Ingest, Search, Answer). The other slots SHALL get the standard graphs of the base profile. A pipeline with no saved revision, or a graph that matches no contract, SHALL go in the Search slot, and the profile SHALL be not ready. When the current revision names another operational profile than the base, the upgrade SHALL save one new revision that names the base profile, and SHALL keep the earlier revisions and their runs.
 
 #### Scenario: A saved search pipeline
 
@@ -312,7 +312,7 @@ On the first start after upgrade, each saved Studio pipeline that belongs to no 
 
 #### Scenario: Workspace job pipeline
 
-- **WHEN** the workspace holds the pipeline "Workspace job: ingest" whose layout holds `omrg_task`
+- **WHEN** the workspace holds the pipeline "Workspace job: ingest" whose layout holds `omrs_task`
 - **THEN** after upgrade no user profile MUST exist for it
 - **AND** its runs MUST stay unchanged
 

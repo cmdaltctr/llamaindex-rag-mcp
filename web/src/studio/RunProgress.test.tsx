@@ -5,7 +5,7 @@ import { EMPTY_RUN_VIEW } from "../runs/runState";
 import { renderWithProviders } from "../test/providers";
 import { RunProgress } from "./RunProgress";
 
-const RAW = "Traceback (most recent call last): /Users/someone/omrg/runner.py";
+const RAW = "Traceback (most recent call last): /Users/someone/omrs/runner.py";
 
 function failingFetch(): typeof fetch {
   return vi.fn(async () => new Response(JSON.stringify({ status: "error", message: RAW }), { status: 500, headers: { "content-type": "application/json" } }));

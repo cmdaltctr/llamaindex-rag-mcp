@@ -16,21 +16,21 @@ import pytest
 
 pytest.importorskip("fastapi")
 
-from omrg.transports.api import power_control  # noqa: E402
-from omrg.transports.api.power_control import (  # noqa: E402
+from omrs.transports.api import power_control  # noqa: E402
+from omrs.transports.api.power_control import (  # noqa: E402
     ACTIONS,
     PowerControl,
     build_argv,
     run_argv,
 )
-from omrg.transports.cli import _launchagent  # noqa: E402
+from omrs.transports.cli import _launchagent  # noqa: E402
 
-LABEL = "com.omrg.web"
+LABEL = "com.omrs.web"
 UID = 501
 
 
 def test_restart_argv_equals_the_cli_kill_command() -> None:
-    """D6: the API copy cannot drift from the helper that ``omrg web restart`` uses."""
+    """D6: the API copy cannot drift from the helper that ``omrs web restart`` uses."""
     assert build_argv("restart", UID, LABEL) == _launchagent.kill_command(UID, LABEL, "SIGTERM")
 
 

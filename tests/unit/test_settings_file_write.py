@@ -1,7 +1,7 @@
-"""Writing ``omrg.jsonc`` safely (move-settings-to-config-file, tasks 4.3 and 4.4).
+"""Writing ``omrs.jsonc`` safely (move-settings-to-config-file, tasks 4.3 and 4.4).
 
-Every test points ``OMRG_CONFIG_DIR`` at a temporary folder. No test reads or
-writes the real ``~/.config/omrg``. Keys are fake constants.
+Every test points ``OMRS_CONFIG_DIR`` at a temporary folder. No test reads or
+writes the real ``~/.config/omrs``. Keys are fake constants.
 """
 
 from __future__ import annotations
@@ -15,15 +15,15 @@ from pathlib import Path
 
 import pytest
 
-from omrg.config.settings_file import file_revision, read_settings_file
-from omrg.config.settings_file_write import (
+from omrs.config.settings_file import file_revision, read_settings_file
+from omrs.config.settings_file_write import (
     ALLOWED_KEYS,
     SettingsFileConflict,
     SettingsFileRefused,
     SettingsFileWriteError,
     write_settings,
 )
-from omrg.config.user_config import parse_jsonc
+from omrs.config.user_config import parse_jsonc
 
 LITERAL_KEY = "sk-or-v1-LITERALKEYVALUE0123456"  # gitleaks:allow
 POSIX_ONLY = pytest.mark.skipif(sys.platform == "win32", reason="POSIX file modes")
@@ -31,15 +31,15 @@ POSIX_ONLY = pytest.mark.skipif(sys.platform == "win32", reason="POSIX file mode
 
 @pytest.fixture
 def folder(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
-    root = tmp_path / "cfg" / "omrg"
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(root))
+    root = tmp_path / "cfg" / "omrs"
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(root))
     return root
 
 
 @pytest.fixture
 def existing(folder: Path) -> Path:
     folder.mkdir(parents=True, mode=0o700)
-    path = folder / "omrg.jsonc"
+    path = folder / "omrs.jsonc"
     path.write_text(
         '// my settings\n{\n  "retrieval": { "top_k": 7 }, // keep\n  "ollama_base_url": "http://a:1"\n}\n',
         encoding="utf-8",
@@ -49,7 +49,7 @@ def existing(folder: Path) -> Path:
 
 
 def data(folder: Path) -> dict:
-    return parse_jsonc((folder / "omrg.jsonc").read_text(encoding="utf-8"))
+    return parse_jsonc((folder / "omrs.jsonc").read_text(encoding="utf-8"))
 
 
 # ── Allowed keys ─────────────────────────────────────────────────────────
@@ -186,10 +186,10 @@ def test_a_tilde_file_reference_inside_secrets_is_accepted(
     home = folder.parent
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("USERPROFILE", str(home))
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(home / ".config" / "omrg"))
-    reference = "file://~/.config/omrg/secrets/x.key"
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(home / ".config" / "omrs"))
+    reference = "file://~/.config/omrs/secrets/x.key"
     write_settings({"openrouter_api_key": reference}, revision=None)
-    assert data(home / ".config" / "omrg") == {"openrouter_api_key": reference}
+    assert data(home / ".config" / "omrs") == {"openrouter_api_key": reference}
 
 
 @pytest.mark.parametrize(
@@ -211,7 +211,7 @@ def test_a_file_reference_must_stay_inside_secrets(folder: Path) -> None:
 
 def test_writing_a_key_reference_touches_nothing_else(folder: Path) -> None:
     write_settings({"openrouter_api_key": "keychain://openrouter"}, revision=None)
-    assert sorted(p.name for p in folder.rglob("*")) == ["omrg.jsonc"]
+    assert sorted(p.name for p in folder.rglob("*")) == ["omrs.jsonc"]
 
 
 # ── Revision and conflicts ───────────────────────────────────────────────
@@ -231,13 +231,13 @@ def test_a_stale_revision_is_a_conflict_and_keeps_the_hand_edit(existing: Path) 
     edited = existing.read_bytes()
     with pytest.raises(SettingsFileConflict) as caught:
         write_settings({"answer.model": "m"}, revision=stale)
-    assert str(caught.value) == "omrg.jsonc changed on disk. Reload to see the new values."
+    assert str(caught.value) == "omrs.jsonc changed on disk. Reload to see the new values."
     assert existing.read_bytes() == edited
 
 
 def test_a_file_that_appeared_after_the_page_loaded_is_a_conflict(folder: Path) -> None:
     folder.mkdir(parents=True, mode=0o700)
-    (folder / "omrg.jsonc").write_text('{ "web_port": 9100 }', encoding="utf-8")
+    (folder / "omrs.jsonc").write_text('{ "web_port": 9100 }', encoding="utf-8")
     with pytest.raises(SettingsFileConflict):
         write_settings({"answer.model": "m"}, revision="absent")
 
@@ -256,12 +256,12 @@ def test_revision_none_skips_the_check(existing: Path) -> None:
 
 def test_a_duplicate_key_is_a_conflict_that_names_it(folder: Path) -> None:
     folder.mkdir(parents=True, mode=0o700)
-    (folder / "omrg.jsonc").write_text('{ "web_port": 9100, "web_port": 9200 }', encoding="utf-8")
-    before = (folder / "omrg.jsonc").read_bytes()
+    (folder / "omrs.jsonc").write_text('{ "web_port": 9100, "web_port": 9200 }', encoding="utf-8")
+    before = (folder / "omrs.jsonc").read_bytes()
     with pytest.raises(SettingsFileConflict) as caught:
         write_settings({"web_port": 9300}, revision=None)
     assert "web_port" in str(caught.value)
-    assert (folder / "omrg.jsonc").read_bytes() == before
+    assert (folder / "omrs.jsonc").read_bytes() == before
 
 
 # ── Broken file ──────────────────────────────────────────────────────────
@@ -270,11 +270,11 @@ def test_a_duplicate_key_is_a_conflict_that_names_it(folder: Path) -> None:
 @pytest.mark.parametrize("text", ['{ "a": ', "[1, 2]", "just words", '{ "a": 1 } trailing'])
 def test_a_broken_file_is_never_overwritten(folder: Path, text: str) -> None:
     folder.mkdir(parents=True, mode=0o700)
-    path = folder / "omrg.jsonc"
+    path = folder / "omrs.jsonc"
     path.write_text(text, encoding="utf-8")
     with pytest.raises(SettingsFileConflict) as caught:
         write_settings({"answer.model": "m"}, revision=None)
-    assert str(caught.value) == "omrg.jsonc could not be read. Fix it, then save again."
+    assert str(caught.value) == "omrs.jsonc could not be read. Fix it, then save again."
     assert path.read_text(encoding="utf-8") == text
 
 
@@ -284,9 +284,9 @@ def test_a_broken_file_is_never_overwritten(folder: Path, text: str) -> None:
 @POSIX_ONLY
 def test_a_new_file_is_0600_in_a_0700_folder_with_a_header(folder: Path) -> None:
     write_settings({"ollama_base_url": "http://box:11434"}, revision="absent")
-    assert stat.S_IMODE((folder / "omrg.jsonc").stat().st_mode) == 0o600
+    assert stat.S_IMODE((folder / "omrs.jsonc").stat().st_mode) == 0o600
     assert stat.S_IMODE(folder.stat().st_mode) == 0o700
-    text = (folder / "omrg.jsonc").read_text(encoding="utf-8")
+    text = (folder / "omrs.jsonc").read_text(encoding="utf-8")
     assert text.startswith("//")
     assert data(folder) == {"ollama_base_url": "http://box:11434"}
     assert read_settings_file().values["ollama_base_url"] == "http://box:11434"
@@ -356,12 +356,12 @@ def test_a_batch_writes_every_change_in_one_replace(existing: Path) -> None:
 
 def test_a_symlinked_file_is_written_through_the_link(folder: Path, tmp_path: Path) -> None:
     folder.mkdir(parents=True, mode=0o700)
-    target = tmp_path / "dotfiles" / "omrg.jsonc"
+    target = tmp_path / "dotfiles" / "omrs.jsonc"
     target.parent.mkdir()
     target.write_text("{\n}\n", encoding="utf-8")
-    (folder / "omrg.jsonc").symlink_to(target)
+    (folder / "omrs.jsonc").symlink_to(target)
     write_settings({"web_port": 9100}, revision=None)
-    assert (folder / "omrg.jsonc").is_symlink()
+    assert (folder / "omrs.jsonc").is_symlink()
     assert parse_jsonc(target.read_text(encoding="utf-8")) == {"web_port": 9100}
 
 
@@ -380,7 +380,7 @@ def test_a_crash_at_replace_leaves_the_old_content_and_no_temporary_file(
     with pytest.raises(SettingsFileWriteError):
         write_settings({"answer.model": "m"}, revision=None)
     assert existing.read_bytes() == before
-    assert [p.name for p in existing.parent.iterdir()] == ["omrg.jsonc"]
+    assert [p.name for p in existing.parent.iterdir()] == ["omrs.jsonc"]
 
 
 def test_a_crash_while_flushing_leaves_the_old_content(
@@ -395,14 +395,14 @@ def test_a_crash_while_flushing_leaves_the_old_content(
     with pytest.raises(SettingsFileWriteError):
         write_settings({"answer.model": "m"}, revision=None)
     assert existing.read_bytes() == before
-    assert [p.name for p in existing.parent.iterdir()] == ["omrg.jsonc"]
+    assert [p.name for p in existing.parent.iterdir()] == ["omrs.jsonc"]
 
 
 def test_a_stale_temporary_file_from_a_crash_does_not_block_a_save(existing: Path) -> None:
-    (existing.parent / "omrg.jsonc.tmp").write_text("half", encoding="utf-8")
+    (existing.parent / "omrs.jsonc.tmp").write_text("half", encoding="utf-8")
     write_settings({"answer.model": "m"}, revision=None)
     assert data(existing.parent)["answer"] == {"model": "m"}
-    assert [p.name for p in existing.parent.iterdir()] == ["omrg.jsonc"]
+    assert [p.name for p in existing.parent.iterdir()] == ["omrs.jsonc"]
 
 
 @POSIX_ONLY
@@ -419,7 +419,7 @@ def test_a_folder_that_cannot_be_written_raises_a_write_error(existing: Path) ->
 
 def test_concurrent_saves_in_one_process_do_not_lose_updates(folder: Path) -> None:
     folder.mkdir(parents=True, mode=0o700)
-    (folder / "omrg.jsonc").write_text("{\n}\n", encoding="utf-8")
+    (folder / "omrs.jsonc").write_text("{\n}\n", encoding="utf-8")
 
     def save(offset: int) -> None:
         for i in range(10):

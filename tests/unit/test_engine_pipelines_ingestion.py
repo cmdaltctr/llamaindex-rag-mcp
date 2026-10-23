@@ -20,10 +20,10 @@ from tests.fixtures.pipeline_parity.ingestion.snapshot import (
 )
 from tests.unit.test_ingestion_graph_adapters_support import offline_settings
 
-from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition
-from omrg.core.pipelines import RunStatus
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
-from omrg.engine import Engine
+from omrs.core.ingestion.graph_adapters import canonical_ingestion_definition
+from omrs.core.pipelines import RunStatus
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.engine import Engine
 
 
 def _engine(tmp_path: Path, settings: Any, **kwargs: Any) -> Engine:
@@ -74,7 +74,7 @@ class FakeRoutes:
 @pytest.fixture
 def fake_ocr(monkeypatch: pytest.MonkeyPatch) -> list[FakeRoutes]:
     """Replace the OCR route builder; return the list of built clients."""
-    from omrg import capabilities
+    from omrs import capabilities
 
     FakeRoutes.built = []
     monkeypatch.setattr(capabilities, "build_ocr_routes", FakeRoutes)
@@ -102,7 +102,7 @@ async def test_graph_runs_borrow_one_engine_owned_ocr_client(
         canonical_ingestion_definition("ocr"), inputs={"path": str(root)}
     )
     assert fake_ocr == [], "validation must not build an OCR client"
-    from omrg.compose_pipeline_runs import plan_run
+    from omrs.compose_pipeline_runs import plan_run
 
     plan = plan_run(snapshot, engine._pipelines.catalogue(), engine._graph_host(None))
     again = plan_run(snapshot, engine._pipelines.catalogue(), engine._graph_host(None))
@@ -144,7 +144,7 @@ def test_injected_ocr_client_is_borrowed_and_never_rebuilt(
     tmp_path: Path, effective_settings: Any, fake_ocr: list[FakeRoutes]
 ) -> None:
     """An Engine composed with a client lends that client to runs."""
-    from omrg.compose_pipeline_runs import plan_run
+    from omrs.compose_pipeline_runs import plan_run
 
     injected = FakeRoutes(None)
     settings = offline_settings(effective_settings).model_copy(
@@ -165,7 +165,7 @@ def test_retrieval_run_plans_no_ingestion_resources(effective_settings: Any) -> 
     """A graph without ingestion operations gets no unit split or shape."""
     from tests.unit.test_engine_pipelines_support import build_engine, retrieval_graph
 
-    from omrg.compose_pipeline_runs import plan_run
+    from omrs.compose_pipeline_runs import plan_run
 
     engine = build_engine(effective_settings())
     snapshot = engine.validate_pipeline(retrieval_graph(), inputs={"query": "q"})

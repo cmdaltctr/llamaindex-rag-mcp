@@ -26,7 +26,7 @@ The Settings view SHALL offer the sections Appearance, Providers, Chat, MCP, Ser
 
 ### Requirement: Connections show provider configuration without secrets
 
-The Providers section SHALL show one card for each entry of `GET /v1/connections`. Each card SHALL show the provider name, a Local or Cloud badge with text, the roles that use it, each editable field as a setting row, the read-only values (embedding address and models) as read-only rows, and the install command when the provider is not installed. A field from `env` SHALL show "Set in the environment. Change it there." with the variable name. A field from `dotenv` SHALL show "Set in .env. Change it there." with the variable name and the `.env` path. A field from `config-file` SHALL show "from omrg.jsonc" and SHALL stay editable. A key from `key-file` SHALL show "from key file" with the file path. A key from `keychain` SHALL show "in system keychain". The field source SHALL be one of `env`, `dotenv`, `config-file`, `keychain`, `key-file`, `default` and `none`. A key field SHALL show at most "Key set" and the last four characters. A Cloud card, and a card whose address is not on this machine, SHALL state that text leaves this machine. The section SHALL name the `omrg.jsonc` path and SHALL state that saves are written there.
+The Providers section SHALL show one card for each entry of `GET /v1/connections`. Each card SHALL show the provider name, a Local or Cloud badge with text, the roles that use it, each editable field as a setting row, the read-only values (embedding address and models) as read-only rows, and the install command when the provider is not installed. A field from `env` SHALL show "Set in the environment. Change it there." with the variable name. A field from `dotenv` SHALL show "Set in .env. Change it there." with the variable name and the `.env` path. A field from `config-file` SHALL show "from omrs.jsonc" and SHALL stay editable. A key from `key-file` SHALL show "from key file" with the file path. A key from `keychain` SHALL show "in system keychain". The field source SHALL be one of `env`, `dotenv`, `config-file`, `keychain`, `key-file`, `default` and `none`. A key field SHALL show at most "Key set" and the last four characters. A Cloud card, and a card whose address is not on this machine, SHALL state that text leaves this machine. The section SHALL name the `omrs.jsonc` path and SHALL state that saves are written there.
 
 #### Scenario: Roles follow the configuration
 
@@ -41,7 +41,7 @@ The Providers section SHALL show one card for each entry of `GET /v1/connections
 #### Scenario: Address from the config file
 
 - **WHEN** the Ollama entry reports the source `config-file`
-- **THEN** the card MUST show the address with "from omrg.jsonc" and MUST offer Edit
+- **THEN** the card MUST show the address with "from omrs.jsonc" and MUST offer Edit
 
 #### Scenario: Key from a key file
 
@@ -113,12 +113,12 @@ The Server log section SHALL show the server's recent log records in a monospace
 
 ### Requirement: The MCP section shows how to connect a client
 
-The MCP section SHALL show a copyable stdio client configuration that starts `omrg` with `uv run --directory <project>`, where `<project>` is `config_dir` from `GET /v1/connections`, so the client's process reads the same `.env`. It SHALL also show, through the endpoints of the `add-mcp-http-transport` change only: an on/off switch for MCP over HTTP, the HTTP client configuration with the server's `/mcp` URL, token create, rotate and revoke with a new token shown once, and the saved web port that applies on the next launch.
+The MCP section SHALL show a copyable stdio client configuration that starts `omrs` with `uv run --directory <project>`, where `<project>` is `config_dir` from `GET /v1/connections`, so the client's process reads the same `.env`. It SHALL also show, through the endpoints of the `add-mcp-http-transport` change only: an on/off switch for MCP over HTTP, the HTTP client configuration with the server's `/mcp` URL, token create, rotate and revoke with a new token shown once, and the saved web port that applies on the next launch.
 
 #### Scenario: Copy stdio configuration
 
 - **WHEN** the user copies the stdio configuration
-- **THEN** the clipboard MUST hold a client configuration that runs `uv run --directory <project> omrg` with `config_dir` as `<project>`
+- **THEN** the clipboard MUST hold a client configuration that runs `uv run --directory <project> omrs` with `config_dir` as `<project>`
 
 #### Scenario: Switch reflects the server
 
@@ -132,7 +132,7 @@ The MCP section SHALL show a copyable stdio client configuration that starts `om
 
 ### Requirement: The Chat section chooses the Chat model
 
-The Chat section SHALL show the Chat provider and model from `GET /v1/settings/chat` as setting rows with their source. When the choice is not locked, Edit SHALL open a provider select of the registered providers, each provider that is not ready marked with its reason in text, a model name field filled with the current model, a List models action that fills the field from the provider's list, a Test action for the typed choice, Save, Cancel and Clear. Save SHALL write `answer.provider` and `answer.model` to `omrg.jsonc`.
+The Chat section SHALL show the Chat provider and model from `GET /v1/settings/chat` as setting rows with their source. When the choice is not locked, Edit SHALL open a provider select of the registered providers, each provider that is not ready marked with its reason in text, a model name field filled with the current model, a List models action that fills the field from the provider's list, a Test action for the typed choice, Save, Cancel and Clear. Save SHALL write `answer.provider` and `answer.model` to `omrs.jsonc`.
 
 #### Scenario: Pick a model from the list
 
@@ -156,7 +156,7 @@ The Chat section SHALL show the Chat provider and model from `GET /v1/settings/c
 
 ### Requirement: The Chat section says where the choice applies
 
-The Chat section SHALL state that the choice also answers MCP clients of this web server that cannot supply their own model, that metadata extraction keeps its own model, that the claim check judge has its own choice in the block below, and that `omrg` over stdio and the CLI read the same `omrg.jsonc` at their next launch. When the selected provider is cloud, the section SHALL state that questions and retrieved passages leave this machine.
+The Chat section SHALL state that the choice also answers MCP clients of this web server that cannot supply their own model, that metadata extraction keeps its own model, that the claim check judge has its own choice in the block below, and that `omrs` over stdio and the CLI read the same `omrs.jsonc` at their next launch. When the selected provider is cloud, the section SHALL state that questions and retrieved passages leave this machine.
 
 #### Scenario: Cloud choice warns
 
@@ -170,7 +170,7 @@ The Chat section SHALL state that the choice also answers MCP clients of this we
 
 ### Requirement: The Ollama card edits the context window
 
-The Ollama card SHALL show "Context window (tokens)" as a setting row with its value and source. Edit SHALL open a number field filled with the current value, with the minimum 2,048 and the maximum 262,144. A locked field SHALL be read-only and SHALL state its lock. A saved value SHALL be written to `omrg.jsonc` and SHALL apply at once. The card SHALL state that the window does not apply to embedding models.
+The Ollama card SHALL show "Context window (tokens)" as a setting row with its value and source. Edit SHALL open a number field filled with the current value, with the minimum 2,048 and the maximum 262,144. A locked field SHALL be read-only and SHALL state its lock. A saved value SHALL be written to `omrs.jsonc` and SHALL apply at once. The card SHALL state that the window does not apply to embedding models.
 
 #### Scenario: Show default
 
@@ -180,7 +180,7 @@ The Ollama card SHALL show "Context window (tokens)" as a setting row with its v
 #### Scenario: Save a value
 
 - **WHEN** the user presses Edit, types 32768 and presses Save
-- **THEN** the card MUST show 32768 and the source "from omrg.jsonc"
+- **THEN** the card MUST show 32768 and the source "from omrs.jsonc"
 
 #### Scenario: Out of range
 
@@ -194,7 +194,7 @@ The Ollama card SHALL show "Context window (tokens)" as a setting row with its v
 
 ### Requirement: The llama.cpp card shows a Local server panel
 
-The llama.cpp card SHALL show a "Local server" panel with: the state as text and a badge (`stopped`, `starting`, `running` or `failed`); the fixed reason when the state is `failed`; setting rows for program path, model, context window and idle sleep, each with its value and source; and the buttons Start, Stop and Restart. The panel SHALL say: "omrg starts and stops only this server. It never touches a server you started yourself." The panel SHALL show "Restart to apply" when the values in force differ from the values of the running server. The panel SHALL NOT show output of the server. Start SHALL be disabled while the state is `starting` or `running`. Stop SHALL be disabled while the state is `stopped`. A locked field SHALL be read-only and SHALL state its lock. The panel SHALL state that the embedding server is not managed. When Start fails because a value is not set, the panel SHALL name the missing value.
+The llama.cpp card SHALL show a "Local server" panel with: the state as text and a badge (`stopped`, `starting`, `running` or `failed`); the fixed reason when the state is `failed`; setting rows for program path, model, context window and idle sleep, each with its value and source; and the buttons Start, Stop and Restart. The panel SHALL say: "omrs starts and stops only this server. It never touches a server you started yourself." The panel SHALL show "Restart to apply" when the values in force differ from the values of the running server. The panel SHALL NOT show output of the server. Start SHALL be disabled while the state is `starting` or `running`. Stop SHALL be disabled while the state is `stopped`. A locked field SHALL be read-only and SHALL state its lock. The panel SHALL state that the embedding server is not managed. When Start fails because a value is not set, the panel SHALL name the missing value.
 
 #### Scenario: Stopped
 
@@ -214,7 +214,7 @@ The llama.cpp card SHALL show a "Local server" panel with: the state as text and
 #### Scenario: Ownership text
 
 - **WHEN** the user opens the panel
-- **THEN** it MUST show "omrg starts and stops only this server. It never touches a server you started yourself."
+- **THEN** it MUST show "omrs starts and stops only this server. It never touches a server you started yourself."
 
 #### Scenario: Program and model need a credentials session
 
@@ -233,12 +233,12 @@ The llama.cpp card SHALL show a "Local server" panel with: the state as text and
 
 ### Requirement: Every setting is shown as a value and source row
 
-Each editable setting on the Settings page SHALL show one row with its label, the value in force and its source in plain words ("from omrg.jsonc", "Set in .env", "Set in the environment", "default"). Edit SHALL open an input filled with the value in force, with Save and Cancel. The page SHALL NOT show an empty input for a field that has a value.
+Each editable setting on the Settings page SHALL show one row with its label, the value in force and its source in plain words ("from omrs.jsonc", "Set in .env", "Set in the environment", "default"). Edit SHALL open an input filled with the value in force, with Save and Cancel. The page SHALL NOT show an empty input for a field that has a value.
 
 #### Scenario: Value from the file
 
-- **WHEN** `omrg.jsonc` sets `llamacpp_server_binary` to `/opt/homebrew/bin/llama-server`
-- **THEN** the row MUST show that path and "from omrg.jsonc", and no input MUST be visible until the user presses Edit
+- **WHEN** `omrs.jsonc` sets `llamacpp_server_binary` to `/opt/homebrew/bin/llama-server`
+- **THEN** the row MUST show that path and "from omrs.jsonc", and no input MUST be visible until the user presses Edit
 
 #### Scenario: Edit opens filled
 
@@ -280,8 +280,8 @@ When the server refuses a Settings save with 400 or 409 and a message, the page 
 
 #### Scenario: File changed on disk
 
-- **WHEN** a save returns 409 because `omrg.jsonc` changed
-- **THEN** the page MUST show "omrg.jsonc changed on disk. Reload to see the new values." with a Reload action
+- **WHEN** a save returns 409 because `omrs.jsonc` changed
+- **THEN** the page MUST show "omrs.jsonc changed on disk. Reload to see the new values." with a Reload action
 
 ### Requirement: A restart-only change offers a restart
 
@@ -295,7 +295,7 @@ After the user saves a setting that applies only after a restart, the page SHALL
 #### Scenario: Restart now
 
 - **WHEN** the user presses "Restart now"
-- **THEN** the page MUST send the power menu restart request and MUST say that the page signs in again by itself, and MUST name `omrg web open` for a restart that moves the app to a new port
+- **THEN** the page MUST send the power menu restart request and MUST say that the page signs in again by itself, and MUST name `omrs web open` for a restart that moves the app to a new port
 
 #### Scenario: Foreground server
 
@@ -304,22 +304,22 @@ After the user saves a setting that applies only after a restart, the page SHALL
 
 ### Requirement: The Configuration section lists every setting
 
-Settings SHALL have a Configuration section that lists every setting read-only, grouped by block, with its value in force, its source, and "Restart to apply" when its file value differs from the value the server started with. Keys SHALL show at most the last four characters. The section SHALL show the `omrg.jsonc` path with a copy action, and the problems found in the file. It SHALL take its data from `GET /v1/settings/configuration` (read scope).
+Settings SHALL have a Configuration section that lists every setting read-only, grouped by block, with its value in force, its source, and "Restart to apply" when its file value differs from the value the server started with. Keys SHALL show at most the last four characters. The section SHALL show the `omrs.jsonc` path with a copy action, and the problems found in the file. It SHALL take its data from `GET /v1/settings/configuration` (read scope).
 
 #### Scenario: Engine setting edited by hand
 
-- **WHEN** the user changes `retrieval.top_k` in `omrg.jsonc` while the server runs
+- **WHEN** the user changes `retrieval.top_k` in `omrs.jsonc` while the server runs
 - **THEN** the section MUST show the launch value, the source `config-file` and "Restart to apply", and MUST offer the restart dialog
 
 #### Scenario: Problems listed
 
-- **WHEN** `omrg.jsonc` holds an unknown key and an invalid value
+- **WHEN** `omrs.jsonc` holds an unknown key and an invalid value
 - **THEN** the section MUST list both by key with one plain line each and MUST NOT show the invalid value
 
 #### Scenario: Database rows not moved
 
-- **WHEN** the server could not move saved settings into `omrg.jsonc`
-- **THEN** the section MUST show "Saved settings could not be moved to omrg.jsonc" with the folder path
+- **WHEN** the server could not move saved settings into `omrs.jsonc`
+- **THEN** the section MUST show "Saved settings could not be moved to omrs.jsonc" with the folder path
 
 ### Requirement: Document reading shows the reading settings and their state
 
@@ -327,7 +327,7 @@ The Document reading section SHALL show one row for each of `pdf_reader`, `ocr_f
 
 #### Scenario: Value saved but not yet in force
 
-- **WHEN** the server launched with `pdf_reader` `auto` and `omrg.jsonc` now holds `"pdf_reader": "liteparse"`
+- **WHEN** the server launched with `pdf_reader` `auto` and `omrs.jsonc` now holds `"pdf_reader": "liteparse"`
 - **THEN** the PDF reader row MUST show `auto` in force, `liteparse` saved and "Restart to apply"
 
 #### Scenario: Key locked by the environment
@@ -345,24 +345,24 @@ The Document reading section SHALL show one row for each of `pdf_reader`, `ocr_f
 - **WHEN** `OCR_WORKER_COMMAND` is set
 - **THEN** the primary engine row MUST say that `OCR_WORKER_COMMAND` replaces the primary engine
 
-### Requirement: Document reading saves to omrg.jsonc for the next launch
+### Requirement: Document reading saves to omrs.jsonc for the next launch
 
-A save in the Document reading section SHALL write the changed keys into `omrg.jsonc` with the file revision the page last read. A save SHALL NOT change the value in force. After a save that leaves a key waiting for a restart, the page SHALL offer the restart dialog and SHALL repeat the index identity note. "Use default" on a row SHALL remove the key from the file. A refused save SHALL show the server message and SHALL leave the row unchanged.
+A save in the Document reading section SHALL write the changed keys into `omrs.jsonc` with the file revision the page last read. A save SHALL NOT change the value in force. After a save that leaves a key waiting for a restart, the page SHALL offer the restart dialog and SHALL repeat the index identity note. "Use default" on a row SHALL remove the key from the file. A refused save SHALL show the server message and SHALL leave the row unchanged.
 
 #### Scenario: Save a fraction
 
 - **WHEN** the user sets the OCR page fraction to 0.2 and presses Save
-- **THEN** `omrg.jsonc` MUST hold `"ocr_fallback_page_fraction": 0.2`, the row MUST show "Restart to apply", and the restart dialog MUST open
+- **THEN** `omrs.jsonc` MUST hold `"ocr_fallback_page_fraction": 0.2`, the row MUST show "Restart to apply", and the restart dialog MUST open
 
 #### Scenario: Return to the default
 
 - **WHEN** the file holds `"ocr_engine_fallback": "my-engine"` and the user presses "Use default" on that row
-- **THEN** `omrg.jsonc` MUST no longer hold `ocr_engine_fallback`
+- **THEN** `omrs.jsonc` MUST no longer hold `ocr_engine_fallback`
 
 #### Scenario: File edited while the page is open
 
-- **WHEN** the user edits `omrg.jsonc` in an editor and then saves a row in Document reading
-- **THEN** the page MUST show "omrg.jsonc changed on disk. Reload to see the new values." and MUST offer Reload
+- **WHEN** the user edits `omrs.jsonc` in an editor and then saves a row in Document reading
+- **THEN** the page MUST show "omrs.jsonc changed on disk. Reload to see the new values." and MUST offer Reload
 
 ### Requirement: Document reading routes
 
@@ -414,7 +414,7 @@ The Chat section SHALL show a "Claim check judge" block under the Chat choice. T
 
 #### Scenario: Edit opens filled
 
-- **WHEN** `omrg.jsonc` sets the judge to `openrouter` and `openai/gpt-5-mini` and the user presses Edit
+- **WHEN** `omrs.jsonc` sets the judge to `openrouter` and `openai/gpt-5-mini` and the user presses Edit
 - **THEN** the provider select MUST show OpenRouter and the model field MUST hold `openai/gpt-5-mini`
 
 #### Scenario: Pick a judge model from the list
@@ -424,7 +424,7 @@ The Chat section SHALL show a "Claim check judge" block under the Chat choice. T
 
 #### Scenario: Remove the judge
 
-- **WHEN** the judge comes from `omrg.jsonc` and the user presses Remove
+- **WHEN** the judge comes from `omrs.jsonc` and the user presses Remove
 - **THEN** the page MUST send the clear request and MUST show the default judge with the source "default"
 
 #### Scenario: Locked judge

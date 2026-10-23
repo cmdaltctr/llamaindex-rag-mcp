@@ -34,10 +34,10 @@ from tests.unit.test_web_runs_support import (  # noqa: E402
     wait_run,
 )
 
-from omrg.core.workspace import ArtefactStore, RunService  # noqa: E402
-from omrg.core.workspace.artefacts import MAX_TEXT_BYTES  # noqa: E402
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
-from omrg.transports.api.runs_wiring import RunAdmitter, build_executor  # noqa: E402
+from omrs.core.workspace import ArtefactStore, RunService  # noqa: E402
+from omrs.core.workspace.artefacts import MAX_TEXT_BYTES  # noqa: E402
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
+from omrs.transports.api.runs_wiring import RunAdmitter, build_executor  # noqa: E402
 
 COLLECTION = "documents"
 
@@ -166,7 +166,7 @@ async def test_stored_node_summaries_are_bounded_and_redacted(tmp_path: Path) ->
         saved_revision,
     )
 
-    from omrg.core.pipelines import NodeOutcome, NodeStatus
+    from omrs.core.pipelines import NodeOutcome, NodeStatus
 
     executor, admitter = FakeExecutor(), FakeAdmitter()
     executor.nodes = (

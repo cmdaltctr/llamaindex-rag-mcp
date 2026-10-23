@@ -20,7 +20,7 @@ function rangeMessage(field: ProviderField): string {
 /**
  * One address (`url`) or whole number (`int`) of a provider as a setting row.
  * A value from the environment or `.env` is read-only; every other source can
- * be edited, and "Use default" removes the value from `omrg.jsonc`.
+ * be edited, and "Use default" removes the value from `omrs.jsonc`.
  */
 export function ProviderValueField({ provider, field, configDir, onTyped }: ProviderValueFieldProps) {
   const save = useSaveProviderFields(provider);

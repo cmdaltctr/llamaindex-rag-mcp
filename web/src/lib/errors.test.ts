@@ -84,7 +84,7 @@ describe("describeSaveError", () => {
   });
 
   it("shows the revision conflict of a 409 with a Reload action", () => {
-    const message = "omrg.jsonc changed on disk. Reload to see the new values.";
+    const message = "omrs.jsonc changed on disk. Reload to see the new values.";
     const friendly = describeSaveError(refused(409, { status: "error", message }));
     expect(friendly.message).toBe(message);
     expect(friendly.action).toEqual({ kind: "reload", label: "Reload" });

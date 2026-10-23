@@ -28,7 +28,7 @@ profile turns manṭiq on by using an Answer pipeline built from the new
 
 ## What Changes
 
-- New package `src/omrg/core/mantiq/`. All manṭiq code lives here:
+- New package `src/omrs/core/mantiq/`. All manṭiq code lives here:
   - `records.py`: frozen records `ConceptFrame`, `ClaimRecord`,
     `InferenceRecord`, `InferenceChecks`, serialisable without a model.
   - `params.py`: pydantic node parameters for the three operations.
@@ -52,7 +52,7 @@ profile turns manṭiq on by using an Answer pipeline built from the new
   - `templates.py`: the `answer-mantiq` graph and one named graph per
     experiment cell.
 - One registration line in `build_operation_catalogue`
-  (`src/omrg/compose_pipelines.py:59-70`). Registering an operation changes
+  (`src/omrs/compose_pipelines.py:59-70`). Registering an operation changes
   nothing until a graph uses it.
 - The `answer-mantiq` template is published by `GET /v1/pipeline-templates`
   after the three canonical templates, which stay unchanged.
@@ -84,7 +84,7 @@ non-canonical graphs, so they also stay as they are.
 
 ## Impact
 
-- **Code**: new `src/omrg/core/mantiq/` (each file under 500 lines). One
+- **Code**: new `src/omrs/core/mantiq/` (each file under 500 lines). One
   import and one call in `build_operation_catalogue`. `compose_pipelines.py`
   is at the 500-line ceiling, so `request_limit_issues` and its two helpers
   move to `compose_pipeline_runs.py` first, with no behaviour change.
@@ -98,11 +98,11 @@ non-canonical graphs, so they also stay as they are.
   decided later; any such model runs through Paper 1's adapter module.
 - **Prerequisite from Paper 1**: `authority-aware-retrieval` owns the
   `authority_status` passthrough in `_evidence_rows`
-  (`src/omrg/core/answer/evidence.py:28`). The gates read the field when it is
+  (`src/omrs/core/answer/evidence.py:28`). The gates read the field when it is
   present and behave normally when it is absent. This change does not edit
   `evidence.py`.
 - **Import contracts**: a new contract forbids every base package from
-  importing `omrg.core.mantiq`. `omrg.core.mantiq` joins the
+  importing `omrs.core.mantiq`. `omrs.core.mantiq` joins the
   `core-business-avoids-providers-transports` source list and may not import
   `core.retrieval` or `core.ingestion`. No new ignore entries.
 - **API**: `PipelineTemplate.name` gains `answer-mantiq`. `AnswerResponse`

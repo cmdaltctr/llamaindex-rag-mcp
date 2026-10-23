@@ -32,14 +32,14 @@ from tests.test_metadata_store_ownership import _Capture, _prompt_categories
 from tests.unit.test_engine_pipelines_support import FakeStore, build_engine, chunks
 from tests.unit.test_ingestion_graph_adapters_support import offline_settings
 
-from omrg.core.chunking import registry as chunking_registry
-from omrg.core.ingestion import graph_adapters
-from omrg.core.ingestion.backends.orchestrator import BackendRead
-from omrg.core.ingestion.graph_adapters import canonical_ingestion_definition
-from omrg.core.metadata import extractor
-from omrg.core.pipelines import RunStatus
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
-from omrg.engine import Engine
+from omrs.core.chunking import registry as chunking_registry
+from omrs.core.ingestion import graph_adapters
+from omrs.core.ingestion.backends.orchestrator import BackendRead
+from omrs.core.ingestion.graph_adapters import canonical_ingestion_definition
+from omrs.core.metadata import extractor
+from omrs.core.pipelines import RunStatus
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.engine import Engine
 
 _SOURCES = ["guide.md", "nested/appendix.md", "notes.txt"]
 
@@ -264,7 +264,7 @@ def capture(monkeypatch: pytest.MonkeyPatch) -> _Capture:
         return None
 
     for target in ("_common", "ollama", "llamacpp"):
-        monkeypatch.setattr(f"omrg.core.metadata.{target}._retry_sleep", _no_sleep)
+        monkeypatch.setattr(f"omrs.core.metadata.{target}._retry_sleep", _no_sleep)
     return fake
 
 

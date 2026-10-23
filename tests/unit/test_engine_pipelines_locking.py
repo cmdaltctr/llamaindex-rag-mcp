@@ -19,8 +19,8 @@ from tests.unit.test_engine_pipelines_support import (
     retrieval_graph,
 )
 
-from omrg.compose_pipelines import EnginePipelines
-from omrg.core.pipelines import (
+from omrs.compose_pipelines import EnginePipelines
+from omrs.core.pipelines import (
     EffectClass,
     NodeContext,
     NodeOutput,

@@ -16,7 +16,7 @@ async function fakeApi(): Promise<string> {
     server: { port: 0, host: "127.0.0.1" },
     plugins: [
       {
-        name: "fake-omrg-api",
+        name: "fake-omrs-api",
         configureServer(server) {
           server.middlewares.use((request, response, next) => {
             // Without Node typings the request type has no fields.
@@ -36,7 +36,7 @@ async function fakeApi(): Promise<string> {
 
 describe("dev proxy", () => {
   it("forwards /v1 requests to the local web transport instead of the dev server 404", async () => {
-    vi.stubEnv("OMRG_API_URL", (await fakeApi()).replace(/\/$/, ""));
+    vi.stubEnv("OMRS_API_URL", (await fakeApi()).replace(/\/$/, ""));
     const dev = await createServer({ configFile: "vite.config.ts", logLevel: "silent", server: { port: 0, host: "127.0.0.1" } });
     servers.push(dev);
     await dev.listen();
@@ -46,8 +46,8 @@ describe("dev proxy", () => {
     expect(await response.json()).toEqual({ path: "/v1/collections?x=1" });
   }, 20_000);
 
-  it("defaults to the omrg web port", async () => {
-    vi.stubEnv("OMRG_API_URL", "");
+  it("defaults to the omrs web port", async () => {
+    vi.stubEnv("OMRS_API_URL", "");
     const config = (await import("../../vite.config")).default;
     const resolved = typeof config === "function" ? await config({ mode: "test", command: "serve" }) : config;
     expect(resolved.server?.proxy).toMatchObject({ "/v1": { target: "http://127.0.0.1:8765" } });

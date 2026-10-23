@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from llama_index.core import Document
 
-from omrg.core.ingestion.backends.orchestrator import BackendRead
-from omrg.core.ingestion.chunker import read_and_chunk_file_async
+from omrs.core.ingestion.backends.orchestrator import BackendRead
+from omrs.core.ingestion.chunker import read_and_chunk_file_async
 
 
 @pytest.mark.asyncio
@@ -39,9 +39,9 @@ async def test_normalisation_precedes_both_chunking_paths(
     source: str,
     expected: str,
 ) -> None:
-    from omrg.core.chunking import sentence
-    from omrg.core.ingestion import chunker
-    from omrg.core.metadata import extractor
+    from omrs.core.chunking import sentence
+    from omrs.core.ingestion import chunker
+    from omrs.core.metadata import extractor
 
     async def read(*args, **kwargs) -> BackendRead:
         return BackendRead([Document(text=source)], structured, "plain")

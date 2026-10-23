@@ -28,10 +28,10 @@ from tests.unit.test_ingestion_graph_adapters_support import (
 )
 from tests.unit.test_ingestion_graph_fingerprint import _rename
 
-from omrg.core.ingestion import pipeline
-from omrg.core.ingestion.graph_fingerprint import SHAPE_SCHEMA, graph_shape, ingestion_shape
-from omrg.core.ingestion.source_state import build_index_identity
-from omrg.core.pipelines import parse_definition
+from omrs.core.ingestion import pipeline
+from omrs.core.ingestion.graph_fingerprint import SHAPE_SCHEMA, graph_shape, ingestion_shape
+from omrs.core.ingestion.source_state import build_index_identity
+from omrs.core.pipelines import parse_definition
 
 
 def test_standard_identity_digest_is_unchanged(effective_settings: Any) -> None:
@@ -61,7 +61,7 @@ async def _graph(data: dict, root: Path, settings: Any, store: Any) -> list[dict
 
 @pytest.fixture
 def ingest_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, effective_settings: Any):
-    from omrg.core.vectordb import get_default_store
+    from omrs.core.vectordb import get_default_store
 
     pin_detection(monkeypatch)
     return copy_sources(tmp_path), offline_settings(effective_settings), get_default_store()

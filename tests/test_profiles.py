@@ -16,13 +16,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from omrg.config import Settings, _load_profile_bundle
-from omrg.core.profiles import (
+from omrs.config import Settings, _load_profile_bundle
+from omrs.core.profiles import (
     ProfileResolver,
     apply_profile_change,
     generate_safety_contract,
 )
-from omrg.core.profiles.resolver import _bundle_to_effective
+from omrs.core.profiles.resolver import _bundle_to_effective
 
 # ── Helpers ────────────────────────────────────────────────────────────
 
@@ -236,7 +236,7 @@ class TestTwoTierResolution:
 
     def test_reranker_model_loaded_once_per_process(self) -> None:
         """The reranker model is loaded at most once (Tier 1)."""
-        from omrg.core.retrieval.reranker import CrossEncoderReranker
+        from omrs.core.retrieval.reranker import CrossEncoderReranker
 
         # Two instances share the same ONNX session cache.
         r1 = CrossEncoderReranker()
@@ -268,7 +268,7 @@ class TestTwoTierResolution:
             }
         )
         resolver = ProfileResolver(store=store, server_profile="documents")
-        with patch("omrg.core.profiles.resolver._load_profile_bundle") as mock_load:
+        with patch("omrs.core.profiles.resolver._load_profile_bundle") as mock_load:
             mock_load.return_value = {"TOP_K": 10, "RERANK_ENABLED": "true"}
             resolver.resolve("a")
             resolver.resolve("b")
@@ -277,8 +277,8 @@ class TestTwoTierResolution:
 
     def test_profile_reranker_enabled_overrides_global_default(self) -> None:
         """Profile-resolved reranker takes precedence over global default."""
-        from omrg.core.retrieval.policy import _resolve_rerank_policy
-        from omrg.core.settings import EffectiveSettings
+        from omrs.core.retrieval.policy import _resolve_rerank_policy
+        from omrs.core.settings import EffectiveSettings
 
         # Global default is off, but profile says on.
         effective, reason = _resolve_rerank_policy(
@@ -289,8 +289,8 @@ class TestTwoTierResolution:
 
     def test_profile_reranker_disabled_overrides_global_default(self) -> None:
         """Profile-resolved reranker disabled takes precedence."""
-        from omrg.core.retrieval.policy import _resolve_rerank_policy
-        from omrg.core.settings import EffectiveSettings
+        from omrs.core.retrieval.policy import _resolve_rerank_policy
+        from omrs.core.settings import EffectiveSettings
 
         effective, reason = _resolve_rerank_policy(
             None, "semantic query", EffectiveSettings(), profile_reranker_enabled=False
@@ -300,8 +300,8 @@ class TestTwoTierResolution:
 
     def test_explicit_rerank_bypasses_profile(self) -> None:
         """Explicit rerank=True bypasses profile-resolved enablement."""
-        from omrg.core.retrieval.policy import _resolve_rerank_policy
-        from omrg.core.settings import EffectiveSettings
+        from omrs.core.retrieval.policy import _resolve_rerank_policy
+        from omrs.core.settings import EffectiveSettings
 
         effective, reason = _resolve_rerank_policy(
             True, "query", EffectiveSettings(), profile_reranker_enabled=False
@@ -324,7 +324,7 @@ class TestContentTypeDispatch:
         # activates when content_type is None (ambiguous).
         import inspect
 
-        from omrg.core.ingestion.chunker import read_and_chunk_file_async
+        from omrs.core.ingestion.chunker import read_and_chunk_file_async
 
         sig = inspect.signature(read_and_chunk_file_async)
         assert "fallback_strategy" in sig.parameters
@@ -333,7 +333,7 @@ class TestContentTypeDispatch:
         """The chunker accepts a fallback_strategy parameter."""
         import inspect
 
-        from omrg.core.ingestion.chunker import read_and_chunk_file_async
+        from omrs.core.ingestion.chunker import read_and_chunk_file_async
 
         sig = inspect.signature(read_and_chunk_file_async)
         assert sig.parameters["fallback_strategy"].default is None
@@ -415,10 +415,10 @@ class TestMCPProfileChangeFlow:
     async def test_mcp_preview_returns_confirm_required(self) -> None:
         """The MCP tool returns a preview with confirm_required=True."""
         from conftest import build_mcp_server, direct_ctx
-        from omrg.transports.mcp import change_collection_profile
+        from omrs.transports.mcp import change_collection_profile
 
         ctx = direct_ctx(build_mcp_server())
-        with patch("omrg.transports.mcp.profile.generate_safety_contract") as mock_gen:
+        with patch("omrs.transports.mcp.profile.generate_safety_contract") as mock_gen:
             mock_gen.return_value = {"collection": "coll", "chunk_count": 0}
             result = await change_collection_profile(
                 collection="coll", profile="codebase", confirm=False, ctx=ctx
@@ -430,10 +430,10 @@ class TestMCPProfileChangeFlow:
     async def test_mcp_confirm_applies_change(self) -> None:
         """The MCP tool applies the change when confirm=True."""
         from conftest import build_mcp_server, direct_ctx
-        from omrg.transports.mcp import change_collection_profile
+        from omrs.transports.mcp import change_collection_profile
 
         server = build_mcp_server()
-        with patch("omrg.transports.mcp.profile.apply_profile_change") as mock_apply:
+        with patch("omrs.transports.mcp.profile.apply_profile_change") as mock_apply:
             mock_apply.return_value = {
                 "status": "ok",
                 "collection": "coll",
@@ -451,7 +451,7 @@ class TestMCPProfileChangeFlow:
     async def test_mcp_rejects_invalid_profile(self) -> None:
         """The MCP tool rejects an invalid profile name."""
         from conftest import build_mcp_server, direct_ctx
-        from omrg.transports.mcp import change_collection_profile
+        from omrs.transports.mcp import change_collection_profile
 
         result = await change_collection_profile(
             collection="coll", profile="invalid", confirm=False, ctx=direct_ctx(build_mcp_server())
@@ -461,7 +461,7 @@ class TestMCPProfileChangeFlow:
     async def test_mcp_rejects_hybrid_profile(self) -> None:
         """The MCP tool rejects 'hybrid' as a target profile."""
         from conftest import build_mcp_server, direct_ctx
-        from omrg.transports.mcp import change_collection_profile
+        from omrs.transports.mcp import change_collection_profile
 
         result = await change_collection_profile(
             collection="coll", profile="hybrid", confirm=False, ctx=direct_ctx(build_mcp_server())
@@ -546,7 +546,7 @@ class TestBundleValidation:
         Silently ignoring flat keys would reintroduce the exact failure mode
         this change exists to remove: config that looks applied but is not.
         """
-        import omrg.config.sources as _sources
+        import omrs.config.sources as _sources
 
         bundle_dir = tmp_path / "profiles"
         bundle_dir.mkdir()
@@ -573,7 +573,7 @@ class TestTaxonomyModeWiring:
         """file_type mode sets category from content_type, not LLM classification."""
         import inspect
 
-        from omrg.core.ingestion.chunker import read_and_chunk_file_async
+        from omrs.core.ingestion.chunker import read_and_chunk_file_async
 
         sig = inspect.signature(read_and_chunk_file_async)
         assert "taxonomy_mode" in sig.parameters
@@ -605,9 +605,9 @@ class TestCLIWatcherWiring:
     @pytest.mark.parametrize(
         "module_path",
         [
-            "omrg.transports.cli.ingest",
-            "omrg.transports.cli.search",
-            "omrg.daemon.watcher",
+            "omrs.transports.cli.ingest",
+            "omrs.transports.cli.search",
+            "omrs.daemon.watcher",
         ],
     )
     def test_module_has_no_bare_profile_resolver_construction(self, module_path: str) -> None:
@@ -630,7 +630,7 @@ class TestCLIWatcherWiring:
 
     def test_cli_ingest_uses_composition_root_resolver(self) -> None:
         """The CLI ingest command resolves its profile via the composition root."""
-        from omrg import compose
+        from omrs import compose
 
         sentinel = compose.build_profile_resolver()
         with patch.object(compose, "build_profile_resolver", return_value=sentinel) as spy:
@@ -643,7 +643,7 @@ class TestCLIWatcherWiring:
         """The CLI search command forwards effective_settings to search()."""
         import inspect
 
-        from omrg.transports.cli import search
+        from omrs.transports.cli import search
 
         source = inspect.getsource(search)
         assert "effective_settings" in source
@@ -653,7 +653,7 @@ class TestCLIWatcherWiring:
         """The watcher resolves the collection's profile before ingesting."""
         import inspect
 
-        from omrg.daemon.watcher import DocumentIngestHandler
+        from omrs.daemon.watcher import DocumentIngestHandler
 
         source = inspect.getsource(DocumentIngestHandler._dispatch_ingest)
         assert "effective_settings" in source
@@ -714,7 +714,7 @@ class TestContractCoverage:
 
     def test_lever_impact_unchanged_value(self) -> None:
         """_lever_impact marks unchanged values correctly."""
-        from omrg.core.profiles.contract import _lever_impact
+        from omrs.core.profiles.contract import _lever_impact
 
         impact = _lever_impact("top_k", 10, 10, "query-time")
         assert "unchanged" in impact["change"]
@@ -737,14 +737,14 @@ class TestResolverCoverage:
 
     def test_parse_profile_bool_with_native_bool(self) -> None:
         """_parse_profile_bool returns native bools directly."""
-        from omrg.core.profiles.resolver import _parse_profile_bool
+        from omrs.core.profiles.resolver import _parse_profile_bool
 
         assert _parse_profile_bool(True) is True
         assert _parse_profile_bool(False) is False
 
     def test_parse_profile_bool_with_non_str_non_bool(self) -> None:
         """_parse_profile_bool coerces other types via bool()."""
-        from omrg.core.profiles.resolver import _parse_profile_bool
+        from omrs.core.profiles.resolver import _parse_profile_bool
 
         assert _parse_profile_bool(1) is True
         assert _parse_profile_bool(0) is False
@@ -792,7 +792,7 @@ class TestResolverCoverage:
         store = _make_mock_store()
         resolver = ProfileResolver(store=store, server_profile="documents")
         with patch(
-            "omrg.core.profiles.resolver._load_profile_bundle",
+            "omrs.core.profiles.resolver._load_profile_bundle",
             return_value={},
         ):
             effective = resolver._load_effective("documents")
@@ -930,8 +930,8 @@ class TestUserProfileResolution:
             self._resolver("my-notes", None).resolve("notes")
         message = str(excinfo.value)
         assert "'notes'" in message and "'my-notes'" in message
-        assert "~/.omrg/workspace/workspace.db" in message
-        assert "omrg web" in message
+        assert "~/.omrs/workspace/workspace.db" in message
+        assert "omrs web" in message
         assert "'documents' or 'codebase'" in message
 
     def test_hybrid_tag_is_still_rejected_with_a_catalogue(self) -> None:

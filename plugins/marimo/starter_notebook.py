@@ -1,27 +1,27 @@
-"""OMRG starter notebook for marimo (design D10, task 8.6).
+"""OMRS starter notebook for marimo (design D10, task 8.6).
 
 Open this file with the registered marimo plugin, inside an approved
 experiment workspace. The notebook submits graph runs through the same
-protected OMRG graph API as the canvas, in one experiment context only.
+protected OMRS graph API as the canvas, in one experiment context only.
 
-When OMRG opens the editor, the notebook connects by itself. OMRG
-writes a private connection file, ``omrg_connection.json`` (mode 600),
-into the editor's private launch directory and sets ``OMRG_CONNECTION_FILE`` to its path. The file
+When OMRS opens the editor, the notebook connects by itself. OMRS
+writes a private connection file, ``omrs_connection.json`` (mode 600),
+into the editor's private launch directory and sets ``OMRS_CONNECTION_FILE`` to its path. The file
 holds the API address, the experiment context id and the path of a
 separate private token file. That token is a new bearer credential bound
-to the experiment context. OMRG revokes it and deletes both files when
+to the experiment context. OMRS revokes it and deletes both files when
 the editor stops.
 
 For an editor that you start yourself, set these environment variables
 in its shell instead (the notebook never stores or prints the token):
 
-* ``OMRG_API_URL``: the loopback server address, for example
+* ``OMRS_API_URL``: the loopback server address, for example
   ``http://127.0.0.1:8765``.
-* ``OMRG_TOKEN_FILE``: a private file (mode 600) that holds a bearer
-  credential bound to the experiment context. ``OMRG_TOKEN`` also works.
-* ``OMRG_EXPERIMENT_CONTEXT``: the experiment context id (``exp_...``).
+* ``OMRS_TOKEN_FILE``: a private file (mode 600) that holds a bearer
+  credential bound to the experiment context. ``OMRS_TOKEN`` also works.
+* ``OMRS_EXPERIMENT_CONTEXT``: the experiment context id (``exp_...``).
 
-``OMRG_CONNECTION_FILE`` takes precedence over these variables. The
+``OMRS_CONNECTION_FILE`` takes precedence over these variables. The
 notebook refuses a connection file or a token file that other users can
 read or that has any mode bit wider than 600.
 
@@ -63,7 +63,7 @@ class ApiConfigError(RuntimeError):
 
 @app.class_definition
 class ApiError(RuntimeError):
-    """The OMRG API refused a request. The message never holds a credential."""
+    """The OMRS API refused a request. The message never holds a credential."""
 
     def __init__(self, status: int, body: object) -> None:
         self.status = status
@@ -71,7 +71,7 @@ class ApiError(RuntimeError):
         self.code = self.body.get("code")
         message = str(self.body.get("message") or "no message")
         suffix = f" ({self.code})" if self.code else ""
-        super().__init__(f"OMRG API returned {status}: {message}{suffix}")
+        super().__init__(f"OMRS API returned {status}: {message}{suffix}")
 
 
 @app.function
@@ -102,7 +102,7 @@ def check_loopback_url(base_url: str) -> str:
     parts = urllib.parse.urlsplit(base_url)
     if parts.scheme != "http" or parts.hostname not in {"127.0.0.1", "localhost", "::1"}:
         raise ApiConfigError(
-            "OMRG_API_URL must be the loopback address that `omrg web` printed, "
+            "OMRS_API_URL must be the loopback address that `omrs web` printed, "
             "for example http://127.0.0.1:8765."
         )
     return base_url.rstrip("/")
@@ -127,15 +127,15 @@ def read_private_file(path: Path, label: str) -> str:
 
 @app.function
 def connection_from_file(environ: dict):
-    """Return ``{api_url, experiment_context, token}`` from ``OMRG_CONNECTION_FILE``.
+    """Return ``{api_url, experiment_context, token}`` from ``OMRS_CONNECTION_FILE``.
 
-    Returns ``None`` when the variable is not set. OMRG sets it when it
+    Returns ``None`` when the variable is not set. OMRS sets it when it
     opens the editor.
     """
-    path = environ.get("OMRG_CONNECTION_FILE", "").strip()
+    path = environ.get("OMRS_CONNECTION_FILE", "").strip()
     if not path:
         return None
-    text = read_private_file(Path(path), "OMRG_CONNECTION_FILE")
+    text = read_private_file(Path(path), "OMRS_CONNECTION_FILE")
     try:
         details = json.loads(text)
     except ValueError:
@@ -145,8 +145,8 @@ def connection_from_file(environ: dict):
         isinstance(details.get(key), str) and details[key].strip() for key in keys
     ):
         raise ApiConfigError(
-            "OMRG_CONNECTION_FILE must hold api_url, experiment_context and token_file. "
-            "Stop the editor and open it again from OMRG."
+            "OMRS_CONNECTION_FILE must hold api_url, experiment_context and token_file. "
+            "Stop the editor and open it again from OMRS."
         )
     token = read_private_file(Path(details["token_file"]), "The connection token file").strip()
     if not token:
@@ -160,27 +160,27 @@ def connection_from_file(environ: dict):
 
 @app.function
 def read_token(environ: dict) -> str:
-    """Return the bearer token from ``OMRG_TOKEN_FILE`` or ``OMRG_TOKEN``.
+    """Return the bearer token from ``OMRS_TOKEN_FILE`` or ``OMRS_TOKEN``.
 
     A token file must be private to its owner (mode 600).
     """
-    path = environ.get("OMRG_TOKEN_FILE")
+    path = environ.get("OMRS_TOKEN_FILE")
     if path:
-        text = read_private_file(Path(path), "OMRG_TOKEN_FILE").strip()
+        text = read_private_file(Path(path), "OMRS_TOKEN_FILE").strip()
         if text:
             return text
-    token = environ.get("OMRG_TOKEN", "").strip()
+    token = environ.get("OMRS_TOKEN", "").strip()
     if not token:
         raise ApiConfigError(
-            "Set OMRG_TOKEN_FILE (or OMRG_TOKEN) to a bearer credential that is bound "
-            "to the experiment context. Issue it in the OMRG Experiments view."
+            "Set OMRS_TOKEN_FILE (or OMRS_TOKEN) to a bearer credential that is bound "
+            "to the experiment context. Issue it in the OMRS Experiments view."
         )
     return token
 
 
 @app.class_definition
 class ApiClient:
-    """Minimal OMRG API client. ``repr`` and errors never show the token."""
+    """Minimal OMRS API client. ``repr`` and errors never show the token."""
 
     def __init__(self, base_url: str, token: str, *, transport=None) -> None:
         self.base_url = check_loopback_url(base_url)
@@ -192,14 +192,14 @@ class ApiClient:
 
     @classmethod
     def from_environment(cls, environ=None, *, transport=None):
-        """Build a client from ``OMRG_CONNECTION_FILE``, else ``OMRG_API_URL`` and the token."""
+        """Build a client from ``OMRS_CONNECTION_FILE``, else ``OMRS_API_URL`` and the token."""
         env = os.environ if environ is None else environ
         connection = connection_from_file(env)
         if connection is not None:
             return cls(connection["api_url"], connection["token"], transport=transport)
-        base_url = env.get("OMRG_API_URL")
+        base_url = env.get("OMRS_API_URL")
         if not base_url:
-            raise ApiConfigError("Set OMRG_API_URL to the address that `omrg web` printed.")
+            raise ApiConfigError("Set OMRS_API_URL to the address that `omrs web` printed.")
         return cls(base_url, read_token(env), transport=transport)
 
     def request(self, method: str, path: str, body: object = None) -> object:
@@ -213,14 +213,14 @@ class ApiClient:
 
 @app.function
 def experiment_context_from_environment(environ=None) -> str:
-    """Return the context id from ``OMRG_CONNECTION_FILE``, else ``OMRG_EXPERIMENT_CONTEXT``."""
+    """Return the context id from ``OMRS_CONNECTION_FILE``, else ``OMRS_EXPERIMENT_CONTEXT``."""
     env = os.environ if environ is None else environ
     connection = connection_from_file(env)
     if connection is not None:
         return connection["experiment_context"]
-    context_id = env.get("OMRG_EXPERIMENT_CONTEXT", "").strip()
+    context_id = env.get("OMRS_EXPERIMENT_CONTEXT", "").strip()
     if not context_id:
-        raise ApiConfigError("Set OMRG_EXPERIMENT_CONTEXT to the experiment context id.")
+        raise ApiConfigError("Set OMRS_EXPERIMENT_CONTEXT to the experiment context id.")
     return context_id
 
 
@@ -432,9 +432,9 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md("""
-    # OMRG experiment
+    # OMRS experiment
 
-    This notebook runs OMRG graphs in one approved experiment context.
+    This notebook runs OMRS graphs in one approved experiment context.
     Nothing runs until you press **Run graph**.
 
     **Trust:** notebook Python runs with your user account's filesystem

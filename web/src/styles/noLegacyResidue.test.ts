@@ -24,7 +24,7 @@ const RULES: Rule[] = [
   },
   { name: "retired helper names", pattern: /\b(useLoad|messageOf|getJson|sendJson|postJson|RequestOptions)\b/, allowed: (p) => /\/api\/client\.test\.ts$/.test(p) },
   { name: "retired client-side upload limit", pattern: /\b(MAX_UPLOAD_BYTES|UPLOAD_LIMIT_LABEL)\b/ },
-  { name: "retired storage keys and state", pattern: /omrg-workspace-ui|omrg-canvas-session|inspectorOpen|readUiState|writeUiState|readSession|writeSession/, allowed: (p) => /\.test\.tsx?$/.test(p) },
+  { name: "retired storage keys and state", pattern: /omrs-workspace-ui|omrs-canvas-session|inspectorOpen|readUiState|writeUiState|readSession|writeSession/, allowed: (p) => /\.test\.tsx?$/.test(p) },
   { name: "retired view modules", pattern: /views\/shared|views\/library|views\/search|views\/ask|views\/DocumentView/ },
   { name: "legacy class names", pattern: /className=\{?["'`][^"'`]*(?<![\w-])(button|button--\w+|control|control--\w+|panel|view|view__\w+|empty-state|app-nav|app-nav__\w+|topbar|field-inline|type-(page-title|section-title|meta|code))(?![\w-])/ },
   { name: "stylesheet other than tokens.css and app.css", pattern: /^[\s\S]*$/, allowed: (p) => !p.endsWith(".css") || /\/styles\/(tokens|app)\.css$/.test(p) },

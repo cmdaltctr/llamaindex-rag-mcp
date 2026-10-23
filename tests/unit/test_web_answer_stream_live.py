@@ -28,9 +28,9 @@ from tests.unit.test_web_answer_stream_support import (  # noqa: E402
 )
 from tests.unit.test_web_documents_support import build_app  # noqa: E402
 
-from omrg.transports.api.lifespan import shutdown_runtime  # noqa: E402
-from omrg.transports.api.routes.answer_stream import stream_answer  # noqa: E402
-from omrg.transports.api.routes.documents import AnswerBody  # noqa: E402
+from omrs.transports.api.lifespan import shutdown_runtime  # noqa: E402
+from omrs.transports.api.routes.answer_stream import stream_answer  # noqa: E402
+from omrs.transports.api.routes.documents import AnswerBody  # noqa: E402
 
 
 @pytest.fixture

@@ -8,7 +8,7 @@ import { runRouter } from "./runRouter";
 
 export const TRUST =
   "Notebook Python runs with your user account's filesystem and network permissions. A dependency environment is not an operating-system sandbox. Open only notebooks you trust.";
-export const INSTALL_HINT = "Install the notebook editor outside OMRG, for example `uv tool install marimo`. OMRG never installs or updates it.";
+export const INSTALL_HINT = "Install the notebook editor outside OMRS, for example `uv tool install marimo`. OMRS never installs or updates it.";
 export const EDITOR_TOKEN = "editor-secret-7f3a";
 export const CREDENTIAL_TOKEN = "bearer-secret-91c2";
 
@@ -95,7 +95,7 @@ export function experimentsServer(initial: Partial<ServerState> = {}, extra: Rec
     "GET /v1/experiments": () => ({ status: "ok", roots: state.roots, folders: folders(state), experiments: state.entries, trust_notice: TRUST }),
     "POST /v1/experiment-folders": (body) => {
       const path = String(body.path);
-      if (state.roots.length === 0) return json({ status: "error", message: "No experiment root is approved. Restart with `omrg web --experiment-root`." }, 409);
+      if (state.roots.length === 0) return json({ status: "error", message: "No experiment root is approved. Restart with `omrs web --experiment-root`." }, 409);
       if (path.split("/").includes("..")) return json({ status: "error", code: "traversal", message: "RAW traversal text" }, 400);
       if (state.dirs.includes(path)) return json({ status: "error", code: "exists", message: "RAW exists text" }, 409);
       state.dirs = [...state.dirs, path];
@@ -150,7 +150,7 @@ export function experimentsServer(initial: Partial<ServerState> = {}, extra: Rec
   const base = documentsServer(handlers);
   const runs = runRouter({ runs: state.runs, results: state.results, events: state.events });
   const fetchImpl = vi.fn<FetchLike>(async (path, init) => {
-    const url = new URL(path, "http://omrg.test");
+    const url = new URL(path, "http://omrs.test");
     const method = init?.method ?? "GET";
     // A handler passed in `extra` overrides the run routes, for example to make the list fail.
     if (!runs.handles(url.pathname) || `${method} ${url.pathname}` in extra) return base.fetchImpl(path, init);

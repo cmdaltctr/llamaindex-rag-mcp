@@ -1,13 +1,13 @@
 # Library Usage
 
-The public `omrg` library API for use in your own Python code.
+The public `omrs` library API for use in your own Python code.
 
 ---
 
 ## Import
 
 ```python
-from omrg import Engine, EffectiveSettings
+from omrs import Engine, EffectiveSettings
 ```
 
 Importing the package constructs nothing. No settings are resolved, no
@@ -16,9 +16,9 @@ providers or stores are built, and no process-global state is mutated.
 `__version__` comes from package metadata, not a hard-coded constant:
 
 ```python
-import omrg
+import omrs
 
-print(omrg.__version__)  # e.g. "2.3.0"
+print(omrs.__version__)  # e.g. "2.3.0"
 ```
 
 ---
@@ -35,7 +35,7 @@ The simplest path reads `.env` and `defaults.yaml`. It delegates to
 `compose.build_engine()` and installs nothing as a process default:
 
 ```python
-from omrg import Engine
+from omrs import Engine
 
 engine = Engine.from_environment()
 ```
@@ -45,8 +45,8 @@ engine = Engine.from_environment()
 For tests or multi-engine setups, pass already-composed dependencies:
 
 ```python
-from omrg import Engine, EffectiveSettings
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
+from omrs import Engine, EffectiveSettings
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
 settings = EffectiveSettings(...)
 store = LanceVectorStore(uri="/path/to/lancedb")
@@ -55,7 +55,7 @@ engine = Engine(settings, store=store, embed_model=my_embedder)
 
 The constructor accepts the dependencies and constructs nothing itself.
 Backend classes such as `LanceVectorStore` are internal and can move in any
-release. The public API is `omrg.Engine`.
+release. The public API is `omrs.Engine`.
 See [Configuration](configuration.md) for the full settings schema.
 
 ---
@@ -121,12 +121,12 @@ Start from a canonical template. `pipeline_templates(engine)` returns the
 `ingestion`, `search` and `answer` graphs, shaped for this engine:
 
 > **Advanced imports.** The examples in this guide import three names that
-> are not in `omrg.__all__`. They are internal and can change without a major
+> are not in `omrs.__all__`. They are internal and can change without a major
 > version:
 >
-> - `pipeline_templates` from `omrg.compose_pipelines` (template helper).
-> - `RunCancellation` from `omrg.core.pipelines` (cancellation token).
-> - `LanceVectorStore` from `omrg.core.vectordb.lancedb.store` (vector store).
+> - `pipeline_templates` from `omrs.compose_pipelines` (template helper).
+> - `RunCancellation` from `omrs.core.pipelines` (cancellation token).
+> - `LanceVectorStore` from `omrs.core.vectordb.lancedb.store` (vector store).
 >
 > The first two are not necessary. You can send your own `PipelineDefinition`
 > to `Engine.run_pipeline()`, and the `cancellation` argument is optional.
@@ -135,8 +135,8 @@ Start from a canonical template. `pipeline_templates(engine)` returns the
 ```python
 import asyncio
 
-from omrg.compose_pipelines import pipeline_templates
-from omrg.core.pipelines import RunCancellation
+from omrs.compose_pipelines import pipeline_templates
+from omrs.core.pipelines import RunCancellation
 
 search = next(t for t in pipeline_templates(engine) if t.name == "search")
 
@@ -183,8 +183,8 @@ graph or invalid inputs. A runtime failure returns a result with
 Construct two engines with different stores and embedders. They do not share state:
 
 ```python
-from omrg import Engine, EffectiveSettings
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
+from omrs import Engine, EffectiveSettings
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
 docs = Engine(
     EffectiveSettings(...), store=LanceVectorStore(uri="./docs.lance"), embed_model=doc_embedder

@@ -22,15 +22,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from omrg.config import Settings
-from omrg.core.vectordb.chroma.store import (
+from omrs.config import Settings
+from omrs.core.vectordb.chroma.store import (
     EmbeddingIdentity,
     build_chroma_vector_store,
 )
-from omrg.core.vectordb.naming import experiment_collection_name
+from omrs.core.vectordb.naming import experiment_collection_name
 
 if TYPE_CHECKING:
-    from omrg.core.vectordb.base import VectorStore
+    from omrs.core.vectordb.base import VectorStore
 
 
 @dataclass(frozen=True)
@@ -112,7 +112,7 @@ class ExperimentStorageConfig:
         if self.backend == "lancedb":
             if self.mode == "cloud":
                 raise ValueError("lancedb backend has no cloud mode; use chroma or local")
-            from omrg.core.vectordb.lancedb.store import LanceVectorStore
+            from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
             return LanceVectorStore(
                 uri=self.persist_dir or settings.lancedb_uri,
@@ -268,8 +268,8 @@ def identity_embed_model(model: str):
     Returns:
         The constructed LlamaIndex embedding model.
     """
-    from omrg.compose import build_embed_model
-    from omrg.config import Settings
+    from omrs.compose import build_embed_model
+    from omrs.config import Settings
 
     return build_embed_model(
         Settings(embed_provider="local", local_backend="ollama", embed_model=model)

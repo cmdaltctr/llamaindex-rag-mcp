@@ -1,4 +1,4 @@
-"""Shared fakes for the ``omrg web`` login item command tests.
+"""Shared fakes for the ``omrs web`` login item command tests.
 
 One :class:`Harness` replaces every outside effect of the commands: the
 home folder, the platform, ``launchctl``, the health check, the clock,
@@ -16,8 +16,8 @@ from typing import Any
 import pytest
 from typer.testing import CliRunner
 
-from omrg.transports.cli import app as cli_app
-from omrg.transports.cli import web_login_item as wl
+from omrs.transports.cli import app as cli_app
+from omrs.transports.cli import web_login_item as wl
 
 runner = CliRunner()
 
@@ -40,11 +40,11 @@ class Harness:
         self.home.mkdir()
         self.cwd = tmp_path / "cwd"
         self.cwd.mkdir()
-        self.command = tmp_path / "tool" / "bin" / "omrg"
+        self.command = tmp_path / "tool" / "bin" / "omrs"
         self.command.parent.mkdir(parents=True)
         self.command.write_text("#!/bin/sh\n", encoding="utf-8")
         monkeypatch.setenv("HOME", str(self.home))
-        monkeypatch.delenv("OMRG_CONFIG_DIR", raising=False)
+        monkeypatch.delenv("OMRS_CONFIG_DIR", raising=False)
         monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
         monkeypatch.chdir(self.cwd)
 
@@ -122,11 +122,11 @@ class Harness:
 
     @property
     def plist(self) -> Path:
-        return self.home / "Library" / "LaunchAgents" / "com.omrg.web.plist"
+        return self.home / "Library" / "LaunchAgents" / "com.omrs.web.plist"
 
     @property
     def error_log(self) -> Path:
-        return self.home / "Library" / "Logs" / "omrg" / "com.omrg.web.err.log"
+        return self.home / "Library" / "Logs" / "omrs" / "com.omrs.web.err.log"
 
     def verbs(self) -> list[str]:
         """The launchctl verbs called so far, in order."""
@@ -159,10 +159,10 @@ class Harness:
         plan.plist_path.write_bytes(wl.core.render_plist(plan))
 
     def write_link(
-        self, port: int = 8765, fragment: str = "omrg_bs_SECRET", workspace: Path | None = None
+        self, port: int = 8765, fragment: str = "omrs_bs_SECRET", workspace: Path | None = None
     ) -> Path:
         """Write the link file where the workspace keeps it (default workspace if none)."""
-        link = (workspace or self.home / ".omrg" / "workspace") / "launch-link"
+        link = (workspace or self.home / ".omrs" / "workspace") / "launch-link"
         link.parent.mkdir(parents=True, exist_ok=True)
         link.write_text(f"http://127.0.0.1:{port}/#bootstrap={fragment}\n", encoding="utf-8")
         return link

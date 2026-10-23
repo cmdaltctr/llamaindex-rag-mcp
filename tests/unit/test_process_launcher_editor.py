@@ -17,9 +17,9 @@ from tests.unit.test_process_launcher_support import (
     wait_gone,
 )
 
-from omrg.core.plugins import NotebookEditorSupervisor, PluginLaunchError, PluginRegistry
-from omrg.integrations.process_launcher import OwnedProcessLauncher, SubprocessProbeRunner
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.core.plugins import NotebookEditorSupervisor, PluginLaunchError, PluginRegistry
+from omrs.integrations.process_launcher import OwnedProcessLauncher, SubprocessProbeRunner
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
 
 TOKEN = "per-launch-token-for-test"  # noqa: S105 - test value
 

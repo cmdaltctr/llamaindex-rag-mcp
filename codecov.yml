@@ -11,21 +11,21 @@ coverage:
         target: 95%
         informational: true
         paths:
-          - "src/omrg/core/ingestion/"
-          - "src/omrg/core/retrieval/"
-          - "src/omrg/core/metadata/"
-          - "src/omrg/core/chunking/"
-          - "src/omrg/core/vectordb/"
-          - "src/omrg/core/profiles/"
-          - "src/omrg/core/settings.py"
-          - "src/omrg/config/"
-          - "src/omrg/transports/mcp.py"
+          - "src/omrs/core/ingestion/"
+          - "src/omrs/core/retrieval/"
+          - "src/omrs/core/metadata/"
+          - "src/omrs/core/chunking/"
+          - "src/omrs/core/vectordb/"
+          - "src/omrs/core/profiles/"
+          - "src/omrs/core/settings.py"
+          - "src/omrs/config/"
+          - "src/omrs/transports/mcp.py"
       orchestration:
         target: 85%
         informational: true
         paths:
-          - "src/omrg/daemon/"
-          - "src/omrg/transports/cli/"
+          - "src/omrs/daemon/"
+          - "src/omrs/transports/cli/"
       default:
         target: 90%
         informational: true

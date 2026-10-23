@@ -268,7 +268,7 @@ class TestResumeSafety:
 class TestRoutingCodeClean:
     def test_dirty_routing_source_detected(self, classify, monkeypatch):
         monkeypatch.setattr(
-            classify, "_git", lambda *args: " M src/omrg/integrations/pdf/ocr_routing.py\n"
+            classify, "_git", lambda *args: " M src/omrs/integrations/pdf/ocr_routing.py\n"
         )
         assert classify._routing_code_clean() is False
 

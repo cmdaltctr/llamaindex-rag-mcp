@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Let OMRG run more than one isolated OCR engine through one shared worker core and one protocol. Adding an engine then needs one engine folder and one route setting, with no host code change.
+Let OMRS run more than one isolated OCR engine through one shared worker core and one protocol. Adding an engine then needs one engine folder and one route setting, with no host code change.
 
 ## Requirements
 
@@ -122,9 +122,9 @@ A worker failure after dispatch SHALL remain a structured per-file error. It SHA
 
 ### Requirement: Engine provisioning SHALL be isolated and per engine
 
-One provisioning command SHALL provision one named engine from that engine's lockfile only. It SHALL NOT change the OMRG main environment. An engine's packages, including PyTorch for `dots-mocr`, SHALL NOT enter the OMRG package metadata, the root lockfile, or any OMRG runtime import.
+One provisioning command SHALL provision one named engine from that engine's lockfile only. It SHALL NOT change the OMRS main environment. An engine's packages, including PyTorch for `dots-mocr`, SHALL NOT enter the OMRS package metadata, the root lockfile, or any OMRS runtime import.
 
-An engine whose model licence adds terms beyond its code licence SHALL require explicit operator acceptance at provisioning. `dots-mocr` SHALL NOT provision without that acceptance. The engine folder SHALL record the terms that affect OMRG.
+An engine whose model licence adds terms beyond its code licence SHALL require explicit operator acceptance at provisioning. `dots-mocr` SHALL NOT provision without that acceptance. The engine folder SHALL record the terms that affect OMRS.
 
 Model weights SHALL be fetched at provisioning, at a pinned model revision. A parse SHALL NOT download model files.
 
@@ -136,9 +136,9 @@ Model weights SHALL be fetched at provisioning, at a pinned model revision. A pa
 
 #### Scenario: Main environment stays free of engine packages
 
-- **GIVEN** OMRG is installed from its main package metadata and root lockfile
+- **GIVEN** OMRS is installed from its main package metadata and root lockfile
 - **WHEN** it starts and ingests a PDF
-- **THEN** no Paddle or PyTorch package SHALL be required or imported by OMRG
+- **THEN** no Paddle or PyTorch package SHALL be required or imported by OMRS
 
 #### Scenario: Parse runs offline
 

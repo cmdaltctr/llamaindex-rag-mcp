@@ -25,7 +25,7 @@ ENGINES = ("dots-mocr", "paddleocr-vl")
 
 def _load_provision_module():
     """Import provision.py directly from its script path."""
-    spec = importlib.util.spec_from_file_location("omrg_ocr_provision", PROVISION_SCRIPT)
+    spec = importlib.util.spec_from_file_location("omrs_ocr_provision", PROVISION_SCRIPT)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
@@ -137,7 +137,7 @@ def test_dots_mocr_with_the_flag_syncs_then_fetches(provision, recorded: list) -
     folder = WORKERS_DIR / "engines" / "dots-mocr"
     assert [call["command"] for call in recorded] == [
         ["uv", "sync", "--locked", "--python", "3.12"],
-        [str(folder / ".venv" / "bin" / "omrg-ocr-fetch")],
+        [str(folder / ".venv" / "bin" / "omrs-ocr-fetch")],
     ]
     for call in recorded:
         assert call["cwd"] == folder

@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository
-from omrg.integrations.workspace_sqlite.settings import (
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository
+from omrs.integrations.workspace_sqlite.settings import (
     CHAT_MODEL,
     CHAT_PROVIDER,
     UnknownSettingError,
@@ -109,14 +109,14 @@ def test_set_chat_choice_refuses_a_damaged_value(settings: WorkspaceSettings) ->
     ],
 )
 def test_provider_key_refuses_bad_names(provider: str, field: str) -> None:
-    from omrg.integrations.workspace_sqlite.settings import provider_key
+    from omrs.integrations.workspace_sqlite.settings import provider_key
 
     with pytest.raises(UnknownSettingError):
         provider_key(provider, field)
 
 
 def test_provider_key_builds_the_allowed_key() -> None:
-    from omrg.integrations.workspace_sqlite.settings import provider_key
+    from omrs.integrations.workspace_sqlite.settings import provider_key
 
     assert provider_key("openrouter", "key_saved_at") == "provider.openrouter.key_saved_at"
 
@@ -127,7 +127,7 @@ def test_provider_key_builds_the_allowed_key() -> None:
 def test_a_secret_looking_field_is_never_a_known_key(
     settings: WorkspaceSettings, field: str
 ) -> None:
-    from omrg.integrations.workspace_sqlite.settings import is_known_key
+    from omrs.integrations.workspace_sqlite.settings import is_known_key
 
     assert is_known_key(f"provider.openrouter.{field}") is False
     with pytest.raises(UnknownSettingError):
@@ -138,8 +138,8 @@ def test_a_secret_looking_field_is_never_a_known_key(
 
 def test_stored_field_ids_match_the_provider_descriptors() -> None:
     """Every url and int field a descriptor declares is storable; no secret field is."""
-    from omrg.core.providers.llm.registry import describe_all
-    from omrg.integrations.workspace_sqlite.settings import (
+    from omrs.core.providers.llm.registry import describe_all
+    from omrs.integrations.workspace_sqlite.settings import (
         KEY_SAVED_AT,
         PROVIDER_FIELD_IDS,
     )
@@ -148,7 +148,7 @@ def test_stored_field_ids_match_the_provider_descriptors() -> None:
     assert descriptors
     url_ids = {f.id for d in descriptors.values() for f in d.fields if f.kind in ("url", "int")}
     secret_ids = {f.id for d in descriptors.values() for f in d.fields if f.kind == "secret"}
-    from omrg.core.providers.llm.llamacpp_rules import LLAMACPP_SERVER_FIELDS
+    from omrs.core.providers.llm.llamacpp_rules import LLAMACPP_SERVER_FIELDS
 
     managed_server_ids = {f.id for f in LLAMACPP_SERVER_FIELDS}  # not a provider descriptor
     assert PROVIDER_FIELD_IDS == url_ids | managed_server_ids | {KEY_SAVED_AT}

@@ -19,10 +19,10 @@ import pytest
 from llama_index.core.embeddings import MockEmbedding
 from llama_index.core.schema import TextNode
 
-from omrg.core.codebase import codebase_map
-from omrg.core.codebase.codebase_map import FileEntry, detect_file_types
-from omrg.core.ingestion import chunker, pipeline
-from omrg.integrations import magika
+from omrs.core.codebase import codebase_map
+from omrs.core.codebase.codebase_map import FileEntry, detect_file_types
+from omrs.core.ingestion import chunker, pipeline
+from omrs.integrations import magika
 
 
 def _magika_row(path: Path, *, group: str, label: str, is_text: bool) -> str:
@@ -207,7 +207,7 @@ def test_detect_file_types_warns_and_uses_whole_scan_suffix_fallback(
     )
     monkeypatch.setattr(codebase_map, "scan_with_suffix", lambda path, settings: suffix_entries)
 
-    with caplog.at_level(logging.WARNING, logger="omrg.core.codebase.codebase_map"):
+    with caplog.at_level(logging.WARNING, logger="omrs.core.codebase.codebase_map"):
         inventory = detect_file_types(str(tmp_path), settings=effective_settings())
 
     assert inventory.entries == suffix_entries

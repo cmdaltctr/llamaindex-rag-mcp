@@ -11,7 +11,7 @@ def test_tokenizer_fields_default_to_the_promoted_qwen_identity() -> None:
     frozen block still rejects mutation."""
     from pydantic import ValidationError
 
-    from omrg.core.settings import EmbeddingBlock, EmbeddingSettings
+    from omrs.core.settings import EmbeddingBlock, EmbeddingSettings
 
     settings = EmbeddingSettings()
     block = EmbeddingBlock()
@@ -30,8 +30,8 @@ def test_empty_tokenizer_environment_opts_back_into_legacy_chunking(
 ) -> None:
     """The promotion stays operator-reversible: explicit empty environment
     values return both models to the legacy character-budgeted path."""
-    from omrg.compose import settings_to_effective
-    from omrg.config import Settings
+    from omrs.compose import settings_to_effective
+    from omrs.config import Settings
 
     monkeypatch.setenv("EMBEDDING__TOKENIZER_MODEL", "")
     monkeypatch.setenv("EMBEDDING__TOKENIZER_REVISION", "")
@@ -49,8 +49,8 @@ def test_tokenizer_fields_resolve_from_nested_environment_and_effective_settings
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Task 3.2: nested tokenizer environment values reach core settings."""
-    from omrg.compose import settings_to_effective
-    from omrg.config import Settings
+    from omrs.compose import settings_to_effective
+    from omrs.config import Settings
 
     monkeypatch.setenv("EMBEDDING__TOKENIZER_MODEL", "Qwen/Qwen3-Embedding-4B")
     monkeypatch.setenv("EMBEDDING__TOKENIZER_REVISION", "test-revision")

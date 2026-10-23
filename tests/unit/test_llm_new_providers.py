@@ -16,18 +16,18 @@ from typing import Any
 import pytest
 from tests.unit.test_connection_summary import make_settings
 
-from omrg import compose
-from omrg.compose_providers import ProviderValues, apply_provider_values, locked_fields
-from omrg.config import Settings
-from omrg.config.provider_sources import PROVIDER_FIELDS
-from omrg.core.providers.llm import registry
-from omrg.core.providers.llm.connection import (
+from omrs import compose
+from omrs.compose_providers import ProviderValues, apply_provider_values, locked_fields
+from omrs.config import Settings
+from omrs.config.provider_sources import PROVIDER_FIELDS
+from omrs.core.providers.llm import registry
+from omrs.core.providers.llm.connection import (
     ConnectionDescriptor,
     ConnectionField,
     ConnectionTarget,
 )
-from omrg.core.settings import PROVIDER_SECRET_FIELDS, provider_secret_values
-from omrg.core.vectordb.identity import RedactionSecrets
+from omrs.core.settings import PROVIDER_SECRET_FIELDS, provider_secret_values
+from omrs.core.vectordb.identity import RedactionSecrets
 
 ANT_KEY = "sk-ant-api03-AAAA1111BBBB2222CCCC3333"  # gitleaks:allow
 ANT_KEY_2 = "sk-ant-api03-ZZZZ9999YYYY8888XXXX7777"  # gitleaks:allow
@@ -239,8 +239,8 @@ NEW_FIELDS = {
 def test_provider_fields_match_the_descriptors() -> None:
     """The static field list the config layer uses equals what the descriptors declare."""
     declared = {f.settings_field for d in registry.describe_all().values() for f in d.fields}
-    from omrg.core.providers.llm.llamacpp_rules import LLAMACPP_SERVER_FIELDS
-    from omrg.core.settings import PROVIDER_INT_FIELDS
+    from omrs.core.providers.llm.llamacpp_rules import LLAMACPP_SERVER_FIELDS
+    from omrs.core.settings import PROVIDER_INT_FIELDS
 
     managed_server = {f.settings_field for f in LLAMACPP_SERVER_FIELDS}  # not in any descriptor
     assert set(PROVIDER_FIELDS) == declared | managed_server | {
@@ -324,7 +324,7 @@ def test_the_new_providers_are_not_embedding_or_metadata_providers(name: str) ->
 def entries(settings: Settings, values: ProviderValues | None = None) -> dict[str, Any]:
     from pathlib import Path
 
-    from omrg.compose_connections import build_connection_summary
+    from omrs.compose_connections import build_connection_summary
 
     result = build_connection_summary(settings, Path("."), values)
     return {e["provider"]: e for e in result["connections"]}
@@ -405,7 +405,7 @@ def test_redaction_values_list_every_secret_field(monkeypatch: pytest.MonkeyPatc
 
 
 def test_startup_error_text_redacts_every_provider_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    from omrg.transports import mcp
+    from omrs.transports import mcp
 
     monkeypatch.setattr(
         compose,
@@ -417,7 +417,7 @@ def test_startup_error_text_redacts_every_provider_key(monkeypatch: pytest.Monke
 
 
 def test_composed_engine_redacts_all_provider_keys(monkeypatch: pytest.MonkeyPatch) -> None:
-    from omrg.compose_engine import build_redaction
+    from omrs.compose_engine import build_redaction
 
     held = build_redaction(
         make_settings(anthropic_api_key=ANT_KEY, openai_compatible_api_key=OAI_KEY)
@@ -427,7 +427,7 @@ def test_composed_engine_redacts_all_provider_keys(monkeypatch: pytest.MonkeyPat
 
 
 def test_error_detail_redacts_the_new_keys() -> None:
-    from omrg.core.answer.stages import safe_error_detail
+    from omrs.core.answer.stages import safe_error_detail
 
     effective = compose.settings_to_effective(
         make_settings(anthropic_api_key=ANT_KEY, openai_compatible_api_key=OAI_KEY)
@@ -525,7 +525,7 @@ _NEW_ANT = "sk-ant-api03-" + "B" * 30 + "newnewnew"  # gitleaks:allow
 
 @pytest.mark.parametrize("cut", [4, 9, 20])
 def test_shared_prefix_keys_leave_no_fragment_of_the_second_key(cut: int) -> None:
-    from omrg.core.vectordb.identity import redact_secrets
+    from omrs.core.vectordb.identity import redact_secrets
 
     fragment = _NEW_ANT[:-cut]
     assert "B" not in redact_secrets(f"error {fragment}", [_OLD_ANT, _NEW_ANT])
@@ -540,7 +540,7 @@ def test_openai_compatible_never_falls_back_to_the_environment_key(
 ) -> None:
     """An empty saved key must not send OPENAI_API_KEY to a typed address."""
     pytest.importorskip("llama_index.llms.openai_like")
-    from omrg.core.providers.llm import openai_compatible
+    from omrs.core.providers.llm import openai_compatible
 
     monkeypatch.setenv("OPENAI_API_KEY", _ENV_KEY)
     settings = make_settings(

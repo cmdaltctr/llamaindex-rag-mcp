@@ -18,18 +18,18 @@ engine Python 3.12.14.
 ## Provisioning
 
 ```bash
-export OMRG_OCR_MODEL_CACHE=~/Development/DATA/omrg/ocr-models
+export OMRS_OCR_MODEL_CACHE=~/Development/DATA/omrs/ocr-models
 python3 ocr-workers/provision.py dots-mocr --dry-run --accept-model-licence
 python3 ocr-workers/provision.py dots-mocr --python 3.12 --accept-model-licence
 ```
 
 1. The dry run resolved from `uv.lock` and installed nothing (task 3.1).
 2. The real run exited 0. It installed the environment and ran
-   `omrg-ocr-fetch`, which downloaded revision
+   `omrs-ocr-fetch`, which downloaded revision
    `e539fbb52280393adc081b289ec597430a0f9031`, applied the patch set and
-   wrote `omrg-code-hashes.json`.
+   wrote `omrs-code-hashes.json`.
 3. Disk: model folder 5.7 GB at
-   `~/Development/DATA/omrg/ocr-models/dots-mocr/` (outside the
+   `~/Development/DATA/omrs/ocr-models/dots-mocr/` (outside the
    repository, kept across worktree removal); engine `.venv` 756 MB.
 4. The patched `modeling_dots_vision.py` differs from the Experiment 34
    copy only in one patch comment. `modeling_dots_ocr.py`,
@@ -39,7 +39,7 @@ python3 ocr-workers/provision.py dots-mocr --python 3.12 --accept-model-licence
 ## Capability output
 
 ```json
-{"backend_id": "dots_mocr", "model": {"identity": "rednote-hilab/dots.mocr", "revision": "e539fbb52280393adc081b289ec597430a0f9031"}, "output_schema": {"id": "omrg.ocr.parse_output", "version": "1"}, "packages": {"accelerate": "1.15.0", "omrg-ocr-dots-mocr": "0.1.0", "omrg-ocr-worker-core": "0.1.0", "pillow": "12.3.0", "pypdfium2": "5.13.0", "qwen-vl-utils": "0.0.14", "torch": "2.14.0", "torchvision": "0.29.0", "transformers": "4.57.6"}, "pipeline": {"identity": "dots-mocr-layout", "revision": "prompt_layout_all_en+omrg-mps-1+layout-1"}, "protocol_version": "1.1"}
+{"backend_id": "dots_mocr", "model": {"identity": "rednote-hilab/dots.mocr", "revision": "e539fbb52280393adc081b289ec597430a0f9031"}, "output_schema": {"id": "omrs.ocr.parse_output", "version": "1"}, "packages": {"accelerate": "1.15.0", "omrs-ocr-dots-mocr": "0.1.0", "omrs-ocr-worker-core": "0.1.0", "pillow": "12.3.0", "pypdfium2": "5.13.0", "qwen-vl-utils": "0.0.14", "torch": "2.14.0", "torchvision": "0.29.0", "transformers": "4.57.6"}, "pipeline": {"identity": "dots-mocr-layout", "revision": "prompt_layout_all_en+omrs-mps-1+layout-1"}, "protocol_version": "1.1"}
 ```
 
 ## Offline smoke run (task 3.4)

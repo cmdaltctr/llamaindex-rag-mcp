@@ -9,7 +9,7 @@ const ENTRY: Integration = {
   purpose: "Cloud document reading.",
   extra: "azure",
   install_command: "uv sync --extra azure",
-  pip_command: 'pip install "omrg[azure]"',
+  pip_command: 'pip install "omrs[azure]"',
   availability: "not-installed",
 };
 

@@ -16,15 +16,15 @@ Precedent: ADR-060 renamed `rag_mcp` to `omrg` in v3 with no shim and no alias, 
 
 - Every live file, identifier and document uses OMRS.
 - Existing stored data (LanceDB collections) opens unchanged.
-- An existing install moves to the new names with one command, with a dry run first.
+- The owner's install moves to the new names once, by hand, after the merge.
 - The old name cannot return unnoticed (guard test).
 - Each step leaves the test suite green.
 
 **Non-Goals:**
 
 - No compatibility alias, shim or silent fallback to the old names.
-- No rewrite of ADRs, TDRs, archived changes, experiment reports or `CHANGELOG.md`.
-- No rename of `DATA/omrg/` (see D7).
+- No rewrite of ADRs, TDRs, archived changes, run experiment records or `CHANGELOG.md`.
+- No migration command or startup check: the owner is the only user (D2).
 - No behaviour change beyond names.
 - No change to the OMMS project.
 
@@ -34,15 +34,18 @@ Precedent: ADR-060 renamed `rag_mcp` to `omrg` in v3 with no shim and no alias, 
 
 The package, distribution, command, env prefix, folders, MCP name and wire prefixes all move together. A partial rename (display name only) would leave `omrs` branding on an `omrg` command and keep the tool-prefix collision with OMMS that motivated the change.
 
-### D2. Clean cut with a migration command, no dual-read
+### D2. Clean cut, no migration code
 
-The old names stop working. A startup check finds the old install and stops, naming the replacement. `omrs migrate` moves the data. This matches ADR-060, the owner's preference for clean renames with documented migration, and the retirement tripwire in `config/legacy.py` (gotcha 11). Dual-read was rejected: a silent fallback hides a half-migrated install, doubles the settings paths to test, and the fallback would need its own retirement date.
+The old names stop working. There is no alias, no dual-read, no startup check and no migration command. The owner is the only user, so migration code would be dead weight the day after it runs. The owner's install moves once, by hand, with the steps in the Migration Plan. This matches ADR-060.
 
-The tripwire is the only mechanism that can detect flat `OMRG_*` names, because pydantic-settings discards unknown flat names without an error. The `OMRG_*` entries therefore stay in the tripwire for as long as an upgrade path exists (the rule in the `legacy.py` docstring).
+The first draft had a startup check and an `omrs migrate` command. They were built, tested against a copy of the owner's data, then removed on the owner's call (2026-10-22): more code to keep than the one-off move is worth.
 
-### D3. Keep `omrg_dataset_epoch`
+### D3. Stored keys move to `omrs`
 
-The key lives inside existing LanceDB tables and feeds the BM25 cache validity token (gotcha 14). A rename would make every existing dataset compare unequal. It is defined once as a constant with a comment, and exempted by name in the guard test.
+The LanceDB key `omrg_dataset_epoch` becomes `omrs_dataset_epoch` and the workspace layout key `omrg_task` becomes `omrs_task`.
+
+- A LanceDB table written before the rename has no epoch under the new key. The store already handles that case (an unmarked table from an older release): `get_data_version` returns `None`, BM25 falls back to the process-local counter, and the next write gives the table an epoch. No re-ingest is needed.
+- `workspace.db` pipelines carry `omrg_task` in `layout_json`, and `runs.inputs_json` holds absolute `~/.omrg/...` paths. The manual move rewrites both with two SQL updates (Migration Plan step 3).
 
 ### D4. ast-grep for code, a scripted pass for the rest
 
@@ -64,13 +67,13 @@ Where the old text is a bare initialism in a sentence, the script substitutes `O
 
 ### D6. Skip list for the scripted pass
 
-The pass never touches: `docs/adr/`, `docs/tdr/` (or `docs/04_tdr/`), `openspec/changes/archive/`, `experiments/**/report.md` and saved outputs, `CHANGELOG.md`, `uv.lock` (regenerated), `.git`, `graphify-out/`, `__pycache__`, `.venv`. It also skips the `omrg_dataset_epoch` string and the migration module with its tests, which must name the old identity.
+The pass never touches: `docs/adr/`, `docs/tdr/` (or `docs/04_tdr/`), `openspec/changes/archive/`, `CHANGELOG.md`, `uv.lock` (regenerated), `.git`, `graphify-out/`, `__pycache__`, `.venv`, and run experiment records. A run experiment is one with a `report.md`; every numbered `experiments/` folder qualifies, and so does the `experiment-42-clef-flash-confirmation` change. Their scripts keep the names they ran with. The exception is the 43 experiment scripts that the test suite or shared tooling (`experiments/_lib`, `experiments/example`) imports: those must import `omrs` to run. The only unrun experiment is `experiment-35-full-document-rag-benchmark`, which is renamed.
 
-### D7. Outside-repo items stay with the owner
+### D7. Outside-repo items
 
-- `~/.claude.json` key `omrg`: the MCP tool prefix follows this client key, not the server's own name string. The owner renames the key to `omrs` and updates any prompt, skill or allow-list that names `mcp__omrg__*`.
-- Skills `omrg-design` and `s-preserve-omrg`: the owner renames the folders and the frontmatter `name`.
-- `DATA/omrg/`: stays. It holds 90 GB, a checksum registry and copy receipts, and `s-preserve-omrg` and gotcha 15 hard-code the path. The registry gets a note that the project is now OMRS and the folder name is historical. Renaming the folder is a later, separate decision.
+- `~/.claude.json` key `omrg`: the MCP tool prefix follows this client key, not the server's own name string. Replaced with an `omrs` entry on 2026-10-22 (task 8.1).
+- Skills `omrg-design` and `s-preserve-omrg`: renamed to `omrs-design` and `s-preserve-omrs` on 2026-10-22 (task 8.3).
+- `DATA/omrg/` became `DATA/omrs/` on 2026-10-22 (a same-disk rename of 90 GB). Six gitignored symlinks in four worktrees were repointed. `DATA_LOCATIONS.md`, the global agent instructions and the preserve skill name the new path. Copy receipts, recovery files and run experiment records inside the folder keep the old path as history.
 - NiftyPM `niftypm/omrg.json` is gitignored. The owner renames it and its project title.
 - GitHub repository: it is `llamaindex-rag-mcp`, which already differs from `omrg`. The owner decides separately.
 - Sibling worktrees (`-v3`, `-v4`, the experiment worktree) each hold their own `src/omrg`. They are not touched.
@@ -81,19 +84,19 @@ The session cookie and the `omrg_bs_`, `omrg_ss_`, `omrg_bt_` prefixes move to `
 
 ### D9. Live specs: in-place token rewrite for most, deltas for the identity contract
 
-Two live requirements define the identity contract and carry real behaviour change: `public-library-api` ("Package identity") and `settings-file` ("The user config folder location"). They get delta files, and the new `project-identity` and `legacy-install-migration` capabilities hold the rest of the contract.
+Two live requirements define the identity contract and carry real behaviour change: `public-library-api` ("Package identity") and `settings-file` ("The user config folder location"). They get delta files, and the new `project-identity` capability holds the rest of the contract.
 
 The other 120 or so blocks (about 180 KB of text) change only the name token. Writing MODIFIED deltas for them would copy the full blocks into the change, add a second source of truth, and risk a collision with the active v4 changes at archive time. They are rewritten in place during apply, as the v3 rename did, and `openspec validate --all --strict` checks the result. The 12 other baseline headings that contain the name are renamed in place at the same time. The recon found no active change that modifies one of them, so no archive collision is possible. A task re-checks this just before apply, in case a change is added.
 
-The five active changes (`authority-aware-retrieval`, `mantiq-reasoning-gates`, `experiment-35-full-document-rag-benchmark`, `experiment-42-clef-flash-confirmation`, `tripwire-retirement-and-provider-symmetry`) get the same token pass, so their file paths (`src/omrg/core/...`) match the new tree.
+Four active changes (`authority-aware-retrieval`, `mantiq-reasoning-gates`, `experiment-35-full-document-rag-benchmark`, `tripwire-retirement-and-provider-symmetry`) get the same token pass, so their file paths (`src/omrg/core/...`) match the new tree. `experiment-42-clef-flash-confirmation` is a run experiment and keeps its text (D6).
 
 ### D10. Order of work
 
-1. Add the guard test and the migration code first, with the old names still in place. Both are testable before the move.
+1. Add the guard test first, with the old names still in place, and confirm it fails.
 2. Move the package (`git mv`), run the import rewrites, fix the build config. Run the fast suite.
 3. Move runtime identifiers and the web workspace.
 4. Rewrite docs, specs and active changes.
-5. Run the full gates, the migration against a copy of the owner's real folders, and a browser check.
+5. Run the full gates and a browser check.
 6. Write ADR-092 and the owner hand-off note.
 
 The change merges as one pull request into `v4`. It lands before `authority-aware-retrieval` and `mantiq-reasoning-gates` are applied, so those changes are built on the new tree. If they are applied first, their branches rebase through the same ast-grep rule.
@@ -104,41 +107,40 @@ The commit type is `feat!:`. python-semantic-release makes a major version. `omr
 
 ## Risks / Trade-offs
 
-- **Blind replace damage.** A plain `omrg` replace would hit `omrg_dataset_epoch`, `com.omrg.*`, ADR file names and the migration code. Mitigation: skip list (D6), AST-scoped rules (D4), and the guard test with named exemptions.
+- **Blind replace damage.** A plain `omrg` replace would hit ADR file names, run experiment records and the pinned path that Experiment 29 reads from an old commit. Mitigation: skip list (D6), AST-scoped rules (D4), and the guard test with named exemptions.
 - **Stale ignore entries.** `unmatched_ignore_imports_alerting = "error"` fails the build when an import-linter ignore string is missed. This is a useful signal. Run `uv run lint-imports` after the move.
 - **Tripwire counts.** `tests/test_clean_base_tripwire.py` pins executed and deselected counts. The rename must not change them. Compare before and after.
 - **Stale environment.** `.venv`, `__pycache__` and the editable install still point to `omrg`. Run `uv sync --frozen --extra web` in the new worktree (not `--all-extras`, which adds torch and breaks 5 tests).
-- **Migration touches real secrets and a login item.** Mitigation: `--dry-run` first, refuse on conflict, run against a copy of the owner's folders in a temp `HOME` before the owner runs it for real, and never print secret values.
+- **Manual move touches real secrets and a login item.** Mitigation: the backup from task 1.6, each step checked before the next, no secret value printed.
+- **BM25 cache after the move.** Old tables have no epoch under the new key until their next write, so the BM25 cache uses the process-local counter until then (D3).
 - **Client breakage.** MCP clients lose their tools until the client key changes (D7). The release note lists the step first.
-- **Keychain copy.** Reading a keychain entry can prompt the user. The migrate command warns before it starts that macOS may ask for permission.
+- **Keychain copy.** Reading a keychain entry can prompt the user. Expect one macOS prompt during the manual move.
 - **Name length.** "System" makes the long form longer. Check README badges, table columns and CLI help wraps.
 - **Similar names.** OMRS and OMMS differ by one letter, which is the pair the owner wants. Typos in docs are still likely. The guard test catches `omrg` only. A later check could look for `omrs` and `omms` mix-ups.
 
 ## Migration Plan
 
-For users of an existing install:
+The owner's machine, once, after the merge. Stop the app first (`omrg web stop`), then:
 
-1. Upgrade the package.
-2. Run `omrs migrate --dry-run` and read the plan.
-3. Run `omrs migrate`.
-4. Set `OMRS_*` for each `OMRG_*` variable the report lists, in the shell profile.
-5. Rename the MCP client key to `omrs` and restart the client.
-6. Create new bearer tokens if any were in use.
+1. Install the new package (`uv tool install` from the merged checkout) and remove the old `omrg` tool.
+2. Move the folders: `mv ~/.omrg ~/.omrs`, `mv ~/.config/omrg ~/.config/omrs`, `mv ~/.config/omrs/omrg.jsonc ~/.config/omrs/omrs.jsonc`. Rewrite `/omrg/secrets/` to `/omrs/secrets/` in `omrs.jsonc`.
+3. Update `workspace.db`: replace `"omrg_task"` with `"omrs_task"` in `pipelines.layout_json`, and `/.omrg/` with `/.omrs/` in `runs.inputs_json`.
+4. Copy the keychain entries from service `omrg` to `omrs` (one macOS prompt).
+5. Replace the login item: unload `com.omrg.web`, delete its plist, run `omrs web install`.
+6. Rename `OMRG_*` variables in the shell profile, if any. Rename the MCP client key to `omrs` and restart the clients. Create new bearer tokens if any were in use.
 
-Rollback: the migrate command renames rather than copies folders, so rollback is `mv ~/.omrs ~/.omrg` and `mv ~/.config/omrs ~/.config/omrg` with the previous package version. The keychain copy leaves the old entry in place until the user deletes it. The login item is the only step with no automatic rollback; reinstall the old one with the old version.
+Rollback: reverse the two folder moves with the previous package version installed. The backup from task 1.6 holds the original folders.
 
 For the repository: the branch is `feat/rename-omrg-to-omrs`, forked from `v4`, in a sibling worktree. A revert of the merge commit restores the old tree, because no history is rewritten.
 
 ## Decisions confirmed by the owner
 
-1. **Compatibility.** Clean cut with `omrs migrate` (D2). No fallback to the old names, anywhere.
+1. **Compatibility.** Clean cut with no migration code (D2). No fallback to the old names, anywhere.
 2. **PyPI.** `omrs` and `omrg` both return 404 on PyPI (checked 2026-10-22), so `omrs` is free and `omrg` was never published. No stub is needed.
 3. **Outside-repo renames.** The owner renames the MCP client key, the skills and the NiftyPM file to `omrs` (D7).
-4. **History.** ADRs, TDRs, archived changes, experiment reports and `CHANGELOG.md` stay unchanged.
+4. **History.** ADRs, TDRs, archived changes, run experiment records and `CHANGELOG.md` stay unchanged. Only unrun experiments are renamed (D6).
 5. **Auth and wire names.** Cookie, token prefixes and `x-omrg-*` keys all move to `omrs` (D8). Old bearer tokens stop working.
 6. **Browser drafts.** No shim (D8).
 7. **OCR workers.** The `omrg_ocr_*` packages are renamed in this change (task 3.1).
-
-## Still open
-
-- **GitHub repository name and `DATA/omrg/`.** Both stay as they are (D7). The owner has not asked to change them. Raise a separate change if that changes.
+8. **Stored keys.** `omrg_dataset_epoch` and `omrg_task` move to `omrs` (D3).
+9. **DATA folder.** `DATA/omrg/` becomes `DATA/omrs/` (D7).

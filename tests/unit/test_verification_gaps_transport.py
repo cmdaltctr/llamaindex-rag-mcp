@@ -1,6 +1,6 @@
 """Transport-separation gaps from the verification report (section B).
 
-* ``omrg`` with no arguments starts the MCP server only: no web server,
+* ``omrs`` with no arguments starts the MCP server only: no web server,
   no socket, no notebook editor, and no web or workspace modules.
 * The parameters and annotations of all eight MCP tools match a snapshot
   taken from the ``v3`` branch (commit ``3ca82a0``), so the web work
@@ -21,17 +21,17 @@ from unittest.mock import patch
 from typer.testing import CliRunner
 
 from conftest import connected_client
-from omrg.transports.cli import app as cli_app
+from omrs.transports.cli import app as cli_app
 
-#: Modules that only ``omrg web`` or the notebook editor may load. The workspace
-#: modules (``omrg.core.workspace``, ``omrg.integrations.workspace_sqlite``) are
+#: Modules that only ``omrs web`` or the notebook editor may load. The workspace
+#: modules (``omrs.core.workspace``, ``omrs.integrations.workspace_sqlite``) are
 #: not listed: the stdio server reads the default workspace catalogue (D11).
 _WEB_ONLY_MODULES = (
     "fastapi",
     "marimo",
-    "omrg.transports.api",
-    "omrg.core.plugins",
-    "omrg.integrations.process_launcher",
+    "omrs.transports.api",
+    "omrs.core.plugins",
+    "omrs.integrations.process_launcher",
 )
 
 _REQUIRED = "<required>"
@@ -103,12 +103,12 @@ _V3_TOOLS: dict[str, tuple[dict[str, Any], list[str], dict[str, bool]]] = {
 
 
 def test_no_argument_start_never_calls_the_web_server() -> None:
-    """``omrg`` with no arguments runs MCP and never binds or serves HTTP."""
+    """``omrs`` with no arguments runs MCP and never binds or serves HTTP."""
     with (
-        patch("omrg.transports.mcp.compose.build_engine"),
-        patch("omrg.transports.mcp.create_mcp_server") as factory,
-        patch("omrg.transports.cli.web._serve") as serve,
-        patch("omrg.transports.cli.web._bind_socket") as bind,
+        patch("omrs.transports.mcp.compose.build_engine"),
+        patch("omrs.transports.mcp.create_mcp_server") as factory,
+        patch("omrs.transports.cli.web._serve") as serve,
+        patch("omrs.transports.cli.web._bind_socket") as bind,
         patch("logging.basicConfig"),
     ):
         result = CliRunner().invoke(cli_app, [])
@@ -119,17 +119,17 @@ def test_no_argument_start_never_calls_the_web_server() -> None:
 
 
 def test_no_argument_entry_point_loads_no_web_or_editor_modules(tmp_path: Path) -> None:
-    """The ``omrg`` console entry point, run in a clean process, imports no web code."""
+    """The ``omrs`` console entry point, run in a clean process, imports no web code."""
     script = textwrap.dedent(
         f"""
         import json, sys
         from unittest.mock import patch
         with (
-            patch("omrg.transports.mcp.compose.build_engine"),
-            patch("omrg.transports.mcp.create_mcp_server") as factory,
+            patch("omrs.transports.mcp.compose.build_engine"),
+            patch("omrs.transports.mcp.create_mcp_server") as factory,
         ):
-            from omrg.transports.cli import run_cli
-            sys.argv = ["omrg"]
+            from omrs.transports.cli import run_cli
+            sys.argv = ["omrs"]
             try:
                 run_cli()
             except SystemExit as exc:

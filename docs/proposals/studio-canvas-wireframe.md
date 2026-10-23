@@ -28,7 +28,7 @@ Widths are drawn for a 1280 px window unless marked.
 
 ```
 +--------------+----------------------------------------------------------+-------------+
-| OMRG  v2.2.0 | Test                              ( All pipelines )      |             |
+| OMRS  v2.2.0 | Test                              ( All pipelines )      |             |
 | ⌂ Home       | Connect pipeline stages, check the graph and run it.     |             |
 | ◯ Chat       | [ Title ] [ Profile ] [ Collection ]   <- settings row   | Operations  |
 | ▤ Knowledge  |  +----------------------------------------------------+  | [search...] |
@@ -54,7 +54,7 @@ The navigation is the icon column. The canvas fills the whole area under the sli
 
 ```
 +----+------------------------------------------------------------------------------------+
-|OMRG| OMRG  Local workspace                                  ( 1 collection )   ☾       |
+|OMRS| OMRS  Local workspace                                  ( 1 collection )   ☾       |
 +----+------------------------------------------------------------------------------------+
 | ⌂  | Test  {draft changed}                                    ( ← All pipelines )       |
 | ◯  +------------------------------------------------------------------------------------+
@@ -95,7 +95,7 @@ The card shrinks to a narrow rail on the right, in the same style as the app nav
 
 ```
 +----+------------------------------------------------------------------------------------+
-|OMRG| OMRG  Local workspace                                  ( 1 collection )   ☾       |
+|OMRS| OMRS  Local workspace                                  ( 1 collection )   ☾       |
 +----+------------------------------------------------------------------------------------+
 | ⌂  | Test  {draft changed}                                    ( ← All pipelines )       |
 | ◯  +------------------------------------------------------------------------------------+
@@ -276,7 +276,7 @@ You press the toggle in the icon column. The canvas gets narrower, the floating 
 
 ```
 +--------------+---------------------------------------------------+
-| OMRG  v2.2.0 | Test                       ( ← All pipelines )    |
+| OMRS  v2.2.0 | Test                       ( ← All pipelines )    |
 | ⌂ Home       |░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ┌────────────────┐ ░░|
 | ▌⟜ Studio    |░░░░░ canvas (narrower) ░░░░░░░ │ card           │ ░░|
 +--------------+---------------------------------------------------+

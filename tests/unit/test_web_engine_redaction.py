@@ -21,8 +21,8 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
 )
 from tests.unit.test_web_runs_support import graph  # noqa: E402
 
-from omrg.core.pipelines import PipelineIssue, PipelineValidationError  # noqa: E402
-from omrg.core.vectordb.identity import RedactionSecrets  # noqa: E402
+from omrs.core.pipelines import PipelineIssue, PipelineValidationError  # noqa: E402
+from omrs.core.vectordb.identity import RedactionSecrets  # noqa: E402
 
 _TENANT = "9" * 8 + "-tenant"
 _OPENROUTER = "sk-or-" + "4" * 12

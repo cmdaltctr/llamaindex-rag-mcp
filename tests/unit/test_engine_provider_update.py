@@ -19,8 +19,8 @@ from tests.unit.test_engine_pipelines_support import (
     build_engine,
 )
 
-from omrg.core.pipelines import RunStatus
-from omrg.core.settings import AnswerBlock
+from omrs.core.pipelines import RunStatus
+from omrs.core.settings import AnswerBlock
 
 
 class SlowLLM(FakeLLM):
@@ -286,7 +286,7 @@ def test_embedder_store_and_reranker_stay_the_same_objects(effective_settings) -
 
 
 def test_redaction_follows_the_new_key(effective_settings) -> None:
-    from omrg.core.vectordb.identity import RedactionSecrets
+    from omrs.core.vectordb.identity import RedactionSecrets
 
     engine = build_engine(
         effective_settings(openrouter_api_key="old-key-0123456789"),

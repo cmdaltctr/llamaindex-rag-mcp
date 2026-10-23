@@ -41,7 +41,7 @@ export function describeError(error: unknown): FriendlyError {
     case 401:
     case 403:
       return {
-        message: "The workspace session was not accepted. Reload the page. If that fails, run omrg web open in a terminal.",
+        message: "The workspace session was not accepted. Reload the page. If that fails, run omrs web open in a terminal.",
         action: { kind: "reload", label: "Reload the page" },
       };
     case 404:

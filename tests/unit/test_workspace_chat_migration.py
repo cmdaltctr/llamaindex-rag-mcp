@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from omrg.integrations.workspace_sqlite import SCHEMA_MIGRATIONS, SqliteWorkspaceRepository
-from omrg.integrations.workspace_sqlite.schema import connect
+from omrs.integrations.workspace_sqlite import SCHEMA_MIGRATIONS, SqliteWorkspaceRepository
+from omrs.integrations.workspace_sqlite.schema import connect
 
 _V4 = SCHEMA_MIGRATIONS[:4]
 

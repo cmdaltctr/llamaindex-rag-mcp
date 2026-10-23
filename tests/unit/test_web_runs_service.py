@@ -1,4 +1,4 @@
-"""Tests for the run-service composition of ``omrg web`` (task 6.6).
+"""Tests for the run-service composition of ``omrs web`` (task 6.6).
 
 Covers the exclusive workspace lock, the CLI wiring (run-service factory
 and the signal hook that closes admission before the connection drain),
@@ -31,9 +31,9 @@ from tests.unit.test_web_runs_support import (  # noqa: E402
 )
 from typer.testing import CliRunner  # noqa: E402
 
-from omrg.transports.api.lifespan import WorkspaceLock, WorkspaceLocked  # noqa: E402
-from omrg.transports.api.runs_wiring import WorkspaceRuns  # noqa: E402
-from omrg.transports.cli import app as cli_app  # noqa: E402
+from omrs.transports.api.lifespan import WorkspaceLock, WorkspaceLocked  # noqa: E402
+from omrs.transports.api.runs_wiring import WorkspaceRuns  # noqa: E402
+from omrs.transports.cli import app as cli_app  # noqa: E402
 
 runner = CliRunner()
 
@@ -72,7 +72,7 @@ def test_second_server_on_the_same_workspace_does_not_start(
 def test_cli_refuses_a_locked_workspace_on_stderr(tmp_path: Path) -> None:
     held = WorkspaceLock.acquire(tmp_path / "ws")
     try:
-        with patch("omrg.transports.cli.web._serve") as serve:
+        with patch("omrs.transports.cli.web._serve") as serve:
             # --port 0: a login item on this machine can hold the default port 8765.
             result = runner.invoke(
                 cli_app, ["web", "--port", "0", "--workspace", str(tmp_path / "ws")]
@@ -80,7 +80,7 @@ def test_cli_refuses_a_locked_workspace_on_stderr(tmp_path: Path) -> None:
     finally:
         held.release()
     assert result.exit_code == 1
-    assert "Another OMRG web server is using the workspace" in result.stderr
+    assert "Another OMRS web server is using the workspace" in result.stderr
     assert result.stdout == ""
     serve.assert_not_called()
 
@@ -93,8 +93,8 @@ def test_cli_wires_the_workspace_run_service(tmp_path: Path, engine: Any) -> Non
         sock.close()
 
     with (
-        patch("omrg.transports.cli.web._serve", side_effect=fake_serve),
-        patch("omrg.transports.api.app.default_engine_factory", return_value=engine),
+        patch("omrs.transports.cli.web._serve", side_effect=fake_serve),
+        patch("omrs.transports.api.app.default_engine_factory", return_value=engine),
     ):
         result = runner.invoke(cli_app, ["web", "--port", "0", "--workspace", str(tmp_path / "ws")])
         assert result.exit_code == 0, result.output
@@ -107,7 +107,7 @@ def test_cli_wires_the_workspace_run_service(tmp_path: Path, engine: Any) -> Non
 def test_signal_closes_admission_before_the_server_drains(tmp_path: Path) -> None:
     import socket
 
-    from omrg.transports.cli import web as web_cli
+    from omrs.transports.cli import web as web_cli
 
     seen: list[str] = []
 
@@ -119,9 +119,9 @@ def test_signal_closes_admission_before_the_server_drains(tmp_path: Path) -> Non
     try:
         with (
             patch("uvicorn.Server.run", fake_run),
-            patch("omrg.transports.api.security.install_log_redaction"),
+            patch("omrs.transports.api.security.install_log_redaction"),
             patch(
-                "omrg.transports.api.lifespan.request_shutdown",
+                "omrs.transports.api.lifespan.request_shutdown",
                 side_effect=lambda app: seen.append("request_shutdown"),
             ),
         ):

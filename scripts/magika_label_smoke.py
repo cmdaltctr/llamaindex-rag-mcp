@@ -25,9 +25,9 @@ _SRC = Path(__file__).resolve().parent.parent / "src"
 if _SRC.is_dir() and str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from omrg.core.codebase.codebase_map import scan_with_suffix  # noqa: E402
-from omrg.core.settings import EffectiveSettings  # noqa: E402
-from omrg.integrations.magika import FileEntry, scan_with_magika  # noqa: E402
+from omrs.core.codebase.codebase_map import scan_with_suffix  # noqa: E402
+from omrs.core.settings import EffectiveSettings  # noqa: E402
+from omrs.integrations.magika import FileEntry, scan_with_magika  # noqa: E402
 
 
 def _rekey_direct_file(entry: Any, operator_path: str) -> Any:

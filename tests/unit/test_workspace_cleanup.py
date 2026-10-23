@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from tests.unit.test_workspace_cleanup_support import Workspace
 
-from omrg.core.workspace import (
+from omrs.core.workspace import (
     CleanupRejected,
     CleanupSelector,
     WorkspaceCleanup,

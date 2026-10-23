@@ -1,4 +1,4 @@
-"""``omrg web`` sets the power control only for the login item (design D3).
+"""``omrs web`` sets the power control only for the login item (design D3).
 
 The server is never started: ``_serve`` and the socket are replaced, and the
 test reads the application state at the moment the fake server runs.
@@ -17,8 +17,8 @@ pytest.importorskip("fastapi")
 
 from typer.testing import CliRunner  # noqa: E402
 
-from omrg.transports.api.power_control import PowerControl  # noqa: E402
-from omrg.transports.cli import app as cli_app  # noqa: E402
+from omrs.transports.api.power_control import PowerControl  # noqa: E402
+from omrs.transports.cli import app as cli_app  # noqa: E402
 
 runner = CliRunner()
 
@@ -33,8 +33,8 @@ def _state_when_served(workspace: Path, *args: str) -> Any:
     sock = MagicMock()
     sock.getsockname.return_value = ("127.0.0.1", 4242)
     with (
-        patch("omrg.transports.cli.web._bind_socket", return_value=sock),
-        patch("omrg.transports.cli.web._serve", side_effect=fake_serve),
+        patch("omrs.transports.cli.web._bind_socket", return_value=sock),
+        patch("omrs.transports.cli.web._serve", side_effect=fake_serve),
     ):
         result = runner.invoke(cli_app, ["web", "--workspace", str(workspace), *args])
     assert result.exit_code == 0, result.output
@@ -44,7 +44,7 @@ def _state_when_served(workspace: Path, *args: str) -> Any:
 def test_the_login_item_carries_a_power_control(tmp_path: Path) -> None:
     control = _state_when_served(tmp_path / "ws", "--login-item")
     assert isinstance(control, PowerControl)
-    assert control.label == "com.omrg.web"
+    assert control.label == "com.omrs.web"
     assert control.uid == os.getuid()
 
 

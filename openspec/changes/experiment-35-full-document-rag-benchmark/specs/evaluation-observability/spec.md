@@ -21,7 +21,7 @@ Experiment traces SHALL remain outside MCP stdout and SHALL NOT require producti
 
 ### Requirement: Trace identity is sufficient for reproducibility
 
-Each measured run SHALL record benchmark revision, OMRG commit, effective settings, provider/model identities, dependency-lock identity, and relevant index identity.
+Each measured run SHALL record benchmark revision, OMRS commit, effective settings, provider/model identities, dependency-lock identity, and relevant index identity.
 
 #### Scenario: Two runs use different embedding models
 - **WHEN** the embedding identities differ
@@ -30,7 +30,7 @@ Each measured run SHALL record benchmark revision, OMRG commit, effective settin
 
 ### Requirement: RAGAS remains an evaluation-only dependency
 
-RAGAS MAY be used for secondary context/answer metrics but SHALL NOT be required by the base OMRG install or normal retrieval path.
+RAGAS MAY be used for secondary context/answer metrics but SHALL NOT be required by the base OMRS install or normal retrieval path.
 
 #### Scenario: RAGAS is unavailable
 - **WHEN** the optional evaluation environment does not contain RAGAS

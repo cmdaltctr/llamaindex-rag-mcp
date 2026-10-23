@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from omrg.integrations.workspace_sqlite import (
+from omrs.integrations.workspace_sqlite import (
     SCHEMA_MIGRATIONS,
     SqliteProfileCatalogue,
     SqliteWorkspaceRepository,
@@ -113,7 +113,7 @@ def test_foreign_database_is_refused(tmp_path: Path) -> None:
     conn = sqlite3.connect(path)
     conn.execute("CREATE TABLE vectors (id INTEGER)")
     conn.close()
-    with pytest.raises(WorkspaceSchemaError, match="not an OMRG workspace"):
+    with pytest.raises(WorkspaceSchemaError, match="not an OMRS workspace"):
         SqliteWorkspaceRepository(path)
     assert _columns(path, "vectors") == ["id"]
     assert _user_version(path) == 0

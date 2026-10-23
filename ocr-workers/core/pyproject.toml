@@ -3,9 +3,9 @@
 # path source. It must stay free of Paddle and PyTorch: standard library
 # plus pypdf only.
 [project]
-name = "omrg-ocr-worker-core"
+name = "omrs-ocr-worker-core"
 version = "0.1.0"
-description = "Shared JSON Lines protocol, framing loop and engine contract for OMRG OCR engines"
+description = "Shared JSON Lines protocol, framing loop and engine contract for OMRS OCR engines"
 requires-python = ">=3.11,<3.14"
 dependencies = [
     # Page checks and subset PDFs for page-listed requests (TDR-027).
@@ -17,4 +17,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/omrg_ocr_worker_core"]
+packages = ["src/omrs_ocr_worker_core"]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the OCR worker over the frozen Experiment 34 sample (task 2.2).
 
-One page-listed protocol 1.1 request per document, through OMRG's own
+One page-listed protocol 1.1 request per document, through OMRS's own
 client, against the worker environment provisioned in ``ocr-worker/``.
 Checkpoint per document: pages land as ``output/worker/<doc>/pNNN.md``,
 state in ``output/worker_state.json`` (atomic rename), so an
@@ -24,7 +24,7 @@ from pathlib import Path
 
 from extra_pages import EXTRA_PAGES, source_pdf
 
-from omrg.integrations.ocr_worker.client import OcrWorkerClient, OcrWorkerError
+from omrs.integrations.ocr_worker.client import OcrWorkerClient, OcrWorkerError
 
 EXP_DIR = Path(__file__).resolve().parent
 REPO_ROOT = EXP_DIR.parents[1]
@@ -51,7 +51,7 @@ def _worker_command() -> list[str]:
     venv_python = WORKER_DIR / ".venv" / "bin" / "python"
     if not venv_python.is_file():
         raise SystemExit(f"worker venv missing: {venv_python}; run ocr-worker/provision.py first")
-    return [str(venv_python), "-m", "omrg_ocr_worker"]
+    return [str(venv_python), "-m", "omrs_ocr_worker"]
 
 
 def main() -> int:

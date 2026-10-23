@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from omrg.integrations.pdf.pypdf import PyPDFReader
+from omrs.integrations.pdf.pypdf import PyPDFReader
 
 # Use a small corpus PDF as test fixture
 CORPUS_PDF = Path(__file__).resolve().parents[2] / (

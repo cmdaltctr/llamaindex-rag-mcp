@@ -14,9 +14,9 @@ import pytest
 from llama_index.core import Settings
 from llama_index.core.embeddings import MockEmbedding
 
-from omrg.core.ingestion import ingest_path_async
-from omrg.core.retrieval import dense as _dense
-from omrg.core.retrieval import search as _retrieval_search
+from omrs.core.ingestion import ingest_path_async
+from omrs.core.retrieval import dense as _dense
+from omrs.core.retrieval import search as _retrieval_search
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -285,7 +285,7 @@ def test_two_identities_with_equal_model_name_never_share_an_entry() -> None:
     """Same ``model_name`` under two providers embeds twice (spec: cache key)."""
     from collections import OrderedDict
 
-    from omrg.core.vectordb.identity import EmbeddingIdentity
+    from omrs.core.vectordb.identity import EmbeddingIdentity
 
     cache: OrderedDict = OrderedDict()
     ollama_embed, llama_embed = _counting("shared-name"), _counting("shared-name")
@@ -303,7 +303,7 @@ def test_one_identity_on_two_collections_embeds_once() -> None:
     """The key has no collection, so a second collection reuses the vector."""
     from collections import OrderedDict
 
-    from omrg.core.vectordb.identity import EmbeddingIdentity
+    from omrs.core.vectordb.identity import EmbeddingIdentity
 
     cache: OrderedDict = OrderedDict()
     embed = _counting("one-model")
@@ -319,7 +319,7 @@ def test_one_identity_on_two_collections_embeds_once() -> None:
 def test_identity_keyed_cache_stays_bounded() -> None:
     from collections import OrderedDict
 
-    from omrg.core.vectordb.identity import EmbeddingIdentity
+    from omrs.core.vectordb.identity import EmbeddingIdentity
 
     cache: OrderedDict = OrderedDict()
     embed = _counting("bounded")

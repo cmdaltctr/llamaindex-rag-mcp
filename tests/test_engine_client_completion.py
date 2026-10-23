@@ -13,8 +13,8 @@ import types
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from omrg.core.answer.pipeline import ResolvedRetrieval
-from omrg.core.settings import AnswerBlock, EffectiveSettings, MetadataBlock
+from omrs.core.answer.pipeline import ResolvedRetrieval
+from omrs.core.settings import AnswerBlock, EffectiveSettings, MetadataBlock
 
 
 def _settings(tmp_path: Any, **answer: Any) -> EffectiveSettings:
@@ -26,7 +26,7 @@ def _settings(tmp_path: Any, **answer: Any) -> EffectiveSettings:
 
 
 def _engine(settings: EffectiveSettings, **kwargs: Any) -> Any:
-    from omrg.engine import Engine
+    from omrs.engine import Engine
 
     store = MagicMock(cache_identity="test-identity")
     return Engine(settings, store=store, embed_model=MagicMock(model_name="m"), **kwargs)
@@ -39,11 +39,11 @@ def _capture() -> tuple[dict[str, Any], Any]:
         captured.update(kwargs)
         return {"status": "ok", "completion_source": kwargs["completion_source"]}
 
-    return captured, patch("omrg.core.answer.pipeline.answer", side_effect=fake_answer)
+    return captured, patch("omrs.core.answer.pipeline.answer", side_effect=fake_answer)
 
 
 def test_client_completion_is_exported_from_engine_module() -> None:
-    from omrg.engine import ClientCompletion
+    from omrs.engine import ClientCompletion
 
     completion = ClientCompletion(complete=AsyncMock(), source="client_mrtr", max_rounds=2)
     assert completion.source == "client_mrtr"
@@ -51,7 +51,7 @@ def test_client_completion_is_exported_from_engine_module() -> None:
 
 
 def test_client_completion_replaces_server_model_and_reports_source(tmp_path: Any) -> None:
-    from omrg.engine import ClientCompletion
+    from omrs.engine import ClientCompletion
 
     server_llm = MagicMock()
     server_llm.acomplete = AsyncMock(return_value=types.SimpleNamespace(text="server"))
@@ -76,7 +76,7 @@ def test_client_completion_replaces_server_model_and_reports_source(tmp_path: An
 
 
 def test_client_completion_never_replaces_the_verifier(tmp_path: Any) -> None:
-    from omrg.engine import ClientCompletion
+    from omrs.engine import ClientCompletion
 
     verify_llm = MagicMock()
     verify_llm.acomplete = AsyncMock(return_value=types.SimpleNamespace(text="judged"))
@@ -102,7 +102,7 @@ def test_client_completion_never_replaces_the_verifier(tmp_path: Any) -> None:
 
 
 def test_client_completion_caps_answer_rounds(tmp_path: Any) -> None:
-    from omrg.engine import ClientCompletion
+    from omrs.engine import ClientCompletion
 
     engine = _engine(_settings(tmp_path, max_rounds=8))
     captured, patcher = _capture()

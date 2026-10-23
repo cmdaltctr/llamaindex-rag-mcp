@@ -13,7 +13,7 @@ from typing import Any
 from tests.unit.test_engine_pipelines_support import FakeStore, build_engine
 from tests.unit.test_profile_service import Env
 
-from omrg.core.profiles.resolver import ProfileResolver
+from omrs.core.profiles.resolver import ProfileResolver
 
 COLLECTION = "parity"
 PROFILE = "my-notes"

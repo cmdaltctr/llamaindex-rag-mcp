@@ -8,7 +8,7 @@ Worker commit before results: `e01994c`
 
 ## Scope
 
-The smoke runner is separate from the main OMRG test suite.
+The smoke runner is separate from the main OMRS test suite.
 
 The initial bare provisioned runs selected the default scanned fixture. That 605-byte one-page PDF has no embedded image data. PaddleOCR-VL returned an image placeholder, so the runner rejected it for lacking a heading, list, or table marker. The same provisioned environments then ran the licence-safe calibration table fixture with an explicit `--fixture` argument.
 
@@ -35,11 +35,11 @@ Every provisioned probe returned this complete fingerprint:
     "revision": "1.6"
   },
   "output_schema": {
-    "id": "omrg.ocr.parse_output",
+    "id": "omrs.ocr.parse_output",
     "version": "1"
   },
   "packages": {
-    "omrg-ocr-worker": "0.1.0",
+    "omrs-ocr-worker": "0.1.0",
     "paddleocr": "3.7.0",
     "paddlepaddle": "3.3.1"
   },
@@ -73,11 +73,11 @@ the provisioned Python 3.13 environment; no model load) reported:
     "revision": "1.6"
   },
   "output_schema": {
-    "id": "omrg.ocr.parse_output",
+    "id": "omrs.ocr.parse_output",
     "version": "1"
   },
   "packages": {
-    "omrg-ocr-worker": "0.1.0",
+    "omrs-ocr-worker": "0.1.0",
     "paddleocr": "3.7.0",
     "paddlepaddle": "3.3.1",
     "paddlex": "3.7.2"
@@ -120,7 +120,7 @@ The successful table-fixture responses were identical across Python versions:
 - Response type: `parse_result`
 - `ok`: `true`
 - Protocol: `1.0`
-- Output schema: `omrg.ocr.parse_output` version `1`
+- Output schema: `omrs.ocr.parse_output` version `1`
 - Page count: `1`
 - OCR backend: `paddleocr-vl`
 - Pipeline: `PaddleOCRVL` using `predict+restructure_pages`
@@ -180,17 +180,17 @@ existing `AIK_py_LFI` alerts at the evidence-write calls in
 
 ## Main-environment boundary
 
-The main-environment Paddle-free check ran before every provisioned smoke run and passed. A final metadata check also reported `Paddle-free` for the root OMRG environment.
+The main-environment Paddle-free check ran before every provisioned smoke run and passed. A final metadata check also reported `Paddle-free` for the root OMRS environment.
 
 The worker owns the Paddle packages, virtual environment, and model cache. No sibling worktree was modified. No file under `experiments/` was modified or executed.
 
 ## Modular-engine addendum (2026-10-04)
 
 Change `modular-ocr-workers-dots-mocr`, tasks 2.1 and 2.2. The engine now
-runs on the shared worker core (`python -m omrg_ocr_worker_core`).
+runs on the shared worker core (`python -m omrs_ocr_worker_core`).
 
 Machine: Apple M5 Pro, 48 GB, macOS 27.0, uv 0.12.18. Model weights came
-from `OMRG_OCR_MODEL_CACHE=~/Development/DATA/omrg/ocr-models`, whose
+from `OMRS_OCR_MODEL_CACHE=~/Development/DATA/omrs/ocr-models`, whose
 `paddleocr-vl` entry is an APFS clone of the preserved cache. The runs
 downloaded no model files. The cache size did not change (2,014,328 KB).
 
@@ -205,7 +205,7 @@ downloaded no model files. The cache size did not change (2,014,328 KB).
 The capability JSON was byte-identical on all three versions:
 
 ```json
-{"backend_id":"paddleocr_vl","model":{"identity":"PaddleOCR-VL","revision":"1.6"},"output_schema":{"id":"omrg.ocr.parse_output","version":"1"},"packages":{"omrg-ocr-paddleocr-vl":"0.1.0","omrg-ocr-worker-core":"0.1.0","paddleocr":"3.7.0","paddlepaddle":"3.3.1","paddlex":"3.7.2"},"pipeline":{"identity":"paddleocr-vl","revision":"predict+restructure_pages"},"protocol_version":"1.1"}
+{"backend_id":"paddleocr_vl","model":{"identity":"PaddleOCR-VL","revision":"1.6"},"output_schema":{"id":"omrs.ocr.parse_output","version":"1"},"packages":{"omrs-ocr-paddleocr-vl":"0.1.0","omrs-ocr-worker-core":"0.1.0","paddleocr":"3.7.0","paddlepaddle":"3.3.1","paddlex":"3.7.2"},"pipeline":{"identity":"paddleocr-vl","revision":"predict+restructure_pages"},"protocol_version":"1.1"}
 ```
 
 The environment stays on Python 3.12 after the runs.

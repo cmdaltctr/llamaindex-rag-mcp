@@ -13,7 +13,7 @@ import { SaveErrorNotice } from "./SaveErrorNotice";
 
 const CLOUD_NOTE = "Claims and cited passages are sent off this machine";
 const LOCK_NOTE =
-  "Either variable locks both judge fields here, and the other field can still come from omrg.jsonc, where a hand edit applies only at the next launch.";
+  "Either variable locks both judge fields here, and the other field can still come from omrs.jsonc, where a hand edit applies only at the next launch.";
 
 /** The provider as set. An alias (`cloud`, `local`) shows with the provider it resolves to. */
 function providerText(judge: JudgeSettings, connections: Connection[]): string {
@@ -21,7 +21,7 @@ function providerText(judge: JudgeSettings, connections: Connection[]): string {
   return judge.provider === judge.resolved_provider ? resolved : `${judge.provider} (${resolved})`;
 }
 
-/** The judge rows, Edit and Remove. Remove shows only for a choice from `omrg.jsonc`; a locked choice has no buttons. */
+/** The judge rows, Edit and Remove. Remove shows only for a choice from `omrs.jsonc`; a locked choice has no buttons. */
 function JudgeChoice({ judge, connections, onEdit }: { judge: JudgeSettings; connections: Connection[]; onEdit: () => void }) {
   const clear = useSetJudgeSettings();
   const locked = judge.locked || isEnvironmentSource(judge.source);
@@ -70,7 +70,7 @@ function JudgeForm({ judge, connections, onClose }: { judge: JudgeSettings; conn
   );
 }
 
-/** The claim check judge of this web server. A saved choice is written to `omrg.jsonc` and applies from the next answer. */
+/** The claim check judge of this web server. A saved choice is written to `omrs.jsonc` and applies from the next answer. */
 export function JudgeBlock({ connections }: { connections: Connection[] }) {
   const api = useApi();
   const query = useQuery(judgeSettingsQuery(api));

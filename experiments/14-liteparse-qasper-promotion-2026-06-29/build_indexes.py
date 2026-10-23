@@ -155,7 +155,7 @@ def parse_corpus(corpus_dir: Path, reader: str) -> dict[str, Any]:
         token_count, parse_time_s, error), ``parsed_text_sha256_by_file``
         and ``artefact_sha256``.
     """
-    from omrg.integrations.pdf.factory import get_pdf_reader
+    from omrs.integrations.pdf.factory import get_pdf_reader
 
     identity = corpus_identity(corpus_dir)
     adapter = get_pdf_reader(reader)
@@ -351,9 +351,9 @@ def main() -> None:
     # install it explicitly.  Deliberately NOT ensure_runtime_setup():
     # that would build the ambient .env store and embed model, overriding
     # the per-parser experiment store built below.
-    from omrg.compose import settings_to_effective
-    from omrg.config import get_settings
-    from omrg.core.settings import set_default_effective_settings
+    from omrs.compose import settings_to_effective
+    from omrs.config import get_settings
+    from omrs.core.settings import set_default_effective_settings
 
     set_default_effective_settings(settings_to_effective(get_settings()))
 
@@ -443,8 +443,8 @@ def main() -> None:
         }
         for doc in documents
     ]
-    from omrg.core.vectordb.identity import EmbeddingIdentity
-    from omrg.core.vectordb.validation import validate_embedding_batch
+    from omrs.core.vectordb.identity import EmbeddingIdentity
+    from omrs.core.vectordb.validation import validate_embedding_batch
 
     identity = EmbeddingIdentity(provider="ollama", model=embed_model)
     validate_embedding_batch(

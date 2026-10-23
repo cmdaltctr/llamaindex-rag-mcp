@@ -117,7 +117,7 @@ describe("confirmed deletion", () => {
     expect(deletes(server)).toEqual([{ dry_run: true }, { confirmation_token: "tok1" }, { dry_run: true }, { confirmation_token: "tok2" }]);
     // The project is gone, so the Knowledge Base returns to the picker and forgets it.
     await waitFor(() => expect(window.location.hash).toBe("#/knowledge-base"));
-    expect(JSON.parse(window.localStorage.getItem("omrg-preferences") ?? "{}").lastCollection).toBeNull();
+    expect(JSON.parse(window.localStorage.getItem("omrs-preferences") ?? "{}").lastCollection).toBeNull();
   });
 
   it("explains a missing confirmation (428) and offers a preview", async () => {

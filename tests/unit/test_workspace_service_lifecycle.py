@@ -20,7 +20,7 @@ from tests.unit.test_workspace_service_support import (
     saved_revision,
 )
 
-from omrg.core.workspace import RunStateError, ServiceClosedError
+from omrs.core.workspace import RunStateError, ServiceClosedError
 
 
 def _stale_runs(tmp_path: Path) -> tuple[str, str]:

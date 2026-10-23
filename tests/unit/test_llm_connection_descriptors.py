@@ -14,9 +14,9 @@ from typing import Any
 
 import pytest
 
-from omrg.config import Settings
-from omrg.core.providers.llm import registry
-from omrg.core.providers.llm.connection import (
+from omrs.config import Settings
+from omrs.core.providers.llm import registry
+from omrs.core.providers.llm.connection import (
     ConnectionDescriptor,
     ConnectionField,
     ConnectionTarget,

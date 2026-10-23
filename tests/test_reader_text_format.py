@@ -20,19 +20,19 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-_ORCH_LOGGER = "omrg.core.ingestion.backends.orchestrator"
+_ORCH_LOGGER = "omrs.core.ingestion.backends.orchestrator"
 
 
 def _pdf_registry():
     """Return the PDF reader registry (lazy, mirrors suite convention)."""
-    from omrg.integrations.pdf import registry
+    from omrs.integrations.pdf import registry
 
     return registry
 
 
 def _orchestrator():
     """Return the document-backend orchestrator module."""
-    from omrg.core.ingestion.backends import orchestrator
+    from omrs.core.ingestion.backends import orchestrator
 
     return orchestrator
 
@@ -100,7 +100,7 @@ class TestPdfReaderDeclarations:
         """Task 4.1 — describe() exposes the declared reader metadata."""
         meta = _pdf_registry().describe("pypdf")
         assert set(meta) == {"import_path", "probe_module", "text_format", "page_provenance"}
-        assert meta["import_path"] == "omrg.integrations.pdf.pypdf:PyPDFReader"
+        assert meta["import_path"] == "omrs.integrations.pdf.pypdf:PyPDFReader"
         assert meta["probe_module"] == "pypdf"
 
     def test_describe_unknown_lists_names(self) -> None:
@@ -125,7 +125,7 @@ class TestRegistrationRequiresDeclaration:
         with pytest.raises(TypeError, match="text_format"):
             registry.register(
                 "temp_undeclared",
-                "omrg.integrations.pdf.pypdf:PyPDFReader",
+                "omrs.integrations.pdf.pypdf:PyPDFReader",
                 "pypdf",
                 page_provenance=True,
             )
@@ -137,7 +137,7 @@ class TestRegistrationRequiresDeclaration:
         with pytest.raises(TypeError, match="page_provenance"):
             registry.register(
                 "temp_no_pages",
-                "omrg.integrations.pdf.pypdf:PyPDFReader",
+                "omrs.integrations.pdf.pypdf:PyPDFReader",
                 "pypdf",
                 text_format="plain",
             )
@@ -149,7 +149,7 @@ class TestRegistrationRequiresDeclaration:
         with pytest.raises(ValueError, match="text_format"):
             registry.register(
                 "temp_bogus_format",
-                "omrg.integrations.pdf.pypdf:PyPDFReader",
+                "omrs.integrations.pdf.pypdf:PyPDFReader",
                 "pypdf",
                 text_format="html",
                 page_provenance=True,
@@ -162,14 +162,14 @@ class TestRegistrationRequiresDeclaration:
         try:
             registry.register(
                 "temp_markdown_reader",
-                "omrg.integrations.pdf.pypdf:PyPDFReader",
+                "omrs.integrations.pdf.pypdf:PyPDFReader",
                 text_format="markdown",
                 page_provenance=False,
             )
             meta = registry.describe("temp_markdown_reader")
             assert meta["text_format"] == "markdown"
             assert meta["page_provenance"] is False
-            assert meta["probe_module"] == "omrg.integrations.pdf.pypdf"
+            assert meta["probe_module"] == "omrs.integrations.pdf.pypdf"
         finally:
             _drop_temp_pdf_entries("temp_markdown_reader")
 
@@ -239,9 +239,9 @@ class TestPreReadResolver:
         pypdf), so a caller that bypassed ``compose`` hashes the same
         ``parser.text_format`` into the identity.
         """
-        from omrg.capabilities import resolve_pdf_reader
-        from omrg.config import Settings
-        from omrg.integrations.pdf.factory import resolve_reader_name
+        from omrs.capabilities import resolve_pdf_reader
+        from omrs.config import Settings
+        from omrs.integrations.pdf.factory import resolve_reader_name
 
         pdf = fixtures_dir / "smoke_text.pdf"
         composed = resolve_pdf_reader(Settings(_env_file=None, pdf_reader="auto"))
@@ -288,7 +288,7 @@ class TestBackendReadCarriesFormat:
         orch = _orchestrator()
         docs = [MagicMock(name="azure-doc")]
         with patch(
-            "omrg.integrations.azure.read_documents",
+            "omrs.integrations.azure.read_documents",
             AsyncMock(return_value=docs),
         ):
             result = await orch.read_document(
@@ -333,11 +333,11 @@ class TestBackendReadCarriesFormat:
         docs = [MagicMock(name="local-doc")]
         with (
             patch(
-                "omrg.integrations.azure.read_documents",
+                "omrs.integrations.azure.read_documents",
                 AsyncMock(side_effect=ImportError("azure-ai-documentintelligence missing")),
             ),
             patch(
-                "omrg.core.ingestion.backends.local.read_documents",
+                "omrs.core.ingestion.backends.local.read_documents",
                 AsyncMock(return_value=docs),
             ),
             caplog.at_level(logging.WARNING, logger=_ORCH_LOGGER),

@@ -8,8 +8,8 @@ budget intact.
 
 from __future__ import annotations
 
-from omrg.core.answer import synthesis
-from omrg.core.answer.prompt import GROUND_REFINE_TEMPLATE, GROUND_TEXT_QA_TEMPLATE
+from omrs.core.answer import synthesis
+from omrs.core.answer.prompt import GROUND_REFINE_TEMPLATE, GROUND_TEXT_QA_TEMPLATE
 
 
 def _text_qa() -> str:

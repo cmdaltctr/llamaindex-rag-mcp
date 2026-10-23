@@ -15,9 +15,9 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from omrg.core.ingestion import ingest_path_async
-from omrg.core.retrieval import search
-from omrg.core.retrieval.pipeline import RERANK_SCORE_KIND
+from omrs.core.ingestion import ingest_path_async
+from omrs.core.retrieval import search
+from omrs.core.retrieval.pipeline import RERANK_SCORE_KIND
 
 _COLLECTION = "lineage_docs"
 _FILE_TEXT = "lineage sentinel paragraph about quantum foxes " * 240

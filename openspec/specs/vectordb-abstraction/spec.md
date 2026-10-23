@@ -77,7 +77,7 @@ interface.
 
 #### Scenario: Single chromadb import site
 
-- **WHEN** `src/omrg/` is searched for `import chromadb` or
+- **WHEN** `src/omrs/` is searched for `import chromadb` or
   `chromadb.PersistentClient`
 - **THEN** every match MUST be in a module under `core/vectordb/chroma/`
 
@@ -97,7 +97,7 @@ interface.
 
 #### Scenario: Existing tests pass against the implementation
 
-- **WHEN** `uv run pytest -m "not slow" --cov=omrg` runs
+- **WHEN** `uv run pytest -m "not slow" --cov=omrs` runs
 - **THEN** all pre-existing tests MUST pass against the ChromaDB-backed
   implementation with no assertion changes beyond injected-settings plumbing
 
@@ -256,7 +256,7 @@ dataset identity change, including overwrite-based schema evolution and
 recreation, and SHALL be observable by any process reading the same underlying
 data. A numeric version whose history can restart is not sufficient alone.
 
-For LanceDB, the token SHALL combine an OMRG-owned random dataset epoch stored
+For LanceDB, the token SHALL combine an OMRS-owned random dataset epoch stored
 in current table schema metadata with `table.version`. Ordinary row mutations
 SHALL preserve the epoch. Table creation, recreation and every overwrite-based
 rebuild SHALL replace it. Version-history timestamps and row counts SHALL NOT
@@ -293,18 +293,18 @@ process-local counter under a durable name.
 
 #### Scenario: Cleanup does not erase identity
 
-- **GIVEN** a Lance table carrying an OMRG dataset epoch
+- **GIVEN** a Lance table carrying an OMRS dataset epoch
 - **WHEN** old versions are pruned through cleanup or optimisation
 - **THEN** the current table MUST retain the same epoch
 - **AND** the next ordinary mutation MUST still change the complete token
 
 #### Scenario: Existing table acquires identity on its next write
 
-- **GIVEN** a pre-existing Lance table without an OMRG dataset epoch
+- **GIVEN** a pre-existing Lance table without an OMRS dataset epoch
 - **WHEN** it is read without mutation
 - **THEN** the durable-version capability MUST report unavailable and MUST NOT
   mutate the table
-- **WHEN** an OMRG-controlled writer next mutates it under the write lock
+- **WHEN** an OMRS-controlled writer next mutates it under the write lock
 - **THEN** the writer MUST install an epoch before the row mutation
 - **AND** readers MUST treat the change from local fallback to durable token as
   cache invalidation

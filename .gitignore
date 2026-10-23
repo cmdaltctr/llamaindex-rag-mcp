@@ -106,4 +106,4 @@ experiments/25-token-chunking-ablation-2026-09-08/corpus
 # Local web workspace (add-local-web-pipeline-workspace): npm dependencies and the
 # Vite build output, which the wheel force-includes at build time
 web/node_modules/
-src/omrg/transports/api/static/
+src/omrs/transports/api/static/

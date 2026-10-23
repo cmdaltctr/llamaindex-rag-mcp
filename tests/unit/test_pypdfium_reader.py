@@ -23,7 +23,7 @@ class TestPyPDFium2Reader:
         if not CORPUS_PDF.exists():
             pytest.skip("Corpus PDF not available")
 
-        from omrg.integrations.pdf.pypdfium import PyPDFium2Reader
+        from omrs.integrations.pdf.pypdfium import PyPDFium2Reader
 
         reader = PyPDFium2Reader()
         documents = reader.load_data(file=CORPUS_PDF)

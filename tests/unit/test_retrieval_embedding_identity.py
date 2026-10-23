@@ -13,7 +13,7 @@ from typing import Any
 
 import pytest
 
-from omrg.core.vectordb.identity import EmbeddingIdentity
+from omrs.core.vectordb.identity import EmbeddingIdentity
 
 IDENTITY_B = EmbeddingIdentity(provider="ollama", model="model-b")
 _ROW = {
@@ -55,7 +55,7 @@ class _RecordingStore:
 
 
 def _search(store: _RecordingStore, settings: Any, **extra: Any) -> list[dict]:
-    from omrg.core.retrieval.pipeline import search
+    from omrs.core.retrieval.pipeline import search
 
     return search(
         "what proves the theorem",
@@ -93,7 +93,7 @@ def test_search_without_identity_sends_no_identity_keyword(effective_settings) -
 
 
 def test_search_retriever_passes_identity_to_search_fn() -> None:
-    from omrg.core.answer.retriever import SearchRetriever
+    from omrs.core.answer.retriever import SearchRetriever
 
     captured: dict[str, Any] = {}
 
@@ -106,7 +106,7 @@ def test_search_retriever_passes_identity_to_search_fn() -> None:
 
 
 def test_search_retriever_without_identity_adds_no_keyword() -> None:
-    from omrg.core.answer.retriever import SearchRetriever
+    from omrs.core.answer.retriever import SearchRetriever
 
     captured: dict[str, Any] = {}
 
@@ -121,7 +121,7 @@ def test_search_retriever_without_identity_adds_no_keyword() -> None:
 def test_answer_hands_identity_to_the_retriever(
     effective_settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from omrg.core.answer import pipeline as answer_pipeline
+    from omrs.core.answer import pipeline as answer_pipeline
 
     seen: dict[str, Any] = {}
 

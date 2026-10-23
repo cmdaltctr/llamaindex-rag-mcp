@@ -1,4 +1,4 @@
-# OMRG web workspace: what to expect
+# OMRS web workspace: what to expect
 
 Draft, 14 October 2026. Local only (git-ignored). It shows what `redesign-web-workspace` will build, screen by screen, in ASCII. The specs in `openspec/changes/redesign-web-workspace/` are the contract; the visual rules are in `web/DESIGN.md`.
 
@@ -24,7 +24,7 @@ Widths are drawn for a 1280px window unless marked "390px".
 
 ```
 +-------------------------------------------------------------------------------------+
-| OMRG  Local workspace                     ( 3 collections )   [ v System ] [ ☾ ]   |  <- top bar, muted grey,
+| OMRS  Local workspace                     ( 3 collections )   [ v System ] [ ☾ ]   |  <- top bar, muted grey,
 +--------------------+----------------------------------------------------------------+     thin shadow underneath
 | ▌⌂ Home            |                                                                |
 |  ◯ Chat            |   Page title                                                   |
@@ -47,7 +47,7 @@ At 390px the navigation becomes a top row of icons with labels underneath, each 
 
 ```
 +----------------------------------+
-| OMRG          ( offline ) [ v ]  |
+| OMRS          ( offline ) [ v ]  |
 +----------------------------------+
 | ⌂    ◯    ▤    ⟜    ⚗    ⏚    ⚙  |
 |Home Chat  KB  Stud Exp  Int  Set |
@@ -70,7 +70,7 @@ Projects are collections. Each card opens that project's Knowledge Base.
 |  ◯ Chat            |  Your projects. Each project is one collection.                |
 |  ...               |                                                                |
 |                    |  +------------------------+  +------------------------+        |
-|                    |  | papers                 |  | omrg-code              |        |
+|                    |  | papers                 |  | omrs-code              |        |
 |                    |  | {documents}            |  | {codebase}             |        |
 |                    |  | 42 documents · 3,118   |  | 311 files · 9,870      |        |
 |                    |  | chunks                 |  | chunks                 |        |
@@ -181,9 +181,9 @@ Ask questions of one knowledge base. Each question is answered on its own (no me
 | ▌◯ Chat            |                                           |                    |
 |  ▤ Knowledge Base  |  You                                      | ▌papers            |
 |  ...               |  What does the survey say about           |   42 docs          |
-|                    |  chunk size?                              |  omrg-code         |
+|                    |  chunk size?                              |  omrs-code         |
 |                    |                                           |   311 files        |
-|                    |  OMRG   {ok}                              |  fiqh-notes        |
+|                    |  OMRS   {ok}                              |  fiqh-notes        |
 |                    |  The survey recommends 512 to 1,024       |   7 docs           |
 |                    |  tokens for prose [1] and smaller...      |                    |
 |                    |                                           |                    |
@@ -202,13 +202,13 @@ Ask questions of one knowledge base. Each question is answered on its own (no me
 - Answer status badge: `{ok}` green, `{no_evidence}` / `{unverified_claims}` / `{generation_unverified}` amber, `{error}` red. The word is always visible.
 - Citation chips open the chunk in the chunk viewer.
 - "Evidence (2)" expands to the evidence rows.
-- Picking another knowledge base mid-chat keeps earlier turns and changes the address to `#/chat/omrg-code`.
+- Picking another knowledge base mid-chat keeps earlier turns and changes the address to `#/chat/omrs-code`.
 - While waiting: the Send button is disabled and the turn says "Answering...".
 
 A failed turn:
 
 ```
-|  OMRG   {error}                                     |
+|  OMRS   {error}                                     |
 |  The local server is not reachable.   [ Retry ]   |
 ```
 
@@ -382,7 +382,7 @@ Six sections. Chips switch them, one at a time, like the Knowledge Base.
 **Connections** (read-only; values come from `.env` and `config/defaults.yaml`)
 
 ```
-|  Values come from /path/to/project/.env. Change them there and restart omrg web.  |
+|  Values come from /path/to/project/.env. Change them there and restart omrs web.  |
 |                                                                                    |
 |  +-- llama.cpp ------------------------------------------------------------------+ |
 |  |  Embeddings  http://localhost:8080/v1   model  qwen3-embedding                | |
@@ -411,19 +411,19 @@ Six sections. Chips switch them, one at a time, like the Knowledge Base.
 **MCP**
 
 ```
-|  Use OMRG from an MCP client                                                       |
+|  Use OMRS from an MCP client                                                       |
 |                                                                                    |
-|  Local (stdio). The client starts OMRG itself, in the folder that holds .env.     |
+|  Local (stdio). The client starts OMRS itself, in the folder that holds .env.     |
 |  +------------------------------------------------------------------------------+  |
-|  | { "mcpServers": { "omrg": { "command": "uv", "args": ["run", "--directory",  |  |
-|  |   "/path/to/project", "omrg"] } } }                                           |  |
+|  | { "mcpServers": { "omrs": { "command": "uv", "args": ["run", "--directory",  |  |
+|  |   "/path/to/project", "omrs"] } } }                                           |  |
 |  +------------------------------------------------------------------------------+  |
 |                                                                       [ Copy ]     |
 |                                                                                    |
 |  Over HTTP from this server            [  on |o ]                                  |
-|  Shares this server's engine. Works while omrg web is running.                     |
+|  Shares this server's engine. Works while omrs web is running.                     |
 |  +------------------------------------------------------------------------------+  |
-|  | { "mcpServers": { "omrg": { "type": "http",                                  |  |
+|  | { "mcpServers": { "omrs": { "type": "http",                                  |  |
 |  |     "url": "http://127.0.0.1:8765/mcp",                                      |  |
 |  |     "headers": { "Authorization": "Bearer <token>" } } } }                   |  |
 |  +------------------------------------------------------------------------------+  |
@@ -433,13 +433,13 @@ Six sections. Chips switch them, one at a time, like the Knowledge Base.
 |          Rotating breaks clients that use the old token.                           |
 |                                                                                    |
 |  Port    8765 (in use now)    Save a different port  [ 9100   ] [ Save ]           |
-|          Applies the next time omrg web starts.                                    |
+|          Applies the next time omrs web starts.                                    |
 ```
 
 - The switch shows only what the server reports. It is off on a new workspace.
 - A new token appears once, with Copy. After you leave the section, only its creation date shows.
 - Only paths inside the folders approved with `--root` work over HTTP. Stdio has no such limit.
-- If port 8765 is taken, `omrg web` stops and says: start with `--port <n>`, then save it here.
+- If port 8765 is taken, `omrs web` stops and says: start with `--port <n>`, then save it here.
 - All of this comes from `add-mcp-http-transport`.
 
 **Server log**
@@ -448,9 +448,9 @@ Six sections. Chips switch them, one at a time, like the Knowledge Base.
 |  [All] [Info] [Warning] [Error]                              [ Pause ] [ Copy ]    |
 |  +------------------------------------------------------------------------------+  |
 |  | 14:02:11  INFO     uvicorn.access   GET /v1/collections 200                  |  |
-|  | 14:02:15  INFO     omrg.ingestion   Ingest job j_7 started: 12 files         |  |
-|  | 14:02:19  WARNING  omrg.retrieval   Reranker disabled for profile codebase   |  |
-|  | 14:02:31  ERROR    omrg.answer      Provider ollama refused the connection   |  |
+|  | 14:02:15  INFO     omrs.ingestion   Ingest job j_7 started: 12 files         |  |
+|  | 14:02:19  WARNING  omrs.retrieval   Reranker disabled for profile codebase   |  |
+|  | 14:02:31  ERROR    omrs.answer      Provider ollama refused the connection   |  |
 |  | _                                                                            |  |
 |  +------------------------------------------------------------------------------+  |
 ```
@@ -469,7 +469,7 @@ Six sections. Chips switch them, one at a time, like the Knowledge Base.
 **Workspace**
 
 ```
-|  ~/.omrg/workspace                                                                 |
+|  ~/.omrs/workspace                                                                 |
 ```
 
 ---
@@ -481,7 +481,7 @@ Six sections. Chips switch them, one at a time, like the Knowledge Base.
 | Loading | The area keeps its layout; content shows "Loading..." in meta text. No spinners that shift the page. |
 | Empty | An icon, one sentence, one action. |
 | Server down | "The local server is not reachable." plus Retry. |
-| Not allowed (session) | "This session cannot do that. Reopen the workspace from `omrg web`." |
+| Not allowed (session) | "This session cannot do that. Reopen the workspace from `omrs web`." |
 | Not found (bad link) | "papers2 does not exist." plus a link back to the picker. |
 | File too large | "attention.zip is over the 50 MB limit." |
 | Wrong address | Home, with the address bar reset to `#/home`. |

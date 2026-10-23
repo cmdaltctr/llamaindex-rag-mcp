@@ -1,6 +1,6 @@
 """The marimo starter notebook's helpers against a real app (task 8.6).
 
-marimo is not in OMRG's environment, so the tests import the notebook with a
+marimo is not in OMRS's environment, so the tests import the notebook with a
 stand-in ``marimo`` module whose ``App`` keeps every cell. The helpers talk
 to a ``TestClient``-backed application through an injected transport, with
 a bearer credential bound
@@ -35,7 +35,7 @@ from tests.unit.test_web_experiments_support import (  # noqa: E402
 )
 from tests.unit.test_web_runs_support import make_engine  # noqa: E402
 
-from omrg.core.profiles.resolver import ProfileResolver  # noqa: E402
+from omrs.core.profiles.resolver import ProfileResolver  # noqa: E402
 
 NOTEBOOK = Path(__file__).resolve().parents[2] / "plugins" / "marimo" / "starter_notebook.py"
 
@@ -66,13 +66,13 @@ class _StubApp:
 def load_notebook(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     """Import the notebook file with a stand-in ``marimo`` module.
 
-    marimo is not in OMRG's environment. The notebook keeps marimo's file
+    marimo is not in OMRS's environment. The notebook keeps marimo's file
     layout (a top-level ``import marimo``), so the test supplies the module.
     """
     stub = ModuleType("marimo")
     stub.App = _StubApp  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "marimo", stub)
-    spec = importlib.util.spec_from_file_location("omrg_starter_notebook", NOTEBOOK)
+    spec = importlib.util.spec_from_file_location("omrs_starter_notebook", NOTEBOOK)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -121,9 +121,9 @@ def lab(tmp_path: Path, effective_settings: Any, notebook: ModuleType) -> Any:
         token_file.write_text(issued["token"] + "\n")
         token_file.chmod(0o600)
         env = {
-            "OMRG_API_URL": BASE,
-            "OMRG_TOKEN_FILE": str(token_file),
-            "OMRG_EXPERIMENT_CONTEXT": context_id,
+            "OMRS_API_URL": BASE,
+            "OMRS_TOKEN_FILE": str(token_file),
+            "OMRS_EXPERIMENT_CONTEXT": context_id,
         }
         transport = Recording(client)
         api = notebook.ApiClient.from_environment(env, transport=transport)
@@ -167,32 +167,32 @@ def test_notebook_imports_without_marimo_and_keeps_explicit_run_controls(
     assert "app = marimo.App(" in text
     assert "mo.ui.run_button(" in text and "mo.stop(\n        not run_button.value" in text
     assert "run_requested=True" in text
-    assert not re.search(r"omrg_bt_[A-Za-z0-9]", text)  # no hard-coded credential
+    assert not re.search(r"omrs_bt_[A-Za-z0-9]", text)  # no hard-coded credential
     assert "print(" not in text
 
 
 def test_connection_settings_are_checked(notebook: ModuleType, tmp_path: Path) -> None:
     token_file = tmp_path / "t"
-    token_file.write_text("omrg_bt_x.y")
+    token_file.write_text("omrs_bt_x.y")
     token_file.chmod(0o644)
     with pytest.raises(notebook.ApiConfigError, match="private"):
-        notebook.read_token({"OMRG_TOKEN_FILE": str(token_file)})
+        notebook.read_token({"OMRS_TOKEN_FILE": str(token_file)})
     with pytest.raises(notebook.ApiConfigError):
         notebook.read_token({})
     with pytest.raises(notebook.ApiConfigError, match="loopback"):
         notebook.ApiClient("http://example.com:8765", "secret")
     with pytest.raises(notebook.ApiConfigError):
         notebook.experiment_context_from_environment({})
-    assert notebook.read_token({"OMRG_TOKEN": " abc "}) == "abc"
+    assert notebook.read_token({"OMRS_TOKEN": " abc "}) == "abc"
 
 
 def _connection_file(tmp_path: Path, token: str, context: str, url: str = BASE) -> Path:
-    """Write a connection file and its token file as OMRG does (mode 600)."""
+    """Write a connection file and its token file as OMRS does (mode 600)."""
     tmp_path.mkdir(parents=True, exist_ok=True)
-    token_file = tmp_path / "omrg-api-token"
+    token_file = tmp_path / "omrs-api-token"
     token_file.write_text(token)
     token_file.chmod(0o600)
-    path = tmp_path / "omrg_connection.json"
+    path = tmp_path / "omrs_connection.json"
     details = {"api_url": url, "experiment_context": context, "token_file": str(token_file)}
     path.write_text(json.dumps(details))
     path.chmod(0o600)
@@ -202,19 +202,19 @@ def _connection_file(tmp_path: Path, token: str, context: str, url: str = BASE) 
 def test_connection_file_is_preferred_over_the_variables(
     notebook: ModuleType, tmp_path: Path
 ) -> None:
-    path = _connection_file(tmp_path, "omrg_bt_file.token", "exp_file")
+    path = _connection_file(tmp_path, "omrs_bt_file.token", "exp_file")
     env = {
-        "OMRG_CONNECTION_FILE": str(path),
-        "OMRG_API_URL": "http://127.0.0.1:1",
-        "OMRG_TOKEN": "omrg_bt_env.token",
-        "OMRG_EXPERIMENT_CONTEXT": "exp_env",
+        "OMRS_CONNECTION_FILE": str(path),
+        "OMRS_API_URL": "http://127.0.0.1:1",
+        "OMRS_TOKEN": "omrs_bt_env.token",
+        "OMRS_EXPERIMENT_CONTEXT": "exp_env",
     }
     client = notebook.ApiClient.from_environment(env)
-    assert client.base_url == BASE and client._token == "omrg_bt_file.token"  # noqa: S105
+    assert client.base_url == BASE and client._token == "omrs_bt_file.token"  # noqa: S105
     assert notebook.experiment_context_from_environment(env) == "exp_file"
-    fallback = {key: value for key, value in env.items() if key != "OMRG_CONNECTION_FILE"}
+    fallback = {key: value for key, value in env.items() if key != "OMRS_CONNECTION_FILE"}
     client = notebook.ApiClient.from_environment(fallback)
-    assert client.base_url == "http://127.0.0.1:1" and client._token == "omrg_bt_env.token"  # noqa: S105
+    assert client.base_url == "http://127.0.0.1:1" and client._token == "omrs_bt_env.token"  # noqa: S105
     assert notebook.experiment_context_from_environment(fallback) == "exp_env"
 
 
@@ -223,9 +223,9 @@ def test_connection_file_is_preferred_over_the_variables(
 def test_connection_or_token_file_wider_than_600_is_refused(
     notebook: ModuleType, tmp_path: Path, target: str, mode: int
 ) -> None:
-    path = _connection_file(tmp_path, "omrg_bt_file.token", "exp_file")
-    (path if target == "connection" else tmp_path / "omrg-api-token").chmod(mode)
-    env = {"OMRG_CONNECTION_FILE": str(path)}
+    path = _connection_file(tmp_path, "omrs_bt_file.token", "exp_file")
+    (path if target == "connection" else tmp_path / "omrs-api-token").chmod(mode)
+    env = {"OMRS_CONNECTION_FILE": str(path)}
     with pytest.raises(notebook.ApiConfigError, match="chmod 600"):
         notebook.ApiClient.from_environment(env)
     with pytest.raises(notebook.ApiConfigError, match="chmod 600"):
@@ -238,21 +238,21 @@ def test_connection_or_token_file_wider_than_600_is_refused(
 def test_malformed_connection_file_is_refused(
     notebook: ModuleType, tmp_path: Path, content: str
 ) -> None:
-    path = _connection_file(tmp_path, "omrg_bt_file.token", "exp_file")
+    path = _connection_file(tmp_path, "omrs_bt_file.token", "exp_file")
     path.write_text(content)
-    with pytest.raises(notebook.ApiConfigError, match="OMRG_CONNECTION_FILE"):
-        notebook.ApiClient.from_environment({"OMRG_CONNECTION_FILE": str(path)})
+    with pytest.raises(notebook.ApiConfigError, match="OMRS_CONNECTION_FILE"):
+        notebook.ApiClient.from_environment({"OMRS_CONNECTION_FILE": str(path)})
 
 
 def test_missing_connection_file_is_refused(notebook: ModuleType, tmp_path: Path) -> None:
-    env = {"OMRG_CONNECTION_FILE": str(tmp_path / "gone.json"), "OMRG_TOKEN": "x"}
+    env = {"OMRS_CONNECTION_FILE": str(tmp_path / "gone.json"), "OMRS_TOKEN": "x"}
     with pytest.raises(notebook.ApiConfigError, match="cannot be read"):
-        notebook.ApiClient.from_environment({**env, "OMRG_API_URL": BASE})
+        notebook.ApiClient.from_environment({**env, "OMRS_API_URL": BASE})
 
 
 def test_connection_file_runs_a_graph(notebook: ModuleType, lab: dict, tmp_path: Path) -> None:
     path = _connection_file(tmp_path / "launch", lab["token"], lab["context_id"])
-    env = {"OMRG_CONNECTION_FILE": str(path)}
+    env = {"OMRS_CONNECTION_FILE": str(path)}
     api = notebook.ApiClient.from_environment(env, transport=lab["transport"])
     session = notebook.ExperimentSession(
         api, notebook.experiment_context_from_environment(env), lab["output"], poll_interval=0.01

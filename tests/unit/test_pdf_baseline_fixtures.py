@@ -159,10 +159,10 @@ def test_baseline_degraded_behaviour_pinned() -> None:
 
 def test_adapter_metadata_contract_on_text_pdf(fixtures_dir, caplog) -> None:
     """The adapter maps exactly the current seven metadata keys on a text PDF."""
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     pdf = fixtures_dir / "pdf_baseline" / "evaluation" / "eval_clean_text.pdf"
-    with caplog.at_level(logging.INFO, logger="omrg.integrations.pdf.pdf_inspector"):
+    with caplog.at_level(logging.INFO, logger="omrs.integrations.pdf.pdf_inspector"):
         docs = PdfInspectorReader().load_data(file=pdf)
 
     assert len(docs) == 1
@@ -181,7 +181,7 @@ def test_adapter_metadata_contract_on_text_pdf(fixtures_dir, caplog) -> None:
     assert doc.metadata["pdf_confidence"] == pytest.approx(1.0)
     assert doc.metadata["page_count"] == 1
     assert "## Evaluation Clean Text Fixture" in doc.get_content()
-    assert "OMRG-EV-0042" in doc.get_content()
+    assert "OMRS-EV-0042" in doc.get_content()
     assert "may need OCR" not in caplog.text, (
         "text_based documents must not log the degraded warning"
     )
@@ -196,10 +196,10 @@ def test_adapter_degraded_ocr_path_pinned(fixtures_dir, caplog) -> None:
     stores ``pages_needing_ocr`` as the SCALAR COUNT (never the
     library's page list — vector-store metadata values are scalars).
     """
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     pdf = fixtures_dir / "pdf_baseline" / "calibration" / "cal_scanned.pdf"
-    with caplog.at_level(logging.INFO, logger="omrg.integrations.pdf.pdf_inspector"):
+    with caplog.at_level(logging.INFO, logger="omrs.integrations.pdf.pdf_inspector"):
         docs = PdfInspectorReader().load_data(file=pdf)
 
     assert len(docs) == 1

@@ -26,12 +26,12 @@ import pytest
 from llama_index.core import Settings
 from llama_index.core.schema import TextNode
 
-from omrg.core.ingestion import ingest_path_async, pipeline
-from omrg.core.ingestion.loader import list_documents
-from omrg.core.ingestion.replacement import IngestionStageError, replace_source_nodes_async
-from omrg.core.ingestion.writer import preview_delete, remove_document
-from omrg.core.vectordb import get_default_store, set_default_store
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.core.ingestion import ingest_path_async, pipeline
+from omrs.core.ingestion.loader import list_documents
+from omrs.core.ingestion.replacement import IngestionStageError, replace_source_nodes_async
+from omrs.core.ingestion.writer import preview_delete, remove_document
+from omrs.core.vectordb import get_default_store, set_default_store
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
 _COLLECTION = "lineage_store"
 
@@ -284,7 +284,7 @@ class TestStorePersistence:
         self, tmp_path: Path, lineage_store
     ) -> None:
         """Spec: unchanged-version selection resolves rows through source_id."""
-        from omrg.core.ingestion import source_state
+        from omrs.core.ingestion import source_state
 
         source = tmp_path / "complete.txt"
         source.write_text("completeness sentinel " * 100, encoding="utf-8")

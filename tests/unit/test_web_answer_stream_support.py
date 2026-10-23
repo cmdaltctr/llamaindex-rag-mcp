@@ -20,7 +20,7 @@ pytest.importorskip("fastapi")
 
 from tests.unit.test_web_documents_support import RecordingEngine, lance_store  # noqa: E402
 
-from omrg.core.answer.progress import AnswerStage  # noqa: E402
+from omrs.core.answer.progress import AnswerStage  # noqa: E402
 
 COLLECTION = "notes"
 ANSWER = f"/v1/collections/{COLLECTION}/answer"

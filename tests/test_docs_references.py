@@ -1,6 +1,6 @@
 """Guard test: documentation file-path references SHALL resolve.
 
-Every ``src/omrg/**.py`` path cited in operator-facing documentation
+Every ``src/omrs/**.py`` path cited in operator-facing documentation
 (``docs/guides/`` and ``tests/TEST_README.md``) must exist on disk.
 Historical records (``docs/adr/``) are excluded — they legitimately cite
 paths that no longer exist, because they describe the past.
@@ -29,17 +29,17 @@ _SCAN_DIRS: list[Path] = [
 ]
 # Folders that hold a folder guide (``AGENTS.md``); every guide below them is scanned.
 _GUIDE_DIRS: list[Path] = [
-    _REPO_ROOT / "src" / "omrg",
+    _REPO_ROOT / "src" / "omrs",
     _REPO_ROOT / "web" / "src",
     _REPO_ROOT / "tests",
 ]
 
-# Match src/omrg/...py paths in documentation.  Path components may
+# Match src/omrs/...py paths in documentation.  Path components may
 # contain hyphens (e.g. ``providers/llama-cpp.py``) as well as word
 # characters, so the class includes ``-`` alongside ``\w``, ``/``, ``.``.
-_SRC_PATH_RE = re.compile(r"src/omrg/[\w./-]+\.py")
+_SRC_PATH_RE = re.compile(r"src/omrs/[\w./-]+\.py")
 
-# Short citations start at a package folder and omit the ``src/omrg/`` prefix
+# Short citations start at a package folder and omit the ``src/omrs/`` prefix
 # (``core/vectordb/lancedb/store.py``).  The lookbehind rejects a match that
 # sits inside a longer path.  A placeholder such as ``core/chunking/<name>.py``
 # does not match, because ``<`` is not a path character.
@@ -61,20 +61,20 @@ def _scan_files() -> list[Path]:
 
 
 def test_documented_src_paths_exist() -> None:
-    """Every ``src/omrg/**.py`` path in operator docs must exist.
+    """Every ``src/omrs/**.py`` path in operator docs must exist.
 
     A path either resolves or it does not — there is no judgement and no
     suppression mechanism needed.  A guide that cites a moved file fails
     this check rather than misleading a contributor.  Short citations that
     start at ``core/``, ``transports/``, ``integrations/``, ``config/`` or
-    ``daemon/`` resolve below ``src/omrg/``.
+    ``daemon/`` resolve below ``src/omrs/``.
     """
     findings: list[str] = []
     for file_path in _scan_files():
         text = file_path.read_text(encoding="utf-8")
         for lineno, line in enumerate(text.splitlines(), start=1):
             cited_paths = [m.group() for m in _SRC_PATH_RE.finditer(line)]
-            cited_paths += [f"src/omrg/{m.group()}" for m in _SHORT_PATH_RE.finditer(line)]
+            cited_paths += [f"src/omrs/{m.group()}" for m in _SHORT_PATH_RE.finditer(line)]
             for cited in cited_paths:
                 resolved = _REPO_ROOT / cited
                 if not resolved.exists():
@@ -83,7 +83,7 @@ def test_documented_src_paths_exist() -> None:
 
     if findings:
         pytest.fail(
-            "Documentation cites src/omrg/ paths that do not exist:\n" + "\n".join(findings)
+            "Documentation cites src/omrs/ paths that do not exist:\n" + "\n".join(findings)
         )
 
 
@@ -106,7 +106,7 @@ _EXEMPT_DIRS: list[Path] = [
 # must name it to assert its absence (task 1.3). Neither is stale residue —
 # both are deliberate, functioning references to the removed name.
 _LEGACY_MIGRATION_EXEMPT: list[Path] = [
-    _REPO_ROOT / "src" / "omrg" / "transports" / "cli" / "_launchagent.py",
+    _REPO_ROOT / "src" / "omrs" / "transports" / "cli" / "_launchagent.py",
     _REPO_ROOT / "tests" / "unit" / "test_launchagent.py",
     _REPO_ROOT / "tests" / "test_install_login_watcher.py",
     _REPO_ROOT / "tests" / "test_package_metadata.py",
@@ -122,7 +122,7 @@ _STALE_RE = re.compile(r"\brag_mcp\b|(?<!llamaindex-)\brag-mcp\b")
 
 # Files to scan for stale references — live source, tests, and operator docs.
 _STALE_SCAN_GLOBS: list[str] = [
-    "src/omrg/**/*.py",
+    "src/omrs/**/*.py",
     "tests/**/*.py",
     "docs/guides/**/*.md",
     "README.md",

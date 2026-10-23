@@ -27,7 +27,7 @@ EXP_DIR = Path(__file__).resolve().parent
 
 
 def main() -> int:
-    from omrg.integrations.pdf.registry import get as get_reader
+    from omrs.integrations.pdf.registry import get as get_reader
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(

@@ -1,4 +1,4 @@
-"""Tests for ``omrg web`` launch, lifespan ownership and API fallback (task 6.1).
+"""Tests for ``omrs web`` launch, lifespan ownership and API fallback (task 6.1).
 
 Covers the lazy web extra, the unchanged no-argument MCP start, the
 engine built once through an injectable factory, graceful drain on
@@ -24,13 +24,13 @@ pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient  # noqa: E402
 from typer.testing import CliRunner  # noqa: E402
 
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import (  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import (  # noqa: E402
     AdmissionClosed,
     WebConfig,
     shutdown_runtime,
 )
-from omrg.transports.cli import app as cli_app  # noqa: E402
+from omrs.transports.cli import app as cli_app  # noqa: E402
 
 BASE = "http://127.0.0.1:8765"
 runner = CliRunner()
@@ -90,12 +90,12 @@ def test_cli_import_and_help_do_not_load_fastapi() -> None:
     code = textwrap.dedent(
         """
         import sys
-        import omrg, omrg.transports.cli
+        import omrs, omrs.transports.cli
         from typer.testing import CliRunner
-        result = CliRunner().invoke(omrg.transports.cli.app, ["--help"])
+        result = CliRunner().invoke(omrs.transports.cli.app, ["--help"])
         assert result.exit_code == 0, result.output
         assert "web" in result.output
-        web_modules = ("fastapi", "starlette", "omrg.transports.api.app")
+        web_modules = ("fastapi", "starlette", "omrs.transports.api.app")
         loaded = [m for m in web_modules if m in sys.modules]
         assert not loaded, loaded
         """
@@ -108,12 +108,12 @@ def test_cli_import_and_help_do_not_load_fastapi() -> None:
 
 
 def test_help_works_when_fastapi_is_not_installed() -> None:
-    """``omrg --help`` succeeds when fastapi cannot be imported at all."""
+    """``omrs --help`` succeeds when fastapi cannot be imported at all."""
     code = textwrap.dedent(
         """
         import sys
         sys.modules["fastapi"] = None
-        import omrg.transports.cli as cli
+        import omrs.transports.cli as cli
         from typer.testing import CliRunner
         result = CliRunner().invoke(cli.app, ["--help"])
         assert result.exit_code == 0, result.output
@@ -127,27 +127,27 @@ def test_help_works_when_fastapi_is_not_installed() -> None:
 
 
 def test_web_without_extra_prints_install_instruction(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A missing extra fails only ``omrg web``, with an install instruction."""
+    """A missing extra fails only ``omrs web``, with an install instruction."""
     monkeypatch.setitem(sys.modules, "fastapi", None)
-    with patch("omrg.transports.cli.compose.ensure_runtime_setup") as setup:
+    with patch("omrs.transports.cli.compose.ensure_runtime_setup") as setup:
         result = runner.invoke(cli_app, ["web"])
     assert result.exit_code == 1
-    assert 'pip install "omrg[web]"' in result.output
+    assert 'pip install "omrs[web]"' in result.output
     assert "uv sync --extra web" in result.output
     setup.assert_not_called()
 
 
 def test_no_argument_start_still_runs_mcp_server() -> None:
-    """``omrg`` with no arguments builds one Engine and starts MCP on stdio."""
+    """``omrs`` with no arguments builds one Engine and starts MCP on stdio."""
     # MCP main() calls logging.basicConfig(force=True) on the captured
     # stream; keep the root logger untouched for later tests.
     server = MagicMock()
     catalogue = object()
     with (
-        patch("omrg.compose_profile_setup.workspace_profile_catalogue", return_value=catalogue),
-        patch("omrg.transports.cli.compose.ensure_runtime_setup") as setup,
-        patch("omrg.transports.mcp.compose.build_engine") as build_engine,
-        patch("omrg.transports.mcp.create_mcp_server", return_value=server) as factory,
+        patch("omrs.compose_profile_setup.workspace_profile_catalogue", return_value=catalogue),
+        patch("omrs.transports.cli.compose.ensure_runtime_setup") as setup,
+        patch("omrs.transports.mcp.compose.build_engine") as build_engine,
+        patch("omrs.transports.mcp.create_mcp_server", return_value=server) as factory,
         patch("logging.basicConfig"),
     ):
         result = runner.invoke(cli_app, [])
@@ -161,7 +161,7 @@ def test_no_argument_start_still_runs_mcp_server() -> None:
 def test_web_bypasses_legacy_installer_and_prints_bootstrap_url_to_stderr(
     tmp_path: Path,
 ) -> None:
-    """``omrg web`` skips the process-default installer and keeps stdout clean."""
+    """``omrs web`` skips the process-default installer and keeps stdout clean."""
     captured: dict[str, Any] = {}
 
     def fake_serve(app: Any, sock: Any) -> None:
@@ -170,8 +170,8 @@ def test_web_bypasses_legacy_installer_and_prints_bootstrap_url_to_stderr(
         sock.close()
 
     with (
-        patch("omrg.transports.cli.compose.ensure_runtime_setup") as setup,
-        patch("omrg.transports.cli.web._serve", side_effect=fake_serve),
+        patch("omrs.transports.cli.compose.ensure_runtime_setup") as setup,
+        patch("omrs.transports.cli.web._serve", side_effect=fake_serve),
     ):
         # --port 0: a login item on this machine can hold the default port 8765.
         result = runner.invoke(cli_app, ["web", "--port", "0", "--workspace", str(tmp_path / "ws")])
@@ -181,14 +181,14 @@ def test_web_bypasses_legacy_installer_and_prints_bootstrap_url_to_stderr(
     assert result.stdout == ""
     port = captured["port"]
     assert port > 0
-    assert f"http://127.0.0.1:{port}/#bootstrap=omrg_bs_" in result.stderr
+    assert f"http://127.0.0.1:{port}/#bootstrap=omrs_bs_" in result.stderr
     assert "mcp" not in captured["app"].title.lower()
 
 
 @pytest.mark.parametrize("host", ["0.0.0.0", "192.168.1.10", "::", "example.com"])  # noqa: S104
 def test_web_rejects_non_loopback_bind(host: str, tmp_path: Path) -> None:
     """A remote bind address fails with a local-use explanation."""
-    with patch("omrg.transports.cli.web._serve") as serve:
+    with patch("omrs.transports.cli.web._serve") as serve:
         result = runner.invoke(
             cli_app, ["web", "--host", host, "--workspace", str(tmp_path / "ws")]
         )
@@ -199,7 +199,7 @@ def test_web_rejects_non_loopback_bind(host: str, tmp_path: Path) -> None:
 
 def test_web_rejects_missing_root(tmp_path: Path) -> None:
     """An approved root that does not exist stops the launch."""
-    with patch("omrg.transports.cli.web._serve") as serve:
+    with patch("omrs.transports.cli.web._serve") as serve:
         result = runner.invoke(
             cli_app,
             ["web", "--workspace", str(tmp_path / "ws"), "--root", str(tmp_path / "absent")],
@@ -215,8 +215,8 @@ def test_web_rejects_missing_root(tmp_path: Path) -> None:
 def test_web_rejects_bad_allow_origin_before_binding(value: str, rule: str, tmp_path: Path) -> None:
     """A bad ``--allow-origin`` exits 2 and names the value, before any socket opens."""
     with (
-        patch("omrg.transports.cli.web._bind_socket") as bind,
-        patch("omrg.transports.cli.web._serve") as serve,
+        patch("omrs.transports.cli.web._bind_socket") as bind,
+        patch("omrs.transports.cli.web._serve") as serve,
     ):
         result = runner.invoke(
             cli_app, ["web", "--workspace", str(tmp_path / "ws"), "--allow-origin", value]
@@ -236,7 +236,7 @@ def test_web_passes_allowed_origins_to_the_policy_and_prints_them_first(tmp_path
         captured["policy"] = app.state.access_policy
         sock.close()
 
-    with patch("omrg.transports.cli.web._serve", side_effect=fake_serve):
+    with patch("omrs.transports.cli.web._serve", side_effect=fake_serve):
         result = runner.invoke(
             cli_app,
             [
@@ -409,7 +409,7 @@ def test_api_errors_use_envelope_for_method_not_allowed(tmp_path: Path) -> None:
 
 def test_bind_socket_picks_a_free_loopback_port() -> None:
     """Port 0 binds a real free port on loopback before the app starts."""
-    from omrg.transports.cli.web import _bind_socket
+    from omrs.transports.cli.web import _bind_socket
 
     sock = _bind_socket("127.0.0.1", 0)
     try:

@@ -1,4 +1,4 @@
-"""Shared test fixtures for the OMRG test suite.
+"""Shared test fixtures for the OMRS test suite.
 
 Provides:
 - Deterministic tmp-path LanceDB default store (task 5.3) plus matching
@@ -66,7 +66,7 @@ class _UnitNormMockEmbedding(MockEmbedding):
 # settings). Defined once so the two fixtures cannot drift apart.
 _TEST_PERSIST_DIR = os.path.join(
     tempfile.gettempdir(),
-    f"test_chroma_omrg_{os.getpid()}",
+    f"test_chroma_omrs_{os.getpid()}",
 )
 _TEST_COLLECTION = "test_documents"
 
@@ -82,8 +82,8 @@ def _reset_default_store() -> None:
     ``ensure_runtime_setup`` recomposes against this test's pinned
     environment instead of skipping setup with a cleared store.
     """
-    from omrg.compose import reset_runtime_setup
-    from omrg.core.vectordb import reset_default_store
+    from omrs.compose import reset_runtime_setup
+    from omrs.core.vectordb import reset_default_store
 
     reset_runtime_setup()
     reset_default_store()
@@ -141,15 +141,15 @@ def _clear_registry_caches() -> None:
     at the original.  Clearing the caches ensures each test sees the
     patched function (task 3.7/3.9).
     """
-    from omrg.core.chunking import registry as _chunking
-    from omrg.core.community import registry as _community
-    from omrg.core.ingestion.backends import registry as _docbackend
-    from omrg.core.metadata import registry as _metadata
-    from omrg.core.providers.embeddings import registry as _embed
-    from omrg.core.providers.llm import registry as _llm
-    from omrg.core.retrieval import registry as _retrieval
-    from omrg.core.vectordb import registry as _vectordb
-    from omrg.integrations.pdf import registry as _pdf
+    from omrs.core.chunking import registry as _chunking
+    from omrs.core.community import registry as _community
+    from omrs.core.ingestion.backends import registry as _docbackend
+    from omrs.core.metadata import registry as _metadata
+    from omrs.core.providers.embeddings import registry as _embed
+    from omrs.core.providers.llm import registry as _llm
+    from omrs.core.retrieval import registry as _retrieval
+    from omrs.core.vectordb import registry as _vectordb
+    from omrs.integrations.pdf import registry as _pdf
 
     for reg in (
         _chunking,
@@ -181,7 +181,7 @@ def effective_settings():
     Builds a frozen :class:`EffectiveSettings` with sensible defaults so
     later test migrations are one-line changes (task 4.1).
     """
-    from omrg.core.settings import (
+    from omrs.core.settings import (
         ChunkingBlock,
         EffectiveSettings,
         EmbeddingBlock,
@@ -307,7 +307,7 @@ def _install_default_effective_settings(_isolate_env, _reset_default_store, tmp_
     (pytest orders dependency-free autouse fixtures alphabetically, which
     would otherwise reset the store AFTER this fixture installs it).
     """
-    from omrg.core.settings import (
+    from omrs.core.settings import (
         EffectiveSettings,
         EmbeddingBlock,
         MetadataBlock,
@@ -344,8 +344,8 @@ def _install_default_effective_settings(_isolate_env, _reset_default_store, tmp_
     # fixture never resolves — and therefore never caches — the flat
     # Settings singleton: a test that overrides provider env vars inside
     # a CliRunner.invoke() must still hit fresh validation.
-    from omrg.core.vectordb import registry as vectordb_registry
-    from omrg.core.vectordb import set_default_store
+    from omrs.core.vectordb import registry as vectordb_registry
+    from omrs.core.vectordb import set_default_store
 
     backend = os.environ.get("VECTOR_STORE", "lancedb")
     set_default_store(vectordb_registry.get(backend)(effective))
@@ -374,7 +374,7 @@ def _patch_embed_model(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureR
     Settings.embed_model = _patch_embed_model._mock
 
     if request.node.path.name in ("test_cli.py", "test_answer_transport_cli.py"):
-        from omrg.core.providers.embeddings import registry as embed_registry
+        from omrs.core.providers.embeddings import registry as embed_registry
 
         real_get = embed_registry.get
 
@@ -401,7 +401,7 @@ def _no_real_keychain(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(keyring.core, "_keyring_backend", fail.Keyring())
     # The adapter detects a backend once per process; that would replace the
     # fail backend with the real keychain.
-    from omrg.integrations import keychain
+    from omrs.integrations import keychain
 
     monkeypatch.setattr(keychain, "_BACKEND_READY", True)
 
@@ -410,10 +410,10 @@ def _no_real_keychain(monkeypatch: pytest.MonkeyPatch) -> None:
 def _isolated_user_config_dir(monkeypatch: pytest.MonkeyPatch, tmp_path_factory) -> None:
     """Point the user config folder at an empty temporary folder.
 
-    No test may read the real ``~/.config/omrg``. Tests of the folder itself
-    set ``OMRG_CONFIG_DIR`` again.
+    No test may read the real ``~/.config/omrs``. Tests of the folder itself
+    set ``OMRS_CONFIG_DIR`` again.
     """
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(tmp_path_factory.mktemp("omrg-config") / "omrg"))
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(tmp_path_factory.mktemp("omrs-config") / "omrs"))
 
 
 @pytest.fixture(autouse=True)
@@ -436,16 +436,16 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """
     import sys
 
-    from omrg.config import Settings as OmrgSettings
-    from omrg.config import provenance
+    from omrs.config import Settings as OmrsSettings
+    from omrs.config import provenance
 
     # A developer's .env reaches a test two ways, so close both
-    # (tests/unit/test_dotenv_isolation.py): ``omrg.config`` copied it into
+    # (tests/unit/test_dotenv_isolation.py): ``omrs.config`` copied it into
     # os.environ at import, and ``Settings()`` reads ``.env`` from the working
     # folder each time it is built. Tests that need a .env pass ``_env_file``.
     for name in provenance.DOTENV_KEYS:
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setitem(OmrgSettings.model_config, "env_file", None)
+    monkeypatch.setitem(OmrsSettings.model_config, "env_file", None)
     # A provider key exported in the developer's shell would make "no key"
     # tests fail locally while CI, which has none, passes. Tests that need a
     # key set a fake one themselves.
@@ -483,7 +483,7 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     # the EffectiveSettings every layer receives.
     #
     # Clear any cached Settings so the env above is picked up per test.
-    config_mod = sys.modules.get("omrg.config")
+    config_mod = sys.modules.get("omrs.config")
     if config_mod is not None:
         monkeypatch.setattr(config_mod, "_settings", None, raising=False)
 
@@ -500,10 +500,10 @@ def build_mcp_engine(effective=None, **engine_kwargs):
     ``engine_kwargs`` (for example ``answer_llm_factory``) override or
     extend the constructor arguments.
     """
-    from omrg import compose
-    from omrg.core.settings import get_default_effective_settings
-    from omrg.core.vectordb import get_default_store
-    from omrg.engine import Engine
+    from omrs import compose
+    from omrs.core.settings import get_default_effective_settings
+    from omrs.core.vectordb import get_default_store
+    from omrs.engine import Engine
 
     store = get_default_store()
     kwargs = {
@@ -542,8 +542,8 @@ def build_mcp_server(engine=None, *, paths=None, admit=None, effective=None, **e
         effective: Settings for the Engine (see :func:`build_mcp_engine`).
         **engine_kwargs: Passed to :func:`build_mcp_engine`.
     """
-    from omrg.transports.mcp import create_mcp_server
-    from omrg.transports.mcp.context import McpContext, PathPolicy, no_admission
+    from omrs.transports.mcp import create_mcp_server
+    from omrs.transports.mcp.context import McpContext, PathPolicy, no_admission
 
     context = McpContext(
         engine if engine is not None else build_mcp_engine(effective, **engine_kwargs),

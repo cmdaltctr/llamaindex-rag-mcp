@@ -15,12 +15,12 @@ from typing import Any
 
 from tests.fixtures.pipeline_parity.answer.harness import QUERY, ScriptedSeam, make_seam
 
-from omrg.core.answer.graph_adapters import (
+from omrs.core.answer.graph_adapters import (
     ANSWER_LLM_RESOURCE,
     VERIFY_LLM_RESOURCE,
     register_answer_operations,
 )
-from omrg.core.pipelines import CancellationFlag, NodeContext, NodeOutput, OperationCatalogue
+from omrs.core.pipelines import CancellationFlag, NodeContext, NodeOutput, OperationCatalogue
 
 PREPARE = "answer.prepare_evidence"
 SYNTHESISE = "answer.synthesise"

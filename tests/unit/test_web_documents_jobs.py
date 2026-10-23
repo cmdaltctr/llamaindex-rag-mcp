@@ -31,10 +31,10 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
     wait_for,
 )
 
-from omrg.transports.api.app import create_app  # noqa: E402
-from omrg.transports.api.lifespan import WebConfig  # noqa: E402
-from omrg.transports.api.runs_wiring import run_service_factory  # noqa: E402
-from omrg.transports.api.security import AccessPolicy  # noqa: E402
+from omrs.transports.api.app import create_app  # noqa: E402
+from omrs.transports.api.lifespan import WebConfig  # noqa: E402
+from omrs.transports.api.runs_wiring import run_service_factory  # noqa: E402
+from omrs.transports.api.security import AccessPolicy  # noqa: E402
 
 COLLECTION = "notes"
 
@@ -155,7 +155,7 @@ def test_failed_ingestion_reports_redacted_error(
     tmp_path: Path, approved: Path, effective_settings
 ) -> None:
     engine = _engine(tmp_path, effective_settings)
-    engine.raise_on["ingest"] = RuntimeError("boom omrg_bt_abc.secretvalue")
+    engine.raise_on["ingest"] = RuntimeError("boom omrs_bt_abc.secretvalue")
     app, policy = build_app(tmp_path, engine, roots=[approved])
     with TestClient(app, base_url=BASE) as client:
         login(client, policy)
@@ -211,7 +211,7 @@ def test_job_polling_accepts_read_bearer(
 def test_codebase_map_job_passes_engine_settings_and_store(
     tmp_path: Path, approved: Path, effective_settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from omrg.core.codebase import codebase_map
+    from omrs.core.codebase import codebase_map
 
     seen: dict[str, Any] = {}
 

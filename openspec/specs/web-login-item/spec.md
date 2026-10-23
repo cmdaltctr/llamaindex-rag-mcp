@@ -1,24 +1,24 @@
 # web-login-item Specification
 
 ## Purpose
-Define the `omrg web install`, `uninstall`, `status`, `restart` and `open` commands. Together they keep the OMRG web app running on a Mac from login, without a terminal window, and give the user a way to sign in to it.
+Define the `omrs web install`, `uninstall`, `status`, `restart` and `open` commands. Together they keep the OMRS web app running on a Mac from login, without a terminal window, and give the user a way to sign in to it.
 
 ## Requirements
 
 ### Requirement: Web login item install
 
-On macOS, `omrg web install` SHALL write a per-user LaunchAgent with the label `com.omrg.web` and load it, so the web app starts at every login and now. The agent SHALL run the absolute path of the `omrg` executable with the arguments `web --login-item`, plus `--workspace`, `--port`, `--root` and `--experiment-root` only when the user gave them to `install`. The command SHALL show a plan before it writes and SHALL write the file atomically.
+On macOS, `omrs web install` SHALL write a per-user LaunchAgent with the label `com.omrs.web` and load it, so the web app starts at every login and now. The agent SHALL run the absolute path of the `omrs` executable with the arguments `web --login-item`, plus `--workspace`, `--port`, `--root` and `--experiment-root` only when the user gave them to `install`. The command SHALL show a plan before it writes and SHALL write the file atomically.
 
 #### Scenario: Install and start
 
-- **WHEN** the user runs `omrg web install --yes` on macOS and no login item exists
-- **THEN** the plist MUST exist at `~/Library/LaunchAgents/com.omrg.web.plist`
+- **WHEN** the user runs `omrs web install --yes` on macOS and no login item exists
+- **THEN** the plist MUST exist at `~/Library/LaunchAgents/com.omrs.web.plist`
 - **AND** the agent MUST be loaded and the app MUST answer `GET /v1/health` within 60 seconds
 
 #### Scenario: Slow or failed first start
 
 - **WHEN** the app does not answer `GET /v1/health` within 60 seconds of install
-- **THEN** the command MUST exit non-zero, MUST name the error log and `omrg web status`, and MUST leave the plist installed
+- **THEN** the command MUST exit non-zero, MUST name the error log and `omrs web status`, and MUST leave the plist installed
 
 #### Scenario: Another process holds the port
 
@@ -27,44 +27,44 @@ On macOS, `omrg web install` SHALL write a per-user LaunchAgent with the label `
 
 #### Scenario: Options reach the agent
 
-- **WHEN** the user runs `omrg web install --root ~/papers --port 9000 --yes`
+- **WHEN** the user runs `omrs web install --root ~/papers --port 9000 --yes`
 - **THEN** the plist arguments MUST include `--root` with the absolute path and `--port 9000`
 - **AND** the plist MUST NOT include `--workspace` when the user did not give it
 
 #### Scenario: Existing login item
 
-- **WHEN** a `com.omrg.web` plist already exists and the user runs `omrg web install` without `--force`
+- **WHEN** a `com.omrs.web` plist already exists and the user runs `omrs web install` without `--force`
 - **THEN** the command MUST leave the file unchanged, MUST say how to replace it, and MUST exit non-zero
 
 #### Scenario: Dry run
 
-- **WHEN** the user runs `omrg web install --dry-run` on any platform
+- **WHEN** the user runs `omrs web install --dry-run` on any platform
 - **THEN** the command MUST print the label, the full argument list, the plist path and the log paths
 - **AND** it MUST write no file and MUST NOT call `launchctl`
 
 #### Scenario: Not macOS
 
-- **WHEN** the user runs `omrg web install` without `--dry-run` on a platform other than macOS
+- **WHEN** the user runs `omrs web install` without `--dry-run` on a platform other than macOS
 - **THEN** the command MUST say that login items are macOS-only and MUST exit non-zero
 
 ### Requirement: Stable executable for the login item
 
-The login item SHALL run an `omrg` executable path that the command resolved to an absolute path at install time. When that path is inside a source checkout (a `.venv` folder whose parent holds a `.git` entry), the command SHALL warn that deleting the checkout stops the app, SHALL name `uv tool install` as the alternative, and SHALL continue only after the user confirms or passes `--yes`. A `--command-path` option SHALL set the executable and SHALL be absolute.
+The login item SHALL run an `omrs` executable path that the command resolved to an absolute path at install time. When that path is inside a source checkout (a `.venv` folder whose parent holds a `.git` entry), the command SHALL warn that deleting the checkout stops the app, SHALL name `uv tool install` as the alternative, and SHALL continue only after the user confirms or passes `--yes`. A `--command-path` option SHALL set the executable and SHALL be absolute.
 
 #### Scenario: Checkout install is flagged
 
-- **WHEN** the resolved executable is `<checkout>/.venv/bin/omrg` and `<checkout>/.git` exists
+- **WHEN** the resolved executable is `<checkout>/.venv/bin/omrs` and `<checkout>/.git` exists
 - **THEN** the plan MUST show the warning
 - **AND** an interactive run MUST ask for confirmation before it writes
 
 #### Scenario: Relative command path
 
-- **WHEN** the user passes `--command-path omrg`
+- **WHEN** the user passes `--command-path omrs`
 - **THEN** the command MUST refuse and MUST say the path must be absolute
 
 ### Requirement: The login item keeps the app running
 
-The agent SHALL start at load, SHALL restart the app after a crash or kill, and SHALL NOT restart it after an exit with status 0. The agent SHALL also start the app again after a stop signal, because the signal ends the process and launchd treats that as a crash. `omrg web uninstall` and the Turn off action (see "Power control from the page") stop the app. Uninstall removes the agent for good. Turn off unloads the agent and keeps the plist, so the app starts again at the next login or when `omrg web start` runs. The agent SHALL wait at least 60 seconds between starts. The agent SHALL write standard output and standard error to `~/Library/Logs/omrg/com.omrg.web.out.log` and `com.omrg.web.err.log`. The agent SHALL give the app a fixed `PATH` that includes `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin` and `/bin`.
+The agent SHALL start at load, SHALL restart the app after a crash or kill, and SHALL NOT restart it after an exit with status 0. The agent SHALL also start the app again after a stop signal, because the signal ends the process and launchd treats that as a crash. `omrs web uninstall` and the Turn off action (see "Power control from the page") stop the app. Uninstall removes the agent for good. Turn off unloads the agent and keeps the plist, so the app starts again at the next login or when `omrs web start` runs. The agent SHALL wait at least 60 seconds between starts. The agent SHALL write standard output and standard error to `~/Library/Logs/omrs/com.omrs.web.out.log` and `com.omrs.web.err.log`. The agent SHALL give the app a fixed `PATH` that includes `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin` and `/bin`.
 
 #### Scenario: Crash restarts
 
@@ -88,29 +88,29 @@ The agent SHALL start at load, SHALL restart the app after a crash or kill, and 
 - **THEN** launchd MUST NOT start the app again in this login session
 - **AND** the plist file MUST still exist, so the agent loads at the next login
 
-### Requirement: The login item reads omrg.jsonc and an optional ~/.omrg/.env
+### Requirement: The login item reads omrs.jsonc and an optional ~/.omrs/.env
 
-The agent SHALL run with the working folder `~/.omrg`. The app SHALL read `omrg.jsonc` from the user config folder, and SHALL also read `~/.omrg/.env` when that file exists. `install` SHALL create `~/.omrg` when it is missing. The plan SHALL name the `omrg.jsonc` path as the settings file and SHALL say that `~/.omrg/.env` is optional and overrides it. When the folder where `install` runs has a `.env`, the plan SHALL tell the user that the login item does not read it, and SHALL suggest `omrg config init`. The command SHALL NOT read, copy or move any `.env` file.
+The agent SHALL run with the working folder `~/.omrs`. The app SHALL read `omrs.jsonc` from the user config folder, and SHALL also read `~/.omrs/.env` when that file exists. `install` SHALL create `~/.omrs` when it is missing. The plan SHALL name the `omrs.jsonc` path as the settings file and SHALL say that `~/.omrs/.env` is optional and overrides it. When the folder where `install` runs has a `.env`, the plan SHALL tell the user that the login item does not read it, and SHALL suggest `omrs config init`. The command SHALL NOT read, copy or move any `.env` file.
 
 #### Scenario: Settings file named in the plan
 
-- **WHEN** the user runs `omrg web install --dry-run` in a checkout that has a `.env`
-- **THEN** the plan MUST name `~/.config/omrg/omrg.jsonc` as the settings file, MUST say that the checkout `.env` is not read, and MUST suggest `omrg config init`
+- **WHEN** the user runs `omrs web install --dry-run` in a checkout that has a `.env`
+- **THEN** the plan MUST name `~/.config/omrs/omrs.jsonc` as the settings file, MUST say that the checkout `.env` is not read, and MUST suggest `omrs config init`
 - **AND** no `.env` file MUST be created or changed
 
 #### Scenario: Settings reach the app
 
-- **WHEN** `omrg.jsonc` sets `embed_model`, `~/.omrg/.env` does not exist, and the login item starts
+- **WHEN** `omrs.jsonc` sets `embed_model`, `~/.omrs/.env` does not exist, and the login item starts
 - **THEN** the running app MUST use that embedding model
 
 #### Scenario: Optional .env overrides
 
-- **WHEN** `omrg.jsonc` sets `embed_model` and `~/.omrg/.env` sets `EMBED_MODEL` to another model
+- **WHEN** `omrs.jsonc` sets `embed_model` and `~/.omrs/.env` sets `EMBED_MODEL` to another model
 - **THEN** the running app MUST use the `.env` model, and Settings MUST report the source `dotenv`
 
 ### Requirement: Web login item status
 
-`omrg web status` SHALL report whether the plist exists, whether the agent is loaded, whether the app answers `GET /v1/health`, the version the running app reports, the version of the installed `omrg` executable, the workspace folder, the port and the log paths. With `--json` the command SHALL print one JSON object with the same facts. It SHALL exit 0 when the app answers and 1 otherwise. When the two versions differ, the report SHALL say that a restart picks up the installed version.
+`omrs web status` SHALL report whether the plist exists, whether the agent is loaded, whether the app answers `GET /v1/health`, the version the running app reports, the version of the installed `omrs` executable, the workspace folder, the port and the log paths. With `--json` the command SHALL print one JSON object with the same facts. It SHALL exit 0 when the app answers and 1 otherwise. When the two versions differ, the report SHALL say that a restart picks up the installed version.
 
 #### Scenario: Running and current
 
@@ -120,20 +120,20 @@ The agent SHALL run with the working folder `~/.omrg`. The app SHALL read `omrg.
 #### Scenario: Running an older version
 
 - **WHEN** the running app reports a lower version than the installed executable
-- **THEN** the report MUST say that `omrg web restart` starts the installed version
+- **THEN** the report MUST say that `omrs web restart` starts the installed version
 
 #### Scenario: Not installed
 
 - **WHEN** no plist exists
-- **THEN** the report MUST say the login item is not installed and name `omrg web install`, and the command MUST exit 1
+- **THEN** the report MUST say the login item is not installed and name `omrs web install`, and the command MUST exit 1
 
 ### Requirement: Web login item restart
 
-`omrg web restart` SHALL send `SIGTERM` to the app, so it shuts down cleanly. It SHALL wait until the old process has ended, for up to 15 seconds. It SHALL then wait up to 5 seconds for launchd to start a new process. Only if none starts SHALL the command start one with `launchctl kickstart`, and it SHALL NOT use the `-k` option. It SHALL then wait until the app answers `GET /v1/health` or 60 seconds pass, and it SHALL exit 0 only when the app answers. When no login item is installed it SHALL say so and exit non-zero.
+`omrs web restart` SHALL send `SIGTERM` to the app, so it shuts down cleanly. It SHALL wait until the old process has ended, for up to 15 seconds. It SHALL then wait up to 5 seconds for launchd to start a new process. Only if none starts SHALL the command start one with `launchctl kickstart`, and it SHALL NOT use the `-k` option. It SHALL then wait until the app answers `GET /v1/health` or 60 seconds pass, and it SHALL exit 0 only when the app answers. When no login item is installed it SHALL say so and exit non-zero.
 
 #### Scenario: Restart shuts down cleanly
 
-- **WHEN** the user runs `omrg web restart`
+- **WHEN** the user runs `omrs web restart`
 - **THEN** the old process MUST end through its normal shutdown, which removes its `launch-link` file
 - **AND** a new process MUST start
 
@@ -151,29 +151,29 @@ The agent SHALL run with the working folder `~/.omrg`. The app SHALL read `omrg.
 #### Scenario: The old process does not end
 
 - **WHEN** the old process is still there after 15 seconds
-- **THEN** the command MUST exit non-zero, MUST NOT run `launchctl kickstart`, and MUST name `omrg web status`
+- **THEN** the command MUST exit non-zero, MUST NOT run `launchctl kickstart`, and MUST name `omrs web status`
 
 #### Scenario: Restart picks up a new install
 
-- **WHEN** the user installs a newer `omrg` and runs `omrg web restart`
-- **THEN** `omrg web status` MUST report the new version as running
+- **WHEN** the user installs a newer `omrs` and runs `omrs web restart`
+- **THEN** `omrs web status` MUST report the new version as running
 
 #### Scenario: Restart keeps open tabs signed in
 
 - **WHEN** the app restarts with the same workspace and port
 - **THEN** earlier browser sessions MUST stop working
 - **AND** an open tab MUST sign in again with the workspace sign-in secret, with no user action
-- **AND** `omrg web open` MUST still give a sign-in link
+- **AND** `omrs web open` MUST still give a sign-in link
 
 ### Requirement: Web login item removal
 
-`omrg web uninstall` SHALL unload the agent and delete its plist. It SHALL keep the workspace folder, the logs and the user's data. It SHALL ask for confirmation unless `--yes` is given, and it SHALL succeed with a message when nothing is installed.
+`omrs web uninstall` SHALL unload the agent and delete its plist. It SHALL keep the workspace folder, the logs and the user's data. It SHALL ask for confirmation unless `--yes` is given, and it SHALL succeed with a message when nothing is installed.
 
 #### Scenario: Remove keeps data
 
-- **WHEN** the user runs `omrg web uninstall --yes`
+- **WHEN** the user runs `omrs web uninstall --yes`
 - **THEN** the plist MUST be gone and the agent MUST be unloaded
-- **AND** `~/.omrg/workspace` MUST be unchanged
+- **AND** `~/.omrs/workspace` MUST be unchanged
 
 #### Scenario: Nothing to remove
 
@@ -182,17 +182,17 @@ The agent SHALL run with the working folder `~/.omrg`. The app SHALL read `omrg.
 
 ### Requirement: Open the app with a fresh sign-in link
 
-`omrg web open` SHALL read the sign-in link that the running login-item server wrote, check that the server answers `GET /v1/health` on that address, and open the link in the default browser. It SHALL print the address without the secret. With `--print` it SHALL print the full link to standard error instead of opening a browser. When the file is missing or the server does not answer, the command SHALL say that the login item is not running, name `omrg web status`, and exit non-zero. It SHALL NOT start a server.
+`omrs web open` SHALL read the sign-in link that the running login-item server wrote, check that the server answers `GET /v1/health` on that address, and open the link in the default browser. It SHALL print the address without the secret. With `--print` it SHALL print the full link to standard error instead of opening a browser. When the file is missing or the server does not answer, the command SHALL say that the login item is not running, name `omrs web status`, and exit non-zero. It SHALL NOT start a server.
 
 #### Scenario: Open signs in
 
-- **WHEN** the login item runs and the user runs `omrg web open`
+- **WHEN** the login item runs and the user runs `omrs web open`
 - **THEN** the default browser MUST open the app and the page MUST sign in without a prompt
 - **AND** the terminal output MUST NOT contain the secret
 
 #### Scenario: Print for another browser
 
-- **WHEN** the user runs `omrg web open --print`
+- **WHEN** the user runs `omrs web open --print`
 - **THEN** the full one-time link MUST be printed to standard error and no browser MUST open
 
 #### Scenario: Old link file after a crash
@@ -202,7 +202,7 @@ The agent SHALL run with the working folder `~/.omrg`. The app SHALL read `omrg.
 
 #### Scenario: Link used twice
 
-- **WHEN** the user runs `omrg web open` twice
+- **WHEN** the user runs `omrs web open` twice
 - **THEN** each run MUST sign in, because the server issues a new link after each sign-in
 
 #### Scenario: Server not running
@@ -218,7 +218,7 @@ The app SHALL offer `GET /v1/server/power` and `POST /v1/server/power`. Both rou
 
 `POST /v1/server/power` SHALL take the body `{"action": "restart"}` or `{"action": "off"}`. A body with any other action SHALL receive 422. A body that is not that shape (a missing or extra field) SHALL receive 400, as every other route does. Neither SHALL signal any process. When the app is not the login item, the route SHALL answer 409 and change nothing. When a run, an ingestion or a map call is in progress, the route SHALL answer 409 and change nothing. In every other case the route SHALL answer 202 and SHALL then act after the response has been sent.
 
-The `restart` action SHALL ask launchd to send `SIGTERM` to the app, so launchd starts it again. The `off` action SHALL ask launchd to unload the agent. After `off` the app SHALL stay stopped until the next login or until `omrg web start` runs. The plist file SHALL stay in place.
+The `restart` action SHALL ask launchd to send `SIGTERM` to the app, so launchd starts it again. The `off` action SHALL ask launchd to unload the agent. After `off` the app SHALL stay stopped until the next login or until `omrs web start` runs. The plist file SHALL stay in place.
 
 #### Scenario: A bearer credential is refused
 
@@ -227,7 +227,7 @@ The `restart` action SHALL ask launchd to send `SIGTERM` to the app, so launchd 
 
 #### Scenario: A foreground server is not managed
 
-- **WHEN** the app runs in a terminal through `omrg web` and `GET /v1/server/power` is called
+- **WHEN** the app runs in a terminal through `omrs web` and `GET /v1/server/power` is called
 - **THEN** the answer MUST be `{"status": "ok", "managed": false}`
 - **AND** a `POST` with either action MUST answer 409 and MUST NOT signal any process
 
@@ -249,7 +249,7 @@ The `restart` action SHALL ask launchd to send `SIGTERM` to the app, so launchd 
 
 - **WHEN** the login item is idle and the session posts `{"action": "off"}`
 - **THEN** the route MUST answer 202
-- **AND** the app MUST end and MUST NOT start again until the next login or `omrg web start`
+- **AND** the app MUST end and MUST NOT start again until the next login or `omrs web start`
 - **AND** the plist file MUST still exist
 
 #### Scenario: Unknown action
@@ -264,19 +264,19 @@ The `restart` action SHALL ask launchd to send `SIGTERM` to the app, so launchd 
 
 ### Requirement: Start the login item
 
-`omrg web start` SHALL load the installed agent into launchd and SHALL wait up to 60 seconds for the app to answer. It SHALL exit 0 only when the app answers. When the agent is already loaded and the app answers, the command SHALL say so and exit 0. When the login item is not installed, the command SHALL name `omrg web install` and exit 1. On a platform other than macOS the command SHALL print a message and exit 1.
+`omrs web start` SHALL load the installed agent into launchd and SHALL wait up to 60 seconds for the app to answer. It SHALL exit 0 only when the app answers. When the agent is already loaded and the app answers, the command SHALL say so and exit 0. When the login item is not installed, the command SHALL name `omrs web install` and exit 1. On a platform other than macOS the command SHALL print a message and exit 1.
 
 #### Scenario: Start after Turn off
 
-- **WHEN** the agent is installed but unloaded and the user runs `omrg web start`
+- **WHEN** the agent is installed but unloaded and the user runs `omrs web start`
 - **THEN** the command MUST load the agent and MUST exit 0 once the app answers
 
 #### Scenario: Start when already running
 
-- **WHEN** the app answers and the user runs `omrg web start`
+- **WHEN** the app answers and the user runs `omrs web start`
 - **THEN** the command MUST say that the app is running and MUST exit 0 without a second load
 
 #### Scenario: Start when not installed
 
-- **WHEN** no plist exists and the user runs `omrg web start`
-- **THEN** the command MUST tell the user to run `omrg web install` and MUST exit 1
+- **WHEN** no plist exists and the user runs `omrs web start`
+- **THEN** the command MUST tell the user to run `omrs web install` and MUST exit 1

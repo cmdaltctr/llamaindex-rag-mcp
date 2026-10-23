@@ -1,4 +1,4 @@
-"""Every package under src/omrg must be covered by an import-linter contract.
+"""Every package under src/omrs must be covered by an import-linter contract.
 
 Task 10.4. Review finding: the `core-business-avoids-providers-transports`
 contract covered only four packages, so `core.vectordb`, `core.profiles`,
@@ -18,13 +18,13 @@ from pathlib import Path
 import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-_SRC = _REPO_ROOT / "src" / "omrg"
+_SRC = _REPO_ROOT / "src" / "omrs"
 
 
 def _packages() -> set[str]:
-    """Return every importable package under src/omrg, dotted."""
+    """Return every importable package under src/omrs, dotted."""
     assert _SRC.is_dir(), f"configured source root is missing: {_SRC}"
-    found = {"omrg"}
+    found = {"omrs"}
     for init in _SRC.rglob("__init__.py"):
         if "__pycache__" in str(init):
             continue
@@ -70,7 +70,7 @@ def test_contracts_are_actually_declared() -> None:
     """Guard the guard: a typo'd config would make the test above vacuous."""
     named = _contract_modules()
     assert len(named) > 5, "expected several contract modules, found few"
-    assert any(m.startswith("omrg") for m in named)
+    assert any(m.startswith("omrs") for m in named)
 
 
 def test_config_does_not_import_chunking_registry() -> None:

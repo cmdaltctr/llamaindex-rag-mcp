@@ -18,7 +18,7 @@ Internal file discovery helpers SHALL not contain unreachable branches or commen
 The benchmark command SHALL use a chunking helper whose intended internal/public boundary is explicit.
 
 #### Scenario: Benchmark chunks a file without indexing it
-- **WHEN** `omrg benchmark --file path` runs
+- **WHEN** `omrs benchmark --file path` runs
 - **THEN** the command SHALL read and chunk the file without writing to ChromaDB
 - **THEN** the helper used for read-and-chunk behavior SHALL be named or documented so maintainers know it is intentionally shared with benchmark
 
@@ -41,17 +41,17 @@ Tests SHALL not rely on a hardcoded shared ChromaDB persist path when an isolate
 ### Requirement: Documented source paths resolve
 
 Documentation that cites a source file path SHALL cite a path that exists.
-Every `src/omrg/**/*.py` path referenced in `docs/guides/`,
+Every `src/omrs/**/*.py` path referenced in `docs/guides/`,
 `tests/TEST_README.md`, the root `AGENTS.md` or a folder guidance file SHALL
 resolve to a file on disk. A short citation that starts at a top-level
 package folder (`core/`, `transports/`, `integrations/`, `config/` or
-`daemon/`) and omits `src/omrg/` SHALL resolve below `src/omrg/` in the same
+`daemon/`) and omits `src/omrs/` SHALL resolve below `src/omrs/` in the same
 way. Records under `docs/adr/` are EXCLUDED: an ADR legitimately cites paths
 that were correct when the decision was taken and have since moved.
 
 #### Scenario: A guide cites a path deleted by a refactor
 
-- **WHEN** a guide references `src/omrg/config.py` after the v2 split moved it to `src/omrg/config/__init__.py`
+- **WHEN** a guide references `src/omrs/config.py` after the v2 split moved it to `src/omrs/config/__init__.py`
 - **THEN** the documentation reference check SHALL fail
 - **THEN** the failure SHALL name the citing file, its line, and the unresolved path
 
@@ -63,12 +63,12 @@ that were correct when the decision was taken and have since moved.
 
 #### Scenario: A folder guidance file cites a moved file
 
-- **WHEN** `src/omrg/core/vectordb/AGENTS.md` cites a module path that no longer exists
+- **WHEN** `src/omrs/core/vectordb/AGENTS.md` cites a module path that no longer exists
 - **THEN** the documentation reference check SHALL fail and name that file and line
 
 #### Scenario: A historical ADR cites a since-deleted path
 
-- **WHEN** `docs/adr/026-provider-registry-and-openrouter.md` references `src/omrg/metadata_extractor.py`, a v1 module deleted in v2.0.0
+- **WHEN** `docs/adr/026-provider-registry-and-openrouter.md` references `src/omrs/metadata_extractor.py`, a v1 module deleted in v2.0.0
 - **THEN** the check SHALL NOT fail
 - **THEN** the ADR SHALL remain unmodified, its accuracy carried by a dated forward note instead
 
@@ -182,10 +182,10 @@ Regression tests SHALL invoke production chunk dispatch, actual prompt construct
 ### Requirement: Key source folders carry agent guidance files
 
 Each of these folders SHALL contain an `AGENTS.md` file and a `CLAUDE.md`
-symbolic link that points to it: `src/omrg/`, `src/omrg/core/`,
-`src/omrg/core/vectordb/`, `src/omrg/core/retrieval/`,
-`src/omrg/core/ingestion/`, `src/omrg/core/pipelines/`,
-`src/omrg/transports/`, `src/omrg/integrations/`, `web/src/` and `tests/`.
+symbolic link that points to it: `src/omrs/`, `src/omrs/core/`,
+`src/omrs/core/vectordb/`, `src/omrs/core/retrieval/`,
+`src/omrs/core/ingestion/`, `src/omrs/core/pipelines/`,
+`src/omrs/transports/`, `src/omrs/integrations/`, `web/src/` and `tests/`.
 Each guidance file SHALL be at most 40 lines and SHALL link to the root
 `AGENTS.md`. An automated check SHALL enforce these rules.
 
@@ -216,10 +216,10 @@ depth. The release wheel check SHALL report each such file it finds.
 
 #### Scenario: Wheel built from the source tree
 
-- **WHEN** a wheel is built from a tree that holds folder guidance files under `src/omrg/`
+- **WHEN** a wheel is built from a tree that holds folder guidance files under `src/omrs/`
 - **THEN** no `AGENTS.md` or `CLAUDE.md` entry SHALL appear in the wheel
 
 #### Scenario: A guidance file leaks into a wheel
 
-- **WHEN** the release wheel check reads a wheel that contains `omrg/core/AGENTS.md`
+- **WHEN** the release wheel check reads a wheel that contains `omrs/core/AGENTS.md`
 - **THEN** the check SHALL fail and name that entry

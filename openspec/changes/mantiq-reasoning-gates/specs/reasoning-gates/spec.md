@@ -339,12 +339,12 @@ both rules with no ignore entry.
 
 - **GIVEN** the import-linter contracts
 - **WHEN** they run
-- **THEN** a contract SHALL forbid every `omrg.core` package other than
-  `omrg.core.mantiq`, and `omrg.transports`, from importing
-  `omrg.core.mantiq`
-- **AND** `omrg.core.mantiq` SHALL import nothing from
-  `omrg.core.providers`, `omrg.transports`, `omrg.core.retrieval` or
-  `omrg.core.ingestion`
+- **THEN** a contract SHALL forbid every `omrs.core` package other than
+  `omrs.core.mantiq`, and `omrs.transports`, from importing
+  `omrs.core.mantiq`
+- **AND** `omrs.core.mantiq` SHALL import nothing from
+  `omrs.core.providers`, `omrs.transports`, `omrs.core.retrieval` or
+  `omrs.core.ingestion`
 
 ### Requirement: Manṭiq cost and timing are disclosed per node
 

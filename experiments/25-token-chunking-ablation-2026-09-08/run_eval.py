@@ -108,7 +108,7 @@ def _search_with_transient_retry(entry: dict, settings, store) -> tuple[list[dic
     Returns the results and the wall time of the successful attempt
     only (same measurement point as Experiment 22's runner).
     """
-    from omrg.core.retrieval import pipeline
+    from omrs.core.retrieval import pipeline
 
     last_exc: BaseException | None = None
     for attempt in range(1, MAX_TRANSIENT_ATTEMPTS + 1):
@@ -144,9 +144,9 @@ def _search_with_transient_retry(entry: dict, settings, store) -> tuple[list[dic
 
 def run_cell() -> None:
     """Run the candidate retrieval arm over all queries, checkpointing per query."""
-    from omrg.compose import ensure_runtime_setup
-    from omrg.core.settings import EffectiveSettings, RetrievalBlock
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrs.compose import ensure_runtime_setup
+    from omrs.core.settings import EffectiveSettings, RetrievalBlock
+    from omrs.core.vectordb.lancedb import LanceVectorStore
 
     ensure_runtime_setup()
     store = LanceVectorStore(uri=str(STORE_URI))

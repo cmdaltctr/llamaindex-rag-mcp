@@ -28,7 +28,7 @@ from tests.unit.test_web_runs_support import (  # noqa: E402
     wait_run,
 )
 
-from omrg.compose_pipelines import pipeline_templates  # noqa: E402
+from omrs.compose_pipelines import pipeline_templates  # noqa: E402
 
 
 @pytest.fixture

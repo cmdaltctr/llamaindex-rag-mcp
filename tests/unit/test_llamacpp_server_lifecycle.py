@@ -26,9 +26,9 @@ from tests.unit.llamacpp_fake import FakeServerProgram, await_until, free_port, 
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="POSIX process groups")
 
-from omrg.core.providers.llm.llamacpp_rules import REASONS  # noqa: E402
-from omrg.transports.api import llamacpp_server as lifecycle  # noqa: E402
-from omrg.transports.api.llamacpp_server import LaunchConfig, LlamacppServer  # noqa: E402
+from omrs.core.providers.llm.llamacpp_rules import REASONS  # noqa: E402
+from omrs.transports.api import llamacpp_server as lifecycle  # noqa: E402
+from omrs.transports.api.llamacpp_server import LaunchConfig, LlamacppServer  # noqa: E402
 
 FAKE_KEY = "sk-or-v1-FAKEKEYFORTESTS0123456789"  # gitleaks:allow
 HF_TOKEN = "hf_FAKE_TOKEN_FOR_TESTS"  # noqa: S105  # gitleaks:allow

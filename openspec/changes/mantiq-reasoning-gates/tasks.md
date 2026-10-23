@@ -11,15 +11,15 @@
 
 ## 2. Make room in the composition root
 
-- [ ] 2.1 Move `request_limit_issues`, `_answers` and `_out_of_range` with their limit constants from `src/omrg/compose_pipelines.py` to `src/omrg/compose_pipeline_runs.py`, with no behaviour change; verify `uv run pytest tests/unit -k "pipeline" -m "not slow" -q` passes and `compose_pipelines.py` is under 490 lines.
+- [ ] 2.1 Move `request_limit_issues`, `_answers` and `_out_of_range` with their limit constants from `src/omrs/compose_pipelines.py` to `src/omrs/compose_pipeline_runs.py`, with no behaviour change; verify `uv run pytest tests/unit -k "pipeline" -m "not slow" -q` passes and `compose_pipelines.py` is under 490 lines.
 
 ## 3. Package and import boundary
 
-- [ ] 3.1 Create `src/omrg/core/mantiq/__init__.py` with a docstring and no imports; verify `uv run python -c "import omrg.core.mantiq"` succeeds.
-- [ ] 3.2 Add contract `base-never-imports-mantiq` to `pyproject.toml`: every `omrg.core` package except `omrg.core.mantiq`, plus `omrg.transports`, `omrg.config`, `omrg.integrations` and `omrg.daemon`, as sources; `omrg.core.mantiq` as forbidden; `allow_indirect_imports = true`; `unmatched_ignore_imports_alerting = "error"`; verify `uv run lint-imports` passes.
-- [ ] 3.3 Verify contract 3.2 bites: add a temporary `import omrg.core.mantiq` to `core/answer/results.py`, confirm `uv run lint-imports` fails, then remove the line.
-- [ ] 3.4 Add `omrg.core.mantiq` to the `core-business-avoids-providers-transports` source list; verify `uv run lint-imports` passes with no new ignore entry.
-- [ ] 3.5 Add contract `mantiq-stays-out-of-retrieval-and-ingestion` (source `omrg.core.mantiq`, forbidden `omrg.core.retrieval` and `omrg.core.ingestion`, same style); verify `uv run lint-imports` passes.
+- [ ] 3.1 Create `src/omrs/core/mantiq/__init__.py` with a docstring and no imports; verify `uv run python -c "import omrs.core.mantiq"` succeeds.
+- [ ] 3.2 Add contract `base-never-imports-mantiq` to `pyproject.toml`: every `omrs.core` package except `omrs.core.mantiq`, plus `omrs.transports`, `omrs.config`, `omrs.integrations` and `omrs.daemon`, as sources; `omrs.core.mantiq` as forbidden; `allow_indirect_imports = true`; `unmatched_ignore_imports_alerting = "error"`; verify `uv run lint-imports` passes.
+- [ ] 3.3 Verify contract 3.2 bites: add a temporary `import omrs.core.mantiq` to `core/answer/results.py`, confirm `uv run lint-imports` fails, then remove the line.
+- [ ] 3.4 Add `omrs.core.mantiq` to the `core-business-avoids-providers-transports` source list; verify `uv run lint-imports` passes with no new ignore entry.
+- [ ] 3.5 Add contract `mantiq-stays-out-of-retrieval-and-ingestion` (source `omrs.core.mantiq`, forbidden `omrs.core.retrieval` and `omrs.core.ingestion`, same style); verify `uv run lint-imports` passes.
 
 ## 4. Records and node parameters
 
@@ -36,7 +36,7 @@
 - [ ] 6.1 Write the four-verdict prompt in `core/mantiq/tasdiq.py` with delimited evidence and an instruction hierarchy, reusing `split_claims`; verify an injected instruction inside evidence stays inside the delimiters in `tests/unit/test_mantiq_tasdiq.py`.
 - [ ] 6.2 Write the verdict parser and the `conditions:` line parser (at most 8 items); verify each verdict, a missing conditions line and a malformed reply mapping to `unparseable`.
 - [ ] 6.3 Build `ClaimRecord`s and apply the `authority_status` rule when rows carry the field; verify both spec scenarios (superseded evidence to `uncertain`; no labels, all supported claims are premises).
-- [ ] 6.4 Verify the base judge is untouched: `uv run pytest tests/test_answer_verify.py -q` passes and `git diff --stat src/omrg/core/answer` is empty.
+- [ ] 6.4 Verify the base judge is untouched: `uv run pytest tests/test_answer_verify.py -q` passes and `git diff --stat src/omrs/core/answer` is empty.
 
 ## 7. Qiyās: inference gate
 
@@ -62,7 +62,7 @@
 ## 10. Template
 
 - [ ] 10.1 Write the `answer-mantiq` transform and the named experiment cells in `core/mantiq/templates.py`; verify node order, the bypassed `verify.claims`, and that synthesis keeps the original `query` input in `tests/unit/test_mantiq_templates.py`.
-- [ ] 10.2 Add `mantiq_templates(engine)` to `src/omrg/compose_templates.py`; verify the template passes `engine.validate_pipeline` for hybrid and plain hosts.
+- [ ] 10.2 Add `mantiq_templates(engine)` to `src/omrs/compose_templates.py`; verify the template passes `engine.validate_pipeline` for hybrid and plain hosts.
 - [ ] 10.3 Append `answer-mantiq` to `describe_templates` in `transports/api/routes/templates.py`, with an `OUTPUT_DESCRIPTIONS` entry; verify the three canonical entries are unchanged.
 - [ ] 10.4 Add `answer-mantiq` to the `PipelineTemplate.name` enum and the optional `mantiq` block to `AnswerResponse` in `openapi.yaml`; verify `uv run pytest tests/test_openapi_conformance.py -q` passes.
 - [ ] 10.5 Update `tests/unit/test_web_templates.py` to expect the canonical templates then `answer-mantiq`; verify it passes.
@@ -71,7 +71,7 @@
 
 ## 11. Web workspace
 
-- [ ] 11.1 Load the `omrg-design` skill and read `web/DESIGN.md`; verify the plan for 11.2 to 11.5 uses only `components/ui/` primitives and tokens.
+- [ ] 11.1 Load the `omrs-design` skill and read `web/DESIGN.md`; verify the plan for 11.2 to 11.5 uses only `components/ui/` primitives and tokens.
 - [ ] 11.2 Add a `listPipelineTemplates` client in `web/src/api/pipelines.ts`; verify its unit test calls `/v1/pipeline-templates`.
 - [ ] 11.3 Add "Use the manṭiq answer template" to the Answer pipeline of a user profile in the Studio canvas; verify a test loads the graph into the draft and the gallery still makes no template call (`StudioView.test.tsx`).
 - [ ] 11.4 Add the optional `mantiq` type to the answer result in `web/src/api/documents.ts`; verify `npm run typecheck` passes in `web/`.

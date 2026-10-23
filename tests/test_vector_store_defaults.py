@@ -18,7 +18,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from omrg.config import Settings
+from omrs.config import Settings
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -42,12 +42,12 @@ def _fresh_get_settings(monkeypatch: pytest.MonkeyPatch):
     """Resolve a fresh ``Settings`` against the CURRENT test environment.
 
     Copies the conftest ``_isolate_env`` cache-reset idiom: the resolved
-    singleton lives in the module global ``omrg.config._settings``.
+    singleton lives in the module global ``omrs.config._settings``.
     Resolves with ``_env_file=None`` so packaged-default assertions hold
     on any machine. The operator's ambient ``.env`` is local
     configuration, not suite input (repair-fast-suite-regressions D2).
     """
-    import omrg.config as config_mod
+    import omrs.config as config_mod
 
     monkeypatch.setattr(config_mod, "_settings", None, raising=False)
     return config_mod.Settings(_env_file=None)
@@ -95,7 +95,7 @@ def test_yaml_defaults_surface_agrees() -> None:
 
     Spec: config-composition-root, scenario 'Default surfaces agree'.
     """
-    data = yaml.safe_load((_REPO_ROOT / "src" / "omrg" / "config" / "defaults.yaml").read_text())
+    data = yaml.safe_load((_REPO_ROOT / "src" / "omrs" / "config" / "defaults.yaml").read_text())
     # The YAML file uses env-style (upper-case) keys, matching the env source.
     assert data["VECTOR_STORE"] == "lancedb"
 
@@ -113,7 +113,7 @@ def test_env_example_surface_agrees() -> None:
 
 def test_effective_settings_surface_agrees() -> None:
     """EffectiveSettings declares lancedb as the vector_store field default."""
-    from omrg.core.settings import EffectiveSettings
+    from omrs.core.settings import EffectiveSettings
 
     default = EffectiveSettings.model_fields["vector_store"].default
     assert default == "lancedb"
@@ -216,7 +216,7 @@ def test_chroma_cloud_tenant_database_must_be_paired(
 
 def test_source_keys_tolerates_raising_and_none_sources() -> None:
     """A broken or empty settings source contributes no provenance keys."""
-    from omrg.config import source_keys
+    from omrs.config import source_keys
 
     def unreadable_source():
         raise OSError("unreadable environment")

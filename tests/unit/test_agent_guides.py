@@ -19,14 +19,14 @@ _ROOT_GUIDE = _REPO / "AGENTS.md"
 _MAX_LINES = 40
 
 _GUIDE_FOLDERS = [
-    "src/omrg",
-    "src/omrg/core",
-    "src/omrg/core/vectordb",
-    "src/omrg/core/retrieval",
-    "src/omrg/core/ingestion",
-    "src/omrg/core/pipelines",
-    "src/omrg/transports",
-    "src/omrg/integrations",
+    "src/omrs",
+    "src/omrs/core",
+    "src/omrs/core/vectordb",
+    "src/omrs/core/retrieval",
+    "src/omrs/core/ingestion",
+    "src/omrs/core/pipelines",
+    "src/omrs/transports",
+    "src/omrs/integrations",
     "web/src",
     "tests",
 ]
@@ -60,7 +60,7 @@ def test_guide_links_back_to_the_root_guide(folder: Path) -> None:
 
 
 def test_wheel_excludes_the_guides() -> None:
-    """Hatch ships every file under ``src/omrg``, so the guides need an ``exclude``."""
+    """Hatch ships every file under ``src/omrs``, so the guides need an ``exclude``."""
     config = tomllib.loads((_REPO / "pyproject.toml").read_text(encoding="utf-8"))
     wheel = config["tool"]["hatch"]["build"]["targets"]["wheel"]
     assert {"AGENTS.md", "CLAUDE.md"} <= set(wheel.get("exclude", []))

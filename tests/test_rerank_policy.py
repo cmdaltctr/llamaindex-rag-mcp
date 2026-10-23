@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from omrg.core.retrieval.policy import (
+from omrs.core.retrieval.policy import (
     _classify_query_technical,
     _resolve_rerank_policy,
 )
@@ -304,7 +304,7 @@ class TestPolicyDiagnostics:
 
     def test_diagnostics_included_in_search(self, effective_settings) -> None:
         """include_diagnostics=True adds rerank_reason to results."""
-        from omrg.core.retrieval import search
+        from omrs.core.retrieval import search
 
         settings = effective_settings(
             rerank_enabled=False,
@@ -327,7 +327,7 @@ class TestPolicyDiagnostics:
 
     def test_diagnostics_excluded_by_default(self) -> None:
         """include_diagnostics=False (default) excludes rerank_reason."""
-        from omrg.core.retrieval import search
+        from omrs.core.retrieval import search
 
         results = search(
             query="test query",

@@ -18,8 +18,8 @@ import pytest
 from tests.unit.test_engine_pipelines_support import FakeStore, build_engine, chunks
 from tests.unit.test_pipeline_support import fixture_host
 
-from omrg.compose_pipelines import build_operation_catalogue
-from omrg.core.pipelines import (
+from omrs.compose_pipelines import build_operation_catalogue
+from omrs.core.pipelines import (
     ALLOWED_LEVERS,
     IssueCode,
     PipelineValidationError,
@@ -158,7 +158,7 @@ def test_example_modules_import_without_web_or_notebook() -> None:
     """A fresh interpreter imports the example modules and no web package."""
     script = (
         "import sys\n"
-        "import omrg.compose_pipelines, omrg.core.pipelines, omrg.engine, omrg.pipeline_templates\n"
+        "import omrs.compose_pipelines, omrs.core.pipelines, omrs.engine, omrs.pipeline_templates\n"
         f"print(sorted(m for m in sys.modules if m.split('.')[0] in {BLOCKED!r}))\n"
     )
     root = Path(__file__).resolve().parents[2]

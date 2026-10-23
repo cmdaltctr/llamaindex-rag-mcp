@@ -175,7 +175,7 @@ def main() -> None:
         "corpus_docs": {"freshstack": 10009, "continuity": 15},
         "qrels_sha256": qrels_sha,
         "latency_note": "query latency includes network round-trip to OpenRouter",
-        "index_note": "omrg production ingestion (default chunking); relevance is "
+        "index_note": "omrs production ingestion (default chunking); relevance is "
         "path-level, not char-offset-level",
     }
 
@@ -265,7 +265,7 @@ def main() -> None:
         "| --- | --- |",
         "| Corpus source | FreshStack LangChain, October 2024 (9a re-export, `prepare_freshstack.py`, seed 20260530) |",
         "| Parent documents indexed | 10,024 (10,009 FreshStack + 15 continuity) |",
-        f"| Chunks stored | {build.get('chunk_count'):,} (omrg production ingestion, default chunking) |",
+        f"| Chunks stored | {build.get('chunk_count'):,} (omrs production ingestion, default chunking) |",
         "| Query set | 203 FreshStack test queries + 20 continuity queries = 223 total |",
         "| Query categories | 200 identifier-heavy, 3 semantic, 20 continuity |",
         "| Query path | raw (no instruction template) |",

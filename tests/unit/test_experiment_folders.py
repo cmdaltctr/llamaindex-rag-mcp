@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.experiments import ExperimentPathError, ExperimentRegistry
-from omrg.core.experiments.folders import (
+from omrs.core.experiments import ExperimentPathError, ExperimentRegistry
+from omrs.core.experiments.folders import (
     MAX_FOLDER_DEPTH,
     MAX_TREE_NODES,
     create_folder,

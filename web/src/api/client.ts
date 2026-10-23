@@ -83,7 +83,7 @@ export interface CallOptions {
 }
 
 const API_PREFIX = "/v1/";
-const PATH_BASE = "http://omrg.invalid";
+const PATH_BASE = "http://omrs.invalid";
 
 /** True only for a same-origin path under `/v1/` that needs no normalisation. */
 function isApiPath(path: string): boolean {

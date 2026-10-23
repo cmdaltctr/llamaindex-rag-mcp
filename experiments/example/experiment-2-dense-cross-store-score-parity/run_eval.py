@@ -28,7 +28,7 @@ Contracts honoured (TDR-014):
   are saved (protocol §20).
 
 Measured path: queries go through the CORE dense function
-``omrg.core.retrieval.dense._dense_query_rows`` with a fixture
+``omrs.core.retrieval.dense._dense_query_rows`` with a fixture
 lookup embed model installed on the LlamaIndex ``Settings`` seam, so
 the production store-blind path produces the rows.  No embedding model
 runs: the lookup returns the committed query vector verbatim.
@@ -138,14 +138,14 @@ def _build_store(backend: str, root: Path):  # noqa: ANN202 - dynamic store type
     if backend == "chroma":
         import chromadb
 
-        from omrg.core.vectordb.chroma import ChromaVectorStore
+        from omrs.core.vectordb.chroma import ChromaVectorStore
 
         client = chromadb.PersistentClient(path=str(root / "chroma"))
         return ChromaVectorStore(client=client)
     if backend == "lancedb":
         import lancedb
 
-        from omrg.core.vectordb.lancedb import LanceVectorStore
+        from omrs.core.vectordb.lancedb import LanceVectorStore
 
         return LanceVectorStore(connection=lancedb.connect(str(root / "lancedb")))
     raise ValueError(f"unknown backend {backend!r}")
@@ -158,7 +158,7 @@ def _seed_fixtures(store: Any, corpus: dict[str, Any]) -> dict[str, dict[str, An
     freshness preflight.
     """
     expected: dict[str, dict[str, Any]] = {}
-    from omrg.core.vectordb.identity import EmbeddingIdentity
+    from omrs.core.vectordb.identity import EmbeddingIdentity
 
     fixture_identity = EmbeddingIdentity(
         provider="fixture", model="committed-fixture-vectors"
@@ -251,7 +251,7 @@ def _run_fixture_query(
     recorded cross-check that the core path and the adapter agree on
     ids and scores.
     """
-    from omrg.core.retrieval.dense import _dense_query_rows
+    from omrs.core.retrieval.dense import _dense_query_rows
 
     collection = f"{COLLECTION_PREFIX}{fixture_id}"
     started = time.perf_counter()
@@ -295,7 +295,7 @@ def run(output_dir: Path, resume: bool) -> dict[str, Any]:
     # Paged reads resolve the default page size through the process
     # default settings; install a disabled-extraction default (no
     # network, no LLM) before touching any store.
-    from omrg.core.settings import (
+    from omrs.core.settings import (
         EffectiveSettings,
         MetadataBlock,
         set_default_effective_settings,

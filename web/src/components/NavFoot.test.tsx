@@ -39,7 +39,7 @@ describe("navigation foot", () => {
     expect(items[0]).toHaveAccessibleName("Switch to dark theme");
     expect(items[1]).toHaveAccessibleName("Settings");
     expect(items[2]).toHaveAccessibleName(/^Server status/);
-    expect(items[3]).toHaveAccessibleName("OMRG on GitHub");
+    expect(items[3]).toHaveAccessibleName("OMRS on GitHub");
   });
 
   it("has no language control", () => {
@@ -145,14 +145,14 @@ describe("navigation foot", () => {
     await waitFor(() => expect(within(panel).getByText(/runs in a terminal/i)).toBeInTheDocument());
     expect(within(panel).getByRole("button", { name: "Turn off" })).toBeDisabled();
     expect(within(panel).getByRole("button", { name: "Restart" })).toBeDisabled();
-    expect(within(panel).getByText("omrg web restart")).toBeInTheDocument();
-    expect(within(panel).getByText("omrg web open")).toBeInTheDocument();
+    expect(within(panel).getByText("omrs web restart")).toBeInTheDocument();
+    expect(within(panel).getByText("omrs web open")).toBeInTheDocument();
     expect(within(panel).getAllByRole("button", { name: /^Copy/ })).toHaveLength(2);
   });
 
   it("links to the repository in a new tab without leaking the opener", () => {
     start();
-    const link = within(foot()).getByRole("link", { name: "OMRG on GitHub" });
+    const link = within(foot()).getByRole("link", { name: "OMRS on GitHub" });
     expect(link).toHaveAttribute("href", REPOSITORY);
     expect(link).toHaveAttribute("target", "_blank");
     expect(link.getAttribute("rel")?.split(" ")).toEqual(expect.arrayContaining(["noopener", "noreferrer"]));

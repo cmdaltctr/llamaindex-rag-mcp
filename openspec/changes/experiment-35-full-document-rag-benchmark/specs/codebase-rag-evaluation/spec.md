@@ -4,7 +4,7 @@
 
 ### Requirement: Codebase baseline uses a frozen RepoProbe subset
 
-Experiment 35B SHALL evaluate the current OMRG `codebase` profile on a small frozen RepoProbe subset.
+Experiment 35B SHALL evaluate the current OMRS `codebase` profile on a small frozen RepoProbe subset.
 
 #### Scenario: Repository identity is not pinned
 - **WHEN** a repository does not have a frozen commit SHA or equivalent immutable identity

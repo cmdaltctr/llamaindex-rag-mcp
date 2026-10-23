@@ -1,5 +1,5 @@
 /**
- * The stamp of `omrg.jsonc` that the page saw last (design D5). Every Settings
+ * The stamp of `omrs.jsonc` that the page saw last (design D5). Every Settings
  * read and every Settings write returns it, and every write sends it back, so a
  * file changed on disk since the page read it gives 409 and the page asks for a
  * reload. All Settings routes share one file, so one stamp serves them all.
@@ -10,7 +10,7 @@ const KEY = ["settings-revision"] as const;
 /** The key of `GET /v1/settings/configuration` (`settings/useConfiguration.ts`). */
 const CONFIGURATION_KEY = ["settings", "configuration"] as const;
 
-/** Query keys (first element) whose data comes from `omrg.jsonc`. */
+/** Query keys (first element) whose data comes from `omrs.jsonc`. */
 const SETTINGS_ROOTS: readonly unknown[] = ["settings", "connections", "mcp", "llamacpp-server"];
 
 export function currentRevision(queryClient: QueryClient): string | undefined {

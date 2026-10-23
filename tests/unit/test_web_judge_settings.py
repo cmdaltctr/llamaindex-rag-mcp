@@ -29,9 +29,9 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
 )
 from tests.unit.test_web_openapi_conformance_support import FAMILIES, ContractChecker  # noqa: E402
 
-from omrg import compose  # noqa: E402
-from omrg.core.providers.llm import registry as llm_registry  # noqa: E402
-from omrg.transports.api.routes import chat_settings  # noqa: E402
+from omrs import compose  # noqa: E402
+from omrs.core.providers.llm import registry as llm_registry  # noqa: E402
+from omrs.transports.api.routes import chat_settings  # noqa: E402
 
 URL = "/v1/settings/judge"
 KEYS = ("answer.verify_provider", "answer.verify_model")

@@ -8,9 +8,9 @@ import { McpHttpPanel } from "./McpHttpPanel";
 import { McpTokenPanel } from "./McpTokenPanel";
 import { WebPortPanel } from "./WebPortPanel";
 
-/** The configuration a stdio client needs: it starts `omrg` in the folder whose `.env` the server read. */
+/** The configuration a stdio client needs: it starts `omrs` in the folder whose `.env` the server read. */
 export function stdioConfiguration(configDir: string): string {
-  return JSON.stringify({ mcpServers: { omrg: { command: "uv", args: ["run", "--directory", configDir, "omrg"] } } }, null, 2);
+  return JSON.stringify({ mcpServers: { omrs: { command: "uv", args: ["run", "--directory", configDir, "omrs"] } } }, null, 2);
 }
 
 function StdioPanel() {
@@ -20,7 +20,7 @@ function StdioPanel() {
     <Card role="region" aria-labelledby="mcp-stdio-title">
       <CardHeader>
         <CardTitle id="mcp-stdio-title">Stdio client</CardTitle>
-        <p className="text-meta text-muted-foreground">The client starts its own omrg process, so no server needs to run.</p>
+        <p className="text-meta text-muted-foreground">The client starts its own omrs process, so no server needs to run.</p>
       </CardHeader>
       {configDir === undefined ? (
         query.isError ? (
@@ -33,9 +33,9 @@ function StdioPanel() {
       ) : (
         <>
           <p className="text-ui">
-            Starts omrg with{" "}
+            Starts omrs with{" "}
             <code dir="ltr" className="text-code font-mono [overflow-wrap:anywhere]">
-              {`uv run --directory ${configDir} omrg`}
+              {`uv run --directory ${configDir} omrs`}
             </code>
             , so it reads the same .env as this server.
           </p>

@@ -26,8 +26,8 @@ from tests.unit.test_web_documents_support import (  # noqa: E402
 )
 from tests.unit.test_web_openapi_conformance_support import FAMILIES, ContractChecker  # noqa: E402
 
-import omrg.capabilities as capabilities  # noqa: E402
-from omrg.transports.api.integrations_catalogue import CATALOGUE  # noqa: E402
+import omrs.capabilities as capabilities  # noqa: E402
+from omrs.transports.api.integrations_catalogue import CATALOGUE  # noqa: E402
 
 DECLARED = (
     "chroma",
@@ -83,7 +83,7 @@ def test_install_commands_use_the_exact_forms(setup: Any) -> None:
     entries = _by_id(client)
     assert entries["azure"]["extra"] == "azure"
     assert entries["azure"]["install_command"] == "uv sync --extra azure"
-    assert entries["azure"]["pip_command"] == 'pip install "omrg[azure]"'
+    assert entries["azure"]["pip_command"] == 'pip install "omrs[azure]"'
     assert entries["magika"]["extra"] is None
     assert entries["magika"]["install_command"] is None
     assert entries["magika"]["pip_command"] is None
@@ -93,8 +93,8 @@ def test_available_and_not_installed_states(setup: Any, monkeypatch: pytest.Monk
     client, _ = setup
     missing = {"rank_bm25", "azure.ai.documentintelligence"}
     monkeypatch.setattr(capabilities, "module_installed", lambda name: name not in missing)
-    monkeypatch.setattr("omrg.core.vectordb.registry.availability", lambda name: "absent")
-    monkeypatch.setattr("omrg.integrations.pdf.registry.probe", lambda name: None)
+    monkeypatch.setattr("omrs.core.vectordb.registry.availability", lambda name: "absent")
+    monkeypatch.setattr("omrs.integrations.pdf.registry.probe", lambda name: None)
     entries = _by_id(client)
     assert entries["chroma"]["availability"] == "not-installed"
     assert entries["hybrid"]["availability"] == "not-installed"
@@ -113,7 +113,7 @@ def test_a_missing_pdf_reader_dependency_is_not_installed(
         if name == "pypdfium2":
             raise ImportError("no pypdfium2")
 
-    monkeypatch.setattr("omrg.integrations.pdf.registry.probe", probe)
+    monkeypatch.setattr("omrs.integrations.pdf.registry.probe", probe)
     entries = _by_id(client)
     assert entries["pdf-pypdfium2"]["availability"] == "not-installed"
     assert entries["pdf-inspector"]["availability"] == "available"
@@ -127,9 +127,9 @@ def test_leiden_follows_its_registered_availability_probe(
     def absent(name: str) -> None:
         raise ImportError("install leidenalg")
 
-    monkeypatch.setattr("omrg.core.community.registry.verify_available", absent)
+    monkeypatch.setattr("omrs.core.community.registry.verify_available", absent)
     assert _by_id(client)["community-leiden"]["availability"] == "not-installed"
-    monkeypatch.setattr("omrg.core.community.registry.verify_available", lambda name: None)
+    monkeypatch.setattr("omrs.core.community.registry.verify_available", lambda name: None)
     assert _by_id(client)["community-leiden"]["availability"] == "available"
 
 
@@ -155,7 +155,7 @@ def test_a_probe_that_raises_gives_unknown_not_a_500(
 
 def test_a_broken_chroma_install_is_unknown(setup: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     client, _ = setup
-    monkeypatch.setattr("omrg.core.vectordb.registry.availability", lambda name: "broken")
+    monkeypatch.setattr("omrs.core.vectordb.registry.availability", lambda name: "broken")
     assert _by_id(client)["chroma"]["availability"] == "unknown"
 
 

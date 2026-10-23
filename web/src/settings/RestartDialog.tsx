@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useReturnFocus } from "../studio/useReturnFocus";
 
 /** Starts the server again in a terminal. A server run by hand has no login item to restart. */
-const TERMINAL_COMMAND = "omrg web";
+const TERMINAL_COMMAND = "omrs web";
 
 function Command({ children }: { children: string }) {
   return <code className="rounded-small border border-border bg-muted px-1.5 py-0.5 text-code">{children}</code>;
@@ -58,8 +58,8 @@ export function RestartDialog({ change, plural = false, note, onLater }: Restart
         {note ? <p className="text-ui">{note}</p> : null}
         {restart.isSuccess ? (
           <p className="text-ui">
-            {"Restarting. This page signs in again by itself when OMRG is back. If the port changed, run "}
-            <Command>omrg web open</Command>
+            {"Restarting. This page signs in again by itself when OMRS is back. If the port changed, run "}
+            <Command>omrs web open</Command>
             {" in a terminal."}
           </p>
         ) : null}
@@ -71,7 +71,7 @@ export function RestartDialog({ change, plural = false, note, onLater }: Restart
           </p>
         ) : null}
         {restart.isError && busy ? (
-          <AlertNotice message="OMRG is busy with a run or an ingestion, so nothing changed. Try again when it has finished.">
+          <AlertNotice message="OMRS is busy with a run or an ingestion, so nothing changed. Try again when it has finished.">
             <Button variant="outline" onClick={() => restart.mutate()}>
               Retry
             </Button>

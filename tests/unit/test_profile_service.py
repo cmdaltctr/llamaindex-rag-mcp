@@ -13,15 +13,15 @@ from typing import Any
 import pytest
 from tests.unit.test_engine_pipelines_support import build_engine
 
-from omrg.compose_profiles import (
+from omrs.compose_profiles import (
     BuiltinProfileError,
     ProfileInUseError,
     ProfileService,
     UnknownProfileError,
 )
-from omrg.core.pipelines import PipelineIssue, PipelineValidationError
-from omrg.core.profiles.resolver import ProfileResolver
-from omrg.integrations.workspace_sqlite import (
+from omrs.core.pipelines import PipelineIssue, PipelineValidationError
+from omrs.core.profiles.resolver import ProfileResolver
+from omrs.integrations.workspace_sqlite import (
     SqliteProfileCatalogue,
     SqliteProfileRepository,
     SqliteWorkspaceRepository,

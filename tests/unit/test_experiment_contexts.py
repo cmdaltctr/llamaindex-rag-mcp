@@ -14,7 +14,7 @@ from typing import Any
 
 import pytest
 
-from omrg.core.experiments import (
+from omrs.core.experiments import (
     BackendIdentity,
     ExperimentAdmissionError,
     ExperimentPathError,

@@ -13,12 +13,12 @@ import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-_PREFIX = "omrg_ocr_"
+_PREFIX = "omrs_ocr_"
 
 
 @contextmanager
 def isolated_worker_modules() -> Iterator[None]:
-    """Unload every ``omrg_ocr_*`` module on entry; restore the originals on exit."""
+    """Unload every ``omrs_ocr_*`` module on entry; restore the originals on exit."""
     saved = {name: mod for name, mod in sys.modules.items() if name.startswith(_PREFIX)}
     for name in saved:
         del sys.modules[name]

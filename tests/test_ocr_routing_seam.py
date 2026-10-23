@@ -17,14 +17,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from omrg.capabilities import probe_ocr_worker, reset_ocr_fingerprint_cache
-from omrg.integrations.ocr_worker.managed import ManagedOcrClient
-from omrg.integrations.pdf.factory import build_pdf_reader
-from omrg.integrations.pdf.ocr_routing import (
+from omrs.capabilities import probe_ocr_worker, reset_ocr_fingerprint_cache
+from omrs.integrations.ocr_worker.managed import ManagedOcrClient
+from omrs.integrations.pdf.factory import build_pdf_reader
+from omrs.integrations.pdf.ocr_routing import (
     OCR_BACKEND_FAST_PATH,
     OcrRoutedPdfInspector,
 )
-from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
 pdf_inspector_lib = pytest.importorskip(
     "pdf_inspector", reason="pdf-inspector is a base dependency (ADR-050)"
@@ -193,7 +193,7 @@ def test_unavailable_client_keeps_partial_markdown_and_degrades(effective_settin
 
 def test_unavailable_fingerprint_client_degrades_the_same_way(effective_settings) -> None:
     """A probed-unavailable fingerprint degrades identically to no client."""
-    from omrg.capabilities import UNAVAILABLE_OCR_WORKER_FINGERPRINT
+    from omrs.capabilities import UNAVAILABLE_OCR_WORKER_FINGERPRINT
 
     client = ManagedOcrClient(
         fingerprint=UNAVAILABLE_OCR_WORKER_FINGERPRINT, command=_stub_command("echo")
@@ -417,7 +417,7 @@ def _stub_liteparse_pages(monkeypatch, page_texts: list[str]) -> None:
     """Seed the registry cache so the adapter's LiteParse retry is stubbed."""
     from llama_index.core import Document
 
-    from omrg.integrations.pdf import registry
+    from omrs.integrations.pdf import registry
 
     class _StubLiteParseReader:
         def __init__(self, *, ocr_enabled: bool = False, num_workers: int | None = None) -> None:
@@ -434,7 +434,7 @@ def _stub_pypdf_pages(monkeypatch, page_texts: list[str]) -> None:
     """Seed the registry cache so the adapter's pypdf retry is stubbed."""
     from llama_index.core import Document
 
-    from omrg.integrations.pdf import registry
+    from omrs.integrations.pdf import registry
 
     class _StubPypdfReader:
         def load_data(self, file, *args, **kwargs):
@@ -525,7 +525,7 @@ def test_document_unit_emits_no_page_source_counts(effective_settings) -> None:
     consumer a merge happened, and would move the index identity of every
     install that never opted in.
     """
-    from omrg.integrations.pdf.page_routing import _COUNT_KEYS
+    from omrs.integrations.pdf.page_routing import _COUNT_KEYS
 
     client = _echo_client()
     try:
@@ -544,8 +544,8 @@ def test_page_source_count_keys_are_all_excluded_from_embedding_text() -> None:
     They are constant across a document's chunks and would otherwise be
     embedded into every one of them.
     """
-    from omrg.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS
-    from omrg.integrations.pdf.page_routing import _COUNT_KEYS
+    from omrs.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS
+    from omrs.integrations.pdf.page_routing import _COUNT_KEYS
 
     assert set(_COUNT_KEYS.values()) <= set(EXCLUDED_EMBED_METADATA_KEYS)
 
@@ -559,8 +559,8 @@ def test_page_routing_keys_are_exactly_the_unit_scoped_set() -> None:
     identity — freezing the fingerprint while the embedded text changed. That
     is the one failure this arrangement could cause, so it is pinned here.
     """
-    from omrg.core.ingestion.embed_exclusions import PAGE_ROUTING_ONLY_EMBED_KEYS
-    from omrg.integrations.pdf.page_routing import _COUNT_KEYS
+    from omrs.core.ingestion.embed_exclusions import PAGE_ROUTING_ONLY_EMBED_KEYS
+    from omrs.integrations.pdf.page_routing import _COUNT_KEYS
 
     assert set(_COUNT_KEYS.values()) == set(PAGE_ROUTING_ONLY_EMBED_KEYS)
 
@@ -572,7 +572,7 @@ def test_no_unit_scoped_key_is_emitted_on_the_document_path(effective_settings) 
     grounds that it never emits them. This asserts that premise against the
     real reader rather than trusting it.
     """
-    from omrg.core.ingestion.embed_exclusions import PAGE_ROUTING_ONLY_EMBED_KEYS
+    from omrs.core.ingestion.embed_exclusions import PAGE_ROUTING_ONLY_EMBED_KEYS
 
     client = _echo_client()
     try:
@@ -593,8 +593,8 @@ def test_page_unit_counts_never_reach_embedding_text() -> None:
     """
     from llama_index.core import Document
 
-    from omrg.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS
-    from omrg.integrations.pdf.page_routing import _COUNT_KEYS
+    from omrs.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS
+    from omrs.integrations.pdf.page_routing import _COUNT_KEYS
 
     document = Document(
         text="page one",

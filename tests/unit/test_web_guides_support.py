@@ -14,7 +14,7 @@ import yaml
 
 REPO = Path(__file__).resolve().parents[2]
 GUIDES = REPO / "docs" / "guides"
-OPENAPI = REPO / "src" / "omrg" / "transports" / "api" / "openapi.yaml"
+OPENAPI = REPO / "src" / "omrs" / "transports" / "api" / "openapi.yaml"
 
 _CODE = re.compile(r"`([^`\n]+)`")
 _ROUTE = re.compile(r"^(?:(GET|POST|PUT|PATCH|DELETE) )?(/v1(?:/[^\s?]*)?)")

@@ -26,10 +26,10 @@ import pytest
 from llama_index.core import Settings
 from llama_index.core.embeddings import MockEmbedding
 
-from omrg.core.profiles.resolver import ProfileResolver
-from omrg.core.settings import AnswerBlock
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
-from omrg.engine import Engine
+from omrs.core.profiles.resolver import ProfileResolver
+from omrs.core.settings import AnswerBlock
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.engine import Engine
 
 # The engines use the native sparse backend (Lance FTS): rank_bm25 is an
 # optional extra and hybrid retrieval must not depend on it here.
@@ -144,8 +144,8 @@ def engine_pair(tmp_path: Path, effective_settings):
     falls back to a process default fails loudly instead of silently
     reading the harness store (task 4.8 precondition).
     """
-    from omrg.core.settings import reset_default_effective_settings
-    from omrg.core.vectordb import get_default_store, reset_default_store
+    from omrs.core.settings import reset_default_effective_settings
+    from omrs.core.vectordb import get_default_store, reset_default_store
 
     reset_default_store()
     reset_default_effective_settings()

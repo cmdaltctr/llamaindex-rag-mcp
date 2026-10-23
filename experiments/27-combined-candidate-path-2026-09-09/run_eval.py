@@ -279,7 +279,7 @@ def _search_with_transient_retry(query: str, settings, store, label: str) -> tup
     Returns the results and the wall time of the successful attempt only
     (same measurement point as Experiments 22 and 25).
     """
-    from omrg.core.retrieval import pipeline
+    from omrs.core.retrieval import pipeline
 
     last_exc: BaseException | None = None
     for attempt in range(1, MAX_TRANSIENT_ATTEMPTS + 1):
@@ -326,9 +326,9 @@ def run(limit: int | None, run_name: str | None = None) -> None:
     manifest = _preflight()
     from _lib.checkpoint_validity import evaluate_resume
 
-    from omrg.compose import ensure_runtime_setup
-    from omrg.core.settings import EffectiveSettings, EmbeddingBlock, RetrievalBlock
-    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrs.compose import ensure_runtime_setup
+    from omrs.core.settings import EffectiveSettings, EmbeddingBlock, RetrievalBlock
+    from omrs.core.vectordb.lancedb import LanceVectorStore
 
     ensure_runtime_setup()
     store = LanceVectorStore(uri=str(STORE_URI))

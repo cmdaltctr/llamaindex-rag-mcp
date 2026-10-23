@@ -1,4 +1,4 @@
-"""``omrg web start`` (add-web-power-menu, group 3).
+"""``omrs web start`` (add-web-power-menu, group 3).
 
 Every case runs on the fakes in ``test_web_login_item_support``: a
 temporary home, a fake ``launchctl`` runner, a fake health check and a
@@ -38,7 +38,7 @@ def test_start_after_turn_off_loads_the_agent_and_waits_for_the_app(h: Harness) 
     assert h.now >= 5.0
     text = flat(result.output)
     assert "2.5.0" in text
-    assert "omrg web open" in text
+    assert "omrs web open" in text
 
 
 def test_start_when_already_running_says_so_and_loads_nothing(h: Harness) -> None:
@@ -57,7 +57,7 @@ def test_start_when_not_installed_names_install_and_exits_1(h: Harness) -> None:
     result = h.invoke("start")
 
     assert result.exit_code == 1
-    assert "omrg web install" in flat(result.output)
+    assert "omrs web install" in flat(result.output)
     assert h.launchctl_calls == []
 
 

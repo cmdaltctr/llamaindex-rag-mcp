@@ -4,7 +4,7 @@ import { DOCUMENT_READING_KEYS, type DocumentReadingKey, type DocumentReadingSet
 import { documentsServer, type Handler } from "../../test/fakeDocumentsServer";
 
 /** Fixtures built from the `openapi.yaml` schemas for the Settings routes. */
-export const CONFIG_DIR = "/srv/omrg project";
+export const CONFIG_DIR = "/srv/omrs project";
 
 const NO_KEY = { min: null, max: null, value: null, required: true, set: false, last4: null, state: null, locked: false, lock_reason: null } as const;
 
@@ -84,7 +84,7 @@ export const OPENROUTER: Connection = {
   roles: ["verification"],
 };
 
-export const CONNECTIONS: ConnectionList = { status: "ok", revision: "r1", config_dir: CONFIG_DIR, user_config_dir: "~/.config/omrg", keychain: "available", connections: [OLLAMA, LLAMACPP, OPENROUTER] };
+export const CONNECTIONS: ConnectionList = { status: "ok", revision: "r1", config_dir: CONFIG_DIR, user_config_dir: "~/.config/omrs", keychain: "available", connections: [OLLAMA, LLAMACPP, OPENROUTER] };
 
 export const CHAT_READY: ChatSettings = {
   status: "ok",
@@ -114,7 +114,7 @@ export const JUDGE_DEFAULT: JudgeSettings = {
   reason: "no-model",
 };
 
-/** A judge saved in `omrg.jsonc`, with an OpenRouter key set. */
+/** A judge saved in `omrs.jsonc`, with an OpenRouter key set. */
 export const JUDGE_SAVED: JudgeSettings = { ...JUDGE_DEFAULT, provider: "openrouter", model: "openai/gpt-5-mini", source: "config-file", ready: true, reason: null };
 
 export const MCP_OFF: McpState = {
@@ -177,7 +177,7 @@ export function readingState(rows: Partial<Record<DocumentReadingKey, Partial<Do
   return { ...DOCUMENT_READING, ...change, settings: DOCUMENT_READING.settings.map((row) => ({ ...row, ...rows[row.key] })) };
 }
 
-export function logRecord(seq: number, level: LogRecord["level"], message: string, logger = "omrg.server"): LogRecord {
+export function logRecord(seq: number, level: LogRecord["level"], message: string, logger = "omrs.server"): LogRecord {
   return { seq, time: `2026-10-14T09:30:${String(seq).padStart(2, "0")}Z`, level, logger, message };
 }
 
@@ -185,7 +185,7 @@ export function logRecord(seq: number, level: LogRecord["level"], message: strin
 export function settingsServer(handlers: Record<string, Handler> = {}) {
   return documentsServer({
     "GET /v1/health": () => ({ status: "ok", ready: true, version: "2.0.0" }),
-    "GET /v1/session": () => ({ status: "ok", kind: "session", scopes: ["files", "graph", "read", "run"], workspace: "/home/u/.omrg/workspace" }),
+    "GET /v1/session": () => ({ status: "ok", kind: "session", scopes: ["files", "graph", "read", "run"], workspace: "/home/u/.omrs/workspace" }),
     "GET /v1/pipeline-operations": () => ({
       status: "ok",
       operations: [

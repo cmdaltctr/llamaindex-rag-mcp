@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import pytest
 
-from omrg.compose_answer import resolve_verify_provider
-from omrg.config import Settings
+from omrs.compose_answer import resolve_verify_provider
+from omrs.config import Settings
 
 
 @pytest.fixture

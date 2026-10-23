@@ -22,13 +22,13 @@ repos:
       # default to all stages and rewrite files mid-push.
       - id: ruff-check
         name: ruff check (lint + auto-fix)
-        entry: uv run ruff check --fix
+        entry: uv run ruff check --fix --force-exclude
         language: system
         types: [python]
         stages: [pre-commit]
       - id: ruff-format
         name: ruff format
-        entry: uv run ruff format
+        entry: uv run ruff format --force-exclude
         language: system
         types: [python]
         stages: [pre-commit]

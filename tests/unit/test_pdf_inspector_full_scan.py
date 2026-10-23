@@ -44,7 +44,7 @@ def _stub(
 
 
 def _read(tmp_path):
-    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrs.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     fake_pdf = tmp_path / "doc.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 stub")
@@ -102,7 +102,7 @@ def test_silent_empty_rescue_records_full_scan_count(monkeypatch, tmp_path):
     """The rescue keeps its contract, with the complete pre-fallback count."""
     from llama_index.core import Document
 
-    from omrg.integrations.pdf import registry
+    from omrs.integrations.pdf import registry
 
     class _Rescue:
         def __init__(self, *, ocr_enabled: bool = False, num_workers: int | None = None) -> None:

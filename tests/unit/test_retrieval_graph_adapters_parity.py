@@ -18,8 +18,8 @@ import pytest
 from tests.fixtures.pipeline_parity.retrieval import harness
 from tests.unit.test_retrieval_graph_adapters_support import FakeEmbedder, run_chain
 
-from omrg.core.pipelines import SCORE_KIND_RERANK, SCORE_KIND_RRF
-from omrg.core.retrieval import registry
+from omrs.core.pipelines import SCORE_KIND_RERANK, SCORE_KIND_RRF
+from omrs.core.retrieval import registry
 
 _CASES = harness.load_cases()
 

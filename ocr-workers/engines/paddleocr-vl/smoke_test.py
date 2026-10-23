@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Dedicated OCR worker smoke-test runner (task 2.15).
 
-SEPARATE from the main OMRG pytest suite on purpose: it provisions the
+SEPARATE from the main OMRS pytest suite on purpose: it provisions the
 isolated worker environment from the worker-owned lockfile, then checks
 the real worker end to end — capability probe, ONE parse request over
 the real JSON Lines protocol, response framing, and structured
@@ -62,21 +62,21 @@ DEFAULT_FIXTURE = (
     REPO_ROOT / "tests" / "fixtures" / "pdf_baseline" / "calibration" / "cal_table_text.pdf"
 )
 
-#: The three Paddle distributions that must NEVER enter the main OMRG
+#: The three Paddle distributions that must NEVER enter the main OMRS
 #: environment (task 2.1/2.1b boundary). Checked with importlib.metadata
 #: so no import of the packages themselves is attempted.
 PADDLE_DISTRIBUTIONS: tuple[str, ...] = ("paddleocr", "paddlex", "paddlepaddle")
 
 # The expected wire contract. Deliberately declared HERE rather than
-# imported from ``src/omrg``: the smoke test validates the contract from
+# imported from ``src/omrs``: the smoke test validates the contract from
 # the outside, so its expected values must be independent of the code
 # under test (they mirror
-# src/omrg/integrations/ocr_worker/protocol.py and
-# ocr-workers/core/src/omrg_ocr_worker_core/protocol.py).
+# src/omrs/integrations/ocr_worker/protocol.py and
+# ocr-workers/core/src/omrs_ocr_worker_core/protocol.py).
 EXPECTED_PROTOCOL_VERSION = "1.1"
 #: The version that introduced the page-list fields (protocol 1.1).
 PAGES_PROTOCOL_VERSION = "1.1"
-EXPECTED_OUTPUT_SCHEMA_ID = "omrg.ocr.parse_output"
+EXPECTED_OUTPUT_SCHEMA_ID = "omrs.ocr.parse_output"
 EXPECTED_OUTPUT_SCHEMA_VERSION = "1"
 REQUEST_TYPE_PARSE = "parse"
 RESPONSE_TYPE_PARSE_RESULT = "parse_result"
@@ -192,8 +192,8 @@ def build_plan(python_arg: str, fixture: Path, *, provision_requested: bool) -> 
             python_arg,
         ],
         "worker_venv_python": str(venv_python),
-        "probe_command": [str(venv_python), "-m", "omrg_ocr_worker_core", "--capabilities"],
-        "parse_command": [str(venv_python), "-m", "omrg_ocr_worker_core"],
+        "probe_command": [str(venv_python), "-m", "omrs_ocr_worker_core", "--capabilities"],
+        "parse_command": [str(venv_python), "-m", "omrs_ocr_worker_core"],
     }
 
 

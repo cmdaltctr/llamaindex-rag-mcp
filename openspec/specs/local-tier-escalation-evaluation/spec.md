@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines how OMRG evaluates an escalation rule for the local OCR tier before any change replaces the shipped confidence post-check.
+Defines how OMRS evaluates an escalation rule for the local OCR tier before any change replaces the shipped confidence post-check.
 
 ## Requirements
 

@@ -1,8 +1,8 @@
 """Write rules of the document-reading keys (document-reading-settings, tasks 1.1 to 1.4).
 
-The rules run only when the Settings page writes ``omrg.jsonc``. Startup
+The rules run only when the Settings page writes ``omrs.jsonc``. Startup
 reading stays as it was: an unknown ``pdf_reader`` still warns and falls back
-to ``auto``. Every test points ``OMRG_CONFIG_DIR`` at a temporary folder.
+to ``auto``. Every test points ``OMRS_CONFIG_DIR`` at a temporary folder.
 """
 
 from __future__ import annotations
@@ -13,16 +13,16 @@ from typing import Any
 
 import pytest
 
-from omrg.config import Settings
-from omrg.config.rules import (
+from omrs.config import Settings
+from omrs.config.rules import (
     DOCUMENT_READING_KEYS,
     ENGINE_NAME_PATTERN,
     MAX_ENGINE_NAME_CHARS,
     PDF_READER_NAMES,
     document_reading_problem,
 )
-from omrg.config.settings_file_write import SettingsFileRefused, write_settings
-from omrg.config.user_config import parse_jsonc
+from omrs.config.settings_file_write import SettingsFileRefused, write_settings
+from omrs.config.user_config import parse_jsonc
 
 ENGINE_RULE = (
     "The engine name must start with a letter or digit, hold only letters, digits, dots, "
@@ -42,7 +42,7 @@ ENGINES = ("ocr_engine_primary", "ocr_engine_fallback")
 
 
 def test_reader_names_match_the_pdf_registry() -> None:
-    from omrg.integrations.pdf import registry
+    from omrs.integrations.pdf import registry
 
     assert PDF_READER_NAMES[0] == "auto"
     assert set(PDF_READER_NAMES) - {"auto"} == set(registry.available())
@@ -74,7 +74,7 @@ def test_the_key_order_is_the_contract_order() -> None:
 
 
 def test_engine_pattern_matches_the_route_resolver() -> None:
-    from omrg.integrations.ocr_worker import routes
+    from omrs.integrations.ocr_worker import routes
 
     assert ENGINE_NAME_PATTERN == routes._ENGINE_NAME_RE.pattern
     assert MAX_ENGINE_NAME_CHARS == 64
@@ -149,10 +149,10 @@ def test_a_key_outside_the_nine_passes_unchecked() -> None:
 
 @pytest.fixture
 def folder(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
-    root = tmp_path / "cfg" / "omrg"
+    root = tmp_path / "cfg" / "omrs"
     root.mkdir(parents=True, mode=0o700)
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(root))
-    (root / "omrg.jsonc").write_text(
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(root))
+    (root / "omrs.jsonc").write_text(
         '// mine\n{\n  "ocr_engine_fallback": "my-engine", // keep this\n  "web_port": 9100\n}\n',
         encoding="utf-8",
     )
@@ -160,7 +160,7 @@ def folder(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
 
 
 def text(folder: Path) -> str:
-    return (folder / "omrg.jsonc").read_text(encoding="utf-8")
+    return (folder / "omrs.jsonc").read_text(encoding="utf-8")
 
 
 def test_a_valid_reader_is_written_and_every_other_byte_stays(folder: Path) -> None:
@@ -226,10 +226,10 @@ def test_an_unknown_reader_in_the_file_still_falls_back_to_auto_at_startup(
     folder: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     monkeypatch.delenv("PDF_READER", raising=False)
-    (folder / "omrg.jsonc").write_text('{ "pdf_reader": "pdfminer" }', encoding="utf-8")
+    (folder / "omrs.jsonc").write_text('{ "pdf_reader": "pdfminer" }', encoding="utf-8")
     empty = folder / "none.env"
     empty.write_text("", encoding="utf-8")
-    with caplog.at_level(logging.WARNING, logger="omrg.config"):
+    with caplog.at_level(logging.WARNING, logger="omrs.config"):
         settings = Settings(_env_file=empty)
     assert settings.pdf_reader == "auto"
     assert any("Unknown PDF_READER" in record.getMessage() for record in caplog.records)

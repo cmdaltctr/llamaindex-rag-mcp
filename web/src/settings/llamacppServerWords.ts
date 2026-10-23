@@ -10,8 +10,8 @@ export const STATE_NAMES: Record<ServerState, string> = {
 const REASON_SENTENCES: Record<Exclude<ServerReason, "exited" | "not-configured">, string> = {
   "binary-invalid": "The program path is not a runnable file named llama-server.",
   "model-invalid": "The model is not an existing .gguf file or a Hugging Face id.",
-  "not-loopback": "The chat address is not on this machine, so omrg will not start a server for it.",
-  "port-in-use": "Another program already uses the chat port. omrg did not touch it.",
+  "not-loopback": "The chat address is not on this machine, so omrs will not start a server for it.",
+  "port-in-use": "Another program already uses the chat port. omrs did not touch it.",
   timeout: "The server did not become ready in time and was stopped.",
 };
 

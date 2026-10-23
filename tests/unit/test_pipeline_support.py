@@ -13,7 +13,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from omrg.core.pipelines import (
+from omrs.core.pipelines import (
     READER_STRUCTURED,
     READER_TEXT_FORMAT,
     SCORE_KIND_DENSE,
@@ -417,7 +417,7 @@ def test_fixture_catalogue_registers_every_descriptor() -> None:
 
 def test_fixture_graphs_parse() -> None:
     """Both fixture graphs are valid graph documents."""
-    from omrg.core.pipelines import GraphDocument
+    from omrs.core.pipelines import GraphDocument
 
     assert GraphDocument.model_validate(search_graph()).schema_version == 1
     assert GraphDocument.model_validate(ingest_graph()).collection == "documents"

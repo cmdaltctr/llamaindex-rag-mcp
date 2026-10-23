@@ -1,8 +1,8 @@
 """Answer stage seams: evidence, synthesis, citations and verification.
 
 Task 3.6 of ``add-local-web-pipeline-workspace``. The seams in
-``omrg.core.answer.stages`` and the result builders in
-``omrg.core.answer.results`` are the single implementation that both the
+``omrs.core.answer.stages`` and the result builders in
+``omrs.core.answer.results`` are the single implementation that both the
 standard ``answer()`` path and later graph adapters call. These tests
 pin each seam on its own, then chain the seams by hand over every parity
 fixture and require the exact result the standard path produced before
@@ -33,7 +33,7 @@ from tests.fixtures.pipeline_parity.answer.harness import (
     observation,
 )
 
-from omrg.core.answer.results import (
+from omrs.core.answer.results import (
     answer_status,
     answered_result,
     disabled_result,
@@ -43,7 +43,7 @@ from omrg.core.answer.results import (
     stage_failure_result,
     zero_generation_diagnostics,
 )
-from omrg.core.answer.stages import (
+from omrs.core.answer.stages import (
     FAILURE_STAGE_GENERATION,
     NO_VERIFICATION,
     error_detail_for,
@@ -52,8 +52,8 @@ from omrg.core.answer.stages import (
     synthesise_answer,
     verify_answer,
 )
-from omrg.core.answer.verify import VerificationFields
-from omrg.core.settings import AnswerBlock
+from omrs.core.answer.verify import VerificationFields
+from omrs.core.settings import AnswerBlock
 
 _ROW = {
     "chunk_id": "c1",
@@ -363,7 +363,7 @@ async def test_seams_never_read_process_default_settings(
     effective_settings: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Seams use only injected values; poisoned defaults are never read."""
-    import omrg.core.settings as core_settings
+    import omrs.core.settings as core_settings
 
     def _poisoned() -> Any:
         raise AssertionError("an answer seam read the process default settings")
@@ -379,9 +379,9 @@ async def test_seams_never_read_process_default_settings(
 
 async def test_seam_citations_resolve_to_stored_chunks(tmp_path: Path) -> None:
     """Every citation chunk id from the seams refetches one stored chunk."""
-    from omrg.core.answer import answer
-    from omrg.core.ingestion import ingest_path_async
-    from omrg.core.retrieval import search
+    from omrs.core.answer import answer
+    from omrs.core.ingestion import ingest_path_async
+    from omrs.core.retrieval import search
 
     collection = "answer_seams_store"
     source = tmp_path / "seams-doc.txt"
@@ -440,7 +440,7 @@ class _ExplodingStore:
 
 async def test_retrieval_failure_is_attributed_before_any_model_call() -> None:
     """The standard path attributes a store failure to retrieval."""
-    from omrg.core.answer import answer
+    from omrs.core.answer import answer
 
     seam = ScriptedSeam({"replies": ["never [1]."]})
     result = await answer(
@@ -463,10 +463,10 @@ def test_answer_seam_modules_stay_lazy_and_graph_free() -> None:
     """Design D6: importing the seams builds no model and no graph runtime."""
     code = (
         "import sys\n"
-        "import omrg.core.answer.stages, omrg.core.answer.results\n"
+        "import omrs.core.answer.stages, omrs.core.answer.results\n"
         "bad = [m for m in sys.modules if m.startswith(("
-        "'omrg.compose_answer', 'omrg.core.pipelines', 'omrg.transports', "
-        "'omrg.integrations'))]\n"
+        "'omrs.compose_answer', 'omrs.core.pipelines', 'omrs.transports', "
+        "'omrs.integrations'))]\n"
         "print(json.dumps(bad))\n"
     )
     proc = subprocess.run(

@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from omrg.core.plugins.manifest import (
+from omrs.core.plugins.manifest import (
     REQUIRED_LAUNCH_CAPABILITIES,
     ManifestError,
     parse_manifest,

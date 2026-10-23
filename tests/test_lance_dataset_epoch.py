@@ -2,7 +2,7 @@
 
 Stage 2 of ``fix-retrieval-freshness-and-context-assembly-2`` (tasks
 2.2, 2.5 and 2.6): pins the lifecycle of the Lance durable
-data-version token — ``(omrg_dataset_epoch, table.version)`` — against
+data-version token — ``(omrs_dataset_epoch, table.version)`` — against
 ordinary mutations, overwrite-based rebuilds, delete/recreate
 collisions on the numeric version, legacy unmarked tables, version
 cleanup/optimisation, and cross-process rebuilds observed through the
@@ -21,12 +21,12 @@ import lancedb
 import pyarrow as pa
 import pytest
 
-from omrg.core.vectordb.identity import EmbeddingIdentity
-from omrg.core.vectordb.lancedb.epoch import (
+from omrs.core.vectordb.identity import EmbeddingIdentity
+from omrs.core.vectordb.lancedb.epoch import (
     durable_data_token,
     parse_durable_data_token,
 )
-from omrg.core.vectordb.lancedb.store import LanceVectorStore
+from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
 _PRECOMPUTED_IDENTITY = EmbeddingIdentity(provider="test", model="mock")
 _EMBEDDING = [1.0, 0.0]
@@ -73,11 +73,11 @@ def _epoch_and_version(store: LanceVectorStore, collection: str) -> tuple[str, i
 
 
 def _create_legacy_table(uri: str, name: str, rows: list[tuple[str, str, str]]) -> None:
-    """Create an adapter-shaped Lance table with no OMRG dataset epoch.
+    """Create an adapter-shaped Lance table with no OMRS dataset epoch.
 
-    Simulates a table written by an older OMRG version or an external
+    Simulates a table written by an older OMRS version or an external
     writer: the schema matches what the store produces, but the schema
-    metadata carries no ``omrg_dataset_epoch`` key.
+    metadata carries no ``omrs_dataset_epoch`` key.
     """
     schema = pa.schema(
         [
@@ -243,8 +243,8 @@ _REBUILDER_SCRIPT = textwrap.dedent(
     """
     import sys
 
-    from omrg.core.vectordb.identity import EmbeddingIdentity
-    from omrg.core.vectordb.lancedb.store import LanceVectorStore
+    from omrs.core.vectordb.identity import EmbeddingIdentity
+    from omrs.core.vectordb.lancedb.store import LanceVectorStore
 
     uri, collection = sys.argv[1], sys.argv[2]
     store = LanceVectorStore(uri=uri)
@@ -305,7 +305,7 @@ class TestLegacyTables:
 
         assert _numeric_table_version(uri, "legacy") == version_before
 
-    def test_next_omrg_mutation_installs_epoch_before_row_mutation(
+    def test_next_omrs_mutation_installs_epoch_before_row_mutation(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The epoch write must precede the row mutation on a legacy table."""

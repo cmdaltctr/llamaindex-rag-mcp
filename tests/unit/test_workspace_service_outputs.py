@@ -18,8 +18,8 @@ from tests.unit.test_workspace_service_support import (
     saved_revision,
 )
 
-from omrg.core.pipelines import EventKind, NodeOutcome, NodeStatus
-from omrg.core.workspace import MAX_PREVIEW_ROWS, REDACTED
+from omrs.core.pipelines import EventKind, NodeOutcome, NodeStatus
+from omrs.core.workspace import MAX_PREVIEW_ROWS, REDACTED
 
 
 def _all_bytes(root: Path) -> bytes:
@@ -169,7 +169,7 @@ async def test_run_with_an_artefact_root_stores_outputs_below_it(tmp_path: Path)
     executor.events["a"] = [
         runner_event(EventKind.NODE_PROGRESS, node_id="a", data={"text": "z" * 9000})
     ]
-    outputs = tmp_path / "experiments" / "exp-a" / "output" / "omrg-runs"
+    outputs = tmp_path / "experiments" / "exp-a" / "output" / "omrs-runs"
     admitter.artefact_root = outputs
     service = make_service(tmp_path, executor, admitter)
     await service.start()

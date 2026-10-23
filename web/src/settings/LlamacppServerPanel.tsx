@@ -24,7 +24,7 @@ export function LlamacppServerPanel() {
       <h4 id="llamacpp-server-title" className="text-ui font-semibold">
         Local server
       </h4>
-      <p className="text-meta text-muted-foreground">omrg starts and stops only this server. It never touches a server you started yourself.</p>
+      <p className="text-meta text-muted-foreground">omrs starts and stops only this server. It never touches a server you started yourself.</p>
       <LlamacppServerFields saved={status.saved} />
       <div role="status" className="text-ui">
         {statusLine(status)}

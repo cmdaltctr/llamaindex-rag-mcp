@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from omrg.core.ingestion import source_state
-from omrg.core.settings import EffectiveSettings, MetadataBlock
+from omrs.core.ingestion import source_state
+from omrs.core.settings import EffectiveSettings, MetadataBlock
 
 
 def test_index_identity_tracks_actual_process_embedder(

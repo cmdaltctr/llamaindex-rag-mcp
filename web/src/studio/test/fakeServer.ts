@@ -176,7 +176,7 @@ export function fakeServer(options: FakeServerOptions = {}) {
     if (path === "/v1/pipeline-operations") return json({ status: "ok", operations: options.catalogue ?? CATALOGUE });
     if (path === "/v1/collections") return json(options.collections ?? []);
     if (path === "/v1/connections" && options.connections !== undefined) {
-      return json({ status: "ok", config_dir: "/srv/omrg", connections: options.connections });
+      return json({ status: "ok", config_dir: "/srv/omrs", connections: options.connections });
     }
     const asProfile = profileStore.route(method, path, body);
     if (asProfile !== null) return json(asProfile.body, asProfile.status);

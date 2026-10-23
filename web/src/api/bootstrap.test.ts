@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { exchangeBootstrap, takeBootstrapSecret } from "./bootstrap";
 
-const SECRET = "omrg_bs_abc123";
+const SECRET = "omrs_bs_abc123";
 
 function okFetch(status = 200) {
   return vi.fn(async () => new Response('{"status":"ok"}', { status, headers: { "content-type": "application/json" } }));

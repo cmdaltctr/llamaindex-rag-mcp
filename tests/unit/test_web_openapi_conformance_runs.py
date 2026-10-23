@@ -31,9 +31,9 @@ from tests.unit.test_web_runs_support import (  # noqa: E402
     new_pipeline,
 )
 
-from omrg.core.workspace import WorkspaceLayout  # noqa: E402
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
-from omrg.transports.api.runs_wiring import TASK_LAYOUT_KEY  # noqa: E402
+from omrs.core.workspace import WorkspaceLayout  # noqa: E402
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
+from omrs.transports.api.runs_wiring import TASK_LAYOUT_KEY  # noqa: E402
 
 
 @pytest.fixture

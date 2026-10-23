@@ -1,5 +1,5 @@
 {
-  "description": "Answer-family parity fixtures (task 3.6). Each case drives omrg.core.answer.answer() with pre-retrieved rows and scripted fake seams. The expected block is captured from the pre-extraction pipeline; timing diagnostics (*_ms) are removed because they are not deterministic. model_calls and judge_calls count every fake seam invocation.",
+  "description": "Answer-family parity fixtures (task 3.6). Each case drives omrs.core.answer.answer() with pre-retrieved rows and scripted fake seams. The expected block is captured from the pre-extraction pipeline; timing diagnostics (*_ms) are removed because they are not deterministic. model_calls and judge_calls count every fake seam invocation.",
   "rows": {
     "tower": {
       "chunk_id": "c-tower",

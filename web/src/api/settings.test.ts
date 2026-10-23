@@ -29,7 +29,7 @@ import { documentsServer } from "../test/fakeDocumentsServer";
 
 const CONNECTIONS = {
   status: "ok",
-  config_dir: "/srv/omrg",
+  config_dir: "/srv/omrs",
   keychain: "available",
   connections: [
     {
@@ -59,7 +59,7 @@ describe("settings API", () => {
   it("reads the connections and the config directory", async () => {
     const { api } = setup({ "GET /v1/connections": () => CONNECTIONS });
     const result = await getConnections(api);
-    expect(result.config_dir).toBe("/srv/omrg");
+    expect(result.config_dir).toBe("/srv/omrs");
     expect(result.connections[0]?.provider).toBe("ollama");
   });
 
@@ -178,10 +178,10 @@ describe("settings API", () => {
 
   it("creates and revokes the MCP token", async () => {
     const { api, server } = setup({
-      "POST /v1/mcp/token": () => ({ status: "ok", token: "omrg_mcp_abc", created_at: "2026-10-14T10:00:00Z" }),
+      "POST /v1/mcp/token": () => ({ status: "ok", token: "omrs_mcp_abc", created_at: "2026-10-14T10:00:00Z" }),
       "DELETE /v1/mcp/token": () => ({ status: "ok", revoked: true }),
     });
-    await expect(rotateMcpToken(api)).resolves.toMatchObject({ token: "omrg_mcp_abc" });
+    await expect(rotateMcpToken(api)).resolves.toMatchObject({ token: "omrs_mcp_abc" });
     await expect(revokeMcpToken(api)).resolves.toMatchObject({ revoked: true });
     expect(server.calls.map((call) => call.method)).toEqual(["POST", "DELETE"]);
   });

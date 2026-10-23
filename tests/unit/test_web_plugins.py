@@ -33,10 +33,10 @@ from tests.unit.test_web_experiments_support import (  # noqa: E402
 from tests.unit.test_web_openapi_conformance_support import FAMILIES, ContractChecker  # noqa: E402
 from tests.unit.test_web_runs_support import make_engine  # noqa: E402
 
-from omrg.core.plugins import NotebookEditorSupervisor, PluginRegistry  # noqa: E402
-from omrg.core.workspace import WorkspaceLayout  # noqa: E402
-from omrg.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
-from omrg.transports.api.lifespan import PluginHost, WebConfig  # noqa: E402
+from omrs.core.plugins import NotebookEditorSupervisor, PluginRegistry  # noqa: E402
+from omrs.core.workspace import WorkspaceLayout  # noqa: E402
+from omrs.integrations.workspace_sqlite import SqliteWorkspaceRepository  # noqa: E402
+from omrs.transports.api.lifespan import PluginHost, WebConfig  # noqa: E402
 
 TOKEN = "editor-token-for-test-0123456789"  # noqa: S105 - test value
 
@@ -119,7 +119,7 @@ def test_list_starts_with_no_plugin_and_explains_installation(setup: Any) -> Non
     client, *_ = setup
     body = client.get("/v1/plugins").json()
     assert body["plugins"] == [] and body["editors"] == []
-    assert "outside OMRG" in body["install_hint"]
+    assert "outside OMRS" in body["install_hint"]
     assert "filesystem" in body["trust_notice"]
 
 
@@ -238,12 +238,12 @@ def test_open_editor_passes_a_bound_connection_and_stop_revokes_it(setup: Any) -
     assert opened.status_code == 201, opened.text
     started = tools.launcher.started[0]
     assert started["environment"] == {
-        "OMRG_CONNECTION_FILE": str(started["workdir"] / "omrg_connection.json")
+        "OMRS_CONNECTION_FILE": str(started["workdir"] / "omrs_connection.json")
     }
-    details = json.loads(started["files"]["omrg_connection.json"])
+    details = json.loads(started["files"]["omrs_connection.json"])
     assert details["api_url"] == "http://127.0.0.1:8765"
     assert details["experiment_context"] == context_id
-    bearer = started["files"]["omrg-api-token"]
+    bearer = started["files"]["omrs-api-token"]
     assert bearer in started["secrets"] and bearer not in json.dumps(opened.json())
     principal = parts.policy.authenticate_bearer(bearer)
     assert principal is not None and principal.experiment_context == context_id

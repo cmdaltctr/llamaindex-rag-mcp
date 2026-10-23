@@ -1,7 +1,7 @@
-"""``omrg.jsonc`` accepts every setting (move-settings-to-config-file, tasks 2.1 to 2.4).
+"""``omrs.jsonc`` accepts every setting (move-settings-to-config-file, tasks 2.1 to 2.4).
 
-Every test points ``OMRG_CONFIG_DIR`` at a temporary folder. No test reads the
-real ``~/.config/omrg``. Keys and addresses here are fake constants.
+Every test points ``OMRS_CONFIG_DIR`` at a temporary folder. No test reads the
+real ``~/.config/omrs``. Keys and addresses here are fake constants.
 """
 
 from __future__ import annotations
@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from omrg.config import Settings, provenance
-from omrg.config.settings_file import (
+from omrs.config import Settings, provenance
+from omrs.config.settings_file import (
     KIND_BROKEN,
     KIND_INVALID,
     KIND_RETIRED,
@@ -44,14 +44,14 @@ def folder(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     for variable in VARIABLES:
         monkeypatch.delenv(variable, raising=False)
     monkeypatch.setattr(provenance, "DOTENV_KEYS", frozenset())  # a repo .env must not leak in
-    root = tmp_path / "omrg-config"
+    root = tmp_path / "omrs-config"
     root.mkdir(mode=0o700)
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(root))
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(root))
     return root
 
 
 def write_config(root: Path, text: str) -> Path:
-    path = root / "omrg.jsonc"
+    path = root / "omrs.jsonc"
     path.write_text(text, encoding="utf-8")
     return path
 
@@ -238,10 +238,10 @@ def test_broken_file_gives_no_values_one_warning_and_the_server_starts(
         settings = build(tmp_path)
     assert parsed.state == "broken"
     assert parsed.values == {}
-    assert [(p.kind, p.key) for p in parsed.problems] == [(KIND_BROKEN, "omrg.jsonc")]
-    assert parsed.problems[0].message == "omrg.jsonc could not be read"
+    assert [(p.kind, p.key) for p in parsed.problems] == [(KIND_BROKEN, "omrs.jsonc")]
+    assert parsed.problems[0].message == "omrs.jsonc could not be read"
     assert settings.retrieval.top_k == 10
-    assert len([m for m in warnings_of(caplog) if "omrg.jsonc" in m]) == 1
+    assert len([m for m in warnings_of(caplog) if "omrs.jsonc" in m]) == 1
 
 
 def test_invalid_value_is_ignored_and_named_without_its_value(
@@ -357,7 +357,7 @@ def test_a_clean_file_has_no_problems(folder: Path) -> None:
 def test_a_missing_file_has_no_problems_and_no_warning(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    monkeypatch.setenv("OMRG_CONFIG_DIR", str(tmp_path / "never"))
+    monkeypatch.setenv("OMRS_CONFIG_DIR", str(tmp_path / "never"))
     with caplog.at_level(logging.WARNING):
         parsed = read_settings_file()
     assert (parsed.state, parsed.revision, parsed.values, parsed.problems) == (
@@ -397,12 +397,12 @@ GUIDE = Path(__file__).resolve().parents[2] / "docs" / "guides" / "configuration
 
 def guide_example() -> str:
     text = GUIDE.read_text(encoding="utf-8")
-    after = text.split("Example `omrg.jsonc` (fake values):", 1)[1]
+    after = text.split("Example `omrs.jsonc` (fake values):", 1)[1]
     return after.split("```jsonc", 1)[1].split("```", 1)[0]
 
 
 def test_the_example_file_in_the_guide_parses_and_has_no_problems(folder: Path) -> None:
-    from omrg.config.user_config import parse_jsonc
+    from omrs.config.user_config import parse_jsonc
 
     example = guide_example()
     assert isinstance(parse_jsonc(example), dict)
@@ -416,7 +416,7 @@ def test_the_example_file_in_the_guide_parses_and_has_no_problems(folder: Path) 
 
 
 def test_the_key_name_examples_in_the_guide_parse() -> None:
-    from omrg.config.user_config import parse_jsonc
+    from omrs.config.user_config import parse_jsonc
 
     text = GUIDE.read_text(encoding="utf-8")
     block = text.split("##### Key names", 1)[1].split("```text", 1)[1].split("```", 1)[0]

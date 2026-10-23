@@ -29,8 +29,8 @@ from pathlib import Path
 import pytest
 from llama_index.core.schema import MetadataMode, NodeRelationship, RelatedNodeInfo, TextNode
 
-from omrg.core.ingestion.hashing import sha256_file
-from omrg.core.vectordb import get_default_store
+from omrs.core.ingestion.hashing import sha256_file
+from omrs.core.vectordb import get_default_store
 
 _COLLECTION = "lineage_core"
 
@@ -65,7 +65,7 @@ def _expected_row_id(source_id: str, source_attempt: str, chunk_id: str) -> str:
 
 def _source_state():
     """Import the source-state module lazily (red-first, see module docstring)."""
-    from omrg.core.ingestion import source_state
+    from omrs.core.ingestion import source_state
 
     return source_state
 

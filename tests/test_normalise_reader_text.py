@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from omrg.core.ingestion.normalise import normalise_reader_text
+from omrs.core.ingestion.normalise import normalise_reader_text
 
 
 @pytest.mark.parametrize(
@@ -125,7 +125,7 @@ def test_normaliser_version_pins_fixture_outputs(fixtures_dir: Path) -> None:
     """A change in any fixture output requires a normaliser version bump."""
     import hashlib
 
-    from omrg.core.ingestion.normalise import NORMALISER_VERSION
+    from omrs.core.ingestion.normalise import NORMALISER_VERSION
 
     expected_digests = {
         1: "f2c9121ad463667efb74ec4a6c11051b92aa698102ed76570595f01f0393af29",
@@ -141,10 +141,10 @@ def test_normaliser_version_pins_fixture_outputs(fixtures_dir: Path) -> None:
 
 
 def test_normalisation_setting_uses_nested_env_only(monkeypatch: pytest.MonkeyPatch) -> None:
-    from omrg.compose_settings import settings_to_effective
-    from omrg.config import Settings
-    from omrg.core.ingestion.settings import IngestionSettings
-    from omrg.core.settings import IngestionBlock
+    from omrs.compose_settings import settings_to_effective
+    from omrs.config import Settings
+    from omrs.core.ingestion.settings import IngestionSettings
+    from omrs.core.settings import IngestionBlock
 
     assert IngestionSettings().normalise_reader_output is True
     assert IngestionBlock().normalise_reader_output is True

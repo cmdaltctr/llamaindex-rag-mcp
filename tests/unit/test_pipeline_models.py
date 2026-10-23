@@ -11,7 +11,7 @@ import pytest
 from pydantic import ValidationError
 from tests.unit.test_pipeline_support import search_graph
 
-from omrg.core.pipelines import (
+from omrs.core.pipelines import (
     SCHEMA_VERSION,
     EventKind,
     GraphDocument,
@@ -219,31 +219,31 @@ def test_validation_error_requires_issues() -> None:
 
 def test_top_level_exports_graph_types() -> None:
     """The four graph types are public, lazy and declared in ``__all__``."""
-    import omrg
+    import omrs
 
-    assert omrg.PipelineDefinition is PipelineDefinition
-    assert omrg.PipelineResult is PipelineResult
-    assert omrg.PipelineEvent is PipelineEvent
-    assert omrg.PipelineValidationError is PipelineValidationError
+    assert omrs.PipelineDefinition is PipelineDefinition
+    assert omrs.PipelineResult is PipelineResult
+    assert omrs.PipelineEvent is PipelineEvent
+    assert omrs.PipelineValidationError is PipelineValidationError
     for name in (
         "PipelineDefinition",
         "PipelineResult",
         "PipelineEvent",
         "PipelineValidationError",
     ):
-        assert name in omrg.__all__
-        assert name in dir(omrg)
+        assert name in omrs.__all__
+        assert name in dir(omrs)
 
 
-def test_importing_omrg_does_not_load_pipelines_or_settings() -> None:
+def test_importing_omrs_does_not_load_pipelines_or_settings() -> None:
     """Import is side-effect free; graph types load only on access."""
     code = (
-        "import sys, omrg\n"
-        "assert 'omrg.core.pipelines' not in sys.modules\n"
-        "assert 'omrg.config' not in sys.modules\n"
-        "omrg.PipelineDefinition\n"
-        "assert 'omrg.core.pipelines' in sys.modules\n"
-        "assert 'omrg.config' not in sys.modules, 'graph types must not resolve settings'\n"
+        "import sys, omrs\n"
+        "assert 'omrs.core.pipelines' not in sys.modules\n"
+        "assert 'omrs.config' not in sys.modules\n"
+        "omrs.PipelineDefinition\n"
+        "assert 'omrs.core.pipelines' in sys.modules\n"
+        "assert 'omrs.config' not in sys.modules, 'graph types must not resolve settings'\n"
         "assert 'networkx' not in sys.modules, 'networkx loads only for validation'\n"
     )
     proc = subprocess.run(  # noqa: S603

@@ -19,12 +19,12 @@ from pathlib import Path
 
 import pytest
 
-from omrg.capabilities import (
+from omrs.capabilities import (
     UNAVAILABLE_OCR_WORKER_FINGERPRINT,
     probe_ocr_worker,
     reset_ocr_fingerprint_cache,
 )
-from omrg.integrations.ocr_worker.fingerprint import (
+from omrs.integrations.ocr_worker.fingerprint import (
     OcrWorkerFingerprint,
     fingerprint_from_payload,
 )
@@ -37,7 +37,7 @@ def _payload_with_version(version: str) -> dict:
         "packages": {"stub-worker": "1.0"},
         "pipeline": {"identity": "stub-pipeline", "revision": "1"},
         "model": {"identity": "stub-model", "revision": "1"},
-        "output_schema": {"id": "omrg.ocr.parse_output", "version": "1"},
+        "output_schema": {"id": "omrs.ocr.parse_output", "version": "1"},
     }
 
 
@@ -74,14 +74,14 @@ def test_probe_returns_the_full_fingerprint_from_the_stub() -> None:
     assert fingerprint.pipeline_revision == "1"
     assert fingerprint.model_identity == "stub-model"
     assert fingerprint.model_revision == "1"
-    assert fingerprint.output_schema_id == "omrg.ocr.parse_output"
+    assert fingerprint.output_schema_id == "omrs.ocr.parse_output"
     assert fingerprint.output_schema_version == "1"
 
 
 def test_fingerprint_accepts_a_1_0_worker_and_a_1_1_worker() -> None:
     """Protocol 1.1 accepts a worker still on 1.0: the upgrade is rolling.
 
-    An OMRG-side upgrade alone must not strand a provisioned 1.0 worker
+    An OMRS-side upgrade alone must not strand a provisioned 1.0 worker
     (and must not move its fingerprint): the client speaks the minimum
     version that expresses each request.
     """
@@ -117,7 +117,7 @@ def test_probe_is_memoised_per_command(monkeypatch: pytest.MonkeyPatch) -> None:
     def _exploding_run(*args, **kwargs):  # type: ignore[no-untyped-def]
         raise AssertionError("probe re-ran the capabilities command")
 
-    import omrg.capabilities as capabilities_module
+    import omrs.capabilities as capabilities_module
 
     monkeypatch.setattr(capabilities_module.subprocess, "run", _exploding_run)
     second = probe_ocr_worker(_stub_command(), timeout=PROBE_TIMEOUT)
@@ -131,7 +131,7 @@ def test_probe_is_memoised_per_command(monkeypatch: pytest.MonkeyPatch) -> None:
     ("label", "command"),
     [
         ("missing-command", []),
-        ("failed-spawn", ["/definitely/not/an/executable-omrg-test"]),
+        ("failed-spawn", ["/definitely/not/an/executable-omrs-test"]),
         (
             "non-zero-exit",
             _stub_command("--capabilities", "fail"),
@@ -183,15 +183,15 @@ def _paddle_engine_path(tmp_path: Path) -> str:
     """Return a PYTHONPATH that registers the Paddle engine from source.
 
     The engine is registered by a ``.dist-info`` folder carrying its
-    ``omrg.ocr_engine`` entry point; nothing is installed.
+    ``omrs.ocr_engine`` entry point; nothing is installed.
     """
-    dist = tmp_path / "omrg_ocr_paddleocr_vl-0.0.dist-info"
+    dist = tmp_path / "omrs_ocr_paddleocr_vl-0.0.dist-info"
     dist.mkdir(parents=True)
     (dist / "METADATA").write_text(
-        "Metadata-Version: 2.1\nName: omrg-ocr-paddleocr-vl\nVersion: 0.0\n", encoding="utf-8"
+        "Metadata-Version: 2.1\nName: omrs-ocr-paddleocr-vl\nVersion: 0.0\n", encoding="utf-8"
     )
     (dist / "entry_points.txt").write_text(
-        "[omrg.ocr_engine]\npaddleocr-vl = omrg_ocr_paddleocr_vl.engine:ENGINE\n",
+        "[omrs.ocr_engine]\npaddleocr-vl = omrs_ocr_paddleocr_vl.engine:ENGINE\n",
         encoding="utf-8",
     )
     workers = REPO_ROOT / "ocr-workers"
@@ -205,14 +205,14 @@ def _paddle_engine_path(tmp_path: Path) -> str:
 
 
 def test_real_worker_capabilities_command_is_one_shot(tmp_path: Path) -> None:
-    """``python -m omrg_ocr_worker_core --capabilities`` prints and exits.
+    """``python -m omrs_ocr_worker_core --capabilities`` prints and exits.
 
     Runs the real worker core with the real Paddle engine registered, in
     the MAIN environment: the capabilities command must be importable
     and one-shot without Paddle (the import boundary test pins the rest).
     """
     completed = subprocess.run(
-        [sys.executable, "-m", "omrg_ocr_worker_core", "--capabilities"],
+        [sys.executable, "-m", "omrs_ocr_worker_core", "--capabilities"],
         env={**os.environ, "PYTHONPATH": _paddle_engine_path(tmp_path)},
         capture_output=True,
         text=True,
@@ -227,14 +227,14 @@ def test_real_worker_fingerprint_via_probe(monkeypatch: pytest.MonkeyPatch, tmp_
     """The probe accepts the real worker's capabilities payload."""
     monkeypatch.setenv("PYTHONPATH", _paddle_engine_path(tmp_path))
     fingerprint = probe_ocr_worker(
-        [sys.executable, "-m", "omrg_ocr_worker_core"], timeout=PROBE_TIMEOUT
+        [sys.executable, "-m", "omrs_ocr_worker_core"], timeout=PROBE_TIMEOUT
     )
     assert fingerprint.available is True
     assert fingerprint.protocol_version == "1.1"
     assert fingerprint.backend_id == "paddleocr_vl"
     packages = dict(fingerprint.packages)
-    assert "omrg-ocr-worker-core" in packages
-    assert "omrg-ocr-worker" not in packages
+    assert "omrs-ocr-worker-core" in packages
+    assert "omrs-ocr-worker" not in packages
 
 
 def test_real_worker_fingerprint_declares_paddlex(
@@ -250,7 +250,7 @@ def test_real_worker_fingerprint_declares_paddlex(
     """
     monkeypatch.setenv("PYTHONPATH", _paddle_engine_path(tmp_path))
     fingerprint = probe_ocr_worker(
-        [sys.executable, "-m", "omrg_ocr_worker_core"], timeout=PROBE_TIMEOUT
+        [sys.executable, "-m", "omrs_ocr_worker_core"], timeout=PROBE_TIMEOUT
     )
     assert fingerprint.available is True
     assert "paddlex" in dict(fingerprint.packages)

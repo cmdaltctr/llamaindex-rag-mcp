@@ -39,7 +39,7 @@ describe("settings mutations", () => {
 
   it("refreshes the MCP state after a token is created or revoked", async () => {
     const { wrapper, queryClient, server } = setup({
-      "POST /v1/mcp/token": () => ({ status: "ok", token: "omrg_mcp_x", created_at: "2026-10-14T10:00:00Z" }),
+      "POST /v1/mcp/token": () => ({ status: "ok", token: "omrs_mcp_x", created_at: "2026-10-14T10:00:00Z" }),
       "DELETE /v1/mcp/token": () => ({ status: "ok", revoked: true }),
     });
     await queryClient.prefetchQuery({ queryKey: queryKeys.mcp(), queryFn: () => MCP_OFF });

@@ -10,8 +10,8 @@ The `"authority"` strategy SHALL be registered in `core/retrieval/registry.py` w
 - **THEN** `"authority"` is present alongside `dense`, `bm25`, `fusion`, `reranker_onnx` and `reranker_torch`, and the documented inventory block lists the same names
 
 #### Scenario: Pipeline module does not import authority eagerly
-- **WHEN** a fresh Python process imports `omrg.core.retrieval.pipeline` and runs a search with `authority.enabled` false
-- **THEN** `omrg.core.authority.resolve` is absent from `sys.modules`
+- **WHEN** a fresh Python process imports `omrs.core.retrieval.pipeline` and runs a search with `authority.enabled` false
+- **THEN** `omrs.core.authority.resolve` is absent from `sys.modules`
 
 #### Scenario: Graph operation is registered with the retrieval operations
 - **WHEN** the composition root builds the operation catalogue

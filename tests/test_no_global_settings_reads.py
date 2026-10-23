@@ -1,6 +1,6 @@
 """No global settings singleton reads inside the production package.
 
-Asserts that no module under ``src/omrg/`` — core, integrations,
+Asserts that no module under ``src/omrs/`` — core, integrations,
 transports, daemon, config and top-level — reads the resolved settings
 singleton except the sanctioned composition-root siblings:
 ``compose.py``, ``compose_answer.py``, ``compose_embedding.py``,
@@ -27,7 +27,7 @@ from pathlib import Path
 
 import pytest
 
-_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "omrg"
+_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "omrs"
 
 # Matches ``from ...config import settings`` / ``from ..config import settings``
 # and the inline ``from ...config import settings`` inside functions.
@@ -37,7 +37,7 @@ _SETTINGS_IMPORT_RE = re.compile(
 )
 
 # Matches ``get_settings`` imports with any alias, module- or
-# function-local (``from omrg.config import get_settings as gs``).
+# function-local (``from omrs.config import get_settings as gs``).
 _GET_SETTINGS_IMPORT_RE = re.compile(
     r"^\s*from\s+\S*config\s+import\s+[^#\n]*\bget_settings\b",
     re.MULTILINE,
@@ -54,7 +54,7 @@ _BARE_CALL_RE = re.compile(r"(?<![\w.])(?<!def )get_settings\s*\(")
 _COMMENT_RE = re.compile(r"#.*$")
 
 # Composition-root siblings permitted to call ``get_settings()``, by
-# exact path relative to ``src/omrg`` — basename matching would exempt
+# exact path relative to ``src/omrs`` — basename matching would exempt
 # any file named ``compose.py`` anywhere in the tree.
 _PERMITTED_PATHS = frozenset(
     {
@@ -127,15 +127,15 @@ def test_no_global_settings_reads_in_production_package() -> None:
 @pytest.mark.parametrize(
     ("source", "expected_fragment"),
     [
-        ("from omrg.config import get_settings", "get_settings"),
+        ("from omrs.config import get_settings", "get_settings"),
         ("from ..config import get_settings as gs\ngs()", "import get_settings"),
         (
             "def helper():\n    from .config import get_settings\n    return get_settings()",
             "from .config import get_settings",
         ),
-        ("import omrg.config\nomrg.config.get_settings()", "config.get_settings("),
+        ("import omrs.config\nomrs.config.get_settings()", "config.get_settings("),
         ("value = get_settings()", "get_settings("),
-        ("from omrg.config import settings", "settings"),
+        ("from omrs.config import settings", "settings"),
         ("from ..config import settings as cfg_singleton", "import settings"),
     ],
 )
@@ -154,8 +154,8 @@ def test_scan_text_flags_forbidden_reads(source: str, expected_fragment: str) ->
         "result = get_settings_something()",
         "value = my_config.get_settings_extra()",
         "# get_settings() must not be called here",
-        "# from omrg.config import get_settings  # retired",
-        "from omrg.config import get_profile_names",
+        "# from omrs.config import get_settings  # retired",
+        "from omrs.config import get_profile_names",
         "settings_like_dict = {}",
         "url = 'https://example.test/#anchor'  # comment with get_settings()",
     ],
@@ -196,7 +196,7 @@ _FORBIDDEN_ACCESSORS = frozenset(
 
 # Leaves repaired by ``repair-modular-core-boundaries`` and the graph
 # adapters added after it, relative to
-# ``src/omrg``. ``models.py`` is the shared-model module from design D4.
+# ``src/omrs``. ``models.py`` is the shared-model module from design D4.
 _GUARDED_LEAVES = (
     "core/ingestion/chunker.py",
     "core/metadata/_common.py",
@@ -289,10 +289,10 @@ def test_repaired_leaf_has_no_default_accessor_reads(relative: str) -> None:
     """Repaired leaves receive settings/store; they never read the defaults."""
     path = _SRC_ROOT / relative
     if not path.is_file():
-        pytest.fail(f"guarded leaf missing: src/omrg/{relative}")
+        pytest.fail(f"guarded leaf missing: src/omrs/{relative}")
     hits = _scan_default_accessors(path.read_text(encoding="utf-8"))
     if hits:
-        lines = [f"  src/omrg/{relative}:{line_no}: {what}" for line_no, what in hits]
+        lines = [f"  src/omrs/{relative}:{line_no}: {what}" for line_no, what in hits]
         pytest.fail(f"{len(hits)} default-accessor read(s):\n" + "\n".join(lines))
 
 
@@ -315,7 +315,7 @@ def test_repaired_leaf_has_no_default_accessor_reads(relative: str) -> None:
             "qualified read .get_default_store",
         ),
         (
-            "import omrg.core.settings\nomrg.core.settings.get_default_effective_settings()",
+            "import omrs.core.settings\nomrs.core.settings.get_default_effective_settings()",
             "qualified read .get_default_effective_settings",
         ),
         # aliased
@@ -324,11 +324,11 @@ def test_repaired_leaf_has_no_default_accessor_reads(relative: str) -> None:
             "read _gds (alias of get_default_store)",
         ),
         (
-            "import omrg.core.settings as cs\ncs.get_default_effective_settings()",
+            "import omrs.core.settings as cs\ncs.get_default_effective_settings()",
             "qualified read .get_default_effective_settings",
         ),
         (
-            "from omrg.core import vectordb as vdb\nvdb.get_default_store()",
+            "from omrs.core import vectordb as vdb\nvdb.get_default_store()",
             "qualified read .get_default_store",
         ),
         # function-local
@@ -355,7 +355,7 @@ def test_repaired_leaf_has_no_default_accessor_reads(relative: str) -> None:
             "read get_default_store",
         ),
         (
-            "import omrg.core.vectordb as v\ngetattr(v, 'get_default_store')()",
+            "import omrs.core.vectordb as v\ngetattr(v, 'get_default_store')()",
             "getattr(..., 'get_default_store')",
         ),
         ("from ..vectordb import *", "star import"),

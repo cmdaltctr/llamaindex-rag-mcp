@@ -25,21 +25,21 @@ from pathlib import Path
 import pytest
 
 _SRC_ROOT = Path(__file__).resolve().parent.parent / "src"
-_COMPOSE_PY = _SRC_ROOT / "omrg" / "compose.py"
+_COMPOSE_PY = _SRC_ROOT / "omrs" / "compose.py"
 
 _FACTORY_MODULE = {
-    "chroma": "omrg.core.vectordb.chroma.store",
-    "lancedb": "omrg.core.vectordb.lancedb.store",
+    "chroma": "omrs.core.vectordb.chroma.store",
+    "lancedb": "omrs.core.vectordb.lancedb.store",
 }
 # The backend folders: each folder and every module below it is concrete (D9).
-_CONCRETE_STORE_MODULES = frozenset({"omrg.core.vectordb.chroma", "omrg.core.vectordb.lancedb"})
+_CONCRETE_STORE_MODULES = frozenset({"omrs.core.vectordb.chroma", "omrs.core.vectordb.lancedb"})
 # Importing the registry must load neither a backend folder nor its store module.
 _LAZY_MODULES = sorted(_CONCRETE_STORE_MODULES | set(_FACTORY_MODULE.values()))
 
 
 def test_available_lists_both_backends() -> None:
     """The registry must expose exactly chroma and lancedb, sorted."""
-    from omrg.core.vectordb import registry
+    from omrs.core.vectordb import registry
 
     assert registry.available() == ["chroma", "lancedb"]
 
@@ -47,7 +47,7 @@ def test_available_lists_both_backends() -> None:
 @pytest.mark.parametrize("name", ["chroma", "lancedb"])
 def test_registered_name_resolves_to_its_factory(name: str) -> None:
     """``get(name)`` must resolve to that module's ``build_vector_store_from_settings``."""
-    from omrg.core.vectordb import registry
+    from omrs.core.vectordb import registry
 
     factory = registry.get(name)
     assert callable(factory)
@@ -59,14 +59,14 @@ def test_registered_name_resolves_to_its_factory(name: str) -> None:
 @pytest.mark.parametrize("name", ["chroma", "lancedb"])
 def test_get_caches_the_resolved_factory(name: str) -> None:
     """A second ``get`` must return the cached same object."""
-    from omrg.core.vectordb import registry
+    from omrs.core.vectordb import registry
 
     assert registry.get(name) is registry.get(name)
 
 
 def test_unknown_name_raises_key_error_listing_registered() -> None:
     """An unknown store name must fail with the registered names listed."""
-    from omrg.core.vectordb import registry
+    from omrs.core.vectordb import registry
 
     with pytest.raises(KeyError) as excinfo:
         registry.get("nope")
@@ -79,7 +79,7 @@ def test_missing_backend_module_raises_import_error() -> None:
     """A backend whose module import fails raises a naming ImportError."""
     from unittest.mock import patch
 
-    from omrg.core.vectordb import registry
+    from omrs.core.vectordb import registry
 
     registry._cache.clear()
     try:
@@ -106,7 +106,7 @@ def test_registry_is_lazy() -> None:
         import importlib
         import sys
 
-        importlib.import_module("omrg.core.vectordb.registry")
+        importlib.import_module("omrs.core.vectordb.registry")
 
         eager = [m for m in {concrete!r} if m in sys.modules]
         if eager:
@@ -121,7 +121,7 @@ def test_registry_is_lazy() -> None:
         text=True,
     )
     assert proc.returncode == 0, (
-        "omrg.core.vectordb.registry eagerly imported concrete store "
+        "omrs.core.vectordb.registry eagerly imported concrete store "
         f"modules on import: {proc.stdout.strip()}"
     )
 
@@ -159,7 +159,7 @@ def _import_string_problem(import_string: str) -> str | None:
 
 def _registry_import_strings() -> list[tuple[str, str, str]]:
     """Return ``(backend, field, import string)`` for every registered string."""
-    from omrg.core.vectordb import registry
+    from omrs.core.vectordb import registry
 
     strings: list[tuple[str, str, str]] = []
     for name in registry.available():
@@ -186,8 +186,8 @@ def test_registry_import_string_resolves(backend: str, field: str, import_string
 @pytest.mark.parametrize(
     ("import_string", "expected"),
     [
-        ("omrg.core.vectordb.no_such_module:factory", "no_such_module"),
-        ("omrg.core.vectordb.registry:no_such_attribute", "no_such_attribute"),
+        ("omrs.core.vectordb.no_such_module:factory", "no_such_module"),
+        ("omrs.core.vectordb.registry:no_such_attribute", "no_such_attribute"),
     ],
     ids=["missing-module", "missing-attribute"],
 )
@@ -225,16 +225,16 @@ def _module_level_concrete_imports(source: str) -> set[str]:
     """Return concrete store modules imported at module level in *source*.
 
     ``from X import Y`` aliases are expanded to their full module path,
-    so ``from omrg.core.vectordb import chroma`` is caught even
+    so ``from omrs.core.vectordb import chroma`` is caught even
     though the ``from`` module alone names the parent package.
     """
 
     def _resolve(module: str, level: int) -> str:
-        # compose.py is ``omrg.compose``: level 1 reaches ``omrg``.
+        # compose.py is ``omrs.compose``: level 1 reaches ``omrs``.
         if level == 0:
             return module
         if level == 1:
-            return f"omrg.{module}" if module else "omrg"
+            return f"omrs.{module}" if module else "omrs"
         return module  # No level-2+ package contains compose.py.
 
     def _is_concrete(module: str) -> bool:
@@ -308,22 +308,22 @@ def test_compose_has_no_module_level_concrete_store_import() -> None:
     ("source", "expected"),
     [
         (
-            "from omrg.core.vectordb import chroma",
-            {"omrg.core.vectordb.chroma"},
+            "from omrs.core.vectordb import chroma",
+            {"omrs.core.vectordb.chroma"},
         ),
         (
-            "from omrg.core.vectordb.chroma import store",
-            {"omrg.core.vectordb.chroma"},
+            "from omrs.core.vectordb.chroma import store",
+            {"omrs.core.vectordb.chroma"},
         ),
-        ("from .core.vectordb import lancedb", {"omrg.core.vectordb.lancedb"}),
-        ("from omrg.core.vectordb import registry", set()),
+        ("from .core.vectordb import lancedb", {"omrs.core.vectordb.lancedb"}),
+        ("from omrs.core.vectordb import registry", set()),
         ("import lancedb", set()),
-        ("import omrg.core.vectordb.chroma", {"omrg.core.vectordb.chroma"}),
+        ("import omrs.core.vectordb.chroma", {"omrs.core.vectordb.chroma"}),
         (
-            "from omrg.core.vectordb.chroma.store import build_chroma_vector_store",
-            {"omrg.core.vectordb.chroma.store"},
+            "from omrs.core.vectordb.chroma.store import build_chroma_vector_store",
+            {"omrs.core.vectordb.chroma.store"},
         ),
-        ("from .core.vectordb.lancedb import store", {"omrg.core.vectordb.lancedb"}),
+        ("from .core.vectordb.lancedb import store", {"omrs.core.vectordb.lancedb"}),
     ],
     ids=[
         "alias-import",
@@ -353,6 +353,6 @@ def test_no_backend_claims_cross_process_write_safety(name: str) -> None:
     experiment; none exists for either backend, so ``describe(name)``
     must report ``False`` for both.
     """
-    from omrg.core.vectordb import registry
+    from omrs.core.vectordb import registry
 
     assert registry.describe(name)["cross_process_writes_safe"] is False

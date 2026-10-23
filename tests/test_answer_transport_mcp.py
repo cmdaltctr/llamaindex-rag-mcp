@@ -22,9 +22,9 @@ from mcp.shared.exceptions import MCPDeprecationWarning
 from mcp.types import CreateMessageResult, SamplingCapability, TextContent
 
 from conftest import build_mcp_server, connected_client, direct_ctx
-from omrg.core.ingestion import ingest_path_async
-from omrg.transports.mcp import answer_documents
-from omrg.transports.mcp.answer import (
+from omrs.core.ingestion import ingest_path_async
+from omrs.transports.mcp import answer_documents
+from omrs.transports.mcp.answer import (
     MODERN_PROTOCOL_VERSION,
     _legacy_complete,
     select_completion_source,
@@ -359,7 +359,7 @@ async def test_completion_calls_respect_the_configured_round_bound(
     tmp_path: Path,
 ) -> None:
     """COMPACT refinement is bounded by ``answer.max_rounds`` on the server path."""
-    from omrg.core.settings import AnswerBlock, get_default_effective_settings
+    from omrs.core.settings import AnswerBlock, get_default_effective_settings
 
     await _ingest_collection(tmp_path)
     current = get_default_effective_settings()
@@ -397,7 +397,7 @@ async def test_completion_calls_respect_the_configured_round_bound(
 
 
 def _verifying_settings() -> Any:
-    from omrg.core.settings import AnswerBlock, get_default_effective_settings
+    from omrs.core.settings import AnswerBlock, get_default_effective_settings
 
     return get_default_effective_settings().model_copy(
         update={"answer": AnswerBlock(verify_claims=True)}
@@ -496,7 +496,7 @@ def _user_profile_engine(
     from tests.unit.test_mcp_stdio_profiles_support import engine_builder, make_env
     from tests.unit.test_pipeline_templates_parity import _store_rows
 
-    from omrg.core.settings import AnswerBlock
+    from omrs.core.settings import AnswerBlock
 
     case = case_by_name("ok_single_citation")
     settings = case_settings(effective_settings(), case)
