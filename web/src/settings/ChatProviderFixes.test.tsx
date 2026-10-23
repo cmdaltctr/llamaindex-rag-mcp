@@ -31,19 +31,20 @@ function form() {
 }
 
 describe("Provider fix lines", () => {
-  it("disables a provider whose extra is not installed and shows its install command", async () => {
+  it("disables a provider whose extra is not installed and links to its Integrations entry", async () => {
     const user = await openForm([OLLAMA, ANTHROPIC]);
     const fixes = within(form()).getByRole("list", { name: "Providers that cannot answer yet" });
     expect(fixes).toHaveTextContent("Anthropic is not installed.");
-    expect(within(fixes).getByText("uv tool install 'omrs[anthropic]'")).toBeInTheDocument();
+    expect(within(fixes).getByRole("link", { name: "Install Anthropic from Integrations" })).toHaveAttribute("href", "#/integrations/anthropic");
+    expect(fixes).not.toHaveTextContent(/uv sync|uv tool install/);
     await user.click(within(form()).getByRole("combobox", { name: "Chat provider and model" }));
     expect(await screen.findByRole("option", { name: "Anthropic (not installed)" })).toHaveAttribute("aria-disabled", "true");
   });
 
-  it("builds the install command from the extra the server names", async () => {
+  it("builds the link from the extra the server names", async () => {
     await openForm([OLLAMA, { ...ANTHROPIC, install_hint: null, extra: "anthropic" }]);
     const fixes = within(form()).getByRole("list", { name: "Providers that cannot answer yet" });
-    expect(within(fixes).getByText("uv tool install 'omrs[anthropic]'")).toBeInTheDocument();
+    expect(within(fixes).getByRole("link", { name: "Install Anthropic from Integrations" })).toHaveAttribute("href", "#/integrations/anthropic");
   });
 
   it("disables a provider with no key and links to its card under Settings > Providers", async () => {

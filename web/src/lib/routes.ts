@@ -19,7 +19,7 @@ export type Route =
   | { area: "chat"; collection: string | null; chatId: string | null }
   | { area: "studio"; profileId: string | null; purpose: Purpose | null }
   | { area: "experiments"; runId: string | null }
-  | { area: "integrations" }
+  | { area: "integrations"; entry: string | null }
   | { area: "settings"; section: SettingsSection | null };
 
 export type RouteArea = Route["area"];
@@ -44,8 +44,13 @@ export function parseRoute(hash: string): Route {
 
   switch (area) {
     case "home":
-    case "integrations":
       return first === undefined ? { area } : HOME;
+    case "integrations": {
+      if (second !== undefined) return HOME;
+      if (first === undefined) return { area, entry: null };
+      const entry = decode(first);
+      return entry === null ? HOME : { area, entry };
+    }
     case "settings": {
       if (second !== undefined) return HOME;
       if (first === undefined) return { area, section: null };
@@ -99,8 +104,9 @@ function withSegment(base: string, value: string | null): string {
 export function formatRoute(route: Route): string {
   switch (route.area) {
     case "home":
+      return "#/home";
     case "integrations":
-      return `#/${route.area}`;
+      return withSegment("#/integrations", route.entry);
     case "settings":
       return route.section === null ? "#/settings" : `#/settings/${route.section}`;
     case "knowledge-base":

@@ -21,13 +21,13 @@ Implement after `add-chat-reasoning-and-usage`, in the same worktree.
 
 ## 4. Integrations page
 
-- [ ] 4.1 Load the `omms-design` skill. Add the Install button, confirm dialog, progress line, output block and Restart action to `IntegrationCard`. Verify: Vitest cases from the spec scenarios fail first, then pass.
-- [ ] 4.2 Poll the install status only while `running`. Verify: a Vitest case that no request is sent while idle.
+- [x] 4.1 Load the `omms-design` skill. Add the Install button, confirm dialog, progress line, output block and Restart action to `IntegrationCard`. Verify: Vitest cases from the spec scenarios fail first, then pass.
+- [x] 4.2 Poll the install status only while `running`. Verify: a Vitest case that no request is sent while idle.
 - [ ] 4.3 Update the page text about installing and restarting, and `docs/guides/web-workspace.md`. Verify: lint and typecheck pass.
 
 ## 5. Provider cards
 
-- [ ] 5.1 Replace the printed command on a not-installed provider card with a link to its Integrations entry; use the same link in the Chat and judge fix line. Verify: Vitest cases for installed and not installed.
+- [x] 5.1 Replace the printed command on a not-installed provider card with a link to its Integrations entry; use the same link in the Chat and judge fix line. Verify: Vitest cases for installed and not installed.
 - [ ] 5.2 Update `docs/guides/cli-reference.md` with the lasting `uv tool install --reinstall` command. Verify: the docs drift check passes.
 
 ## 6. Records and checks

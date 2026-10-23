@@ -8,7 +8,7 @@ import { ApiError, type ApiClient } from "./client";
 import { listEmbeddingProviders } from "./embedding";
 import { getChunk, getJob, getSession, listCollections, listDocuments, listRoots } from "./documents";
 import { listExperiments } from "./experiments";
-import { listIntegrations } from "./integrations";
+import { getIntegrationInstall, listIntegrations, type IntegrationInstall } from "./integrations";
 import { getPipeline, getRevision, listOperations, PipelineIssuesError, validatePipeline, type GraphDocument, type NodeControls } from "./pipelines";
 import { listPlugins } from "./plugins";
 import { getPower } from "./power";
@@ -67,6 +67,8 @@ export const queryKeys = {
   uploadLimit: () => ["settings", "upload-limit"] as const,
   documentReading: () => ["settings", "document-reading"] as const,
   integrations: () => ["integrations"] as const,
+  // Its own root, so invalidating the catalogue never refetches the install state.
+  integrationInstall: () => ["integration-install"] as const,
   job: (id: string) => ["jobs", id] as const,
 };
 
@@ -232,6 +234,23 @@ export const integrationsQuery = (api: ApiClient) =>
   queryOptions({ queryKey: queryKeys.integrations(), queryFn: ({ signal }) => listIntegrations(api, { signal }) });
 
 const POLL_MS = 1000;
+
+/**
+ * The running or last integration install. Polled every second only while it
+ * runs. When a poll sees the install finish, the catalogue is read again, so
+ * the entry shows its new availability.
+ */
+export const integrationInstallQuery = (api: ApiClient) =>
+  queryOptions({
+    queryKey: queryKeys.integrationInstall(),
+    queryFn: async ({ client, signal }) => {
+      const before = client.getQueryData<IntegrationInstall>(queryKeys.integrationInstall());
+      const install = await getIntegrationInstall(api, { signal });
+      if (before?.state === "running" && install.state !== "running") void client.invalidateQueries({ queryKey: queryKeys.integrations() });
+      return install;
+    },
+    refetchInterval: (query) => (query.state.data?.state === "running" ? POLL_MS : false),
+  });
 
 /** An ingest job, polled until it completes or fails. */
 export const jobQuery = (api: ApiClient, jobId: string) =>

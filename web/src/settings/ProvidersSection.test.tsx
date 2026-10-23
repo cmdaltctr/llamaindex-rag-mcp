@@ -223,7 +223,7 @@ describe("Providers", () => {
     }
   });
 
-  it("shows read-only values as read-only and the install command when not installed", async () => {
+  it("shows read-only values as read-only and a link to Integrations, not a command, when not installed", async () => {
     await openProviders({
       "GET /v1/connections": () => list(OLLAMA, { ...LLAMACPP, installed: false, install_hint: "uv sync --extra llamacpp" }, OPENROUTER),
     });
@@ -231,8 +231,9 @@ describe("Providers", () => {
     expect(within(llamacpp).getByText("Embedding model")).toBeInTheDocument();
     expect(within(llamacpp).getByText("bge-small")).toBeInTheDocument();
     expect(within(llamacpp).getAllByText("(Read-only)").length).toBeGreaterThan(0);
-    expect(within(llamacpp).getByText("uv sync --extra llamacpp")).toBeInTheDocument();
-    expect(within(card("Ollama")).queryByText(/uv sync/)).toBeNull();
+    expect(within(llamacpp).getByRole("link", { name: "Install llama.cpp from Integrations" })).toHaveAttribute("href", "#/integrations/llamacpp");
+    expect(llamacpp).not.toHaveTextContent(/uv sync/);
+    expect(within(card("Ollama")).queryByRole("link", { name: /from Integrations/ })).toBeNull();
   });
 
   it("names the omrs.jsonc path, says saves are written there, and shows no restart banner", async () => {

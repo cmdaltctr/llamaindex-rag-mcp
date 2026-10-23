@@ -27,6 +27,9 @@ const CATALOGUE: Integration[] = [
     install_command: `uv sync --extra ${id}`,
     pip_command: `pip install "omrs[${id}]"`,
     availability,
+    installable: false,
+    install_reason: "not-uv-tool" as const,
+    packages: [],
   })),
   {
     id: "magika",
@@ -36,10 +39,13 @@ const CATALOGUE: Integration[] = [
     install_command: null,
     pip_command: null,
     availability: "available",
+    installable: false,
+    install_reason: "not-installable-here",
+    packages: [],
   },
 ];
 
-const serve = (handler: () => unknown = () => ({ status: "ok", integrations: CATALOGUE })) =>
+const serve = (handler: () => unknown = () => ({ status: "ok", install_type: "checkout", integrations: CATALOGUE })) =>
   documentsServer({ "GET /v1/integrations": handler });
 
 const card = async (name: string) => {
@@ -109,16 +115,17 @@ describe("Integrations", () => {
     expect(within(azure).getByText("uv sync --extra azure")).toBeVisible();
   });
 
-  it("explains that availability reflects this launch and that the page never installs", async () => {
+  it("explains that availability reflects this launch and that installing here needs the command outside the app", async () => {
     startApp("#/integrations", serve());
-    const notice = await screen.findByRole("note");
+    await screen.findByRole("list", { name: "Integrations" });
+    const notice = screen.getByRole("note");
     expect(notice).toHaveTextContent(/running launch/i);
-    expect(notice).toHaveTextContent(/never installs/i);
-    expect(notice).toHaveTextContent(/outside the browser/i);
+    expect(notice).toHaveTextContent(/outside the app/i);
     expect(notice).toHaveTextContent(/restart the server/i);
+    expect(notice).not.toHaveTextContent(/never installs/i);
   });
 
-  it("offers no install or run control", async () => {
+  it("offers no install or run control when the server cannot install", async () => {
     startApp("#/integrations", serve());
     await screen.findByRole("list", { name: "Integrations" });
     const labels = screen.getAllByRole("button").map((button) => button.getAttribute("aria-label") ?? button.textContent ?? "");
@@ -133,7 +140,7 @@ describe("Integrations", () => {
     let fail = true;
     startApp(
       "#/integrations",
-      serve(() => (fail ? json({ status: "error", message: "Probe <html>exploded" }, 500) : { status: "ok", integrations: CATALOGUE })),
+      serve(() => (fail ? json({ status: "error", message: "Probe <html>exploded" }, 500) : { status: "ok", install_type: "checkout", integrations: CATALOGUE })),
     );
     const alert = await screen.findByRole("alert");
     expect(alert).not.toHaveTextContent("exploded");

@@ -15,7 +15,8 @@ const ROUTES: { route: Route; hash: string }[] = [
   { route: { area: "studio", profileId: "papers-search", purpose: "answer" }, hash: "#/studio/papers-search/answer" },
   { route: { area: "experiments", runId: null }, hash: "#/experiments" },
   { route: { area: "experiments", runId: "run_9" }, hash: "#/experiments/runs/run_9" },
-  { route: { area: "integrations" }, hash: "#/integrations" },
+  { route: { area: "integrations", entry: null }, hash: "#/integrations" },
+  { route: { area: "integrations", entry: "anthropic" }, hash: "#/integrations/anthropic" },
   { route: { area: "settings", section: null }, hash: "#/settings" },
   ...SETTINGS_SECTIONS.map((section) => ({ route: { area: "settings", section } as Route, hash: `#/settings/${section}` })),
 ];
@@ -95,6 +96,18 @@ describe("routes", () => {
     "#/knowledge-base/%E0%A4%A",
     "chat",
   ])("resolves the unknown hash %j to Home", (hash) => {
+    expect(parseRoute(hash)).toEqual({ area: "home" });
+  });
+});
+
+describe("integration entry in the route", () => {
+  it("encodes the entry and parses it back", () => {
+    const hash = formatRoute({ area: "integrations", entry: "pdf inspector" });
+    expect(hash).toBe("#/integrations/pdf%20inspector");
+    expect(parseRoute(hash)).toEqual({ area: "integrations", entry: "pdf inspector" });
+  });
+
+  it.each(["#/integrations/a/b", "#/integrations/%E0%A4%A"])("resolves %j to Home", (hash) => {
     expect(parseRoute(hash)).toEqual({ area: "home" });
   });
 });

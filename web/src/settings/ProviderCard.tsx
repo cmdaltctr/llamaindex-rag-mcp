@@ -3,6 +3,7 @@ import type { Connection, ProviderField } from "../api/settings";
 import { Badge } from "../components/ui/badge";
 import { Card, CardHeader, CardInset, CardTitle } from "../components/ui/card";
 import { isLoopback, ROLE_NAMES } from "./connectionWords";
+import { IntegrationLink } from "./IntegrationLink";
 import { PROVIDER_EXTRAS } from "./providerExtras";
 import { ProviderKeyField } from "./ProviderKeyField";
 import { ProviderTest } from "./ProviderTest";
@@ -44,7 +45,9 @@ export function ProviderCard({ connection, keychain, configDir }: ProviderCardPr
     <>
       {!connection.installed ? (
         <p className="text-ui">
-          Not installed. Run <code dir="ltr" className={CODE}>{connection.install_hint ?? "the install command"}</code> and restart the server.
+          {"Not installed. "}
+          <IntegrationLink connection={connection} />
+          {"."}
         </p>
       ) : null}
       {connection.fields.map((field) =>

@@ -19,7 +19,7 @@ export function renderArea(route: Route) {
     case "experiments":
       return <ExperimentsView runId={route.runId} />;
     case "integrations":
-      return <IntegrationsView />;
+      return <IntegrationsView entry={route.entry} />;
     case "settings":
       return <SettingsView />;
     case "studio":
