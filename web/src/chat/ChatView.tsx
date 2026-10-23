@@ -1,11 +1,11 @@
-import { useIsMutating, useQuery } from "@tanstack/react-query";
+import { useIsMutating, useQuery, useQueryClient } from "@tanstack/react-query";
 import { History, MessageCircle, Plus } from "lucide-react";
 import { useState } from "react";
 import { useApi } from "../api/ApiProvider";
 import type { ChatSummary } from "../api/chats";
 import type { AnswerResult } from "../api/documents";
 import { ANSWER_MUTATION_KEY } from "../api/mutations";
-import { chatSettingsQuery } from "../api/queries";
+import { chatSettingsQuery, queryKeys } from "../api/queries";
 import { AlertNotice } from "../components/AlertNotice";
 import { ChunkViewer } from "../components/ChunkViewer";
 import { CollectionGate } from "../components/CollectionGate";
@@ -58,6 +58,7 @@ export function ChatView() {
   const chatStatus = useQuery(chatSettingsQuery(useApi())).data;
   const unavailable = chatStatus !== undefined && !chatStatus.ready;
   const busy = useIsMutating({ mutationKey: ANSWER_MUTATION_KEY }) > 0;
+  const queryClient = useQueryClient();
 
   const openFromHistory = (chat: ChatSummary) => {
     void openChat(chat);
@@ -135,6 +136,8 @@ export function ChatView() {
                       onResult={(result) => {
                         record(turn, result);
                         void onResult(turn, result);
+                        // One credit read per finished answer; the query never refetches by itself.
+                        void queryClient.invalidateQueries({ queryKey: queryKeys.usageCredit() });
                       }}
                       onShowChunk={(collection, chunkId) => setChunk({ collection, chunkId })}
                     />
@@ -148,7 +151,7 @@ export function ChatView() {
                   </Button>
                 </AlertNotice>
               ) : null}
-              <Composer collection={active.name} busy={busy} unavailable={unavailable} onSend={send(active.name)} />
+              <Composer collection={active.name} busy={busy} unavailable={unavailable} onSend={send(active.name)} usage={latest?.result.usage ?? null} />
             </div>
             <aside aria-label="Knowledge base panel" className={`sticky top-12 z-[5] order-first flex flex-col gap-2 self-stretch lg:order-none lg:self-start ${STICKY_WIDE}`}>
               <SidePanel side="right" label="knowledge bases" collapsed={knowledgeHidden} onToggle={() => setKnowledgeHidden(!knowledgeHidden)}>

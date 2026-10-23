@@ -124,6 +124,15 @@ export interface AnswerDiagnostics {
   verification_calls?: number;
 }
 
+/** A figure is `null` unless every call reported it. */
+export interface AnswerUsage {
+  input_tokens: number | null;
+  output_tokens: number | null;
+  reasoning_tokens: number | null;
+  cost_usd: number | null;
+  calls: number;
+}
+
 export type AnswerStatus = "ok" | "no_evidence" | "generation_unverified" | "unverified_claims" | "error";
 
 export interface AnswerResult {
@@ -139,6 +148,10 @@ export interface AnswerResult {
   unverified_claims?: { claim: string; verdict: string; ordinals: number[] }[];
   verification_skipped?: string;
   diagnostics?: AnswerDiagnostics;
+  /** The model's reasoning text, calls joined by a blank line. Present only when a call returned some. */
+  reasoning?: string;
+  /** Tokens and cost of the server's own model calls, judge included. Absent for client-sampled answers. */
+  usage?: AnswerUsage;
 }
 
 export interface ChunkView {

@@ -15,7 +15,7 @@ import { getPower } from "./power";
 import { getChat, listChats } from "./chats";
 import { getProfile, listProfiles } from "./profiles";
 import { getRunArtefact, getRunRecord, getRunResult, listRuns } from "./runs";
-import { getChatSettings, getConnections, getHealth, getJudgeSettings, getMcpState, getUploadLimit, getWebPort } from "./settings";
+import { getChatSettings, getConnections, getHealth, getJudgeSettings, getMcpState, getReasoningLevels, getUploadLimit, getUsageCredit, getWebPort } from "./settings";
 import { getDocumentReadingSettings } from "./settingsDocumentReading";
 import { rememberRevision } from "./settingsRevision";
 
@@ -60,6 +60,8 @@ export const queryKeys = {
   connections: () => ["connections"] as const,
   chatSettings: () => ["settings", "chat"] as const,
   judgeSettings: () => ["settings", "judge"] as const,
+  reasoningLevels: (provider: string, model: string) => ["settings", "reasoning-levels", provider, model] as const,
+  usageCredit: () => ["usage", "credit"] as const,
   mcp: () => ["mcp"] as const,
   webPort: () => ["settings", "web-port"] as const,
   uploadLimit: () => ["settings", "upload-limit"] as const,
@@ -182,6 +184,17 @@ export const chatSettingsQuery = (api: ApiClient) =>
 /** The claim check judge provider and model, and whether the judge is ready. Sends no request to any provider. */
 export const judgeSettingsQuery = (api: ApiClient) =>
   queryOptions({ queryKey: queryKeys.judgeSettings(), queryFn: ({ client, signal }) => getJudgeSettings(api, { signal }).then((data) => rememberRevision(client, data)) });
+
+/** The reasoning levels of one provider and model. The server caches the catalogue, so a typed model name costs one cheap read. */
+export const reasoningLevelsQuery = (api: ApiClient, provider: string, model: string) =>
+  queryOptions({ queryKey: queryKeys.reasoningLevels(provider, model), queryFn: ({ signal }) => getReasoningLevels(api, provider, model, { signal }) });
+
+/**
+ * The credit left on the Chat provider key. It never goes stale by itself:
+ * Chat invalidates it once when an answer finishes, so typing sends nothing.
+ */
+export const usageCreditQuery = (api: ApiClient) =>
+  queryOptions({ queryKey: queryKeys.usageCredit(), queryFn: ({ signal }) => getUsageCredit(api, { signal }), staleTime: Infinity, refetchOnWindowFocus: false, refetchOnReconnect: false });
 
 /**
  * The draft check of one graph document, given as JSON text, read for the

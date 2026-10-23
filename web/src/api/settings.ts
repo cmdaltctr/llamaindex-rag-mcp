@@ -2,7 +2,7 @@
  * Typed client for the Settings routes: health, provider connections, the
  * server log and MCP access. Shapes follow `openapi.yaml` (`getConnections`,
  * `testConnection`, `listProviderModels`, `saveProviderFields`, `saveProviderKey`,
- * `removeProviderKey`, `getChatSettings`, `setChatSettings`, `testChatModel`, `getJudgeSettings`, `setJudgeSettings`, `getLogs`, `streamLogs`, `getMcpState`, `setMcpEnabled`,
+ * `removeProviderKey`, `getChatSettings`, `setChatSettings`, `testChatModel`, `getReasoningLevels`, `getUsageCredit`, `getJudgeSettings`, `setJudgeSettings`, `getLogs`, `streamLogs`, `getMcpState`, `setMcpEnabled`,
  * `rotateMcpToken`, `revokeMcpToken`, `getWebPort`, `setWebPort`,
  * `getUploadLimit`, `setUploadLimit`).
  * No response here ever holds a provider key; the MCP token appears once, in
@@ -66,6 +66,8 @@ export interface Connection {
   installed: boolean;
   /** The install command when the provider is not installed. */
   install_hint: string | null;
+  /** The `pyproject.toml` extra that supplies the provider, or `null` for the base install. */
+  extra?: string | null;
   fields: ProviderField[];
   read_only: ReadOnlyValue[];
   roles: ConnectionRole[];
@@ -105,9 +107,25 @@ export type FieldValues = Record<string, string>;
 export interface ChatChoice {
   provider: string;
   model: string;
+  /** The reasoning level, written in the same save. `""` means the provider default. Left out, the saved level stays. */
+  reasoning?: string;
 }
 
-export interface ChatSettings {
+/**
+ * The reasoning level of a Chat or judge choice. Optional, because a server
+ * before the reasoning change does not send them.
+ */
+export interface ReasoningSetting {
+  /** `""` means the provider default. */
+  reasoning?: string;
+  /** True when the environment or `.env` sets the level. A save that sends it gives 409. */
+  reasoning_locked?: boolean;
+  reasoning_lock_reason?: string | null;
+  /** True when the saved provider does not send the level to the model. */
+  reasoning_ignored?: boolean;
+}
+
+export interface ChatSettings extends ReasoningSetting {
   status: "ok";
   revision: string;
   provider: string | null;
@@ -121,11 +139,28 @@ export interface ChatSettings {
   reason: string | null;
 }
 
+/** The reasoning levels a model accepts (`GET /v1/settings/chat/reasoning-levels`). */
+export type ReasoningLevels =
+  | { known: false; ignored?: boolean }
+  | {
+      known: true;
+      /** True when the provider sends nothing for any level. */
+      ignored?: boolean;
+      levels: string[];
+      /** The level the model uses when none is sent, or `null`. */
+      default: string | null;
+      /** True when the model always reasons. */
+      mandatory: boolean;
+    };
+
+/** The remaining provider credit (`GET /v1/usage/credit`). */
+export type UsageCredit = { available: false } | { available: true; limit_usd: number; remaining_usd: number };
+
 /** Why the claim check judge is not ready (`GET /v1/settings/judge`). `no-model`: the judge model in force is empty. */
 export type JudgeNotReadyReason = "disabled" | "unknown-provider" | "not-installed" | "not-configured" | "no-model";
 
 /** The claim check judge. A profile decides per collection whether claims are checked, so this holds no on/off state. */
-export interface JudgeSettings {
+export interface JudgeSettings extends ReasoningSetting {
   status: "ok";
   revision: string;
   /** The provider as set: a registry name, or the alias `cloud` or `local`. */
@@ -273,6 +308,16 @@ export function setChatSettings(api: ApiClient, choice: ChatChoice | null, optio
 /** Sends one short prompt to the typed choice, or to the saved choice when none is given. Nothing is saved. */
 export function testChatModel(api: ApiClient, choice: ChatChoice | null = null, options: CallOptions = {}): Promise<ChatTestResult> {
   return api.request<ChatTestResult>("POST", "/v1/settings/chat/test", { body: choice ?? {}, signal: options.signal });
+}
+
+/** The reasoning levels of one model. Sends at most one catalogue request, which the server caches. */
+export function getReasoningLevels(api: ApiClient, provider: string, model: string, options: CallOptions = {}): Promise<ReasoningLevels> {
+  return api.request<ReasoningLevels>("GET", "/v1/settings/chat/reasoning-levels", { query: { provider, model }, signal: options.signal });
+}
+
+/** The credit left on the Chat provider key, when the provider reports it. */
+export function getUsageCredit(api: ApiClient, options: CallOptions = {}): Promise<UsageCredit> {
+  return api.request<UsageCredit>("GET", "/v1/usage/credit", { signal: options.signal });
 }
 
 export function getJudgeSettings(api: ApiClient, options: CallOptions = {}): Promise<JudgeSettings> {

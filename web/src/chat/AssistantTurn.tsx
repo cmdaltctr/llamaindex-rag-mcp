@@ -8,6 +8,7 @@ import { Button } from "../components/ui/button";
 import { AnswerProgress } from "./AnswerProgress";
 import { AnswerText, ClaimList } from "./AnswerText";
 import { answerStatus, failureLine } from "./answerStatus";
+import { ReasoningBox } from "./ReasoningBox";
 
 interface AssistantTurnProps {
   collection: string;
@@ -82,6 +83,7 @@ function AnswerBody({ result, collection, onShowChunk }: { result: AnswerResult;
           Claim verification skipped: {result.verification_skipped}. Only the citation check applies.
         </p>
       ) : null}
+      {result.reasoning ? <ReasoningBox text={result.reasoning} /> : null}
       {result.answer !== null ? <AnswerText text={result.answer} citations={result.citations} evidence={result.evidence} collection={collection} onShowChunk={onShowChunk} /> : null}
       {result.unverified_claims && result.unverified_claims.length > 0 ? (
         <ClaimList claims={result.unverified_claims} citations={result.citations} evidence={result.evidence} collection={collection} onShowChunk={onShowChunk} />

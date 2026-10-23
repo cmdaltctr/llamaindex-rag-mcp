@@ -385,6 +385,20 @@ The llama.cpp card has a Local server panel. It shows the state, the program pat
 
 Settings > Chat sets the provider and model that Chat uses. The same choice answers MCP clients of this web server that cannot supply their own model. Metadata extraction keeps its own model. The choice locks when `ANSWER__PROVIDER` or `ANSWER__MODEL` is set in the environment or `.env`. A cloud provider sends questions and retrieved passages off this machine. The Chat section says so. List models and Test run only when you press them. When no model is ready, Chat shows one line with a link to Settings > Chat and disables Send.
 
+To set the Chat model and its reasoning level:
+
+1. Open Settings > Chat.
+2. In the "Answer model" card, press Edit.
+3. Select the provider. A provider that cannot answer yet stays in the list, disabled, with its reason, for example "Anthropic (not installed)".
+4. Read the lines under the select. Each line gives the fix for one provider that is not ready: the install command, such as `uv tool install 'omrs[anthropic]'`, or a link to the provider card under Settings > Providers for a missing key. All providers ready shows no lines.
+5. Type the model name, or press List models and pick one.
+6. Set Reasoning. When the provider catalogue knows the model, Reasoning is a dropdown: "Provider default" first, then the levels the model accepts. "Provider default (max)" names the default level when the catalogue gives one. Otherwise Reasoning is a text box. Leave it empty for the provider default.
+7. Press Save. Save writes the provider, the model and the level in one write.
+
+The card then shows `Reasoning: low`, or `Reasoning: Provider default` when no level is saved. A note under the control says when the provider ignores the level. `ANSWER__REASONING` in the environment or `.env` locks the level: the control is read-only and names the variable. The judge card has its own Reasoning control, stored as `answer.verify_reasoning` and locked by `ANSWER__VERIFY_REASONING`.
+
+The page reads the levels from `GET /v1/settings/chat/reasoning-levels?provider=<provider>&model=<model>` when the form opens and when the provider or model changes.
+
 The server keeps the last 1,000 log records in memory and writes no log file. The filter that removes provider keys and credentials runs before a record is stored.
 
 `POST /v1/experiment-folders` (scope `manage`) creates a directory below an approved experiment root. `GET /v1/experiments` returns the folder tree of each root in `folders`.
@@ -616,6 +630,12 @@ Chat reads the stages from a streamed route. It uses the blocking route only whe
 | `POST /v1/collections/{collection}/answer/stream` | `read` | The same body. `text/event-stream` with `stage` frames, then one `result` frame that holds the same JSON as the blocking route. |
 
 A `stage` frame holds only `stage`, `sequence` (from 1) and `elapsed_ms`. It never holds the question, passage text, answer text, a model name or an error. A request that the server refuses gets the same 400, 401, 403 or 503 as the blocking route, and no stream opens. The stream has no `retry:` line, and nothing reconnects. See [ADR-089](../adr/089-answer-stage-progress.md).
+
+### Reasoning and usage in Chat
+
+When the model returns reasoning text, the answer shows a "Reasoning" button above the answer. The box starts closed. Press the button, or focus it and press Enter, to open it. The text is plain and smaller than the answer, with no citation buttons. A chat saved before this change shows no Reasoning button.
+
+One line at the top right of the question box gives the tokens and cost of the latest answer, for example `1,240 in · 380 out · 210 reasoning · $0.0012`. A figure the provider did not report is left out. When the provider reports the remaining credit (`GET /v1/usage/credit`), the line ends with it, for example `· $2.81 left`. Hover or focus the line to see all figures and the number of model calls. An answer with no usage shows no line. Chat reads the credit once after each answer, never while you type. On a narrow screen, the line stays on one row and ends with an ellipsis.
 
 ### Chat history
 

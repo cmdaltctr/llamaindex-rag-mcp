@@ -165,7 +165,7 @@ describe("Chat section", () => {
     expect(await within(section()).findAllByText("from omrs.jsonc")).toHaveLength(2);
     expect(within(section()).getByText("openai/gpt-4o-mini")).toBeInTheDocument();
     expect(within(section()).queryByRole("textbox")).toBeNull();
-    expect(server.find("PUT", "/v1/settings/chat")[0]?.body).toEqual({ provider: "openrouter", model: "openai/gpt-4o-mini", revision: "r1" });
+    expect(server.find("PUT", "/v1/settings/chat")[0]?.body).toEqual({ provider: "openrouter", model: "openai/gpt-4o-mini", reasoning: "", revision: "r1" });
   });
 
   it("clears the saved choice with only the revision in the body", async () => {
@@ -232,9 +232,9 @@ describe("Chat section", () => {
     await user.type(within(section()).getByRole("textbox", { name: "Model name" }), "x");
     await user.click(within(section()).getByRole("button", { name: "Save" }));
     expect(await within(section()).findByRole("alert")).toHaveTextContent(message);
-    const reads = server.find("GET", "/v1/settings/chat").length;
+    const reads = server.exact("GET", "/v1/settings/chat").length;
     await user.click(within(section()).getByRole("button", { name: "Reload" }));
-    await waitFor(() => expect(server.find("GET", "/v1/settings/chat").length).toBe(reads + 1));
+    await waitFor(() => expect(server.exact("GET", "/v1/settings/chat").length).toBe(reads + 1));
   });
 
   it("states where the choice applies", async () => {
@@ -321,7 +321,7 @@ describe("Claim check judge", () => {
     expect(server.find("PUT", "/v1/settings/chat")).toHaveLength(0);
     await user.click(within(judge()).getByRole("button", { name: "Save" }));
     await waitFor(() => expect(server.find("PUT", "/v1/settings/judge")).toHaveLength(1));
-    expect(server.find("PUT", "/v1/settings/judge")[0]?.body).toEqual({ provider: "ollama", model: "qwen3:4b", revision: "r1" });
+    expect(server.find("PUT", "/v1/settings/judge")[0]?.body).toEqual({ provider: "ollama", model: "qwen3:4b", reasoning: "", revision: "r1" });
   });
 
   it("tests the typed judge choice through the Chat test route and saves nothing", async () => {

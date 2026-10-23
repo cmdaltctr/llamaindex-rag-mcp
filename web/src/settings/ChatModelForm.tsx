@@ -10,14 +10,9 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { cloudHost, isKnownReason, reasonSentence } from "./connectionWords";
+import { notReady, ProviderFixLines } from "./ProviderFixLines";
+import { ReasoningField, type ReasoningState } from "./ReasoningField";
 import { SaveErrorNotice } from "./SaveErrorNotice";
-
-/** Why a provider cannot answer yet, from the cards, or `null` when it can. */
-function notReady(connection: Connection): string | null {
-  if (!connection.installed) return "not installed";
-  const key = connection.fields.find((field) => field.kind === "secret");
-  return key !== undefined && key.required && !key.set ? "no key" : null;
-}
 
 /** A write of a provider and model choice, or a clear with `null`. */
 export type ChoiceSave = UseMutationResult<unknown, Error, ChatChoice | null>;
@@ -25,6 +20,8 @@ export type ChoiceSave = UseMutationResult<unknown, Error, ChatChoice | null>;
 interface ChatModelFormProps {
   /** The values the form opens with. */
   initial: ChatChoice;
+  /** The saved reasoning level, its lock and whether the saved provider ignores it. */
+  reasoning: ReasoningState;
   connections: Connection[];
   save: ChoiceSave;
   /** The label above the provider select, such as "Chat provider and model". */
@@ -37,13 +34,14 @@ interface ChatModelFormProps {
   onClose: () => void;
 }
 
-/** The provider select, the model name, List models, Test, Save, Cancel and Clear. Only Save and Clear write. */
-export function ChatModelForm({ initial, connections, save, label, cloudNote, canClear, onClose }: ChatModelFormProps) {
+/** The provider select, the model name, the reasoning level, List models, Test, Save, Cancel and Clear. Only Save and Clear write. */
+export function ChatModelForm({ initial, reasoning, connections, save, label, cloudNote, canClear, onClose }: ChatModelFormProps) {
   const api = useApi();
   const providerId = useId();
   const modelId = useId();
   const [provider, setProvider] = useState(initial.provider);
   const [model, setModel] = useState(initial.model);
+  const [level, setLevel] = useState(reasoning.value);
   const choice = { provider, model: model.trim() };
   const ready = provider !== "" && choice.model !== "";
   const selected = connections.find((connection) => connection.provider === provider);
@@ -63,7 +61,8 @@ export function ChatModelForm({ initial, connections, save, label, cloudNote, ca
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (ready) save.mutate(choice, { onSuccess: onClose });
+    // A locked level is left out: sending it gives 409.
+    if (ready) save.mutate(reasoning.locked ? choice : { ...choice, reasoning: level }, { onSuccess: onClose });
   }
 
   return (
@@ -85,12 +84,14 @@ export function ChatModelForm({ initial, connections, save, label, cloudNote, ca
             })}
           </SelectContent>
         </Select>
+        <ProviderFixLines connections={connections} />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={modelId}>Model name</Label>
         <Input id={modelId} dir="ltr" autoComplete="off" spellCheck={false} className="max-w-md" value={model} onChange={(event) => setModel(event.target.value)} />
         <p className="text-meta text-muted-foreground">Type the model name exactly as the provider spells it, or use List models.</p>
       </div>
+      <ReasoningField provider={provider} model={choice.model} value={level} onChange={setLevel} state={reasoning} savedProvider={initial.provider} />
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" size="sm" disabled={provider === "" || list.isPending} onClick={() => list.mutate()}>
           <List aria-hidden="true" />

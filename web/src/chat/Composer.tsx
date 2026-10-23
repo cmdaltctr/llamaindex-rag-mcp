@@ -1,8 +1,10 @@
 import { SendHorizontal } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
+import type { AnswerUsage } from "../api/documents";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { UsageLine } from "./UsageLine";
 
 /** The longest question the answer route accepts. */
 export const MAX_QUESTION = 4096;
@@ -13,10 +15,12 @@ interface ComposerProps {
   /** True while Chat has no ready model. Send stays off. */
   unavailable?: boolean;
   onSend: (question: string) => void;
+  /** Tokens and cost of the latest answer, shown above the field. */
+  usage?: AnswerUsage | null;
 }
 
 /** The question field, docked at the bottom of the column. It sends on the Send action or Enter. */
-export function Composer({ collection, busy, unavailable = false, onSend }: ComposerProps) {
+export function Composer({ collection, busy, unavailable = false, onSend, usage = null }: ComposerProps) {
   const id = useId();
   const [text, setText] = useState("");
 
@@ -33,6 +37,7 @@ export function Composer({ collection, busy, unavailable = false, onSend }: Comp
       <Label htmlFor={id} className="sr-only">
         Question
       </Label>
+      {usage !== null ? <UsageLine usage={usage} /> : null}
       <div className="flex gap-2">
         <Input
           id={id}
