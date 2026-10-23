@@ -1,6 +1,7 @@
 import { Settings } from "lucide-react";
 import { formatRoute } from "../lib/routes";
 import { cn } from "../lib/utils";
+import { NavTooltip } from "./NavTooltip";
 import { PowerMenu } from "./PowerMenu";
 import { ThemeToggle } from "./ThemeControls";
 import { Button } from "./ui/button";
@@ -33,18 +34,22 @@ export function NavFoot({ collapsed, onSettings }: { collapsed: boolean; onSetti
         collapsed ? "md:flex-col md:gap-1 md:p-2" : "md:justify-between md:p-3",
       )}
     >
-      <ThemeToggle />
-      <Button asChild variant="ghost" size="icon">
-        <a href={formatRoute({ area: "settings", section: null })} aria-label="Settings" aria-current={onSettings ? "page" : undefined} className="aria-[current=page]:bg-selection">
-          <Settings aria-hidden="true" />
-        </a>
-      </Button>
+      <ThemeToggle withTooltip />
+      <NavTooltip label="Settings">
+        <Button asChild variant="ghost" size="icon">
+          <a href={formatRoute({ area: "settings", section: null })} aria-label="Settings" aria-current={onSettings ? "page" : undefined} className="aria-[current=page]:bg-selection">
+            <Settings aria-hidden="true" />
+          </a>
+        </Button>
+      </NavTooltip>
       <PowerMenu />
-      <Button asChild variant="ghost" size="icon">
-        <a href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" aria-label="OMRS on GitHub">
-          <GitHubMark />
-        </a>
-      </Button>
+      <NavTooltip label="OMRS on GitHub">
+        <Button asChild variant="ghost" size="icon">
+          <a href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" aria-label="OMRS on GitHub">
+            <GitHubMark />
+          </a>
+        </Button>
+      </NavTooltip>
     </div>
   );
 }

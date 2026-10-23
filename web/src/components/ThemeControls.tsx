@@ -2,6 +2,7 @@ import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePreferences } from "../lib/PreferencesProvider";
 import { THEMES, type ThemePreference } from "../lib/preferences";
+import { NavTooltip } from "./NavTooltip";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
@@ -49,14 +50,16 @@ export function ThemeSelect() {
 }
 
 /** One click between Light and Dark. It shows the theme in effect and names the one it switches to. */
-export function ThemeToggle() {
+export function ThemeToggle({ withTooltip = false }: { withTooltip?: boolean }) {
   const { setTheme } = usePreferences();
   const effective = useEffectiveTheme();
   const target = effective === "dark" ? "light" : "dark";
   const Icon = effective === "dark" ? Moon : Sun;
-  return (
-    <Button variant="ghost" size="icon" aria-label={`Switch to ${target} theme`} onClick={() => setTheme(target)}>
+  const label = `Switch to ${target} theme`;
+  const button = (
+    <Button variant="ghost" size="icon" aria-label={label} onClick={() => setTheme(target)}>
       <Icon aria-hidden="true" />
     </Button>
   );
+  return withTooltip ? <NavTooltip label={label}>{button}</NavTooltip> : button;
 }

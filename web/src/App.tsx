@@ -24,10 +24,13 @@ function Shell() {
     if (!onCanvas) setFullScreen(false);
   }, [onCanvas, setFullScreen]);
   const chromeHidden = onCanvas && fullScreen;
+  // Chat collapses the navigation the same way, so the conversation gets the width.
+  const collapseKey = canvasId !== null ? `studio:${canvasId}` : route.area === "chat" ? "chat" : null;
   const [expandedFor, setExpandedFor] = useState<string | null>(null);
-  if (!onCanvas && expandedFor !== null) setExpandedFor(null);
-  const navCollapsed = onCanvas ? expandedFor !== canvasId : storedCollapsed;
-  const toggleNav = onCanvas ? () => setExpandedFor((current) => (current === canvasId ? null : canvasId)) : toggleStored;
+  if (collapseKey === null && expandedFor !== null) setExpandedFor(null);
+  const navCollapsed = collapseKey !== null ? expandedFor !== collapseKey : storedCollapsed;
+  const toggleNav =
+    collapseKey !== null ? () => setExpandedFor((current) => (current === collapseKey ? null : collapseKey)) : toggleStored;
 
   // After the user moves to another area, move focus to its heading so
   // screen readers announce it. The first load keeps the browser default.

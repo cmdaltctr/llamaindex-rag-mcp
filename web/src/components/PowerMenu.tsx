@@ -11,6 +11,7 @@ import { AlertNotice } from "./AlertNotice";
 import { ErrorNotice } from "./ErrorNotice";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
+import { NavTooltip } from "./NavTooltip";
 import { Popover } from "./ui/popover";
 
 const HEALTH_POLL_MS = 15_000;
@@ -125,9 +126,11 @@ export function PowerMenu() {
         placement="above"
         width={272}
         trigger={(props) => (
-          <Button variant="ghost" size="icon" aria-label={`Server status: ${state}`} {...props}>
-            <Power aria-hidden="true" className={running ? "text-status-success" : "text-muted-foreground"} />
-          </Button>
+          <NavTooltip label={`Server status: ${state}`}>
+            <Button variant="ghost" size="icon" aria-label={`Server status: ${state}`} {...props}>
+              <Power aria-hidden="true" className={running ? "text-status-success" : "text-muted-foreground"} />
+            </Button>
+          </NavTooltip>
         )}
       >
         <p className="text-ui font-medium">{state}</p>

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { documentsServer, json, type Handler } from "../test/fakeDocumentsServer";
 import { renderWithProviders } from "../test/providers";
+import { TooltipProvider } from "./ui/tooltip";
 import { PowerMenu } from "./PowerMenu";
 
 const HEALTH: Record<string, Handler> = { "GET /v1/health": () => ({ status: "ok", ready: true, version: "2.3.4" }) };
@@ -13,7 +14,12 @@ const ACCEPTED = (action: string): Handler => () => json({ status: "accepted", a
 async function openPanel(handlers: Record<string, Handler>) {
   const user = userEvent.setup();
   const server = documentsServer(handlers);
-  renderWithProviders(<PowerMenu />, { fetchImpl: server.fetchImpl });
+  renderWithProviders(
+    <TooltipProvider>
+      <PowerMenu />
+    </TooltipProvider>,
+    { fetchImpl: server.fetchImpl },
+  );
   await user.click(screen.getByRole("button", { name: /^Server status/ }));
   const panel = document.querySelector("[data-slot='power-panel']") as HTMLElement;
   return { user, server, panel };

@@ -496,7 +496,7 @@ If the process stops without this sequence, for example after a crash, unfinishe
 
 ## Screens
 
-The workspace has seven areas. Use the navigation on the left to open an area. The OMRS logo and name sit at the top of the navigation. Use the button next to them to collapse the navigation to a column of icons. In the collapsed column, the button sits under the logo. The browser remembers the choice. Under 768 px the navigation becomes one row of icons under the top bar. The top bar shows the collection count and one button that switches between Light and Dark. Choose System, Light or Dark in Settings.
+The workspace has seven areas. Use the navigation on the left to open an area. The OMRS logo and name sit at the top of the navigation. Use the button next to them to collapse the navigation to a column of icons. In the collapsed column, the button sits under the logo. The browser remembers the choice. Chat always opens with the icon column. Select "Expand navigation" to open it until you leave Chat. Hover over an area, the collapse button or an icon at the foot to see its name. The name shows at once and closes after 3 seconds. The navigation stays in view at full window height when you scroll a long page. Under 768 px the navigation becomes one row of icons under the top bar. The top bar shows the collection count and one button that switches between Light and Dark. Choose System, Light or Dark in Settings.
 
 Every area has its own address. Back and forward move between them. An address that the app does not know opens Home.
 

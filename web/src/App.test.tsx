@@ -216,7 +216,7 @@ describe("navigation collapse", () => {
     const nav = screen.getByRole("navigation", { name: "Workspace" });
     await user.click(within(nav).getByRole("button", { name: "Collapse navigation" }));
     expect(within(nav).getByRole("button", { name: "Expand navigation" })).toHaveAttribute("aria-expanded", "false");
-    expect(within(nav).getByRole("link", { name: "Settings" })).toHaveAttribute("title", "Settings");
+    expect(within(nav).getByRole("link", { name: "Settings" })).not.toHaveAttribute("title");
     expect(window.localStorage.getItem(NAV_COLLAPSED_KEY)).toBe("true");
   });
 
@@ -288,6 +288,32 @@ describe("navigation on the canvas sub-page", () => {
     start("#/studio");
     await user.click(within(nav()).getByRole("button", { name: "Collapse navigation" }));
     expect(window.localStorage.getItem(NAV_COLLAPSED_KEY)).toBe("true");
+  });
+});
+
+describe("navigation on the chat page", () => {
+  function toggleName() {
+    return within(nav()).queryByRole("button", { name: "Expand navigation" }) ? "collapsed" : "expanded";
+  }
+
+  it("collapses an expanded navigation to the icon column", () => {
+    window.localStorage.setItem(NAV_COLLAPSED_KEY, "false");
+    start("#/chat");
+    expect(toggleName()).toBe("collapsed");
+  });
+
+  it("expands for this visit only and applies the stored choice elsewhere", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(NAV_COLLAPSED_KEY, "false");
+    start("#/chat");
+    await user.click(within(nav()).getByRole("button", { name: "Expand navigation" }));
+    expect(toggleName()).toBe("expanded");
+    expect(window.localStorage.getItem(NAV_COLLAPSED_KEY)).toBe("false");
+
+    window.location.hash = "#/home";
+    await waitFor(() => expect(window.location.hash).toBe("#/home"));
+    window.location.hash = "#/chat";
+    await waitFor(() => expect(toggleName()).toBe("collapsed"));
   });
 });
 
