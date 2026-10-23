@@ -100,9 +100,33 @@ Score answers with the RepoProbe checklist scorer. Some checklist items ask for 
 
 The checklist judge needs a hosted model. If the paid-provider budget in task 1.7 does not cover it, drop 35B-1 and keep 35B-2.
 
-### 35B-2 corpus: labelled code retrieval
+#### 35B-1 scoring (decided 2026-10-23)
 
-Use a labelled code retrieval set with gold documents per question. The candidate is FreshStack (used in Experiments 9a and 22). Experiment 22 used `qwen/qwen3-embedding-4b` through OpenRouter, one vector per parent document, and hybrid retrieval with rerank off. If the frozen `codebase` profile matches those settings, cite the Experiment 22 result and do not repeat it. If the settings differ, run a small frozen subset only. The dataset choice and subset size are frozen in task 1.2.
+- Call RepoProbe's `SimpleScorer.score_answer_multiple(question, ModelAnswer(...), num_iterations, repo_info)` directly, at a pinned RepoProbe commit. Do not use `evaluator.py`. Its Docker agent container is not needed: the scorer takes a plain answer string (checked in `scorer.py` on 2026-10-23).
+- Judge: `glm-5.3` through the Z.AI API, with `reasoning_effort: low`. GLM-5.3 cannot turn thinking off (Z.AI docs: `thinking.type=disabled` returns an error), and its default effort is `max`. So the frozen config sets `low` explicitly. Pass `scoring_model="glm-5.3"`, because the scorer defaults to `gpt-5.2`. Point `OPENAI_SCORING_BASE_URL` and `OPENAI_SCORING_API_KEY` at the Z.AI OpenAI-compatible endpoint.
+- `num_iterations=3`. Report the mean and the spread across the three judge calls per question.
+- Optional judge check: score 5 frozen questions again with GPT-5.6 Sol at `reasoning.effort: low` through OpenRouter. Report how often the two judges agree within 1 point out of 10. The check informs the limitations section only; it does not replace the GLM-5.3 score. Confirm the OpenRouter model slug at freeze.
+- Before freeze, read `agent_configs/model_client.py` (how it passes `reasoning_effort` and `thinking` to the scoring endpoint) and `prompt_templates_en.py` (what `repo_info` adds to the judge prompt). If the client cannot send `reasoning_effort: low`, record the effort the judge actually used.
+- Neither judge is the RepoProbe paper's `gpt-5.2`, so 35B-1 scores are not comparable with the paper's tables. The report says so.
+
+### 35B-2 corpus: labelled code retrieval (decided 2026-10-23)
+
+Use the FreshStack LangChain slice exported by `prepare_freshstack.py` with seed 20260530: about 10,024 parent documents and all 223 queries, with the qrels of Experiments 9a and 22. Use all 223 queries. Indexing is the main cost; queries are cheap, and a smaller set only widens the error bars.
+
+Experiment 22 does not count as the 35B-2 baseline. It used standard OMRS ingestion with default chunking (32,631 chunks), `qwen/qwen3-embedding-4b` through OpenRouter, hybrid retrieval with RRF k=60, rerank off and top_k 50. The `codebase` profile sets top_k 20, the `code` chunking fallback, a wider extension list and file-type taxonomy. So 35B-2 builds a new index through the frozen `codebase` profile. Experiment 22 is a reference point: report it beside 35B-2 and name the settings that differ. (Experiment 22's protocol says "one vector per parent doc"; its results file records chunked ingestion. The results file is the record. Experiment 9a used one vector per parent document, so 9a numbers are not comparable.)
+
+Map each retrieved chunk to its parent document and keep only the first rank of each parent before scoring, as Experiment 22's `run_eval.py` does. Reuse that mapping code.
+
+Cells:
+
+1. Reference cell: the frozen reference embedding model from task 1.4. This is the 35B-2 baseline.
+2. Comparison cell: local `qwen3-embedding:0.6b` through the same `codebase` profile, if the reference model is not 0.6B. It shows what the smaller local model costs in retrieval quality. It is secondary and never replaces the baseline.
+
+### Embedding model choice (task 1.4)
+
+Decide after timing, not before. On the Mac that will run the measured runs, embed one fixed slice of 200 FreshStack documents with each candidate: local Qwen3-Embedding-4B, OpenRouter `qwen/qwen3-embedding-4b`, and local `qwen3-embedding:0.6b`. Record wall time, tokens and peak memory. Extrapolate each to the full corpus. Then freeze one reference model for both 35A and 35B, with the reason. The timing slice is a planning measurement, not a scored run. Record the hardware (chip, memory, GPU cores) in the manifest of every run, because timings from the current machine (M5 Pro, 48 GB, 16-core GPU) do not transfer.
+
+Measurement machine, expected the week of 2026-10-26: MacBook Pro with Apple M5 Pro (18-core CPU, 20-core GPU, 16-core Neural Engine), 64 GB unified memory, 1 TB SSD. Run the timing slice and every measured 35A and 35B run on this machine. Do not run task 1.4 on the current machine.
 
 ### Pipeline
 
@@ -195,9 +219,9 @@ If a smoke run shows that the frozen subset cannot complete inside that envelope
 
 1. Which exact FinanceBench questions and PDFs make up the 35A subset?
 2. Which two RepoProbe repositories and question IDs make up 35B-1?
-2b. Which labelled code retrieval set and subset make up 35B-2, and does an earlier FreshStack run already match the frozen `codebase` settings?
-2c. Does the RepoProbe scorer accept answers that come from a single-shot RAG run, without its agent container? Not checked yet.
-3. Which embedding provider/model is the local reference configuration?
+3. Which embedding provider/model is the local reference configuration? Decided by the timing slice in task 1.4.
+
+Resolved on 2026-10-23: 35B-2 uses the full FreshStack LangChain slice with a new `codebase`-profile index, and Experiment 22 is a reference only. The RepoProbe scorer accepts plain answers without its agent container; the judge is GLM-5.3 at `reasoning_effort: low`.
 4. Is grounded-answer scoring mandatory for both profiles or secondary?
 5. Which RAGAS metrics and judge configuration are acceptable?
 6. What Mac wall-time/memory budget defines the local ceiling?

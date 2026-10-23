@@ -26,16 +26,24 @@ The measured run SHALL preserve the current codebase retrieval policy, including
 
 ### Requirement: Codebase retrieval is measured on a labelled set
 
-Experiment 35B-2 SHALL measure codebase retrieval with Recall@K and MRR@10 on a frozen code retrieval set that labels gold documents per question. Retrieval metrics SHALL NOT be computed from RepoProbe, because RepoProbe labels no gold files or chunks. When an earlier run on the same labelled set used settings that match the frozen `codebase` profile, the report MAY cite that run instead of repeating it, and SHALL name the run and the matched settings.
+Experiment 35B-2 SHALL measure codebase retrieval with Recall@K and MRR@10 on the frozen FreshStack LangChain slice, all 223 queries, through a new index built with the frozen `codebase` profile. Retrieval metrics SHALL NOT be computed from RepoProbe, because RepoProbe labels no gold files or chunks. Each retrieved chunk SHALL be mapped to its parent document, and only the first rank of each parent SHALL count. An earlier FreshStack run MAY be reported beside the baseline as a reference, and the report SHALL name the settings that differ.
 
 #### Scenario: Retrieval metrics are requested for RepoProbe
 - **WHEN** the harness is asked for Recall@K on a RepoProbe question
 - **THEN** it SHALL report the metric as not measurable for that benchmark
 
-#### Scenario: An earlier run does not match the frozen settings
-- **WHEN** the earlier run used a different embedding model, chunking or retrieval policy
-- **THEN** the report SHALL NOT cite it as the 35B-2 baseline
-- **AND** 35B-2 SHALL run a small frozen subset
+#### Scenario: An earlier run is reported as a reference
+- **WHEN** the report shows Experiment 22 beside the 35B-2 result
+- **THEN** it SHALL label Experiment 22 as a reference, not the baseline
+- **AND** it SHALL list the settings that differ, such as top_k, chunking fallback and embedding model
+
+#### Scenario: Several chunks from one document are retrieved
+- **WHEN** three chunks of the same parent document appear in the top 10
+- **THEN** Recall@10 SHALL count that parent once, at the rank of its first chunk
+
+#### Scenario: The RepoProbe judge runs at its default effort
+- **WHEN** the 35B-1 judge config omits `reasoning_effort` for GLM-5.3
+- **THEN** the run SHALL be labelled exploratory, because GLM-5.3 defaults to `max` and the frozen setting is `low`
 
 ### Requirement: Codebase retrieval and answer quality are reported separately
 

@@ -5,13 +5,13 @@
 ## 1. Freeze the local protocol
 
 - [ ] 1.1 Select and freeze 30–50 FinanceBench questions across multiple source PDFs for 35A.
-- [ ] 1.2 Select and freeze two RepoProbe repositories, commit SHAs from `repos_info.json`, and approximately 10–20 questions for 35B-1. Select and freeze the 35B-2 labelled code retrieval set (candidate: FreshStack), its revision and question IDs, and record whether an earlier FreshStack run already matches the frozen `codebase` settings.
+- [ ] 1.2 Select and freeze two RepoProbe repositories, commit SHAs from `repos_info.json`, and approximately 10–20 questions for 35B-1. Freeze the 35B-2 set: the FreshStack LangChain slice from `prepare_freshstack.py` (seed 20260530), all 223 queries, and the qrels hash. Pin the RepoProbe commit, and read `agent_configs/model_client.py` and `prompt_templates_en.py` before freezing the judge.
 - [ ] 1.3 Record exact dataset versions, licences, download procedures, and source hashes. Recheck each licence against the table in the proposal (checked 2026-10-23) at the frozen revision; keep FinanceBench data out of git (CC BY-NC 4.0).
 - [ ] 1.3a Record the FinanceBench page-level hit rule from design 35A (gold document and gold page, zero-indexed `evidence_page_num` converted once).
-- [ ] 1.4 Select the reference embedding provider/model and freeze all OMRS profile settings.
+- [ ] 1.4 On the 64 GB M5 Pro, time a fixed 200-document FreshStack slice with local Qwen3-Embedding-4B, OpenRouter `qwen/qwen3-embedding-4b` and local `qwen3-embedding:0.6b` (wall time, tokens, peak memory). Extrapolate to the full corpus. Freeze one reference embedding model for 35A and 35B with the reason, and freeze all OMRS profile settings.
 - [ ] 1.5 Decide whether grounded-answer scoring is mandatory or secondary for each profile.
 - [ ] 1.6 Select the RAGAS version (candidate 0.4.3), metrics, and judge/provider configuration if RAGAS is used.
-- [ ] 1.7 Define the Mac wall-time, memory-pressure, and paid-provider budget, including the RepoProbe checklist judge for 35B-1.
+- [ ] 1.7 Define the Mac wall-time, memory-pressure, and paid-provider budget, including the RepoProbe checklist judge for 35B-1 (GLM-5.3 at `reasoning_effort: low`, 3 iterations) and the optional 5-question GPT-5.6 Sol check through OpenRouter.
 - [ ] 1.8 Remove DRAFT status only after these decisions are recorded.
 
 ## 2. Build shared evaluation observability
@@ -44,8 +44,9 @@
 - [ ] 5.1 Start 35B only after 35A completes or stops.
 - [ ] 5.2 Ingest each frozen RepoProbe repository at its pinned commit through the current `codebase` profile, and check that each checkout matches its SHA.
 - [ ] 5.3 Capture dense, sparse/BM25, RRF, retrieval-result, and answer-stage traces where available.
-- [ ] 5.4 35B-1: score answers with the RepoProbe checklist scorer and the frozen judge, without enabling document-profile reranking. Report no retrieval metric for 35B-1.
-- [ ] 5.4a 35B-2: measure Recall@1/@3/@5/@10 and MRR@10 on the frozen labelled set, or cite the earlier FreshStack run when task 1.2 recorded a settings match.
+- [ ] 5.4 35B-1: score answers with `SimpleScorer` and the frozen GLM-5.3 judge (`reasoning_effort: low`, `num_iterations=3`), without enabling document-profile reranking. Report the mean and spread per question, and no retrieval metric. If approved in task 1.7, rescore 5 questions with GPT-5.6 Sol through OpenRouter and report judge agreement.
+- [ ] 5.4a 35B-2: build a new FreshStack index through the frozen `codebase` profile with the reference embedding model. Map chunks to parent documents, keep the first rank of each, and measure Recall@1/@3/@5/@10 and MRR@10 on all 223 queries. Report Experiment 22 beside it as a reference, naming the settings that differ.
+- [ ] 5.4b 35B-2 comparison cell: repeat 5.4a with local `qwen3-embedding:0.6b` if the reference model is not 0.6B. Label it secondary.
 - [ ] 5.5 Measure indexing time, embedding tokens, chunk count, index size, and query latency.
 - [ ] 5.6 Run selected RAGAS metrics only if the frozen protocol enables them and they are meaningful for the benchmark.
 - [ ] 5.7 Preserve failed repositories and queries in denominators.
