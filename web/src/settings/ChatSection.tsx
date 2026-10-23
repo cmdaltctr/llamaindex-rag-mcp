@@ -6,6 +6,7 @@ import type { ChatSettings, Connection } from "../api/settings";
 import { useSetChatSettings } from "../api/settingsMutations";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Button } from "../components/ui/button";
+import { Card, CardHeader, CardTitle } from "../components/ui/card";
 import { ChatModelForm } from "./ChatModelForm";
 import { ChoiceRow, SOURCE } from "./ChoiceRow";
 import { isEnvironmentSource } from "./connectionWords";
@@ -71,22 +72,27 @@ export function ChatSection() {
           </p>
         )
       ) : (
-        <>
-          {editing ? (
-            <ChatForm key={`${settings.provider}|${settings.model}|${settings.source}`} settings={settings} connections={connections} onClose={() => setEditing(false)} />
-          ) : (
-            <Choice settings={settings} connections={connections} onEdit={() => setEditing(true)} />
-          )}
-          <ul className="list-disc ps-5 text-meta text-muted-foreground">
-            <li>The choice also answers MCP clients of this web server that cannot supply their own model.</li>
-            <li>Metadata extraction keeps its own model.</li>
-            <li>The claim check judge has its own choice in the block below.</li>
-            <li>
-              <code className="font-mono text-code">omrs</code> over stdio and the CLI read the same omrs.jsonc at their next launch.
-            </li>
-          </ul>
+        <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
+          <Card role="region" aria-labelledby="settings-chat-model">
+            <CardHeader>
+              <CardTitle id="settings-chat-model">Answer model</CardTitle>
+            </CardHeader>
+            {editing ? (
+              <ChatForm key={`${settings.provider}|${settings.model}|${settings.source}`} settings={settings} connections={connections} onClose={() => setEditing(false)} />
+            ) : (
+              <Choice settings={settings} connections={connections} onEdit={() => setEditing(true)} />
+            )}
+            <ul className="list-disc ps-5 text-meta text-muted-foreground">
+              <li>The choice also answers MCP clients of this web server that cannot supply their own model.</li>
+              <li>Metadata extraction keeps its own model.</li>
+              <li>The claim check judge has its own choice in the next card.</li>
+              <li>
+                <code className="font-mono text-code">omrs</code> over stdio and the CLI read the same omrs.jsonc at their next launch.
+              </li>
+            </ul>
+          </Card>
           <JudgeBlock connections={connections} />
-        </>
+        </div>
       )}
     </section>
   );

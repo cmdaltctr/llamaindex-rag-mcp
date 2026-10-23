@@ -6,6 +6,7 @@ import type { Connection, JudgeSettings } from "../api/settings";
 import { useSetJudgeSettings } from "../api/settingsMutations";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Button } from "../components/ui/button";
+import { Card, CardHeader, CardTitle } from "../components/ui/card";
 import { ChatModelForm } from "./ChatModelForm";
 import { ChoiceRow, SOURCE } from "./ChoiceRow";
 import { isEnvironmentSource } from "./connectionWords";
@@ -78,10 +79,10 @@ export function JudgeBlock({ connections }: { connections: Connection[] }) {
   const judge = query.data;
 
   return (
-    <section aria-labelledby="settings-judge" className="flex flex-col gap-3">
-      <h3 id="settings-judge" className="text-subsection-title font-semibold">
-        Claim check judge
-      </h3>
+    <Card role="region" aria-labelledby="settings-judge">
+      <CardHeader>
+        <CardTitle id="settings-judge">Claim check judge</CardTitle>
+      </CardHeader>
       {judge === undefined ? (
         query.isError ? (
           <ErrorNotice error={query.error} onRetry={() => void query.refetch()} />
@@ -97,6 +98,6 @@ export function JudgeBlock({ connections }: { connections: Connection[] }) {
         <li>The judge runs only for collections whose profile turns on "Check claims" in Studio.</li>
         <li>A profile that sets its own judge overrides this choice.</li>
       </ul>
-    </section>
+    </Card>
   );
 }

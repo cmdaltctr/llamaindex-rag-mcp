@@ -3,6 +3,7 @@ import { useApi } from "../api/ApiProvider";
 import type { Root } from "../api/documents";
 import { rootsQuery, sessionQuery } from "../api/queries";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { Card, CardInset, CardTitle } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { UploadLimitPanel } from "./UploadLimitPanel";
 
@@ -16,17 +17,19 @@ export function WorkspaceSection() {
   const roots = useQuery(rootsQuery(api));
 
   return (
-    <section aria-labelledby="settings-workspace" className="flex flex-col gap-4">
+    <section aria-labelledby="settings-workspace" className="flex flex-col gap-3">
       <h2 id="settings-workspace" className="text-section-title font-semibold">
         Workspace
       </h2>
-      <div className="flex flex-col gap-1">
-        <h3 className="text-subsection-title font-semibold">Workspace folder</h3>
+      <Card>
+        <CardTitle>Workspace folder</CardTitle>
         {session.data !== undefined ? (
           session.data.workspace !== null ? (
-            <code dir="ltr" className={PATH}>
-              {session.data.workspace}
-            </code>
+            <CardInset>
+              <code dir="ltr" className={PATH}>
+                {session.data.workspace}
+              </code>
+            </CardInset>
           ) : (
             <p className="text-meta text-muted-foreground">The server did not report the workspace folder.</p>
           )
@@ -35,9 +38,9 @@ export function WorkspaceSection() {
         ) : (
           <p className="text-meta text-muted-foreground">Loading.</p>
         )}
-      </div>
-      <div className="flex flex-col gap-2">
-        <h3 className="text-subsection-title font-semibold">File access</h3>
+      </Card>
+      <Card>
+        <CardTitle>File access</CardTitle>
         <p className="text-meta text-muted-foreground">Only these folders are readable. Paths stored in the index never grant access.</p>
         {roots.isError ? <ErrorNotice error={roots.error} onRetry={() => void roots.refetch()} /> : null}
         {roots.data !== undefined ? (
@@ -66,7 +69,7 @@ export function WorkspaceSection() {
             </TableBody>
           </Table>
         ) : null}
-      </div>
+      </Card>
       <UploadLimitPanel />
     </section>
   );

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
+import { Card, CardHeader, CardInset, CardTitle } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { sourceText } from "./connectionWords";
 import { CopyButton } from "./CopyButton";
@@ -62,28 +63,45 @@ export function ConfigurationView({ state, onRestart }: ConfigurationViewProps) 
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <p className="text-meta text-muted-foreground">Settings file</p>
-        <code dir="ltr" className={CODE}>
-          {state.path}
-        </code>
-        <div>
-          <CopyButton text={state.path} what="settings file path" />
-        </div>
-      </div>
-      {state.handover.pending ? (
-        <div className="flex flex-col gap-1">
-          <p className="text-ui">Saved settings could not be moved to omrs.jsonc</p>
-          {state.handover.folder !== null ? (
-            <code dir="ltr" className={CODE}>
-              {state.handover.folder}
-            </code>
-          ) : null}
-        </div>
-      ) : null}
+      <Card role="region" aria-labelledby="configuration-file">
+        <CardHeader>
+          <CardTitle id="configuration-file">Settings file</CardTitle>
+        </CardHeader>
+        <CardInset>
+          <code dir="ltr" className={CODE}>
+            {state.path}
+          </code>
+          <div>
+            <CopyButton text={state.path} what="settings file path" />
+          </div>
+        </CardInset>
+        {state.handover.pending ? (
+          <CardInset>
+            <p className="text-ui">Saved settings could not be moved to omrs.jsonc</p>
+            {state.handover.folder !== null ? (
+              <code dir="ltr" className={CODE}>
+                {state.handover.folder}
+              </code>
+            ) : null}
+          </CardInset>
+        ) : null}
+        {waiting.length > 0 ? (
+          <CardInset className="flex-row flex-wrap items-center gap-3">
+            <p className="text-ui">{waiting.length === 1 ? "One setting waits for a restart." : `${waiting.length} settings wait for a restart.`}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onRestart(waiting.length === 1 ? { change: waiting[0]!.key, plural: false } : { change: `${waiting.length} changed settings`, plural: true })}
+            >
+              Restart…
+            </Button>
+          </CardInset>
+        ) : null}
+      </Card>
       {state.problems.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          <h3 className="text-subsection-title font-semibold">Problems in omrs.jsonc</h3>
+        <Card>
+          <CardTitle>Problems in omrs.jsonc</CardTitle>
           <ul aria-label="Problems in omrs.jsonc" className="flex flex-col gap-1">
             {state.problems.map((problem) => (
               <li key={`${problem.key}-${problem.kind}`} className="text-ui">
@@ -94,24 +112,11 @@ export function ConfigurationView({ state, onRestart }: ConfigurationViewProps) 
               </li>
             ))}
           </ul>
-        </div>
-      ) : null}
-      {waiting.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="text-ui">{waiting.length === 1 ? "One setting waits for a restart." : `${waiting.length} settings wait for a restart.`}</p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onRestart(waiting.length === 1 ? { change: waiting[0]!.key, plural: false } : { change: `${waiting.length} changed settings`, plural: true })}
-          >
-            Restart…
-          </Button>
-        </div>
+        </Card>
       ) : null}
       {groupSettings(state.settings).map((group) => (
-        <div key={group.name} className="flex flex-col gap-2">
-          <h3 className="text-subsection-title font-semibold">{title(group.name)}</h3>
+        <Card key={group.name}>
+          <CardTitle>{title(group.name)}</CardTitle>
           <Table aria-label={title(group.name)}>
             <TableHeader>
               <TableRow>
@@ -145,7 +150,7 @@ export function ConfigurationView({ state, onRestart }: ConfigurationViewProps) 
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       ))}
     </div>
   );

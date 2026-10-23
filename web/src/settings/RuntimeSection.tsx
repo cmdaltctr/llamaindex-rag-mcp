@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useApi } from "../api/ApiProvider";
 import { healthQuery, operationsQuery, sessionQuery } from "../api/queries";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { Card, CardHeader, CardInset, CardTitle } from "../components/ui/card";
 
 /** One fact: the value, a loading line, or a friendly failure with Retry. */
 function Fact<T>({ query, show, quiet = false }: { query: UseQueryResult<T>; show: (data: T) => ReactNode; quiet?: boolean }) {
@@ -26,37 +27,46 @@ export function RuntimeSection() {
       <h2 id="settings-runtime" className="text-section-title font-semibold">
         Runtime
       </h2>
-      <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4 gap-y-2 text-ui">
-        <dt className="text-muted-foreground">Server</dt>
-        <dd>
-          <Fact query={health} show={(data) => (data.ready ? "Ready" : "Starting or shutting down")} />
-        </dd>
-        <dt className="text-muted-foreground">Session</dt>
-        <dd>
-          <Fact query={session} show={(data) => data.kind} />
-        </dd>
-        <dt className="text-muted-foreground">Scopes</dt>
-        <dd>
-          <Fact query={session} quiet show={(data) => data.scopes.join(", ")} />
-        </dd>
-        <dt className="text-muted-foreground">Pipeline operations</dt>
-        <dd>
-          <Fact query={operations} show={(data) => `${data.length - unavailable.length} of ${data.length} available`} />
-        </dd>
-      </dl>
-      {unavailable.length > 0 ? (
-        <ul aria-label="Unavailable operations" className="flex flex-col gap-1 text-ui">
-          {unavailable.map((operation) => (
-            <li key={operation.operation_id}>
-              {operation.title}{" "}
-              <code dir="ltr" className="text-code font-mono">
-                ({operation.operation_id})
-              </code>
-              : not available in this runtime
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <Card role="region" aria-labelledby="settings-runtime-state">
+        <CardHeader>
+          <CardTitle id="settings-runtime-state">This server</CardTitle>
+        </CardHeader>
+        <CardInset>
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4 gap-y-2 text-ui">
+            <dt className="text-muted-foreground">Server</dt>
+            <dd>
+              <Fact query={health} show={(data) => (data.ready ? "Ready" : "Starting or shutting down")} />
+            </dd>
+            <dt className="text-muted-foreground">Session</dt>
+            <dd>
+              <Fact query={session} show={(data) => data.kind} />
+            </dd>
+            <dt className="text-muted-foreground">Scopes</dt>
+            <dd>
+              <Fact query={session} quiet show={(data) => data.scopes.join(", ")} />
+            </dd>
+            <dt className="text-muted-foreground">Pipeline operations</dt>
+            <dd>
+              <Fact query={operations} show={(data) => `${data.length - unavailable.length} of ${data.length} available`} />
+            </dd>
+          </dl>
+        </CardInset>
+        {unavailable.length > 0 ? (
+          <CardInset>
+            <ul aria-label="Unavailable operations" className="flex flex-col gap-1 text-ui">
+              {unavailable.map((operation) => (
+                <li key={operation.operation_id}>
+                  {operation.title}{" "}
+                  <code dir="ltr" className="text-code font-mono">
+                    ({operation.operation_id})
+                  </code>
+                  : not available in this runtime
+                </li>
+              ))}
+            </ul>
+          </CardInset>
+        ) : null}
+      </Card>
     </section>
   );
 }

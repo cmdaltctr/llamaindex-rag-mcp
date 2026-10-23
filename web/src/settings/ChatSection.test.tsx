@@ -365,7 +365,7 @@ describe("Claim check judge", () => {
 
   it("states where the judge applies and that a profile judge overrides it", async () => {
     await openJudge();
-    expect(section()).toHaveTextContent(/the claim check judge has its own choice in the block below/i);
+    expect(section()).toHaveTextContent(/the claim check judge has its own choice in the next card/i);
     expect(judge()).toHaveTextContent(/only for collections whose profile turns on "Check claims"/i);
     expect(judge()).toHaveTextContent(/a profile that sets its own judge overrides this choice/i);
   });

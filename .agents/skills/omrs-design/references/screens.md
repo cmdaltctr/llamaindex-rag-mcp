@@ -26,6 +26,7 @@ Every card holds its parts in mini cards. Apply this rule in every view without 
 - Keep the card title, the card description, notices such as "Text you send leaves this machine" and the card's own action (for example Test) outside the mini cards.
 - Never put a `Card` inside a `Card`. A section that brings its own cards (for example Knowledge Base > Add) sits outside the section card.
 - A view with no cards at all is wrong. Put each panel of the view in a `Card`, then its parts in mini cards.
+- When you apply this rule, check every tab of the view, not only the tab you were shown. `web/src/settings/SettingsCards.test.tsx` fails when a Settings tab has no card. Add a case there for a new tab.
 
 ## Shell
 

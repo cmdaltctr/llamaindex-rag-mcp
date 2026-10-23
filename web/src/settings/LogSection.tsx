@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { LogLevel } from "../api/settings";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
 import { plural } from "../lib/labels";
 import { CopyButton } from "./CopyButton";
 import { logLine, LogPanel } from "./LogPanel";
@@ -42,33 +43,35 @@ export function LogSection() {
       <h2 id="settings-log" className="text-section-title font-semibold">
         Server log
       </h2>
-      <p className="text-meta text-muted-foreground">The last 1,000 lines, kept in memory only. The server removes keys and tokens before it stores a line.</p>
-      {mode === "error" ? (
-        <ErrorNotice error={error} onRetry={retry} />
-      ) : (
-        <>
-          <div className="flex flex-wrap items-center gap-3">
-            <div role="group" aria-label="Minimum level" className="flex flex-wrap gap-2">
-              {LEVEL_CHIPS.map(({ label, rank }) => (
-                <Button key={label} variant="chip" size="sm" aria-pressed={minimum === rank} onClick={() => setMinimum(rank)}>
-                  {label}
-                </Button>
-              ))}
+      <Card role="region" aria-label="Server log lines">
+        <p className="text-meta text-muted-foreground">The last 1,000 lines, kept in memory only. The server removes keys and tokens before it stores a line.</p>
+        {mode === "error" ? (
+          <ErrorNotice error={error} onRetry={retry} />
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center gap-3">
+              <div role="group" aria-label="Minimum level" className="flex flex-wrap gap-2">
+                {LEVEL_CHIPS.map(({ label, rank }) => (
+                  <Button key={label} variant="chip" size="sm" aria-pressed={minimum === rank} onClick={() => setMinimum(rank)}>
+                    {label}
+                  </Button>
+                ))}
+              </div>
+              <Button variant="outline" size="sm" aria-pressed={pausedAt !== null} onClick={() => setPausedAt(pausedAt === null ? newest : null)}>
+                {pausedAt === null ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+                {pausedAt === null ? "Pause" : "Resume"}
+              </Button>
+              <CopyButton text={shown.map(logLine).join("\n")} what="visible log lines" />
             </div>
-            <Button variant="outline" size="sm" aria-pressed={pausedAt !== null} onClick={() => setPausedAt(pausedAt === null ? newest : null)}>
-              {pausedAt === null ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
-              {pausedAt === null ? "Pause" : "Resume"}
-            </Button>
-            <CopyButton text={shown.map(logLine).join("\n")} what="visible log lines" />
-          </div>
-          <LogPanel records={shown} onFollowingChange={setFollowing} />
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-meta text-muted-foreground">
-            <span>{MODE_TEXT[mode]}</span>
-            <span>{following ? "Following new lines." : "Not following. Scroll to the bottom to follow new lines."}</span>
-            {waiting > 0 ? <span>{plural(waiting, "new line")} while paused.</span> : null}
-          </div>
-        </>
-      )}
+            <LogPanel records={shown} onFollowingChange={setFollowing} />
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-meta text-muted-foreground">
+              <span>{MODE_TEXT[mode]}</span>
+              <span>{following ? "Following new lines." : "Not following. Scroll to the bottom to follow new lines."}</span>
+              {waiting > 0 ? <span>{plural(waiting, "new line")} while paused.</span> : null}
+            </div>
+          </>
+        )}
+      </Card>
     </section>
   );
 }

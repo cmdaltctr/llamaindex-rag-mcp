@@ -1,3 +1,4 @@
+import { CardInset } from "../components/ui/card";
 import { sourceText } from "./connectionWords";
 
 export const SOURCE = "text-meta text-muted-foreground";
@@ -5,7 +6,7 @@ export const SOURCE = "text-meta text-muted-foreground";
 /** One row of a provider and model choice: label, value and source. An empty value shows as "Not set". */
 export function ChoiceRow({ label, value, source }: { label: string; value: string; source: string }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <CardInset>
       <p className={SOURCE}>{label}</p>
       {value === "" ? (
         <p className="text-ui">Not set</p>
@@ -15,6 +16,6 @@ export function ChoiceRow({ label, value, source }: { label: string; value: stri
         </code>
       )}
       <p className={SOURCE}>{sourceText(source)}</p>
-    </div>
+    </CardInset>
   );
 }
