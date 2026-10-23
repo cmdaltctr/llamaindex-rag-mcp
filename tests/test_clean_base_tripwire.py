@@ -132,7 +132,11 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # itself adds and removes no test (7491 -> 7493).
 # +9 (2026-10-23, chat folder order): migration 6 (1), the repository reorder cases (6)
 # and the reorder routes in test_web_chats.py (2). The 2 route cases need fastapi.
-_BASE_EXECUTED = 7502
+# +238 (2026-10-23, add-chat-reasoning-and-usage): 243 new cases (reasoning settings 50,
+# provider levels and reply readers 109, answer ledger 15, live reasoning update 3,
+# connection extra 1, reasoning and credit routes 65). The base before the change measured
+# 7497, not the pinned 7502, so the measured total is 7740. The 65 route cases need fastapi.
+_BASE_EXECUTED = 7740
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -425,7 +429,10 @@ if not _has_qwen_tokenizer:
 # same total on the base commit and the branch (plus the 2 guard tests), so the 19 cases
 # came in with v3 work, not with the rename (1257).
 # +2 (2026-10-23, chat folder order): the reorder route cases in test_web_chats.py (1259).
-_WEB_EXTRA_CASES = 1259
+# +65 (2026-10-23, add-chat-reasoning-and-usage): test_web_reasoning_levels.py (21),
+# test_web_reasoning_settings.py (28) and test_web_usage_credit.py (16) skip without
+# fastapi (1324).
+_WEB_EXTRA_CASES = 1324
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)

@@ -82,3 +82,6 @@ Additive. Old saved turns have no `reasoning` or `usage` and render as before. E
 ## Open Questions
 
 - Ollama `think` accepts level strings only for some models. If a model rejects `"low"`, the fallback could be `True`. This is decided during task 2 by a live check against the local Ollama, with no change to the spec.
+  - Result (task 2.3, 2026-10-23): the saved Chat model is on OpenRouter, so the check used the first local qwen3 model, `qwen3:0.6b`. `POST /api/chat` with `"think": "low"`, `stream: false` and the prompt `Hi` returned 200 with `message.content`, `message.thinking`, `prompt_eval_count` 11 and `eval_count` 106. Ollama took the text level and did not refuse it.
+  - Decision: keep the D2 mapping. `low`, `medium` and `high` go as text, `none` sends `false`, any other level sends `true`. No retry with `true` is added. A model that refuses a text level shows the Ollama error, and the user can pick another level.
+  - Note: the LlamaIndex `Ollama` class puts `additional_kwargs` in `options`, where Ollama ignores `think`. The Ollama `build()` therefore passes the level through the class's `thinking` field, which LlamaIndex sends as the top-level `think`.
