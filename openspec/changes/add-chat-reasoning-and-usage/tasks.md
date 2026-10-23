@@ -42,5 +42,5 @@
 ## 7. Records and checks
 
 - [x] 7.1 Write ADR-093 for the ledger, reply readers and result shape (load `s-adr`). Add it to the ADR index.
-- [ ] 7.2 Run `./scripts/local_ci.sh`, `npm run lint`, `npm run typecheck`, `npm test` in `web/`, and `openspec validate add-chat-reasoning-and-usage --strict`. Verify: all pass.
+- [x] 7.2 Run `./scripts/local_ci.sh`, `npm run lint`, `npm run typecheck`, `npm test` in `web/`, and `openspec validate add-chat-reasoning-and-usage --strict`. Verify: all pass.
 - [ ] 7.3 Browser check on a scratch server at 1280 px and 390 px: Settings > Chat with GLM-5.3-flash shows the dropdown; one answer at `low` shows the Reasoning box and the usage line with credit. Record the timing at `low` against the 31 s baseline.

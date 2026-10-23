@@ -132,11 +132,11 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # itself adds and removes no test (7491 -> 7493).
 # +9 (2026-10-23, chat folder order): migration 6 (1), the repository reorder cases (6)
 # and the reorder routes in test_web_chats.py (2). The 2 route cases need fastapi.
-# +238 (2026-10-23, add-chat-reasoning-and-usage): 243 new cases (reasoning settings 50,
+# +245 (2026-10-23, add-chat-reasoning-and-usage): 243 new cases (reasoning settings 50,
 # provider levels and reply readers 109, answer ledger 15, live reasoning update 3,
-# connection extra 1, reasoning and credit routes 65). The base before the change measured
-# 7497, not the pinned 7502, so the measured total is 7740. The 65 route cases need fastapi.
-_BASE_EXECUTED = 7740
+# connection extra 1, reasoning and credit routes 65), plus 2 the pin already lacked
+# before the change (base measured 7504 against 7502). The 65 route cases need fastapi.
+_BASE_EXECUTED = 7747
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
