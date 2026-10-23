@@ -8,3 +8,10 @@ const MIB = 1024 * 1024;
 export function formatMiB(bytes: number): string {
   return `${Number((bytes / MIB).toFixed(1))} MiB`;
 }
+
+/** A file size for a list: bytes below 1 KiB, KiB below 1 MiB, else MiB. */
+export function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < MIB) return `${Number((bytes / 1024).toFixed(1))} KiB`;
+  return formatMiB(bytes);
+}

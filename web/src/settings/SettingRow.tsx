@@ -1,4 +1,5 @@
 import { useId, useState, type FormEvent } from "react";
+import { CardInset } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -67,7 +68,7 @@ export function SettingRow(props: SettingRowProps) {
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <CardInset>
       {editing ? (
         <form onSubmit={submit} noValidate className="flex flex-col gap-1.5">
           <Label htmlFor={id}>{label}</Label>
@@ -125,7 +126,7 @@ export function SettingRow(props: SettingRowProps) {
         </>
       )}
       {error ? <SaveErrorNotice error={error} onRetry={onRetry} /> : null}
-    </div>
+    </CardInset>
   );
 }
 
@@ -183,7 +184,7 @@ export function KeySettingRow(props: KeySettingRowProps) {
   const noKeychain = !set && keychain === "unavailable";
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <CardInset>
       {set ? <p className="text-ui">{summary}</p> : null}
       {noKeychain ? (
         <>
@@ -231,6 +232,6 @@ export function KeySettingRow(props: KeySettingRowProps) {
         </div>
       ) : null}
       {error ? <SaveErrorNotice error={error} onRetry={onRetry} /> : null}
-    </div>
+    </CardInset>
   );
 }

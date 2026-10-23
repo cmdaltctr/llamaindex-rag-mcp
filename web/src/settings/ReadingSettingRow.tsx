@@ -3,6 +3,7 @@ import type { DocumentReadingSetting, DocumentReadingState } from "../api/settin
 import { useSaveDocumentReading } from "../api/settingsMutations";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
+import { CardInset } from "../components/ui/card";
 import { sourceText } from "./connectionWords";
 import { draftText, draftValue, fractionError, readingText, type ReadingChoice, type ReadingRowWords } from "./documentReadingWords";
 import { ReadingControl } from "./ReadingControl";
@@ -69,7 +70,7 @@ export function ReadingSettingRow({ setting, words, choices, notes, onSaved }: R
   }
 
   return (
-    <div role="group" aria-label={label} className="flex flex-col gap-1.5">
+    <CardInset role="group" aria-label={label}>
       <p className={META}>{label}</p>
       {draft === null ? (
         <code dir="ltr" className={CODE}>
@@ -126,6 +127,6 @@ export function ReadingSettingRow({ setting, words, choices, notes, onSaved }: R
         </form>
       ) : null}
       {save.isError ? <SaveErrorNotice error={save.error} onRetry={() => save.reset()} /> : null}
-    </div>
+    </CardInset>
   );
 }

@@ -43,6 +43,14 @@ function savingServer(start: DocumentReadingState) {
 }
 
 describe("Document reading", () => {
+  it("puts each reading setting in its own mini card", async () => {
+    await openSection();
+    for (const name of ["PDF reader", "OCR fallback", "Lowest text confidence"]) {
+      expect(row(name).closest("[data-slot='card-inset']")).not.toBeNull();
+    }
+    expect(row("PDF reader").closest("[data-slot='card-inset']")).not.toBe(row("OCR fallback").closest("[data-slot='card-inset']"));
+  });
+
   it("opens from its address with its chip selected, straight before Configuration", async () => {
     await openSection();
     const chips = within(screen.getByRole("group", { name: "Sections" })).getAllByRole("button").map((button) => button.textContent);

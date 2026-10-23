@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./card";
+import { Card, CardContent, CardDescription, CardHeader, CardInset, CardTitle } from "./card";
 import { Separator } from "./separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./table";
 
@@ -19,6 +19,18 @@ describe("Card", () => {
     expect(card).toHaveClass("border", "rounded-panel", "bg-card");
     expect(card.className).not.toMatch(/shadow/);
     expect(screen.getByRole("heading", { name: "Collection", level: 3 })).toBeInTheDocument();
+  });
+
+  it("holds each part of a card in a lighter mini card with a smaller radius", () => {
+    render(
+      <Card>
+        <CardInset data-testid="inset">Context window</CardInset>
+      </Card>,
+    );
+    const inset = screen.getByTestId("inset");
+    expect(inset).toHaveAttribute("data-slot", "card-inset");
+    expect(inset).toHaveClass("border", "rounded-control", "bg-background/60", "p-3");
+    expect(inset.className).not.toMatch(/shadow|bg-card/);
   });
 });
 

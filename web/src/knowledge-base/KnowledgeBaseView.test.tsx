@@ -14,6 +14,12 @@ async function sourcesTable() {
 }
 
 describe("project routes", () => {
+  it("shows the open section of a project inside a card", async () => {
+    startApp("#/knowledge-base/documents", documentsServer());
+    const table = await sourcesTable();
+    expect(table.closest("[data-slot='card']")).not.toBeNull();
+  });
+
   it("shows the project named in the URL, so a reload keeps it", async () => {
     startApp("#/knowledge-base/notes");
     expect(await screen.findByRole("heading", { level: 2, name: "notes" })).toBeInTheDocument();

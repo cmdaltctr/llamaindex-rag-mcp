@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { documentsServer, json, UPLOAD_LIMIT, type Handler } from "../test/fakeDocumentsServer";
@@ -22,6 +22,46 @@ function sized(name: string, bytes: number) {
 }
 
 describe("uploads", () => {
+  it("shows upload and folder ingest each in its own card", async () => {
+    await openAdd();
+    const card = (name: string) => screen.getByRole("heading", { level: 3, name }).closest("[data-slot='card']");
+    expect(card("Upload files")).not.toBeNull();
+    expect(card("Ingest from an approved folder")).not.toBeNull();
+    expect(card("Upload files")).not.toBe(card("Ingest from an approved folder"));
+  });
+
+  it("adds files dropped on the drop zone, lists each with its size and lets the user remove one", async () => {
+    const { server, user } = await openAdd(ACCEPT_UPLOAD);
+    const zone = screen.getByRole("group", { name: "Drop files to upload" });
+    const files = [new File(["aaaa"], "notes.md"), new File(["b"], "draft.md")];
+    fireEvent.dragOver(zone, { dataTransfer: { files, types: ["Files"] } });
+    expect(zone).toHaveAttribute("data-dragging", "true");
+    fireEvent.drop(zone, { dataTransfer: { files, types: ["Files"] } });
+    expect(zone).not.toHaveAttribute("data-dragging");
+    const chosen = screen.getByRole("list", { name: "Files to send" });
+    expect(within(chosen).getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      expect.stringContaining("notes.md"),
+      expect.stringContaining("draft.md"),
+    ]);
+    expect(within(chosen).getByText("notes.md").closest("li")).toHaveTextContent("4 B");
+    await user.click(within(chosen).getByRole("button", { name: "Remove draft.md" }));
+    expect(within(chosen).getAllByRole("listitem")).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "Upload and ingest" }));
+    await waitFor(() => expect(server.find("POST", "/v1/uploads").filter((call) => call.path === "/v1/uploads")).toHaveLength(1));
+    expect(await screen.findByRole("list", { name: "Upload results" })).toHaveTextContent("notes.md: uploaded");
+    expect(screen.queryByRole("list", { name: "Files to send" })).toBeNull();
+  });
+
+  it("adds a second pick to the files already chosen, without duplicates", async () => {
+    const { user } = await openAdd();
+    const input = screen.getByLabelText("Files to upload");
+    const notes = new File(["a"], "notes.md");
+    await user.upload(input, notes);
+    await user.upload(input, [notes, new File(["b"], "plan.md")]);
+    const chosen = screen.getByRole("list", { name: "Files to send" });
+    expect(within(chosen).getAllByRole("listitem")).toHaveLength(2);
+  });
+
   it("states the per-file limit", async () => {
     await openAdd();
     expect(screen.getByText(/50 MiB per file/)).toBeInTheDocument();

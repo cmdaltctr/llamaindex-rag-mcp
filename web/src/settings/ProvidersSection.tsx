@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useApi } from "../api/ApiProvider";
 import { connectionsQuery } from "../api/queries";
 import { ErrorNotice } from "../components/ErrorNotice";
-import { MasonryColumns } from "./MasonryColumns";
+import { MasonryColumns } from "../components/MasonryColumns";
 import { ProviderCard } from "./ProviderCard";
 
 /** The provider cards. Addresses and keys are saved to `omrs.jsonc` (keys to the keychain) and apply at once to this web server. */

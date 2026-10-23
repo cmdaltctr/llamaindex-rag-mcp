@@ -101,6 +101,21 @@ function card(name: string) {
 }
 
 describe("Providers", () => {
+  it("puts each field, the key and the read-only values of a card in their own mini card", async () => {
+    await openProviders();
+    const inset = (element: HTMLElement) => element.closest("[data-slot='card-inset']");
+    const ollama = card("Ollama");
+    expect(inset(within(ollama).getByText("Address"))).not.toBeNull();
+    expect(inset(within(ollama).getByText("qwen3"))).not.toBeNull();
+    expect(inset(within(ollama).getByText("Address"))).not.toBe(inset(within(ollama).getByText("qwen3")));
+    const openrouter = card("OpenRouter");
+    expect(inset(within(openrouter).getByText(/Key set/))).not.toBeNull();
+    const llamacpp = card("llama.cpp");
+    const server = await within(llamacpp).findByRole("heading", { level: 4, name: "Local server" });
+    const serverRows = server.closest("[data-slot='provider-extra']")!.querySelectorAll("[data-slot='card-inset']");
+    expect(serverRows.length).toBeGreaterThan(1);
+  });
+
   it("lists a card per server entry with Local and Cloud badges in text and the roles", async () => {
     await openProviders();
     expect(screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual(["Ollama", "llama.cpp", "OpenRouter"]);

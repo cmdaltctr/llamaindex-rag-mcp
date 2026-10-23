@@ -43,6 +43,18 @@ function CardContent({ className, ...props }: ComponentProps<"div">) {
   return <div data-slot="card-content" className={cn("flex flex-col gap-3", className)} {...props} />;
 }
 
+// A mini card for one part of a card, such as one setting: lighter than the
+// card, with the control radius, a 1px border and no shadow (as in OMMS).
+function CardInset({ className, ...props }: ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-inset"
+      className={cn("flex min-w-0 flex-col gap-1.5 rounded-control border border-border bg-background/60 p-3", className)}
+      {...props}
+    />
+  );
+}
+
 function CardFooter({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
@@ -53,4 +65,4 @@ function CardFooter({ className, ...props }: ComponentProps<"div">) {
   );
 }
 
-export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle };
+export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardInset, CardTitle };

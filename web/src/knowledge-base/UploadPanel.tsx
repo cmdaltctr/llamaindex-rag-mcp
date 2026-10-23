@@ -7,10 +7,9 @@ import { joinRootPath, type Job, type Root } from "../api/documents";
 import { useIngestPath, useUploadFile } from "../api/mutations";
 import { uploadLimitQuery } from "../api/queries";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import { describeError } from "../lib/errors";
 import { formatMiB } from "../lib/uploadLimit";
+import { FileDropZone } from "./FileDropZone";
 
 interface UploadPanelProps {
   /** The collection to ingest into; `null` until a project is open or named. */
@@ -80,6 +79,8 @@ export function UploadPanel({ collection, managedRoot, onJob }: UploadPanelProps
       lines.push(await uploadOne(file, collection));
       setResults([...lines]);
     }
+    // The results list replaces the chosen files, so a second click cannot send them again.
+    setFiles([]);
     setBusy(false);
   }
 
@@ -92,10 +93,7 @@ export function UploadPanel({ collection, managedRoot, onJob }: UploadPanelProps
         {limit !== null ? `Limit: ${limit} per file. A larger file is refused here and never sent. ` : null}
         The server checks each file's name, size and type before the file is sent. Archives and web addresses are not accepted.
       </p>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor={inputId}>Files to upload</Label>
-        <Input id={inputId} type="file" multiple onChange={(e) => setFiles(Array.from(e.target.files ?? []))} />
-      </div>
+      <FileDropZone files={files} onChange={setFiles} disabled={busy} />
       <div>
         <Button type="submit" disabled={busy || files.length === 0 || collection === null}>
           <Upload aria-hidden="true" />

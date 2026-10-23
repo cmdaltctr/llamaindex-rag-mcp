@@ -22,6 +22,12 @@ async function openPanel(handlers = {}) {
 }
 
 describe("upload limit panel", () => {
+  it("puts the limit setting in its own mini card inside the panel", async () => {
+    const { panel } = await openPanel();
+    const label = await within(panel).findByText("Limit per file, in MiB");
+    expect(label.closest("[data-slot='card-inset']")).not.toBeNull();
+  });
+
   it("states the limit in force, that the default applies and that a change applies straight away", async () => {
     const { panel } = await openPanel();
     expect(await within(panel).findByText("The limit in force is 50 MiB per file.")).toBeInTheDocument();

@@ -4,6 +4,8 @@ import { useApi } from "../api/ApiProvider";
 import type { Job } from "../api/documents";
 import { rootsQuery } from "../api/queries";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { MasonryColumns } from "../components/MasonryColumns";
+import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { IngestPanel } from "./IngestPanel";
@@ -27,7 +29,7 @@ export function AddSources({ active, onJob }: AddSourcesProps) {
   const destination = target.trim() || active;
 
   return (
-    <section aria-label="Add sources" className="flex flex-col gap-5">
+    <section aria-label="Add sources" className="flex flex-col gap-4">
       <div className="flex max-w-sm flex-col gap-1.5">
         <Label htmlFor={targetId}>Target collection</Label>
         <Input id={targetId} dir="ltr" value={target} placeholder={active ?? "papers"} onChange={(e) => setTarget(e.target.value)} />
@@ -36,8 +38,16 @@ export function AddSources({ active, onJob }: AddSourcesProps) {
         </p>
       </div>
       {roots.isError ? <ErrorNotice error={roots.error} onRetry={() => void roots.refetch()} /> : null}
-      <UploadPanel collection={destination} managedRoot={roots.data?.find((root) => root.kind === "managed")} onJob={onJob} />
-      {roots.isError ? null : <IngestPanel collection={destination} roots={roots.data} onJob={onJob} />}
+      <MasonryColumns>
+        <Card key="upload">
+          <UploadPanel collection={destination} managedRoot={roots.data?.find((root) => root.kind === "managed")} onJob={onJob} />
+        </Card>
+        {roots.isError ? null : (
+          <Card key="folder">
+            <IngestPanel collection={destination} roots={roots.data} onJob={onJob} />
+          </Card>
+        )}
+      </MasonryColumns>
     </section>
   );
 }

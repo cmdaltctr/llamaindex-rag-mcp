@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Connection, ProviderField } from "../api/settings";
 import { Badge } from "../components/ui/badge";
-import { Card, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardHeader, CardInset, CardTitle } from "../components/ui/card";
 import { isLoopback, ROLE_NAMES } from "./connectionWords";
 import { PROVIDER_EXTRAS } from "./providerExtras";
 import { ProviderKeyField } from "./ProviderKeyField";
@@ -55,20 +55,22 @@ export function ProviderCard({ connection, keychain, configDir }: ProviderCardPr
         ),
       )}
       {connection.read_only.length > 0 ? (
-        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-ui">
-          {connection.read_only.map((entry) => (
-            <div key={entry.label} className="col-span-2 grid grid-cols-subgrid">
-              <dt className="text-meta text-muted-foreground">
-                {entry.label} <span>(Read-only)</span>
-              </dt>
-              <dd>
-                <code dir="ltr" className={CODE}>
-                  {entry.value}
-                </code>
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <CardInset>
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-ui">
+            {connection.read_only.map((entry) => (
+              <div key={entry.label} className="col-span-2 grid grid-cols-subgrid">
+                <dt className="text-meta text-muted-foreground">
+                  {entry.label} <span>(Read-only)</span>
+                </dt>
+                <dd>
+                  <code dir="ltr" className={CODE}>
+                    {entry.value}
+                  </code>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </CardInset>
       ) : null}
       {offMachine ? (
         <p className="text-meta text-muted-foreground">
