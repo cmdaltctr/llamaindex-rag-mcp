@@ -70,6 +70,9 @@ coverage.xml
 # Ruff
 .ruff_cache/
 
+# import-linter (the tool also writes its own .gitignore inside the folder)
+.import_linter_cache/
+
 # VS Code comment tracking files (e.g. .README.md.comments.json)
 .comments.json
 *.comments.json
