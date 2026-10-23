@@ -13,7 +13,7 @@ Experiment 35 therefore starts with two small local benchmarks that run sequenti
 ## Goals
 
 - Evaluate the current `documents` profile end to end on a small real document benchmark.
-- Evaluate the current `codebase` profile end to end on a small repository-understanding benchmark.
+- Evaluate the current `codebase` profile on answer quality (RepoProbe) and on retrieval (a labelled code retrieval set).
 - Capture stage-level observability so failures can be attributed to the correct pipeline stage.
 - Add optional RAGAS evaluation without coupling RAGAS to production OMRS.
 - Establish a reproducible local baseline before cloud scale-up.
@@ -33,7 +33,8 @@ Run the two baselines separately:
 ```text
 35A FinanceBench / documents
         ↓ complete + report
-35B RepoProbe / codebase
+35B-1 RepoProbe answers / codebase
+35B-2 labelled code retrieval / codebase
         ↓ complete + report
 cloud-scale benchmark later
 ```
@@ -65,6 +66,8 @@ raw PDF
 
 - Evidence Recall@1, @3, @5, and @10
 - MRR@10
+
+A retrieved chunk is a hit when its source is the gold `evidence_doc_name` and its page is the gold page. FinanceBench `evidence_page_num` is zero-indexed. The harness converts it to the page numbering that OMRS stores in exactly one function, with a unit test on a known page. A chunk that spans pages is a hit when any of its pages is the gold page. A question with several evidence entries is a hit at K when any gold page is hit within the top K.
 - nDCG@10 when the qrels support it
 - no-hit rate
 
@@ -81,9 +84,25 @@ raw PDF
 
 ## 35B — Codebase Profile
 
-### Corpus
+### Status
 
-Use a frozen RepoProbe subset. Initial target: two pinned repositories and approximately 10–20 questions total. Freeze repository commit SHAs and question IDs before measured execution.
+The user confirmed the split into 35B-1 and 35B-2 on 2026-10-23.
+
+### Why two parts
+
+RepoProbe gives each question a reference answer and a weighted checklist. An LLM judge scores the checklist. RepoProbe gives no gold files or chunks, so it cannot give Recall@K or MRR. Retrieval needs a second, labelled set.
+
+### 35B-1 corpus: RepoProbe answers
+
+Use a frozen RepoProbe subset. Initial target: two pinned repositories and approximately 10–20 questions total. Take each commit SHA from `repos_info.json` and check that the checkout matches it. The RepoProbe history records an earlier fetch script that cloned the branch tip instead of the snapshot commit.
+
+Score answers with the RepoProbe checklist scorer. Some checklist items ask for facts that are not in the source code, for example a commit hash. Report the share of such items. RepoProbe evaluates agents that explore a repository with tools. OMRS retrieves once and then answers. Label the result "single-shot RAG on RepoProbe" and do not compare it with the agent scores in the RepoProbe paper.
+
+The checklist judge needs a hosted model. If the paid-provider budget in task 1.7 does not cover it, drop 35B-1 and keep 35B-2.
+
+### 35B-2 corpus: labelled code retrieval
+
+Use a labelled code retrieval set with gold documents per question. The candidate is FreshStack (used in Experiments 9a and 22). Experiment 22 used `qwen/qwen3-embedding-4b` through OpenRouter, one vector per parent document, and hybrid retrieval with rerank off. If the frozen `codebase` profile matches those settings, cite the Experiment 22 result and do not repeat it. If the settings differ, run a small frozen subset only. The dataset choice and subset size are frozen in task 1.2.
 
 ### Pipeline
 
@@ -101,7 +120,10 @@ The measured run must use the current `codebase` profile as shipped. It must not
 
 ### Primary metrics
 
-Use the benchmark's source-grounded repository evidence to measure retrieval success. Report Recall@K/MRR-style metrics when the released labels support them. Also report exact benchmark answer scoring where the benchmark provides an authoritative scorer.
+- 35B-1: RepoProbe checklist score (overall, knowledge and clarity) and perfect-solve rate, from the RepoProbe scorer with a frozen judge.
+- 35B-2: Recall@1/@3/@5/@10 and MRR@10 against the labelled set's gold documents.
+
+Do not report retrieval metrics for 35B-1.
 
 ### Diagnostic metrics
 
@@ -140,7 +162,9 @@ RAGAS is a secondary evaluation layer, not the primary retrieval metric.
 
 Where the benchmark supports answer/reference evaluation, the harness may report selected RAGAS metrics such as context precision, context recall, faithfulness, and answer correctness. The exact RAGAS version, metric set, judge/provider, and model identity must be frozen before measured use.
 
-RAGAS must be installed only in an evaluation/dev environment or optional evaluation extra. It must not become a base OMRS dependency.
+RAGAS goes in a separate `uv` dependency group (for example `eval`), not in a published extra, so users never install it. The candidate version is 0.4.3 (Apache-2.0, Python 3.9 or later). It pulls in `langchain`, `datasets` and `tiktoken`. Before adding it, run a dry resolve and check whether `tests/test_dependency_floors.py` needs an exemption. It must not become a base OMRS dependency.
+
+RAGAS accepts any OpenAI-compatible endpoint as its judge, including a local server. A small local judge can give noisy scores on multi-step metrics such as faithfulness. Freeze the judge choice with its cost in task 1.6.
 
 If a RAGAS metric requires a paid cloud judge, the operator must approve the provider and budget before execution.
 
@@ -158,6 +182,8 @@ If a smoke run shows that the frozen subset cannot complete inside that envelope
 
 - Freeze exact FinanceBench question IDs and source PDF hashes.
 - Freeze exact RepoProbe repository identities, commit SHAs, and question IDs.
+- Freeze the 35B-2 dataset revision, question IDs and gold labels.
+- Freeze the FinanceBench page-index conversion and its test.
 - Freeze effective OMRS settings and all model/provider identities.
 - Freeze scoring code and metric definitions.
 - Record repository SHA and dependency-lock hashes.
@@ -168,7 +194,9 @@ If a smoke run shows that the frozen subset cannot complete inside that envelope
 ## Draft Open Questions
 
 1. Which exact FinanceBench questions and PDFs make up the 35A subset?
-2. Which two RepoProbe repositories and question IDs make up 35B?
+2. Which two RepoProbe repositories and question IDs make up 35B-1?
+2b. Which labelled code retrieval set and subset make up 35B-2, and does an earlier FreshStack run already match the frozen `codebase` settings?
+2c. Does the RepoProbe scorer accept answers that come from a single-shot RAG run, without its agent container? Not checked yet.
 3. Which embedding provider/model is the local reference configuration?
 4. Is grounded-answer scoring mandatory for both profiles or secondary?
 5. Which RAGAS metrics and judge configuration are acceptable?

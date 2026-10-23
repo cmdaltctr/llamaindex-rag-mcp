@@ -31,7 +31,15 @@ The harness SHALL distinguish source evidence recovery, chunk preservation, retr
 
 ### Requirement: Document retrieval metrics remain primary
 
-The primary 35A result SHALL report Evidence Recall@1/@3/@5/@10, MRR@10, no-hit rate, and nDCG@10 where the qrels support it.
+The primary 35A result SHALL report Evidence Recall@1/@3/@5/@10, MRR@10, no-hit rate, and nDCG@10 where the qrels support it. A hit SHALL be a retrieved chunk from the gold document and the gold page, with the zero-indexed FinanceBench page number converted by one frozen, tested function.
+
+#### Scenario: A chunk comes from the gold page
+- **WHEN** a retrieved chunk comes from the gold document and its page equals the gold `evidence_page_num` after conversion from zero-indexed numbering
+- **THEN** the chunk SHALL count as a hit
+
+#### Scenario: The page index is not converted
+- **WHEN** the harness compares zero-indexed `evidence_page_num` values with stored page numbers without the frozen conversion
+- **THEN** the page-index unit test SHALL fail before any measured run
 
 #### Scenario: RAGAS answer scores improve while retrieval degrades
 - **WHEN** secondary answer metrics improve but primary retrieval metrics worsen

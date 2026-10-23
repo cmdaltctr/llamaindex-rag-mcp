@@ -30,7 +30,12 @@ Each measured run SHALL record benchmark revision, OMRS commit, effective settin
 
 ### Requirement: RAGAS remains an evaluation-only dependency
 
-RAGAS MAY be used for secondary context/answer metrics but SHALL NOT be required by the base OMRS install or normal retrieval path.
+RAGAS MAY be used for secondary context/answer metrics but SHALL NOT be required by the base OMRS install or normal retrieval path. RAGAS SHALL be declared only in a separate `uv` dependency group and SHALL NOT appear in a published extra.
+
+#### Scenario: RAGAS is added to a published extra
+- **WHEN** `pyproject.toml` lists RAGAS under `[project.optional-dependencies]` or `[project].dependencies`
+- **THEN** the change SHALL be rejected
+- **AND** RAGAS SHALL move to a `[dependency-groups]` entry
 
 #### Scenario: RAGAS is unavailable
 - **WHEN** the optional evaluation environment does not contain RAGAS
