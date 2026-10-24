@@ -144,7 +144,8 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # +87 (2026-10-24, edit-settings-from-configuration-page): editable keys (39), configuration
 # rows (17) and the configuration save route (31). The 48 row and save cases need fastapi
 # (measured 7893, pin 7900).
-_BASE_EXECUTED = 7900
+# +5 (2026-10-24, magika lookup next to the running Python): test_magika_binary_lookup.py.
+_BASE_EXECUTED = 7905
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.

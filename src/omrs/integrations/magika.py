@@ -5,7 +5,7 @@ primitives (``FileEntry``, ``_EXCLUDED_DIRS``) so that ``codebase_map.py``
 imports them from here rather than the reverse. Provides:
 - ``FileEntry`` — dataclass for a single detected file
 - ``_EXCLUDED_DIRS`` — directory names skipped during scanning
-- ``_is_magika_available()`` — check if the Magika CLI is on $PATH
+- ``_is_magika_available()`` — check if the Magika CLI is on $PATH or next to the running Python
 - ``scan_with_magika(path)`` — scan a directory and return typed file entries
 
 ``codebase_map.py`` re-exports ``_is_magika_available`` and ``scan_with_magika``
@@ -17,8 +17,10 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import shutil
 import subprocess
+import sysconfig
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -79,9 +81,32 @@ def _magika_binary(settings: Any | None = None) -> str:
     return get_default_effective_settings().magika_binary
 
 
+def _scripts_folder() -> Path:
+    """Return the folder where the running Python installs its programs."""
+    return Path(sysconfig.get_path("scripts"))
+
+
+def _resolve_magika(settings: Any | None = None) -> str | None:
+    """Return the Magika program to run, or ``None`` when there is none.
+
+    ``$PATH`` comes first. ``magika`` is a base dependency, so an install
+    also puts the program next to the running Python; the login item starts
+    ``omrs web`` with a short ``$PATH`` that lacks that folder, so the
+    folder is checked too. A configured path is used as given.
+
+    Args:
+        settings: Injected effective settings carrying ``magika_binary``.
+    """
+    binary = _magika_binary(settings)
+    found = shutil.which(binary)
+    if found is not None or os.sep in binary:
+        return found
+    return shutil.which(binary, path=os.fspath(_scripts_folder()))
+
+
 def _is_magika_available(settings: Any | None = None) -> bool:
-    """Check if the Magika CLI binary is on $PATH."""
-    return shutil.which(_magika_binary(settings)) is not None
+    """Check if the Magika program is on ``$PATH`` or next to the running Python."""
+    return _resolve_magika(settings) is not None
 
 
 # Groups that stay readable even when the model marks ``is_text`` false
@@ -186,12 +211,13 @@ def scan_with_magika(path: str, settings: Any | None = None) -> list:
         ValueError: If any CLI row is invalid (non-JSON, non-``ok``
             status, malformed envelope, or bad required field).
     """
-    if not _is_magika_available(settings):
+    program = _resolve_magika(settings)
+    if program is None:
         raise FileNotFoundError(f"Magika CLI binary not found: {_magika_binary(settings)}")
 
     try:
         result = subprocess.run(  # noqa: S603
-            [_magika_binary(settings), "-r", path, "--jsonl"],
+            [program, "-r", path, "--jsonl"],
             capture_output=True,
             text=True,
             check=True,
