@@ -528,6 +528,32 @@ Rules the server applies:
 - A page save goes to a temporary file that replaces the original, so a stop during a save never leaves half a file.
 - The server notices a hand edit before the next request that reads settings. A save from the page that was open before your edit is refused (409), and your edit stays. Reload the page to see it.
 
+##### What the Settings page writes
+
+Settings > Configuration lists every setting. Each row shows the value in force and its source. A row with Edit opens a control for its kind: an on/off switch, a number field with its range, a choice list or a text field. Save sends `PUT /v1/settings/configuration`. The server checks every change, then writes all of them in one save or none.
+
+The page can write every setting that holds one plain value: a boolean, a number, a text or a fixed choice. This includes the retrieval, reranker, hybrid, chunking, ingestion, metadata, answer, OCR and server settings, and the three file-only keys. The list comes from the `Settings` model, so a new plain setting is editable with no list change.
+
+The server checks each value against the rule of its setting before the write: the type, the lower and upper bound, and the accepted choices. A value that breaks its rule gets 400 with the rule. The file does not change.
+
+These keys stay read-only. The row shows the reason and no Edit:
+
+| Keys | Reason on the row |
+|---|---|
+| `embed_provider`, `embed_model`, `local_backend`, `cloud_backend`, `llamacpp_embed_url`, `llamacpp_embed_model`, `openrouter_embed_model`, every `embedding.*` key | The embedding model is part of every collection. Change it in omrs.jsonc and re-ingest. |
+| `vector_store`, `lancedb_uri`, `chroma_persist_dir`, `chroma_mode`, `collection_name` | Existing collections stay where they are. Change it in omrs.jsonc and restart. |
+| `ocr_workers_dir` | The worker folder is set when the OCR workers are installed. |
+| Every key field (`*_api_key`, `*_key`) | Keys are set on the provider cards as references. |
+| `ingestion.ingest_extensions`, `metadata.keyword_rules` | Edit this in omrs.jsonc. |
+
+More rules:
+
+- A key that the environment or `.env` sets is read-only. The row names the variable, for example "Remove RETRIEVAL__TOP_K from the environment or .env to edit it here." A save of that key gets 409.
+- An optional setting saved in the file has Clear. Clear sends `null`, which removes the key from the file. The default then applies.
+- A chunking key is part of the index identity. After a restart, the next ingest can read existing files again.
+- A restart-only key shows "Restart to apply" after a save. The row keeps the launch value until the restart.
+- The Providers cards still write key references (`keychain://`, `env://`, `file://`). The Configuration save refuses key fields.
+
 ##### Problems in the file
 
 A problem never stops the server. The server starts and lists each problem by key, never by value. `omrs config show` and `GET /v1/settings/configuration` show the list.

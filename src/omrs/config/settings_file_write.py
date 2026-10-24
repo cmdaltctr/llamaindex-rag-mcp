@@ -4,8 +4,8 @@ The Settings page is a second editor of the file. :func:`write_settings`
 changes only the keys it is given and keeps every other byte (comments, order,
 layout) through ``jsonc_edit``. It refuses, and writes nothing, when:
 
-- a key is not one the page edits (:data:`ALLOWED_KEYS`) or a value breaks its
-  rule (:class:`SettingsFileRefused`, answer 400);
+- a key is not one the page edits (:data:`ALLOWED_KEYS`, or a provider key
+  field) or a value breaks its rule (:class:`SettingsFileRefused`, answer 400);
 - a key field holds a literal key instead of a reference (same error);
 - the file changed since the caller read it (:class:`SettingsFileConflict`,
   answer 409);
@@ -36,8 +36,9 @@ from typing import Any
 
 from .jsonc_edit import JsoncEditError, remove_value, set_value
 from .provider_sources import PROVIDER_FIELDS
-from .rules import DOCUMENT_READING_KEYS, FILE_ONLY, SECRET_FIELDS, document_reading_problem
-from .settings_file import ABSENT, check_setting
+from .rules import INTERNAL_FIELDS, SECRET_FIELDS, document_reading_problem
+from .setting_shapes import is_scalar
+from .settings_file import ABSENT, check_setting, setting_paths
 from .user_config import (
     CONFIG_FILE,
     REFERENCE_RULE,
@@ -47,9 +48,68 @@ from .user_config import (
     user_config_dir,
 )
 
-#: The keys the Settings page may write: the provider fields, the file-only keys
-#: and the document-reading keys.
-ALLOWED_KEYS: tuple[str, ...] = (*PROVIDER_FIELDS, *FILE_ONLY, *DOCUMENT_READING_KEYS)
+_EMBEDDING = (
+    "The embedding model is part of every collection. Change it in omrs.jsonc and re-ingest."
+)
+_STORAGE = "Existing collections stay where they are. Change it in omrs.jsonc and restart."
+#: The reason of every key field: the Providers cards write references.
+KEY_FIELD_REASON = "Keys are set on the provider cards as references."
+EDIT_BY_HAND = "Edit this in omrs.jsonc."
+NOT_A_SETTING = "This is not a setting."
+
+#: Keys the page never writes, each with the reason the page shows (design D1).
+#: An entry that ends in ``.`` covers every key of that block. Key fields are
+#: read-only too (:data:`KEY_FIELD_REASON`), as is any setting that is not one
+#: plain value (:data:`EDIT_BY_HAND`).
+READ_ONLY_KEYS: Mapping[str, str] = {
+    "embed_provider": _EMBEDDING,
+    "embed_model": _EMBEDDING,
+    "local_backend": _EMBEDDING,
+    "cloud_backend": _EMBEDDING,
+    "llamacpp_embed_url": _EMBEDDING,
+    "llamacpp_embed_model": _EMBEDDING,
+    "openrouter_embed_model": _EMBEDDING,
+    "embedding.": _EMBEDDING,
+    "vector_store": _STORAGE,
+    "lancedb_uri": _STORAGE,
+    "chroma_persist_dir": _STORAGE,
+    "chroma_mode": _STORAGE,
+    "collection_name": _STORAGE,
+    "ocr_workers_dir": "The worker folder is set when the OCR workers are installed.",
+    "ingestion.ingest_extensions": EDIT_BY_HAND,
+    "metadata.keyword_rules": EDIT_BY_HAND,
+}
+
+
+def read_only_reason(key: str) -> str | None:
+    """Return why the page may not write *key*, or ``None`` when it may.
+
+    The reason never holds a value. A key that names no setting gives
+    :data:`NOT_A_SETTING`.
+    """
+    if key in SECRET_FIELDS:
+        return KEY_FIELD_REASON
+    if key in READ_ONLY_KEYS:
+        return READ_ONLY_KEYS[key]
+    block, dot, _ = key.partition(".")
+    if dot and f"{block}." in READ_ONLY_KEYS:
+        return READ_ONLY_KEYS[f"{block}."]
+    if key in INTERNAL_FIELDS or key not in setting_paths():
+        return NOT_A_SETTING
+    return None if is_scalar(key) else EDIT_BY_HAND
+
+
+#: The keys the Settings page may write: every setting that is one plain value
+#: (a boolean, a number, a text or a choice) and has no read-only reason. It is
+#: computed from the model, so a new plain setting is writable with no edit here.
+ALLOWED_KEYS: tuple[str, ...] = tuple(
+    key for key in setting_paths() if read_only_reason(key) is None
+)
+#: What :func:`write_settings` takes: :data:`ALLOWED_KEYS` plus the provider key
+#: fields, which the Providers cards write as references only.
+_WRITABLE: frozenset[str] = frozenset(
+    {*ALLOWED_KEYS, *(key for key in PROVIDER_FIELDS if key in SECRET_FIELDS)}
+)
 
 CONFLICT_CHANGED = "omrs.jsonc changed on disk. Reload to see the new values."
 CONFLICT_BROKEN = "omrs.jsonc could not be read. Fix it, then save again."
@@ -106,7 +166,7 @@ def _plan(changes: Mapping[str, Any], secrets: Path) -> dict[str, Any]:
     """Check every change. Return ``{key: value or None}``, a blank value as ``None``."""
     plan: dict[str, Any] = {}
     for key, value in changes.items():
-        if key not in ALLOWED_KEYS:
+        if key not in _WRITABLE:
             raise SettingsFileRefused(f"{key} is not a setting that can be changed here.")
         reading_rule = document_reading_problem(key, value)  # blank text is refused here
         if reading_rule is not None:
@@ -180,7 +240,7 @@ def write_settings(
     Args:
         changes: Dotted key to new value. ``None`` or a blank string removes the
             key. A key field takes a reference, never a key. Keys must be in
-            :data:`ALLOWED_KEYS`.
+            :data:`ALLOWED_KEYS` or be a provider key field.
         revision: The revision the caller read (``absent`` for no file). The
             write refuses when the file differs. ``None`` skips the check; use
             it only where no person edited the file in between.

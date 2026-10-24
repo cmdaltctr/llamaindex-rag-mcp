@@ -55,14 +55,16 @@ def data(folder: Path) -> dict:
 # ── Allowed keys ─────────────────────────────────────────────────────────
 
 
-def test_the_allowed_keys_are_the_ones_the_page_edits() -> None:
-    assert set(ALLOWED_KEYS) == {
+def test_the_card_keys_stay_allowed_and_key_fields_are_not() -> None:
+    # edit-settings-from-configuration-page D1: ALLOWED_KEYS grew to every plain
+    # setting. Key fields left it; the writer still takes them as references.
+    assert not {"openrouter_api_key", "openai_compatible_api_key", "anthropic_api_key"} & set(
+        ALLOWED_KEYS
+    )
+    assert set(ALLOWED_KEYS) >= {
         "ollama_base_url",
         "llamacpp_chat_url",
         "openai_compatible_base_url",
-        "openrouter_api_key",
-        "openai_compatible_api_key",
-        "anthropic_api_key",
         "ollama_context_window",
         "llamacpp_context_window",
         "llamacpp_idle_sleep_seconds",
@@ -89,7 +91,6 @@ def test_the_allowed_keys_are_the_ones_the_page_edits() -> None:
         "ocr_maths_routing_enabled",
         "ocr_maths_page_fraction",
     }
-    assert len(ALLOWED_KEYS) == 29
 
 
 def test_a_key_outside_the_list_is_refused_and_changes_nothing(existing: Path) -> None:
@@ -102,7 +103,7 @@ def test_a_key_outside_the_list_is_refused_and_changes_nothing(existing: Path) -
 
 def test_a_refused_key_does_not_create_the_file(folder: Path) -> None:
     with pytest.raises(SettingsFileRefused):
-        write_settings({"retrieval.top_k": 5}, revision=None)
+        write_settings({"lancedb_uri": "./elsewhere"}, revision=None)
     assert not folder.exists()
 
 
