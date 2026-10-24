@@ -1,70 +1,38 @@
 import { useId, useState, type FormEvent } from "react";
-import { Badge } from "../components/ui/badge";
 import { CardInset } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { isEnvironmentSource, sourceText } from "./connectionWords";
 import { SaveErrorNotice } from "./SaveErrorNotice";
-import { SettingControl, type SettingKind } from "./SettingControl";
-import { numberIn, rangeRule, wholeNumberIn } from "./validation";
+import { SettingControl } from "./SettingControl";
 
 const CODE = "text-code font-mono [overflow-wrap:anywhere]";
 const SOURCE = "text-meta text-muted-foreground";
 
 export interface SettingRowProps {
   label: string;
-  /** The value in force, as text. Edit opens an input filled with it. A `bool` row takes `true` or `false`. */
+  /** The value in force, as text. Edit opens an input filled with it. */
   value: string;
   source: string;
   /** A variable name or path that goes after the source words. */
   detail?: string | null;
   inputType?: "text" | "number";
-  /** The control Edit opens. Left out, the row keeps a text or number input from `inputType`. */
-  kind?: SettingKind;
-  /** The accepted values of a `choice` row. */
-  choices?: string[] | null;
   min?: number | null;
   max?: number | null;
   /** Makes the row read-only and says why, for example a missing session scope. */
   readOnlyReason?: string | null;
-  /** Shows "Restart to apply": the saved value applies after a restart. */
-  restartPending?: boolean;
-  /**
-   * The value the next launch uses, as text, or `null` for the default. Shown
-   * beside "Restart to apply", and Edit opens with it. Left out, Edit opens with `value`.
-   */
-  saved?: string | null;
   pending: boolean;
   error: unknown;
   /** Called with the typed text; the row closes its input when `done` runs. */
   onSave: (text: string, done: () => void) => void;
   /** Returns the setting to its default. The row offers it only for a value from `omrs.jsonc`. */
   onClear?: (done: () => void) => void;
-  /** The words on the clear button. */
-  clearLabel?: string;
   onRetry: () => void;
   /** Checked before Save sends anything. A returned message shows under the input and nothing is saved. */
   validate?: (text: string) => string | null;
   /** Called with the typed text as it changes, and with `null` when the input closes. */
   onTyped?: (text: string | null) => void;
-}
-
-/** The control for a row: `kind` when given, else the input that `inputType` names. */
-function controlKind(kind: SettingKind | undefined, inputType: "text" | "number"): SettingKind {
-  return kind ?? (inputType === "number" ? "int" : "text");
-}
-
-/** The check of a number row with no `validate` of its own: its range rule. A row given `kind` gets it; an old `inputType` row does not. */
-function rangeCheck(kind: SettingKind | undefined, min: number | null, max: number | null): ((text: string) => string | null) | undefined {
-  if (kind === "int") return wholeNumberIn(min, max, rangeRule(min, max, true));
-  if (kind === "float") return numberIn(min, max, rangeRule(min, max, false));
-  return undefined;
-}
-
-function shownValue(kind: SettingKind | undefined, value: string): string {
-  if (kind === "bool" && (value === "true" || value === "false")) return value === "true" ? "On" : "Off";
-  return value;
 }
 
 /**
@@ -74,9 +42,8 @@ function shownValue(kind: SettingKind | undefined, value: string): string {
  * `.env` has no Edit; the source words say where to change it.
  */
 export function SettingRow(props: SettingRowProps) {
-  const { label, value, source, detail, inputType = "text", kind, choices, min = null, max = null, readOnlyReason, restartPending = false, saved, pending, error } = props;
-  const { onSave, onClear, clearLabel = "Use default", onRetry, onTyped } = props;
-  const validate = props.validate ?? rangeCheck(kind, min, max);
+  const { label, value, source, detail, inputType = "text", min = null, max = null, readOnlyReason, pending, error } = props;
+  const { onSave, onClear, onRetry, onTyped, validate } = props;
   const id = useId();
   const [typed, setTyped] = useState<string | null>(null);
   const editing = typed !== null;
@@ -92,8 +59,7 @@ export function SettingRow(props: SettingRowProps) {
     onTyped?.(null);
   };
   const locked = isEnvironmentSource(source) || (readOnlyReason ?? null) !== null;
-  const start = saved ?? value;
-  const dirty = typed !== null && typed !== start && typed.trim() !== "";
+  const dirty = typed !== null && typed !== value && typed.trim() !== "";
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -108,7 +74,7 @@ export function SettingRow(props: SettingRowProps) {
       {editing ? (
         <form onSubmit={submit} noValidate className="flex flex-col gap-1.5">
           <Label htmlFor={id}>{label}</Label>
-          <SettingControl id={id} label={label} kind={controlKind(kind, inputType)} typed={typed} choices={choices ?? []} min={min} max={max} refusal={refusal} onChange={change} />
+          <SettingControl id={id} label={label} kind={inputType === "number" ? "int" : "text"} typed={typed} choices={[]} min={min} max={max} refusal={refusal} onChange={change} />
           {refusal !== null ? (
             <p id={`${id}-refusal`} className="text-meta text-status-error-label">
               {refusal}
@@ -124,7 +90,7 @@ export function SettingRow(props: SettingRowProps) {
             </Button>
             {source === "config-file" && onClear !== undefined ? (
               <Button type="button" variant="outline" size="sm" disabled={pending} onClick={() => onClear(close)}>
-                {clearLabel}
+                Use default
               </Button>
             ) : null}
           </div>
@@ -136,27 +102,14 @@ export function SettingRow(props: SettingRowProps) {
             <p className="text-ui">Not set</p>
           ) : (
             <code dir="ltr" className={CODE}>
-              {shownValue(kind, value)}
+              {value}
             </code>
           )}
           <p className={SOURCE}>{sourceText(source, detail)}</p>
-          {restartPending ? (
-            <div className="flex flex-wrap items-center gap-2">
-              {saved !== undefined ? (
-                <p className="text-ui">
-                  {"Saved for the next launch: "}
-                  <code dir="ltr" className={CODE}>
-                    {saved === null ? "default" : shownValue(kind, saved)}
-                  </code>
-                </p>
-              ) : null}
-              <Badge variant="warning">Restart to apply</Badge>
-            </div>
-          ) : null}
           {readOnlyReason ? <p className={SOURCE}>{readOnlyReason}</p> : null}
           {!locked ? (
             <div>
-              <Button type="button" variant="outline" size="sm" aria-label={`Edit ${label}`} onClick={() => setTyped(start)}>
+              <Button type="button" variant="outline" size="sm" aria-label={`Edit ${label}`} onClick={() => setTyped(value)}>
                 Edit
               </Button>
             </div>

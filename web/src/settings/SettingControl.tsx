@@ -1,4 +1,5 @@
 import { Button } from "../components/ui/button";
+import { cn } from "../lib/utils";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
@@ -16,10 +17,14 @@ interface SettingControlProps {
   max: number | null;
   refusal: string | null;
   onChange: (text: string) => void;
+  /** The id of a line that describes the field, such as its rule. Left out, the refusal line describes it while there is one. */
+  describedBy?: string;
+  /** Extra classes for a text, number or choice field, such as a width. */
+  className?: string;
 }
 
 /** One editor for a setting value. The row owns the label, Save and Cancel; nothing is saved here. */
-export function SettingControl({ id, label, kind, typed, choices, min, max, refusal, onChange }: SettingControlProps) {
+export function SettingControl({ id, label, kind, typed, choices, min, max, refusal, onChange, describedBy, className }: SettingControlProps) {
   if (kind === "bool") {
     const on = typed === "true";
     return (
@@ -34,7 +39,7 @@ export function SettingControl({ id, label, kind, typed, choices, min, max, refu
   if (kind === "choice") {
     return (
       <Select value={typed} onValueChange={onChange}>
-        <SelectTrigger id={id} aria-label={label} className="max-w-xs">
+        <SelectTrigger id={id} aria-label={label} className={cn("max-w-xs", className)}>
           <SelectValue placeholder="Choose one" />
         </SelectTrigger>
         <SelectContent>
@@ -52,6 +57,8 @@ export function SettingControl({ id, label, kind, typed, choices, min, max, refu
   return (
     <Input
       id={id}
+      aria-label={label}
+      className={className}
       dir="ltr"
       autoComplete="off"
       spellCheck={false}
@@ -60,7 +67,7 @@ export function SettingControl({ id, label, kind, typed, choices, min, max, refu
       value={typed}
       onChange={(event) => onChange(event.target.value)}
       aria-invalid={refusal !== null}
-      aria-describedby={refusal !== null ? `${id}-refusal` : undefined}
+      aria-describedby={describedBy ?? (refusal !== null ? `${id}-refusal` : undefined)}
     />
   );
 }

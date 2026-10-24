@@ -2,10 +2,12 @@ import { useState } from "react";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardInset, CardTitle } from "../components/ui/card";
-import { ConfigurationRow, isChunkingKey, type RestartRequest } from "./ConfigurationRow";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { useReturnFocus } from "../studio/useReturnFocus";
+import type { RestartRequest } from "./configurationDraft";
+import { ConfigurationTable } from "./ConfigurationTable";
 import { CopyButton } from "./CopyButton";
 import type { ConfigurationSetting, ConfigurationState } from "./configurationTypes";
-import { IDENTITY_NOTE } from "./DocumentReadingSection";
 import { RestartDialog } from "./RestartDialog";
 import { useConfiguration } from "./useConfiguration";
 
@@ -33,15 +35,63 @@ function title(name: string): string {
   return name === GENERAL ? name : name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, " ");
 }
 
+interface DiscardDialogProps {
+  /** The title of the block with changes, or `null` to keep the dialog closed. */
+  block: string | null;
+  onKeep: () => void;
+  onDiscard: () => void;
+}
+
+/** Asks before Edit on another block drops the changes in the open one. */
+function DiscardDialog({ block, onKeep, onDiscard }: DiscardDialogProps) {
+  const returnFocus = useReturnFocus();
+  return (
+    <Dialog open={block !== null} onOpenChange={(next) => (next ? undefined : onKeep())}>
+      <DialogContent {...returnFocus}>
+        <DialogHeader>
+          <DialogTitle>{`Discard your changes to ${block ?? ""}?`}</DialogTitle>
+          <DialogDescription>Only one table can be edited at a time. Nothing in this table has been saved.</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onKeep}>
+            Keep editing
+          </Button>
+          <Button type="button" variant="destructive" onClick={onDiscard}>
+            Discard
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 interface ConfigurationViewProps {
   state: ConfigurationState;
   /** Called when the person asks to restart for the settings that wait. */
   onRestart: (request: RestartRequest) => void;
 }
 
-/** The settings grouped by block, one mini card each, with the file path, the problems found in the file and a restart prompt. */
+/**
+ * The settings grouped by block, one table in a card each, with the file path,
+ * the problems found in the file and a restart prompt. Only one table is in
+ * edit mode at a time; Edit on another block asks first when the open one has changes.
+ */
 export function ConfigurationView({ state, onRestart }: ConfigurationViewProps) {
   const waiting = state.settings.filter((setting) => setting.restart_pending);
+  const [open, setOpen] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [asking, setAsking] = useState<string | null>(null);
+
+  function openBlock(name: string | null) {
+    setOpen(name);
+    setDirty(false);
+    setAsking(null);
+  }
+
+  function requestEdit(name: string) {
+    if (open !== null && open !== name && dirty) return setAsking(name);
+    openBlock(name);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -97,14 +147,20 @@ export function ConfigurationView({ state, onRestart }: ConfigurationViewProps) 
         </Card>
       ) : null}
       {groupSettings(state.settings).map((group) => (
-        <Card key={group.name} role="group" aria-label={title(group.name)}>
-          <CardTitle>{title(group.name)}</CardTitle>
-          {group.settings.some((setting) => isChunkingKey(setting.key)) ? <p className="text-meta text-muted-foreground">{IDENTITY_NOTE}</p> : null}
-          {group.settings.map((setting) => (
-            <ConfigurationRow key={setting.key} setting={setting} revision={state.revision} onRestart={onRestart} />
-          ))}
-        </Card>
+        <ConfigurationTable
+          // A new key on open and on close remounts the table, so a closed table holds no draft.
+          key={open === group.name ? `${group.name}:edit` : group.name}
+          title={title(group.name)}
+          settings={group.settings}
+          revision={state.revision}
+          editing={open === group.name}
+          onEdit={() => requestEdit(group.name)}
+          onClose={() => openBlock(null)}
+          onDirty={setDirty}
+          onRestart={onRestart}
+        />
       ))}
+      <DiscardDialog block={open !== null && asking !== null ? title(open) : null} onKeep={() => setAsking(null)} onDiscard={() => openBlock(asking)} />
     </div>
   );
 }
