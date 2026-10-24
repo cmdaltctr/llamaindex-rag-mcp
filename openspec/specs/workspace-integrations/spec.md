@@ -14,12 +14,12 @@ The Integrations view SHALL list one entry for each installable pip extra the pr
 - **WHEN** the user opens Integrations
 - **THEN** every declared extra and magika MUST be listed with a name, purpose, status and install command
 
-An entry that every install includes (it has no extra, such as magika) SHALL show a second badge "Base default" next to its status, so a user does not install it again.
+An entry that every install includes SHALL show a second badge "Base default" next to its status and SHALL offer no Install and no install command, so a user does not install it again. Such an entry has no extra (magika), or an extra whose requirements are all base requirements, kept so an old `--extra` command still works (pdf-inspector, llamacpp, openrouter).
 
 #### Scenario: Base install entry
 
 - **WHEN** the user opens Integrations
-- **THEN** the magika card MUST show "Base default" next to its status, and no extra's card MUST show it
+- **THEN** the magika, pdf-inspector, llamacpp and openrouter cards MUST show "Base default" next to their status with no Install and no command, and no other card MUST show it
 
 ### Requirement: Availability comes from the running server
 

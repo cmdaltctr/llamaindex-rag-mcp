@@ -50,8 +50,8 @@ export function IntegrationCard({ integration, installType, control }: Integrati
           <CardTitle className="min-w-0 break-words">{integration.name}</CardTitle>
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant={status.variant}>{status.label}</Badge>
-            {/* An entry with no extra comes with every install, so nobody installs it twice. */}
-            {integration.extra === null ? <Badge variant="neutral">Base default</Badge> : null}
+            {/* Every install already holds a base entry, so nobody installs it twice. */}
+            {integration.base ? <Badge variant="neutral">Base default</Badge> : null}
           </div>
         </div>
         <CardDescription>{integration.purpose}</CardDescription>

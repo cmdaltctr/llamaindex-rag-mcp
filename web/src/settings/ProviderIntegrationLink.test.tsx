@@ -30,6 +30,7 @@ const ANTHROPIC_ENTRY: Integration = {
   install_reason: "not-uv-tool",
   packages: ["llama-index-llms-anthropic>=0.11.0"],
   install_caution: null,
+  base: false,
 };
 
 async function openProviders(connections: Connection[]) {

@@ -20,6 +20,7 @@ function entry(id: string, name: string, change: Partial<Integration> = {}): Int
     install_reason: null,
     packages: [`package-for-${id}>=1.0`],
     install_caution: null,
+    base: false,
     ...change,
   };
 }

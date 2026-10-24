@@ -31,6 +31,7 @@ const CATALOGUE: Integration[] = [
     install_reason: "not-uv-tool" as const,
     packages: [],
     install_caution: null,
+    base: ["pdf-inspector", "llamacpp", "openrouter"].includes(id),
   })),
   {
     id: "magika",
@@ -44,6 +45,7 @@ const CATALOGUE: Integration[] = [
     install_reason: "not-installable-here",
     packages: [],
     install_caution: null,
+    base: true,
   },
 ];
 
@@ -87,11 +89,12 @@ describe("Integrations", () => {
     expect(await badge("llama.cpp provider")).toHaveTextContent("Unknown");
   });
 
-  it("marks a base install entry with Base default next to its status, and no other entry", async () => {
+  it("marks every base install entry with Base default next to its status, and no other entry", async () => {
     startApp("#/integrations", serve());
     const magika = await card("Magika file detection");
     expect(within(magika).getByText("Base default", { selector: "[data-slot=badge]" })).toBeInTheDocument();
-    expect(within(await card("PDF reader: pdf-inspector")).queryByText("Base default")).not.toBeInTheDocument();
+    expect(within(await card("PDF reader: pdf-inspector")).getByText("Base default", { selector: "[data-slot=badge]" })).toBeInTheDocument();
+    expect(within(await card("PDF reader: pypdfium2")).queryByText("Base default")).not.toBeInTheDocument();
     expect(within(await card("Chroma vector store")).queryByText("Base default")).not.toBeInTheDocument();
   });
 

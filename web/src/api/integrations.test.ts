@@ -15,6 +15,7 @@ const ENTRY: Integration = {
   install_reason: "not-uv-tool",
   packages: ["azure-ai-documentintelligence>=1.0.0"],
   install_caution: null,
+  base: false,
 };
 
 const RUNNING: IntegrationInstall = {

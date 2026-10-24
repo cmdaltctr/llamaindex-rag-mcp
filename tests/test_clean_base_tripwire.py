@@ -146,7 +146,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # (measured 7893, pin 7900).
 # +5 (2026-10-24, magika lookup next to the running Python): test_magika_binary_lookup.py.
 # +1 (2026-10-24, PyTorch size caution): test_web_integration_install_routes.py.
-_BASE_EXECUTED = 7906
+# +6 (2026-10-24, base entries and torch installable): base checks in
+# test_web_integration_install_environment.py (+7, one excluded-extra case dropped).
+_BASE_EXECUTED = 7912
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.

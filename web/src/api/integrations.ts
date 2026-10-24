@@ -36,6 +36,8 @@ export interface Integration {
   packages: string[];
   /** A warning to read before the install, such as a package version it can change; null for most entries. */
   install_caution: string | null;
+  /** True when every install already holds this entry; it has no install command. */
+  base: boolean;
 }
 
 export interface IntegrationList {

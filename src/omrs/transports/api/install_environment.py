@@ -37,9 +37,9 @@ UV_TOOL: InstallType = "uv-tool"
 CHECKOUT: InstallType = "checkout"
 OTHER: InstallType = "other"
 
-#: Extras the app never installs: ``web`` runs the page already, and
-#: ``torch`` is several GB and opt-in only (ADR-073).
-EXCLUDED_EXTRAS: frozenset[str] = frozenset({"web", "torch"})
+#: Extras the app never installs: ``web`` runs the page already. ``torch``
+#: is allowed; its card warns about the download size first.
+EXCLUDED_EXTRAS: frozenset[str] = frozenset({"web"})
 
 #: Availability values that mean the extra needs no install.
 INSTALLED_STATES: frozenset[str] = frozenset({"available", "restart-needed"})
@@ -272,3 +272,32 @@ def extra_requirements(extra: str, requires: Iterable[str] | None = None) -> lis
             continue
         found.append(f"{spec.strip()}; {rest}" if rest else spec.strip())
     return found
+
+
+def _requirement_name(line: str) -> str:
+    """Return the normalised project name of a requirement line."""
+    name = re.split(r"[\s<>=!~;\[(@]", line.strip(), maxsplit=1)[0]
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def is_base_extra(extra: str | None, requires: Iterable[str] | None = None) -> bool:
+    """Return whether every install already holds what *extra* adds.
+
+    An entry with no extra is part of the base install. So is an extra whose
+    requirements are all base requirements, or that has none: such an extra
+    only keeps an old ``--extra`` command working.
+
+    Args:
+        extra: The extra name, or ``None`` for an always-on integration.
+        requires: Requirement lines. Defaults to the installed metadata.
+    """
+    if extra is None:
+        return True
+    if requires is None:
+        try:
+            requires = metadata.distribution("omrs").requires or []
+        except metadata.PackageNotFoundError:
+            return False
+    lines = list(requires)
+    base = {_requirement_name(line) for line in lines if "extra" not in line.partition(";")[2]}
+    return all(_requirement_name(line) in base for line in extra_requirements(extra, lines))

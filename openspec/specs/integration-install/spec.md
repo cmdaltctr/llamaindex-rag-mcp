@@ -26,7 +26,7 @@ The server SHALL report its install type as `uv-tool` when a `uv-receipt.toml` f
 
 ### Requirement: Only allowed extras can be installed
 
-The install route SHALL accept only an extra from a fixed list held by the server: the extras declared by the installed OMRS package, without `web` and `torch`. The requirements to install SHALL come from the installed OMRS package metadata for that extra. No text from the request SHALL reach the command, other than the choice of a listed extra.
+The install route SHALL accept only an extra from a fixed list held by the server: the extras declared by the installed OMRS package, without `web`. `torch` is allowed; its card shows the download size before the install. The requirements to install SHALL come from the installed OMRS package metadata for that extra. No text from the request SHALL reach the command, other than the choice of a listed extra.
 
 #### Scenario: Unknown extra refused
 
@@ -35,7 +35,7 @@ The install route SHALL accept only an extra from a fixed list held by the serve
 
 #### Scenario: Excluded extra refused
 
-- **WHEN** a request asks to install `torch`
+- **WHEN** a request asks to install `web`
 - **THEN** the server MUST return 409 naming the reason `not-installable-here`, and MUST start no process
 
 #### Scenario: Requirements come from package metadata

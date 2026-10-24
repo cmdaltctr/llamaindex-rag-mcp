@@ -132,6 +132,18 @@ def test_anthropic_carries_an_install_caution_and_others_none(harness: Harness) 
     assert entries["magika"]["install_caution"] is None
 
 
+def test_base_install_entries_offer_no_install_and_no_command(harness: Harness) -> None:
+    harness.install_as("uv-tool")
+    entries = harness.entries()
+    for name in ("magika", "pdf-inspector", "llamacpp", "openrouter"):
+        entry = entries[name]
+        assert entry["base"] is True, name
+        assert entry["install_command"] is None and entry["pip_command"] is None, name
+        assert entry["installable"] is False, name
+    for name in ("chroma", "hybrid", "anthropic", "torch", "web"):
+        assert entries[name]["base"] is False, name
+
+
 def test_torch_carries_a_size_caution(harness: Harness) -> None:
     harness.install_as("uv-tool")
     caution = harness.entries()["torch"]["install_caution"]
@@ -144,10 +156,11 @@ def test_torch_carries_a_size_caution(harness: Harness) -> None:
 def test_excluded_and_always_on_entries_are_not_installable(harness: Harness) -> None:
     harness.install_as("uv-tool")
     entries = harness.entries()
-    for name in ("web", "torch", "magika"):
+    for name in ("web", "magika"):
         assert entries[name]["installable"] is False
         assert entries[name]["install_reason"] == "not-installable-here"
     assert entries["magika"]["packages"] == [] and entries["magika"]["install_command"] is None
+    assert entries["torch"]["installable"] is True and entries["torch"]["install_reason"] is None
 
 
 def test_a_checkout_shows_the_sync_command_and_no_button(harness: Harness) -> None:
@@ -212,9 +225,8 @@ def test_an_unknown_extra_is_404_and_starts_nothing(harness: Harness, extra: str
 @pytest.mark.parametrize(
     ("install_type", "uv", "extra", "reason"),
     [
-        ("uv-tool", True, "torch", "not-installable-here"),
         ("uv-tool", True, "web", "not-installable-here"),
-        ("uv-tool", True, "llamacpp", "no-requirements"),
+        ("uv-tool", True, "llamacpp", "not-installable-here"),
         ("checkout", True, "anthropic", "not-uv-tool"),
         ("other", True, "anthropic", "not-uv-tool"),
         ("uv-tool", False, "anthropic", "uv-not-found"),
@@ -293,7 +305,7 @@ def test_install_responses_conform(harness: Harness) -> None:
     check.check(harness.client.get(STATUS), 200)
     check.check(harness.client.get("/v1/integrations"), 200)
     check.check(harness.client.post("/v1/integrations/no-such/install", headers=ORIGIN), 404)
-    check.check(harness.client.post("/v1/integrations/torch/install", headers=ORIGIN), 409)
+    check.check(harness.client.post("/v1/integrations/web/install", headers=ORIGIN), 409)
     check.check(harness.client.post(ANTHROPIC, headers=ORIGIN), 202)
     harness.settle()
     check.check(harness.client.get(STATUS), 200)

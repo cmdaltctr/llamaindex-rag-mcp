@@ -28,6 +28,7 @@ from .install_environment import (
     copy_command,
     extra_requirements,
     install_reason,
+    is_base_extra,
 )
 
 logger = logging.getLogger(__name__)
@@ -230,14 +231,21 @@ def describe_entry(
             logger.warning("Integration probe %r failed.", item.id, exc_info=True)
             availability = UNKNOWN
     packages = [] if extra is None else requirements(extra)
-    reason = install_reason(extra, availability, packages, environment)
+    # A base entry comes with every install; offering it again would install it twice.
+    base = is_base_extra(extra)
+    reason = (
+        "not-installable-here"
+        if base
+        else install_reason(extra, availability, packages, environment)
+    )
     return {
         "id": item.id,
         "name": item.name,
         "purpose": item.purpose,
         "extra": extra,
-        "install_command": None if extra is None else copy_command(environment, extra),
-        "pip_command": None if extra is None else f'pip install "omrs[{extra}]"',
+        "base": base,
+        "install_command": None if base or extra is None else copy_command(environment, extra),
+        "pip_command": None if base or extra is None else f'pip install "omrs[{extra}]"',
         "availability": availability,
         "installable": reason is None,
         "install_reason": reason,

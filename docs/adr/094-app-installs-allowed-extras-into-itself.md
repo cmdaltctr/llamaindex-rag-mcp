@@ -4,7 +4,7 @@
 - **Status:** Proposed
 - **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 - **Related:** [ADR-073](073-make-the-torch-extra-a-normal-choice.md) (the torch extra), [ADR-085](085-web-login-item.md) (web login item), [ADR-086](086-web-power-menu.md) (power menu), [ADR-087](087-settings-live-in-omrg-jsonc.md) (settings in `omrs.jsonc`)
-- **Change:** `openspec/changes/install-integrations-from-the-app/` (design D1 to D4); amended by `harden-integration-installs` (decisions 7 to 9)
+- **Change:** `openspec/changes/install-integrations-from-the-app/` (design D1 to D4); amended by `harden-integration-installs` (decisions 7 to 9); `torch` allowed on 2026-10-24 (decision 3)
 
 ## Context
 
@@ -39,8 +39,9 @@ Three facts shape the decision:
    because the login item has a short `PATH`. A checkout or any other install
    shows a copy command and never installs.
 3. **Only a fixed list of extras.** The list is the catalogue extras, without
-   `web` (present when the page runs) and `torch` (several GB, opt-in only,
-   ADR-073). No request text reaches the command except the choice of a listed
+   `web` (present when the page runs). `torch` was excluded at first; since
+   2026-10-24 it is allowed, and its card shows the download size (about
+   170 MB on a Mac, several GB for a GPU build) before the install. No request text reaches the command except the choice of a listed
    extra. The argument list is built in code and runs with no shell.
 4. **One job per server, with limits.** The job lives on `WebRuntime`. One
    install runs at a time. It stops after 600 s. The process gets the server
@@ -105,7 +106,7 @@ Three facts shape the decision:
 |--------|-----------------|
 | `uv tool install --reinstall` with the new extra | It rebuilds OMRS from the receipt's source folder, which can hold uncommitted code and an old web build. Safe only when OMRS installs from a released package. Revisit if OMRS ships to PyPI. |
 | Keep copy commands only | The user asked for an Install button. The old command was also wrong for the usual install. |
-| Install any extra the package declares, including `torch` | `torch` is several GB and opt-in by ADR-073. `web` is present when the page runs. |
+| Install any extra the package declares, including `web` | `web` is present when the page runs. (`torch` was in this row until 2026-10-24; it is now allowed with a size warning.) |
 | Forbid downgrades with a constraint file | The Anthropic install needs one and is safe. Every such install would fail. |
 | Import the new modules without a restart | A running process cannot load new modules safely in every case. The restart action already exists. |
 

@@ -22,6 +22,7 @@ from omrs.transports.api.install_environment import (
     extra_requirements,
     find_uv,
     install_reason,
+    is_base_extra,
 )
 
 RECEIPT = """\
@@ -194,12 +195,16 @@ def test_an_allowed_missing_extra_is_installable() -> None:
 def test_an_entry_with_unknown_status_is_not_installable() -> None:
     assert install_reason("anthropic", "unknown", PACKAGES, TOOL) == "status-unknown"
     # The allowed list still decides first.
-    assert install_reason("torch", "unknown", PACKAGES, TOOL) == "not-installable-here"
+    assert install_reason("web", "unknown", PACKAGES, TOOL) == "not-installable-here"
 
 
-@pytest.mark.parametrize("extra", ["web", "torch", None])
-def test_web_torch_and_always_on_are_not_installable_here(extra: str | None) -> None:
+@pytest.mark.parametrize("extra", ["web", None])
+def test_web_and_always_on_are_not_installable_here(extra: str | None) -> None:
     assert install_reason(extra, "not-installed", PACKAGES, TOOL) == "not-installable-here"
+
+
+def test_torch_is_installable_like_any_other_extra() -> None:
+    assert install_reason("torch", "not-installed", PACKAGES, TOOL) is None
 
 
 @pytest.mark.parametrize("availability", ["available", "restart-needed"])
@@ -282,3 +287,36 @@ def test_installed_metadata_has_only_readable_lines_for_allowed_extras() -> None
     allowed = extras - EXCLUDED_EXTRAS
     assert "anthropic" in allowed
     assert _unsafe_lines(metadata.distribution("omrs").requires or [], allowed) == []
+
+
+BASE_REQUIRES = [
+    "pdf-inspector>=1.17.0",
+    "llama-index-llms-openai-like>=0.7.0",
+    "pdf-inspector>=1.17.0; extra == 'pdf-inspector'",
+    "chromadb>=1.0; extra == 'chroma'",
+    "Llama_Index.LLMs.OpenAI-Like>=0.7; extra == 'openai-alias'",
+]
+
+
+@pytest.mark.parametrize(
+    ("extra", "base"),
+    [
+        (None, True),
+        ("pdf-inspector", True),
+        ("openai-alias", True),
+        ("llamacpp", True),
+        ("chroma", False),
+    ],
+)
+def test_an_extra_is_base_when_the_base_install_already_holds_all_of_it(
+    extra: str | None, base: bool
+) -> None:
+    # An extra with no requirements of its own (llamacpp here) only keeps an old command working.
+    assert is_base_extra(extra, BASE_REQUIRES) is base
+
+
+def test_real_metadata_marks_the_compatibility_extras_as_base() -> None:
+    for extra in ("pdf-inspector", "llamacpp", "openrouter"):
+        assert is_base_extra(extra), extra
+    for extra in ("chroma", "hybrid", "anthropic", "torch", "azure", "community-leiden"):
+        assert not is_base_extra(extra), extra

@@ -7943,7 +7943,7 @@ components:
     Integration:
       type: object
       additionalProperties: false
-      required: [id, name, purpose, extra, install_command, pip_command, availability, installable, install_reason, packages, install_caution]
+      required: [id, name, purpose, extra, base, install_command, pip_command, availability, installable, install_reason, packages, install_caution]
       properties:
         id:
           type: string
@@ -7994,6 +7994,13 @@ components:
           description: >
             A warning the page shows before the install, such as a package
             version the install can change. Null for most entries.
+        base:
+          type: boolean
+          description: >
+            True when every install already holds this entry: no extra, or an
+            extra whose requirements are all base requirements (kept so an old
+            `--extra` command still works). A base entry has no install command
+            and cannot be installed.
 
     IntegrationList:
       type: object
