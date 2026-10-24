@@ -101,7 +101,7 @@ describe("MCP over HTTP switch", () => {
     expect(await within(http).findByText("default")).toBeInTheDocument();
     await user.click(await screen.findByRole("switch", { name: "MCP over HTTP" }));
     expect(await screen.findByRole("switch", { name: "MCP over HTTP", checked: true })).toBeInTheDocument();
-    expect(within(http).getByText("from omrs.jsonc")).toBeInTheDocument();
+    expect(within(http).getByText("Saved in settings (omrs.jsonc)")).toBeInTheDocument();
   });
 
   it.each([
@@ -247,7 +247,7 @@ describe("Saved web port", () => {
     await user.clear(input);
     await user.type(input, "9000");
     await user.click(within(port).getByRole("button", { name: "Save" }));
-    expect(await within(port).findByText("from omrs.jsonc")).toBeInTheDocument();
+    expect(await within(port).findByText("Saved in settings (omrs.jsonc)")).toBeInTheDocument();
     expect(within(port).getByText("9000")).toBeInTheDocument();
     expect(within(port).getByText("Restart to apply")).toBeInTheDocument();
     expect(within(port).getByText(/applies on the next launch/i)).toBeInTheDocument();

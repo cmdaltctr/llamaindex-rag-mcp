@@ -9,7 +9,9 @@ const INSET = "[data-slot='card-inset']";
 const CONFIGURATION = {
   path: "~/.config/omrs/omrs.jsonc",
   revision: "r1",
-  settings: [{ key: "retrieval.top_k", value: 10, source: "default", applies: "restart", restart_pending: false }],
+  settings: [
+    { key: "retrieval.top_k", value: 10, source: "default", applies: "restart", restart_pending: false, editable: true, read_only_reason: null, kind: "int", choices: null, min: 1, max: 100, nullable: false },
+  ],
   problems: [],
   handover: { pending: false, folder: null },
 };
@@ -57,5 +59,12 @@ describe("every Settings tab uses cards", () => {
   it("puts the theme choice in a mini card", async () => {
     const section = await openTab("appearance", "Appearance");
     expect(within(section).getByRole("combobox").closest(INSET)).not.toBeNull();
+  });
+
+  it("shows each Configuration setting in its own mini card inside a block card", async () => {
+    const section = await openTab("configuration", "Configuration");
+    const key = await within(section).findByText("retrieval.top_k");
+    expect(key.closest(INSET)).not.toBeNull();
+    expect(key.closest(CARD)).not.toBeNull();
   });
 });

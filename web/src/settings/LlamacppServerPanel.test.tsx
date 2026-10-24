@@ -53,7 +53,7 @@ describe("Local server block on the llama.cpp card", () => {
         serverStatus({}, { binary: { value: "/opt/homebrew/bin/llama-server", source: "config-file" }, model: { value: "a/b", source: "config-file" }, context_window: { value: 8192, source: "config-file" } }),
     });
     expect(within(panel()).getByText("/opt/homebrew/bin/llama-server")).toBeInTheDocument();
-    expect(within(panel()).getAllByText("from omrs.jsonc")).toHaveLength(3);
+    expect(within(panel()).getAllByText("Saved in settings (omrs.jsonc)")).toHaveLength(3);
     expect(within(panel()).getByRole("button", { name: "Edit Model" })).toBeInTheDocument();
   });
 
@@ -75,7 +75,7 @@ describe("Local server block on the llama.cpp card", () => {
     await user.click(within(panel()).getByRole("button", { name: "Save" }));
     expect(put).toEqual([{ binary: "/opt/llama/llama-server", revision: "r1" }]);
     expect(await within(panel()).findByText("/opt/llama/llama-server")).toBeInTheDocument();
-    expect(within(panel()).getByText("from omrs.jsonc")).toBeInTheDocument();
+    expect(within(panel()).getByText("Saved in settings (omrs.jsonc)")).toBeInTheDocument();
     expect(within(panel()).queryByRole("textbox")).toBeNull();
   });
 

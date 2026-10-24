@@ -466,6 +466,65 @@ These rules also apply:
 
 The nine keys are part of the index identity. After a restart, the next ingest can read existing files again. A failed save shows the server message. When `omrs.jsonc` changed on disk, select Reload to read the new values, then save again.
 
+### Configuration
+
+Settings > Configuration (`#/settings/configuration`) lists every setting. The page reads `GET /v1/settings/configuration`. The settings are grouped by block, for example Retrieval, Chunking and Answer. Each block is a card. Each setting is a mini card in its block card.
+
+Each row shows these items:
+
+- The key, for example `retrieval.top_k`.
+- The value in force. A boolean shows "On" or "Off". A setting with no value shows "Not set".
+- The source in plain words: "Saved in settings (omrs.jsonc)", "Set in .env. Change it there.", "Set in the environment. Change it there." or "default".
+- "Restart to apply" when the file value differs from the value at launch.
+
+A key shows "Key set · ending XXXX" at most. The page never shows more of a key.
+
+The top of the section shows the `omrs.jsonc` path with a copy action. It also lists the problems in the file, one plain line for each key.
+
+#### Change a setting
+
+1. Select Edit on the row.
+2. Set the new value. The control follows the kind of setting:
+   - A boolean has an On/Off switch.
+   - A whole number has a number field. The row checks the range, for example "Enter 1 to 8.".
+   - A decimal number has a number field that accepts decimals in its range.
+   - A setting with fixed choices has a choice list. You cannot type other text.
+   - Text has a text field.
+3. Select Save.
+
+A value outside the range shows the range rule. The page then sends nothing. Save sends `PUT /v1/settings/configuration` with the revision the section read. The row then shows the value and the source that the server returns.
+
+Some settings apply at once, for example the provider addresses. Most settings apply after a restart of `omrs web`. After you save one of them, the restart dialog opens. Select "Restart now", or select Later and restart yourself.
+
+Until the restart, the row shows the value in force since the launch. Next to it, the row shows "Saved for the next launch: <value>" and "Restart to apply". The source names where the value comes from after the restart. Edit opens with the saved value. After a save, the other Settings sections read their values again, so a setting that applies at once shows there too.
+
+#### Clear an optional setting
+
+An optional setting saved in `omrs.jsonc` has Clear. Select Edit, then select Clear. The page removes the key from `omrs.jsonc`. The row then shows the default value and the source "default". For a setting that applies after a restart, the row shows "Saved for the next launch: default" until the restart.
+
+#### Read-only settings
+
+A read-only row shows its value, its source and the reason. It has no Edit. These settings are read-only:
+
+| Settings | Reason on the row |
+| --- | --- |
+| Embedding identity: `embed_provider`, `embed_model`, `local_backend`, `cloud_backend`, `llamacpp_embed_url`, `llamacpp_embed_model`, `openrouter_embed_model` and every `embedding.*` key | "The embedding model is part of every collection. Change it in omrs.jsonc and re-ingest." |
+| Storage: `vector_store`, `lancedb_uri`, `chroma_persist_dir`, `chroma_mode` and `collection_name` | "Existing collections stay where they are. Change it in omrs.jsonc and restart." |
+| `ocr_workers_dir` | "The worker folder is set when the OCR workers are installed." |
+| Every key field | "Keys are set on the provider cards as references." |
+| `ingestion.ingest_extensions` and `metadata.keyword_rules` | "Edit this in omrs.jsonc." |
+| A setting set in the environment or `.env` | "Remove <ENV_NAME> from the environment or .env to edit it here." |
+
+`<ENV_NAME>` is the key in upper case with `.` changed to `__`. For example, `retrieval.top_k` gives `RETRIEVAL__TOP_K`.
+
+#### Chunking settings
+
+The Chunking card states that its settings are part of the index identity. After a restart, the next ingest can read existing files again. The restart dialog after a Chunking save states the same.
+
+#### Failed saves
+
+A failed save shows one line and one action. When the server refuses a value, the row shows the server rule. When `omrs.jsonc` changed on disk after the section loaded, the row shows "omrs.jsonc changed on disk. Reload to see the new values." The page writes nothing. Select Reload to read the new values, then save again.
+
 ### Embedding model of a profile
 
 A user profile can choose its own embedding provider and model (ADR-081). The embedding routes follow. Both `manage` routes need the browser session.
@@ -524,7 +583,7 @@ Every area has its own address. Back and forward move between them. An address t
 | Studio | `#/studio`, `#/studio/<profile-id>`, `#/studio/<profile-id>/<purpose>` | Open a gallery of profiles. Duplicate a profile, start an empty one, rename it or delete it. Open the Ingest, Search or Answer pipeline of a profile. Add operations, connect ports, save a revision, validate, run and cancel. |
 | Experiments | `#/experiments`, `#/experiments/runs/<run-id>` | Create experiment folders and sub-experiments, issue a bound credential, register and open the notebook editor, and read pipeline runs. A preview that is cut offers Open full output, which shows the redacted value as text and downloads it. |
 | Integrations | `#/integrations` | See which optional parts are installed. When the server is a `uv tool` install and finds `uv`, press Install on an entry, confirm the packages, then restart the server to use them. Read a red "Before you install" note first: it names a package version the install can change. After the install the server checks every package; if they clash, run the entry's command instead of restarting. Otherwise copy the command, run it in a terminal and restart the server. For a `uv tool` install, the copied command keeps the extra after a later reinstall. |
-| Settings | `#/settings`, `#/settings/<section>` | Nine sections: Appearance, Providers, Chat, MCP, Server log, Runtime, Workspace, Document reading and Configuration. Set provider addresses and keys and test them, choose the Chat model, read the server log, copy the MCP client configuration, manage MCP access over HTTP, set the per-file upload limit, choose the PDF reader and the OCR settings for the next launch, and read every setting in force. |
+| Settings | `#/settings`, `#/settings/<section>` | Nine sections: Appearance, Providers, Chat, MCP, Server log, Runtime, Workspace, Document reading and Configuration. Set provider addresses and keys and test them, choose the Chat model, read the server log, copy the MCP client configuration, manage MCP access over HTTP, set the per-file upload limit, choose the PDF reader and the OCR settings for the next launch, and read and change every setting. |
 
 The screenshots show a local server with small Markdown sources. The run output screenshot shows a search result passage that is longer than the 4 KiB preview.
 
