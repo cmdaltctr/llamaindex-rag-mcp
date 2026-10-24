@@ -176,6 +176,10 @@ CATALOGUE: tuple[Integration, ...] = (
         "Optional PyTorch backend for the cross-encoder reranker.",
         "torch",
         _modules("sentence_transformers", "transformers"),
+        # Sizes from uv.lock (torch 2.13, macOS arm64 wheels) and the CUDA builds.
+        "This install is large. On a Mac, PyTorch and its libraries download about "
+        "170 MB. On Linux with GPU support they can take several GB. Search uses "
+        "PyTorch only when retrieval.rerank_backend is set to torch.",
     ),
     Integration(
         "web",

@@ -14,6 +14,13 @@ The Integrations view SHALL list one entry for each installable pip extra the pr
 - **WHEN** the user opens Integrations
 - **THEN** every declared extra and magika MUST be listed with a name, purpose, status and install command
 
+An entry that every install includes (it has no extra, such as magika) SHALL show a second badge "Base default" next to its status, so a user does not install it again.
+
+#### Scenario: Base install entry
+
+- **WHEN** the user opens Integrations
+- **THEN** the magika card MUST show "Base default" next to its status, and no extra's card MUST show it
+
 ### Requirement: Availability comes from the running server
 
 The status of each entry SHALL come from `GET /v1/integrations`, resolved through the runtime probes the server already owns (PDF reader and sparse backend resolution, vector-store and community registries, import checks for the optional providers). The page SHALL state that availability reflects the running launch. When the server can install, the page SHALL say that Install adds the packages and that a restart makes them available. When it cannot, the page SHALL say that installing requires running the command outside the app and restarting the server.
@@ -84,3 +91,8 @@ An entry MAY carry an `install_caution` line. While the entry is `not-installed`
 
 - **WHEN** the Anthropic entry is `available`
 - **THEN** the card MUST NOT show the caution
+
+#### Scenario: PyTorch size caution
+
+- **WHEN** the PyTorch entry is not installed
+- **THEN** the card MUST show a caution that gives the download size and says that search uses PyTorch only when `retrieval.rerank_backend` is `torch`

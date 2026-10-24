@@ -132,6 +132,15 @@ def test_anthropic_carries_an_install_caution_and_others_none(harness: Harness) 
     assert entries["magika"]["install_caution"] is None
 
 
+def test_torch_carries_a_size_caution(harness: Harness) -> None:
+    harness.install_as("uv-tool")
+    caution = harness.entries()["torch"]["install_caution"]
+    assert caution is not None
+    assert "MB" in caution and "GB" in caution
+    assert "retrieval.rerank_backend" in caution
+    assert "ADR" not in caution
+
+
 def test_excluded_and_always_on_entries_are_not_installable(harness: Harness) -> None:
     harness.install_as("uv-tool")
     entries = harness.entries()

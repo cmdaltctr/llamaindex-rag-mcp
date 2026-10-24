@@ -145,7 +145,8 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # rows (17) and the configuration save route (31). The 48 row and save cases need fastapi
 # (measured 7893, pin 7900).
 # +5 (2026-10-24, magika lookup next to the running Python): test_magika_binary_lookup.py.
-_BASE_EXECUTED = 7905
+# +1 (2026-10-24, PyTorch size caution): test_web_integration_install_routes.py.
+_BASE_EXECUTED = 7906
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -447,7 +448,8 @@ if not _has_qwen_tokenizer:
 # and test_web_integration_install_routes.py (2) (1360).
 # +48 (2026-10-24, edit-settings-from-configuration-page): test_web_configuration_rows.py (17)
 # and test_web_configuration_save.py (31) (1408).
-_WEB_EXTRA_CASES = 1408
+# +1 (2026-10-24, PyTorch size caution): test_web_integration_install_routes.py (1409).
+_WEB_EXTRA_CASES = 1409
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)
