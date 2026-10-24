@@ -281,7 +281,7 @@ describe("Providers", () => {
     });
     const ollama = card("Ollama");
     expect(within(ollama).getByText("http://cfg-host:11434")).toBeInTheDocument();
-    expect(within(ollama).getByText("from omrs.jsonc")).toBeInTheDocument();
+    expect(within(ollama).getByText("Saved in settings (omrs.jsonc)")).toBeInTheDocument();
     expect(within(ollama).getByRole("button", { name: "Edit Address" })).toBeInTheDocument();
   });
 
@@ -304,7 +304,7 @@ describe("Providers", () => {
     await user.clear(input);
     await user.type(input, "http://gpu-box.local:11434");
     await user.click(within(ollama).getByRole("button", { name: "Save" }));
-    expect(await within(ollama).findByText("from omrs.jsonc")).toBeInTheDocument();
+    expect(await within(ollama).findByText("Saved in settings (omrs.jsonc)")).toBeInTheDocument();
     expect(within(ollama).getByText("http://gpu-box.local:11434")).toBeInTheDocument();
     expect(within(ollama).queryByRole("textbox")).toBeNull();
     expect(server.find("PUT", "/v1/connections/ollama")[0]?.body).toEqual({ fields: { base_url: "http://gpu-box.local:11434" }, revision: "r1" });

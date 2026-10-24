@@ -15,7 +15,7 @@ import { SaveErrorNotice } from "./SaveErrorNotice";
 
 const CLOUD_NOTE = "Claims and cited passages are sent off this machine";
 const LOCK_NOTE =
-  "Either variable locks both judge fields here, and the other field can still come from omrs.jsonc, where a hand edit applies only at the next launch.";
+  "Either variable locks both judge fields here, and the other field can still be set in omrs.jsonc, where a hand edit applies only at the next launch.";
 
 /** The provider as set. An alias (`cloud`, `local`) shows with the provider it resolves to. */
 function providerText(judge: JudgeSettings, connections: Connection[]): string {

@@ -39,7 +39,7 @@ describe("Chat section", () => {
     const chat = section();
     expect(within(chat).getByText("Ollama")).toBeInTheDocument();
     expect(within(chat).getByText("qwen3:4b")).toBeInTheDocument();
-    expect(within(chat).getAllByText("from omrs.jsonc")).toHaveLength(2);
+    expect(within(chat).getAllByText("Saved in settings (omrs.jsonc)")).toHaveLength(2);
     expect(within(chat).queryByRole("combobox")).toBeNull();
     await edit(user);
     expect(within(chat).getByRole("combobox", { name: "Chat provider and model" })).toHaveTextContent("Ollama");
@@ -162,7 +162,7 @@ describe("Chat section", () => {
     await pick(user, "Chat provider and model", "OpenRouter");
     await user.type(within(section()).getByRole("textbox", { name: "Model name" }), "openai/gpt-4o-mini");
     await user.click(within(section()).getByRole("button", { name: "Save" }));
-    expect(await within(section()).findAllByText("from omrs.jsonc")).toHaveLength(2);
+    expect(await within(section()).findAllByText("Saved in settings (omrs.jsonc)")).toHaveLength(2);
     expect(within(section()).getByText("openai/gpt-4o-mini")).toBeInTheDocument();
     expect(within(section()).queryByRole("textbox")).toBeNull();
     expect(server.find("PUT", "/v1/settings/chat")[0]?.body).toEqual({ provider: "openrouter", model: "openai/gpt-4o-mini", reasoning: "", revision: "r1" });
@@ -289,7 +289,7 @@ describe("Claim check judge", () => {
   it("opens Edit filled with the saved provider and model", async () => {
     const { user } = await openJudge({ "GET /v1/settings/judge": () => JUDGE_SAVED });
     expect(within(judge()).getByText("OpenRouter")).toBeInTheDocument();
-    expect(within(judge()).getAllByText("from omrs.jsonc")).toHaveLength(2);
+    expect(within(judge()).getAllByText("Saved in settings (omrs.jsonc)")).toHaveLength(2);
     expect(judge()).not.toHaveTextContent("Claim checks are skipped");
     await user.click(within(judge()).getByRole("button", { name: "Edit claim check judge" }));
     expect(within(judge()).getByRole("combobox", { name: "Judge provider and model" })).toHaveTextContent("OpenRouter");
@@ -336,7 +336,7 @@ describe("Claim check judge", () => {
     expect(server.find("PUT", "/v1/settings/judge")).toHaveLength(0);
   });
 
-  it("removes a judge from omrs.jsonc with the clear request and shows the default again", async () => {
+  it("removes a judge from the settings file with the clear request and shows the default again", async () => {
     let state: JudgeSettings = JUDGE_SAVED;
     const { user, server } = await openJudge({
       "GET /v1/settings/judge": () => state,
@@ -357,7 +357,7 @@ describe("Claim check judge", () => {
     const block = judge();
     expect(block).toHaveTextContent("ANSWER__VERIFY_PROVIDER");
     expect(block).toHaveTextContent("Set in .env. Change it there.");
-    expect(block).toHaveTextContent("Either variable locks both judge fields here, and the other field can still come from omrs.jsonc, where a hand edit applies only at the next launch.");
+    expect(block).toHaveTextContent("Either variable locks both judge fields here, and the other field can still be set in omrs.jsonc, where a hand edit applies only at the next launch.");
     expect(block).toHaveTextContent("openai/gpt-5-mini");
     expect(within(block).queryByRole("button", { name: "Edit claim check judge" })).toBeNull();
     expect(within(block).queryByRole("button", { name: "Remove claim check judge" })).toBeNull();

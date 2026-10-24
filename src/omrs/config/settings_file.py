@@ -178,19 +178,38 @@ def _replacement(env_name: str) -> str | None:
     return None if new is None else new.lower().replace("__", ".")
 
 
+def field_bounds(info: FieldInfo) -> dict[str, Any]:
+    """Return the ``ge``, ``gt``, ``le`` and ``lt`` bounds that *info* declares."""
+    found: dict[str, Any] = {}
+    for item in info.metadata:
+        for name in ("ge", "gt", "le", "lt"):
+            if getattr(item, name, None) is not None:
+                found[name] = getattr(item, name)
+    return found
+
+
+#: The text of a one-sided bound, in the order the rule text tries them.
+_ONE_SIDED = (
+    ("gt", "greater than"),
+    ("ge", "of at least"),
+    ("lt", "less than"),
+    ("le", "of at most"),
+)
+
+
 def _rule_text(info: FieldInfo) -> str:
     """Describe the type rule of a field. It names a kind and a range, never a value."""
     names = {info.annotation, *get_args(info.annotation)}
-    low = high = None
-    for item in info.metadata:
-        low = getattr(item, "ge", getattr(item, "gt", low))
-        high = getattr(item, "le", getattr(item, "lt", high))
+    bounds = field_bounds(info)
+    low, high = bounds.get("ge", bounds.get("gt")), bounds.get("le", bounds.get("lt"))
     if bool in names:
         return "The value must be true or false."
     kind = "a whole number" if int in names else "a number" if float in names else None
     if kind is None:
         return "The value must be text." if str in names else "The value is not valid."
     span = f" from {low} to {high}" if low is not None and high is not None else ""
+    if not span:
+        span = next((f" {text} {bounds[name]}" for name, text in _ONE_SIDED if name in bounds), "")
     return f"The value must be {kind}{span}."
 
 

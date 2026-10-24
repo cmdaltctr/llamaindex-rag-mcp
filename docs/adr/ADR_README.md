@@ -103,6 +103,7 @@ development of OMRG — Opinionated Modular RAG.
 | [092](./092-rename-project-to-omrs.md) | Rename OMRG to OMRS | 2026-10-22 | Proposed |
 | [093](./093-answer-reasoning-and-usage-ledger.md) | Answer Reasoning and Usage through a Ledger beside the Seam | 2026-10-23 | Proposed |
 | [094](./094-app-installs-allowed-extras-into-itself.md) | The App Installs Allowed Extras into Its Own Environment | 2026-10-24 | Proposed |
+| [095](./095-page-writes-every-scalar-setting.md) | The Settings Page Writes Every Scalar Setting Except Identity, Storage and Keys | 2026-10-24 | Proposed |
 
 ## Convention
 

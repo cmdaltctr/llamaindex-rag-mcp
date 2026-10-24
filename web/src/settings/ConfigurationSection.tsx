@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { ErrorNotice } from "../components/ErrorNotice";
-import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardInset, CardTitle } from "../components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
-import { sourceText } from "./connectionWords";
+import { ConfigurationRow, isChunkingKey, type RestartRequest } from "./ConfigurationRow";
 import { CopyButton } from "./CopyButton";
-import type { ConfigurationSetting, ConfigurationState, ConfigurationValue } from "./configurationTypes";
+import type { ConfigurationSetting, ConfigurationState } from "./configurationTypes";
+import { IDENTITY_NOTE } from "./DocumentReadingSection";
 import { RestartDialog } from "./RestartDialog";
 import { useConfiguration } from "./useConfiguration";
 
@@ -34,30 +33,13 @@ function title(name: string): string {
   return name === GENERAL ? name : name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, " ");
 }
 
-function valueText(value: ConfigurationValue): string {
-  if (value === null) return "Not set";
-  return typeof value === "object" ? JSON.stringify(value) : String(value);
-}
-
-/** A key shows at most "Key set" and its last four characters; the server never sends more. */
-function shown(setting: ConfigurationSetting): string {
-  if (setting.last4 === undefined) return valueText(setting.value);
-  if (setting.last4 === null) return "No key";
-  return setting.last4 === "" ? "Key set" : `Key set · ending ${setting.last4}`;
-}
-
-export interface RestartRequest {
-  change: string;
-  plural: boolean;
-}
-
 interface ConfigurationViewProps {
   state: ConfigurationState;
   /** Called when the person asks to restart for the settings that wait. */
   onRestart: (request: RestartRequest) => void;
 }
 
-/** The settings, read-only, grouped by block, with the file path, the problems found in the file and a restart prompt. */
+/** The settings grouped by block, one mini card each, with the file path, the problems found in the file and a restart prompt. */
 export function ConfigurationView({ state, onRestart }: ConfigurationViewProps) {
   const waiting = state.settings.filter((setting) => setting.restart_pending);
 
@@ -115,41 +97,12 @@ export function ConfigurationView({ state, onRestart }: ConfigurationViewProps) 
         </Card>
       ) : null}
       {groupSettings(state.settings).map((group) => (
-        <Card key={group.name}>
+        <Card key={group.name} role="group" aria-label={title(group.name)}>
           <CardTitle>{title(group.name)}</CardTitle>
-          <Table aria-label={title(group.name)}>
-            <TableHeader>
-              <TableRow>
-                <TableHead scope="col">Setting</TableHead>
-                <TableHead scope="col">Value</TableHead>
-                <TableHead scope="col">Source</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {group.settings.map((setting) => (
-                <TableRow key={setting.key}>
-                  <TableCell>
-                    <code dir="ltr" className={CODE}>
-                      {setting.key}
-                    </code>
-                  </TableCell>
-                  <TableCell>
-                    <span dir="ltr" className={CODE}>
-                      {shown(setting)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-meta text-muted-foreground">{sourceText(setting.source)}</span>
-                    {setting.restart_pending ? (
-                      <Badge variant="warning" className="ms-2">
-                        Restart to apply
-                      </Badge>
-                    ) : null}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {group.settings.some((setting) => isChunkingKey(setting.key)) ? <p className="text-meta text-muted-foreground">{IDENTITY_NOTE}</p> : null}
+          {group.settings.map((setting) => (
+            <ConfigurationRow key={setting.key} setting={setting} revision={state.revision} onRestart={onRestart} />
+          ))}
         </Card>
       ))}
     </div>
@@ -175,7 +128,7 @@ export function ConfigurationSection() {
           Loading.
         </p>
       )}
-      <RestartDialog change={restart?.change ?? null} plural={restart?.plural ?? false} onLater={() => setRestart(null)} />
+      <RestartDialog change={restart?.change ?? null} plural={restart?.plural ?? false} note={restart?.note} onLater={() => setRestart(null)} />
     </section>
   );
 }

@@ -4106,6 +4106,60 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+    put:
+      operationId: setSettingsConfiguration
+      summary: Save one or more settings to omrs.jsonc, all or none
+      description: >
+        Writes the `changes` to `omrs.jsonc` in one write under the `revision`
+        the page read, or writes nothing. `null` removes a key, so the default
+        applies. The checks run in this order and stop at the first failure:
+        body shape (400, `Invalid request. …`); a key that the page may not
+        write: read-only, a key field, not one plain value, or not a setting
+        (400, "<key> is not a setting that can be changed here."); a key that
+        the environment or `.env` sets (409, "Remove <ENV_NAME> from the
+        environment or .env to edit it here."); a value that breaks its rule
+        (400, "<key>: <rule>", for example "answer.max_rounds: The value must
+        be a whole number from 1 to 8."); a PDF reader that is not installed
+        (400, "pdf_reader: This PDF reader is not installed. Install its
+        package, then save again."); a stale `revision` (409, "omrs.jsonc
+        changed on disk. Reload to see the new values."); a file that cannot be
+        parsed or holds a key twice (409, "omrs.jsonc could not be read. Fix
+        it, then save again."); a disk error (500, "omrs.jsonc could not be
+        written."). A provider value that the running engine refuses puts the
+        file back (409). The answer is the body of `GET
+        /v1/settings/configuration`. Provider fields, `web_max_upload_mib` and
+        `mcp_http_enabled` apply at once; any other saved key shows
+        `restart_pending` true and the source `config-file`, and `value` keeps
+        the launch value. No message holds a submitted value. Session only: a
+        bearer credential gets 403.
+      security:
+        - sessionCookie: [manage]
+      x-omrs-scopes: [manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigurationUpdate"
+      responses:
+        "200":
+          description: The configuration list after the write, with the new revision.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SettingsConfiguration"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /settings/document-reading:
     get:
@@ -8676,11 +8730,66 @@ components:
     ConfigurationSetting:
       type: object
       additionalProperties: false
-      required: [key, value, source, applies, restart_pending]
+      required:
+        - key
+        - value
+        - source
+        - applies
+        - restart_pending
+        - saved
+        - editable
+        - read_only_reason
+        - kind
+        - choices
+        - min
+        - max
+        - nullable
       properties:
         key:
           type: string
           description: Dotted setting key, for example `retrieval.top_k`.
+        saved:
+          description: >
+            The valid value `omrs.jsonc` holds now for this key, as plain JSON
+            data, or null when the file lacks the key. For a restart-only
+            setting it can differ from `value`, which keeps the launch value
+            until a restart. Always null for a key field: the file holds a
+            reference there, and the response never sends it.
+        editable:
+          type: boolean
+          description: >
+            The page may write this key now with `PUT
+            /v1/settings/configuration`. False for a read-only key and for a
+            key that the environment or `.env` sets.
+        read_only_reason:
+          type: [string, "null"]
+          description: >
+            Why the row has no Edit, in plain English, or null when `editable`
+            is true. A read-only key names its reason (embedding identity,
+            storage location, OCR workers folder, key field, or "Edit this in
+            omrs.jsonc."). A key that the environment or `.env` sets reads
+            "Remove <ENV_NAME> from the environment or .env to edit it here."
+        kind:
+          type: [string, "null"]
+          enum: [bool, int, float, text, choice, null]
+          description: The control to show. Null for a setting that is not one plain value.
+        choices:
+          type: [array, "null"]
+          items:
+            type: string
+          description: The accepted values of a `choice` row, else null.
+        min:
+          type: [number, "null"]
+          description: >
+            The inclusive lower bound of a number, else null. A whole number
+            greater than n has the minimum n + 1; a decimal number greater than
+            n has no inclusive bound, so it is null.
+        max:
+          type: [number, "null"]
+          description: The inclusive upper bound of a number, else null.
+        nullable:
+          type: boolean
+          description: The setting accepts null. Clear sends null, so the default applies.
         value:
           description: >
             The value in force as plain JSON data. Null for a key field and for
@@ -8693,12 +8802,36 @@ components:
           enum: [live, restart]
         restart_pending:
           type: boolean
+          description: >
+            `omrs.jsonc` now holds another value for a restart-only setting.
+            `value` keeps the launch value; `source` then names where the value
+            after a restart comes from (`config-file`, or `default` when the
+            file no longer holds the key).
         last4:
           type: string
           maxLength: 4
           description: >
             Present only on a key field that is set: its last four characters,
             or an empty string for a key shorter than eight characters.
+
+    ConfigurationUpdate:
+      type: object
+      additionalProperties: false
+      required: [revision, changes]
+      properties:
+        revision:
+          type: string
+          maxLength: 128
+          description: The `revision` the page last read (`absent` when there was no file).
+        changes:
+          type: object
+          minProperties: 1
+          maxProperties: 128
+          description: >
+            Dotted setting key to its new value, with the key's JSON type, or
+            null to remove the key so the default applies.
+          additionalProperties:
+            type: [string, boolean, number, "null"]
 
     ConfigurationProblem:
       type: object
