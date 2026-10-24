@@ -81,8 +81,8 @@ describe("Integrations", () => {
 
   it("states installed, absent and unknown availability in text", async () => {
     startApp("#/integrations", serve());
-    const badge = async (name: string) => within(await card(name)).getByText(/^(Available|Not installed|Unknown)$/, { selector: "[data-slot=badge]" });
-    expect(await badge("PDF reader: pdf-inspector")).toHaveTextContent("Available");
+    const badge = async (name: string) => within(await card(name)).getByText(/^(Installed|Not installed|Unknown)$/, { selector: "[data-slot=badge]" });
+    expect(await badge("PDF reader: pdf-inspector")).toHaveTextContent("Installed");
     expect(await badge("Chroma vector store")).toHaveTextContent("Not installed");
     expect(await badge("llama.cpp provider")).toHaveTextContent("Unknown");
   });

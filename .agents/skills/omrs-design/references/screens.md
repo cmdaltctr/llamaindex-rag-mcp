@@ -104,7 +104,7 @@ With no experiment root approved, state it and name the `--experiment-root` serv
 
 ## Integrations
 
-One card or table row per integration: chroma, hybrid, pdf-pypdfium2, pdf-inspector, community-leiden, azure, llamacpp, openrouter, torch, web, and magika. Each shows name, one-line purpose, an availability badge with text (available or not installed), and the install command in a monospace block with a copy button.
+One card or table row per integration: chroma, hybrid, pdf-pypdfium2, pdf-inspector, community-leiden, azure, llamacpp, openrouter, torch, web, and magika. Each shows name, one-line purpose, an availability badge with text ("Installed", "Not installed", "Unknown" or "Installed, restart to use"), and the install command in a monospace block with a copy button.
 
 State that availability reflects the running launch, and that installing needs the command run outside the app and the server restarted. The page never installs anything. A failed load shows the friendly line and Retry. Give the copy action visible confirmation and an announcement for assistive technology (a polite live region).
 

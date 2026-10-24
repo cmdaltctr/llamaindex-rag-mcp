@@ -7,7 +7,7 @@ import { InstallControls, installPhase } from "./InstallControls";
 import type { InstallControl } from "./useIntegrationInstall";
 
 const STATUS: Record<IntegrationAvailability, { label: string; variant: "success" | "neutral" | "warning" | "info" }> = {
-  available: { label: "Available", variant: "success" },
+  available: { label: "Installed", variant: "success" },
   "not-installed": { label: "Not installed", variant: "neutral" },
   unknown: { label: "Unknown", variant: "warning" },
   "restart-needed": { label: "Installed, restart to use", variant: "info" },
