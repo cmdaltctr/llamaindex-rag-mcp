@@ -15,7 +15,7 @@ export type IntegrationAvailability = "available" | "not-installed" | "unknown" 
 export type InstallType = "uv-tool" | "checkout" | "other";
 
 /** Why `installable` is false, or `null` when it is true. */
-export type InstallReason = "not-installable-here" | "not-uv-tool" | "uv-not-found" | "already-installed" | "no-requirements";
+export type InstallReason = "not-installable-here" | "status-unknown" | "not-uv-tool" | "uv-not-found" | "already-installed" | "no-requirements";
 
 export interface Integration {
   id: string;
@@ -34,6 +34,8 @@ export interface Integration {
   install_reason: InstallReason | null;
   /** The requirements the extra adds, such as `llama-index-llms-anthropic>=0.11.0`. */
   packages: string[];
+  /** A warning to read before the install, such as a package version it can change; null for most entries. */
+  install_caution: string | null;
 }
 
 export interface IntegrationList {
@@ -50,8 +52,8 @@ export interface IntegrationInstall {
   extra: string | null;
   started_at: string | null;
   finished_at: string | null;
-  /** Why the install failed; null unless `state` is `failed`. */
-  reason: "exit-code" | "timed-out" | "start-failed" | null;
+  /** Why the install failed; null unless `state` is `failed`. `check-failed`: installed, but `uv pip check` found a clash. */
+  reason: "exit-code" | "check-failed" | "timed-out" | "start-failed" | null;
   exit_code: number | null;
   /** The last output lines (at most 40), redacted by the server. */
   output: string[];

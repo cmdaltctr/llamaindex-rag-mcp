@@ -10,8 +10,8 @@
 
 ## 2. Page
 
-- [ ] 2.1 Load the `omrs-design` skill. Show `install_caution` as a red callout on the card while the entry is `not-installed` or `unknown`. Verify: Vitest cases for shown and hidden, failing first.
-- [ ] 2.2 Add the `check-failed` failure line and the `status-unknown` refusal line. Verify: Vitest cases, failing first.
+- [x] 2.1 Load the `omrs-design` skill. Show `install_caution` as a red callout on the card while the entry is `not-installed` or `unknown`. Verify: Vitest cases for shown and hidden, failing first.
+- [x] 2.2 Add the `check-failed` failure line and the `status-unknown` refusal line. Verify: Vitest cases, failing first.
 
 ## 3. Records and checks
 

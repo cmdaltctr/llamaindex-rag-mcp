@@ -14,6 +14,7 @@ const OUTPUT_LINES = 40;
 
 const FAILURE: Record<NonNullable<IntegrationInstall["reason"]>, string> = {
   "exit-code": "The install failed. The last output lines are below.",
+  "check-failed": "The packages were installed, but they clash with packages the server already has. Do not restart yet: run the command below to reinstall cleanly.",
   "timed-out": "The install stopped after 10 minutes. The last output lines are below.",
   "start-failed": "The install could not start.",
 };
@@ -75,13 +76,17 @@ function InstallDialog({ integration, open, onCancel, onConfirm }: { integration
 function FailedInstall({ integration, install, control }: { integration: Integration; install: IntegrationInstall; control: InstallControl }) {
   const extra = integration.extra ?? "";
   const output = install.output.slice(-OUTPUT_LINES);
+  // A second install cannot mend a clash; the lasting command rebuilds the environment.
+  const retry = install.reason !== "check-failed";
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <AlertNotice message={FAILURE[install.reason ?? "exit-code"]}>
-        <Button type="button" variant="outline" size="sm" disabled={control.busy} onClick={() => control.start(extra)}>
-          <RotateCcw aria-hidden="true" />
-          Retry
-        </Button>
+        {retry ? (
+          <Button type="button" variant="outline" size="sm" disabled={control.busy} onClick={() => control.start(extra)}>
+            <RotateCcw aria-hidden="true" />
+            Retry
+          </Button>
+        ) : null}
       </AlertNotice>
       {output.length > 0 ? (
         <pre

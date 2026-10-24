@@ -19,6 +19,7 @@ function entry(id: string, name: string, change: Partial<Integration> = {}): Int
     installable: true,
     install_reason: null,
     packages: [`package-for-${id}>=1.0`],
+    install_caution: null,
     ...change,
   };
 }
@@ -210,6 +211,55 @@ describe("Install from the Integrations page", () => {
     const notice = await screen.findByRole("note");
     await waitFor(() => expect(notice).toHaveTextContent(/Install adds the packages/i));
     expect(notice).toHaveTextContent(/restart makes them available/i);
+  });
+});
+
+const CAUTION = "This install can change another package. It adds Amazon's botocore, which needs python-dateutil below version 3.";
+
+describe("Install caution and post-install check", () => {
+  it("shows the caution in a red callout before the Install button while the entry is not installed", async () => {
+    const { server } = installServer({ catalogue: [{ ...ANTHROPIC, install_caution: CAUTION }, AZURE, WEB] });
+    startApp("#/integrations", server);
+    const anthropic = await card("Anthropic provider");
+    const callout = within(anthropic).getByText(CAUTION).closest("[data-slot=install-caution]");
+    expect(callout).not.toBeNull();
+    expect(callout).toHaveTextContent(/^Before you install/);
+    expect(callout?.className).toMatch(/border-status-error/);
+    const install = within(anthropic).getByRole("button", { name: "Install Anthropic provider" });
+    expect(callout!.compareDocumentPosition(install) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(await card("Azure Document Intelligence")).queryByText(/Before you install/)).toBeNull();
+  });
+
+  it("hides the caution once the entry is available or waits for a restart", async () => {
+    const available = { ...ANTHROPIC, install_caution: CAUTION, availability: "available" as const, installable: false, install_reason: "already-installed" as const };
+    const restart = { ...AZURE, install_caution: CAUTION, availability: "restart-needed" as const, installable: false, install_reason: "already-installed" as const };
+    const { server } = installServer({ catalogue: [available, restart, WEB] });
+    startApp("#/integrations", server);
+    expect(within(await card("Anthropic provider")).queryByText(CAUTION)).toBeNull();
+    expect(within(await card("Azure Document Intelligence")).queryByText(CAUTION)).toBeNull();
+  });
+
+  it("says the packages clash and to run the command when the check after the install fails, with no Retry", async () => {
+    const { server } = installServer({ install: { ...FAILED, reason: "check-failed", output: ["pandas needs python-dateutil>=3"] } });
+    startApp("#/integrations", server);
+    const anthropic = await card("Anthropic provider");
+    const alert = await within(anthropic).findByRole("alert");
+    expect(alert).toHaveTextContent("The packages were installed, but they clash with packages the server already has. Do not restart yet: run the command below to reinstall cleanly.");
+    expect(within(alert).queryByRole("button", { name: "Retry" })).toBeNull();
+    expect(within(anthropic).getByLabelText("Install output for Anthropic provider")).toHaveTextContent("pandas needs python-dateutil>=3");
+  });
+
+  it("says the server could not check the entry when it refuses with status-unknown", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { server } = installServer({
+      post: () => json({ status: "error", message: "Refused <raw> detail", reason: "status-unknown" }, 409),
+    });
+    startApp("#/integrations", server);
+    const { user, dialog } = await pressInstall("Anthropic provider");
+    await user.click(within(dialog).getByRole("button", { name: "Install" }));
+    const alert = await within(await card("Anthropic provider")).findByRole("alert");
+    expect(alert).toHaveTextContent("The server could not check this integration, so it cannot install it. Run the command instead.");
+    expect(within(alert).getByRole("button", { name: "Check again" })).toBeInTheDocument();
   });
 });
 

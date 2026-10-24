@@ -11,6 +11,7 @@ const REFUSALS: Record<string, { message: string; action: RefusalAction }> = {
   "install-running": { message: "Another install is running. Wait for it to finish, then try again.", action: "retry" },
   "not-installable-here": { message: "This integration cannot be installed from the app. Run its command instead.", action: "check" },
   "not-uv-tool": { message: "This server was not installed with uv tool, so it cannot install from the app. Run the command instead.", action: "check" },
+  "status-unknown": { message: "The server could not check this integration, so it cannot install it. Run the command instead.", action: "check" },
   "uv-not-found": { message: "The server cannot find uv, so it cannot install from the app. Run the command instead.", action: "check" },
   "already-installed": { message: "This integration is already installed. Restart the server to use it.", action: "check" },
   "no-requirements": { message: "This integration adds no packages, so there is nothing to install.", action: "check" },

@@ -1,3 +1,4 @@
+import { TriangleAlert } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import type { Integration, IntegrationAvailability, InstallType } from "../api/integrations";
@@ -11,6 +12,19 @@ const STATUS: Record<IntegrationAvailability, { label: string; variant: "success
   unknown: { label: "Unknown", variant: "warning" },
   "restart-needed": { label: "Installed, restart to use", variant: "info" },
 };
+
+/** A red callout with the entry's install caution. It shows only while the entry is not installed yet. */
+function InstallCaution({ text }: { text: string }) {
+  return (
+    <div data-slot="install-caution" className="flex min-w-0 gap-2 rounded-panel border border-status-error bg-status-error/10 px-3 py-2">
+      <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-status-error-label" />
+      <p className="min-w-0 text-ui text-status-error-label [overflow-wrap:anywhere]">
+        <strong>Before you install: </strong>
+        {text}
+      </p>
+    </div>
+  );
+}
 
 /** The DOM id of an entry's card, so a link such as `#/integrations/anthropic` can focus it. */
 export function integrationCardId(id: string): string {
@@ -26,7 +40,9 @@ interface IntegrationCardProps {
 /** One catalogue entry: name, status badge with its value as text, purpose, Install action and install command. */
 export function IntegrationCard({ integration, installType, control }: IntegrationCardProps) {
   // An install that succeeded in this launch shows as restart-needed before the catalogue is read again.
-  const status = STATUS[installPhase(integration, control) === "restart" ? "restart-needed" : integration.availability];
+  const phase = installPhase(integration, control);
+  const status = STATUS[phase === "restart" ? "restart-needed" : integration.availability];
+  const caution = integration.install_caution !== null && phase !== "restart" && (integration.availability === "not-installed" || integration.availability === "unknown");
   return (
     <Card id={integrationCardId(integration.id)} tabIndex={-1} className="scroll-mt-4">
       <CardHeader>
@@ -40,6 +56,7 @@ export function IntegrationCard({ integration, installType, control }: Integrati
         {integration.availability === "unknown" && (
           <p className="text-meta text-muted-foreground">The server could not check this integration.</p>
         )}
+        {caution && <InstallCaution text={integration.install_caution ?? ""} />}
         <InstallControls integration={integration} control={control} />
         {integration.install_command === null ? (
           <p className="text-meta text-muted-foreground">Always on. Nothing to install.</p>

@@ -30,6 +30,7 @@ const CATALOGUE: Integration[] = [
     installable: false,
     install_reason: "not-uv-tool" as const,
     packages: [],
+    install_caution: null,
   })),
   {
     id: "magika",
@@ -42,6 +43,7 @@ const CATALOGUE: Integration[] = [
     installable: false,
     install_reason: "not-installable-here",
     packages: [],
+    install_caution: null,
   },
 ];
 
