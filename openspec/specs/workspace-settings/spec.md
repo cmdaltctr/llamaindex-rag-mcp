@@ -26,7 +26,7 @@ The Settings view SHALL offer the sections Appearance, Providers, Chat, MCP, Ser
 
 ### Requirement: Connections show provider configuration without secrets
 
-The Providers section SHALL show one card for each entry of `GET /v1/connections`. Each card SHALL show the provider name, a Local or Cloud badge with text, the roles that use it, each editable field as a setting row, the read-only values (embedding address and models) as read-only rows, and the install command when the provider is not installed. A field from `env` SHALL show "Set in the environment. Change it there." with the variable name. A field from `dotenv` SHALL show "Set in .env. Change it there." with the variable name and the `.env` path. A field from `config-file` SHALL show "from omrs.jsonc" and SHALL stay editable. A key from `key-file` SHALL show "from key file" with the file path. A key from `keychain` SHALL show "in system keychain". The field source SHALL be one of `env`, `dotenv`, `config-file`, `keychain`, `key-file`, `default` and `none`. A key field SHALL show at most "Key set" and the last four characters. A Cloud card, and a card whose address is not on this machine, SHALL state that text leaves this machine. The section SHALL name the `omrs.jsonc` path and SHALL state that saves are written there.
+The Providers section SHALL show one card for each entry of `GET /v1/connections`. Each card SHALL show the provider name, a Local or Cloud badge with text, the roles that use it, each editable field as a setting row, the read-only values (embedding address and models) as read-only rows, and the install command when the provider is not installed. A field from `env` SHALL show "Set in the environment. Change it there." with the variable name. A field from `dotenv` SHALL show "Set in .env. Change it there." with the variable name and the `.env` path. A field from `config-file` SHALL show "Saved in settings (omrs.jsonc)" and SHALL stay editable. A key from `key-file` SHALL show "from key file" with the file path. A key from `keychain` SHALL show "in system keychain". The field source SHALL be one of `env`, `dotenv`, `config-file`, `keychain`, `key-file`, `default` and `none`. A key field SHALL show at most "Key set" and the last four characters. A Cloud card, and a card whose address is not on this machine, SHALL state that text leaves this machine. The section SHALL name the `omrs.jsonc` path and SHALL state that saves are written there.
 
 #### Scenario: Roles follow the configuration
 
@@ -41,7 +41,7 @@ The Providers section SHALL show one card for each entry of `GET /v1/connections
 #### Scenario: Address from the config file
 
 - **WHEN** the Ollama entry reports the source `config-file`
-- **THEN** the card MUST show the address with "from omrs.jsonc" and MUST offer Edit
+- **THEN** the card MUST show the address with "Saved in settings (omrs.jsonc)" and MUST offer Edit
 
 #### Scenario: Key from a key file
 
@@ -180,7 +180,7 @@ The Ollama card SHALL show "Context window (tokens)" as a setting row with its v
 #### Scenario: Save a value
 
 - **WHEN** the user presses Edit, types 32768 and presses Save
-- **THEN** the card MUST show 32768 and the source "from omrs.jsonc"
+- **THEN** the card MUST show 32768 and the source "Saved in settings (omrs.jsonc)"
 
 #### Scenario: Out of range
 
@@ -233,12 +233,12 @@ The llama.cpp card SHALL show a "Local server" panel with: the state as text and
 
 ### Requirement: Every setting is shown as a value and source row
 
-Each editable setting on the Settings page SHALL show one row with its label, the value in force and its source in plain words ("from omrs.jsonc", "Set in .env", "Set in the environment", "default"). Edit SHALL open an input filled with the value in force, with Save and Cancel. The page SHALL NOT show an empty input for a field that has a value.
+Each editable setting on the Settings page SHALL show one row with its label, the value in force and its source in plain words ("Saved in settings (omrs.jsonc)", "Set in .env", "Set in the environment", "default"). Edit SHALL open an input filled with the value in force, with Save and Cancel. The page SHALL NOT show an empty input for a field that has a value.
 
 #### Scenario: Value from the file
 
 - **WHEN** `omrs.jsonc` sets `llamacpp_server_binary` to `/opt/homebrew/bin/llama-server`
-- **THEN** the row MUST show that path and "from omrs.jsonc", and no input MUST be visible until the user presses Edit
+- **THEN** the row MUST show that path and "Saved in settings (omrs.jsonc)", and no input MUST be visible until the user presses Edit
 
 #### Scenario: Edit opens filled
 
@@ -304,7 +304,7 @@ After the user saves a setting that applies only after a restart, the page SHALL
 
 ### Requirement: The Configuration section lists every setting
 
-Settings SHALL have a Configuration section that lists every setting read-only, grouped by block, with its value in force, its source, and "Restart to apply" when its file value differs from the value the server started with. Keys SHALL show at most the last four characters. The section SHALL show the `omrs.jsonc` path with a copy action, and the problems found in the file. It SHALL take its data from `GET /v1/settings/configuration` (read scope).
+Settings SHALL have a Configuration section that lists every setting, grouped by block, with its value in force, its source, and "Restart to apply" when its file value differs from the value the server started with. Keys SHALL show at most the last four characters. The section SHALL show the `omrs.jsonc` path with a copy action, and the problems found in the file. It SHALL take its data from `GET /v1/settings/configuration` (read scope). Each setting SHALL be a mini card. A setting the server reports as editable SHALL offer Edit, which opens a control for its kind: an on/off switch for a boolean, a number field with its range for a number, a choice list for a setting with fixed choices, and a text field for text. Save SHALL call `PUT /v1/settings/configuration` with the revision the section read. A setting the server reports as read-only SHALL show its reason and no Edit. A setting set in the environment or `.env` SHALL be read-only and SHALL show "Remove <ENV_NAME> from the environment or .env to edit it here." An optional setting saved in the file SHALL offer Clear, which removes the key so the default applies. A chunking setting SHALL state that it is part of the index identity, so the next ingest after a restart can read existing files again.
 
 #### Scenario: Engine setting edited by hand
 
@@ -320,6 +320,41 @@ Settings SHALL have a Configuration section that lists every setting read-only, 
 
 - **WHEN** the server could not move saved settings into `omrs.jsonc`
 - **THEN** the section MUST show "Saved settings could not be moved to omrs.jsonc" with the folder path
+
+#### Scenario: Edit a restart-only number
+
+- **WHEN** `retrieval.top_k` comes from the default and the user edits it to 20 and saves
+- **THEN** the page MUST send `{"revision": <read revision>, "changes": {"retrieval.top_k": 20}}`, the row MUST show 20 with "Saved in settings (omrs.jsonc)" and "Restart to apply", and the restart dialog MUST be offered
+
+#### Scenario: Turn a boolean off
+
+- **WHEN** the user switches `answer.enabled` off and saves
+- **THEN** `omrs.jsonc` MUST hold `answer.enabled` false and the row MUST show "Off"
+
+#### Scenario: Choose from fixed choices
+
+- **WHEN** the user edits `metadata.extraction_mode`
+- **THEN** the control MUST be a choice list of the accepted modes, and no free text MUST be possible
+
+#### Scenario: Out of range number refused before the request
+
+- **WHEN** the server reports `answer.max_rounds` with the range 1 to 8 and the user types 12
+- **THEN** the page MUST show the range rule and MUST NOT send a request
+
+#### Scenario: Read-only identity setting
+
+- **WHEN** the section shows `embed_model`
+- **THEN** the row MUST show its value and its reason ("The embedding model is part of every collection. Change it in omrs.jsonc and re-ingest.") and MUST NOT offer Edit
+
+#### Scenario: Clear an optional setting
+
+- **WHEN** `omrs.jsonc` holds `metadata.ollama_classify_timeout_override` 30 and the user presses Clear
+- **THEN** the key MUST be removed from the file and the row MUST show the default and the source "default"
+
+#### Scenario: File changed under the page
+
+- **WHEN** someone edits `omrs.jsonc` by hand after the section loaded and the user then saves a setting
+- **THEN** the page MUST show "omrs.jsonc changed on disk. Reload to see the new values." and MUST NOT write
 
 ### Requirement: Document reading shows the reading settings and their state
 
