@@ -27,5 +27,6 @@ Implement after `add-chat-reasoning-and-usage` and `install-integrations-from-th
 ## 5. Records and checks
 
 - [x] 5.1 Write an ADR amending ADR-087's rule on the keys the page may write (load `s-adr`); add it to the index.
-- [ ] 5.2 Run `./scripts/local_ci.sh`, `npm run lint`, `npm run typecheck`, `npm test` in `web/`, and `openspec validate edit-settings-from-configuration-page --strict`. Verify: all pass.
+- [x] 5.2 Run `./scripts/local_ci.sh`, `npm run lint`, `npm run typecheck`, `npm test` in `web/`, and `openspec validate edit-settings-from-configuration-page --strict`. Verify: all pass.
+  - Done (2026-10-24): local CI passed: 7,893 passed and 152 skipped in the main suite, tripwire 5 passed (re-pinned to 7,900 executed, `_WEB_EXTRA_CASES` 1,408), 152 web test files with 1,887 tests, lint and typecheck clean, 85 specs valid, OpenAPI contract valid. `openspec validate edit-settings-from-configuration-page --strict` passed.
 - [ ] 5.3 Browser check on a scratch server at 1280 px and 390 px, following the Orca preview steps: edit `retrieval.top_k`, see "Restart to apply", restart, see it in force; confirm `embed_model` has no Edit.
