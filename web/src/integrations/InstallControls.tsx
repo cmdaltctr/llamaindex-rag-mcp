@@ -23,7 +23,10 @@ export function installPhase(integration: Integration, control: InstallControl):
   const extra = integration.extra;
   const install = control.install;
   const mine = extra !== null && install?.extra === extra;
-  if (integration.availability === "restart-needed" || (mine && install?.state === "succeeded")) return "restart";
+  // A local success only lifts an entry the catalogue still calls not installed. After a restart the
+  // catalogue says available, and the cached status must not hide that.
+  const succeeded = mine && install?.state === "succeeded" && integration.availability === "not-installed";
+  if (integration.availability === "restart-needed" || succeeded) return "restart";
   if ((mine && install?.state === "running") || (extra !== null && control.starting === extra)) return "running";
   if (mine && install?.state === "failed") return "failed";
   return integration.installable && extra !== null ? "ready" : "none";

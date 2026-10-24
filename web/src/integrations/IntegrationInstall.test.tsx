@@ -177,6 +177,19 @@ describe("Install from the Integrations page", () => {
     expect(within(anthropic).queryByRole("button", { name: /^Install/ })).toBeNull();
   });
 
+  it("trusts the server after a restart: an available entry shows Available even when the last status read said succeeded", async () => {
+    // A login item restart signs the page in again without a reload, so the cached status can still say succeeded.
+    const { server } = installServer({
+      install: SUCCEEDED,
+      catalogue: [{ ...ANTHROPIC, availability: "available", installable: false, install_reason: "already-installed" }, WEB],
+    });
+    startApp("#/integrations", server);
+    const anthropic = await card("Anthropic provider");
+    await waitFor(() => expect(statusReads(server)).toBe(1));
+    expect(within(anthropic).getByText("Available", { selector: "[data-slot=badge]" })).toBeInTheDocument();
+    expect(within(anthropic).queryByRole("button", { name: "Restart" })).toBeNull();
+  });
+
   it("shows no Install button on an entry that is not installable, only its command", async () => {
     const { server } = installServer();
     startApp("#/integrations", server);
