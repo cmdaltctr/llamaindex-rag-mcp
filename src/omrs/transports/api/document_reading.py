@@ -186,6 +186,15 @@ def update_refusal(values: Mapping[str, Any], launch: Settings) -> tuple[int, st
             rule = document_reading_problem(key, values[key])
             if rule is not None:
                 return 400, f"{key}: {rule}"
+    return reader_refusal(values)
+
+
+def reader_refusal(values: Mapping[str, Any]) -> tuple[int, str] | None:
+    """Return ``(400, READER_NOT_INSTALLED)`` when *values* name a PDF reader that is missing.
+
+    ``auto``, ``None`` and a missing ``pdf_reader`` pass. The Configuration save
+    runs this check too.
+    """
     reader = values.get("pdf_reader")
     if reader not in (None, "auto") and capabilities.pdf_reader_options().get(reader) is not None:
         return 400, READER_NOT_INSTALLED

@@ -14,6 +14,10 @@ an edit here.
 A key field never leaves this module as a value: the row holds ``None`` and
 the last four characters, and only when the key has at least eight
 characters.
+
+Each row also describes its control (edit-settings-from-configuration-page
+D2): whether the page may write it, why not, its kind, choices, bounds and
+whether it takes ``null``. A value that ``env`` or ``.env`` sets locks its row.
 """
 
 from __future__ import annotations
@@ -26,7 +30,9 @@ from typing import TYPE_CHECKING, Any
 
 from ..config.provider_sources import PROVIDER_FIELDS
 from ..config.rules import FILE_ONLY, SECRET_FIELDS
+from ..config.setting_shapes import setting_shape
 from ..config.settings_file import SettingsFile, setting_paths
+from ..config.settings_file_write import read_only_reason
 
 if TYPE_CHECKING:
     from ..config import Settings
@@ -45,6 +51,8 @@ FILE_ONLY_DEFAULTS: Mapping[str, Any] = {
 }
 #: Sources that win over the file, so a file edit changes nothing.
 OUTRANKS_FILE: frozenset[str] = frozenset({"init", "env", "dotenv"})
+#: Sources that lock a row: the page may not write the key while they set it.
+LOCKING_SOURCES: frozenset[str] = frozenset({"env", "dotenv"})
 #: A key shorter than this shows no characters at all.
 MIN_KEY_CHARS_FOR_LAST4 = 8
 
@@ -52,6 +60,27 @@ MIN_KEY_CHARS_FOR_LAST4 = 8
 def applies(path: str) -> str:
     """Return ``live`` when the setting *path* applies at once, else ``restart``."""
     return APPLIES_LIVE if path in LIVE_KEYS else APPLIES_RESTART
+
+
+def env_name(key: str) -> str:
+    """Return the environment name of *key* (``retrieval.top_k`` gives ``RETRIEVAL__TOP_K``)."""
+    return key.upper().replace(".", "__")
+
+
+def env_lock_reason(key: str) -> str:
+    """Return the lock text of a key that ``env`` or ``.env`` sets. It names the variable."""
+    return f"Remove {env_name(key)} from the environment or .env to edit it here."
+
+
+def edit_refusal(key: str, source: str) -> str | None:
+    """Return why the page may not write *key* now, or ``None`` when it may.
+
+    A read-only reason wins over the lock of an ``env`` or ``dotenv`` source.
+    """
+    reason = read_only_reason(key)
+    if reason is None and source in LOCKING_SOURCES:
+        return env_lock_reason(key)
+    return reason
 
 
 def restart_only_keys() -> tuple[str, ...]:
@@ -72,6 +101,16 @@ class SettingView:
         restart_pending: The file now holds another value that a restart applies.
         last4: Only for a key field that is set: its last four characters, or an
             empty string when the key is too short to show any.
+        saved: The value ``omrs.jsonc`` holds now as plain JSON data, or
+            ``None`` when the file lacks it. ``None`` for a key field.
+        editable: The page may write this key now.
+        read_only_reason: Why the page may not, or ``None`` when it may.
+        kind: ``bool``, ``int``, ``float``, ``text`` or ``choice``; ``None``
+            for a setting that is not one plain value.
+        choices: The accepted values of a ``choice`` row, else ``None``.
+        min: The inclusive lower bound of a number, else ``None``.
+        max: The inclusive upper bound of a number, else ``None``.
+        nullable: The setting takes ``None``, so Clear restores its default.
     """
 
     key: str
@@ -80,6 +119,14 @@ class SettingView:
     applies: str
     restart_pending: bool
     last4: str | None = None
+    saved: Any = None
+    editable: bool = False
+    read_only_reason: str | None = None
+    kind: str | None = None
+    choices: tuple[str, ...] | None = None
+    min: int | float | None = None
+    max: int | float | None = None
+    nullable: bool = False
 
     def __repr__(self) -> str:
         return f"SettingView(key={self.key}, source={self.source}, applies={self.applies})"
@@ -159,7 +206,10 @@ def describe_settings(
 
     Returns:
         One row per setting key, in model order. A row never holds a key
-        value: key fields give ``value=None`` and the last four characters.
+        value: key fields give ``value=None``, ``saved=None`` and the last four
+        characters. A row whose restart is pending names the source of the
+        value a restart applies: ``config-file``, or ``default`` when the file
+        no longer holds the key.
     """
     fixed = overrides or {}
     rows: list[SettingView] = []
@@ -178,14 +228,28 @@ def describe_settings(
                 source = "default"
         else:
             value, source = plain(_lookup(settings, path)), source_word(settings, path)
+        waiting = path in pending and source not in OUTRANKS_FILE
+        if waiting and path not in SECRET_FIELDS:
+            # The value after a restart comes from the file now, so the source says so.
+            source = "config-file" if file.values.get(path) is not None else "default"
+        refusal = edit_refusal(path, source)
+        shape = setting_shape(path)
         rows.append(
             SettingView(
                 key=path,
                 value=value,
                 source=source,
                 applies=kind,
-                restart_pending=path in pending and source not in OUTRANKS_FILE,
+                restart_pending=waiting,
                 last4=last4,
+                saved=None if path in SECRET_FIELDS else plain(file.values.get(path)),
+                editable=refusal is None,
+                read_only_reason=refusal,
+                kind=shape.kind,
+                choices=shape.choices,
+                min=shape.min,
+                max=shape.max,
+                nullable=shape.nullable,
             )
         )
     return rows
