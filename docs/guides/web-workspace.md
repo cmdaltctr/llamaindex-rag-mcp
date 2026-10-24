@@ -468,43 +468,62 @@ The nine keys are part of the index identity. After a restart, the next ingest c
 
 ### Configuration
 
-Settings > Configuration (`#/settings/configuration`) lists every setting. The page reads `GET /v1/settings/configuration`. The settings are grouped by block, for example Retrieval, Chunking and Answer. Each block is a card. Each setting is a mini card in its block card.
+Settings > Configuration (`#/settings/configuration`) lists every setting. The page reads `GET /v1/settings/configuration`. The settings are grouped by block, for example Retrieval, Chunking and Answer. Each block is a card that holds one table with the columns Setting, Value and Source. Each setting is one row of the table.
 
 Each row shows these items:
 
-- The key, for example `retrieval.top_k`.
-- The value in force. A boolean shows "On" or "Off". A setting with no value shows "Not set".
-- The source in plain words: "Saved in settings (omrs.jsonc)", "Set in .env. Change it there.", "Set in the environment. Change it there." or "default".
-- "Restart to apply" when the file value differs from the value at launch.
+- Setting: the key, for example `retrieval.top_k`.
+- Value: the value in force. A boolean shows "On" or "Off". A setting with no value shows "Not set".
+- Source: where the value comes from, in plain words: "Saved in settings (omrs.jsonc)", "Set in .env. Change it there.", "Set in the environment. Change it there." or "default".
+- "Restart to apply" in the Source cell when the file value differs from the value at launch.
+
+At phone width the table has no Source column. The source shows under the setting name, and the page does not scroll sideways.
 
 A key shows "Key set · ending XXXX" at most. The page never shows more of a key.
 
 The top of the section shows the `omrs.jsonc` path with a copy action. It also lists the problems in the file, one plain line for each key.
 
-#### Change a setting
+#### Change settings
 
-1. Select Edit on the row.
-2. Set the new value. The control follows the kind of setting:
-   - A boolean has an On/Off switch.
-   - A whole number has a number field. The row checks the range, for example "Enter 1 to 8.".
-   - A decimal number has a number field that accepts decimals in its range.
-   - A setting with fixed choices has a choice list. You cannot type other text.
-   - Text has a text field.
-3. Select Save.
+A block card with at least one editable setting has Edit at its top right. To change settings in that block:
 
-A value outside the range shows the range rule. The page then sends nothing. Save sends `PUT /v1/settings/configuration` with the revision the section read. The row then shows the value and the source that the server returns.
+1. Select Edit at the top right of the block card.
+2. Change the value in one or more cells.
+3. Select Save at the top right of the card.
 
-Some settings apply at once, for example the provider addresses. Most settings apply after a restart of `omrs web`. After you save one of them, the restart dialog opens. Select "Restart now", or select Later and restart yourself.
+To stop without a save, select Cancel. Cancel drops every change in the table and leaves edit mode.
 
-Until the restart, the row shows the value in force since the launch. Next to it, the row shows "Saved for the next launch: <value>" and "Restart to apply". The source names where the value comes from after the restart. Edit opens with the saved value. After a save, the other Settings sections read their values again, so a setting that applies at once shows there too.
+Edit puts the whole table in edit mode, and Cancel and Save take the place of Edit. Each editable Value cell then shows a control. The control starts with the value that the next launch uses. Its type follows the kind of setting:
+
+- A boolean has an On/Off switch.
+- A whole number has a number field with its range.
+- A decimal number has a number field that accepts decimals in its range.
+- A setting with fixed choices has a choice list. You cannot type other text.
+- Text has a text field.
+
+The rule of a cell shows under its field as you type. A number outside its range shows the range rule, for example "Enter 1 to 8.". An empty field on a setting that is not optional shows "Enter a value.". Save stays disabled until a cell changes. It also stays disabled while a cell breaks its rule.
+
+Save sends all changed cells of the table in one `PUT /v1/settings/configuration` request, with the revision the section read. The server writes all of the changes or none of them. One save covers one table only. After a good save the table leaves edit mode. Each row then shows the value and the source that the server returns.
+
+Only one table can be in edit mode at a time. If the open table has changes and you select Edit on a second table, the page asks "Discard your changes to <Block>?". Select "Keep editing" to go back to the open table. Select Discard to drop the changes and open the second table. An open table with no changes closes at once.
+
+Some settings apply at once, for example the provider addresses. Most settings apply after a restart of `omrs web`. When a save holds one or more of them, the restart dialog opens one time for the whole save. Select "Restart now", or select Later and restart yourself.
+
+Until the restart, the Value cell shows the value in force since the launch. Under that value, the cell shows "Next launch: <value>". When the file holds no value for the key, it shows "Next launch: default". The Source cell shows "Restart to apply". The source names where the value comes from after the restart. After a save, the other Settings sections read their values again, so a setting that applies at once shows there too.
 
 #### Clear an optional setting
 
-An optional setting saved in `omrs.jsonc` has Clear. Select Edit, then select Clear. The page removes the key from `omrs.jsonc`. The row then shows the default value and the source "default". For a setting that applies after a restart, the row shows "Saved for the next launch: default" until the restart.
+There is no Clear button. To clear an optional setting:
+
+1. Select Edit at the top right of the block card.
+2. Empty the field of the setting.
+3. Select Save.
+
+The page sends `null` for that key, and the server removes the key from `omrs.jsonc`. The row then shows the default value and the source "default". For a setting that applies after a restart, the row shows "Next launch: default" until the restart.
 
 #### Read-only settings
 
-A read-only row shows its value, its source and the reason. It has no Edit. These settings are read-only:
+A read-only row keeps its value as text with a lock icon, also in edit mode. The reason is the name of the lock icon, so a hover or a screen reader gives it. In edit mode the reason also shows on a line under the row. A block with no editable setting has no Edit. These settings are read-only:
 
 | Settings | Reason on the row |
 | --- | --- |
@@ -519,11 +538,11 @@ A read-only row shows its value, its source and the reason. It has no Edit. Thes
 
 #### Chunking settings
 
-The Chunking card states that its settings are part of the index identity. After a restart, the next ingest can read existing files again. The restart dialog after a Chunking save states the same.
+The Chunking card states one time, for the whole table, that its settings are part of the index identity. After a restart, the next ingest can read existing files again. The restart dialog after a Chunking save states the same.
 
 #### Failed saves
 
-A failed save shows one line and one action. When the server refuses a value, the row shows the server rule. When `omrs.jsonc` changed on disk after the section loaded, the row shows "omrs.jsonc changed on disk. Reload to see the new values." The page writes nothing. Select Reload to read the new values, then save again.
+A failed save shows one line and one action under the card header. The table stays in edit mode and keeps the typed values. When the server refuses a value, the card shows the server message. When `omrs.jsonc` changed on disk after the section loaded, the card shows "omrs.jsonc changed on disk. Reload to see the new values." The page writes nothing. Select Reload to read the new values, then save again.
 
 ### Embedding model of a profile
 

@@ -61,10 +61,10 @@ describe("every Settings tab uses cards", () => {
     expect(within(section).getByRole("combobox").closest(INSET)).not.toBeNull();
   });
 
-  it("shows each Configuration setting in its own mini card inside a block card", async () => {
+  it("each setting row is in a table inside a block card", async () => {
     const section = await openTab("configuration", "Configuration");
     const key = await within(section).findByText("retrieval.top_k");
-    expect(key.closest(INSET)).not.toBeNull();
-    expect(key.closest(CARD)).not.toBeNull();
+    expect(key.closest("tr")).not.toBeNull();
+    expect(key.closest("table")?.closest(CARD)).toBe(within(section).getByRole("group", { name: "Retrieval" }));
   });
 });
