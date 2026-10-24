@@ -22,10 +22,11 @@
 
 ## 4. HTTP routes
 
-- [ ] 4.1 Carry the levels on `GET/PUT /v1/settings/chat` and the judge route, with the 400 and 409 rules. Verify: route tests for save, refuse and lock.
-- [ ] 4.2 Add `GET /v1/settings/chat/reasoning-levels` with the OpenRouter catalogue hook and the 10-minute cache. Verify: tests with a recorded catalogue for a mandatory model, a model with `none`, an unknown model, a fetch failure and a provider without a catalogue (no request sent).
-- [ ] 4.3 Add `GET /v1/usage/credit` with the OpenRouter `/key` hook. Verify: tests for a key with a limit, a key without one, an error, and a check that the key text is not in the response or the log.
-- [ ] 4.4 Update the OpenAPI 3.1 contract and its contract test.
+- [x] 4.1 Carry the levels on `GET/PUT /v1/settings/chat` and the judge route, with the 400 and 409 rules. Verify: route tests for save, refuse and lock.
+- [x] 4.2 Add `GET /v1/settings/chat/reasoning-levels` with the OpenRouter catalogue hook and the 10-minute cache. Verify: tests with a recorded catalogue for a mandatory model, a model with `none`, an unknown model, a fetch failure and a provider without a catalogue (no request sent).
+- [x] 4.3 Add `GET /v1/usage/credit` with the OpenRouter `/key` hook. Verify: tests for a key with a limit, a key without one, an error, and a check that the key text is not in the response or the log.
+- [x] 4.4 Update the OpenAPI 3.1 contract and its contract test.
+  - Ticked 2026-10-24 from evidence: the routes and tests landed in `eebb25c` but the boxes stayed open. `test_web_reasoning_settings.py`, `test_web_reasoning_levels.py`, `test_web_usage_credit.py` and `test_web_openapi_conformance.py` hold every stated case (save, 400, 409 lock; mandatory, `none`, unknown, fetch failure, no-catalogue; limit, no limit, error, key not in response or log) and pass (87 passed).
 
 ## 5. Settings page
 
