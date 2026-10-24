@@ -24,9 +24,9 @@ function isEditable(setting: ConfigurationSetting): boolean {
   return setting.editable && setting.kind !== null;
 }
 
-/** A value as the table shows it: On or Off for a boolean, "Not set" for no value. */
+/** A value as the table shows it: On or Off for a boolean, "Not set" for no value or empty text. */
 function shownValue(setting: ConfigurationSetting, value: ConfigurationValue): string {
-  if (value === null) return "Not set";
+  if (value === null || value === "") return "Not set";
   if (setting.kind === "bool" && typeof value === "boolean") return value ? "On" : "Off";
   return valueText(value);
 }

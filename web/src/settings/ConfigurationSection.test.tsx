@@ -160,9 +160,10 @@ describe("A Configuration block", () => {
     expect(rowOf("anthropic.api_key")).not.toHaveTextContent("ending");
   });
 
-  it("shows a setting with no value as Not set and a list as text with a lock", () => {
-    view(withSettings(setting("answer.model", null), readOnly("ingestion.ingest_extensions", [".md", ".pdf"], "Edit this in omrs.jsonc.", { kind: null })));
+  it("shows a setting with no value or empty text as Not set and a list as text with a lock", () => {
+    view(withSettings(setting("answer.model", null), readOnly("embedding.query_instruction", "", IDENTITY), readOnly("ingestion.ingest_extensions", [".md", ".pdf"], "Edit this in omrs.jsonc.", { kind: null })));
     expect(rowOf("answer.model")).toHaveTextContent("Not set");
+    expect(rowOf("embedding.query_instruction")).toHaveTextContent("Not set");
     expect(rowOf("ingestion.ingest_extensions")).toHaveTextContent('[".md",".pdf"]');
     expect(within(rowOf("ingestion.ingest_extensions")).getByRole("img", { name: "Edit this in omrs.jsonc." })).toBeInTheDocument();
     expect(within(cardOf("Ingestion")).queryByRole("button")).not.toBeInTheDocument();
