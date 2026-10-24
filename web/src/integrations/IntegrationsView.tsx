@@ -4,6 +4,7 @@ import { useApi } from "../api/ApiProvider";
 import type { IntegrationList } from "../api/integrations";
 import { integrationsQuery } from "../api/queries";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { MasonryColumns } from "../components/MasonryColumns";
 import { PageHeader } from "../components/PageHeader";
 import { areaById } from "../lib/views";
 import { IntegrationCard, integrationCardId } from "./IntegrationCard";
@@ -61,13 +62,17 @@ export function IntegrationsView({ entry = null }: { entry?: string | null }) {
           </p>
         )
       ) : (
-        <ul aria-label="Integrations" className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {list.integrations.map((integration) => (
-            <li key={integration.id} className="min-w-0">
-              <IntegrationCard integration={integration} installType={list.install_type} control={control} />
-            </li>
-          ))}
-        </ul>
+        // Masonry, not a grid: a card with an install message is tall, and a
+        // grid row would leave a gap beside the short cards next to it.
+        <div role="list" aria-label="Integrations">
+          <MasonryColumns>
+            {list.integrations.map((integration) => (
+              <div key={integration.id} role="listitem" className="min-w-0">
+                <IntegrationCard integration={integration} installType={list.install_type} control={control} />
+              </div>
+            ))}
+          </MasonryColumns>
+        </div>
       )}
     </section>
   );

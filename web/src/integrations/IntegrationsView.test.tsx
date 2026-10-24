@@ -72,6 +72,13 @@ describe("Integrations", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Integrations" })).toBeInTheDocument();
   });
 
+  it("places the cards in masonry columns, so a tall card leaves no gap beside short ones", async () => {
+    startApp("#/integrations", serve());
+    const list = await screen.findByRole("list", { name: "Integrations" });
+    expect(within(list).getByTestId("masonry")).toBeInTheDocument();
+    for (const item of within(list).getAllByRole("listitem")) expect(item.closest("[data-testid='masonry-column']")).not.toBeNull();
+  });
+
   it("states installed, absent and unknown availability in text", async () => {
     startApp("#/integrations", serve());
     const badge = async (name: string) => within(await card(name)).getByText(/^(Available|Not installed|Unknown)$/, { selector: "[data-slot=badge]" });
