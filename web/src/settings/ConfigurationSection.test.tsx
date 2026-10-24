@@ -125,7 +125,7 @@ describe("A Configuration block", () => {
   it("Read-only identity setting", async () => {
     const { user } = view(withSettings(readOnly("embed_model", "nomic-embed-text", IDENTITY), setting("web_port", 8765, { kind: "int" })));
     const lock = within(rowOf("embed_model")).getByRole("img", { name: IDENTITY });
-    expect(lock).toHaveAttribute("title", IDENTITY);
+    expect(lock).toHaveAttribute("tabindex", "0");
     expect(screen.queryByText(IDENTITY)).not.toBeInTheDocument();
     await edit(user, "General");
     const row = rowOf("embed_model");

@@ -4,6 +4,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardTitle } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
 import { cellRule, changesOf, restartFor, startText, valueText, type Draft, type RestartRequest } from "./configurationDraft";
 import type { ConfigurationSetting, ConfigurationValue } from "./configurationTypes";
 import { sourceText } from "./connectionWords";
@@ -47,6 +48,26 @@ function SourceWords({ setting }: { setting: ConfigurationSetting }) {
   );
 }
 
+/**
+ * The lock on a read-only row. Hover or keyboard focus opens a tooltip that
+ * says the setting cannot be changed on this page, and why.
+ */
+function ReadOnlyLock({ reason }: { reason: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span role="img" aria-label={reason} tabIndex={0} className="inline-flex shrink-0 rounded-small text-muted-foreground">
+          <Lock size={16} aria-hidden="true" />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="flex flex-col gap-0.5">
+        <span className="font-semibold">Read-only on this page.</span>
+        <span>{reason}</span>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 /** The value in force as text, a lock with the reason on a read-only row, and the next launch value while a restart waits. */
 function ValueText({ setting }: { setting: ConfigurationSetting }) {
   const value = shown(setting);
@@ -61,11 +82,7 @@ function ValueText({ setting }: { setting: ConfigurationSetting }) {
             {value}
           </span>
         )}
-        {reason !== null ? (
-          <span role="img" aria-label={reason} title={reason} className="inline-flex shrink-0 text-muted-foreground">
-            <Lock size={16} aria-hidden="true" />
-          </span>
-        ) : null}
+        {reason !== null ? <ReadOnlyLock reason={reason} /> : null}
       </div>
       {setting.restart_pending ? (
         <p className={META}>
@@ -210,42 +227,44 @@ export function ConfigurationTable({ title, settings, revision, editing, onEdit,
   }
 
   return (
-    <Card role="group" aria-label={title}>
-      <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-        <CardTitle>{title}</CardTitle>
-        {!settings.some(isEditable) ? null : editing ? (
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>
-              Cancel
+    <TooltipProvider>
+      <Card role="group" aria-label={title}>
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+          <CardTitle>{title}</CardTitle>
+          {!settings.some(isEditable) ? null : editing ? (
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="button" size="sm" disabled={!changed || broken || save.isPending} onClick={submit}>
+                Save
+              </Button>
+            </div>
+          ) : (
+            <Button type="button" variant="outline" size="sm" aria-label={`Edit ${title}`} onClick={onEdit}>
+              Edit
             </Button>
-            <Button type="button" size="sm" disabled={!changed || broken || save.isPending} onClick={submit}>
-              Save
-            </Button>
-          </div>
-        ) : (
-          <Button type="button" variant="outline" size="sm" aria-label={`Edit ${title}`} onClick={onEdit}>
-            Edit
-          </Button>
-        )}
-      </CardHeader>
-      {settings.some((setting) => setting.key.startsWith("chunking.")) ? <p className={META}>{IDENTITY_NOTE}</p> : null}
-      {save.isError ? <SaveErrorNotice error={save.error} onRetry={() => save.reset()} /> : null}
-      <Table aria-label={title}>
-        <TableHeader>
-          <TableRow>
-            <TableHead scope="col">Setting</TableHead>
-            <TableHead scope="col">Value</TableHead>
-            <TableHead scope="col" className={WIDE}>
-              Source
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {settings.map((setting) => (
-            <SettingRows key={setting.key} setting={setting} text={editing ? textOf(setting) : null} onChange={(text) => change(setting.key, text)} />
-          ))}
-        </TableBody>
-      </Table>
-    </Card>
+          )}
+        </CardHeader>
+        {settings.some((setting) => setting.key.startsWith("chunking.")) ? <p className={META}>{IDENTITY_NOTE}</p> : null}
+        {save.isError ? <SaveErrorNotice error={save.error} onRetry={() => save.reset()} /> : null}
+        <Table aria-label={title}>
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">Setting</TableHead>
+              <TableHead scope="col">Value</TableHead>
+              <TableHead scope="col" className={WIDE}>
+                Source
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {settings.map((setting) => (
+              <SettingRows key={setting.key} setting={setting} text={editing ? textOf(setting) : null} onChange={(text) => change(setting.key, text)} />
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </TooltipProvider>
   );
 }

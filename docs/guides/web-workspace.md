@@ -523,7 +523,7 @@ The page sends `null` for that key, and the server removes the key from `omrs.js
 
 #### Read-only settings
 
-A read-only row keeps its value as text with a lock icon, also in edit mode. The reason is the name of the lock icon, so a hover or a screen reader gives it. In edit mode the reason also shows on a line under the row. A block with no editable setting has no Edit. These settings are read-only:
+A read-only row keeps its value as text with a lock icon, also in edit mode. Hover over the lock, or move to it with Tab, to see a tooltip. The tooltip says "Read-only on this page." and gives the reason. A screen reader reads the reason as the name of the lock. In edit mode the reason also shows on a line under the row. A block with no editable setting has no Edit. These settings are read-only:
 
 | Settings | Reason on the row |
 | --- | --- |
