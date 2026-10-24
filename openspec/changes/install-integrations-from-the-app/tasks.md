@@ -12,7 +12,8 @@ Implement after `add-chat-reasoning-and-usage`, in the same worktree.
 
 - [x] 2.1 Read the extra's requirements from the installed package metadata. Verify: a test that `anthropic` gives `llama-index-llms-anthropic>=0.11.0` with no marker, and an unknown extra gives nothing.
 - [x] 2.2 Add `InstallJob` on `WebRuntime`: one job at a time, argument list with no shell, environment without `*_API_KEY`, 40-line redacted output, 600 s timeout, `restart_needed` set. Verify: tests with a fake `uv` script for success, failure, timeout and a second start while running; a test that a key value in the output is redacted.
-- [ ] 2.3 Live check on a scratch `uv tool` environment, never the live login item: install `anthropic`, restart, and confirm the provider reports installed. Record the time taken.
+- [x] 2.3 Live check on a scratch `uv tool` environment, never the live login item: install `anthropic`, restart, and confirm the provider reports installed. Record the time taken.
+  - Result (2026-10-24): scratch `uv tool` folder (`UV_TOOL_DIR` in the session scratchpad, receipt `omrs[web,hybrid]` from this worktree), scratch config, port 8792. `GET /v1/integrations` reported `uv-tool` and the lasting command `uv tool install --reinstall "omrs[web,hybrid,anthropic] @ ~/Development/PROJECTS/llamaindex-rag-mcp-feat-install-integrations-from-the-app"`. Install of `anthropic` took 2 s on the server (8 s in the page with polling). `uv` moved `python-dateutil` from 3.0.0 to 2.9.0.post0 to fit the new requirement (the downgrade risk in design.md). After a restart, `GET /v1/integrations/install` was `idle`, the entry `available`, and `GET /v1/connections` reported Anthropic installed.
 
 ## 3. Routes
 
@@ -33,5 +34,7 @@ Implement after `add-chat-reasoning-and-usage`, in the same worktree.
 ## 6. Records and checks
 
 - [x] 6.1 Write the ADR for app-driven installs of allowed extras (load `s-adr`), with the next free number, and add it to the index.
-- [ ] 6.2 Run `./scripts/local_ci.sh`, `npm run lint`, `npm run typecheck`, `npm test` in `web/`, and `openspec validate install-integrations-from-the-app --strict`. Verify: all pass.
-- [ ] 6.3 Browser check on the scratch server at 1280 px and 390 px: install one extra, restart, and see it reported available.
+- [x] 6.2 Run `./scripts/local_ci.sh`, `npm run lint`, `npm run typecheck`, `npm test` in `web/`, and `openspec validate install-integrations-from-the-app --strict`. Verify: all pass.
+  - Result (2026-10-24): local CI passed (ruff, import-linter 21 kept, OpenSpec 85 passed, OpenAPI valid, torch-free, fast suite 7798 passed and 152 skipped, tripwire 5 passed, web 152 files and 1854 tests, wheel assets). The change validates with `--strict`.
+- [x] 6.3 Browser check on the scratch server at 1280 px and 390 px: install one extra, restart, and see it reported available.
+  - Result (2026-10-24): at 1280 px, Install on Anthropic opened the dialog with `llama-index-llms-anthropic>=0.11.0`, showed the progress line with the other four Install buttons disabled, then "Installed, restart to use" with Restart. Restart opened the existing dialog with the terminal text (not a login item). At 390 px, `pdf-pypdfium2` installed with no sideways scroll at any step (dialog 16 px to 374 px). The check found one bug: after a restart without a page reload, the card kept "Installed, restart to use" from the cached status. Fixed test-first in `fix(web): show an installed integration as available after a restart`. The failure output block was checked by Vitest only, because no live install failed.
