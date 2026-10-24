@@ -16,5 +16,7 @@
 ## 3. Records and checks
 
 - [x] 3.1 Add the check step and the caution to ADR-094; note the reserved ADR-090 and ADR-091 in `ADR_README.md`; update `docs/guides/web-workspace.md`. Verify: docs tests pass.
-- [ ] 3.2 Re-pin the clean-base tripwire if the counts move. Run `./scripts/local_ci.sh` and `openspec validate harden-integration-installs --strict`. Verify: both pass.
-- [ ] 3.3 Browser check at 1280 px and 390 px on a scratch server: the Anthropic callout shows and fits. Verify: no sideways scroll.
+- [x] 3.2 Re-pin the clean-base tripwire if the counts move. Run `./scripts/local_ci.sh` and `openspec validate harden-integration-installs --strict`. Verify: both pass.
+  - Result (2026-10-24): fast suite 7,806 passed, 152 skipped; tripwire 5 passed (pin 7,813 = measured 7,806 + 7; `_WEB_EXTRA_CASES` 1,360); web 152 files, 1,858 tests; OpenSpec 86 passed; local CI passed.
+- [x] 3.3 Browser check at 1280 px and 390 px on a scratch server: the Anthropic callout shows and fits. Verify: no sideways scroll.
+  - Result (2026-10-24): scratch checkout server on port 8793. At 1280 px the red "Before you install" callout shows on the Anthropic card only (1 of 12 cards), above the copy command, border `rgb(218, 91, 74)`. At 390 px it stays inside the card (324 px wide) and the page has no sideways scroll.

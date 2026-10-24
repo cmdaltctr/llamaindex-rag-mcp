@@ -139,7 +139,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # +58 (2026-10-24, install-integrations-from-the-app): install environment (27), install
 # job (10), install routes (20) and the power busy check for a running install (1).
 # The 31 job, route and power cases need fastapi (measured 7798, pin 7805).
-_BASE_EXECUTED = 7805
+# +8 (2026-10-24, harden-integration-installs): install environment (3), install job (3)
+# and install routes (2). The 5 job and route cases need fastapi (measured 7806, pin 7813).
+_BASE_EXECUTED = 7813
 # Re-baselined check-embedding-stamp-before-dimension (2026-10-18): 10 new cases
 # (store stamp-first tests and graph embed-step tests). Measured in two clean
 # venvs: 5741 with the web extra, 5091 without; the web extra still adds 650.
@@ -437,7 +439,9 @@ if not _has_qwen_tokenizer:
 # fastapi (1324).
 # +31 (2026-10-24, install-integrations-from-the-app): test_web_integration_install_job.py
 # (10), test_web_integration_install_routes.py (20) and test_web_power.py (1) (1355).
-_WEB_EXTRA_CASES = 1355
+# +5 (2026-10-24, harden-integration-installs): test_web_integration_install_job.py (3)
+# and test_web_integration_install_routes.py (2) (1360).
+_WEB_EXTRA_CASES = 1360
 if find_spec("fastapi") is None:
     _BASE_EXECUTED -= _WEB_EXTRA_CASES
 # -m "not slow": existing 14, four quality gates and the profile latency check (2026-10-17)
