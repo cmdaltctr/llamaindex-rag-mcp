@@ -5,6 +5,8 @@ development of OMRG — Opinionated Modular RAG.
 
 > **Name.** The project was named OMRG until ADR-092. It is now OMRS, "Opinionated Modular RAG System". ADRs, TDRs and archived changes keep the name the project had when they were written, and file names such as `087-settings-live-in-omrg-jsonc.md` stay so that links hold.
 
+> **Gaps.** ADR-090 and ADR-091 do not exist yet. The v4 proposals reserve them: `authority-aware-retrieval` writes ADR-090 and `mantiq-reasoning-gates` writes ADR-091, each after its experiments report. v3 skips the two numbers so that the records do not clash when v4 merges.
+
 ## Index
 
 | ADR                                                                | Title                                                                                        | Date       | Status   |

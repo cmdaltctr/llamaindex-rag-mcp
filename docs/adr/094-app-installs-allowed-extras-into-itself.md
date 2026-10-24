@@ -4,7 +4,7 @@
 - **Status:** Proposed
 - **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 - **Related:** [ADR-073](073-make-the-torch-extra-a-normal-choice.md) (the torch extra), [ADR-085](085-web-login-item.md) (web login item), [ADR-086](086-web-power-menu.md) (power menu), [ADR-087](087-settings-live-in-omrg-jsonc.md) (settings in `omrs.jsonc`)
-- **Change:** `openspec/changes/install-integrations-from-the-app/` (design D1 to D4)
+- **Change:** `openspec/changes/install-integrations-from-the-app/` (design D1 to D4); amended by `harden-integration-installs` (decisions 7 to 9)
 
 ## Context
 
@@ -53,6 +53,20 @@ Three facts shape the decision:
    `uv tool install --reinstall "omrs[<receipt extras>,<extra>] @ <source>"`,
    with the home folder written as `~`. A later manual reinstall with this
    command keeps the extra.
+7. **Check the packages after the install.** After exit code 0 the job runs
+   `uv pip check --python <sys.executable>` with the same limits. A clash
+   fails the install with `check-failed` and no restart is offered. The live
+   check showed why: installing `anthropic` moved `python-dateutil` from 3.0.0
+   to 2.9.0.post0, because `botocore` (through `anthropic[bedrock]`) needs
+   `python-dateutil<3`.
+8. **Refuse an entry with `unknown` status.** When a probe fails, the server
+   does not know what is installed, so the entry reports `status-unknown` and
+   shows the copy command only.
+9. **Warn on the card before a known version change.** A catalogue entry can
+   carry an `install_caution` line. The page shows it in a red callout while
+   the entry is not installed. Anthropic carries the `python-dateutil` line.
+   A guard test keeps the extra requirement lines simple (`extra ==` joined
+   with `and` only, never naming `omrs`).
 
 ## Consequences
 
@@ -70,8 +84,13 @@ Three facts shape the decision:
 - The server can now start a process that reaches the package index. A stolen
   browser session could install a listed extra. It cannot install anything
   else.
-- A new requirement can, in rare cases, change an installed package version.
-  Recovery is the lasting reinstall command, which rebuilds the environment.
+- A new requirement can change an installed package version. The check in
+  decision 7 catches a change that breaks another package. Recovery is the
+  lasting reinstall command, which rebuilds the environment in one resolve.
+- `uv pip check` also reports a clash that existed before the install, so
+  such an install shows `check-failed` although it did not cause the clash.
+- The Anthropic caution is fixed text. It goes stale if `botocore` accepts
+  `python-dateutil` 3.
 
 ### Neutral
 
@@ -87,6 +106,7 @@ Three facts shape the decision:
 | `uv tool install --reinstall` with the new extra | It rebuilds OMRS from the receipt's source folder, which can hold uncommitted code and an old web build. Safe only when OMRS installs from a released package. Revisit if OMRS ships to PyPI. |
 | Keep copy commands only | The user asked for an Install button. The old command was also wrong for the usual install. |
 | Install any extra the package declares, including `torch` | `torch` is several GB and opt-in by ADR-073. `web` is present when the page runs. |
+| Forbid downgrades with a constraint file | The Anthropic install needs one and is safe. Every such install would fail. |
 | Import the new modules without a restart | A running process cannot load new modules safely in every case. The restart action already exists. |
 
 ## References

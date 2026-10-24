@@ -15,6 +15,6 @@
 
 ## 3. Records and checks
 
-- [ ] 3.1 Add the check step and the caution to ADR-094; note the reserved ADR-090 and ADR-091 in `ADR_README.md`; update `docs/guides/web-workspace.md`. Verify: docs tests pass.
+- [x] 3.1 Add the check step and the caution to ADR-094; note the reserved ADR-090 and ADR-091 in `ADR_README.md`; update `docs/guides/web-workspace.md`. Verify: docs tests pass.
 - [ ] 3.2 Re-pin the clean-base tripwire if the counts move. Run `./scripts/local_ci.sh` and `openspec validate harden-integration-installs --strict`. Verify: both pass.
 - [ ] 3.3 Browser check at 1280 px and 390 px on a scratch server: the Anthropic callout shows and fits. Verify: no sideways scroll.
