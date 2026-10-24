@@ -59,7 +59,9 @@ class Harness:
         """Make the server look like *install_type*, with a fake ``uv`` running *body*."""
         script = self.tmp_path / "bin" / "uv"
         script.parent.mkdir(parents=True, exist_ok=True)
-        script.write_text(f"#!/bin/sh\necho ran >> {shlex.quote(str(self.ran))}\n{body}\n")
+        # ``uv pip check`` passes at once; only the install records that it ran.
+        check = 'if [ "$2" = check ]; then exit 0; fi'
+        script.write_text(f"#!/bin/sh\n{check}\necho ran >> {shlex.quote(str(self.ran))}\n{body}\n")
         script.chmod(0o755)
         env = InstallEnvironment(
             install_type=install_type,  # type: ignore[arg-type]
@@ -119,6 +121,15 @@ def test_a_uv_tool_install_offers_the_button_and_the_lasting_command(harness: Ha
         'uv tool install --reinstall "omrs[web,hybrid,anthropic] @ ~/src/omrs"'
     )
     assert entry["pip_command"] == 'pip install "omrs[anthropic]"'
+
+
+def test_anthropic_carries_an_install_caution_and_others_none(harness: Harness) -> None:
+    harness.install_as("uv-tool")
+    entries = harness.entries()
+    caution = entries["anthropic"]["install_caution"]
+    assert "python-dateutil" in caution and "botocore" in caution
+    assert entries["chroma"]["install_caution"] is None
+    assert entries["magika"]["install_caution"] is None
 
 
 def test_excluded_and_always_on_entries_are_not_installable(harness: Harness) -> None:
@@ -208,6 +219,26 @@ def test_a_listed_extra_that_cannot_be_installed_is_409(
     assert response.status_code == 409, response.text
     body = response.json()
     assert body["status"] == "error" and body["reason"] == reason and body["message"]
+    assert not harness.ran.exists()
+
+
+def test_an_entry_whose_probe_fails_is_409_status_unknown(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    harness.install_as("uv-tool")
+
+    def broken(name: str) -> bool:
+        if name.startswith("azure"):
+            raise RuntimeError("probe broke")
+        return name not in MISSING
+
+    monkeypatch.setattr(capabilities, "module_installed", broken)
+    entry = harness.entries()["azure"]
+    assert entry["availability"] == "unknown"
+    assert entry["installable"] is False and entry["install_reason"] == "status-unknown"
+    response = harness.client.post("/v1/integrations/azure/install", headers=ORIGIN)
+    assert response.status_code == 409 and response.json()["reason"] == "status-unknown"
+    assert response.json()["message"]
     assert not harness.ran.exists()
 
 

@@ -41,6 +41,10 @@ UNKNOWN_EXTRA = "This extra is not in the integrations list."
 #: Plain-English message for each 409 reason.
 REASONS: dict[str, str] = {
     "not-installable-here": "The app does not install this extra. Use the command on its entry.",
+    "status-unknown": (
+        "The server could not check whether this extra is installed. "
+        "Use the command on its entry instead."
+    ),
     "already-installed": "This extra is already installed.",
     "no-requirements": "This extra adds no packages, so there is nothing to install.",
     "not-uv-tool": (

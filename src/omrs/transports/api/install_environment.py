@@ -203,7 +203,8 @@ def install_reason(
     """Return why *extra* cannot be installed from the app, or ``None``.
 
     The checks run in a fixed order: the allowed list, the current
-    availability, the requirements, the install type, the ``uv`` program.
+    availability (``unknown`` refuses, because the server does not know
+    what is there), the requirements, the install type, the ``uv`` program.
 
     Args:
         extra: The entry's extra, or ``None`` for an always-on integration.
@@ -213,6 +214,8 @@ def install_reason(
     """
     if extra is None or extra in EXCLUDED_EXTRAS:
         return "not-installable-here"
+    if availability == "unknown":
+        return "status-unknown"
     if availability in INSTALLED_STATES:
         return "already-installed"
     if not packages:

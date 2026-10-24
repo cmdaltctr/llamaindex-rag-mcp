@@ -8,11 +8,14 @@ beside a fake prefix, a fake checkout with ``pyproject.toml`` and
 from __future__ import annotations
 
 import os
+import re
+from importlib import metadata
 from pathlib import Path
 
 import pytest
 
 from omrs.transports.api.install_environment import (
+    EXCLUDED_EXTRAS,
     InstallEnvironment,
     copy_command,
     detect_environment,
@@ -186,7 +189,12 @@ PACKAGES = ["llama-index-llms-anthropic>=0.11.0"]
 
 def test_an_allowed_missing_extra_is_installable() -> None:
     assert install_reason("anthropic", "not-installed", PACKAGES, TOOL) is None
-    assert install_reason("anthropic", "unknown", PACKAGES, TOOL) is None
+
+
+def test_an_entry_with_unknown_status_is_not_installable() -> None:
+    assert install_reason("anthropic", "unknown", PACKAGES, TOOL) == "status-unknown"
+    # The allowed list still decides first.
+    assert install_reason("torch", "unknown", PACKAGES, TOOL) == "not-installable-here"
 
 
 @pytest.mark.parametrize("extra", ["web", "torch", None])
@@ -234,3 +242,43 @@ def test_other_marker_parts_are_kept_and_other_extras_ignored() -> None:
         "d",
     ]
     assert extra_requirements("x", requires) == ["a>=1", 'b<2; python_version < "3.12"']
+
+
+# ── Metadata guard (harden-integration-installs, task 1.4) ───────────────
+
+_EXTRA_NAME = re.compile(r"""extra\s*==\s*['"]([^'"]+)['"]""")
+_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+
+
+def _unsafe_lines(requires: list[str], allowed: set[str]) -> list[str]:
+    """Return the lines for an allowed extra that the requirement reader cannot trust.
+
+    The reader drops a line that joins the extra with ``or``, and a line that
+    names ``omrs`` would make ``uv`` fetch OMRS from the package index.
+    """
+    unsafe = []
+    for line in requires:
+        spec, _, marker = line.partition(";")
+        if not set(_EXTRA_NAME.findall(marker)) & allowed:
+            continue
+        name = _NAME.match(spec.strip())
+        if re.search(r"\bor\b", marker) or (name and name[0].lower() == "omrs"):
+            unsafe.append(line)
+    return unsafe
+
+
+def test_the_guard_finds_or_markers_and_self_references() -> None:
+    requires = [
+        "a>=1; extra == 'anthropic'",
+        "b; extra == 'anthropic' or extra == 'all'",
+        'omrs[hybrid]; extra == "anthropic"',
+        "c; extra == 'all' or extra == 'other'",
+    ]
+    assert _unsafe_lines(requires, {"anthropic"}) == requires[1:3]
+
+
+def test_installed_metadata_has_only_readable_lines_for_allowed_extras() -> None:
+    extras = set(metadata.metadata("omrs").get_all("Provides-Extra") or [])
+    allowed = extras - EXCLUDED_EXTRAS
+    assert "anthropic" in allowed
+    assert _unsafe_lines(metadata.distribution("omrs").requires or [], allowed) == []

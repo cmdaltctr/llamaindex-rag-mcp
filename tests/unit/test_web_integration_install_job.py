@@ -27,13 +27,21 @@ PACKAGES = ["llama-index-llms-anthropic>=0.11.0"]
 KEY = "sk-test-0123456789abcdefghij"  # gitleaks:allow
 
 
-def fake_uv(tmp_path: Path, body: str) -> str:
-    """Write an executable ``uv`` that records argv and env, then runs *body*."""
+CHECK_OK = "exit 0"
+
+
+def fake_uv(tmp_path: Path, body: str, check: str = CHECK_OK) -> str:
+    """Write an executable ``uv`` that records argv and env, then runs *body*.
+
+    ``uv pip check`` records its argv in ``check-argv.txt`` and runs *check*.
+    """
     script = tmp_path / "bin" / "uv"
     script.parent.mkdir(parents=True, exist_ok=True)
     out = shlex.quote(str(tmp_path))
     script.write_text(
-        f'#!/bin/sh\nprintf "%s\\n" "$@" > {out}/argv.txt\nenv > {out}/env.txt\n{body}\n',
+        f'#!/bin/sh\nif [ "$2" = check ]; then\nprintf "%s\\n" "$@" > {out}/check-argv.txt\n'
+        f"{check}\nfi\n"
+        f'printf "%s\\n" "$@" > {out}/argv.txt\nenv > {out}/env.txt\n{body}\n',
         encoding="utf-8",
     )
     script.chmod(0o755)
@@ -164,3 +172,30 @@ async def test_api_keys_are_not_passed_and_never_shown(
     text = "\n".join(snapshot["output"])
     assert KEY not in text and "***" in text
     assert "provider-secret-value" not in text and "[hidden]" in text
+
+
+async def test_a_passing_check_runs_after_the_install(tmp_path: Path) -> None:
+    job = _job()
+    uv = fake_uv(tmp_path, "echo Installed 1 package\nexit 0", "echo All compatible\nexit 0")
+    snapshot = await _run(job, uv)
+    argv = (tmp_path / "check-argv.txt").read_text(encoding="utf-8").splitlines()
+    assert argv == ["pip", "check", "--python", "/env/bin/python"]
+    assert snapshot["state"] == "succeeded"
+    assert snapshot["output"] == ["Installed 1 package", "All compatible"]
+    assert job.restart_needed == {"anthropic"}
+
+
+async def test_a_failing_check_fails_the_install(tmp_path: Path) -> None:
+    job = _job()
+    check = "echo 'pandas 3.0.0 requires python-dateutil>=3, but 2.9.0 is installed'\nexit 1"
+    snapshot = await _run(job, fake_uv(tmp_path, "echo Installed 1 package\nexit 0", check))
+    assert snapshot["state"] == "failed"
+    assert snapshot["reason"] == "check-failed" and snapshot["exit_code"] == 1
+    assert snapshot["output"][-1].startswith("pandas 3.0.0 requires")
+    assert job.restart_needed == set()
+
+
+async def test_no_check_runs_after_a_failed_install(tmp_path: Path) -> None:
+    snapshot = await _run(_job(), fake_uv(tmp_path, "exit 2"))
+    assert snapshot["reason"] == "exit-code"
+    assert not (tmp_path / "check-argv.txt").exists()

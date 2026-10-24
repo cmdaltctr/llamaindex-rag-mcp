@@ -91,6 +91,7 @@ class Integration:
         purpose: One-line description of what the integration adds.
         extra: The pip extra, or ``None`` for an always-on integration.
         probe: Returns ``available``, ``not-installed`` or ``unknown``.
+        caution: A warning the page shows before the install, or ``None``.
     """
 
     id: str
@@ -98,6 +99,7 @@ class Integration:
     purpose: str
     extra: str | None
     probe: Probe
+    caution: str | None = None
 
 
 CATALOGUE: tuple[Integration, ...] = (
@@ -163,6 +165,10 @@ CATALOGUE: tuple[Integration, ...] = (
         "Chat answers from Anthropic models.",
         "anthropic",
         _modules("llama_index.llms.anthropic"),
+        # botocore (through anthropic[bedrock]) needs python-dateutil<3 (ADR-094).
+        "This install can change another package. It adds Amazon's botocore, which "
+        "needs python-dateutil below version 3, so uv can move python-dateutil back "
+        "to 2.9. The app checks every package after the install.",
     ),
     Integration(
         "torch",
@@ -232,6 +238,7 @@ def describe_entry(
         "installable": reason is None,
         "install_reason": reason,
         "packages": packages,
+        "install_caution": item.caution,
     }
 
 

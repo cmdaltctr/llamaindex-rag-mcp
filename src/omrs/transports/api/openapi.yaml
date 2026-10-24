@@ -3190,8 +3190,11 @@ paths:
         `restart-needed` until the server restarts. An extra that is not in
         the catalogue gets 404. Every refusal of a listed extra gets 409 with
         `reason`: `not-installable-here` (`web`, `torch` or an entry without
-        an extra), `not-uv-tool`, `uv-not-found`, `already-installed`,
-        `no-requirements` or `install-running`. Session only: a bearer
+        an extra), `status-unknown` (the probe failed), `not-uv-tool`,
+        `uv-not-found`, `already-installed`, `no-requirements` or
+        `install-running`. After `uv pip install` ends with exit code 0, the
+        job runs `uv pip check` on the same Python; a conflict fails the
+        install with `check-failed`. Session only: a bearer
         credential gets 403.
       security:
         - sessionCookie: [manage]
@@ -7886,7 +7889,7 @@ components:
     Integration:
       type: object
       additionalProperties: false
-      required: [id, name, purpose, extra, install_command, pip_command, availability, installable, install_reason, packages]
+      required: [id, name, purpose, extra, install_command, pip_command, availability, installable, install_reason, packages, install_caution]
       properties:
         id:
           type: string
@@ -7922,7 +7925,7 @@ components:
           description: Whether `POST /v1/integrations/{extra}/install` would start an install now.
         install_reason:
           type: [string, "null"]
-          enum: [not-installable-here, not-uv-tool, uv-not-found, already-installed, no-requirements, null]
+          enum: [not-installable-here, status-unknown, not-uv-tool, uv-not-found, already-installed, no-requirements, null]
           description: Why `installable` is false, or null when it is true.
         packages:
           type: array
@@ -7932,6 +7935,11 @@ components:
             Requirements the installed OMRS package declares for the extra,
             without the extra marker (for example
             `llama-index-llms-anthropic>=0.11.0`). Empty without an extra.
+        install_caution:
+          type: [string, "null"]
+          description: >
+            A warning the page shows before the install, such as a package
+            version the install can change. Null for most entries.
 
     IntegrationList:
       type: object
@@ -7972,8 +7980,11 @@ components:
           format: date-time
         reason:
           type: [string, "null"]
-          enum: [exit-code, timed-out, start-failed, null]
-          description: Why the install failed; null unless `state` is `failed`.
+          enum: [exit-code, check-failed, timed-out, start-failed, null]
+          description: >
+            Why the install failed; null unless `state` is `failed`.
+            `check-failed` means `uv pip install` succeeded but `uv pip check`
+            then found a conflict; `exit_code` is the check's code.
         exit_code:
           type: [integer, "null"]
         output:

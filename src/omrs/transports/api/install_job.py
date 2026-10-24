@@ -11,7 +11,11 @@ variable. Its output (stderr merged into stdout) is redacted line by line
 and only the last :data:`MAX_OUTPUT_LINES` lines are kept. The job stops
 the process after :data:`INSTALL_TIMEOUT_SECONDS`.
 
-After a successful install the extra goes into ``restart_needed``: the
+After exit code 0 the job runs ``uv pip check --python <this Python>``
+with the same limits, because an install can move a package another one
+needs (ADR-094). A conflict fails the install with ``check-failed``.
+
+After a successful check the extra goes into ``restart_needed``: the
 running process cannot use the new modules safely until it restarts. The
 state is kept in memory, so a restart shows ``idle`` again.
 """
@@ -99,6 +103,7 @@ class InstallJob:
     _exit_code: int | None = None
     _output: deque[str] = field(default_factory=lambda: deque(maxlen=MAX_OUTPUT_LINES))
     _task: asyncio.Task[None] | None = None
+    _process: asyncio.subprocess.Process | None = None
 
     @property
     def running(self) -> bool:
@@ -163,40 +168,56 @@ class InstallJob:
         def clean(text: str) -> str:
             return redact(redactor(text) if redactor else text, secrets)
 
+        check = [argv[0], "pip", "check", "--python", self.python]
         try:
-            process = await asyncio.create_subprocess_exec(
-                *argv,
-                stdin=asyncio.subprocess.DEVNULL,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
-                env=env,
-                start_new_session=True,
+            reason, code = await asyncio.wait_for(
+                self._steps(argv, check, env, clean), self.timeout
             )
+        except TimeoutError:
+            # Before OSError: TimeoutError is one of its subclasses.
+            await self._stop_current()
+            self._finish(FAILED, "timed-out", None)
+            return
         except OSError:
             logger.warning("Could not start the install of %s.", self._extra)
             self._finish(FAILED, "start-failed", None)
             return
-        try:
-            await asyncio.wait_for(self._collect(process, clean), self.timeout)
-        except TimeoutError:
-            _stop(process)
-            await process.wait()
-            self._finish(FAILED, "timed-out", None)
-            return
         except asyncio.CancelledError:
             # The server is shutting down: stop the process and keep no result.
-            _stop(process)
+            if self._process is not None:
+                _stop(self._process)
             raise
-        code = process.returncode
-        self._finish(SUCCEEDED if code == 0 else FAILED, None if code == 0 else "exit-code", code)
+        self._finish(SUCCEEDED if reason is None else FAILED, reason, code)
 
-    async def _collect(
-        self, process: asyncio.subprocess.Process, clean: Callable[[str], str]
-    ) -> None:
-        """Keep the redacted output lines, then wait for the exit code."""
+    async def _steps(
+        self, install: list[str], check: list[str], env: dict[str, str], clean: Callable[[str], str]
+    ) -> tuple[str | None, int]:
+        """Run the install, then the check; return the failure reason (or ``None``) and the code."""
+        code = await self._exec(install, env, clean)
+        if code != 0:
+            return "exit-code", code
+        code = await self._exec(check, env, clean)
+        return (None if code == 0 else "check-failed"), code
+
+    async def _exec(self, argv: list[str], env: dict[str, str], clean: Callable[[str], str]) -> int:
+        """Run one argument list, keep its redacted output lines and return the exit code."""
+        self._process = process = await asyncio.create_subprocess_exec(
+            *argv,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            env=env,
+            start_new_session=True,
+        )
         if process.stdout is not None:
             async for raw in process.stdout:
                 line = raw.decode("utf-8", errors="replace").rstrip()
                 if line:
                     self._output.append(clean(line))
-        await process.wait()
+        return await process.wait()
+
+    async def _stop_current(self) -> None:
+        """Stop the running process after a timeout and wait for it to end."""
+        if self._process is not None:
+            _stop(self._process)
+            await self._process.wait()
